@@ -781,6 +781,13 @@ export interface Rows {
     readonly read_at: string | null;
     readonly due_at: string | null;
   };
+  readonly packages: {
+    readonly code: string;
+    readonly service_every_days: number;
+    readonly replace_after_months: number;
+    readonly updated_by: string;
+    readonly updated_at: string;
+  };
   readonly partial_reasons: {
     readonly code: string;
     readonly label: string;
@@ -878,6 +885,7 @@ export interface Rows {
     readonly crm_contact_id: string | null;
     readonly crm_contact_erased_at: string | null;
     readonly crm_contact_erasure_attempts: number;
+    readonly package: string | null;
   };
   readonly photo_sets: {
     readonly id: string;

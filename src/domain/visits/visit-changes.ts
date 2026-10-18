@@ -42,7 +42,8 @@ import { NO_SHOW_CHARGES } from "../../policy/no-show.ts";
 import { ONE_VISIT_TERMS } from "../../policy/one-visit.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
-import { lateFeeOn, priceOf, type Price } from "../money/price-book.ts";
+import { lateFeeOn, type Price } from "../money/price-book.ts";
+import { visitPriceOf } from "../booking/client-prices.ts";
 import { bookedMinutes } from "../booking/occupancy.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { visitBegun } from "./visit-begun.ts";
@@ -338,7 +339,8 @@ export async function changeTerms({
   const payment = await visitPayment(db, visit.id);
   const paid = payment?.paid ?? 0;
   // A charged move books a new visit of the same service, at its price on the day.
-  const visitPrice = await priceOf(db, visit.type, { on, tier: visit.tier, city: await cityOfVisit(db, visit.id) });
+  const city = await cityOfVisit(db, visit.id);
+  const visitPrice = await visitPriceOf(db, { type: visit.type, tier: visit.tier, on, city, personId: visit.personId });
   const gst = visitPrice?.gst_percent ?? 0;
 
   const cost = moveCost(visit.type, notice, "client", terms.lateCharge);

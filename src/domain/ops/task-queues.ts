@@ -1,6 +1,7 @@
 // The Tasks board's queues (./tasks.ts): one statement's arm for each, each giving the same columns, read from the
 // queues the database already keeps.
 
+import { everyDaysSql } from "../booking/packages.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { UNTOLD_MOVE, UNTOLD_REASON } from "../dispatch/dispatch-board.ts";
 import { LEAVE_ON_THE_DAY } from "../dispatch/leave.ts";
@@ -38,6 +39,9 @@ const daysOn = (days: number) => `+${String(days)} days`;
 const LEAVE_CONFLICT_EPISODE = `(SELECT l.id FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY}
   ORDER BY l.created_at, l.id LIMIT 1)`;
 
+/** Days from the client's last visit to their next service, by their package. */
+const EVERY = everyDaysSql("pe.package");
+
 /** A first fit to book is a new task after each later consultation: the consultation it follows. */
 const FIRST_FIT_EPISODE = "s.consulted_start";
 
@@ -58,6 +62,8 @@ export interface ReadAt {
   readonly atRiskBefore: string;
   /** The first moment of the first day a last visit can have been done on with its client not yet lost. */
   readonly notLostFrom: string;
+  /** Days lapsed before a client counts as lost (src/policy/client-standing.ts). */
+  readonly lostAfter: number;
   /** The first moment after the last day a first fit to book's consultation can have been done on. */
   readonly toBookBefore: string;
   /** The latest a payment link with no close of its own can have been sent and be closed now. */
@@ -266,20 +272,24 @@ export const QUEUES: readonly Queue[] = [
      AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)`,
   },
-  // An At-risk client is a fitted one with nothing booked since their last first fit, service or replacement, done
-  // before ?1: `at_risk_after_due` days past the day their next service fell due. It reads the visit's start as its
-  // `since`, from which nextVisitDays counts the day it waits from and the day the service fell due, and goes as soon
-  // as a visit is booked, paid for, or done after it (docs/decisions/0086-the-next-visit-is-offered.md); once the
-  // client counts as lost, the visit done before ?2 (src/policy/client-standing.ts); or once ops close it with what
+  // An At-risk client is a fitted one with nothing booked since their last first fit, service or replacement:
+  // `at_risk_after_due` days (?3) past the day their next service fell due by their package's cadence, on or before
+  // today (?4); ?1 and ?2 bound the starts any cadence reads. It reads the visit's start as its `since`, from which
+  // nextVisitDays counts the day it waits from and the day the service fell due, and goes as soon as a visit is
+  // booked, paid for, or done after it (docs/decisions/0086-the-next-visit-is-offered.md); once the client counts as
+  // lost, ?5 days lapsed (src/policy/client-standing.ts); or once ops close it with what
   // came of the call. It reads each client's last visits from last_visits, which the database keeps as each visit
   // closes (migration 0053), and looks for a visit booked since along indexes that hold only the visits to come or
   // those after it.
   {
     group: "at_risk_client",
     sql: `SELECT 'at_risk_client' AS "group", s.visit_id AS id, s.person_id AS person_id, pe.name AS person_name,
-         s.visit_start AS detail, NULL AS facts, s.visit_start AS since, NULL AS due_by, '' AS episode
+         s.visit_start AS detail, json_object('every', ${EVERY}) AS facts, s.visit_start AS since, NULL AS due_by,
+         '' AS episode
     FROM last_visits s JOIN people pe ON pe.id = s.person_id
    WHERE s.visit_start < ?1 AND s.visit_start >= ?2 AND pe.erased_at IS NULL
+     AND date(s.visit_start, '+330 minutes', '+' || (${EVERY} + ?3) || ' days') <= ?4
+     AND date(s.visit_start, '+330 minutes', '+' || (${EVERY} + ?3 + 1 + ?5) || ' days') > ?4
      AND NOT EXISTS (
        SELECT 1 FROM task_closures c WHERE c.task_group = 'at_risk_client' AND c.subject_id = s.visit_id)
      AND NOT EXISTS (
@@ -292,7 +302,7 @@ export const QUEUES: readonly Queue[] = [
           AND ${statusNotIn("later.status", VISIT_CALLED_OFF)})
      AND NOT EXISTS (
        SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND ${paidNotBooked("h")})`,
-    binds: (at) => [at.atRiskBefore, at.notLostFrom],
+    binds: (at) => [at.atRiskBefore, at.notLostFrom, at.days.at_risk_after_due, at.today, at.lostAfter],
   },
   // A First fit to book is a client whose last consultation was done before ?1, with no first fit, service or
   // replacement done since, and nothing booked since. A one visit the client declined ends as a consultation, so it

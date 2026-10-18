@@ -2,14 +2,20 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { DISCOUNT_CODES, empty, fails, json } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
-import { review } from "../../apps/ops/src/content/common.ts";
+import { deleting } from "../../apps/ops/src/content/common.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 
-// Discount codes (docs/decisions/0108-discount-codes.md), which no board draws.
+// Discount codes (docs/decisions/0108-discount-codes.md), which no board draws. A row opens its code's record, where
+// it is switched off or deleted (docs/decisions/0212-editing-in-place.md).
 test.describe("the discount codes", () => {
+  const copy = settingsCopy.discountCodes;
   const made = (codes: string[]) => json({ codes }, 201);
   const row = (page: Page, code: string) =>
-    page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: code, exact: true }) });
+    page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open(code), exact: true }) });
+  const recordOf = async (page: Page, code: string) => {
+    await page.getByRole("button", { name: copy.open(code), exact: true }).click();
+    return page.getByRole("dialog", { name: code });
+  };
   /** Make codes is shut until asked for. */
   const makeForm = async (page: Page) => {
     await page.getByRole("button", { name: settingsCopy.discountCodes.make }).click();
@@ -42,12 +48,15 @@ test.describe("the discount codes", () => {
       "Rs. 12,000",
       "Rs. 64,000",
       "Sat 18 Sep",
-      settingsCopy.discountCodes.switchOff,
     ]);
     await expect(row(page, "TYPO10")).toContainText("Ended Wed 1 Sep");
-    await expect(row(page, "TYPO10").getByRole("button", { name: "Delete TYPO10" })).toBeVisible();
+    const typo = await recordOf(page, "TYPO10");
+    await expect(typo.getByRole("button", { name: deleting.label("TYPO10") })).toBeVisible();
+    await page.keyboard.press("Escape");
     // A code a booking has used is switched off, never deleted.
-    await expect(row(page, "WEDDNG25").getByRole("button", { name: "Delete WEDDNG25" })).toHaveCount(0);
+    const wedding = await recordOf(page, "WEDDNG25");
+    await expect(wedding).toContainText("Rs. 64,000");
+    await expect(wedding.getByRole("button", { name: deleting.label("WEDDNG25") })).toHaveCount(0);
   });
 
   test("folds the codes switched off beneath the table, their figures kept", async ({ page }) => {
@@ -56,7 +65,8 @@ test.describe("the discount codes", () => {
     await page.getByText("Switched off (1)").click();
     await expect(row(page, "RPLC2K")).toContainText("Rs. 13,000");
     await expect(row(page, "RPLC2K")).toContainText("Fri 10 Sep");
-    await expect(row(page, "RPLC2K").getByRole("button")).toHaveCount(0);
+    const off = await recordOf(page, "RPLC2K");
+    await expect(off.getByRole("button", { name: copy.switching.label("RPLC2K") })).toHaveCount(0);
   });
 
   test("sorts the codes by what was paid, and narrows them to what they apply to", async ({ page }) => {
@@ -83,32 +93,31 @@ test.describe("the discount codes", () => {
       },
       "GET /api/discount-codes": (route) => json(deleted ? left : DISCOUNT_CODES)(route),
     });
-    await row(page, "TYPO10").getByRole("button", { name: "Delete TYPO10" }).click();
-    await expect(page.getByText("Delete TYPO10? This can’t be undone.")).toBeVisible();
-    await page.getByRole("button", { name: settingsCopy.discountCodes.delete, exact: true }).click();
+    const record = await recordOf(page, "TYPO10");
+    await record.getByRole("button", { name: deleting.label("TYPO10") }).click();
+    await expect(record.getByText(deleting.warning("TYPO10"))).toBeVisible();
+    await record.getByRole("button", { name: deleting.confirm, exact: true }).click();
 
     await expect(page.getByRole("status").filter({ hasText: settingsCopy.discountCodes.deleted })).toBeVisible();
     await expect(row(page, "TYPO10")).toHaveCount(0);
   });
 
-  test("makes a code ops typed only once they have read what it takes off", async ({ page }) => {
+  test("makes a code ops typed, saying what it takes off beneath the boxes before it is made", async ({ page }) => {
     await open(page, "/settings/discount-codes", { "POST /api/discount-codes": made(["DIWALI"]) });
     const form = await makeForm(page);
-    const check = form.getByRole("button", { name: settingsCopy.discountCodes.check });
-    await expect(check).toBeDisabled();
+    const summary = form.getByRole("list", { name: copy.summary });
+    await expect(summary).toHaveCount(0);
     await form.getByLabel(settingsCopy.discountCodes.code, { exact: true }).fill("diwali");
     await form.getByLabel(settingsCopy.discountCodes.value).fill("10");
     await form.getByLabel("Cap, Rs.").fill("1500");
     await form.getByLabel(settingsCopy.discountCodes.coverNames.service).check();
-    await check.click();
 
-    const panel = page.getByRole("group", { name: review.title });
-    await expect(panel).toContainText("Code DIWALI");
-    await expect(panel).toContainText("10% (max Rs. 1,500) off before GST");
-    await expect(panel).toContainText("On Service visits");
-    await expect(panel).toContainText("Unlimited uses, once per client");
+    await expect(summary).toContainText("Code DIWALI");
+    await expect(summary).toContainText("10% (max Rs. 1,500) off before GST");
+    await expect(summary).toContainText("On Service visits");
+    await expect(summary).toContainText("Unlimited uses, once per client");
     const request = posted(page, "/api/discount-codes");
-    await panel.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
+    await form.getByRole("button", { name: copy.makeButton, exact: true }).click();
     expect((await request).postDataJSON()).toEqual({
       code: "diwali",
       kind: "percent",
@@ -130,12 +139,11 @@ test.describe("the discount codes", () => {
     await form.getByLabel(settingsCopy.discountCodes.coverNames.first_fit).check();
     // A batch's codes are single-use: there is no total to set.
     await expect(form.getByLabel("Total uses")).toHaveCount(0);
-    await form.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
-    const panel = page.getByRole("group", { name: review.title });
-    await expect(panel).toContainText("2 single-use codes");
-    await expect(panel).toContainText("Rs. 1,000 off before GST");
+    const summary = form.getByRole("list", { name: copy.summary });
+    await expect(summary).toContainText("2 single-use codes");
+    await expect(summary).toContainText("Rs. 1,000 off before GST");
     const request = posted(page, "/api/discount-codes");
-    await panel.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
+    await form.getByRole("button", { name: copy.makeButton, exact: true }).click();
     expect((await request).postDataJSON()).toEqual({
       count: 2,
       kind: "amount",
@@ -155,13 +163,11 @@ test.describe("the discount codes", () => {
     await form.getByLabel(settingsCopy.discountCodes.code, { exact: true }).fill("WELCOME");
     await form.getByLabel(settingsCopy.discountCodes.value).fill("10");
     await form.getByLabel(settingsCopy.discountCodes.coverNames.service).check();
-    await form.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
-    await page.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
+    await form.getByRole("button", { name: copy.makeButton, exact: true }).click();
     await expect(page.getByRole("alert")).toHaveText(settingsCopy.discountCodes.errors.code);
   });
 
-  // AUDITTEST reached "Make these codes?" before the API refused it.
-  test("says beside the box when a typed code cannot be one, before anything is checked", async ({ page }) => {
+  test("says beside the box when a typed code cannot be one, before anything is sent", async ({ page }) => {
     await open(page, "/settings/discount-codes");
     const form = await makeForm(page);
     const code = form.getByLabel(settingsCopy.discountCodes.code, { exact: true });
@@ -170,11 +176,11 @@ test.describe("the discount codes", () => {
     await form.getByLabel(settingsCopy.discountCodes.coverNames.service).check();
     await expect(code).toHaveAttribute("aria-invalid", "true");
     await expect(code).toHaveAccessibleDescription(settingsCopy.discountCodes.errors.code);
-    await expect(form.getByRole("button", { name: settingsCopy.discountCodes.check })).toBeDisabled();
+    await expect(form.getByRole("list", { name: copy.summary })).toHaveCount(0);
     // Ordinary words are codes: I, L and O are allowed in a code ops type.
     await code.fill("WEDDING25");
     await expect(code).not.toHaveAttribute("aria-invalid", "true");
-    await expect(form.getByRole("button", { name: settingsCopy.discountCodes.check })).toBeEnabled();
+    await expect(form.getByRole("list", { name: copy.summary })).toBeVisible();
   });
 
   test("switches a code off only once ops have read what it leaves on record", async ({ page }) => {
@@ -182,11 +188,11 @@ test.describe("the discount codes", () => {
     if (wedding === undefined) throw new Error("the fixture has no code");
     const off = `POST /api/discount-codes/${wedding.id}/off` as const;
     await open(page, "/settings/discount-codes", { [off]: empty() });
-    await page.getByRole("button", { name: "Switch off WEDDNG25" }).click();
-    const panel = page.getByRole("group", { name: "Switch off WEDDNG25?" });
-    await expect(panel).toContainText("It can’t be used again. 3 bookings keep it.");
+    const record = await recordOf(page, "WEDDNG25");
+    await record.getByRole("button", { name: copy.switching.label("WEDDNG25") }).click();
+    await expect(record).toContainText("It can’t be used again. 3 bookings keep it.");
     const request = posted(page, `/api/discount-codes/${wedding.id}/off`);
-    await panel.getByRole("button", { name: review.send }).click();
+    await record.getByRole("button", { name: copy.switching.confirm, exact: true }).click();
     await request;
   });
 });

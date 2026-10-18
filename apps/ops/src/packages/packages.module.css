@@ -1,0 +1,85 @@
+/*
+ * Settings · Packages (./PackagesScreen.tsx): the list, a package's record in sections, each a small heading over its
+ * rows, its hair systems' table and a hair system's own rows beneath it, and the record's foot.
+ */
+
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8) var(--sp-12);
+  padding: var(--sp-12) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
+}
+
+.addLabel {
+  font-size: var(--fs-14);
+  color: var(--ui-text);
+}
+
+.addRefusal {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.section {
+  border-top: var(--hairline) solid var(--ui-line);
+}
+
+.sectionTitle {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20) var(--sp-4);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-medium);
+  color: var(--ui-text-muted);
+}
+
+.hairSystem {
+  margin: var(--sp-8) var(--sp-20) var(--sp-12);
+  border: var(--hairline) solid var(--ui-line);
+}
+
+.addHairSystem {
+  display: grid;
+  gap: var(--sp-12);
+  margin: var(--sp-8) var(--sp-20) var(--sp-16);
+  padding: var(--sp-16);
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
+}
+
+.addFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12) var(--sp-16);
+}
+
+.addField {
+  margin: 0;
+}
+
+.addActions,
+.addRow {
+  display: flex;
+  gap: var(--sp-8);
+}
+
+.addRow {
+  padding: var(--sp-12) var(--sp-20);
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-12);
+  padding: var(--sp-16) var(--sp-20);
+  border-top: var(--hairline) solid var(--ui-line);
+}
+
+.order {
+  display: flex;
+  gap: var(--sp-8);
+  margin-right: auto;
+}

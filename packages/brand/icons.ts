@@ -81,6 +81,8 @@ export const GLYPHS = {
   search: "M10.5 4 A6.5 6.5 0 0 1 10.5 17 A6.5 6.5 0 0 1 10.5 4 M15.3 15.3 L20 20",
   fold: "M4 4.5 H20 V19.5 H4 Z M9.5 4.5 V19.5 M15.5 9.5 L13 12 L15.5 14.5",
   more: "M6 12 H6.01 M12 12 H12.01 M18 12 H18.01",
+  /** A value the console changes where it reads. */
+  edit: "M4.5 19.5 L5.5 15 L15.5 5 L19 8.5 L9 18.5 Z M13.5 7 L17 10.5",
 } as const;
 
 /** The client app's tab bar (design/phase2/Client App, the tabs() data). */

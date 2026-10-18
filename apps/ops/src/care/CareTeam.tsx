@@ -1,25 +1,30 @@
 // The Care team on the Messages page (docs/decisions/0134-care-cover.md, 0136-care-names.md): each member's name as
-// clients know it, clients, weekly days off and leave, and who covers them today. A Customer Care manager sets the
-// name, the days off and the leave from the member's row.
+// clients know it, clients, weekly days off and leave, and who covers them today. A member's row opens their record
+// beside the table, where a Customer Care manager changes the name and the days off where they read, adds or cancels
+// leave, and moves every client to another member (docs/decisions/0212-editing-in-place.md).
 
 import { Button, RowButton } from "@maneman/ui/Button";
-import { Checkbox, DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
+import { Checkbox, DateInput, Field, Select } from "@maneman/ui/Field";
+import { EditableRow } from "@maneman/ui/EditableRow";
 import { Note } from "@maneman/ui/Note";
 import { Table, TableScroll } from "@maneman/ui/Table";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useLoad } from "@maneman/ui/useLoad";
+import { TextButton } from "@maneman/ui/TextLink";
+import { useLiveLoad } from "@maneman/ui/useLoad";
 import { useWrite } from "../lib/write.ts";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
+import { AddForm } from "../components/AddForm.tsx";
+import { ReadRow, TextRow } from "../components/RecordRows.tsx";
+import { EDITING } from "../content/common.ts";
 import { care } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
-import { Refused } from "../settings/index.ts";
+import { Refused } from "../components/Refusal.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type CareMember } from "./care-api.ts";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
 import { FormDrawer } from "../components/FormDrawer.tsx";
-import { FormActions } from "../components/FormActions.tsx";
 
 const copy = care.team;
 
@@ -30,52 +35,65 @@ const periodOf = (leave: Leave): string => copy.period(shortDate(leave.from), sh
 /** Sends a change, saying why it was refused; `onDone` once it went. */
 const useSend = (onDone: () => void) => useWrite<unknown>(onDone);
 
-function DaysOffForm(props: { member: CareMember; onDone: () => void; onCancel: () => void }) {
-  const [picked, setPicked] = useState<readonly number[]>(props.member.weekly_off);
-  const { busy, failure, send } = useSend(props.onDone);
-  const toggle = (day: number) => {
-    setPicked((was) => (was.includes(day) ? was.filter((each) => each !== day) : [...was, day].sort()));
-  };
+/** The weekdays a member is off, changed where they read. */
+function DaysOff({
+  member,
+  mayChange,
+  onSaved,
+}: {
+  member: CareMember;
+  mayChange: boolean;
+  onSaved: () => Promise<void>;
+}) {
+  const days = member.weekly_off.map((day) => copy.weekdays[day] ?? "").join(", ");
   return (
-    <div className={styles.teamForm}>
-      <div className={styles.days}>
-        {copy.weekdays.map((name, day) => (
-          <Checkbox
-            key={name}
-            label={name}
-            checked={picked.includes(day)}
-            onChange={() => {
-              toggle(day);
-            }}
-          />
-        ))}
-      </div>
-      <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          disabled={busy}
-          onClick={() => void send(() => careApi.setDaysOff(props.member.email, picked))}
-        >
-          {copy.save}
-        </Button>
-        <Button variant="outline" size="small" narrow onClick={props.onCancel}>
-          {copy.cancel}
-        </Button>
-      </FormActions>
-      <Refused failed={failure} errors={copy.errors} />
-    </div>
+    <EditableRow<readonly number[]>
+      label={copy.columns.daysOff}
+      words={EDITING}
+      mayChange={mayChange}
+      value={days === "" ? copy.noDaysOff : days}
+      start={() => member.weekly_off}
+      save={async (picked) => {
+        const answer = await careApi.setDaysOff(member.email, picked);
+        if (!answer.ok) return errorText(copy.errors, answer);
+        await onSaved();
+        return null;
+      }}
+    >
+      {(control, picked, pick) => (
+        <span className={styles.days} id={control.id}>
+          {copy.weekdays.map((name, day) => (
+            <Checkbox
+              key={name}
+              label={name}
+              checked={picked.includes(day)}
+              onChange={() => {
+                pick(picked.includes(day) ? picked.filter((each) => each !== day) : [...picked, day].sort());
+              }}
+            />
+          ))}
+        </span>
+      )}
+    </EditableRow>
   );
 }
 
-function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: () => void }) {
+/** Leave for a member: its first day and its last. */
+function AddLeave({ member, onDone }: { member: CareMember; onDone: (added: boolean) => Promise<void> }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const { busy, failure, send } = useSend(props.onDone);
   return (
-    <div className={styles.teamForm}>
+    <AddForm
+      title={copy.addLeaveLabel(member.email)}
+      words={copy}
+      errors={copy.errors}
+      boxes={["from", "to"]}
+      send={() => careApi.addLeave(member.email, from, to)}
+      onAdded={() => onDone(true)}
+      onCancel={() => void onDone(false)}
+    >
       <div className={form.fields}>
-        <Field label={copy.from}>
+        <Field label={copy.from} className={form.field} box="from">
           {(control) => (
             <DateInput
               {...control}
@@ -87,7 +105,7 @@ function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: ()
             />
           )}
         </Field>
-        <Field label={copy.to}>
+        <Field label={copy.to} className={form.field} box="to">
           {(control) => (
             <DateInput
               {...control}
@@ -99,58 +117,7 @@ function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: ()
           )}
         </Field>
       </div>
-      <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          disabled={busy || from === "" || to === ""}
-          onClick={() => void send(() => careApi.addLeave(props.member.email, from, to))}
-        >
-          {copy.add}
-        </Button>
-        <Button variant="outline" size="small" narrow onClick={props.onCancel}>
-          {copy.cancel}
-        </Button>
-      </FormActions>
-      <Refused failed={failure} errors={copy.errors} />
-    </div>
-  );
-}
-
-function NameForm(props: { member: CareMember; onDone: () => void; onCancel: () => void }) {
-  const [name, setName] = useState(props.member.name ?? "");
-  const { busy, failure, send } = useSend(props.onDone);
-  return (
-    <div className={styles.teamForm}>
-      <div className={form.fields}>
-        <Field label={copy.nameLabel}>
-          {(control) => (
-            <TextInput
-              {...control}
-              maxLength={40}
-              value={name}
-              onChange={(event) => {
-                setName(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-      </div>
-      <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          disabled={busy || name.trim() === ""}
-          onClick={() => void send(() => careApi.setCareName(props.member.email, name.trim()))}
-        >
-          {copy.save}
-        </Button>
-        <Button variant="outline" size="small" narrow onClick={props.onCancel}>
-          {copy.cancel}
-        </Button>
-      </FormActions>
-      <Refused failed={failure} errors={copy.errors} />
-    </div>
+    </AddForm>
   );
 }
 
@@ -213,15 +180,29 @@ function ShiftSwitch(props: { me: CareMember; onDone: () => void }) {
 }
 
 /** Every client of one member, moved to another on the team. */
-function MoveAllForm(props: {
-  member: CareMember;
-  team: readonly CareMember[];
-  onDone: () => void;
-  onCancel: () => void;
-}) {
+function MoveAll(props: { member: CareMember; team: readonly CareMember[]; onDone: () => Promise<void> }) {
   const others = props.team.filter((each) => each.on_team && each.email !== props.member.email);
+  const [asking, setAsking] = useState(false);
   const [to, setTo] = useState(others[0]?.email ?? "");
-  const { busy, failure, send } = useSend(props.onDone);
+  const { busy, failure, send } = useSend(() => {
+    setAsking(false);
+    void props.onDone();
+  });
+  if (!asking) {
+    return (
+      <Button
+        variant="outline"
+        size="small"
+        narrow
+        aria-label={copy.moveAllLabel(props.member.email)}
+        onClick={() => {
+          setAsking(true);
+        }}
+      >
+        {copy.moveAll}
+      </Button>
+    );
+  }
   return (
     <div className={styles.teamForm}>
       <div className={styles.closing}>
@@ -251,7 +232,14 @@ function MoveAllForm(props: {
         >
           {copy.move}
         </Button>
-        <Button variant="outline" size="small" narrow onClick={props.onCancel}>
+        <Button
+          variant="outline"
+          size="small"
+          narrow
+          onClick={() => {
+            setAsking(false);
+          }}
+        >
           {copy.cancel}
         </Button>
       </div>
@@ -260,83 +248,98 @@ function MoveAllForm(props: {
   );
 }
 
-type Acting = "name" | "days" | "leave" | "move" | null;
-
-/** A manager's ways to change a member: their name, days off and leave while on the team, and moving their clients. */
-function MemberActions(props: { member: CareMember; acting: Acting; onActing: (acting: Acting) => void }) {
-  const { member } = props;
-  const actions: readonly (readonly [Exclude<Acting, null>, string, string])[] = [
-    ...(member.on_team
-      ? ([
-          ["name", copy.editName, copy.editNameLabel(member.email)],
-          ["days", copy.editDays, copy.editDaysLabel(member.email)],
-          ["leave", copy.addLeave, copy.addLeaveLabel(member.email)],
-        ] as const)
-      : []),
-    ...(member.clients > 0 ? ([["move", copy.moveAll, copy.moveAllLabel(member.email)]] as const) : []),
-  ];
-  return actions.map(([acting, label, aria]) => (
-    <RowButton
-      key={acting}
-      beside
-      aria-label={aria}
-      onClick={() => {
-        props.onActing(props.acting === acting ? null : acting);
-      }}
-    >
-      {label}
-    </RowButton>
-  ));
+function MemberRow({ member, onOpen }: { member: CareMember; onOpen: () => void }) {
+  const days = member.weekly_off.map((day) => copy.weekdays[day] ?? "").join(", ");
+  return (
+    <tr>
+      <th scope="row" className={styles.who}>
+        <TextButton compact aria-label={copy.open(member.email)} onClick={onOpen}>
+          {member.email}
+        </TextButton>
+      </th>
+      <td>{member.name ?? copy.noName}</td>
+      <td className={styles.figure}>{member.clients}</td>
+      <td>{days === "" ? copy.noDaysOff : days}</td>
+      <td>{member.leave.length === 0 ? copy.noLeave : member.leave.map(periodOf).join(", ")}</td>
+      <td>{todayOf(member)}</td>
+    </tr>
+  );
 }
 
-function MemberRows(props: {
+/** A member's record: what they are known as, their days off and leave, and who has their clients. */
+function MemberRecord(props: {
   member: CareMember;
   team: readonly CareMember[];
   mayManage: boolean;
-  onChanged: () => void;
+  reread: () => Promise<void>;
 }) {
-  const { member, mayManage } = props;
-  const [acting, setActing] = useState<Acting>(null);
-  const done = () => {
-    setActing(null);
-    props.onChanged();
-  };
-  const cancel = () => {
-    setActing(null);
-  };
-  const days = member.weekly_off.map((day) => copy.weekdays[day] ?? "").join(", ");
+  const { member, mayManage, reread } = props;
+  const [adding, setAdding] = useState(false);
+  const mayChange = mayManage && member.on_team;
   return (
     <>
-      <tr>
-        <th scope="row" className={styles.who}>
-          {member.email}
-        </th>
-        <td>{member.name ?? copy.noName}</td>
-        <td className={styles.figure}>{member.clients}</td>
-        <td>{days === "" ? copy.noDaysOff : days}</td>
-        <td>
-          <LeaveList leave={member.leave} mayManage={mayManage} onChanged={props.onChanged} />
-        </td>
-        <td>{todayOf(member)}</td>
-        <td className={styles.actions}>
-          {mayManage && <MemberActions member={member} acting={acting} onActing={setActing} />}
-        </td>
-      </tr>
-      {acting !== null && (
-        <FormDrawer title={member.name ?? member.email} onClose={cancel}>
-          {acting === "name" && <NameForm member={member} onDone={done} onCancel={cancel} />}
-          {acting === "days" && <DaysOffForm member={member} onDone={done} onCancel={cancel} />}
-          {acting === "leave" && <LeaveForm member={member} onDone={done} onCancel={cancel} />}
-          {acting === "move" && <MoveAllForm member={member} team={props.team} onDone={done} onCancel={cancel} />}
-        </FormDrawer>
+      <div className={form.record}>
+        <TextRow
+          label={copy.columns.name}
+          value={member.name ?? ""}
+          shown={member.name ?? copy.noName}
+          maxLength={40}
+          mayChange={mayChange}
+          save={async (typed) => {
+            const answer = await careApi.setCareName(member.email, typed.trim());
+            if (!answer.ok) return errorText(copy.errors, answer);
+            await reread();
+            return null;
+          }}
+        />
+        <ReadRow label={copy.columns.clients} value={member.clients} />
+        <DaysOff member={member} mayChange={mayChange} onSaved={reread} />
+        <ReadRow
+          label={copy.columns.leave}
+          value={<LeaveList leave={member.leave} mayManage={mayManage} onChanged={() => void reread()} />}
+        />
+        <ReadRow label={copy.columns.today} value={todayOf(member)} />
+      </div>
+      {mayChange &&
+        (adding ? (
+          <AddLeave
+            member={member}
+            onDone={async (added) => {
+              setAdding(false);
+              if (added) await reread();
+            }}
+          />
+        ) : (
+          <div className={styles.addLeave}>
+            <Button
+              variant="outline"
+              size="small"
+              narrow
+              aria-label={copy.addLeaveLabel(member.email)}
+              onClick={() => {
+                setAdding(true);
+              }}
+            >
+              {copy.addLeave}
+            </Button>
+          </div>
+        ))}
+      {mayManage && member.clients > 0 && (
+        <div className={form.recordFoot}>
+          <MoveAll member={member} team={props.team} onDone={reread} />
+        </div>
       )}
     </>
   );
 }
 
+/** Read again every five minutes while open, as who is on shift moves, and after every change. */
+const EVERY_MS = 5 * 60_000;
+
 export function CareTeam() {
   const load = useCallback(() => careApi.careTeam(), []);
-  const [loaded, retry] = useLoad(load);
+  const { loaded, reread, retry } = useLiveLoad(load, EVERY_MS);
+  const [open, setOpen] = useState<string | null>(null);
   const mayManage = useAccess().mayCall("POST /api/care-team/days-off");
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
@@ -344,10 +347,11 @@ export function CareTeam() {
   if (team.length === 0) return <Note>{care.carePerson.noTeam}</Note>;
   const columns = copy.columns;
   const me = team.find((member) => member.email === loaded.value.me);
+  const opened = team.find((member) => member.email === open);
   return (
     <TableScroll labelledBy="care-team">
-      {me !== undefined && <ShiftSwitch me={me} onDone={retry} />}
-      <Table controls className={styles.table}>
+      {me !== undefined && <ShiftSwitch me={me} onDone={() => void reread()} />}
+      <Table className={styles.table}>
         <thead>
           <tr>
             <th scope="col">{columns.member}</th>
@@ -358,17 +362,30 @@ export function CareTeam() {
             <th scope="col">{columns.daysOff}</th>
             <th scope="col">{columns.leave}</th>
             <th scope="col">{columns.today}</th>
-            <th scope="col">
-              <VisuallyHidden>{copy.editDays}</VisuallyHidden>
-            </th>
           </tr>
         </thead>
         <tbody>
           {team.map((member) => (
-            <MemberRows key={member.email} member={member} team={team} mayManage={mayManage} onChanged={retry} />
+            <MemberRow
+              key={member.email}
+              member={member}
+              onOpen={() => {
+                setOpen(member.email);
+              }}
+            />
           ))}
         </tbody>
       </Table>
+      {opened !== undefined && (
+        <FormDrawer
+          title={opened.name ?? opened.email}
+          onClose={() => {
+            setOpen(null);
+          }}
+        >
+          <MemberRecord member={opened} team={team} mayManage={mayManage} reread={reread} />
+        </FormDrawer>
+      )}
     </TableScroll>
   );
 }

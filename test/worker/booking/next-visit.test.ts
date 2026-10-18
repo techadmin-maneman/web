@@ -3,6 +3,7 @@
 // time and the horizon a visit may be booked within, and the WhatsApp reminder of the next service. NOW is Monday
 // 21 September 2026, 12 noon in India, so tomorrow is Tuesday the 22nd. Every name and number here is made up.
 
+import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../../src/config/message-templates.ts";
@@ -134,6 +135,7 @@ function config(messaging: Partial<Settings["messaging"]> = {}): StaticConfig {
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
+  await aGenericFirstFit();
   await env.DB.prepare(
     "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city, fits_trained) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon', 1)",
   )
@@ -261,9 +263,9 @@ describe("what the app offers next (GET /api/me)", () => {
     expect((await me()).booking.next).toBeNull();
   });
 
-  it("counts the due day from the cadence ops set", async () => {
+  it("counts the due day from the cadence of the client's package", async () => {
     await visit("service", "2026-09-10T04:30:00.000Z");
-    await opsSet({ service_cadence: 45 });
+    await env.DB.prepare("UPDATE packages SET service_every_days = 45 WHERE code = 'standard'").run();
     expect((await me()).booking.next).toMatchObject({ type: "service", date: "2026-10-25" });
   });
 
@@ -302,15 +304,7 @@ describe("what the app offers next (GET /api/me)", () => {
 
   // The hair profile taken at the consultation names the hair system recommended (ADR 0106).
   it("offers it as the hair system recommended at the consultation, and recaps the consultation", async () => {
-    await env.DB.batch([
-      env.DB.prepare(
-        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-         VALUES ('first_fit', 'premium', 'Premium hair system', 180, 1, 'ops@maneman.in', ?1)`,
-      ).bind(NOW.toISOString()),
-      env.DB.prepare(
-        "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('first_fit', 'premium', 3000000, 18, '2026-01-01')",
-      ),
-    ]);
+    await aPackage({ code: "premium", name: "Premium hair system", firstFit: 3_000_000, gstPercent: 18 });
     const consultation = await visit("consultation", "2026-09-18T04:30:00.000Z");
     await env.DB.prepare(
       `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at, product)

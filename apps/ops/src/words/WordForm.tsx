@@ -1,18 +1,22 @@
-// A line given new words (docs/decisions/0126-the-words-page.md): the code's wording above the box, the holes the page
-// fills to keep and the length the layout holds beneath it, then what the line is now beside what it will be, and only
-// the second press saves it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// A line's record (docs/decisions/0126-the-words-page.md): the code's wording, and the line's own, changed where it
+// reads, with the holes the page fills to keep and the length the layout holds beneath it; then its history, where an
+// earlier wording opens the line's box with it, to read before it is kept.
 
-import { CheckLine } from "../components/CheckPanel.tsx";
-import { Field, TextArea } from "@maneman/ui/Field";
+import { EditableRow } from "@maneman/ui/EditableRow";
+import { TextArea } from "@maneman/ui/Field";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type Word } from "../api.ts";
-import { words as copy } from "../content/words.ts";
-import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
+import { ReadRow } from "../components/RecordRows.tsx";
 import form from "../components/forms.module.css";
+import { EDITING } from "../content/common.ts";
+import { words as copy } from "../content/words.ts";
+import { useAccess } from "../lib/access.ts";
+import { WordHistory } from "./WordHistory.tsx";
 import styles from "./word-form.module.css";
 import { wordsApi } from "./words-api.ts";
 
-const { form: formWords, check } = copy;
+const { form: formWords } = copy;
 
 /** What the page or the sender fills: "{city}", "{{2}}". */
 const holesOf = (text: string): string[] => [...new Set(text.match(/\{\{\d+\}\}|\{[a-zA-Z]+\}/g) ?? [])];
@@ -43,56 +47,51 @@ export function placeOf(word: Word): string {
   return parts.join(" · ");
 }
 
-export function WordForm(props: {
+export function WordRecord(props: {
   readonly word: Word;
-  /** The wording the box opens with: the one in force, or an earlier one to go back to. */
-  readonly start: string;
   readonly messages: Messages;
-  readonly onDone: (word: Word) => void;
-  readonly onCancel: () => void;
+  readonly onSaved: (word: Word) => void;
 }) {
   const { word } = props;
-  const [text, setText] = useState(props.start);
-  const steps = useSteps(
-    async () =>
-      sentOf(await wordsApi.setWord(word.key, text === word.text ? null : text), (body) => ({ word: body.word })),
-    (sent) => {
-      props.onDone(sent.word);
-    },
-  );
+  const mayChange = useAccess().mayCall("POST /api/words");
+  /** An earlier wording chosen from the history, which the box opens with, and how many times one has been. */
+  const [used, setUsed] = useState<string | null>(null);
+  const [uses, setUses] = useState(0);
   const holes = holesOf(word.text);
   return (
-    <SettingForm
-      title={formWords.title(placeOf(word))}
-      steps={steps}
-      ready={text.trim() !== "" && text !== word.now}
-      errors={copy.errors}
-      onCancel={props.onCancel}
-      boxes={["text"]}
-      above={<p className={styles.code}>{formWords.inCode(word.text)}</p>}
-      checking={
-        <>
-          <CheckLine>{check.was(word.now)}</CheckLine>
-          <CheckLine>{check.now(text)}</CheckLine>
-        </>
-      }
-    >
-      <div className={form.fields}>
-        <Field label={formWords.wording} className={styles.wording} box="text">
-          {(control) => (
+    <>
+      <div className={form.record}>
+        <ReadRow label={formWords.code} value={word.text} />
+        <EditableRow<string>
+          key={uses}
+          label={formWords.wording}
+          words={EDITING}
+          mayChange={mayChange}
+          opened={used !== null}
+          value={<span className={styles.said}>{word.now}</span>}
+          start={() => used ?? word.now}
+          save={async (typed) => {
+            if (typed.trim() === "") return copy.errors.empty;
+            const answer = await wordsApi.setWord(word.key, typed === word.text ? null : typed);
+            if (!answer.ok) return errorText(copy.errors, answer);
+            setUsed(null);
+            props.onSaved(answer.body.word);
+            return null;
+          }}
+        >
+          {(control, typed, type) => (
             <TextArea
               {...control}
               className={styles.box}
               rows={word.surface === "message" ? 5 : 3}
               maxLength={word.longest}
-              value={text}
+              value={typed}
               onChange={(event) => {
-                setText(event.target.value);
-                steps.edit();
+                type(event.target.value);
               }}
             />
           )}
-        </Field>
+        </EditableRow>
       </div>
       <p className={styles.hint}>
         {holes.length > 0 && `${formWords.keep(holes.join(", "))} `}
@@ -101,6 +100,14 @@ export function WordForm(props: {
       {word.surface === "message" && (
         <p className={styles.hint}>{props.messages === "at_once" ? formWords.atOnce : formWords.afterApproval}</p>
       )}
-    </SettingForm>
+      <WordHistory
+        word={word}
+        mayChange={mayChange}
+        onUse={(text) => {
+          setUsed(text);
+          setUses(uses + 1);
+        }}
+      />
+    </>
   );
 }

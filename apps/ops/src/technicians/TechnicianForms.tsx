@@ -1,9 +1,9 @@
-// Adding a technician, changing their details, and switching them off or back on (src/routes/ops/technicians.ts).
+// Adding a technician, their details changed where they read (docs/decisions/0212-editing-in-place.md), and switching
+// them off or back on (src/routes/ops/technicians.ts).
 // Switching off asks first, since it signs them out at once and hands their visits still to come back to the dispatch
 // board.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
@@ -11,7 +11,7 @@ import { mobileDigits } from "@maneman/web-kit/mobile";
 import { useState } from "react";
 import { type ReturnedVisit, type TechnicianChange, type TechnicianSummary } from "../api.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { ChoiceRow, TextRow } from "../components/RecordRows.tsx";
 import { technicians } from "../content.ts";
 import { GIVING_NO_CITY, useAccess } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -189,115 +189,85 @@ export function AddTechnician({
   );
 }
 
-const typedOf = (technician: TechnicianSummary): Typed => ({
-  name: technician.name,
-  mobile: technician.mobile === null ? "" : phoneWords(technician.mobile),
-  zone: technician.zone ?? "",
-  city: technician.city ?? "",
-  fitsTrained: technician.fits_trained,
-});
-
-/** What ops changed, field by field: a field left as it was is not sent. */
-function changeOf(technician: TechnicianSummary, typed: Typed): TechnicianChange | "unreadable_mobile" {
-  const mobile = mobileDigits(typed.mobile);
-  if (mobile === null) return "unreadable_mobile";
-  const change: {
-    name?: string;
-    mobile?: string;
-    zone?: string | null;
-    city?: string | null;
-    fits_trained?: boolean;
-  } = {};
-  const name = typed.name.trim();
-  if (name !== technician.name) change.name = name;
-  if (technician.mobile === null || mobile !== mobileDigits(technician.mobile)) change.mobile = mobile;
-  const zone = zoneOf(typed.zone);
-  if (zone !== technician.zone) change.zone = zone;
-  const city = cityOf(typed.city);
-  if (city !== technician.city) change.city = city;
-  if (typed.fitsTrained !== technician.fits_trained) change.fits_trained = typed.fitsTrained;
-  return change;
-}
-
-function ChangeForm({
+/** Their details, each changed where it reads: a change is sent alone, and the roster read again. */
+function DetailRows({
   technician,
   cities,
-  onSaved,
-  onCancel,
+  onChange,
 }: {
   technician: TechnicianSummary;
   cities: readonly string[];
-  onSaved: () => Promise<void>;
-  onCancel: () => void;
+  onChange: () => Promise<void>;
 }) {
   const copy = technicians.details;
-  const [typed, setTyped] = useState<Typed>(() => typedOf(technician));
-  const [sending, once] = useOneAtATime();
-  const [failed, setFailed] = useState<string | null>(null);
-
-  const send = () =>
-    once(async () => {
-      const change = changeOf(technician, typed);
-      if (change === "unreadable_mobile") {
-        setFailed(technicians.errors.unreadable_mobile);
-        return;
-      }
-      if (Object.keys(change).length === 0) {
-        onCancel();
-        return;
-      }
-      setFailed(null);
-      const answer = await techniciansApi.changeTechnician(technician.id, change);
-      if (!answer.ok) {
-        setFailed(refusal(answer.code));
-        return;
-      }
-      await onSaved();
-    });
-
+  const fields = technicians.fields;
+  const access = useAccess();
+  const mayChange = access.mayCall("PATCH /api/technicians/{id}");
+  const mayGiveNone = access.reaches(GIVING_NO_CITY);
+  const save = async (change: TechnicianChange): Promise<string | null> => {
+    const answer = await techniciansApi.changeTechnician(technician.id, change);
+    if (!answer.ok) return refusal(answer.code);
+    await onChange();
+    return null;
+  };
+  const cityChoices: (readonly [string, string])[] = [
+    ...(mayGiveNone || technician.city === null ? [["", fields.noCity] as const] : []),
+    ...cities.map((city) => [city, city] as const),
+  ];
   return (
-    <form
-      className={styles.leaveForm}
-      onSubmit={(event) => {
-        event.preventDefault();
-        void send();
-      }}
-    >
-      <Fields typed={typed} cities={cities} onType={setTyped} focusFirst />
-      <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
-          {sending ? copy.saving : copy.save}
-        </Button>
-        <Button variant="outline" size="small" className={styles.quiet} disabled={sending} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
-      </div>
-      {failed !== null && <Refusal className={styles.error} said={failed} />}
-    </form>
-  );
-}
-
-/** The number they sign in with, their zone, their city and whether they fit; a gap where none is recorded. */
-function Facts({ technician }: { technician: TechnicianSummary }) {
-  const copy = technicians.details;
-  return (
-    <DescriptionList
-      items={[
-        {
-          term: copy.mobile,
-          details: technician.mobile === null ? technicians.unknown : phoneWords(technician.mobile),
-        },
-        { term: copy.zone, details: technician.zone ?? technicians.unknown },
-        { term: copy.city, details: technician.city ?? technicians.noCity },
-        { term: copy.fitting, details: technician.fits_trained ? copy.trained : copy.notTrained },
-      ]}
-    />
+    <div className={styles.rows}>
+      <TextRow
+        label={fields.name}
+        value={technician.name}
+        maxLength={80}
+        mayChange={mayChange}
+        save={(name) => save({ name: name.trim() })}
+      />
+      <TextRow
+        label={copy.mobile}
+        type="tel"
+        value={technician.mobile === null ? "" : phoneWords(technician.mobile)}
+        shown={technician.mobile === null ? technicians.unknown : phoneWords(technician.mobile)}
+        maxLength={20}
+        mayChange={mayChange}
+        save={(typed) => {
+          const mobile = mobileDigits(typed);
+          return mobile === null ? Promise.resolve(technicians.errors.unreadable_mobile) : save({ mobile });
+        }}
+      />
+      <TextRow
+        label={copy.zone}
+        value={technician.zone ?? ""}
+        shown={technician.zone ?? technicians.unknown}
+        maxLength={60}
+        mayChange={mayChange}
+        save={(zone) => save({ zone: zoneOf(zone) })}
+      />
+      <ChoiceRow
+        label={copy.city}
+        value={technician.city ?? ""}
+        choices={cityChoices}
+        mayChange={mayChange}
+        save={(city) => save({ city: cityOf(city) })}
+      />
+      <ChoiceRow
+        label={copy.fitting}
+        value={technician.fits_trained ? "trained" : "not_trained"}
+        choices={[
+          ["trained", copy.trained],
+          ["not_trained", copy.notTrained],
+        ]}
+        mayChange={mayChange}
+        save={(fitting) => save({ fits_trained: fitting === "trained" })}
+      />
+    </div>
   );
 }
 
 /**
- * Their details, with the ways to change them, in a drawer, and to switch them off or back on where they are ours to
- * change. Each change reads the roster again, because the dispatch board and the sign-in read the same rows.
+ * Their details, each changed where it reads, and the ways to switch them off or back on, or delete one added by
+ * mistake, where they are ours to change. Each change reads the roster again, because the dispatch board and the
+ * sign-in read the same rows.
  */
 export function Details({
   technician,
@@ -317,36 +287,16 @@ export function Details({
   onDeleted: () => void;
 }) {
   const copy = technicians.details;
-  const [changing, setChanging] = useState(false);
   const access = useAccess();
-  const mayChange = access.mayCall("PATCH /api/technicians/{id}");
   const maySwitchOff = active && access.mayCall("POST /api/technicians/{id}/deactivate");
   const maySwitchOn = !active && access.mayCall("POST /api/technicians/{id}/reactivate");
   const mayDelete = access.mayCall("POST /api/technicians/{id}/delete");
-  const stopChanging = () => {
-    setChanging(false);
-  };
 
   return (
     <section aria-label={copy.title}>
       {!active && <p className={styles.offNote}>{technicians.switchOn.note}</p>}
-      <Facts technician={technician} />
+      <DetailRows technician={technician} cities={cities} onChange={onChange} />
       <div className={styles.recordActions}>
-        {mayChange && (
-          <div className={styles.actions}>
-            <Button
-              variant="outline"
-              size="small"
-              className={styles.quiet}
-              aria-label={copy.changeLabel(technician.name)}
-              onClick={() => {
-                setChanging(true);
-              }}
-            >
-              {copy.change}
-            </Button>
-          </div>
-        )}
         {maySwitchOff && <SwitchOff technician={technician} onSwitchedOff={onSwitchedOff} />}
         {maySwitchOn && <SwitchOn technician={technician} onSwitchedOn={onSwitchedOn} />}
         {mayDelete && (
@@ -358,19 +308,6 @@ export function Details({
           />
         )}
       </div>
-      {changing && (
-        <FormDrawer title={technician.name} onClose={stopChanging}>
-          <ChangeForm
-            technician={technician}
-            cities={cities}
-            onSaved={async () => {
-              await onChange();
-              stopChanging();
-            }}
-            onCancel={stopChanging}
-          />
-        </FormDrawer>
-      )}
     </section>
   );
 }

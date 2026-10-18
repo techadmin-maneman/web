@@ -23,7 +23,8 @@ import { type SoldTerms, LATE_FEES } from "../policy/moving-a-visit.ts";
 import { bookHold } from "./book-hold.ts";
 import type { AppEnv } from "./context.ts";
 import { opsInputs } from "./ops-inputs.ts";
-import { replacementWears } from "../domain/inventory/stock-gap.ts";
+import { packageWanted } from "../domain/clients/client-package.ts";
+import { pricedFor } from "../domain/booking/client-prices.ts";
 import { cityOfPerson } from "../domain/cities/cities.ts";
 
 /**
@@ -97,16 +98,16 @@ export async function bookable(
   on: string,
 ): Promise<PricedService | "no_product" | "not_bookable"> {
   const db = c.env.DB;
-  const [wears, city] = await Promise.all([
-    replacementWears(db, { kind: wanted.type, tier: wanted.tier, personId }),
+  const [onPackage, city] = await Promise.all([
+    packageWanted(db, { kind: wanted.type, tier: wanted.tier, personId }),
     cityOfPerson(db, personId),
   ]);
   const [types, service] = await Promise.all([
     bookableTypes(db, personId, c.var.deps.now()),
-    bookableService(db, { kind: wanted.type, tier: wanted.tier, on, wears, city }),
+    bookableService(db, { kind: wanted.type, tier: wanted.tier, on, onPackage, city }),
   ]);
   if (!types.includes(wanted.type)) return "not_bookable";
-  if (service !== null) return service;
+  if (service !== null) return (await pricedFor(db, [service], { personId, on, city }))[0] ?? service;
   const noProduct = wanted.type === "first_fit" && (await offeredProducts(db, on, city)).length === 0;
   return noProduct ? "no_product" : "not_bookable";
 }

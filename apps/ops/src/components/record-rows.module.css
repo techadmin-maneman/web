@@ -1,0 +1,5 @@
+/* A record's values (./RecordRows.tsx): words of a few lines read with their line breaks. */
+
+.lines {
+  white-space: pre-line;
+}

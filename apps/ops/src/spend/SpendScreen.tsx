@@ -15,7 +15,7 @@ import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { spend as copy } from "../content/spend.ts";
 import { useAccess } from "../lib/access.ts";
-import { Refused } from "../settings/index.ts";
+import { Refused } from "../components/Refusal.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { spendApi, type SpendChannel, type SpendEntry, type SpendList } from "./spend-api.ts";
 import form from "../components/forms.module.css";

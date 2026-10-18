@@ -2,3 +2,8 @@
   display: block;
   white-space: nowrap;
 }
+
+/* Another department, added beneath a person's grants. */
+.addGrant {
+  margin-top: var(--sp-12);
+}

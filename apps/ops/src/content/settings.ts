@@ -6,9 +6,6 @@ import { grantPhrasing } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
 import { tasks } from "./tasks.ts";
 
-/** A service's description in a check line: quoted, or "no description". */
-const descriptionWords = (line: string) => (line === "" ? "no description" : `“${line}”`);
-
 /**
  * Settings: the business inputs ops set for themselves. The design draws this
  * section and letters nothing inside it (docs/decisions/0061-ops-editable-inputs.md,
@@ -47,12 +44,10 @@ export const settings = {
     expires: "Last valid day (optional)",
     maxUses: "Total uses (optional)",
     oncePerClient: "Once per client",
-    check: "Review",
-    checkTitle: "Make these codes?",
-    send: "Confirm",
-    sending: "Making…",
-    back: "Back",
-    /** One line of the check: what each code takes off. */
+    makeButton: "Make",
+    /** What will be made, read beneath the boxes once they hold a code. */
+    summary: "What will be made",
+    /** One line of the summary: what each code takes off. */
     off: (what: string) => `${what} off before GST`,
     percentOff: (percent: number, cap: string | null) =>
       cap === null ? `${String(percent)}%` : `${String(percent)}% (max ${cap})`,
@@ -84,7 +79,6 @@ export const settings = {
       paid: "Revenue",
       lastUsed: "Last used",
       offOn: "Switched off",
-      actions: "Actions",
     },
     coverShort: {
       first_fit: "First fit",
@@ -98,8 +92,6 @@ export const settings = {
     narrow: "Filter codes",
     switchedOffTitle: (count: number) => `Switched off (${String(count)})`,
     switchedOff: "Switched off.",
-    delete: "Delete",
-    deleteLabel: (code: string) => `Delete ${code}`,
     inUse: "A booking has used it. Switch it off instead.",
     deleted: "Deleted.",
     /** Codes are found by how they begin, so "SPR" finds SPRTEST. */
@@ -110,12 +102,17 @@ export const settings = {
     noneFound: "No matching codes.",
     /** How far a code with a limit is used: "3 of 10". */
     usesOf: (uses: number, most: number) => `${String(uses)} of ${String(most)}`,
-    switchOff: "Switch off",
-    switchOffLabel: (code: string) => `Switch off ${code}`,
-    switchTitle: (code: string) => `Switch off ${code}?`,
-    switchLine: (uses: number) =>
-      `It can’t be used again. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it.`,
-    switching: "Switching off",
+    /** A row's name, read as what pressing it does. */
+    open: (code: string) => `Open ${code}`,
+    switching: {
+      open: "Switch off",
+      label: (code: string) => `Switch off ${code}`,
+      warning: (code: string, uses: number) =>
+        `Switch off ${code}? It can’t be used again. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it.`,
+      confirm: "Switch off",
+      sending: "Switching off…",
+      cancel: "Cancel",
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       code: "4–16 letters or digits, no spaces.",
@@ -170,15 +167,14 @@ export const settings = {
     saving: "Saving…",
     saved: "Saved.",
     reset: "Reset to default",
-    changes: (count: number) => (count === 1 ? "1 change" : `${String(count)} changes`),
-    discard: "Discard",
+    resetLabel: (rule: string) => `Reset ${rule} to default`,
     /** Beside the title of a page of policies the person may read and not change. */
     viewOnly: "View only",
-    /** The open-keyed rule's extra row: a base, and the cycle for it. */
-    keyName: "Base, as the technician records it",
-    keyValue: "Days",
+    /** The open-keyed rule's extra row: a currency, and its rate. */
+    keyName: "Currency code, as USD",
+    keyValue: "Rupees",
     add: "Add",
-    defaultKey: "All other bases",
+    defaultKey: "Every other currency",
     /**
      * The boxes of a rule with one figure per key: the kinds of visit and the
      * task queues, as the rest of the console names them. A base ops name
@@ -233,7 +229,8 @@ export const settings = {
       // The days the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
       booking_days: {
         first_fit_lead: "Consultation to first fit",
-        service_cadence: "Between service visits",
+        /** Named where a package's cadence reaches past the horizon (Settings · Packages). */
+        service_every_days: "A package’s service visits",
         reminder_before_due: "Reminder before a service is due",
         at_risk_after_due: "At risk after the due date",
         first_fit_to_book: "First fit booked within",
@@ -313,19 +310,8 @@ export const settings = {
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /** The check before a rule is sent: each figure that moves, the old beside the new. */
     confirm: {
-      title: "Review the change",
-      change: (label: string, was: string, now: string) => `${label}: ${was} → ${now}`,
-      /** A figure as the check writes it: "200 metres". */
+      /** A figure as a row reads it: "200 metres". */
       figure: (value: number, unit: string) => `${String(value)} ${unit}`,
-      /** A base ops are naming for the first time had no figure of its own. */
-      noFigure: "none",
-      /** A base whose own figure is taken away takes the one for every other base. */
-      otherBases: "the figure for all other bases",
-      /** A box of a rule with many, named with its rule: "No-show wait · First fit". */
-      keyed: (rule: string, box: string) => `${rule} · ${box}`,
-      standard: (rule: string) => `Resets ${rule} to the defaults.`,
-      send: "Confirm",
-      back: "Edit",
     },
     /** A section's Save sends its rules one by one, so a refusal speaks for its own rule only. */
     outside: (field: string, range: string) => `${field}: ${range}`,
@@ -358,7 +344,11 @@ export const settings = {
     start: (window: string, position: number) =>
       position === 1 ? `${window} starts` : `${window}, half-slot ${String(position)} starts`,
     dayEnd: "The day ends",
-    /** The check's line for a window: "Morning: 9 am–12 noon → 9:30 am–12:30 pm". */
+    /** What a change will set, read beneath its boxes. */
+    summary: "What changes",
+    add: "Set",
+    cancel: "Cancel",
+    /** A window's line: "Morning: 9 am–12 noon → 9:30 am–12:30 pm". */
     change: (window: string, was: string, now: string) =>
       was === now ? `${window}: ${now}` : `${window}: ${was} → ${now}`,
     from: (date: string) => `From ${date}.`,
@@ -403,15 +393,14 @@ export const settings = {
     everyCity: "Every city",
     reason: "Reason",
     formTitle: "Close days",
-    /** The check's line: "Tue 20 Oct to Thu 22 Oct · Gurgaon · Diwali". */
-    closing: (period: string, city: string, reason: string) => `${period} · ${city} · ${reason}`,
+    add: "Close",
+    cancel: "Cancel",
     /** What closing the days leaves to move, said before they are closed. */
     stranded: (visits: number) =>
       `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} booked on these days. Move ${
         visits === 1 ? "it" : "them"
       } on the dispatch board.`,
     uncounted: "Booked visits couldn’t be counted. Check the dispatch board.",
-    added: "Closed.",
     none: "No closed days.",
     /** "Tue 20 Oct to Thu 22 Oct", and "Tue 20 Oct" for one day. */
     period: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
@@ -424,10 +413,15 @@ export const settings = {
     show: "Show on board",
     /** The link's whole name, since the list holds many and each link says the same. */
     showLabel: (period: string) => `Show on board: ${period}`,
-    remove: "Reopen",
-    /** The button's whole name, since the list holds many and each button says the same. */
-    removeLabel: (period: string) => `Reopen ${period}`,
-    reopen: (period: string) => `Reopen ${period}?`,
+    reopening: {
+      open: "Reopen",
+      /** The button's whole name, since the list holds many and each button says the same. */
+      label: (period: string) => `Reopen ${period}`,
+      warning: (period: string) => `Reopen ${period}?`,
+      confirm: "Reopen",
+      sending: "Reopening…",
+      cancel: "Cancel",
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       from: "The first day can’t be in the past.",
@@ -440,184 +434,31 @@ export const settings = {
       unknown: FAILED,
     },
   },
-  /** What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md). */
-  standardCosts: {
-    title: "Hair system costs",
-    unit: "Rs., before GST",
-    since: (date: string) => `since ${date}`,
-    kinds: { first_fit: "First fit", replacement: "Replacement" },
-    notSet: "Not set",
-    saved: "Saved.",
-    reviewLabel: (product: string) => `Review the cost of ${product}`,
-    change: (product: string, was: string, now: string) => `${product}: ${was} → ${now}, from today`,
-    errors: {
-      invalid_request: "Type whole rupees.",
-      not_found: changed("That product is no longer sold."),
-      not_permitted: NOT_PERMITTED,
-      offline: OFFLINE,
-      unconfirmed: UNCONFIRMED,
-      unknown: FAILED,
-    },
-  },
   /**
-   * No board draws the services (docs/decisions/0085-services-ops-can-edit.md). What a price or a change was is
-   * shown beside what it will be before anything is sent.
+   * Settings · Consultation and fees (docs/decisions/0085-services-ops-can-edit.md): the consultation clients book and
+   * the two late fees. Every other service is a package's (Settings · Packages, docs/decisions/0211-packages.md).
    */
   services: {
-    title: "Services and prices",
-    /** The four kinds, as the rest of the console names them. */
-    kinds: dispatch.typeNames,
-    /** Each kind's table: its services, then its late fee where it has one. */
-    columns: ["Service", "Length", "Before GST", "GST", "Next price"],
-    actionsColumn: "Actions",
+    consultation: "Consultation",
+    lateFees: "Late fees",
+    rows: { name: "Name", description: "Description", noDescription: "None", length: "Length", price: "Price" },
     minutes: (minutes: number) => `${String(minutes)} min`,
-    retiring: (from: string) => `Hidden from ${from}`,
-    retired: (from: string) => `Retired from ${from}`,
-    /** A price form's line: what it costs today. */
-    now: (price: string, since: string) => `${price} since ${since}`,
+    unit: "min",
     unpriced: "Not priced",
-    toCome: (price: string, from: string) => `${price} from ${from}`,
-    /** "Rs. 1,234 + 18% GST": a price as the check compares two. */
-    price: (rupees: string, gst: number) => `${rupees} + ${String(gst)}% GST`,
-    earlier: (prices: readonly string[]) => `Earlier: ${prices.join(" · ")}`,
-    percent: (value: number) => `${String(value)}%`,
-    /** The two late fees, each one figure for its kind, beside its kind's services. */
-    lateFee: "Late fee",
-    lateFees: {
-      late_fee_first_fit: "Late fee on a first fit",
-      late_fee_replacement: "Late fee on a replacement",
-    },
+    lateFeeNames: { late_fee_first_fit: "On a first fit", late_fee_replacement: "On a replacement" },
     /** The link to the rule that says when a late fee is charged. */
     lateFeeRule: "When it’s charged",
-    actions: {
-      edit: "Edit",
-      price: "New price",
-      correct: "Correct",
-      takeBack: "Withdraw",
-      rename: "Rename",
-      describe: "Description",
-      length: "Length",
-      retire: "Retire",
-      restore: "Restore",
-      up: "Move up",
-      down: "Move down",
-      add: (kind: string) => `Add to ${kind}`,
-      addHairSystem: "Add a hair system",
-    },
-    /** Each button named for a screen reader with what it acts on. */
-    labels: {
-      edit: (name: string) => `Edit ${name}`,
-      price: (name: string) => `Change the price of ${name}`,
-      correct: (name: string, from: string) => `Correct the ${name} price from ${from}`,
-      takeBack: (name: string, from: string) => `Withdraw the ${name} price from ${from}`,
-      rename: (name: string) => `Rename ${name}`,
-      describe: (name: string) => `Edit the description of ${name}`,
-      length: (name: string) => `Change the length of ${name}`,
-      retire: (name: string) => `Retire ${name}`,
-      restore: (name: string) => `Restore ${name}`,
-      up: (name: string) => `Move ${name} up`,
-      down: (name: string) => `Move ${name} down`,
-    },
-    form: {
-      priceTitle: (name: string) => `New price: ${name}`,
-      correctTitle: (name: string, from: string) => `Correct the ${name} price from ${from}`,
-      amount: "Price before GST, Rs.",
-      gst: "GST",
-      from: "Starts",
-      /** A day typed before tomorrow, said beside the box before anything is checked. */
-      fromTooSoon: "Choose tomorrow or later.",
-      setPrice: "Set price",
-      renameTitle: (name: string) => `Rename ${name}`,
-      name: "Name",
-      describeTitle: (name: string) => `Description: ${name}`,
-      description: "Description",
-      lengthTitle: (name: string) => `Length: ${name}`,
-      minutes: "Length, in minutes",
-      retireTitle: (name: string) => `Retire ${name}`,
-      retireFrom: "Hidden from",
-      addTitle: (kind: string) => `New ${kind} service`,
-      code: "Code",
-      /** What a kind's code does beyond pricing it: a replacement under a hair system's code is offered to its wearers. */
-      codeHints: {
-        replacement: "Give it the code of the hair system it replaces, and clients who wear that one are offered it.",
-      } as Readonly<Partial<Record<string, string>>>,
-      next: "Review",
-      cancel: "Cancel",
-    },
-    /** The check before anything is sent: what it is now, and what it will be. */
-    check: {
-      title: "Review the change",
-      price: (name: string, was: string, now: string, from: string) => `${name}: ${was} → ${now}, from ${from}`,
-      correct: ({
-        name,
-        was,
-        wasFrom,
-        now,
-        from,
-      }: {
-        name: string;
-        was: string;
-        wasFrom: string;
-        now: string;
-        from: string;
-      }) => `${name}: ${was} from ${wasFrom} → ${now} from ${from}`,
-      nothing: "nothing",
-      gstChanges: (was: number, now: number) => `GST: ${String(was)}% → ${String(now)}%`,
-      sameDay: "Replaces the price already set for that day.",
-      rename: (was: string, now: string, tier: string) => `${was} → ${now} (code stays ${tier})`,
-      describe: (name: string, was: string, now: string) =>
-        `${name}: ${descriptionWords(was)} → ${descriptionWords(now)}`,
-      length: (name: string, was: number, now: number) => `${name}: ${String(was)} → ${String(now)} minutes`,
-      retire: (name: string, from: string) => `${name} is hidden from ${from}.`,
-      restore: (name: string) => `Offer ${name} again?`,
-      order: (kind: string, was: string, now: string) => `${kind}: ${was} → ${now}`,
-      add: (kind: string, name: string, minutes: number, _tier: string) =>
-        `Add ${name} to ${kind}: ${String(minutes)} minutes. Hidden until priced.`,
-      takeBack: (from: string) => `Withdraw the price from ${from}?`,
-      send: "Confirm",
-      back: "Back",
-      takeBackConfirm: "Confirm withdrawal",
-      keep: "Keep price",
-    },
-    saving: "Saving…",
-    done: {
-      price: "Price set.",
-      takenBack: "Price withdrawn.",
-      saved: "Saved.",
-    },
-    /** A refusal of a box with the limit the API gave the form, as the API checks it (src/routes/ops/services.ts). */
-    limits: {
-      description: (most: number) => `Up to ${String(most)} characters, on one line.`,
-      minutes: (min: number, max: number) => `Enter ${String(min)}–${String(max)} minutes.`,
-      amount: (most: string) => `Enter whole rupees, up to ${most}.`,
-      gst: (most: number) => `Enter a whole percentage, 0–${String(most)}.`,
-    },
-    /** A refusal names the box it came from (src/routes/ops/services.ts, ops-settings.ts); these are said of each. */
     errors: {
       not_permitted: NOT_PERMITTED,
-      tier: "No such code, or none can be made from that name.",
       name: "2–60 characters, starting with a letter or digit.",
       description: "Keep it to one line.",
-      minutes: "Enter the minutes allowed.",
-      retired_date: "Retire from today or later. Restore a retired service first.",
-      order: changed("The order changed elsewhere."),
-      amount_ex_gst: "Enter whole rupees.",
-      gst_percent: "Enter a whole percentage.",
-      valid_from: "A new price starts tomorrow at the earliest.",
-      was_valid_from: "That price is already in effect, so it stays.",
-      service_exists: "That name or code is already in use.",
-      last_of_kind: "Each kind needs one priced service. Add and price its replacement first.",
-      service_retired: "It’s retired by then, so it can’t be priced.",
+      minutes: "Between 30 minutes and the length of a day.",
+      service_exists: "That name is already in use.",
+      last_of_kind: "Clients would have nothing of this kind to book. Keep it offered.",
+      in_use: "It belongs to a package. Change it in Packages.",
       not_found: changed("No longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
-      unknown: FAILED,
-    },
-    /** Taking back a price that applies already, or has applied: it may stand on an invoice. */
-    takeBackErrors: {
-      not_permitted: NOT_PERMITTED,
-      valid_from: "That price is already in effect, so it stays.",
-      offline: OFFLINE,
       unknown: FAILED,
     },
   },
@@ -631,21 +472,36 @@ export const settings = {
     warranty: (days: number) => (days === 0 ? "None" : `${String(days)} days`),
     active: "Active",
     retired: "Retired",
-    change: "Change",
-    changeLabel: (name: string) => `Change ${name}`,
-    retire: "Retire",
-    retireLabel: (name: string) => `Retire ${name}`,
+    /** A row's name, read as what pressing it does. */
+    open: (name: string) => `Open ${name}`,
+    /** Its record's values, a line each. */
+    rows: {
+      name: "Name",
+      gstin: "GSTIN",
+      country: "Country code",
+      currency: "Currency",
+      contactName: "Contact",
+      contactPhone: "Phone",
+      contactEmail: "Email",
+      terms: "Payment terms",
+      warranty: "Warranty",
+      status: "Status",
+      days: "days",
+      none: "None",
+    },
     restore: "Restore",
     restoreLabel: (name: string) => `Restore ${name}`,
-    items: "Items",
-    itemsLabel: (name: string) => `Items of ${name}`,
-    retiredSaid: "Retired.",
-    restoredSaid: "Restored.",
-    retireQuestion: (name: string) => `Retire ${name}? Their open orders stay.`,
-    restoreQuestion: (name: string) => `Restore ${name}?`,
+    retiring: {
+      open: "Retire",
+      label: (name: string) => `Retire ${name}`,
+      warning: (name: string) => `Retire ${name}? Their open orders stay.`,
+      confirm: "Retire",
+      sending: "Retiring…",
+      cancel: "Cancel",
+    },
+    added: "Added.",
     form: {
       addTitle: "Add a supplier",
-      changeTitle: (name: string) => `Change ${name}`,
       name: "Name",
       gstin: "GSTIN (optional)",
       country: "Country code",
@@ -656,27 +512,14 @@ export const settings = {
       terms: "Payment terms, days",
       warranty: "Warranty, days",
       add: "Add",
-      save: "Save supplier",
-      saving: "Saving…",
       cancel: "Cancel",
-      added: "Added.",
-      saved: "Saved.",
-      confirm: {
-        title: "Check before saving",
-        line: (field: string, was: string, now: string) => `${field}: ${was} → ${now}`,
-        /** "Lumina Hair Co · CN · USD" */
-        adding: (name: string, country: string, currency: string) => `${name} · ${country} · ${currency}`,
-        nothing: "Nothing changes.",
-        none: "None",
-        send: "Save",
-        back: "Edit",
-      },
     },
     item: {
       title: (name: string) => `What ${name} supplies`,
       addOne: "Add an item",
       columns: ["Item", "Their code", "Price", "Pack", "Minimum", "Lead time"],
       none: "Nothing listed yet.",
+      allListed: "Every item is listed.",
       consumable: "Item",
       theirCode: "Their code (optional)",
       /** "Price per ml, INR": the price of one unit, never of a pack. */
@@ -686,20 +529,42 @@ export const settings = {
       perUnit: (price: string, unit: string) => `${price} per ${unit}`,
       /** "250 ml" */
       amount: (figure: number, unit: string) => amountOf(figure, unit),
-      /** "Pack 250 ml", as the line under review reads it. */
+      /** "Pack 250 ml", as an item's line reads it. */
       packOf: (amount: string) => `Pack ${amount}`,
       minimum: "Minimum order",
       lead: "Lead time, days",
       days: (days: number) => `${String(days)} days`,
-      set: "Save item",
-      saved: "Saved.",
-      remove: "Remove",
-      removeLabel: (name: string) => `Remove ${name}`,
+      /** An item's values, a line each. */
+      rows: {
+        theirCode: "Their code",
+        price: (unit: string) => `Price per ${unit}`,
+        pack: "Pack size",
+        lead: "Lead time",
+      },
+      removing: {
+        open: "Remove",
+        label: (name: string) => `Remove ${name}`,
+        confirm: "Remove",
+        sending: "Removing…",
+        cancel: "Cancel",
+      },
       removeQuestion: (item: string, supplier: string) => `Take ${item} off ${supplier}’s list?`,
-      removed: "Removed.",
     },
     errors: {
       name: "Another supplier has that name.",
+      gstin: "15 characters: 07AABCK1234M1Z5.",
+      country: "Two letters: IN.",
+      currency: "Three letters: INR.",
+      contact_name: "Up to 80 characters.",
+      contact_phone: "With its country code: +919810000001.",
+      contact_email: "An email address.",
+      payment_terms_days: "Whole days, up to 365.",
+      warranty_days: "Whole days, up to 3,650.",
+      their_code: "Up to 40 characters.",
+      unit_price: "A price, to two places.",
+      pack_size: "A whole number, 1 or more.",
+      minimum_order: "A whole number, 1 or more.",
+      lead_time_days: "Whole days, up to 365.",
       consumable_code: changed("That item is no longer listed."),
       id: changed("That supplier is gone."),
       not_found: changed("That supplier is gone."),
@@ -730,9 +595,21 @@ export const settings = {
       retiring: (from: string) => `Offered until ${from}`,
       retired: (from: string) => `Retired from ${from}`,
     },
-    // The buttons in each row, named for the screen reader by the consumable.
-    change: "Change",
-    changeLabel: (name: string) => `Change ${name}`,
+    /** A row's name, read as what pressing it does. */
+    open: (name: string) => `Open ${name}`,
+    /** Its record's values, a line each. */
+    rows: {
+      name: "Name",
+      unit: "Unit",
+      cost: "Cost each",
+      kit: "Kit low at",
+      store: "Hub or stockroom low at",
+      central: "Warehouse low at",
+      shelf: "Shelf life",
+      status: "Status",
+    },
+    noLevel: "None",
+    days: "days",
     /** "Keeps 180 days", what a lot with no expiry of its own is given. */
     shelfLife: (days: number | null) => (days === null ? "Does not expire" : `Keeps ${String(days)} days`),
     /** One added by mistake; one whose stock has moved is retired instead. */
@@ -743,34 +620,6 @@ export const settings = {
     restore: "Restore",
     restoreLabel: (name: string) => `Restore ${name}`,
     // No design draws it (docs/decisions/0156-hair-systems-in-stock.md).
-    hairSystems: {
-      title: "Hair systems",
-      add: "Add a hair system",
-      noProducts: "Add a first-fit service in Services first.",
-      product: "Product",
-      width: "Base width, inches",
-      length: "Base length, inches",
-      colour: "Colour",
-      grey: "Grey, %",
-      density: "Density",
-      cost: "Cost each, Rs.",
-      kit: "Kit low at (optional)",
-      store: "Hub or stockroom low at (optional)",
-      central: "Warehouse low at (optional)",
-      formTitle: "Add a hair system",
-      /** The check's line: the spec the code is made to, and what one costs. */
-      adding: (spec: string, cost: string) => `${spec}, at ${cost} each`,
-      added: "Added.",
-      errors: {
-        product: "Choose a product from the list.",
-        hair_system: "That spec is already in stock.",
-        invalid_request: "Check the size in inches, and grey and density as percentages, 0–100.",
-        not_permitted: NOT_PERMITTED,
-        offline: OFFLINE,
-        unconfirmed: UNCONFIRMED,
-        unknown: FAILED,
-      },
-    },
     form: {
       addTitle: "Add a consumable",
       changeTitle: (name: string) => `Change ${name}`,
@@ -782,37 +631,12 @@ export const settings = {
       central: "Warehouse low at (optional)",
       shelf: "Shelf life, days (optional)",
       add: "Add",
-      save: "Save consumable",
-      saving: "Saving…",
       cancel: "Cancel",
       added: "Added.",
-      saved: "Saved.",
-      /** The check before anything is sent, the old beside the new. */
-      confirm: {
-        title: "Review the change",
-        adding: (name: string, unit: string, cost: string) => `${name}, by the ${unit}, at ${cost} each.`,
-        line: (field: string, was: string, now: string) => `${field}: ${was} → ${now}`,
-        fields: {
-          name: "Name",
-          unit: "Unit",
-          cost: "Cost each",
-          kit: "Kit low at",
-          store: "Hub or stockroom low at",
-          central: "Warehouse low at",
-          shelf: "Shelf life",
-        },
-        noLevel: "none",
-        send: "Confirm",
-        back: "Edit",
-        nothing: "No changes.",
-      },
     },
     retiring: {
-      title: (name: string) => `Retire ${name}`,
       from: "Retire from",
       question: (name: string, from: string) => `Technicians can’t log ${name} from ${from}. Past jobs keep it.`,
-      restore: (name: string) => `Offer ${name} again?`,
-      done: "Done.",
     },
     usage: {
       title: "Expected use per service",
@@ -822,16 +646,8 @@ export const settings = {
         retiredFrom === null ? name : `${name}, retired from ${retiredFrom}`,
       quantity: (name: string, unit: string) => `${name}, ${unit} per visit`,
       noneOffered: "Add a consumable first.",
-      save: "Save use",
-      confirm: {
-        title: "Review the change",
-        line: (name: string, was: string, now: string) => `${name}: ${was} → ${now}`,
-        none: "none",
-        send: "Confirm",
-        back: "Edit",
-        nothing: "No changes.",
-      },
-      saved: "Saved.",
+      none: "None",
+      whole: "A whole number up to 999, or blank.",
     },
     /** The cost refused, with the most the API takes. */
     unitCostUpTo: (most: string) => `Enter whole rupees, up to ${most}.`,
@@ -844,6 +660,7 @@ export const settings = {
       reorder_kit: "A whole number, or blank.",
       reorder_store: "A whole number, or blank.",
       reorder_central: "A whole number, or blank.",
+      shelf_life_days: "A whole number of days, or blank.",
       from: "Today or later.",
       tier: "That service no longer exists.",
       items: "Unknown or repeated consumable.",
@@ -864,7 +681,7 @@ export const settings = {
     item: (position: number) => `Item ${String(position)}`,
     clientWords: (position: number) => `Item ${String(position)}, as the client reads it`,
     clientNote:
-      "The second box is what the client’s record says was done. Leave it empty for a step only the technician needs.",
+      "Beneath each item is what the client’s record says was done. Leave it empty for a step only the technician needs.",
     clientNone: "Only the technician sees it",
     reason: (position: number) => `Reason ${String(position)}`,
     /** The buttons beside an item: each names the item after what it does, so a screen reader says which. */
@@ -874,7 +691,6 @@ export const settings = {
     down: (label: string) => `Move down: ${label}`,
     removeButton: "Remove",
     remove: (label: string) => `Remove: ${label}`,
-    unnamed: "the empty item",
     add: "Add item",
     addReason: "Add reason",
     retired: "Removed",
@@ -882,23 +698,9 @@ export const settings = {
     putBackButton: "Restore",
     committed: "Default",
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
-    save: "Save",
-    saving: "Saving…",
+    addButton: "Add",
+    cancel: "Cancel",
     saved: "Saved.",
-    confirm: {
-      title: "Review the change",
-      was: "Was",
-      now: "Now",
-      added: (label: string) => `Added: ${label}`,
-      renamed: (was: string, now: string) => `Renamed: ${was} → ${now}`,
-      takenOff: (label: string) => `Removed: ${label}`,
-      clientReads: (label: string, words: string) => `${label}: the client reads “${words}”`,
-      clientNone: (label: string) => `${label}: only the technician sees it`,
-      moved: "Order changed.",
-      send: "Confirm",
-      back: "Edit",
-      nothing: "No changes.",
-    },
     /** A refusal of the list with the limits the API gave it. */
     limits: {
       items: (most: number) => `Keep 1 to ${String(most)} items.`,
@@ -926,34 +728,22 @@ export const settings = {
     active: "Active",
     inactive: "Off",
     add: "Add a person",
-    change: "Change",
-    changeLabel: (email: string) => `Change ${email}`,
+    /** A row's name, read as what pressing it does. */
+    open: (email: string) => `Open ${email}`,
+    /** A grant's line in a person's record: "Finance · Delhi", its level beside it. */
+    grantLabel: (department: string, place: string) => `${department} · ${place}`,
     form: {
       addTitle: "Add a person",
-      changeTitle: (email: string) => `Change ${email}`,
       email: "Sign-in email",
-      letIn: "Active",
       access: "Access",
       department: "Department",
       level: "Level",
       place: "Where",
+      /** The level that takes a grant away. */
+      noAccess: "No access",
       addGrant: "Add a department",
-      removeGrant: "Remove",
-      removeGrantLabel: (grant: string) => `Remove ${grant}`,
-      review: "Review",
+      add: "Add",
       cancel: "Cancel",
-    },
-    confirm: {
-      title: "Review the change",
-      adds: (email: string) => `Adds ${email}.`,
-      letsIn: "Restores their access.",
-      switchesOff: "Removes all their access.",
-      gives: (grant: string) => `Grants ${grant}`,
-      takes: (grant: string) => `Removes ${grant}`,
-      nothing: "No changes.",
-      send: "Confirm",
-      sending: "Saving…",
-      back: "Edit",
     },
     saved: "Saved.",
     removed: "Removed.",
@@ -982,14 +772,22 @@ export const settings = {
       off: "Off. Everyone signed in sees every section.",
       on: "On. People see only what they’re granted.",
       setBy: (who: string, when: string) => `Changed by ${who} on ${when}`,
-      start: "Turn on",
-      stop: "Turn off",
-      startTitle: "Turn on access control?",
-      startLine: "Only listed people can use the console.",
-      stopTitle: "Turn off access control?",
-      stopLine: "Everyone signed in will see every section.",
-      sending: "Saving…",
-      back: "Cancel",
+      starting: {
+        open: "Turn on",
+        label: () => "Turn on access control",
+        warning: () => "Turn on access control? Only listed people can use the console.",
+        confirm: "Turn on",
+        sending: "Saving…",
+        cancel: "Cancel",
+      },
+      stopping: {
+        open: "Turn off",
+        label: () => "Turn off access control",
+        warning: () => "Turn off access control? Everyone signed in will see every section.",
+        confirm: "Turn off",
+        sending: "Saving…",
+        cancel: "Cancel",
+      },
       errors: {
         not_permitted: "Only national Admin · Manage can change this.",
         offline: OFFLINE,
@@ -1004,12 +802,14 @@ export const settings = {
       clientId: "Client ID",
       label: "Name",
       addTitle: "Add a service token",
-      /** The check's line: "Uptime check · 1a2b3c.access". */
-      adding: (label: string, clientId: string) => `${label} · ${clientId}`,
-      remove: "Remove",
-      removeLabel: (label: string) => `Remove ${label}`,
-      removeTitle: (label: string) => `Remove ${label}?`,
-      removeLine: "It’s refused once access control is on.",
+      removing: {
+        open: "Remove",
+        label: (label: string) => `Remove ${label}`,
+        warning: (label: string) => `Remove ${label}? It’s refused once access control is on.`,
+        confirm: "Remove",
+        sending: "Removing…",
+        cancel: "Cancel",
+      },
       errors: {
         client_id: "Paste the client ID exactly as shown.",
         label: "Give it a short name.",

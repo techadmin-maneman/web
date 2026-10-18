@@ -19,17 +19,6 @@ export async function fitCode(db: D1Database, personId: string, product: string 
   return matchingCode(await hairSystemSpecs(db), product === null ? fit : { ...fit, product });
 }
 
-/** What a replacement naming no tier is priced for: the product the client wears; null for any other booking. */
-export const replacementWears = (
-  db: D1Database,
-  wanted: { kind: string; tier?: string | undefined; personId: string },
-) => (wanted.kind === "replacement" && wanted.tier === undefined ? wornProduct(db, wanted.personId) : null);
-
-/** The product of the hair system a client wears, as their latest hair profile names it; null with none. */
-export async function wornProduct(db: D1Database, personId: string): Promise<string | null> {
-  return (await latestFits(db, [personId])).get(personId)?.product ?? null;
-}
-
 /** The places a technician's fit draws on: their kit, and their city's stockroom. `?2` is the technician. */
 const IN_REACH = `(SELECT ?2 UNION ALL SELECT r.id FROM stock_places r JOIN technicians t ON t.id = ?2
                    WHERE r.kind = 'stockroom' AND r.city = t.city AND r.active = 1)`;

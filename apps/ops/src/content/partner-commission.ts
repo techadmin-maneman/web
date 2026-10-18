@@ -38,17 +38,12 @@ export const partnerCommission = {
     amount: "Paid, Rs.",
     paidOn: "Paid on",
     reference: "Reference",
-    next: "Review",
+    add: "Record",
     cancel: "Cancel",
   },
-  /** The check before a payment is recorded. */
+  /** Said beneath the boxes before a payment is recorded. */
   check: {
-    title: "Review the payment",
-    line: (amount: string, day: string, reference: string) => `${amount} paid on ${day}, reference ${reference}.`,
     short: (due: string) => `Less than the ${due} due.`,
-    send: "Confirm",
-    saving: "Saving…",
-    back: "Back",
   },
   done: { recorded: "Payment recorded.", deleted: "Payment deleted." },
   /** The statement a partner is sent: days and amounts, never a client. */

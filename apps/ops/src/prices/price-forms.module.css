@@ -1,8 +1,0 @@
-/* What ./PriceForms.tsx alone draws; what it shares is in ./prices.module.css. */
-
-/* What the item and tier chosen cost today: the figure the boxes beneath start from. */
-.formNow {
-  margin: var(--sp-12) 0 0;
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
-}

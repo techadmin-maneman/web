@@ -1,5 +1,7 @@
 // The services clients book, behind Access (docs/decisions/0085-services-ops-can-edit.md): each kind of visit's
-// services, with every price each has had, is to have, and has now, and the two late fees beside their kinds.
+// services, with every price each has had, is to have, and has now, and the two late fees beside their kinds. A first
+// fit, a service visit and a replacement are each a package's, changed with it (./packages.ts); only a consultation
+// is added and changed here.
 //
 // A kind is code, and so is what it decides: the technician's steps, the booking rules and the fees. Every change
 // here is audited in the same batch as the change itself (ADR 0031), and nothing already sold moves with it: a hold
@@ -31,6 +33,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import { LATE_FEES } from "../../policy/moving-a-visit.ts";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
 import { DESCRIPTION_LENGTH, isOffered, PRICE_TIER } from "../../policy/services.ts";
+import { isPackageKind } from "../../policy/packages.ts";
 import { SERVICE_MINUTES } from "../../policy/visit-length.ts";
 import { PriceRowSchema } from "../schemas/prices.ts";
 
@@ -95,7 +98,8 @@ const refused = {
   404: errorResponse("not_found: no service of that kind has that code"),
   409: errorResponse(
     "service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its " +
-      "kind would be left with nothing to book, which a first fit may be",
+      "kind would be left with nothing to book, which a first fit may be; in_use: the service is a package's, " +
+      "changed with it at /api/packages",
   ),
 };
 
@@ -276,11 +280,16 @@ const isRefusal = (result: object): result is ServiceRefusal => "refused" in res
 
 const writeOf = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
+/** A package's service is changed with its package, so its names and figures stay together. */
+const packageOwned = (c: Context<AppEnv>, kind: VisitType) => (isPackageKind(kind) ? refuse(c, "in_use") : null);
+
 export function registerOpsServices(app: App): void {
   app.openapi(servicesRoute, async (c) => c.json(await servicesBody(c), 200));
 
   app.openapi(addRoute, async (c) => {
     const { kind, name, tier, minutes } = c.req.valid("json");
+    const owned = packageOwned(c, kind);
+    if (owned !== null) return owned;
     const added = await addService(c.env.DB, { ...writeOf(c), kind, name, tier, minutes });
     if (isRefusal(added)) return refusalBody(c, added);
     return c.json(await servicesBody(c), 201);
@@ -288,6 +297,8 @@ export function registerOpsServices(app: App): void {
 
   app.openapi(renameRoute, async (c) => {
     const { kind, tier } = c.req.valid("param");
+    const owned = packageOwned(c, kind);
+    if (owned !== null) return owned;
     const renamed = await renameService(c.env.DB, { ...writeOf(c), kind, tier, name: c.req.valid("json").name });
     if (isRefusal(renamed)) return refusalBody(c, renamed);
     return c.json(await servicesBody(c), 200);
@@ -295,6 +306,8 @@ export function registerOpsServices(app: App): void {
 
   app.openapi(describeRoute, async (c) => {
     const { kind, tier } = c.req.valid("param");
+    const owned = packageOwned(c, kind);
+    if (owned !== null) return owned;
     const description = c.req.valid("json").description;
     const described = await describeService(c.env.DB, { ...writeOf(c), kind, tier, description });
     if (isRefusal(described)) return refusalBody(c, described);
@@ -303,6 +316,8 @@ export function registerOpsServices(app: App): void {
 
   app.openapi(lengthRoute, async (c) => {
     const { kind, tier } = c.req.valid("param");
+    const owned = packageOwned(c, kind);
+    if (owned !== null) return owned;
     const minutes = c.req.valid("json").minutes;
     const changed = await setServiceLength(c.env.DB, { ...writeOf(c), kind, tier, minutes });
     if (isRefusal(changed)) return refusalBody(c, changed);
@@ -311,6 +326,8 @@ export function registerOpsServices(app: App): void {
 
   app.openapi(orderRoute, async (c) => {
     const kind: VisitType = c.req.valid("param").kind;
+    const owned = packageOwned(c, kind);
+    if (owned !== null) return owned;
     const ordered = await reorderServices(c.env.DB, { ...writeOf(c), kind, tiers: c.req.valid("json").tiers });
     if (isRefusal(ordered)) return refusalBody(c, ordered);
     return c.json(await servicesBody(c), 200);
@@ -318,6 +335,8 @@ export function registerOpsServices(app: App): void {
 
   app.openapi(retireRoute, async (c) => {
     const { kind, tier } = c.req.valid("param");
+    const owned = packageOwned(c, kind);
+    if (owned !== null) return owned;
     const write = writeOf(c);
     const from = c.req.valid("json").from;
     const retired = await retireService(c.env.DB, { ...write, kind, tier, from, today: indiaDate(write.now) });
@@ -327,6 +346,8 @@ export function registerOpsServices(app: App): void {
 
   app.openapi(restoreRoute, async (c) => {
     const { kind, tier } = c.req.valid("param");
+    const owned = packageOwned(c, kind);
+    if (owned !== null) return owned;
     const restored = await restoreService(c.env.DB, { ...writeOf(c), kind, tier });
     if (isRefusal(restored)) return refusalBody(c, restored);
     return c.json(await servicesBody(c), 200);

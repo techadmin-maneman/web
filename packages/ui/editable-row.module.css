@@ -1,0 +1,134 @@
+/*
+ * One value changed where it reads (./EditableRow.tsx): the name in a column as wide as the app sets
+ * (--setting-label-width, ./base.css), the value as words beside it, a rule beneath. The value is its own button,
+ * marked by a pencil that shows as the pointer or the keyboard comes to it; opened, its box and Save and Cancel take
+ * its place. Short of a desk the name stands above.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .row {
+    display: grid;
+    grid-template-columns: var(--setting-label-width) minmax(0, 1fr);
+    column-gap: var(--sp-16);
+    align-items: center;
+    min-height: var(--control-height);
+    padding: var(--sp-8) var(--sp-20);
+    border-bottom: var(--hairline) solid var(--ui-line);
+  }
+
+  .row:last-child {
+    border-bottom: 0;
+  }
+
+  .editing {
+    align-items: start;
+    background: var(--ui-raised);
+  }
+
+  .label {
+    font-size: var(--fs-14);
+    color: var(--ui-text-muted);
+  }
+
+  .editing .label {
+    padding-top: var(--sp-8);
+    color: var(--ui-text);
+  }
+
+  .reading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-12);
+    min-width: 0;
+  }
+
+  .value {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-8);
+    min-height: var(--small-height);
+    margin-left: calc(-1 * var(--sp-8));
+    padding: 0 var(--sp-8);
+    border: var(--hairline) solid transparent;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-14);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text);
+    text-align: left;
+  }
+
+  button.value {
+    cursor: pointer;
+    transition: border-color var(--duration-quick) var(--ease-house);
+  }
+
+  button.value:hover,
+  button.value:focus-visible {
+    border-color: var(--ui-line-control);
+  }
+
+  .cue {
+    flex: none;
+    color: var(--ui-text-quiet);
+    opacity: 0;
+    transition: opacity var(--duration-quick) var(--ease-house);
+  }
+
+  button.value:hover .cue,
+  button.value:focus-visible .cue {
+    opacity: 1;
+  }
+
+  .saved {
+    margin: 0;
+  }
+
+  .edit {
+    display: grid;
+    gap: var(--sp-8);
+    min-width: 0;
+  }
+
+  .boxes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-8);
+  }
+
+  .boxes :is(input, select, textarea) {
+    margin-top: 0;
+  }
+
+  .unit {
+    font-size: var(--fs-14);
+    color: var(--ui-text-muted);
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--sp-8);
+  }
+
+  .refusal {
+    margin: 0;
+  }
+
+  @media (max-width: 760px) {
+    .row {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: var(--sp-4);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    button.value,
+    .cue {
+      transition: none;
+    }
+  }
+}

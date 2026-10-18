@@ -1,4 +1,4 @@
-/* What ./PayRates.tsx alone draws; what it shares is in ./technician-pay.module.css. */
+/* What ./PayRates.tsx and a grade's record alone draw; what it shares is in ./technician-pay.module.css. */
 
 .rates {
   min-width: var(--ops-table-min);
@@ -11,6 +11,9 @@
   color: var(--ui-text-muted);
 }
 
-.ask {
-  padding: var(--sp-12) var(--sp-20) 0;
+/* The heading over a grade's rates in its record. */
+.ratesTitle {
+  margin: var(--sp-24) 0 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-medium);
 }

@@ -46,7 +46,6 @@ export async function copyNight(steps: Steps, run: CopyRun, date: string): Promi
       if (await withWarehouse((warehouse) => warehouse.ranOn(date))) return null;
       const { nextVisitDays, lostAfterDays, bookingRules } = await readOpsInputs(run.env.DB, new Date());
       const standing = {
-        cadence: nextVisitDays.service_cadence,
         grace: nextVisitDays.at_risk_after_due,
         lostAfter: lostAfterDays,
       };

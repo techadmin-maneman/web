@@ -1,165 +1,83 @@
 // What each grade is paid for each kind of visit, for every city or one (docs/decisions/0122-technician-pay-per-visit.md).
 // A city with no rate of its own shows every city's, marked; a rate set to start later shows beneath the one in force.
-// Each grade's row sets a rate, renames the grade, or, while no technician holds it, deletes it.
+// A grade's row opens its record beside the table, where its name and its rates change where they read.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { TextButton } from "@maneman/ui/TextLink";
 import { classes } from "@maneman/ui/classes";
 import { Note } from "@maneman/ui/Note";
-import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type TechnicianPay } from "../api.ts";
-import { DeleteAction } from "../components/DeleteAction.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
 import { technicianPay } from "../content/technician-pay.ts";
 import { tables } from "../content.ts";
-import { AddGradeForm, RenameGradeForm, SetRateForm } from "./PayForms.tsx";
+import { AddGrade, GradeRecord } from "./PayForms.tsx";
 import { rateNow, ratesLater } from "./pay-rates.ts";
 import form from "../components/forms.module.css";
 import shared from "./technician-pay.module.css";
 import styles from "./pay-rates.module.css";
-import { technicianPayApi } from "./technician-pay-api.ts";
 
 const copy = technicianPay.rates;
 
 type Grade = TechnicianPay["grades"][number];
 
-/** What a grade's row has open. */
-type Acting = { readonly id: string; readonly kind: "rate" | "rename" | "delete" } | null;
-
-/** Which row actions the person's access reaches. */
-interface May {
-  readonly grades: boolean;
-  readonly rates: boolean;
-}
-
-interface RowProps {
-  readonly pay: TechnicianPay;
-  /** "" for every city. */
-  readonly city: string;
-  readonly acting: Acting;
-  readonly may: May;
-  readonly onAct: (acting: Acting) => void;
-  readonly onDone: (pay: TechnicianPay, said: string) => void;
-}
-
-/** A grade's row actions; Delete only while no technician holds it. */
-function RateActions({ grade, acting, may, onAct }: { grade: Grade } & Pick<RowProps, "acting" | "may" | "onAct">) {
-  const actions: readonly (readonly [boolean, NonNullable<Acting>["kind"], string, string])[] = [
-    [may.rates, "rate", copy.setRate, copy.setRateLabel(grade.name)],
-    [may.grades, "rename", copy.rename, copy.renameLabel(grade.name)],
-    [may.grades && grade.technicians === 0, "delete", copy.delete, copy.deleteLabel(grade.name)],
-  ];
+function GradeRow(props: { pay: TechnicianPay; city: string | null; grade: Grade; onOpen: () => void }) {
+  const { pay, grade, city } = props;
   return (
-    <td className={shared.actions}>
-      {actions
-        .filter(([shown]) => shown)
-        .map(([, kind, words, label]) => (
-          <RowButton
-            key={kind}
-            beside
-            aria-label={label}
-            disabled={acting !== null}
-            onClick={() => {
-              onAct({ id: grade.id, kind });
-            }}
-          >
-            {words}
-          </RowButton>
-        ))}
-    </td>
-  );
-}
-
-/** What a grade's action opened, in a drawer beside the table. */
-function RateActingRow({ grade, ...row }: { grade: Grade } & RowProps) {
-  const { acting, onAct, onDone } = row;
-  if (acting?.id !== grade.id) return null;
-  const cancel = () => {
-    onAct(null);
-  };
-  const saved = (pay: TechnicianPay) => {
-    onDone(pay, technicianPay.done.saved);
-  };
-  return (
-    <FormDrawer title={grade.name} onClose={cancel}>
-      {acting.kind === "rate" && (
-        <SetRateForm grade={grade} pay={row.pay} city={row.city} onDone={saved} onCancel={cancel} />
-      )}
-      {acting.kind === "rename" && <RenameGradeForm grade={grade} onDone={saved} onCancel={cancel} />}
-      {acting.kind === "delete" && (
-        <div className={styles.ask}>
-          <DeleteAction
-            name={grade.name}
-            send={() => technicianPayApi.deletePayGrade(grade.id)}
-            refusal={(refused) =>
-              refused === "in_use" ? copy.inUse : errorText(technicianPay.errors, { code: refused, fields: [] })
-            }
-            onDeleted={(pay) => {
-              onDone(pay, technicianPay.done.deleted);
-            }}
-            onCancel={cancel}
-          />
-        </div>
-      )}
-    </FormDrawer>
-  );
-}
-
-function GradeRows({ grade, ...row }: { grade: Grade } & RowProps) {
-  const { pay } = row;
-  const city = row.city === "" ? null : row.city;
-  return (
-    <>
-      <tr>
-        <th scope="row" className={shared.grade}>
+    <tr>
+      <th scope="row" className={shared.grade}>
+        <TextButton compact aria-label={copy.open(grade.name)} onClick={props.onOpen}>
           {grade.name}
-        </th>
-        <td className={shared.figure}>{grade.technicians}</td>
-        {pay.kinds.map((kind) => (
-          <td key={kind} className={shared.figure}>
-            {rateNow(pay, { grade: grade.id, kind, city })}
-            {ratesLater(pay, { grade: grade.id, kind, city }).map((line) => (
-              <span key={line} className={styles.later}>
-                {line}
-              </span>
-            ))}
-          </td>
-        ))}
-        <RateActions grade={grade} {...row} />
-      </tr>
-      <RateActingRow grade={grade} {...row} />
-    </>
+        </TextButton>
+      </th>
+      <td className={shared.figure}>{grade.technicians}</td>
+      {pay.kinds.map((kind) => (
+        <td key={kind} className={shared.figure}>
+          {rateNow(pay, { grade: grade.id, kind, city })}
+          {ratesLater(pay, { grade: grade.id, kind, city }).map((line) => (
+            <span key={line} className={styles.later}>
+              {line}
+            </span>
+          ))}
+        </td>
+      ))}
+    </tr>
   );
 }
 
-function RatesTable(row: RowProps) {
+function RatesTable(props: { pay: TechnicianPay; city: string | null; onOpen: (id: string) => void }) {
+  const { pay } = props;
   return (
     <TableScroll labelledBy="pay-rates">
-      <Table controls className={classes(shared.table, styles.rates)}>
+      <Table className={classes(shared.table, styles.rates)}>
         <thead>
           <tr>
             <th scope="col">{copy.grade}</th>
             <th scope="col" className={shared.figure}>
               {copy.technicians}
             </th>
-            {row.pay.kinds.map((kind) => (
+            {pay.kinds.map((kind) => (
               <th key={kind} scope="col" className={shared.figure}>
                 {technicianPay.kinds[kind]}
               </th>
             ))}
-            <th scope="col">
-              <VisuallyHidden>{copy.actions}</VisuallyHidden>
-            </th>
           </tr>
         </thead>
         <tbody>
-          {row.pay.grades.map((grade) => (
-            <GradeRows key={grade.id} grade={grade} {...row} />
+          {pay.grades.map((grade) => (
+            <GradeRow
+              key={grade.id}
+              pay={pay}
+              city={props.city}
+              grade={grade}
+              onOpen={() => {
+                props.onOpen(grade.id);
+              }}
+            />
           ))}
         </tbody>
       </Table>
@@ -194,62 +112,35 @@ function CityChoice({ pay, city, onCity }: { pay: TechnicianPay; city: string; o
   );
 }
 
-export function PayRates(props: { pay: TechnicianPay; may: May; onChanged: (pay: TechnicianPay) => void }) {
-  const { pay, may } = props;
+export function PayRates(props: { pay: TechnicianPay; mayAdd: boolean; onChanged: (pay: TechnicianPay) => void }) {
+  const { pay } = props;
   const [city, setCity] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [acting, setActing] = useState<Acting>(null);
+  const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
-  const done = (next: TechnicianPay, words: string) => {
-    setAdding(false);
-    setActing(null);
-    setSaid(words);
-    props.onChanged(next);
-  };
-  const act = (next: Acting) => {
-    setSaid(null);
-    setActing(next);
-  };
-  const row: RowProps = { pay, city, acting, may, onAct: act, onDone: done };
+  const opened = pay.grades.find((grade) => grade.id === open);
+  const shown = city === "" ? null : city;
   return (
     <Panel
       titleId="pay-rates"
       title={copy.title}
       padded
       actions={
-        may.grades &&
-        !adding && (
-          <Button
-            variant="outline"
-            size="small"
-            narrow
-            onClick={() => {
-              setSaid(null);
-              setAdding(true);
-            }}
-          >
-            {copy.addGrade}
-          </Button>
+        props.mayAdd && (
+          <DrawerButton label={copy.addGrade}>
+            {(close) => (
+              <AddGrade
+                onAdded={(next) => {
+                  props.onChanged(next);
+                  setSaid(technicianPay.done.saved);
+                  close();
+                }}
+                onCancel={close}
+              />
+            )}
+          </DrawerButton>
         )
       }
     >
-      {adding && (
-        <FormDrawer
-          title={copy.addGrade}
-          onClose={() => {
-            setAdding(false);
-          }}
-        >
-          <AddGradeForm
-            onDone={(next) => {
-              done(next, technicianPay.done.saved);
-            }}
-            onCancel={() => {
-              setAdding(false);
-            }}
-          />
-        </FormDrawer>
-      )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}
@@ -260,8 +151,35 @@ export function PayRates(props: { pay: TechnicianPay; may: May; onChanged: (pay:
       ) : (
         <>
           <CityChoice pay={pay} city={city} onCity={setCity} />
-          <RatesTable {...row} />
+          <RatesTable
+            pay={pay}
+            city={shown}
+            onOpen={(id) => {
+              setSaid(null);
+              setOpen(id);
+            }}
+          />
         </>
+      )}
+      {opened !== undefined && (
+        <FormDrawer
+          title={opened.name}
+          onClose={() => {
+            setOpen(null);
+          }}
+        >
+          <GradeRecord
+            pay={pay}
+            grade={opened}
+            city={shown}
+            onSaved={props.onChanged}
+            onDeleted={(next) => {
+              props.onChanged(next);
+              setOpen(null);
+              setSaid(technicianPay.done.deleted);
+            }}
+          />
+        </FormDrawer>
       )}
     </Panel>
   );

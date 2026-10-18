@@ -1,17 +1,19 @@
 // The GST registrations by state: a state with one here has its visits supplied from it, and invoiced under its Books
 // branch; any other is supplied from the registration Books is set up with (docs/decisions/0198-cities-as-data.md).
+// One is removed from its row, asked once.
 
-import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 import { Table } from "@maneman/ui/Table";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { cities } from "../content.ts";
+import { AddForm } from "../components/AddForm.tsx";
+import { DeleteAction } from "../components/DeleteAction.tsx";
+import { cities } from "../content/cities.ts";
 import { useAccess } from "../lib/access.ts";
-import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import type { Cities } from "./types.ts";
 import { RowHead } from "../components/RowHead.tsx";
@@ -51,33 +53,26 @@ function RegistrationEntry(props: {
   );
 }
 
-function RegistrationForm({ onSaved }: { onSaved: () => void }) {
+function RegistrationForm({ onAdded, onCancel }: { onAdded: () => Promise<void>; onCancel: () => void }) {
   const [draft, setDraft] = useState<Draft>(EMPTY);
-  const body = {
-    state_code: draft.stateCode.trim().toUpperCase(),
-    gstin: draft.gstin.trim().toUpperCase(),
-    books_branch_id: draft.branch.trim() === "" ? null : draft.branch.trim(),
-  };
-  const steps = useSteps(
-    async () => sentOf(await citiesApi.addGstRegistration(body), () => ({})),
-    () => {
-      setDraft(EMPTY);
-      onSaved();
-    },
-  );
   const edit = (change: Partial<Draft>) => {
     setDraft({ ...draft, ...change });
-    steps.edit();
   };
   return (
-    <SettingForm
+    <AddForm
       title={copy.add}
-      steps={steps}
-      ready={/^[A-Za-z]{2}$/.test(body.state_code) && body.gstin.length === 15}
+      words={{ add: cities.form.add, cancel: copy.cancel }}
       errors={copy.errors}
-      onCancel={null}
       boxes={["state_code", "gstin", "books_branch_id"]}
-      checking={<CheckLine>{copy.adding(body.state_code, body.gstin)}</CheckLine>}
+      send={() =>
+        citiesApi.addGstRegistration({
+          state_code: draft.stateCode.trim().toUpperCase(),
+          gstin: draft.gstin.trim().toUpperCase(),
+          books_branch_id: draft.branch.trim() === "" ? null : draft.branch.trim(),
+        })
+      }
+      onAdded={onAdded}
+      onCancel={onCancel}
     >
       <div className={form.fields}>
         <RegistrationEntry
@@ -108,16 +103,16 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
           }}
         />
       </div>
-    </SettingForm>
+    </AddForm>
   );
 }
 
-export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
+export function Registrations({ cities, reread }: { cities: Cities; reread: () => Promise<void> }) {
   const access = useAccess();
   const [said, setSaid] = useState<string | null>(null);
-  const saved = (words: string) => () => {
+  const saved = (words: string) => async () => {
     setSaid(words);
-    onSaved();
+    await reread();
   };
   return (
     <Panel
@@ -129,10 +124,11 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
           <DrawerButton label={copy.add}>
             {(close) => (
               <RegistrationForm
-                onSaved={() => {
-                  saved(copy.added)();
+                onAdded={async () => {
                   close();
+                  await saved(copy.added)();
                 }}
+                onCancel={close}
               />
             )}
           </DrawerButton>
@@ -142,7 +138,7 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
       {cities.registrations.length === 0 ? (
         <EmptyState look="panel" line={copy.none} />
       ) : (
-        <Table controls>
+        <Table>
           <thead>
             <tr>
               {copy.columns.map((column) => (
@@ -160,15 +156,12 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
                 <td>{registration.books_branch_id ?? copy.noBranch}</td>
                 <td>
                   {access.mayCall("DELETE /api/gst-registrations/{state_code}") && (
-                    <ActionCheck
-                      label={copy.remove}
-                      ariaLabel={copy.removeLabel(registration.state_code)}
-                      question={copy.removeQuestion(registration.state_code)}
-                      send={async () =>
-                        sentOf(await citiesApi.removeGstRegistration(registration.state_code), () => ({}))
-                      }
-                      onDone={saved(copy.removed)}
-                      errors={copy.errors}
+                    <DeleteAction
+                      name={registration.state_code}
+                      words={copy.removing}
+                      send={() => citiesApi.removeGstRegistration(registration.state_code)}
+                      refusal={(code) => errorText(copy.errors, { code })}
+                      onDeleted={saved(copy.removed)}
                     />
                   )}
                 </td>

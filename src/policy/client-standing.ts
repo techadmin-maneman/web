@@ -1,6 +1,7 @@
 // Where a client stands, as the retention figures count it (docs/decisions/0151-retention-figures.md): active while
-// their last first fit, service or replacement is within the service cadence and the grace the At-risk client task
-// gives (src/policy/next-visit.ts); lapsed after that; lost once lapsed for the days ops set in Settings · Rules.
+// their last first fit, service or replacement is within their package's service cadence and the grace the At-risk
+// client task gives (src/policy/next-visit.ts); lapsed after that; lost once lapsed for the days ops set in
+// Settings · Rules.
 
 import { addDays } from "../lib/india-time.ts";
 
@@ -9,13 +10,17 @@ export const LOST_AFTER_DAYS = 90;
 
 export type Standing = "active" | "lapsed" | "lost";
 
-export interface StandingDays {
-  /** From a fitting to the next service's due day. */
-  readonly cadence: number;
+/** What ops set of every client's standing. */
+export interface StandingRules {
   /** After the due day, before a client counts as lapsed. */
   readonly grace: number;
   /** Lapsed for this long, a client counts as lost. */
   readonly lostAfter: number;
+}
+
+/** One client's standing days: the rules, and their package's days from a fitting to the next service's due day. */
+export interface StandingDays extends StandingRules {
+  readonly cadence: number;
 }
 
 /** The latest day a client's last first fit, service or replacement may have been done on for them to be lost today. */

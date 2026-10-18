@@ -29,7 +29,8 @@ import { isRefusal } from "../../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "../platform/alerts.ts";
 import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
 import { referenceLink } from "./payments.ts";
-import { priceOf } from "./price-book.ts";
+import type { Price } from "./price-book.ts";
+import { visitPriceOf } from "../booking/client-prices.ts";
 import { serviceOf } from "../booking/services.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
 import { cityOfVisit } from "../cities/cities.ts";
@@ -112,11 +113,7 @@ async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<L
   for (let tries = 0; tries < LINK_TRIES; tries += 1) {
     const existing = await current();
     if (existing !== null) return { kind: "link", row: existing };
-    const listed = await priceOf(db, "first_fit", {
-      on: visit.day,
-      tier: visit.tier,
-      city: await cityOfVisit(db, visit.appointmentId),
-    });
+    const listed = await fittedPrice(db, visit);
     if (listed === null) return { kind: "unpriced" };
     const after = await priceAfterCode(db, visit.appointmentId, listed);
     if (after.price.amount === 0) {
@@ -149,6 +146,12 @@ async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<L
   }
   const written = await current();
   return written === null ? { kind: "code_changing" } : { kind: "link", row: written };
+}
+
+/** What a fitted one visit costs on its day: the hair system made to the client and the package's service visit. */
+async function fittedPrice(db: D1Database, visit: FittedVisit): Promise<Price | null> {
+  const city = await cityOfVisit(db, visit.appointmentId);
+  return visitPriceOf(db, { type: "first_fit", tier: visit.tier, on: visit.day, city, personId: visit.personId });
 }
 
 /**
@@ -188,11 +191,7 @@ async function settleFree(
  * then does; ops record it once it is in the account. A code that leaves nothing to pay settles it, as with a link.
  */
 export async function oweAtVisit(db: D1Database, visit: FittedVisit, now: Date): Promise<LinkSent> {
-  const listed = await priceOf(db, "first_fit", {
-    on: visit.day,
-    tier: visit.tier,
-    city: await cityOfVisit(db, visit.appointmentId),
-  });
+  const listed = await fittedPrice(db, visit);
   if (listed === null) return "unpriced";
   const after = await priceAfterCode(db, visit.appointmentId, listed);
   if (after.price.amount === 0) {

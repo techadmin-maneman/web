@@ -6,7 +6,7 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 export const words = {
   title: "Words",
   narrow: "Find words",
-  columns: { page: "Page", where: "Where", wording: "Wording", actions: "Actions" },
+  columns: { page: "Page", where: "Where", wording: "Wording" },
   /** The site's parts as the Where column names them; any other is its own name in words. */
   places: {
     header: "Header",
@@ -28,29 +28,16 @@ export const words = {
     islandFailed: "When a part fails to load",
   } as Readonly<Record<string, string | undefined>>,
   changed: (by: string, day: string) => `Changed by ${by}, ${day}`,
-  edit: "Edit",
-  editLabel: (where: string) => `Edit ${where}`,
-  history: "History",
-  historyLabel: (where: string) => `History of ${where}`,
+  /** A row's name, read as what pressing it does. */
+  open: (where: string) => `Open ${where}`,
   form: {
-    title: (where: string) => `Edit: ${where}`,
+    code: "In the code",
     wording: "Wording",
-    inCode: (wording: string) => `In the code: ${wording}`,
     keep: (holes: string) => `Keep ${holes}.`,
     longest: (count: number) => `Up to ${String(count)} characters.`,
     toCode: "Back to the code’s wording",
     atOnce: "Sends in these words from the next message.",
     afterApproval: "Changes go live once WhatsApp approves them.",
-    next: "Review",
-    cancel: "Cancel",
-  },
-  check: {
-    title: "Review the change",
-    was: (wording: string) => `Was: ${wording}`,
-    now: (wording: string) => `Now: ${wording}`,
-    send: "Confirm",
-    saving: "Saving…",
-    back: "Back",
   },
   versions: {
     title: (where: string) => `History: ${where}`,
@@ -59,9 +46,7 @@ export const words = {
     by: (by: string, day: string) => `${by}, ${day}`,
     use: "Use",
     useLabel: (day: string) => `Use the wording of ${day}`,
-    close: "Close",
   },
-  done: "Saved.",
   notOnSite: "Not on the site yet",
   /** The code's wording a copy review has not read: a line written or changed since the last one. */
   review: { notReviewed: "Not reviewed" },

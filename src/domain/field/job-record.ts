@@ -1,8 +1,8 @@
 // What a technician's step writes to our own record of field work, in the same batch as the step itself: the visit's
 // status as they arrive, starts and closes it, its visits row at the close, and the pieces. Each write is safe to run again, since a phone replays its outbox.
 
-import { cycleDaysFor, type Cycles } from "../../config/pieces.ts";
-import { addDays, indiaDate } from "../../lib/india-time.ts";
+import { indiaDate, monthsAfter } from "../../lib/india-time.ts";
+import { replaceAfterMonthsFor } from "../booking/packages.ts";
 import type { JobEventKind } from "../../policy/in-job-steps.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
 import {
@@ -20,8 +20,6 @@ export interface LandingStep {
   readonly body: Record<string, unknown>;
   /** The phone's time for the step, within bounds. */
   readonly occurredAt: Date;
-  /** The replacement cycles in force, which a piece's due date is counted by. */
-  readonly cycles: Cycles;
   readonly now: Date;
 }
 
@@ -77,10 +75,10 @@ async function startedAtOf(db: D1Database, appointmentId: string): Promise<strin
 }
 
 /**
- * The piece fitted, due a cycle of its base from the day in India the phone fitted it, each that failed, and the one
+ * The piece fitted, due its package's months from the day in India the phone fitted it, each that failed, and the one
  * it took the place of.
  */
-function pieceStatements(db: D1Database, step: LandingStep): D1PreparedStatement[] {
+async function pieceStatements(db: D1Database, step: LandingStep): Promise<D1PreparedStatement[]> {
   const personId = step.visit.personId;
   const pieces = pieceStepOf(step.body);
   const failed = pieces.failed.map((failure) =>
@@ -96,7 +94,7 @@ function pieceStatements(db: D1Database, step: LandingStep): D1PreparedStatement
     base: pieces.fitted.base,
     supplierLot: pieces.fitted.supplierLot,
     fittedOn,
-    replacementDue: addDays(fittedOn, cycleDaysFor(pieces.fitted.base, step.cycles)),
+    replacementDue: monthsAfter(fittedOn, await replaceAfterMonthsFor(db, step.visit)),
     now: step.now,
   });
   const replaced = replacedPiecesStatement(db, {

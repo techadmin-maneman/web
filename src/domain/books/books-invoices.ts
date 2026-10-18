@@ -24,7 +24,8 @@ import { paymentsTab, type AlertOnce, type ResolveAlert } from "../platform/aler
 import { supplyFor } from "../cities/gst-registrations.ts";
 import { customerFor } from "./books-customers.ts";
 import { codeOnVisit, priceAfterCode } from "../money/discount-code-uses.ts";
-import { priceOf, type Price } from "../money/price-book.ts";
+import type { Price } from "../money/price-book.ts";
+import { visitPriceOf } from "../booking/client-prices.ts";
 import { PAYMENT_HELD, statusIn } from "../../config/statuses.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
@@ -54,6 +55,7 @@ export interface BooksInvoiceOptions {
 /** A visit as its figures are worked out: what it was, of which service, and when. */
 interface PricedVisit {
   readonly id: string;
+  readonly person_id: string;
   readonly type: VisitType | null;
   /** Its service's tier; null where none is known, which is the standard tier's. */
   readonly tier: string | null;
@@ -63,7 +65,6 @@ interface PricedVisit {
 }
 
 interface Visit extends PricedVisit {
-  readonly person_id: string;
   readonly type: VisitType;
   readonly window_start: string;
   readonly window_end: string | null;
@@ -371,13 +372,15 @@ async function soldVisit(db: D1Database, visit: PricedVisit, off: number): Promi
   return { soldFor: price === null ? null : discounted(price, off).amount, paidWithCredit, creditMissing };
 }
 
-/** The price book's price for the visit's own service on the day it happened in India; null where there is none. */
+/** The price book's price for the visit as it is sold, on the day it happened in India; null where there is none. */
 function listPrice(db: D1Database, visit: PricedVisit): Promise<Price | null> {
   if (visit.type === null || visit.window_start === null) return Promise.resolve(null);
-  return priceOf(db, visit.type, {
-    on: indiaDate(new Date(visit.window_start)),
+  return visitPriceOf(db, {
+    type: visit.type,
     tier: visit.tier ?? STANDARD_TIER,
+    on: indiaDate(new Date(visit.window_start)),
     city: visit.service_city,
+    personId: visit.person_id,
   });
 }
 

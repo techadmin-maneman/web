@@ -1,11 +1,12 @@
-// Growth · Words in the console (apps/ops/src/words/; docs/decisions/0126-the-words-page.md): the lines, a line
-// changed once reviewed, and a line put back to the code's wording from its history. Every name is made up.
+// Growth · Words in the console (apps/ops/src/words/; docs/decisions/0126-the-words-page.md): the lines, a line's
+// wording changed where it reads in its record, and a line put back to the code's wording from its history, read in its
+// box before it is kept. Every name is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Word } from "../../apps/ops/src/api.ts";
-import { review } from "../../apps/ops/src/content/common.ts";
+import { EDITING, review } from "../../apps/ops/src/content/common.ts";
 import { words as copy } from "../../apps/ops/src/content/words.ts";
 import { WordsScreen } from "../../apps/ops/src/words/WordsScreen.tsx";
 import { answered } from "./render-hook.ts";
@@ -47,6 +48,7 @@ beforeEach(() => {
   openDialogsAsJsdomCan();
   answers = new Map([
     ["GET /api/words", () => Response.json({ words: [REMINDER, HERO], published: null, messages: "at_once" })],
+    ["GET /api/words/history", () => Response.json({ versions: [] })],
   ]);
   sent = [];
   vi.stubGlobal(
@@ -132,7 +134,7 @@ describe("the Words page", () => {
     expect(found.some((row) => row.includes("Visit reminder"))).toBe(false);
   });
 
-  it("saves a line once its change is reviewed", async () => {
+  it("saves a line's wording where it reads", async () => {
     const reworded = "Hi {{1}}, see you tomorrow.\n{{2}}: {{3}}, {{4}}, with {{5}}.";
     answers.set("POST /api/words", () =>
       Response.json({
@@ -140,16 +142,15 @@ describe("the Words page", () => {
       }),
     );
     await show();
-    await press(copy.editLabel("Visit reminder"));
-    expect(document.body.textContent).toContain(copy.form.inCode(REMINDER.text));
+    await press(copy.open("Visit reminder"));
+    expect(document.body.textContent).toContain(copy.form.code);
     expect(document.body.textContent).toContain(copy.form.atOnce);
+    await press(`${EDITING.change} ${copy.form.wording}`);
     type(reworded);
-    await press(copy.form.next);
-    expect(document.body.textContent).toContain(copy.check.now(reworded));
     expect(sent).toEqual([]);
-    await press(copy.check.send);
+    await press(EDITING.save);
     expect(sent).toEqual([{ key: REMINDER.key, text: reworded }]);
-    expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.done);
+    expect(document.body.querySelector('[role="status"]')?.textContent).toBe(EDITING.saved);
   });
 
   it("says why the words were refused", async () => {
@@ -157,10 +158,10 @@ describe("the Words page", () => {
       Response.json({ error: { code: "invalid_request", fields: ["text.holes"], request_id: "r-1" } }, { status: 400 }),
     );
     await show();
-    await press(copy.editLabel("Visit reminder"));
+    await press(copy.open("Visit reminder"));
+    await press(`${EDITING.change} ${copy.form.wording}`);
     type("Hi {{1}}, see you tomorrow.");
-    await press(copy.form.next);
-    await press(copy.check.send);
+    await press(EDITING.save);
     expect(document.body.querySelector('[role="alert"]')?.textContent).toBe(copy.errors.holes);
     // Said on the box it names, which is marked as refused and described by it.
     const box = document.body.querySelector("textarea");
@@ -186,12 +187,12 @@ describe("the Words page", () => {
       Response.json({ word: { ...HERO, now: HERO.text, changed: null, on_site: false } }),
     );
     await show();
-    await press(copy.historyLabel("Top of the page · Title"));
+    await press(copy.open("Top of the page · Title"));
     expect(document.body.textContent).toContain(copy.versions.by("growth@maneman.test", "Mon 5 Oct"));
     await press(copy.form.toCode);
     expect(document.body.querySelector("textarea")?.value).toBe(HERO.text);
-    await press(copy.form.next);
-    await press(copy.check.send);
+    expect(sent).toEqual([]);
+    await press(EDITING.save);
     expect(sent).toEqual([{ key: HERO.key, text: null }]);
   });
 

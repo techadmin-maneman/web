@@ -1,4 +1,4 @@
-/* Partners: each partner a row with its link, its terms and what came through it, the actions at the row's end. */
+/* Partners: each partner a row with its link, its terms and what came through it, its name opening its record. */
 
 .table {
   min-width: var(--ops-table-min);
@@ -24,13 +24,4 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-align: right;
-}
-
-.actions {
-  white-space: nowrap;
-  text-align: right;
-}
-
-.actions button:first-child {
-  margin-left: 0;
 }

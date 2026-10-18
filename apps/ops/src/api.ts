@@ -109,13 +109,10 @@ export type TechnicianPay = Body<paths["/api/technician-pay"]["get"]>;
 export type PayRate = TechnicianPay["rates"][number];
 export type PayKind = PayRate["kind"];
 export type PayRateSet = Sent<paths["/api/technician-pay/rates"]["post"]>;
-export type PriceCorrection = Sent<paths["/api/prices/correct"]["post"]>;
 /** The services clients book, kind by kind, each with its prices (docs/decisions/0085-services-ops-can-edit.md). */
 export type ServiceCatalogue = Body<paths["/api/services"]["get"]>;
 export type OpsService = ServiceCatalogue["services"][number];
-export type LateFee = ServiceCatalogue["late_fees"][number];
 export type Kind = OpsService["kind"];
-export type ServiceAdd = Sent<paths["/api/services"]["post"]>;
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
 export type NewPincode = Sent<paths["/api/pincodes"]["post"]>;

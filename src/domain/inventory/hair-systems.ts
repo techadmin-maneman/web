@@ -21,7 +21,7 @@ export interface HairSystemSpec {
   readonly densityPercent: number;
 }
 
-interface SpecRow {
+export interface SpecRow {
   readonly code: string;
   readonly product: string;
   readonly base_width_in: number;
@@ -31,10 +31,10 @@ interface SpecRow {
   readonly density_percent: number;
 }
 
-const SPEC_COLUMNS =
+export const SPEC_COLUMNS =
   "h.code, h.product, h.base_width_in, h.base_length_in, h.colour, h.grey_percent, h.density_percent";
 
-const specOf = (row: SpecRow): HairSystemSpec => ({
+export const specOf = (row: SpecRow): HairSystemSpec => ({
   product: row.product,
   baseWidthIn: row.base_width_in,
   baseLengthIn: row.base_length_in,

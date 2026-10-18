@@ -1,7 +1,9 @@
 // Settings › Window times: the day's eight half-slot starts and its end, from which the morning, afternoon and evening
 // are read (docs/decisions/0102-window-times.md). A change applies from a day nothing is booked or bookable on, which
-// the API names as the earliest, and is kept for good, so the list of changes only grows.
+// the API names as the earliest, and is kept for good, so the list of changes only grows. A change is made beside the
+// page, each window's hours read beneath its boxes as they are typed, before it is set.
 
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -14,14 +16,15 @@ import { windowTimesOf } from "@rules/policy/slot-times.ts";
 import { WINDOW_SLOT_MAP } from "@rules/config/scheduling.ts";
 import { useState } from "react";
 import type { SlotTimes } from "../api.ts";
-import { CheckLine } from "../components/CheckPanel.tsx";
+import { AddForm } from "../components/AddForm.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import form from "../components/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { settingsApi } from "./settings-api.ts";
+import styles from "./window-times.module.css";
 
 const copy = settings.windowTimes;
 const WINDOWS = ["morning", "afternoon", "evening"] as const;
@@ -99,47 +102,28 @@ function TimeBoxes({ draft, onDraft }: { draft: Draft; onDraft: (draft: Draft) =
   );
 }
 
-/** A change of the times, from a day the API allows, checked against the windows it changes. */
-function ChangeForm({ times, said, onSet }: { times: SlotTimes; said: string | null; onSet: () => void }) {
+/** A change of the times, from a day the API allows, each window's hours read beside what they are now. */
+function ChangeForm(props: { times: SlotTimes; onSet: () => void; onCancel: () => void }) {
+  const { times } = props;
   const [draft, setDraft] = useState<Draft>({
     from: times.earliest,
     starts: times.in_force.unit_starts,
     end: times.in_force.day_end,
   });
-  const steps = useSteps(
-    async () =>
-      sentOf(
-        await settingsApi.setSlotTimes({
-          applies_from: draft.from,
-          unit_starts: [...draft.starts],
-          day_end: draft.end,
-        }),
-        () => ({}),
-      ),
-    onSet,
-  );
-  const edit = (next: Draft) => {
-    setDraft(next);
-    steps.edit();
-  };
   const was = hoursOf({ unitStarts: times.in_force.unit_starts, dayEnd: times.in_force.day_end });
   const now = hoursOf({ unitStarts: draft.starts, dayEnd: draft.end });
-  const ready = draft.from !== "" && draft.starts.every((start) => start !== "") && draft.end !== "";
+  const whole = draft.from !== "" && draft.starts.every((start) => start !== "") && draft.end !== "";
   return (
-    <SettingForm
+    <AddForm
       title={copy.formTitle}
-      steps={steps}
-      ready={ready}
+      words={copy}
       errors={copy.errors}
-      onCancel={null}
-      said={said}
       boxes={["applies_from", "day_end"]}
-      checking={[
-        ...WINDOWS.map((window) => copy.change(copy.window[window], was(window), now(window))),
-        copy.from(longDate(draft.from)),
-      ].map((line) => (
-        <CheckLine key={line}>{line}</CheckLine>
-      ))}
+      send={() =>
+        settingsApi.setSlotTimes({ applies_from: draft.from, unit_starts: [...draft.starts], day_end: draft.end })
+      }
+      onAdded={props.onSet}
+      onCancel={props.onCancel}
     >
       <Field
         label={copy.appliesFrom}
@@ -153,13 +137,21 @@ function ChangeForm({ times, said, onSet }: { times: SlotTimes; said: string | n
             min={times.earliest}
             value={draft.from}
             onChange={(event) => {
-              edit({ ...draft, from: event.target.value });
+              setDraft({ ...draft, from: event.target.value });
             }}
           />
         )}
       </Field>
-      <TimeBoxes draft={draft} onDraft={edit} />
-    </SettingForm>
+      <TimeBoxes draft={draft} onDraft={setDraft} />
+      {whole && (
+        <ul className={styles.summary} aria-label={copy.summary}>
+          {WINDOWS.map((window) => (
+            <li key={window}>{copy.change(copy.window[window], was(window), now(window))}</li>
+          ))}
+          <li>{copy.from(longDate(draft.from))}</li>
+        </ul>
+      )}
+    </AddForm>
   );
 }
 
@@ -212,18 +204,34 @@ export function WindowTimes() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const times = loaded.value;
   return (
-    <Panel titleId="window-times" title={copy.title} padded>
+    <Panel
+      titleId="window-times"
+      title={copy.title}
+      padded
+      actions={
+        access.mayCall("POST /api/slot-times") && (
+          <DrawerButton label={copy.formTitle}>
+            {(close) => (
+              <ChangeForm
+                key={times.earliest}
+                times={times}
+                onSet={() => {
+                  setSaid(copy.set);
+                  close();
+                  retry();
+                }}
+                onCancel={close}
+              />
+            )}
+          </DrawerButton>
+        )
+      }
+    >
       <InForce times={times} />
-      {access.mayCall("POST /api/slot-times") && (
-        <ChangeForm
-          key={times.earliest}
-          times={times}
-          said={said}
-          onSet={() => {
-            setSaid(copy.set);
-            retry();
-          }}
-        />
+      {said !== null && (
+        <InlineMessage tone="saved" className={form.saved}>
+          {said}
+        </InlineMessage>
       )}
       <h3 className={form.ruleTitle}>{copy.history}</h3>
       <Changes

@@ -1,117 +1,122 @@
-// Our cities: each with its state, its zone and whether we serve it, changed or added in the form beneath.
+// Our cities: each with its state, its zone and whether we serve it. A row opens its record beside the list, where
+// each value, and each rule the city sets for itself, changes where it reads (docs/decisions/0212-editing-in-place.md).
 
-import { RowButton } from "@maneman/ui/Button";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { TextButton } from "@maneman/ui/TextLink";
 import { useState } from "react";
-import { cities } from "../content.ts";
-import { useAccess } from "../lib/access.ts";
-import form from "../components/forms.module.css";
-import type { Cities, City } from "./types.ts";
-import { CityForm } from "./CityForm.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
 import { DrawerButton } from "../components/DrawerButton.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import form from "../components/forms.module.css";
+import { cities as words } from "../content/cities.ts";
+import { useAccess } from "../lib/access.ts";
+import { AddCity } from "./CityForm.tsx";
+import { CityRecord } from "./CityRecord.tsx";
+import type { Cities, City } from "./types.ts";
 
-const copy = cities.list;
+const copy = words.list;
 
 const statusOf = (city: City): string => {
   if (!city.active) return copy.hidden;
   return city.served ? copy.served : copy.notServed;
 };
 
-/** Adding a city, from the list's head. */
-function AddCity({ zones, onSaved }: { zones: readonly string[]; onSaved: (said: string) => void }) {
+function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) => void }) {
   return (
-    <DrawerButton label={copy.add}>
-      {(close) => (
-        <CityForm
-          city={null}
-          zones={zones}
-          onSaved={(words) => {
-            onSaved(words);
-            close();
-          }}
-          onCancel={close}
-        />
-      )}
-    </DrawerButton>
+    <Table>
+      <thead>
+        <tr>
+          {copy.columns.map((column) => (
+            <th key={column} scope="col">
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {cities.cities.map((city) => (
+          <tr key={city.name}>
+            <RowHead>
+              <TextButton
+                compact
+                aria-label={copy.open(city.name)}
+                onClick={() => {
+                  onOpen(city.name);
+                }}
+              >
+                {city.name}
+              </TextButton>
+            </RowHead>
+            <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
+            <td>{city.zone ?? copy.noZone}</td>
+            <td>{statusOf(city)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
   );
 }
 
-export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
-  const mayChange = useAccess().mayCall("PATCH /api/cities/{name}");
+export function CityList({ cities, reread }: { cities: Cities; reread: () => Promise<void> }) {
   const mayAdd = useAccess().mayCall("POST /api/cities");
-  const [changingName, setChangingName] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  /** The name a city open had before it was renamed, until the list is read again under the new one. */
+  const [was, setWas] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
-  const changing = cities.cities.find((city) => city.name === changingName);
-  const saved = (words: string) => {
-    setSaid(words);
-    setChangingName(null);
-    onSaved();
-  };
+  const opened = cities.cities.find((city) => city.name === open) ?? cities.cities.find((city) => city.name === was);
   return (
     <Panel
       titleId="cities"
       title={copy.panel}
       count={cities.cities.length}
-      actions={mayAdd && <AddCity zones={cities.zones} onSaved={saved} />}
+      actions={
+        mayAdd && (
+          <DrawerButton label={copy.add}>
+            {(close) => (
+              <AddCity
+                zones={cities.zones}
+                onAdded={async () => {
+                  setSaid(words.form.added);
+                  close();
+                  await reread();
+                }}
+                onCancel={close}
+              />
+            )}
+          </DrawerButton>
+        )
+      }
     >
-      <Table controls>
-        <thead>
-          <tr>
-            {copy.columns.map((column) => (
-              <th key={column} scope="col">
-                {column}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {cities.cities.map((city) => (
-            <tr key={city.name}>
-              <RowHead>{city.name}</RowHead>
-              <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
-              <td>{city.zone ?? copy.noZone}</td>
-              <td>{statusOf(city)}</td>
-              <td>
-                {mayChange && (
-                  <RowButton
-                    beside
-                    aria-label={copy.changeLabel(city.name)}
-                    onClick={() => {
-                      setSaid(null);
-                      setChangingName(city.name);
-                    }}
-                  >
-                    {copy.change}
-                  </RowButton>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      <CityTable
+        cities={cities}
+        onOpen={(name) => {
+          setSaid(null);
+          setWas(null);
+          setOpen(name);
+        }}
+      />
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
-      {changing !== undefined && (
+      {opened !== undefined && (
         <FormDrawer
-          title={changing.name}
+          title={opened.name}
           onClose={() => {
-            setChangingName(null);
+            setOpen(null);
+            setWas(null);
           }}
         >
-          <CityForm
-            key={changing.name}
-            city={changing}
-            zones={cities.zones}
-            onSaved={saved}
-            onCancel={() => {
-              setChangingName(null);
+          <CityRecord
+            city={opened}
+            cities={cities}
+            reread={reread}
+            onRenamed={(name) => {
+              setWas(opened.name);
+              setOpen(name);
             }}
           />
         </FormDrawer>

@@ -38,7 +38,7 @@ export const RULE_GROUPS = [
       "move_proposal_hours",
     ],
   },
-  { id: "reminders", rules: ["reminder_hour", "piece_cycle_days", "credit_reminder_days", "check_in_days"] },
+  { id: "reminders", rules: ["reminder_hour", "credit_reminder_days", "check_in_days"] },
   { id: "referrals", rules: ["referral_reward", "referral_monthly_cap"] },
   { id: "tryon", rules: ["tryon_look_days"] },
   { id: "care", rules: ["care_hours", "remedy_limit"] },

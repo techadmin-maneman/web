@@ -72,8 +72,8 @@ describe("the piece", () => {
         replacement_due_at: "2026-09-21",
         failure_reason: "Adhesive lifted at the front",
       },
-      // Fitted on the 21st in India, whatever day the write arrived; due 180 days on.
-      { piece_code: "MM-STD-5520-A", fitted_at: "2026-09-21", replacement_due_at: "2027-03-20", failure_reason: null },
+      // Fitted on the 21st in India, whatever day the write arrived; due its package's six months on.
+      { piece_code: "MM-STD-5520-A", fitted_at: "2026-09-21", replacement_due_at: "2027-03-21", failure_reason: null },
     ]);
   });
 

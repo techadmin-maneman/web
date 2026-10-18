@@ -1,21 +1,24 @@
-// One list of the job sheet as ops edit it: a checklist or the partial reasons (ADR 0087). Items are renamed, moved,
-// taken off or put back, each keeping its code, so a phone holding the old list still sends what the API understands.
-// A checklist's item also has the words the client's record shows, empty for a step only the technician needs. The
-// check shows what changes first (ADR 0071).
+// One list of the job sheet (ADR 0087): its items' words change where they read, and its own buttons move, take off or
+// put back an item, each change saved at once (ADR 0212). Every item keeps its code, so a phone holding the old list
+// still sends what the API understands. A checklist's item also has the words the client's record shows, empty for a
+// step only the technician needs.
 
-import { CheckLine } from "../components/CheckPanel.tsx";
-import { TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
+import { EditableRow } from "@maneman/ui/EditableRow";
+import { Field, TextInput } from "@maneman/ui/Field";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
-import { useRef, useState } from "react";
+import { errorText } from "@maneman/web-kit/refusal";
+import { useState } from "react";
 import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts";
+import { AddForm } from "../components/AddForm.tsx";
+import { Refusal } from "../components/Refusal.tsx";
+import form from "../components/forms.module.css";
+import { EDITING } from "../content/common.ts";
 import { settings } from "../content/settings.ts";
 import { whoWords } from "../lib/who.ts";
-import { review } from "../content/common.ts";
 import styles from "./list-editor.module.css";
-import form from "../components/forms.module.css";
-import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
-import { FormActions } from "../components/FormActions.tsx";
 
 const copy = settings.jobSheet;
 
@@ -32,155 +35,20 @@ type EditedList = Pick<JobSheetList, "set_by" | "set_at"> & {
   readonly retired: readonly ListItem[];
 };
 
-/**
- * An item as it is edited: a new one has no code yet, and every one a key React can follow as it moves. A
- * checklist's has the client's words, empty for none; a list of reasons has none to give.
- */
+/** An item as it is sent: a new one has no code yet. */
 interface Line {
-  readonly key: string;
   readonly code: string | null;
   readonly label: string;
-  readonly client: string | null;
-}
-
-const lineOf = (item: ListItem, withClient: boolean): Line => ({
-  key: item.code,
-  code: item.code,
-  label: item.label,
-  client: withClient ? (item.client ?? "") : null,
-});
-
-const linesOf = (list: EditedList, withClient: boolean): Line[] => list.items.map((item) => lineOf(item, withClient));
-
-/** What an item's client words become, where they change: "" for none. */
-function clientChange(line: Line, before: ListItem | undefined): string[] {
-  if (line.client === null) return [];
-  const now = line.client.trim();
-  if (before !== undefined && (before.client ?? "") === now) return [];
-  const name = line.label.trim();
-  return [now === "" ? copy.confirm.clientNone(name) : copy.confirm.clientReads(name, now)];
-}
-
-/** What the change is: each item added, renamed, reworded for the client or taken off, and whether the order moves. */
-function changesOf(list: EditedList, lines: readonly Line[]): string[] {
-  const { confirm } = copy;
-  const was = new Map(list.items.map((item) => [item.code, item]));
-  const kept = new Set(lines.flatMap((line) => (line.code === null ? [] : [line.code])));
-  const changes = [
-    ...lines.flatMap((line) => {
-      const before = line.code === null ? undefined : was.get(line.code);
-      const label = line.label.trim();
-      if (before === undefined) return [confirm.added(label), ...clientChange(line, before)];
-      const renamed = before.label === label ? [] : [confirm.renamed(before.label, label)];
-      return [...renamed, ...clientChange(line, before)];
-    }),
-    ...list.items.filter((item) => !kept.has(item.code)).map((item) => confirm.takenOff(item.label)),
-  ];
-  const order = lines.flatMap((line) => (line.code !== null && was.has(line.code) ? [line.code] : []));
-  const before = list.items.map((item) => item.code).filter((code) => kept.has(code));
-  if (order.join() !== before.join()) changes.push(confirm.moved);
-  return changes;
-}
-
-interface Props {
-  readonly id: string;
-  readonly title: string;
-  readonly list: EditedList;
-  readonly most: number;
-  readonly longest: number;
-  readonly itemLabel: (position: number) => string;
-  /** A checklist's: the name of an item's box for the client's words. A list without them has none. */
-  readonly clientLabel?: (position: number) => string;
-  readonly addLabel: string;
-  /** The list's write, which the form's steps send once its change is confirmed. */
-  readonly send: (items: JobSheetItemSent[]) => Promise<Answer<JobSheet>>;
-  /** This list, out of the sheet the save answers with. */
-  readonly pick: (sheet: JobSheet) => EditedList;
-  readonly onSaved: (sheet: JobSheet) => void;
-}
-
-function Item({
-  line,
-  index,
-  count,
-  id,
-  props,
-  onLabel,
-  onClient,
-  onMove,
-  onRemove,
-}: {
-  line: Line;
-  index: number;
-  count: number;
-  id: string;
-  props: Props;
-  onLabel: (label: string) => void;
-  onClient: (client: string) => void;
-  onMove: (to: number) => void;
-  onRemove: () => void;
-}) {
-  const name = line.label.trim() === "" ? copy.unnamed : line.label.trim();
-  return (
-    <li className={styles.item}>
-      <TextInput
-        className={styles.label}
-        id={`${id}-${line.key}`}
-        maxLength={props.longest}
-        aria-label={props.itemLabel(index + 1)}
-        value={line.label}
-        onChange={(event) => {
-          onLabel(event.target.value);
-        }}
-      />
-      <Button
-        variant="outline"
-        size="small"
-        aria-label={copy.up(name)}
-        disabled={index === 0}
-        onClick={() => {
-          onMove(index - 1);
-        }}
-      >
-        {copy.upButton}
-      </Button>
-      <Button
-        variant="outline"
-        size="small"
-        aria-label={copy.down(name)}
-        disabled={index === count - 1}
-        onClick={() => {
-          onMove(index + 1);
-        }}
-      >
-        {copy.downButton}
-      </Button>
-      <Button variant="outline" size="small" aria-label={copy.remove(name)} onClick={onRemove}>
-        {copy.removeButton}
-      </Button>
-      {line.client !== null && props.clientLabel !== undefined && (
-        <TextInput
-          className={styles.client}
-          id={`${id}-${line.key}-client`}
-          maxLength={props.longest}
-          aria-label={props.clientLabel(index + 1)}
-          placeholder={copy.clientNone}
-          value={line.client}
-          onChange={(event) => {
-            onClient(event.target.value);
-          }}
-        />
-      )}
-    </li>
-  );
+  readonly client?: string | null;
 }
 
 /** What a save sends: each item by its code where it has one, a checklist's with the client's words or none. */
-const itemsSent = (lines: readonly Line[]): JobSheetItemSent[] =>
+const itemsSent = (lines: readonly Line[], withClient: boolean): JobSheetItemSent[] =>
   lines.map((line) => {
     const words = line.code === null ? { label: line.label.trim() } : { code: line.code, label: line.label.trim() };
-    if (line.client === null) return words;
-    return { ...words, client: line.client.trim() === "" ? null : line.client.trim() };
+    if (!withClient) return words;
+    const client = (line.client ?? "").trim();
+    return { ...words, client: client === "" ? null : client };
   });
 
 const setLineOf = (list: EditedList): string =>
@@ -205,117 +73,167 @@ export function ListRead({ title, list }: { title: string; list: EditedList }) {
   );
 }
 
-export function ListEditor(props: Props) {
-  const { id, title, list, most, longest } = props;
-  const withClient = props.clientLabel !== undefined;
-  const [lines, setLines] = useState<Line[]>(() => linesOf(list, withClient));
-  const [saved, setSaved] = useState(false);
-  const steps = useSteps(
-    async () => sentOf(await props.send(itemsSent(lines)), (sheet) => ({ sheet })),
-    (sent) => {
-      // The new items have their codes now, so a second save names them rather than adding them again.
-      setLines(linesOf(props.pick(sent.sheet), withClient));
-      setSaved(true);
-      steps.edit();
-      props.onSaved(sent.sheet);
-    },
-  );
-  const added = useRef(0);
-  const change = (next: Line[]) => {
-    setLines(next);
-    setSaved(false);
-    steps.edit();
-  };
-  const labels = lines.map((line) => line.label.trim().toLowerCase());
-  const ready =
-    lines.length > 0 &&
-    lines.length <= most &&
-    labels.every((label, index) => label !== "" && label.length <= longest && labels.indexOf(label) === index) &&
-    lines.every((line) => (line.client?.trim().length ?? 0) <= longest);
-  // What is off the list: retired before, or taken off in this draft, each able to go back on.
-  const off = [...list.retired, ...list.items].filter((item) => !lines.some((line) => line.code === item.code));
-  const changes = changesOf(list, lines);
+interface Props {
+  readonly id: string;
+  readonly title: string;
+  readonly list: EditedList;
+  readonly most: number;
+  readonly longest: number;
+  readonly itemLabel: (position: number) => string;
+  /** A checklist's: the name of an item's box for the client's words. A list without them has none. */
+  readonly clientLabel?: (position: number) => string;
+  readonly addLabel: string;
+  /** The list's write, which each change sends whole. */
+  readonly send: (items: JobSheetItemSent[]) => Promise<Answer<JobSheet>>;
+  readonly onSaved: (sheet: JobSheet) => void;
+}
 
+/** An item's words: the technician's, and on a checklist the client's beneath them. */
+interface Words {
+  readonly label: string;
+  readonly client: string;
+}
+
+function ItemRow(props: {
+  readonly item: ListItem;
+  readonly position: number;
+  readonly editor: Props;
+  readonly save: (words: Words) => Promise<string | null>;
+}) {
+  const { item, position, editor } = props;
+  const withClient = editor.clientLabel !== undefined;
   return (
-    <SettingForm
-      said={saved ? copy.saved : null}
-      title={title}
-      steps={steps}
-      ready={ready}
-      errors={{
-        ...copy.errors,
-        items: copy.limits.items(most),
-        label: copy.limits.label(longest),
-        client: copy.limits.client(longest),
-      }}
-      onCancel={null}
-      sendable={changes.length > 0}
-      above={
+    <EditableRow<Words>
+      className={styles.row}
+      label={editor.itemLabel(position)}
+      words={EDITING}
+      value={
         <>
-          <p className={form.set}>{setLineOf(list)}</p>
-          {withClient && <p className={form.set}>{copy.clientNote}</p>}
+          {item.label}
+          {withClient && <span className={styles.clientWords}>{item.client ?? copy.clientNone}</span>}
         </>
       }
-      checking={(changes.length === 0 ? [review.nothing] : changes).map((line) => (
-        <CheckLine key={line}>{line}</CheckLine>
-      ))}
+      start={() => ({ label: item.label, client: item.client ?? "" })}
+      save={props.save}
     >
-      <ol className={styles.items}>
-        {lines.map((line, index) => (
-          <Item
-            key={line.key}
-            line={line}
-            index={index}
-            count={lines.length}
-            id={id}
-            props={props}
-            onLabel={(label) => {
-              change(lines.map((each) => (each.key === line.key ? { ...each, label } : each)));
-            }}
-            onClient={(client) => {
-              change(lines.map((each) => (each.key === line.key ? { ...each, client } : each)));
-            }}
-            onMove={(to) => {
-              const next = lines.filter((each) => each.key !== line.key);
-              next.splice(to, 0, line);
-              change(next);
-            }}
-            onRemove={() => {
-              change(lines.filter((each) => each.key !== line.key));
+      {(control, draft, edit) => (
+        <span className={styles.boxes}>
+          <TextInput
+            {...control}
+            width="area"
+            maxLength={editor.longest}
+            value={draft.label}
+            onChange={(event) => {
+              edit({ ...draft, label: event.target.value });
             }}
           />
-        ))}
-      </ol>
-      <FormActions>
+          {editor.clientLabel !== undefined && (
+            <TextInput
+              width="area"
+              maxLength={editor.longest}
+              aria-label={editor.clientLabel(position)}
+              placeholder={copy.clientNone}
+              value={draft.client}
+              onChange={(event) => {
+                edit({ ...draft, client: event.target.value });
+              }}
+            />
+          )}
+        </span>
+      )}
+    </EditableRow>
+  );
+}
+
+/** A new item, at the list's foot. */
+function AddItem(props: {
+  readonly editor: Props;
+  readonly add: (words: Words) => ReturnType<Props["send"]>;
+  readonly onDone: () => void;
+}) {
+  const { editor } = props;
+  const [words, setWords] = useState<Words>({ label: "", client: "" });
+  return (
+    <AddForm
+      title={editor.addLabel}
+      words={{ add: copy.addButton, cancel: copy.cancel }}
+      errors={copy.errors}
+      boxes={["label", "client"]}
+      send={() => props.add(words)}
+      onAdded={props.onDone}
+      onCancel={props.onDone}
+    >
+      <div className={form.fields}>
+        <Field label={editor.itemLabel(editor.list.items.length + 1)} className={form.field} box="label">
+          {(control) => (
+            <TextInput
+              {...control}
+              width="area"
+              maxLength={editor.longest}
+              value={words.label}
+              onChange={(event) => {
+                setWords({ ...words, label: event.target.value });
+              }}
+            />
+          )}
+        </Field>
+        {editor.clientLabel !== undefined && (
+          <Field label={editor.clientLabel(editor.list.items.length + 1)} className={form.field} box="client">
+            {(control) => (
+              <TextInput
+                {...control}
+                width="area"
+                maxLength={editor.longest}
+                placeholder={copy.clientNone}
+                value={words.client}
+                onChange={(event) => {
+                  setWords({ ...words, client: event.target.value });
+                }}
+              />
+            )}
+          </Field>
+        )}
+      </div>
+    </AddForm>
+  );
+}
+
+/** An item's own buttons: up, down, and off the list. */
+function Moves(props: {
+  name: string;
+  first: boolean;
+  last: boolean;
+  busy: boolean;
+  onUp: () => void;
+  onDown: () => void;
+  onRemove: () => void;
+}) {
+  const buttons = [
+    [copy.up(props.name), copy.upButton, props.first, props.onUp],
+    [copy.down(props.name), copy.downButton, props.last, props.onDown],
+    [copy.remove(props.name), copy.removeButton, false, props.onRemove],
+  ] as const;
+  return (
+    <span className={styles.moves}>
+      {buttons.map(([label, words, shut, onPress]) => (
         <Button
-          variant="outline"
+          key={words}
+          variant="quiet"
           size="small"
           narrow
-          disabled={lines.length >= most}
-          onClick={() => {
-            added.current += 1;
-            const key = `new-${String(added.current)}`;
-            change([...lines, { key, code: null, label: "", client: withClient ? "" : null }]);
-          }}
+          aria-label={label}
+          disabled={shut || props.busy}
+          onClick={onPress}
         >
-          {props.addLabel}
+          {words}
         </Button>
-      </FormActions>
-      {off.length > 0 && (
-        <Removed
-          off={off}
-          full={lines.length >= most}
-          onPutBack={(item) => {
-            change([...lines, lineOf(item, withClient)]);
-          }}
-        />
-      )}
-    </SettingForm>
+      ))}
+    </span>
   );
 }
 
 /** What is off the list, each able to go back on while there is room. */
-function Removed(props: { off: readonly ListItem[]; full: boolean; onPutBack: (item: ListItem) => void }) {
+function Removed(props: { off: readonly ListItem[]; shut: boolean; onPutBack: (item: ListItem) => void }) {
   return (
     <div className={styles.retired}>
       <p className={styles.retiredTitle}>{copy.retired}</p>
@@ -327,7 +245,7 @@ function Removed(props: { off: readonly ListItem[]; full: boolean; onPutBack: (i
               variant="outline"
               size="small"
               aria-label={copy.putBack(item.label)}
-              disabled={props.full}
+              disabled={props.shut}
               onClick={() => {
                 props.onPutBack(item);
               }}
@@ -338,5 +256,132 @@ function Removed(props: { off: readonly ListItem[]; full: boolean; onPutBack: (i
         ))}
       </ul>
     </div>
+  );
+}
+
+/** The list's writes: each sends it whole; a move, a removal or a putting back says what it came to beneath it. */
+function useListSaves(props: Props) {
+  const [said, setSaid] = useState<string | null>(null);
+  const [refused, setRefused] = useState<string | null>(null);
+  const [busy, once] = useOneAtATime();
+  const errors = {
+    ...copy.errors,
+    items: copy.limits.items(props.most),
+    label: copy.limits.label(props.longest),
+    client: copy.limits.client(props.longest),
+  };
+  const send = async (next: readonly Line[]) => {
+    const answer = await props.send(itemsSent(next, props.clientLabel !== undefined));
+    if (answer.ok) props.onSaved(answer.body);
+    return answer;
+  };
+  const press = (next: readonly Line[]) =>
+    once(async () => {
+      setSaid(null);
+      setRefused(null);
+      const answer = await send(next);
+      if (answer.ok) setSaid(copy.saved);
+      else setRefused(errorText(errors, answer));
+    });
+  return { said, refused, busy, errors, send, press };
+}
+
+/** Another item: its button, then its boxes in place, while the list has room. */
+function MoreItems(props: { editor: Props; add: (words: Words) => ReturnType<Props["send"]> }) {
+  const [adding, setAdding] = useState(false);
+  if (adding) {
+    return (
+      <AddItem
+        editor={props.editor}
+        add={props.add}
+        onDone={() => {
+          setAdding(false);
+        }}
+      />
+    );
+  }
+  return (
+    <div className={styles.add}>
+      <Button
+        variant="outline"
+        size="small"
+        narrow
+        disabled={props.editor.list.items.length >= props.editor.most}
+        onClick={() => {
+          setAdding(true);
+        }}
+      >
+        {props.editor.addLabel}
+      </Button>
+    </div>
+  );
+}
+
+/** The list with one line moved from one place to another. */
+function moved(lines: readonly Line[], from: number, to: number): Line[] {
+  const next = [...lines];
+  const [line] = next.splice(from, 1);
+  if (line !== undefined) next.splice(to, 0, line);
+  return next;
+}
+
+export function ListEditor(props: Props) {
+  const { title, list, most } = props;
+  const withClient = props.clientLabel !== undefined;
+  const { said, refused, busy, errors, send, press } = useListSaves(props);
+  const lines: readonly Line[] = list.items;
+  const off = list.retired;
+  return (
+    <section className={form.group} aria-labelledby={`${props.id}-title`}>
+      <h3 id={`${props.id}-title`} className={form.ruleTitle}>
+        {title}
+      </h3>
+      <p className={form.set}>{setLineOf(list)}</p>
+      {withClient && <p className={form.set}>{copy.clientNote}</p>}
+      <ol className={styles.items}>
+        {list.items.map((item, index) => {
+          const name = item.label;
+          return (
+            <li className={styles.item} key={item.code}>
+              <ItemRow
+                item={item}
+                position={index + 1}
+                editor={props}
+                save={async (words) => {
+                  const answer = await send(
+                    lines.map((line, at) =>
+                      at === index ? { ...line, label: words.label, client: words.client } : line,
+                    ),
+                  );
+                  return answer.ok ? null : errorText(errors, answer);
+                }}
+              />
+              <Moves
+                name={name}
+                first={index === 0}
+                last={index === lines.length - 1}
+                busy={busy}
+                onUp={() => void press(moved(lines, index, index - 1))}
+                onDown={() => void press(moved(lines, index, index + 1))}
+                onRemove={() => void press(lines.filter((_, at) => at !== index))}
+              />
+            </li>
+          );
+        })}
+      </ol>
+      {said !== null && (
+        <InlineMessage tone="saved" className={form.saved}>
+          {said}
+        </InlineMessage>
+      )}
+      {refused !== null && <Refusal className={form.error} said={refused} />}
+      <MoreItems
+        editor={props}
+        add={(words) => send([...lines, { code: null, label: words.label, client: words.client }])}
+      />
+      {off.length > 0 && (
+        <Removed off={off} shut={lines.length >= most || busy} onPutBack={(item) => void press([...lines, item])} />
+      )}
+    </section>
   );
 }

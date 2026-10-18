@@ -1,24 +1,23 @@
 // Saved answers (docs/decisions/0141-quick-replies.md): picked in a chat and filled in with the client's first name and
-// next visit, and kept on the Messages page by a Customer Care manager.
+// next visit, and kept on the Messages page by a Customer Care manager, who adds them and retires them, asked once.
 
-import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextArea, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
-import { boxError, type Failure } from "@maneman/web-kit/refusal";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import { api, isErased } from "../api.ts";
+import { AddForm } from "../components/AddForm.tsx";
+import { DeleteAction } from "../components/DeleteAction.tsx";
 import { care } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
-import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi } from "./care-api.ts";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 import { PageActions } from "../components/PageHead.tsx";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
-import { FormActions } from "../components/FormActions.tsx";
 
 const copy = care.quick;
 
@@ -74,25 +73,21 @@ export function QuickReplyPick(props: {
   );
 }
 
-function AddForm({ onAdded }: { onAdded: () => void }) {
+function AddReply({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => void }) {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
-  const [failure, setFailure] = useState<Failure | null>(null);
-  const add = async () => {
-    setFailure(null);
-    const answer = await careApi.addQuickReply(title.trim(), text.trim());
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setTitle("");
-    setText("");
-    onAdded();
-  };
   return (
-    <div className={styles.teamForm}>
+    <AddForm
+      title={copy.addOne}
+      words={copy}
+      errors={copy.errors}
+      boxes={["title", "text"]}
+      send={() => careApi.addQuickReply(title.trim(), text.trim())}
+      onAdded={onAdded}
+      onCancel={onCancel}
+    >
       <div className={form.fields}>
-        <Field label={copy.title} error={boxError(copy.errors, failure, "title")}>
+        <Field label={copy.title} className={form.field} box="title">
           {(control) => (
             <TextInput
               {...control}
@@ -104,7 +99,7 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
             />
           )}
         </Field>
-        <Field label={copy.text} className={styles.reply} error={boxError(copy.errors, failure, "text")}>
+        <Field label={copy.text} className={styles.reply} box="text">
           {(control) => (
             <TextArea
               {...control}
@@ -120,18 +115,7 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
         </Field>
       </div>
       <Note>{copy.holes}</Note>
-      <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          disabled={title.trim() === "" || text.trim() === ""}
-          onClick={() => void add()}
-        >
-          {copy.add}
-        </Button>
-      </FormActions>
-      <Refused failed={failure} errors={copy.errors} boxes={["title", "text"]} />
-    </div>
+    </AddForm>
   );
 }
 
@@ -153,13 +137,14 @@ export function QuickRepliesPanel() {
             <li key={reply.id}>
               <span className={styles.who}>{reply.title}</span> · {reply.text}{" "}
               {mayKeep && (
-                <RowButton
-                  beside
-                  aria-label={copy.retireLabel(reply.title)}
-                  onClick={() => void careApi.retireQuickReply(reply.id).then(retry)}
-                >
-                  {copy.retire}
-                </RowButton>
+                <DeleteAction
+                  name={reply.title}
+                  tone="danger"
+                  words={copy.retiring}
+                  send={() => careApi.retireQuickReply(reply.id)}
+                  refusal={(code) => errorText(copy.errors, { code })}
+                  onDeleted={retry}
+                />
               )}
             </li>
           ))}
@@ -169,11 +154,12 @@ export function QuickRepliesPanel() {
         <PageActions>
           <DrawerButton primary label={copy.addOne}>
             {(close) => (
-              <AddForm
+              <AddReply
                 onAdded={() => {
                   retry();
                   close();
                 }}
+                onCancel={close}
               />
             )}
           </DrawerButton>

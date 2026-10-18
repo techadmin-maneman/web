@@ -1,16 +1,18 @@
 // Blackout days: the days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). The API keeps a row
 // a day; the list runs together the days one press added, each run naming who added it. Closing a day moves nothing
-// booked on it, so the check counts the visits it strands, and each run links to the board to move them.
+// booked on it, so the visits it would strand are counted beneath the boxes as the days are typed, before anything is
+// sent, and each run links to the board to move them. A run is reopened from its line, asked once.
 
 import { isBlackoutReason } from "@rules/policy/blackouts.ts";
-import { CheckLine, CheckWarning } from "../components/CheckPanel.tsx";
+import { CheckWarning } from "../components/CheckPanel.tsx";
 import { Field, DateInput, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { buttonLook } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { errorText } from "@maneman/web-kit/refusal";
+import { useEffect, useState } from "react";
 import { type Blackout } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content/settings.ts";
@@ -19,7 +21,8 @@ import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
-import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { AddForm } from "../components/AddForm.tsx";
+import { DeleteAction } from "../components/DeleteAction.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { settingsApi } from "./settings-api.ts";
 import { DrawerButton } from "../components/DrawerButton.tsx";
@@ -166,64 +169,49 @@ function DraftBoxes(props: {
   );
 }
 
-function AddForm(props: { today: string; cities: readonly string[]; onAdded: (days: readonly Blackout[]) => void }) {
-  const { today, onAdded } = props;
-  const [draft, setDraft] = useState<Draft>(EMPTY);
-  /** The visits the days would leave booked, counted as the check opens; null where they could not be. */
+/** The visits the days would leave booked, counted once both days are typed; null where they could not be. */
+function useStranded({ from, to, city }: Draft): number | null {
   const [booked, setBooked] = useState<number | null>(0);
-  const [added, setAdded] = useState(false);
-  const ready = draft.from !== "" && draft.to !== "" && isBlackoutReason(draft.reason.trim());
-  const steps = useSteps(
-    async () =>
-      sentOf(await settingsApi.addBlackouts({ ...periodOf(draft), reason: draft.reason.trim() }), (body) => ({
-        days: body.blackouts,
-      })),
-    (sent) => {
-      setDraft(EMPTY);
-      setAdded(true);
-      steps.edit();
-      onAdded(sent.days);
-    },
-  );
-  const review = {
-    ...steps,
-    check: () => {
-      void settingsApi.blackoutsBooked(periodOf(draft)).then((answer) => {
-        setBooked(answer.ok ? answer.body.booked : null);
-        steps.check();
-      });
-    },
-  };
+  const named = from !== "" && to !== "" && from <= to;
+  useEffect(() => {
+    if (!named) return;
+    let current = true;
+    void settingsApi.blackoutsBooked(periodOf({ from, to, city })).then((answer) => {
+      if (current) setBooked(answer.ok ? answer.body.booked : null);
+    });
+    return () => {
+      current = false;
+    };
+  }, [named, from, to, city]);
+  return named ? booked : 0;
+}
+
+function CloseDays(props: {
+  today: string;
+  cities: readonly string[];
+  onAdded: (days: readonly Blackout[]) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<Draft>(EMPTY);
+  const booked = useStranded(draft);
   const edit = (field: keyof Draft, value: string) => {
     setDraft({ ...draft, [field]: value });
-    setAdded(false);
-    steps.edit();
   };
-
   return (
-    <SettingForm
-      said={added ? copy.added : null}
+    <AddForm
       title={copy.formTitle}
-      steps={review}
-      ready={ready}
+      words={copy}
       errors={copy.errors}
-      onCancel={null}
       boxes={["from", "to", "city", "reason"]}
-      checking={
-        <>
-          <CheckLine>
-            {copy.closing(
-              ready ? periodWords(draft) : "",
-              draft.city === "" ? copy.everyCity : draft.city,
-              draft.reason.trim(),
-            )}
-          </CheckLine>
-          {booked !== 0 && <CheckWarning>{booked === null ? copy.uncounted : copy.stranded(booked)}</CheckWarning>}
-        </>
-      }
+      send={() => settingsApi.addBlackouts({ ...periodOf(draft), reason: draft.reason.trim() })}
+      onAdded={(body) => {
+        props.onAdded(body.blackouts);
+      }}
+      onCancel={props.onCancel}
     >
-      <DraftBoxes draft={draft} today={today} cities={props.cities} onEdit={edit} />
-    </SettingForm>
+      <DraftBoxes draft={draft} today={props.today} cities={props.cities} onEdit={edit} />
+      {booked !== 0 && <CheckWarning>{booked === null ? copy.uncounted : copy.stranded(booked)}</CheckWarning>}
+    </AddForm>
   );
 }
 
@@ -257,17 +245,15 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
         </FormActions>
       )}
       {mayRemove && (
-        <ActionCheck
-          label={copy.remove}
-          ariaLabel={copy.removeLabel(words)}
-          question={copy.reopen(words)}
-          send={async () =>
-            sentOf(await settingsApi.removeBlackouts(periodOf(period)), (body) => ({ days: body.blackouts }))
-          }
-          onDone={(sent) => {
-            onRemoved(sent.days);
+        <DeleteAction
+          name={words}
+          tone="danger"
+          words={copy.reopening}
+          send={() => settingsApi.removeBlackouts(periodOf(period))}
+          refusal={(code) => errorText(copy.errors, { code })}
+          onDeleted={(body) => {
+            onRemoved(body.blackouts);
           }}
-          errors={copy.errors}
         />
       )}
     </li>
@@ -293,13 +279,14 @@ export function Blackouts() {
         <PageActions>
           <DrawerButton primary label={copy.formTitle}>
             {(close) => (
-              <AddForm
+              <CloseDays
                 today={loaded.value.today}
                 cities={loaded.value.cities}
                 onAdded={(next) => {
                   setChanged(next);
                   close();
                 }}
+                onCancel={close}
               />
             )}
           </DrawerButton>

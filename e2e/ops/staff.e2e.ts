@@ -1,13 +1,13 @@
 // Admin · Staff: who may use the console and for what, the switch that enforces it, and the service tokens let
-// in. As every panel of Settings does, it shows a change before it is sent, and says why one was refused.
+// in. A person's row opens their record, where whether they are let in and each grant's level change where they read
+// (docs/decisions/0212-editing-in-place.md); a refusal is said in the page's own words.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, json, type Answers, type OpsReply } from "./fixtures.ts";
-import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
-import { review } from "../../apps/ops/src/content/common.ts";
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 
 const AT = "2026-09-24T07:03:54.415Z";
 
@@ -53,7 +53,15 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
-const row = (page: Page, name: string) => page.getByRole("row").filter({ has: page.getByRole("rowheader", { name }) });
+const copy = settingsCopy.staff;
+
+const row = (page: Page, email: string) =>
+  page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open(email) }) });
+
+async function recordOf(page: Page, email: string) {
+  await page.getByRole("button", { name: copy.open(email) }).click();
+  return page.getByRole("dialog", { name: email });
+}
 
 test("lists each person with their access and whether they are let in", async ({ page }) => {
   await open(page);
@@ -68,68 +76,111 @@ test("lists each person with their access and whether they are let in", async ({
   await expect(page.getByText("a1b2c3d4.access")).toBeVisible();
 });
 
-test("adds a person only after the check names what they are given", async ({ page }) => {
+test("adds a person with their first grant", async ({ page }) => {
   await open(page, { "POST /api/staff": json(BOOK) });
-  await page.getByRole("button", { name: settingsCopy.staff.add }).click();
-  const form = page.getByRole("group", { name: settingsCopy.staff.add });
-  await form.getByLabel(settingsCopy.staff.form.email).fill("delhi.lead@maneman.in");
-  await form.getByLabel(settingsCopy.staff.form.department).selectOption("finance");
-  await form.getByLabel(settingsCopy.staff.form.level).selectOption("act");
-  await form.getByLabel(settingsCopy.staff.form.place).selectOption("city:Delhi");
-  await form.getByRole("button", { name: review.next }).click();
-
-  const check = page.getByRole("group", { name: review.title });
-  await expect(check).toContainText("Adds delhi.lead@maneman.in.");
-  await expect(check).toContainText("Grants Finance · Act · Delhi");
+  await page.getByRole("button", { name: copy.add }).click();
+  const form = page.getByRole("group", { name: copy.form.addTitle });
+  await form.getByLabel(copy.form.email).fill("delhi.lead@maneman.in");
+  await form.getByLabel(copy.form.department).selectOption("finance");
+  await form.getByLabel(copy.form.level).selectOption("act");
+  await form.getByLabel(copy.form.place).selectOption("city:Delhi");
 
   const request = posted(page, "/api/staff");
-  await check.getByRole("button", { name: review.send }).click();
+  await form.getByRole("button", { name: copy.form.add, exact: true }).click();
   expect((await request).postDataJSON()).toEqual({
     email: "delhi.lead@maneman.in",
     active: true,
     grants: [{ department: "finance", level: "act", geography: "city", place: "Delhi" }],
   });
-  await expect(page.getByRole("status").filter({ hasText: settingsCopy.rules.saved })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: copy.saved })).toBeVisible();
 });
 
-test("sends someone already listed to Change, rather than replacing their access unseen", async ({ page }) => {
-  await open(page);
-  await page.getByRole("button", { name: settingsCopy.staff.add }).click();
-  const form = page.getByRole("group", { name: settingsCopy.staff.add });
-  await form.getByLabel(settingsCopy.staff.form.email).fill("Owner@ManeMan.in");
-  await expect(form.getByRole("button", { name: review.next })).toBeDisabled();
+test("sends someone already listed to their record, rather than replacing their access unseen", async ({ page }) => {
+  let sent = false;
+  await open(page, {
+    "POST /api/staff": (route) => {
+      sent = true;
+      return json(BOOK)(route);
+    },
+  });
+  await page.getByRole("button", { name: copy.add }).click();
+  const form = page.getByRole("group", { name: copy.form.addTitle });
+  const email = form.getByLabel(copy.form.email);
+  await email.fill("Owner@ManeMan.in");
+  await expect(email).toHaveAccessibleDescription(copy.errors.already_listed);
+  await form.getByRole("button", { name: copy.form.add, exact: true }).click();
+  expect(sent).toBe(false);
+});
 
-  await expect(page.getByRole("alert")).toHaveText(settingsCopy.staff.errors.already_listed);
-  await expect(page.getByRole("group", { name: review.title })).toHaveCount(0);
+test("changes a grant's level where it reads, the rest of their grants sent as they stand", async ({ page }) => {
+  await open(page, { "POST /api/staff": json(BOOK) });
+  const record = await recordOf(page, "owner@maneman.in");
+  const finance = copy.grantLabel(copy.departments.finance, copy.national);
+  await record.getByRole("button", { name: `${EDITING.change} ${finance}` }).click();
+  await record.getByRole("combobox", { name: finance }).selectOption("view");
+  const request = posted(page, "/api/staff");
+  await record.getByRole("button", { name: EDITING.save }).click();
+  expect((await request).postDataJSON()).toEqual({
+    email: "owner@maneman.in",
+    active: true,
+    grants: [
+      { department: "admin", level: "manage", geography: "national", place: null },
+      { department: "finance", level: "view", geography: "national", place: null },
+    ],
+  });
+});
+
+test("takes a grant away by its level of none, and adds another department", async ({ page }) => {
+  await open(page, { "POST /api/staff": json(BOOK) });
+  const record = await recordOf(page, "owner@maneman.in");
+  const finance = copy.grantLabel(copy.departments.finance, copy.national);
+  await record.getByRole("button", { name: `${EDITING.change} ${finance}` }).click();
+  await record.getByRole("combobox", { name: finance }).selectOption(copy.form.noAccess);
+  let request = posted(page, "/api/staff");
+  await record.getByRole("button", { name: EDITING.save }).click();
+  expect((await request).postDataJSON()).toMatchObject({
+    grants: [{ department: "admin", level: "manage", geography: "national", place: null }],
+  });
+
+  await record.getByRole("button", { name: copy.form.addGrant }).click();
+  const add = record.getByRole("group", { name: copy.form.addGrant });
+  await add.getByLabel(copy.form.department).selectOption("growth");
+  request = posted(page, "/api/staff");
+  await add.getByRole("button", { name: copy.form.add, exact: true }).click();
+  expect((await request).postDataJSON()).toMatchObject({
+    grants: [
+      { department: "admin", level: "manage", geography: "national", place: null },
+      { department: "finance", level: "manage", geography: "national", place: null },
+      { department: "growth", level: "view", geography: "national", place: null },
+    ],
+  });
 });
 
 test("says why a change was refused", async ({ page }) => {
   await open(page, { "POST /api/staff": fails(409, "last_admin") });
-  await page.getByRole("button", { name: "Change owner@maneman.in" }).click();
-  await page.getByLabel(settingsCopy.suppliers.active).uncheck();
-  await page.getByRole("group", { name: "Change owner@maneman.in" }).getByRole("button", { name: review.next }).click();
-  const check = page.getByRole("group", { name: review.title });
-  await expect(check).toContainText(settingsCopy.staff.confirm.switchesOff);
-  await check.getByRole("button", { name: review.send }).click();
-  await expect(page.getByRole("alert")).toHaveText(settingsCopy.staff.errors.last_admin);
+  const record = await recordOf(page, "owner@maneman.in");
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.columns.state}` }).click();
+  await record.getByRole("combobox", { name: copy.columns.state }).selectOption(copy.inactive);
+  await record.getByRole("button", { name: EDITING.save }).click();
+  await expect(record.getByRole("alert")).toHaveText(copy.errors.last_admin);
 });
 
-test("starts enforcing only after the check, for someone who may switch it", async ({ page }) => {
+test("starts enforcing only once asked, for someone who may switch it", async ({ page }) => {
   const enforced = { ...BOOK, enforced: { on: true, set_by: "owner@maneman.in", set_at: AT } };
   await open(page, { "POST /api/staff/enforcement": json(enforced) });
-  await page.getByRole("button", { name: settingsCopy.staff.enforcement.start }).click();
-  const check = page.getByRole("group", { name: settingsCopy.staff.enforcement.startTitle });
+  await page.getByRole("button", { name: copy.enforcement.starting.label() }).click();
+  await expect(page.getByText(copy.enforcement.starting.warning())).toBeVisible();
   const request = posted(page, "/api/staff/enforcement");
-  await check.getByRole("button", { name: review.send }).click();
+  await page.getByRole("button", { name: copy.enforcement.starting.confirm, exact: true }).click();
   expect((await request).postDataJSON()).toEqual({ on: true });
-  await expect(page.getByRole("button", { name: settingsCopy.staff.enforcement.stop })).toBeVisible();
+  await expect(page.getByRole("button", { name: copy.enforcement.stopping.label() })).toBeVisible();
 });
 
 test("offers the switch and the service tokens to nobody without Admin · Manage nationally", async ({ page }) => {
   await open(page, { "GET /api/staff": json({ ...BOOK, may_run_access: false }) });
-  await expect(page.getByRole("button", { name: settingsCopy.staff.enforcement.start })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: copy.enforcement.starting.label() })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: settingsCopy.staff.tokens.addTitle })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: copy.tokens.addTitle })).toHaveCount(0);
 });
 
 /** Signed in as `email`, who may read the list, change it and take people off it. */
@@ -148,26 +199,25 @@ const signedInAs = (email: string) =>
 test("removes a person from staff, once asked", async ({ page }) => {
   const left = { ...BOOK, people: BOOK.people.filter((each) => each.email !== "noida.lead@maneman.in") };
   await open(page, { "GET /api/whoami": signedInAs("owner@maneman.in"), "POST /api/staff/delete": json(left) });
-  await page.getByRole("button", { name: "Change noida.lead@maneman.in" }).click();
-  await page.getByRole("button", { name: "Remove noida.lead@maneman.in" }).click();
-  await expect(page.getByText("Remove noida.lead@maneman.in from staff?")).toBeVisible();
+  const record = await recordOf(page, "noida.lead@maneman.in");
+  await record.getByRole("button", { name: copy.removing.label("noida.lead@maneman.in") }).click();
+  await expect(record.getByText(copy.removing.warning("noida.lead@maneman.in"))).toBeVisible();
 
   const sent = posted(page, "/api/staff/delete");
-  await page.getByRole("button", { name: settingsCopy.jobSheet.removeButton, exact: true }).click();
+  await record.getByRole("button", { name: copy.removing.confirm, exact: true }).click();
   expect((await sent).postDataJSON()).toEqual({ email: "noida.lead@maneman.in" });
   await expect(page.getByRole("status").filter({ hasText: settingsCopy.staff.removed })).toBeVisible();
-  await expect(page.getByRole("rowheader", { name: "noida.lead@maneman.in" })).toHaveCount(0);
+  await expect(row(page, "noida.lead@maneman.in")).toHaveCount(0);
 });
 
 test("offers nobody a way to remove themselves", async ({ page }) => {
   await open(page, { "GET /api/whoami": signedInAs("owner@maneman.in") });
-  await page.getByRole("button", { name: "Change owner@maneman.in" }).click();
-  await expect(page.getByRole("button", { name: "Remove owner@maneman.in" })).toHaveCount(0);
+  const record = await recordOf(page, "owner@maneman.in");
+  await expect(record.getByRole("button", { name: copy.removing.label("owner@maneman.in") })).toHaveCount(0);
 });
 
-test("meets WCAG 2.2 AA, a box to a line", async ({ page }) => {
+test("meets WCAG 2.2 AA, with a person's record open", async ({ page }) => {
   await open(page);
-  await page.getByRole("button", { name: settingsCopy.staff.add }).click();
-  await expectOneBoxALine(page, settingsCopy.staff.add);
+  await recordOf(page, "owner@maneman.in");
   expect(await axeViolations(page)).toEqual([]);
 });

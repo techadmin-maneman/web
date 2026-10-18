@@ -1,10 +1,11 @@
-// Technician pay, under Finance (docs/decisions/0122-technician-pay-per-visit.md), which no board draws. Every name
-// and figure is made up.
+// Technician pay, under Finance (docs/decisions/0122-technician-pay-per-visit.md), which no board draws. A grade's
+// row opens its record, where its name and its rates change where they read (docs/decisions/0212-editing-in-place.md).
+// Every name and figure is made up.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
-import { deleting, review } from "../../apps/ops/src/content/common.ts";
+import { deleting, EDITING } from "../../apps/ops/src/content/common.ts";
 import { technicianPay as copy } from "../../apps/ops/src/content/technician-pay.ts";
 import { settingsPageNames, shell } from "../../apps/ops/src/content.ts";
 
@@ -81,8 +82,13 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
 const cellsOf = (page: Page, grade: string) =>
   page
     .getByRole("row")
-    .filter({ has: page.getByRole("rowheader", { name: grade, exact: true }) })
+    .filter({ has: page.getByRole("button", { name: copy.rates.open(grade), exact: true }) })
     .getByRole("cell");
+
+async function recordOf(page: Page, name: string) {
+  await page.getByRole("button", { name: copy.rates.open(name), exact: true }).click();
+  return page.getByRole("dialog", { name });
+}
 
 test("lists the grades and each one’s rates, every city’s first, then a city’s own", async ({ page }) => {
   await open(page);
@@ -94,14 +100,13 @@ test("lists the grades and each one’s rates, every city’s first, then a city
     "Rs. 300Rs. 350 from Thu 1 Oct",
     "—",
     "—",
-    /^Set rate/,
   ]);
   await page.getByLabel(copy.rates.city, { exact: true }).selectOption("Delhi");
   await expect(cellsOf(page, "Senior").nth(3)).toHaveText("Rs. 1,000 (every city)");
   await expect(cellsOf(page, "Senior").nth(4)).toHaveText("Rs. 400");
 });
 
-test("sets a rate from a date, in rupees, for every city, once it is reviewed", async ({ page }) => {
+test("sets a rate from a date, in rupees, for every city, where it reads", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "POST /api/technician-pay/rates": (route) => {
@@ -109,16 +114,32 @@ test("sets a rate from a date, in rupees, for every city, once it is reviewed", 
       return json(PAY)(route);
     },
   });
-  await page.getByRole("button", { name: copy.rates.setRateLabel("Trainee") }).click();
-  await page.getByLabel(copy.form.kind, { exact: true }).selectOption(copy.kinds.replacement);
-  await page.getByLabel(copy.form.amount).fill("450");
-  await page.getByLabel(copy.form.from, { exact: true }).fill("2026-10-01");
-  await page.getByRole("button", { name: review.next }).click();
-  await expect(page.getByText("Trainee · Replacement · Every city: — → Rs. 450, from Thu 1 Oct")).toBeVisible();
-  expect(sent).toBeNull();
-  await page.getByRole("button", { name: review.send }).click();
-  await expect(page.getByRole("status")).toHaveText(copy.done.saved);
+  const record = await recordOf(page, "Trainee");
+  await expect(record).toContainText(copy.form.ratesIn(null));
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.kinds.replacement}` }).click();
+  const amount = record.getByRole("textbox", { name: copy.kinds.replacement });
+  await expect(record.getByLabel(copy.form.from)).toHaveValue("2026-09-21");
+  await amount.fill("450");
+  await record.getByLabel(copy.form.from).fill("2026-10-01");
+  await amount.press("Enter");
+  await expect(record.getByRole("status")).toHaveText(EDITING.saved);
   expect(sent).toEqual({ grade_id: TRAINEE, city: null, kind: "replacement", amount: 45000, from: "2026-10-01" });
+});
+
+test("renames a grade where its name reads", async ({ page }) => {
+  let sent: unknown = null;
+  await open(page, {
+    "PATCH /api/technician-pay/grades/{id}": (route) => {
+      sent = route.request().postDataJSON();
+      return json(PAY)(route);
+    },
+  });
+  const record = await recordOf(page, "Senior");
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.form.name}` }).click();
+  const name = record.getByRole("textbox", { name: copy.form.name });
+  await name.fill("Lead");
+  await name.press("Enter");
+  await expect.poll(() => sent).toEqual({ name: "Lead" });
 });
 
 test("shows last month’s pay at the rates per visit, says what no rate covered, and gives it as a CSV", async ({
@@ -149,17 +170,16 @@ test("adds a grade, and gives a technician one", async ({ page }) => {
   };
   await open(page, { "POST /api/technician-pay/grades": keep, "POST /api/technician-pay/technicians/{id}": keep });
   await page.getByRole("button", { name: copy.rates.addGrade }).click();
-  await page.getByRole("textbox", { name: copy.form.name, exact: true }).fill("Lead");
-  await page.getByRole("button", { name: review.next }).click();
-  await expect(page.getByText(copy.check.add("Lead"))).toBeVisible();
-  await page.getByRole("button", { name: review.send }).click();
-  await page.getByRole("button", { name: copy.technicians.changeLabel("Test technician Two") }).click();
-  await page.getByLabel(copy.form.grade, { exact: true }).selectOption("Trainee");
-  await page.getByRole("button", { name: review.next }).click();
-  await expect(
-    page.getByText(copy.check.grade("Test technician Two", copy.technicians.noGrade, "Trainee")),
-  ).toBeVisible();
-  await page.getByRole("button", { name: review.send }).click();
+  const add = page.getByRole("group", { name: copy.form.addTitle });
+  await add.getByRole("textbox", { name: copy.form.name, exact: true }).fill("Lead");
+  await add.getByRole("button", { name: copy.form.add, exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText(copy.done.saved);
+
+  await page.getByRole("button", { name: copy.technicians.open("Test technician Two") }).click();
+  const record = page.getByRole("dialog", { name: "Test technician Two" });
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.technicians.grade}` }).click();
+  await record.getByRole("combobox", { name: copy.technicians.grade }).selectOption("Trainee");
+  await record.getByRole("button", { name: EDITING.save }).click();
   await expect.poll(() => posts).toEqual([{ name: "Lead" }, { grade_id: TRAINEE }]);
 });
 
@@ -167,8 +187,11 @@ test("deletes a grade no technician holds, and says why one in use stays", async
   await open(page, {
     "POST /api/technician-pay/grades/{id}/delete": json({ error: { code: "in_use", request_id: "r-1" } }, 409),
   });
-  await expect(page.getByRole("button", { name: copy.rates.deleteLabel("Senior") })).toHaveCount(0);
-  await page.getByRole("button", { name: copy.rates.deleteLabel("Trainee") }).click();
-  await page.getByRole("button", { name: deleting.confirm, exact: true }).click();
-  await expect(page.getByRole("alert")).toHaveText(copy.rates.inUse);
+  const senior = await recordOf(page, "Senior");
+  await expect(senior.getByRole("button", { name: deleting.label("Senior") })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  const trainee = await recordOf(page, "Trainee");
+  await trainee.getByRole("button", { name: deleting.label("Trainee") }).click();
+  await trainee.getByRole("button", { name: deleting.confirm, exact: true }).click();
+  await expect(trainee.getByRole("alert")).toHaveText(copy.rates.inUse);
 });

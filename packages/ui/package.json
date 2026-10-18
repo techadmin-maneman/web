@@ -27,6 +27,7 @@
     "./Disclosure": "./Disclosure.tsx",
     "./DocumentLink": "./DocumentLink.tsx",
     "./Drawer": "./Drawer.tsx",
+    "./EditableRow": "./EditableRow.tsx",
     "./EmptyState": "./EmptyState.tsx",
     "./ErrorBoundary": "./ErrorBoundary.tsx",
     "./ErrorRef": "./ErrorRef.tsx",

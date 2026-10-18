@@ -2,6 +2,7 @@
 // src/domain/booking/public-consultation.ts, src/routes/client/booking.ts; docs/decisions/0125-partner-discount-codes.md).
 // NOW is Monday 21 September 2026, 12 noon in India. Every name, number and code here is made up.
 
+import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { codeOnHold } from "../../../src/domain/money/discount-code-holds.ts";
@@ -54,6 +55,7 @@ const heldCode = async () => {
 
 beforeEach(async () => {
   await markDatabase();
+  await aGenericFirstFit();
   captureLogs();
   ops = appFor("local", fakeDependencies(), {}, "ops");
   await env.DB.prepare(

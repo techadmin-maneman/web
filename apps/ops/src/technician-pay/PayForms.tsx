@@ -1,319 +1,176 @@
-// The Technician pay page's forms (docs/decisions/0122-technician-pay-per-visit.md): a grade added or renamed, a
-// grade's rate for a kind of visit from a day, and a technician's grade. Each goes as every setting does: its boxes,
-// then what it is now beside what it will be, and only the second press sends it
-// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// A pay grade added, and a grade's record (docs/decisions/0122-technician-pay-per-visit.md): its name, and what it
+// pays for each kind of visit in the city the page shows, each changed where it reads. A rate asks its day in the same
+// row, today to begin with; an empty amount is no rate of its own from that day. A grade no technician holds is
+// deleted at the foot.
 
-import { CheckLine } from "../components/CheckPanel.tsx";
-import { Checkbox, DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
-import { shortDate } from "@maneman/web-kit/dates";
+import { EditableRow } from "@maneman/ui/EditableRow";
+import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type PayKind, type TechnicianPay } from "../api.ts";
-import { technicianPay } from "../content/technician-pay.ts";
-import { rateNow } from "./pay-rates.ts";
-import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
+import { AddForm } from "../components/AddForm.tsx";
+import { DeleteAction } from "../components/DeleteAction.tsx";
+import { TextRow } from "../components/RecordRows.tsx";
 import form from "../components/forms.module.css";
+import { EDITING } from "../content/common.ts";
+import { technicianPay } from "../content/technician-pay.ts";
+import { useAccess } from "../lib/access.ts";
+import { rateNow, ratesLater } from "./pay-rates.ts";
+import styles from "./pay-rates.module.css";
 import { technicianPayApi } from "./technician-pay-api.ts";
 
-const { form: formWords, check, errors } = technicianPay;
+const { form: formWords, errors } = technicianPay;
+const WHOLE = /^\d{1,7}$/;
 
 type Grade = TechnicianPay["grades"][number];
-type PayTechnician = TechnicianPay["technicians"][number];
 
-interface FormProps {
-  readonly onDone: (pay: TechnicianPay) => void;
-  readonly onCancel: () => void;
-}
-
-/** A grade's name, typed. */
-function NameField({ name, onName }: { name: string; onName: (name: string) => void }) {
-  return (
-    <div className={form.fields}>
-      <Field label={formWords.name} className={form.field} box="name">
-        {(control) => (
-          <TextInput
-            {...control}
-            width="area"
-            maxLength={40}
-            value={name}
-            onChange={(event) => {
-              onName(event.target.value);
-            }}
-          />
-        )}
-      </Field>
-    </div>
-  );
-}
-
-export function AddGradeForm({ onDone, onCancel }: FormProps) {
+export function AddGrade(props: { readonly onAdded: (pay: TechnicianPay) => void; readonly onCancel: () => void }) {
   const [name, setName] = useState("");
-  const steps = useSteps(
-    async () => sentOf(await technicianPayApi.addPayGrade(name.trim()), (pay) => ({ pay })),
-    (sent) => {
-      onDone(sent.pay);
-    },
-  );
   return (
-    <SettingForm
+    <AddForm
       title={formWords.addTitle}
-      steps={steps}
-      ready={name.trim() !== ""}
+      words={formWords}
       errors={errors}
-      onCancel={onCancel}
       boxes={["name"]}
-      checking={<CheckLine>{check.add(name.trim())}</CheckLine>}
+      send={() => technicianPayApi.addPayGrade(name.trim())}
+      onAdded={props.onAdded}
+      onCancel={props.onCancel}
     >
-      <NameField
-        name={name}
-        onName={(typed) => {
-          setName(typed);
-          steps.edit();
-        }}
-      />
-    </SettingForm>
-  );
-}
-
-export function RenameGradeForm({ grade, onDone, onCancel }: FormProps & { readonly grade: Grade }) {
-  const [name, setName] = useState(grade.name);
-  const steps = useSteps(
-    async () => sentOf(await technicianPayApi.renamePayGrade(grade.id, name.trim()), (pay) => ({ pay })),
-    (sent) => {
-      onDone(sent.pay);
-    },
-  );
-  return (
-    <SettingForm
-      title={formWords.renameTitle(grade.name)}
-      steps={steps}
-      ready={name.trim() !== "" && name.trim() !== grade.name}
-      errors={errors}
-      onCancel={onCancel}
-      boxes={["name"]}
-      checking={<CheckLine>{check.rename(grade.name, name.trim())}</CheckLine>}
-    >
-      <NameField
-        name={name}
-        onName={(typed) => {
-          setName(typed);
-          steps.edit();
-        }}
-      />
-    </SettingForm>
+      <div className={form.fields}>
+        <Field label={formWords.name} className={form.field} box="name">
+          {(control) => (
+            <TextInput
+              {...control}
+              width="area"
+              maxLength={40}
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+      </div>
+    </AddForm>
   );
 }
 
 interface RateDraft {
-  readonly kind: PayKind;
-  /** "" for every city. */
-  readonly city: string;
+  /** Whole rupees as typed; empty for no rate of its own. */
   readonly amount: string;
-  readonly none: boolean;
   readonly from: string;
 }
 
-interface DraftProps {
+/** What the grade pays for one kind of visit in the city shown, and the rates set to start later. */
+function RateRow(props: {
   readonly pay: TechnicianPay;
-  readonly draft: RateDraft;
-  readonly edit: (change: Partial<RateDraft>) => void;
-}
-
-/** Which rate: the kind of visit, and every city or one. */
-function RateWhere({ pay, draft, edit }: DraftProps) {
+  readonly grade: Grade;
+  readonly kind: PayKind;
+  readonly city: string | null;
+  readonly onSaved: (pay: TechnicianPay) => void;
+}) {
+  const { pay, grade, kind, city } = props;
+  const cell = { grade: grade.id, kind, city };
+  const own = pay.rates.find(
+    (rate) =>
+      rate.grade_id === grade.id && rate.kind === kind && rate.city === city && rate.effective_from <= pay.today,
+  );
   return (
-    <>
-      <Field label={formWords.kind} className={form.field} box="kind">
-        {(control) => (
-          <Select
+    <EditableRow<RateDraft>
+      label={technicianPay.kinds[kind]}
+      words={EDITING}
+      mayChange={useAccess().mayCall("POST /api/technician-pay/rates")}
+      value={[rateNow(pay, cell), ...ratesLater(pay, cell)].join(" · ")}
+      start={() => ({
+        amount: own?.amount === undefined || own.amount === null ? "" : String(own.amount / 100),
+        from: pay.today,
+      })}
+      save={async (draft) => {
+        const typed = draft.amount.trim();
+        const amount = typed === "" ? null : paiseFromRupees(typed);
+        if ((typed !== "" && !WHOLE.test(typed)) || (amount ?? 0) > pay.max_amount) {
+          return technicianPay.amountUpTo(rupees(pay.max_amount));
+        }
+        if (draft.from < pay.today) return errors.from;
+        const answer = await technicianPayApi.setPayRate({ grade_id: grade.id, city, kind, amount, from: draft.from });
+        if (!answer.ok) return errorText(errors, answer);
+        props.onSaved(answer.body);
+        return null;
+      }}
+    >
+      {(control, draft, edit) => (
+        <>
+          <NumberInput
             {...control}
-            width="choice"
-            value={draft.kind}
+            type="text"
+            width="amount"
+            inputMode="numeric"
+            value={draft.amount}
             onChange={(event) => {
-              edit({ kind: pay.kinds.find((kind) => kind === event.target.value) ?? draft.kind });
+              edit({ ...draft, amount: event.target.value });
             }}
-          >
-            {pay.kinds.map((kind) => (
-              <option key={kind} value={kind}>
-                {technicianPay.kinds[kind]}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-      <Field label={formWords.city} className={form.field} box="city">
-        {(control) => (
-          <Select
-            {...control}
-            width="choice"
-            value={draft.city}
+          />
+          <DateInput
+            width="date"
+            aria-label={formWords.from}
+            min={pay.today}
+            value={draft.from}
             onChange={(event) => {
-              edit({ city: event.target.value });
+              edit({ ...draft, from: event.target.value });
             }}
-          >
-            <option value="">{technicianPay.rates.everyCity}</option>
-            {pay.cities.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-    </>
+          />
+        </>
+      )}
+    </EditableRow>
   );
 }
 
-/** The rate's boxes: which rate, the amount or none, and the day it starts. */
-function RateFields({ pay, draft, edit }: DraftProps) {
+export function GradeRecord(props: {
+  readonly pay: TechnicianPay;
+  readonly grade: Grade;
+  /** The city the page shows, or null for every city. */
+  readonly city: string | null;
+  readonly onSaved: (pay: TechnicianPay) => void;
+  readonly onDeleted: (pay: TechnicianPay) => void;
+}) {
+  const { pay, grade, city, onSaved } = props;
+  const access = useAccess();
+  const mayChange = access.mayCall("POST /api/technician-pay/grades");
   return (
     <>
-      <div className={form.fields}>
-        <RateWhere pay={pay} draft={draft} edit={edit} />
-        <Field label={formWords.amount} className={form.field} box="amount">
-          {(control) => (
-            <NumberInput
-              {...control}
-              width="amount"
-              inputMode="numeric"
-              step={1}
-              min={0}
-              max={pay.max_amount / 100}
-              disabled={draft.none}
-              value={draft.amount}
-              onChange={(event) => {
-                edit({ amount: event.target.value });
-              }}
-            />
-          )}
-        </Field>
-        <Field
-          box="from"
-          label={formWords.from}
-          className={form.field}
-          error={draft.from !== "" && draft.from < pay.today ? technicianPay.errors.from : undefined}
-        >
-          {(control) => (
-            <DateInput
-              {...control}
-              width="date"
-              min={pay.today}
-              value={draft.from}
-              onChange={(event) => {
-                edit({ from: event.target.value });
-              }}
-            />
-          )}
-        </Field>
-      </div>
-      <div className={form.fields}>
-        <Checkbox
-          label={formWords.none}
-          checked={draft.none}
-          onChange={(event) => {
-            edit({ none: event.currentTarget.checked });
+      <div className={form.record}>
+        <TextRow
+          label={formWords.name}
+          value={grade.name}
+          maxLength={40}
+          mayChange={mayChange}
+          save={async (typed) => {
+            const answer = await technicianPayApi.renamePayGrade(grade.id, typed.trim());
+            if (!answer.ok) return errorText(errors, answer);
+            onSaved(answer.body);
+            return null;
           }}
         />
       </div>
-    </>
-  );
-}
-
-/** What a city left with no rate of its own pays: every city's, which stands in; every city's own, nothing. */
-const noneFor = (city: string | null) => (city === null ? check.nothing : check.everyCitys);
-
-export function SetRateForm(props: FormProps & { readonly grade: Grade; readonly pay: TechnicianPay; city: string }) {
-  const { grade, pay } = props;
-  const [draft, setDraft] = useState<RateDraft>({
-    kind: "service",
-    city: props.city,
-    amount: "",
-    none: false,
-    from: pay.today,
-  });
-  const city = draft.city === "" ? null : draft.city;
-  const amount = draft.none ? null : paiseFromRupees(draft.amount);
-  const amountOk = amount === null || (draft.amount.trim() !== "" && amount >= 0 && amount <= pay.max_amount);
-  const steps = useSteps(
-    async () =>
-      sentOf(
-        await technicianPayApi.setPayRate({ grade_id: grade.id, city, kind: draft.kind, amount, from: draft.from }),
-        (body) => ({
-          pay: body,
-        }),
-      ),
-    (sent) => {
-      props.onDone(sent.pay);
-    },
-  );
-  const edit = (change: Partial<RateDraft>) => {
-    setDraft({ ...draft, ...change });
-    steps.edit();
-  };
-  const where = check.where(grade.name, technicianPay.kinds[draft.kind], city ?? technicianPay.rates.everyCity);
-  const was = rateNow(pay, { grade: grade.id, kind: draft.kind, city });
-  const now = amount === null ? noneFor(city) : rupees(amount);
-  return (
-    <SettingForm
-      title={formWords.rateTitle(grade.name)}
-      steps={steps}
-      ready={amountOk && draft.from >= pay.today}
-      errors={{ ...errors, amount: technicianPay.amountUpTo(rupees(pay.max_amount)) }}
-      onCancel={props.onCancel}
-      boxes={["kind", "city", "amount", "from"]}
-      checking={<CheckLine>{check.rate(where, was, now, shortDate(draft.from))}</CheckLine>}
-    >
-      <RateFields pay={pay} draft={draft} edit={edit} />
-    </SettingForm>
-  );
-}
-
-export function GradeOfForm(props: FormProps & { readonly technician: PayTechnician; readonly pay: TechnicianPay }) {
-  const { technician, pay } = props;
-  const [grade, setGrade] = useState(technician.grade_id ?? "");
-  const nameOf = (id: string | null) =>
-    pay.grades.find((each) => each.id === id)?.name ?? technicianPay.technicians.noGrade;
-  const steps = useSteps(
-    async () =>
-      sentOf(await technicianPayApi.setPayGradeOf(technician.id, grade === "" ? null : grade), (body) => ({
-        pay: body,
-      })),
-    (sent) => {
-      props.onDone(sent.pay);
-    },
-  );
-  return (
-    <SettingForm
-      title={formWords.gradeTitle(technician.name)}
-      steps={steps}
-      ready={grade !== (technician.grade_id ?? "")}
-      errors={errors}
-      onCancel={props.onCancel}
-      boxes={["grade_id"]}
-      checking={<CheckLine>{check.grade(technician.name, nameOf(technician.grade_id), nameOf(grade))}</CheckLine>}
-    >
-      <div className={form.fields}>
-        <Field label={formWords.grade} className={form.field} box="grade_id">
-          {(control) => (
-            <Select
-              {...control}
-              width="choice"
-              value={grade}
-              onChange={(event) => {
-                setGrade(event.target.value);
-                steps.edit();
-              }}
-            >
-              <option value="">{technicianPay.technicians.noGrade}</option>
-              {pay.grades.map((each) => (
-                <option key={each.id} value={each.id}>
-                  {each.name}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
+      <h3 className={styles.ratesTitle}>{formWords.ratesIn(city)}</h3>
+      <div className={form.record}>
+        {pay.kinds.map((kind) => (
+          <RateRow key={kind} pay={pay} grade={grade} kind={kind} city={city} onSaved={onSaved} />
+        ))}
       </div>
-    </SettingForm>
+      {mayChange && grade.technicians === 0 && (
+        <div className={form.recordFoot}>
+          <DeleteAction
+            name={grade.name}
+            send={() => technicianPayApi.deletePayGrade(grade.id)}
+            refusal={(refused) =>
+              refused === "in_use" ? technicianPay.rates.inUse : errorText(errors, { code: refused })
+            }
+            onDeleted={props.onDeleted}
+          />
+        </div>
+      )}
+    </>
   );
 }

@@ -6,9 +6,10 @@
 // What these hold: a kind is code and its services are ops', each added,
 // renamed, timed, ordered, retired and restored with its audit entry in the same
 // batch; a service keeps its code, and so its prices, whatever it is called; a
-// kind with a standard service always keeps something to book, and a first fit
-// may be left with no hair system at all; a price is set only for a service that
-// is offered on its day; and the price in force and every spent one stay.
+// kind with a standard service always keeps something to book; a first fit, a
+// service visit and a replacement are a package's, changed with it
+// (test/worker/money/ops-packages.test.ts); a price is set only for a service
+// that is offered on its day; and the price in force and every spent one stay.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -129,25 +130,25 @@ describe("the services, before anybody changes one", () => {
 
 describe("adding a service", () => {
   it("adds it last in its kind, its code made from its name and its length its kind's, unpriced and so unoffered", async () => {
-    const answer = await post("/api/services", { kind: "first_fit", name: "Premium" });
+    const answer = await post("/api/services", { kind: "consultation", name: "Premium" });
 
     expect(answer.status).toBe(201);
     const added = await serviceNamed("Premium");
-    expect(added).toMatchObject({ kind: "first_fit", tier: "premium", minutes: 180, sort: 1, prices: [] });
+    expect(added).toMatchObject({ kind: "consultation", tier: "premium", minutes: 60, sort: 1, prices: [] });
     expect(added.updated_by).toBe("ops@localhost");
   });
 
   it("takes a code and a length of its own", async () => {
-    await post("/api/services", { kind: "first_fit", name: "Thin skin", tier: "premium", minutes: 240 });
+    await post("/api/services", { kind: "consultation", name: "Thin skin", tier: "premium", minutes: 240 });
 
     expect(await serviceNamed("Thin skin")).toMatchObject({ tier: "premium", minutes: 240 });
   });
 
   it("records who added it, in its kind and code", async () => {
-    await post("/api/services", { kind: "replacement", name: "Lace, front", minutes: 150 });
+    await post("/api/services", { kind: "consultation", name: "Lace, front", minutes: 150 });
 
     const { results } = await auditFor("service.add");
-    expect(results[0]).toMatchObject({ actor: "ops@localhost", subject_id: "replacement/lace_front" });
+    expect(results[0]).toMatchObject({ actor: "ops@localhost", subject_id: "consultation/lace_front" });
     expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ name: "Lace, front", minutes: 150 });
   });
 
@@ -158,7 +159,7 @@ describe("adding a service", () => {
     ["a length longer than the day holds", { name: "Long", minutes: 400 }, "minutes"],
     ["a name with no letter a code can be made from, and no code", { name: "प्रीमियम" }, "tier"],
   ])("refuses %s, naming the box, and records nothing", async (_, body, field) => {
-    const answer = await post("/api/services", { kind: "first_fit", ...body });
+    const answer = await post("/api/services", { kind: "consultation", ...body });
 
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: [field] } });
@@ -166,70 +167,72 @@ describe("adding a service", () => {
   });
 
   it("refuses a name another service has, whatever its kind or case, and a code its kind has", async () => {
-    const sameName = await post("/api/services", { kind: "replacement", name: "first FIT" });
+    const sameName = await post("/api/services", { kind: "consultation", name: "first FIT" });
     expect(sameName.status).toBe(409);
     expect(await sameName.json()).toMatchObject({ error: { code: "service_exists", fields: ["name"] } });
 
-    const sameCode = await post("/api/services", { kind: "first_fit", name: "Another", tier: "standard" });
+    const sameCode = await post("/api/services", { kind: "consultation", name: "Another", tier: "standard" });
     expect(sameCode.status).toBe(409);
     expect(await sameCode.json()).toMatchObject({ error: { code: "service_exists", fields: ["tier"] } });
   });
 
-  it("lets two kinds carry the same code, since a price is its kind's and its code's", async () => {
-    expect(
-      (await post("/api/services", { kind: "first_fit", name: "Premium first fit", tier: "premium" })).status,
-    ).toBe(201);
-    expect((await post("/api/services", { kind: "service", name: "Premium service", tier: "premium" })).status).toBe(
-      201,
-    );
+  // docs/decisions/0211-packages.md: a first fit, a service visit and a replacement are a package's, changed with it.
+  it("leaves a first fit, a service visit and a replacement to their package, and records nothing", async () => {
+    const added = await post("/api/services", { kind: "first_fit", name: "Premium first fit" });
+    expect(added.status).toBe(409);
+    expect(await added.json()).toMatchObject({ error: { code: "in_use" } });
+    expect((await post("/api/services/service/standard/name", { name: "Monthly service" })).status).toBe(409);
+    expect((await post("/api/services/replacement/standard/length", { minutes: 150 })).status).toBe(409);
+    expect((await post("/api/services/first_fit/standard/retire", { from: "2026-09-21" })).status).toBe(409);
+    expect((await auditFor("service.add")).results).toHaveLength(0);
   });
 });
 
 describe("changing a service", () => {
   it("renames it and keeps its code, and so every price it has", async () => {
-    const answer = await post("/api/services/service/standard/name", { name: "Monthly service" });
+    const answer = await post("/api/services/consultation/standard/name", { name: "Home consultation" });
 
     expect(answer.status).toBe(200);
-    const renamed = await serviceNamed("Monthly service");
+    const renamed = await serviceNamed("Home consultation");
     expect(renamed.tier).toBe("standard");
     expect(renamed.prices).toHaveLength(2);
     const { results } = await auditFor("service.rename");
-    expect(results[0]?.subject_id).toBe("service/standard");
-    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ from: "Service visit", to: "Monthly service" });
+    expect(results[0]?.subject_id).toBe("consultation/standard");
+    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ from: "Consultation", to: "Home consultation" });
   });
 
   it("refuses a name another service has, and one it cannot have", async () => {
-    const taken = await post("/api/services/service/standard/name", { name: "Replacement" });
+    const taken = await post("/api/services/consultation/standard/name", { name: "Replacement" });
     expect(taken.status).toBe(409);
     expect(await taken.json()).toMatchObject({ error: { code: "service_exists", fields: ["name"] } });
-    expect((await post("/api/services/service/standard/name", { name: "+1" })).status).toBe(400);
+    expect((await post("/api/services/consultation/standard/name", { name: "+1" })).status).toBe(400);
   });
 
   it("gives it the line clients read under its name, trimmed, and records it", async () => {
-    await post("/api/services", { kind: "first_fit", name: "Mane Man Active" });
-    expect((await serviceNamed("Mane Man Active")).description).toBeNull();
+    await post("/api/services", { kind: "consultation", name: "Scalp check" });
+    expect((await serviceNamed("Scalp check")).description).toBeNull();
 
-    const answer = await post("/api/services/first_fit/mane_man_active/description", {
-      description: "  Made for men who sweat.  ",
+    const answer = await post("/api/services/consultation/scalp_check/description", {
+      description: "  For men who sweat.  ",
     });
 
     expect(answer.status).toBe(200);
-    expect((await serviceNamed("Mane Man Active")).description).toBe("Made for men who sweat.");
+    expect((await serviceNamed("Scalp check")).description).toBe("For men who sweat.");
     const { results } = await auditFor("service.describe");
-    expect(results[0]?.subject_id).toBe("first_fit/mane_man_active");
-    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ from: null, to: "Made for men who sweat." });
+    expect(results[0]?.subject_id).toBe("consultation/scalp_check");
+    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ from: null, to: "For men who sweat." });
   });
 
   it("clears the line when it is sent empty, and records nothing when it is unchanged", async () => {
-    await post("/api/services/service/standard/description", { description: "Refit, clean, trim, at home." });
-    await post("/api/services/service/standard/description", { description: "Refit, clean, trim, at home." });
-    await post("/api/services/service/standard/description", { description: " " });
+    await post("/api/services/consultation/standard/description", { description: "At home, an hour." });
+    await post("/api/services/consultation/standard/description", { description: "At home, an hour." });
+    await post("/api/services/consultation/standard/description", { description: " " });
 
-    expect((await serviceNamed("Service visit")).description).toBeNull();
+    expect((await serviceNamed("Consultation")).description).toBeNull();
     const { results } = await auditFor("service.describe");
     expect(results.map((entry) => JSON.parse(entry.detail) as unknown)).toEqual([
-      { from: null, to: "Refit, clean, trim, at home." },
-      { from: "Refit, clean, trim, at home.", to: null },
+      { from: null, to: "At home, an hour." },
+      { from: "At home, an hour.", to: null },
     ]);
   });
 
@@ -237,7 +240,7 @@ describe("changing a service", () => {
     ["a line break", "Made for men\nwho sweat."],
     ["more than 160 characters", "A".repeat(161)],
   ])("refuses a description with %s, naming the box, and records nothing", async (_, description) => {
-    const answer = await post("/api/services/service/standard/description", { description });
+    const answer = await post("/api/services/consultation/standard/description", { description });
 
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["description"] } });
@@ -245,23 +248,23 @@ describe("changing a service", () => {
   });
 
   it("gives it another length, from now on, and records it", async () => {
-    const answer = await post("/api/services/replacement/standard/length", { minutes: 150 });
+    const answer = await post("/api/services/consultation/standard/length", { minutes: 75 });
 
     expect(answer.status).toBe(200);
-    expect((await serviceNamed("Replacement")).minutes).toBe(150);
+    expect((await serviceNamed("Consultation")).minutes).toBe(75);
     const { results } = await auditFor("service.length");
-    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ from: 135, to: 150 });
+    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ from: 60, to: 75 });
   });
 
   it("puts a kind's services in the order given, every one of them once", async () => {
-    await post("/api/services", { kind: "first_fit", name: "Premium" });
+    await post("/api/services", { kind: "consultation", name: "Premium" });
 
-    expect((await post("/api/services/first_fit/order", { tiers: ["premium"] })).status).toBe(400);
-    expect((await post("/api/services/first_fit/order", { tiers: ["premium", "premium"] })).status).toBe(400);
-    const answer = await post("/api/services/first_fit/order", { tiers: ["premium", "standard"] });
+    expect((await post("/api/services/consultation/order", { tiers: ["premium"] })).status).toBe(400);
+    expect((await post("/api/services/consultation/order", { tiers: ["premium", "premium"] })).status).toBe(400);
+    const answer = await post("/api/services/consultation/order", { tiers: ["premium", "standard"] });
 
     expect(answer.status).toBe(200);
-    const kind = (await services()).services.filter((service) => service.kind === "first_fit");
+    const kind = (await services()).services.filter((service) => service.kind === "consultation");
     expect(kind.map((service) => service.tier)).toEqual(["premium", "standard"]);
     const { results } = await auditFor("service.reorder");
     expect(results).toHaveLength(1);
@@ -269,72 +272,60 @@ describe("changing a service", () => {
   });
 
   it("answers not_found for a service the console does not hold", async () => {
-    expect((await post("/api/services/first_fit/lace/name", { name: "Lace" })).status).toBe(404);
-    expect((await post("/api/services/first_fit/lace/description", { description: "Lace." })).status).toBe(404);
-    expect((await post("/api/services/first_fit/lace/retire", { from: "2026-09-21" })).status).toBe(404);
+    expect((await post("/api/services/consultation/lace/name", { name: "Lace" })).status).toBe(404);
+    expect((await post("/api/services/consultation/lace/description", { description: "Lace." })).status).toBe(404);
+    expect((await post("/api/services/consultation/lace/retire", { from: "2026-09-21" })).status).toBe(404);
   });
 });
 
 describe("retiring a service", () => {
-  /** A premium first fit ops added and priced from today. */
+  /** A premium consultation ops added and priced from today. */
   async function premium() {
-    await post("/api/services", { kind: "first_fit", name: "Premium" });
-    await pricedSince("first_fit", "premium", "2026-09-21");
+    await post("/api/services", { kind: "consultation", name: "Premium" });
+    await pricedSince("consultation", "premium", "2026-09-21");
   }
 
   it("stops offering it from the day given, and records it", async () => {
     await premium();
-    const answer = await post("/api/services/first_fit/standard/retire", { from: "2026-10-01" });
+    const answer = await post("/api/services/consultation/standard/retire", { from: "2026-10-01" });
 
     expect(answer.status).toBe(200);
-    expect(await serviceNamed("First fit")).toMatchObject({ retired_date: "2026-10-01", offered: true });
-    await post("/api/services", { kind: "service", name: "Premium service" });
-    await pricedSince("service", "premium_service", "2026-09-21", 250_000);
-    await post("/api/services/service/standard/retire", { from: "2026-09-21" });
-    expect(await serviceNamed("Service visit")).toMatchObject({ retired_date: "2026-09-21", offered: false });
+    expect(await serviceNamed("Consultation")).toMatchObject({ retired_date: "2026-10-01", offered: true });
+    await post("/api/services/consultation/standard/restore");
+    await post("/api/services/consultation/standard/retire", { from: "2026-09-21" });
+    expect(await serviceNamed("Consultation")).toMatchObject({ retired_date: "2026-09-21", offered: false });
     const { results } = await auditFor("service.retire");
-    expect(results.map((entry) => entry.subject_id)).toEqual(["first_fit/standard", "service/standard"]);
+    expect(results.map((entry) => entry.subject_id)).toEqual(["consultation/standard", "consultation/standard"]);
     expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ from: "2026-10-01" });
   });
 
   it("refuses a day before today: what was offered then was offered", async () => {
     await premium();
-    const answer = await post("/api/services/first_fit/premium/retire", { from: "2026-09-20" });
+    const answer = await post("/api/services/consultation/premium/retire", { from: "2026-09-20" });
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { fields: ["retired_date"] } });
   });
 
   // src/policy/services.ts: a kind with a standard service keeps one never retired and priced, so it stays bookable.
   it("refuses to retire a kind's last service, until another is added and priced", async () => {
-    const alone = await post("/api/services/replacement/standard/retire", { from: "2026-10-01" });
+    const alone = await post("/api/services/consultation/standard/retire", { from: "2026-10-01" });
     expect(alone.status).toBe(409);
     expect(await alone.json()).toMatchObject({ error: { code: "last_of_kind" } });
 
-    await post("/api/services", { kind: "replacement", name: "Lace" });
-    expect((await post("/api/services/replacement/standard/retire", { from: "2026-10-01" })).status).toBe(409);
-    await price("replacement", "lace", "2026-10-02");
-    expect((await post("/api/services/replacement/standard/retire", { from: "2026-10-01" })).status).toBe(409);
-    await price("replacement", "lace", "2026-10-01");
-    expect((await post("/api/services/replacement/standard/retire", { from: "2026-10-01" })).status).toBe(200);
+    await post("/api/services", { kind: "consultation", name: "Lace" });
+    expect((await post("/api/services/consultation/standard/retire", { from: "2026-10-01" })).status).toBe(409);
+    await price("consultation", "lace", "2026-10-02");
+    expect((await post("/api/services/consultation/standard/retire", { from: "2026-10-01" })).status).toBe(409);
+    await price("consultation", "lace", "2026-10-01");
+    expect((await post("/api/services/consultation/standard/retire", { from: "2026-10-01" })).status).toBe(200);
     expect((await auditFor("service.retire")).results).toHaveLength(1);
-  });
-
-  // Only the hair systems ops offer, and no generic first fit in their place.
-  it("retires a first fit's last hair system, which leaves first fits with nothing to book", async () => {
-    const answer = await post("/api/services/first_fit/standard/retire", { from: "2026-09-21" });
-
-    expect(answer.status).toBe(200);
-    expect(await serviceNamed("First fit")).toMatchObject({ retired_date: "2026-09-21", offered: false });
-    const site = appFor("local", fakeDependencies());
-    const offered = await (await request(site, "/api/published-prices")).json<{ services: { type: string }[] }>();
-    expect(offered.services.filter((service) => service.type === "first_fit")).toEqual([]);
   });
 
   it("offers it again once restored, with the prices it had, and records it", async () => {
     await premium();
-    await post("/api/services/first_fit/premium/retire", { from: "2026-09-21" });
+    await post("/api/services/consultation/premium/retire", { from: "2026-09-21" });
 
-    const answer = await post("/api/services/first_fit/premium/restore");
+    const answer = await post("/api/services/consultation/premium/restore");
 
     expect(answer.status).toBe(200);
     expect(await serviceNamed("Premium")).toMatchObject({
@@ -344,36 +335,43 @@ describe("retiring a service", () => {
     });
     const { results } = await auditFor("service.restore");
     expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({ was: "2026-09-21" });
-    expect((await post("/api/services/first_fit/premium/restore")).status).toBe(400);
+    expect((await post("/api/services/consultation/premium/restore")).status).toBe(400);
   });
 
   it("asks for a service already retired to be restored before it is given another day", async () => {
     await premium();
-    await post("/api/services/first_fit/premium/retire", { from: "2026-09-21" });
+    await post("/api/services/consultation/premium/retire", { from: "2026-09-21" });
 
-    expect((await post("/api/services/first_fit/premium/retire", { from: "2026-10-01" })).status).toBe(400);
+    expect((await post("/api/services/consultation/premium/retire", { from: "2026-10-01" })).status).toBe(400);
   });
 });
 
 describe("a service's prices", () => {
   it("refuses a price for a service retired by the day it would apply from, and takes one from before", async () => {
-    await post("/api/services", { kind: "first_fit", name: "Premium" });
-    await pricedSince("first_fit", "premium", "2026-09-21");
-    await post("/api/services/first_fit/premium/retire", { from: "2026-10-01" });
+    await post("/api/services", { kind: "consultation", name: "Premium" });
+    await pricedSince("consultation", "premium", "2026-09-21");
+    await post("/api/services/consultation/premium/retire", { from: "2026-10-01" });
 
-    const after = await price("first_fit", "premium", "2026-10-01", 4_500_000);
+    const after = await price("consultation", "premium", "2026-10-01", 4_500_000);
     expect(after.status).toBe(400);
     expect(await after.json()).toMatchObject({ error: { code: "service_retired", fields: ["valid_from"] } });
-    expect((await price("first_fit", "premium", "2026-09-30", 4_500_000)).status).toBe(200);
+    expect((await price("consultation", "premium", "2026-09-30", 4_500_000)).status).toBe(200);
   });
 
   it("still refuses a price from today or before: today's may be quoted already, an earlier one invoiced", async () => {
-    await post("/api/services", { kind: "first_fit", name: "Premium" });
+    await post("/api/services", { kind: "consultation", name: "Premium" });
     for (const validFrom of ["2026-09-20", "2026-09-21"]) {
-      const answer = await price("first_fit", "premium", validFrom);
+      const answer = await price("consultation", "premium", validFrom);
       expect(answer.status, validFrom).toBe(400);
       expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["valid_from"] } });
     }
+  });
+
+  // A first fit costs its hair system and its service visit (docs/decisions/0211-packages.md).
+  it("refuses a price of a first fit's own, which costs its hair system and its service visit", async () => {
+    const answer = await price("first_fit", "standard", "2026-09-30");
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["item"] } });
   });
 });
 

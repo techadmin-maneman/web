@@ -7,7 +7,17 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
-import { IMRAN, SANDEEP, SANA, technician, essential, client, visit, later } from "./client-booking-fixtures.ts";
+import {
+  IMRAN,
+  SANDEEP,
+  SANA,
+  technician,
+  essential,
+  client,
+  visit,
+  later,
+  theFirstFit,
+} from "./client-booking-fixtures.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 
 /**
@@ -32,6 +42,7 @@ beforeEach(async () => {
   await technician(SANDEEP, "Sandeep Rawat", "SR");
   await technician(SANA, "Sana Mirza", "SM");
   await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANA).run();
+  await theFirstFit();
   // A visit a technician a day, so each hold fills its technician's day and these tests count holds one a technician.
   await env.DB.prepare("INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('booking_rules', ?1, 'ops', ?2)")
     .bind(JSON.stringify({ ...BOOKING_RULES, visits: 1 }), NOW.toISOString())

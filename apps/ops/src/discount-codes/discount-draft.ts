@@ -1,5 +1,5 @@
 // A discount code as ops are making it (./DiscountCodeForm.tsx): every box holds text until it is sent, and rupees
-// become paise only then; and the check's lines, which say what will be made before anything is.
+// become paise only then; and its summary, which says what will be made before anything is.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
@@ -82,20 +82,20 @@ export function isReady(draft: Draft): boolean {
   return named && codeError(draft) === null && draft.value.trim() !== "" && draft.covers.length > 0;
 }
 
-/** The check's first line: the code typed, or how many are generated. */
+/** The summary's first line: the code typed, or how many are generated. */
 function madeLine(draft: Draft): string {
   if (draft.how === "typed") return copy.oneTyped(draft.code.trim().toUpperCase());
   return isBatch(draft) ? copy.manyGenerated(Number(draft.count)) : copy.oneGenerated;
 }
 
-/** What each code takes off, as the check says it: "10%, at most Rs. 1,234", or "Rs. 100". */
+/** What each code takes off, as the summary says it: "10%, at most Rs. 1,234", or "Rs. 100". */
 function offWords(sent: DiscountCodesNew): string {
   if (sent.kind === "amount") return rupees(sent.value);
   const cap = sent.cap ?? null;
   return copy.percentOff(sent.value, cap === null ? null : rupees(cap));
 }
 
-/** The check's lines: what is made, what each takes off, on what, until when, and how often. */
+/** The summary's lines: what is made, what each takes off, on what, until when, and how often. */
 export function checkLines(draft: Draft, sent: DiscountCodesNew): string[] {
   const covered = sent.covers.map((kind) => copy.coverNames[kind]).join("; ");
   const lastDay = sent.expires_on ?? null;

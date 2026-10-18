@@ -1,8 +1,10 @@
 // The services clients book (docs/decisions/0085-services-ops-can-edit.md). Each is a kind of visit and a tier of
 // it (src/policy/services.ts): the kind is code, and the services within it are ops', named, timed, ordered and
-// retired from a day in the console. The price book prices each by its kind and tier (src/domain/money/price-book.ts), so
-// a service keeps every price it was ever sold at, and a hold copies its service's price, late fee and length as it
-// is made (src/domain/booking/hold-slot.ts), so nothing already sold moves with a change here.
+// retired from a day in the console. Every service but the consultation is a package's (./packages.ts), under its
+// code. The price book prices each by its kind and tier (src/domain/money/price-book.ts), so a service keeps every
+// price it was ever sold at; a first fit and a replacement each cost their parts (src/policy/packages.ts). A hold
+// copies its service's price, late fee and length as it is made (src/domain/booking/hold-slot.ts), so nothing already
+// sold moves with a change here.
 //
 // Every change is written in one batch with its audit entry (ADR 0031): a change that is not recorded does not
 // happen. Books' items follow the services, by each one's own item (src/domain/books/books-items.ts).
@@ -11,6 +13,7 @@ import { failedUniqueOn } from "../../lib/d1-errors.ts";
 import { VISIT_BLOCKS } from "../../config/scheduling.ts";
 import { hasStandardService, STANDARD_TIER, tierOf, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import {
+  forPackage,
   isOffered,
   isServiceDescription,
   retireRefusal,
@@ -21,7 +24,8 @@ import {
 import { isServiceLength } from "../../policy/visit-length.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { priceFrom, priceInForce, type Price } from "../money/price-lookup.ts";
-import { replacementFor } from "../../policy/services.ts";
+import { priceByParts } from "../../policy/packages.ts";
+import { hairSystemPricesOn, type HairSystemPrice } from "../money/hair-system-prices.ts";
 
 /** A service, as the services table holds it. */
 interface Service {
@@ -69,20 +73,35 @@ export function serviceOf(db: D1Database, kind: VisitType, tier: string): Promis
 }
 
 /**
- * Every service, offered or retired, each with its price on a day, in the order the console lists them. The price is
- * the book's row in force that day, read with its rate in one lookup a service, since the hourly catalogue check
- * reads this inside the cron run's budget of rows (scripts/lib/usage-budget.ts).
+ * A service's price on a day from its own and its package's: a first fit's is its package's cheapest hair system and
+ * its service visit, the price it is offered from; a replacement's, the replacement and the service visit; every
+ * other's, its own.
+ */
+function visitPrice(service: ServiceOnDay, all: readonly ServiceOnDay[], hairSystems: readonly HairSystemPrice[]) {
+  const visit = all.find((each) => each.kind === "service" && each.tier === service.tier)?.price ?? null;
+  const pieces = hairSystems.filter((each) => each.product === service.tier).map((each) => each.price);
+  return priceByParts(service.kind, { own: service.price, serviceVisit: visit, hairSystems: pieces });
+}
+
+/**
+ * Every service, offered or retired, each with its price on a day, in the order the console lists them. Each part's
+ * price is the book's row in force that day, read with its rate in one lookup a service and a hair system, since the
+ * hourly catalogue check reads this inside the cron run's budget of rows (scripts/lib/usage-budget.ts).
  */
 export async function servicesOnDay(db: D1Database, on: string, city: string | null = null): Promise<ServiceOnDay[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT s.kind, s.tier, s.name, s.description, s.minutes, s.sort, s.retired_date, s.updated_by, s.updated_at,
-         ${priceInForce("s.kind", "s.tier", "?1", "?2")} AS price
-       FROM services s`,
-    )
-    .bind(on, city)
-    .all<Service & { price: string | null }>();
-  return results.map(({ price, ...service }) => ({ ...service, price: priceFrom(price) })).sort(inOrder);
+  const [{ results }, hairSystems] = await Promise.all([
+    db
+      .prepare(
+        `SELECT s.kind, s.tier, s.name, s.description, s.minutes, s.sort, s.retired_date, s.updated_by, s.updated_at,
+           ${priceInForce("s.kind", "s.tier", "?1", "?2")} AS price
+         FROM services s`,
+      )
+      .bind(on, city)
+      .all<Service & { price: string | null }>(),
+    hairSystemPricesOn(db, on, city),
+  ]);
+  const own = results.map(({ price, ...service }) => ({ ...service, price: priceFrom(price) }));
+  return own.map((service) => ({ ...service, price: visitPrice(service, own, hairSystems) })).sort(inOrder);
 }
 
 /**
@@ -116,9 +135,10 @@ export async function offeredServices(
 
 /**
  * The service a booking is for, offered and priced on the day: the one named, or, where a booking names only its
- * kind, the kind's standard service while it is offered, else the first the kind offers. So the site's consultation,
- * a lead's Request and an app from before services, which sends no tier, each book what the kind offers. A first fit
- * is booked only as the hair system named. Null when the kind offers nothing that day, or not the one named.
+ * kind, the client's package's service visit or replacement, else the kind's standard service while it is offered,
+ * else the first the kind offers. So the site's consultation, a lead's Request and an app from before services, which
+ * sends no tier, each book what the kind offers. A first fit is booked only as the package named. Null when the kind
+ * offers nothing that day, or not the one named.
  */
 export async function bookableService(
   db: D1Database,
@@ -126,8 +146,8 @@ export async function bookableService(
     readonly kind: VisitType;
     readonly tier: string | undefined;
     readonly on: string;
-    /** The product of the hair system the client wears, which a replacement naming no tier is priced for. */
-    readonly wears?: string | null;
+    /** The package the client is on, whose service visit or replacement a booking naming no tier is for. */
+    readonly onPackage?: string | null;
     /** Where the visit is, whose own price comes first; null for the book's. */
     readonly city?: string | null;
   },
@@ -136,11 +156,11 @@ export async function bookableService(
   const offered = await offeredServices(db, wanted.on, [kind], wanted.city ?? null);
   if (tier !== undefined) return offered.find((service) => service.tier === tier) ?? null;
   if (!hasStandardService(kind)) return null;
-  if (kind === "replacement") return replacementFor(offered, wanted.wears ?? null)[0] ?? null;
+  if (kind === "service" || kind === "replacement") return forPackage(offered, wanted.onPackage ?? null)[0] ?? null;
   return offered.find((service) => service.tier === STANDARD_TIER) ?? offered[0] ?? null;
 }
 
-/** The hair systems a first fit is sold as on a day: the first-fit services offered and priced then, in ops' order. */
+/** The packages a first fit is sold as on a day: the first-fit services offered and priced then, in ops' order. */
 export function offeredProducts(db: D1Database, on: string, city: string | null = null): Promise<PricedService[]> {
   return offeredServices(db, on, ["first_fit"], city);
 }

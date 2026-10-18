@@ -80,8 +80,8 @@ describe("publishing the site's words", () => {
   it("tells the site's build how long each kind of visit is booked for, as ops last set it", async () => {
     const before = (await siteWords()).lengths;
     expect([typeof before.consultation, typeof before.service]).toEqual(["number", "number"]);
-    const longer = (before.service ?? 0) + 30;
-    expect((await post("/api/services/service/standard/length", { minutes: longer })).status).toBe(200);
-    expect((await siteWords()).lengths.service).toBe(longer);
+    const longer = (before.consultation ?? 0) + 30;
+    expect((await post("/api/services/consultation/standard/length", { minutes: longer })).status).toBe(200);
+    expect((await siteWords()).lengths.consultation).toBe(longer);
   });
 });

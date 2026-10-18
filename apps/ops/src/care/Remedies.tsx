@@ -11,7 +11,7 @@ import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import { care } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
-import { Refused } from "../settings/index.ts";
+import { Refused } from "../components/Refusal.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type RemedyReason } from "./care-api.ts";
 import form from "../components/forms.module.css";

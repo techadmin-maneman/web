@@ -1,8 +1,8 @@
 // Every wording a line has had, newest first (docs/decisions/0126-the-words-page.md), and the code's own: each can be
-// used again, which opens the line's form with it to review.
+// used again, which opens the line's box with it, to read before it is kept.
 
 import { whoWords } from "../lib/who.ts";
-import { Button, RowButton } from "@maneman/ui/Button";
+import { RowButton } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -13,7 +13,6 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeOf } from "./WordForm.tsx";
 import form from "../components/forms.module.css";
 import styles from "./word-history.module.css";
-import { FormActions } from "../components/FormActions.tsx";
 import { wordsApi } from "./words-api.ts";
 
 const versions = copy.versions;
@@ -30,7 +29,6 @@ export function WordHistory(props: {
   readonly word: Word;
   readonly mayChange: boolean;
   readonly onUse: (text: string) => void;
-  readonly onClose: () => void;
 }) {
   const { word } = props;
   const load = useCallback(() => wordsApi.wordHistory(word.key), [word.key]);
@@ -76,11 +74,6 @@ export function WordHistory(props: {
           </li>
         )}
       </ol>
-      <FormActions>
-        <Button variant="outline" size="small" narrow onClick={props.onClose}>
-          {versions.close}
-        </Button>
-      </FormActions>
     </section>
   );
 }

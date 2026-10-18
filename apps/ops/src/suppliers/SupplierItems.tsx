@@ -1,80 +1,172 @@
-// What a supplier supplies (docs/decisions/0165-suppliers.md): for each stock code their code, the price of one in
-// their currency, the pack it comes in, the least they take, and the lead time they promise. Setting an item shows the
-// old beside the new before it is sent (ADR 0071); removing one takes it off their list.
+// What a supplier supplies (docs/decisions/0165-suppliers.md), in its record: for each stock code their code, the
+// price of one in their currency, the pack it comes in, the least they take, and the lead time they promise. A line
+// opens its values, each changed where it reads, and removing it takes it off their list once asked.
 
-import { CheckLine } from "../components/CheckPanel.tsx";
-import { Panel } from "@maneman/ui/Panel";
-import { RowButton } from "@maneman/ui/Button";
+import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { TextButton } from "@maneman/ui/TextLink";
 import { inCurrency, paiseFromRupees } from "@maneman/web-kit/money";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
+import { AddForm } from "../components/AddForm.tsx";
+import { DeleteAction } from "../components/DeleteAction.tsx";
+import { figureOrNone, FigureRow, TextRow } from "../components/RecordRows.tsx";
+import form from "../components/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
-import form from "../components/forms.module.css";
-import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import type { Supplier, Suppliers } from "./SupplierForm.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import { suppliersApi } from "./suppliers-api.ts";
-import { DrawerButton } from "../components/DrawerButton.tsx";
+import { suppliersApi, type Supplier, type SupplierItem, type Suppliers } from "./suppliers-api.ts";
+import styles from "./suppliers.module.css";
 
 const copy = settings.suppliers;
 const words = copy.item;
 const AMOUNT = /^\d{1,9}(?:\.\d{1,2})?$/;
-const WHOLE = /^\d{1,6}$/;
 
 type Item = Supplier["items"][number];
 
-interface Draft {
-  readonly code: string;
-  readonly theirCode: string;
-  readonly price: string;
-  readonly pack: string;
-  readonly minimum: string;
-  readonly lead: string;
+interface Props {
+  readonly suppliers: Suppliers;
+  readonly supplier: Supplier;
+  readonly onSaved: (suppliers: Suppliers) => void;
 }
 
-const draftOf = (suppliers: Suppliers, item: Item | null): Draft => ({
-  code: item?.consumable_code ?? suppliers.consumables[0]?.code ?? "",
-  theirCode: item?.their_code ?? "",
-  price: item === null ? "" : String(item.unit_price / 100),
-  pack: String(item?.pack_size ?? 1),
-  minimum: String(item?.minimum_order ?? 1),
-  lead: item === null ? "" : String(item.lead_time_days),
-});
+/** "Solvent · USD 12.50 per ml · Pack 12 ml · Minimum 24 ml · 21 days" */
+const itemLine = (name: string, unit: string, item: Item, currency: string) =>
+  `${name} · ${words.perUnit(inCurrency(item.unit_price, currency), unit)} · ${words.packOf(words.amount(item.pack_size, unit))} · ` +
+  `${words.minimum} ${words.amount(item.minimum_order, unit)} · ${words.days(item.lead_time_days)}`;
 
-function ItemEntry(props: { label: string; value: string; onChange: (text: string) => void; box: string }) {
+/** One stock code's values, each changed where it reads, and its removal. */
+function ItemRecord(props: Props & { readonly item: Item; readonly name: string; readonly unit: string }) {
+  const { supplier, item, name, unit, onSaved } = props;
+  const access = useAccess();
+  const mayChange = access.mayCall("POST /api/suppliers/{id}/items");
+  const save = async (change: Partial<SupplierItem>) => {
+    const answer = await suppliersApi.setSupplierItem(supplier.id, { ...item, ...change });
+    if (!answer.ok) return errorText(copy.errors, answer);
+    onSaved(answer.body);
+    return null;
+  };
+  const whole = (field: "pack_size" | "minimum_order" | "lead_time_days", least: number) => (typed: string) => {
+    const figure = figureOrNone(typed);
+    return figure === undefined || figure === null || figure < least
+      ? Promise.resolve(copy.errors[field])
+      : save({ [field]: figure });
+  };
   return (
-    <Field label={props.label} className={form.field} box={props.box}>
+    <div className={styles.item} role="group" aria-label={name}>
+      <TextRow
+        label={words.rows.theirCode}
+        value={item.their_code ?? ""}
+        shown={item.their_code ?? copy.rows.none}
+        maxLength={40}
+        mayChange={mayChange}
+        save={(typed) => save({ their_code: typed.trim() === "" ? null : typed.trim() })}
+      />
+      <FigureRow
+        label={words.rows.price(unit)}
+        value={item.unit_price / 100}
+        shown={inCurrency(item.unit_price, supplier.currency)}
+        unit={supplier.currency}
+        mayChange={mayChange}
+        save={(typed) =>
+          AMOUNT.test(typed.trim())
+            ? save({ unit_price: paiseFromRupees(typed) })
+            : Promise.resolve(copy.errors.unit_price)
+        }
+      />
+      <FigureRow
+        label={words.rows.pack}
+        value={item.pack_size}
+        shown={words.amount(item.pack_size, unit)}
+        unit={unit}
+        mayChange={mayChange}
+        save={whole("pack_size", 1)}
+      />
+      <FigureRow
+        label={words.minimum}
+        value={item.minimum_order}
+        shown={words.amount(item.minimum_order, unit)}
+        unit={unit}
+        mayChange={mayChange}
+        save={whole("minimum_order", 1)}
+      />
+      <FigureRow
+        label={words.rows.lead}
+        value={item.lead_time_days}
+        shown={words.days(item.lead_time_days)}
+        unit={copy.rows.days}
+        mayChange={mayChange}
+        save={whole("lead_time_days", 0)}
+      />
+      {access.mayCall("POST /api/suppliers/{id}/items/{code}/remove") && (
+        <div className={form.recordFoot}>
+          <DeleteAction
+            name={name}
+            tone="danger"
+            words={{ ...words.removing, warning: (item: string) => words.removeQuestion(item, supplier.name) }}
+            send={() => suppliersApi.removeSupplierItem(supplier.id, item.consumable_code)}
+            refusal={(code) => errorText(copy.errors, { code })}
+            onDeleted={onSaved}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A stock code the supplier does not list yet, with its figures. */
+function AddItem(props: Props & { readonly onDone: () => void }) {
+  const { suppliers, supplier } = props;
+  const unlisted = suppliers.consumables.filter(
+    (each) => !supplier.items.some((item) => item.consumable_code === each.code),
+  );
+  const [draft, setDraft] = useState({
+    code: unlisted[0]?.code ?? "",
+    theirCode: "",
+    price: "",
+    pack: "1",
+    minimum: "1",
+    lead: "",
+  });
+  const unit = suppliers.consumables.find((each) => each.code === draft.code)?.unit ?? "";
+  const box = (field: "theirCode" | "price" | "pack" | "minimum" | "lead", label: string, name: string) => (
+    <Field label={label} className={form.field} box={name}>
       {(control) => (
         <TextInput
           {...control}
           width="figure"
           maxLength={12}
-          value={props.value}
+          value={draft[field]}
           onChange={(event) => {
-            props.onChange(event.target.value);
+            setDraft({ ...draft, [field]: event.target.value });
           }}
         />
       )}
     </Field>
   );
-}
-
-/** The item's boxes: the stock code, which starts from what the supplier lists of it, and its figures. */
-function ItemBoxes(props: {
-  suppliers: Suppliers;
-  supplier: Supplier;
-  draft: Draft;
-  onDraft: (draft: Draft) => void;
-  edit: (field: keyof Draft) => (text: string) => void;
-  onPick: () => void;
-}) {
-  const { suppliers, supplier, draft, onDraft, edit, onPick } = props;
-  const unit = suppliers.consumables.find((each) => each.code === draft.code)?.unit ?? "";
+  if (unlisted.length === 0) return <Note>{words.allListed}</Note>;
   return (
-    <>
+    <AddForm
+      title={words.addOne}
+      words={copy.form}
+      errors={copy.errors}
+      boxes={["consumable_code", "their_code", "unit_price", "pack_size", "minimum_order", "lead_time_days"]}
+      send={() =>
+        suppliersApi.setSupplierItem(supplier.id, {
+          consumable_code: draft.code,
+          their_code: draft.theirCode.trim() === "" ? null : draft.theirCode.trim(),
+          unit_price: paiseFromRupees(draft.price),
+          pack_size: Number(draft.pack),
+          minimum_order: Number(draft.minimum),
+          lead_time_days: Number(draft.lead),
+        })
+      }
+      onAdded={(next) => {
+        props.onSaved(next);
+        props.onDone();
+      }}
+      onCancel={props.onDone}
+    >
       <div className={form.fields}>
         <Field label={words.consumable} className={form.field} box="consumable_code">
           {(control) => (
@@ -83,14 +175,10 @@ function ItemBoxes(props: {
               width="choice"
               value={draft.code}
               onChange={(event) => {
-                // A stock code already listed starts from what it holds; a new one from nothing.
-                const code = event.target.value;
-                const listed = supplier.items.find((item) => item.consumable_code === code);
-                onDraft(listed === undefined ? { ...draftOf(suppliers, null), code } : draftOf(suppliers, listed));
-                onPick();
+                setDraft({ ...draft, code: event.target.value });
               }}
             >
-              {suppliers.consumables.map((each) => (
+              {unlisted.map((each) => (
                 <option key={each.code} value={each.code}>
                   {each.name}
                 </option>
@@ -98,208 +186,68 @@ function ItemBoxes(props: {
             </Select>
           )}
         </Field>
-        <ItemEntry label={words.theirCode} value={draft.theirCode} onChange={edit("theirCode")} box="their_code" />
-        <ItemEntry
-          label={words.price(supplier.currency, unit)}
-          value={draft.price}
-          onChange={edit("price")}
-          box="unit_price"
-        />
+        {box("theirCode", words.theirCode, "their_code")}
+        {box("price", words.price(supplier.currency, unit), "unit_price")}
+        {box("pack", words.pack(unit), "pack_size")}
+        {box("minimum", words.minimum, "minimum_order")}
+        {box("lead", words.lead, "lead_time_days")}
       </div>
-      <div className={form.fields}>
-        <ItemEntry label={words.pack(unit)} value={draft.pack} onChange={edit("pack")} box="pack_size" />
-        <ItemEntry label={words.minimum} value={draft.minimum} onChange={edit("minimum")} box="minimum_order" />
-        <ItemEntry label={words.lead} value={draft.lead} onChange={edit("lead")} box="lead_time_days" />
-      </div>
-    </>
+    </AddForm>
   );
 }
 
-/** "Solvent · USD 12.50 per ml · Pack 12 ml · Minimum 24 ml · 21 days" */
-const itemLine = (name: string, unit: string, item: Omit<Item, "consumable_code" | "their_code">, currency: string) =>
-  `${name} · ${words.perUnit(inCurrency(item.unit_price, currency), unit)} · ${words.packOf(words.amount(item.pack_size, unit))} · ` +
-  `${words.minimum} ${words.amount(item.minimum_order, unit)} · ${words.days(item.lead_time_days)}`;
-
-function ItemForm({
-  suppliers,
-  supplier,
-  onSaved,
-}: {
-  suppliers: Suppliers;
-  supplier: Supplier;
-  onSaved: (suppliers: Suppliers, said: string) => void;
-}) {
-  const [draft, setDraft] = useState<Draft>(() => draftOf(suppliers, null));
-  const was = supplier.items.find((item) => item.consumable_code === draft.code) ?? null;
-  const ready =
-    draft.code !== "" &&
-    AMOUNT.test(draft.price.trim()) &&
-    [draft.pack, draft.minimum, draft.lead].every((figure) => WHOLE.test(figure.trim())) &&
-    Number(draft.pack) > 0 &&
-    Number(draft.minimum) > 0;
-  const body = {
-    consumable_code: draft.code,
-    their_code: draft.theirCode.trim() === "" ? null : draft.theirCode.trim(),
-    unit_price: paiseFromRupees(draft.price),
-    pack_size: Number(draft.pack),
-    minimum_order: Number(draft.minimum),
-    lead_time_days: Number(draft.lead),
-  };
-  const steps = useSteps(
-    async () => sentOf(await suppliersApi.setSupplierItem(supplier.id, body), (next) => ({ next })),
-    (sent) => {
-      onSaved(sent.next, words.saved);
-      setDraft(draftOf(suppliers, null));
-    },
-  );
-  const edit = (field: keyof Draft) => (text: string) => {
-    setDraft({ ...draft, [field]: text });
-    steps.edit();
-  };
-  const listed = suppliers.consumables.find((each) => each.code === draft.code);
-  const name = listed?.name ?? draft.code;
-  const unit = listed?.unit ?? "";
-  const line = itemLine(name, unit, body, supplier.currency);
-  const before = was === null ? null : itemLine(name, unit, was, supplier.currency);
+export function SupplierItems(props: Props) {
+  const { suppliers, supplier } = props;
+  const [open, setOpen] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const mayAdd = useAccess().mayCall("POST /api/suppliers/{id}/items");
+  const listed = (code: string) => suppliers.consumables.find((each) => each.code === code);
   return (
-    <SettingForm
-      title={words.title(supplier.name)}
-      steps={steps}
-      ready={ready}
-      errors={copy.errors}
-      onCancel={null}
-      boxes={["consumable_code", "their_code", "unit_price", "pack_size", "minimum_order", "lead_time_days"]}
-      checking={[before === null ? line : copy.form.confirm.line(name, before, line)].map((each) => (
-        <CheckLine key={each}>{each}</CheckLine>
-      ))}
-    >
-      <ItemBoxes
-        suppliers={suppliers}
-        supplier={supplier}
-        draft={draft}
-        onDraft={setDraft}
-        edit={edit}
-        onPick={steps.edit}
-      />
-    </SettingForm>
-  );
-}
-
-/** A row's Remove, which asks before the item comes off the supplier's list. */
-function RemoveItem(props: {
-  supplier: Supplier;
-  code: string;
-  name: string;
-  mayRemove: boolean;
-  onSaved: (suppliers: Suppliers, said: string) => void;
-}) {
-  const [asking, setAsking] = useState(false);
-  if (!props.mayRemove) return null;
-  if (!asking) {
-    return (
-      <RowButton
-        beside
-        aria-label={words.removeLabel(props.name)}
-        onClick={() => {
-          setAsking(true);
-        }}
-      >
-        {words.remove}
-      </RowButton>
-    );
-  }
-  return (
-    <ActionCheck
-      label={words.remove}
-      question={words.removeQuestion(props.name, props.supplier.name)}
-      send={async () =>
-        sentOf(await suppliersApi.removeSupplierItem(props.supplier.id, props.code), (next) => ({ next }))
-      }
-      onDone={(sent) => {
-        setAsking(false);
-        props.onSaved(sent.next, words.removed);
-      }}
-      errors={copy.errors}
-      onCancel={() => {
-        setAsking(false);
-      }}
-    />
-  );
-}
-
-export function SupplierItems({
-  suppliers,
-  supplier,
-  onSaved,
-}: {
-  suppliers: Suppliers;
-  supplier: Supplier;
-  onSaved: (suppliers: Suppliers, said: string) => void;
-}) {
-  const access = useAccess();
-  const named = (code: string) => suppliers.consumables.find((each) => each.code === code)?.name ?? code;
-  const unitOf = (code: string) => suppliers.consumables.find((each) => each.code === code)?.unit ?? "";
-  return (
-    <Panel
-      titleId="supplier-items"
-      title={words.title(supplier.name)}
-      actions={
-        access.mayCall("POST /api/suppliers/{id}/items") && (
-          <DrawerButton label={words.addOne} title={words.title(supplier.name)}>
-            {(close) => (
-              <ItemForm
-                key={supplier.id}
-                suppliers={suppliers}
-                supplier={supplier}
-                onSaved={(next, said) => {
-                  onSaved(next, said);
-                  close();
+    <section className={styles.items} aria-labelledby="supplier-items">
+      <h3 id="supplier-items" className={styles.itemsTitle}>
+        {words.title(supplier.name)}
+      </h3>
+      {supplier.items.length === 0 && <Note>{words.none}</Note>}
+      <ul className={styles.itemList}>
+        {supplier.items.map((item) => {
+          const name = listed(item.consumable_code)?.name ?? item.consumable_code;
+          const unit = listed(item.consumable_code)?.unit ?? "";
+          const isOpen = open === item.consumable_code;
+          return (
+            <li key={item.consumable_code}>
+              <TextButton
+                compact
+                aria-expanded={isOpen}
+                onClick={() => {
+                  setOpen(isOpen ? null : item.consumable_code);
                 }}
-              />
-            )}
-          </DrawerButton>
-        )
-      }
-    >
-      {supplier.items.length === 0 ? (
-        <Note>{words.none}</Note>
-      ) : (
-        <Table controls>
-          <thead>
-            <tr>
-              {words.columns.map((column) => (
-                <th key={column} scope="col">
-                  {column}
-                </th>
-              ))}
-              <th scope="col" />
-            </tr>
-          </thead>
-          <tbody>
-            {supplier.items.map((item) => (
-              <tr key={item.consumable_code}>
-                <RowHead>{named(item.consumable_code)}</RowHead>
-                <td>{item.their_code ?? ""}</td>
-                <td className={form.figure}>
-                  {words.perUnit(inCurrency(item.unit_price, supplier.currency), unitOf(item.consumable_code))}
-                </td>
-                <td className={form.figure}>{words.amount(item.pack_size, unitOf(item.consumable_code))}</td>
-                <td className={form.figure}>{words.amount(item.minimum_order, unitOf(item.consumable_code))}</td>
-                <td className={form.figure}>{words.days(item.lead_time_days)}</td>
-                <td>
-                  <RemoveItem
-                    supplier={supplier}
-                    code={item.consumable_code}
-                    name={named(item.consumable_code)}
-                    mayRemove={access.mayCall("POST /api/suppliers/{id}/items/{code}/remove")}
-                    onSaved={onSaved}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      )}
-    </Panel>
+              >
+                {itemLine(name, unit, item, supplier.currency)}
+              </TextButton>
+              {isOpen && <ItemRecord {...props} item={item} name={name} unit={unit} />}
+            </li>
+          );
+        })}
+      </ul>
+      {mayAdd &&
+        (adding ? (
+          <AddItem
+            {...props}
+            onDone={() => {
+              setAdding(false);
+            }}
+          />
+        ) : (
+          <Button
+            variant="outline"
+            size="small"
+            onClick={() => {
+              setAdding(true);
+            }}
+          >
+            {words.addOne}
+          </Button>
+        ))}
+    </section>
   );
 }

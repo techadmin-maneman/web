@@ -16,7 +16,8 @@ import {
   useStatement,
   type Removed,
 } from "./discount-code-uses.ts";
-import { type Price, priceOf } from "./price-book.ts";
+import type { Price } from "./price-book.ts";
+import { visitPriceOf } from "../booking/client-prices.ts";
 import { amountOff } from "../../policy/discount-codes.ts";
 import { auditStatementIfWritten, type AuditEntry, auditStatementIfStamped } from "../platform/audit.ts";
 import { termsOf } from "./discount-codes.ts";
@@ -55,10 +56,12 @@ const TAKES_A_CODE = new Set(["scheduled", "dispatched", "in_progress", "complet
 /** The visit's own price in the book on its day: its service's, or a one visit's product once chosen. */
 async function priceOfVisit(db: D1Database, visit: VisitRow): Promise<Price | null> {
   if (visit.one_visit === "booked") return null;
-  return priceOf(db, visit.type, {
-    on: indiaDate(new Date(visit.window_start)),
+  return visitPriceOf(db, {
+    type: visit.type,
     tier: visit.tier ?? STANDARD_TIER,
+    on: indiaDate(new Date(visit.window_start)),
     city: visit.service_city,
+    personId: visit.person_id,
   });
 }
 

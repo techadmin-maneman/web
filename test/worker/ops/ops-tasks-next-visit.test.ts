@@ -149,9 +149,11 @@ describe("GET /api/tasks, the next visit", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
-  it("counts from the cadence and the days ops set, and never lists a client who has not been fitted as at risk", async () => {
+  it("counts from the cadence of the client's package, and never lists a client who has not been fitted as at risk", async () => {
     await visitOf(VISIT, "service", "2026-08-01T04:30:00.000Z", "completed");
-    expect((await opsSet({ service_cadence: 45 })).groups).toEqual([]);
+    await env.DB.prepare("UPDATE packages SET service_every_days = 45 WHERE code = 'standard'").run();
+    expect((await opsSet({})).groups).toEqual([]);
+    await env.DB.prepare("UPDATE packages SET service_every_days = 30 WHERE code = 'standard'").run();
     await env.DB.prepare("DELETE FROM ops_settings").run();
     // Only consulted, they are a First fit to book instead.
     await env.DB.prepare("UPDATE appointments SET type = 'consultation'").run();

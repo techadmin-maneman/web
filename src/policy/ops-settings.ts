@@ -33,7 +33,6 @@ import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "./phone-clock.ts";
 import { MAX_REWARD_VISITS, REFERRAL_REWARD, REFERRAL_REWARD_KEYS } from "./referral-reward.ts";
 import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "./technician-work.ts";
 import { TASK_GROUPS, TASK_LAPSE_DAYS, TASK_SLA_HOURS } from "./tasks.ts";
-import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "../config/pieces.ts";
 import { HOUR_OF_DAY } from "../config/setting-units.ts";
 import { PAYMENT_HOLD, PAYMENT_HOLD_KEYS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
@@ -70,9 +69,8 @@ export interface NumberSetting extends Described {
   readonly bounds?: Readonly<Record<string, KeyBounds>>;
   /**
    * null for one number. A list of keys where the set is closed, as the visit
-   * types and the task groups are. "open" where ops name the keys themselves:
-   * a piece base is whatever the technician records it as, so the set cannot be
-   * known here, and the key `default` then stands for every base without one.
+   * types and the task groups are. "open" where ops name the keys themselves, as
+   * the currencies an order is placed in, and the key `default` then stands for every one without its own.
    */
   readonly keys: readonly string[] | "open" | null;
   /** In force while the store holds no row, or cannot be read. */
@@ -219,16 +217,6 @@ export const OPS_SETTINGS = [
     fallback: TASK_LAPSE_DAYS,
   },
   {
-    name: "piece_cycle_days",
-    title: "Replacement cycle",
-    note: "How long a hair system lasts on each base.",
-    unit: "days",
-    min: 30,
-    max: 1095,
-    keys: "open",
-    fallback: { ...PIECE_CYCLE_DAYS, [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS },
-  },
-  {
     // Ten minutes, and two minutes' grace for a payment made late (docs/decisions/0068-a-paid-hold-is-kept.md).
     name: "payment_hold",
     title: "Payment hold",
@@ -363,7 +351,7 @@ export const settingNamed = (name: string): OpsSetting | undefined =>
 /**
  * The most keys an open-keyed input may hold. Every input's value is read on
  * the hot path, so it has to stay small enough to be worth reading; thirty-two
- * bases is far past anything the catalogue will hold.
+ * currencies is far past anything ops will order in.
  */
 export const MAX_OPEN_KEYS = 32;
 
@@ -373,7 +361,7 @@ export const MAX_OPEN_KEYS = 32;
  * test/node/apps/ops/ops-settings.test.ts holds the register to it.
  */
 export const MAX_SNAPSHOT_BYTES = 16 * 1024;
-/** A base names itself; this is long enough for any base's name. */
+/** A key names itself, as a currency code does; this is long enough for any. */
 const KEY = /^[A-Za-z0-9][A-Za-z0-9 _.-]{0,63}$/;
 
 /** What one figure may be: its key's own bounds where it has them, else the input's, and what it counts. */

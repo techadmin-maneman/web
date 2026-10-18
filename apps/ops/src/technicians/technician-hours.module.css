@@ -12,11 +12,10 @@
   gap: var(--sp-8);
 }
 
+/* The week as it reads: a run of days with the same hours a line. */
 .lines {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--fs-14);
+  display: flex;
+  flex-direction: column;
 }
 
 .home {
@@ -32,6 +31,6 @@
 
 .days {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
+  flex-wrap: wrap;
+  gap: var(--sp-4) var(--sp-12);
 }

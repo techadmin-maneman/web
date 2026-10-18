@@ -33,12 +33,15 @@ describe("the hair profile's table", () => {
   it("is reached through it by the routes, the card, the erasure, the export and Home, and by no queue or provider", () => {
     // Imported from beside it or from any folder: "./hair-profiles.ts", "../clients/hair-profiles.ts". Home's first
     // fit offer, its recap of the consultation and the console's booking of a first fit read the hair system
-    // recommended alone (recommendedProduct), and
-    // the stock demand, a client's match to stock, a custom order raised to it, the forecast and the evening's kit check
-    // each client's latest fit spec (latestFits).
+    // recommended alone (recommendedProduct), as do the package a client is on before they book one and a package
+    // kept from deletion; and the stock demand, a client's match to stock, a custom order raised to it, the forecast,
+    // the evening's kit check and a first fit's price each client's latest fit spec (latestFits).
     const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?(?:[a-z-]+\/)?hair-profiles\.ts"/).sort();
     expect(users).toEqual(
       [
+        "src/domain/booking/client-prices.ts",
+        "src/domain/booking/packages-console.ts",
+        "src/domain/clients/client-package.ts",
         "src/domain/privacy/data-export.ts",
         "src/domain/privacy/erasure-statements.ts",
         "src/domain/field/job-card.ts",

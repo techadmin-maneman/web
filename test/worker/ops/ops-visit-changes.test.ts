@@ -20,7 +20,7 @@ import {
   request,
   savedAddress,
 } from "../helpers.ts";
-import { aConsent, aCreditSpent } from "../fixtures/index.ts";
+import { aGenericFirstFit, aConsent, aCreditSpent, aPackage } from "../fixtures/index.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -39,6 +39,7 @@ let messages: ReturnType<typeof fakeQueue>;
 beforeEach(async () => {
   captureLogs();
   await markDatabase();
+  await aGenericFirstFit();
   payments = createStubPayments();
   messages = fakeQueue();
   await env.DB.prepare(
@@ -397,19 +398,12 @@ describe("POST /api/visits/:id/close", () => {
     await env.DB.batch([
       env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(VISIT),
       env.DB.prepare(
-        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-         VALUES ('first_fit', 'natural', 'Mane Man Natural', 180, 1, 'ops@localhost', ?1)`,
-      ).bind(NOW.toISOString()),
-      env.DB.prepare(
-        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-         VALUES ('first_fit', 'natural', 4500000, 0, '2026-09-01')`,
-      ),
-      env.DB.prepare(
         `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
            updated_at)
          VALUES ('event-1', ?1, 'event-piece-01', 't1', 'piece', ?2, ?3, ?3, ?3)`,
       ).bind(VISIT, JSON.stringify(piece), THIS_MORNING),
     ]);
+    await aPackage({ code: "natural", name: "Mane Man Natural", firstFit: 4500000, validFrom: "2026-09-01" });
 
     const answer = await close(
       {},

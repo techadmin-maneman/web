@@ -3,6 +3,7 @@
 // credit pays for, and a consultation and fit in one visit are booked at once. NOW is Monday 21 September 2026,
 // 12 noon in India, so the first bookable day is Tuesday the 22nd. Every name, number and price is made up.
 
+import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
@@ -43,19 +44,11 @@ const book = (body: object, vendors: Vendors = {}) =>
 beforeEach(async () => {
   captureLogs();
   await markDatabase();
+  await aGenericFirstFit();
   payments = createStubPayments();
   await technician(IMRAN, "Imran Qureshi", "IQ");
   await technician(SANDEEP, "Sandeep Rawat", "SR");
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-       VALUES ('first_fit', ?1, ?2, 180, 1, 'ops@localhost', ?3)`,
-    ).bind(NATURAL.tier, NATURAL.name, NOW.toISOString()),
-    env.DB.prepare(
-      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-       VALUES ('first_fit', ?1, ?2, 0, '2026-09-01')`,
-    ).bind(NATURAL.tier, NATURAL.amount),
-  ]);
+  await aPackage({ code: NATURAL.tier, name: NATURAL.name, firstFit: NATURAL.amount, validFrom: "2026-09-01" });
 });
 
 describe("POST /api/visits: the visit written in the request", () => {

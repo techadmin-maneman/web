@@ -27,12 +27,3 @@
 .table .figure {
   padding-block: var(--sp-4);
 }
-
-.actions {
-  white-space: nowrap;
-  text-align: right;
-}
-
-.actions button:first-child {
-  margin-left: 0;
-}

@@ -5,6 +5,7 @@
 export { aCreditSpent } from "./credits.ts";
 export { aHold } from "./holds.ts";
 export { aPayment, aPaymentLink } from "./payments.ts";
+export { aGenericFirstFit, aHairSystemOf, aPackage } from "./packages.ts";
 export { aConsent, aHairProfile, anAddress, aPerson } from "./people.ts";
 export { aTechnician } from "./technicians.ts";
 export { aNoShow, aVisit, keepUpVisits } from "./visits.ts";

@@ -36,6 +36,13 @@ export function addMonths(month: string, months: number): string {
   return first.toISOString().slice(0, 7);
 }
 
+/** The day `months` after a date, "YYYY-MM-DD": the same day of the month, or the month's last where it is shorter. */
+export function monthsAfter(date: string, months: number): string {
+  const month = addMonths(monthOf(date), months);
+  const last = new Date(Date.parse(`${addMonths(month, 1)}-01T00:00:00Z`) - DAY_MS).getUTCDate();
+  return `${month}-${String(Math.min(Number(date.slice(8, 10)), last)).padStart(2, "0")}`;
+}
+
 export function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }

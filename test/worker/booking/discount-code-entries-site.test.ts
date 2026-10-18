@@ -4,6 +4,7 @@
 // September 2026, 12 noon in India; staging's book has a service visit at Rs. 2,000 and a first fit at Rs. 30,000,
 // with no GST, from the 22nd. Every name, number and code here is made up.
 
+import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { paymentEntries, paymentEntry } from "../../../src/domain/money/client-payments.ts";
@@ -34,6 +35,7 @@ async function clientRecord(personId: string) {
 
 beforeEach(async () => {
   await markDatabase();
+  await aGenericFirstFit();
   captureLogs();
   cookies.clear();
 });

@@ -3,6 +3,7 @@
 // the link copied from the Tasks board or texted again. NOW is Monday 21 September 2026,
 // 12 noon in India; the visit is on Thursday the 24th. Every name, number and price is made up.
 
+import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
@@ -25,6 +26,7 @@ const NATURAL = { tier: "natural", name: "Mane Man Natural", amount: 4_500_000 }
 beforeEach(async () => {
   captureLogs();
   await markDatabase();
+  await aGenericFirstFit();
   await env.DB.prepare(
     `INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')`,
   )
@@ -52,16 +54,7 @@ async function visit(shape: { oneVisit?: string | null; status?: string; tier?: 
 }
 
 async function offerNatural() {
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-       VALUES ('first_fit', ?1, ?2, 180, 1, 'ops@localhost', ?3)`,
-    ).bind(NATURAL.tier, NATURAL.name, NOW.toISOString()),
-    env.DB.prepare(
-      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-       VALUES ('first_fit', ?1, ?2, 0, '2026-09-01')`,
-    ).bind(NATURAL.tier, NATURAL.amount),
-  ]);
+  await aPackage({ code: NATURAL.tier, name: NATURAL.name, firstFit: NATURAL.amount, validFrom: "2026-09-01" });
 }
 
 /** A tenth off first fits, entered on the visit, its amount not fixed until the link. */
@@ -157,7 +150,7 @@ describe("a one visit still to come", () => {
   });
 
   it("is said to be paid by link even before ops price any hair system for its day", async () => {
-    await env.DB.prepare("DELETE FROM price_book WHERE item = 'first_fit'").run();
+    await env.DB.prepare("DELETE FROM price_book WHERE item = 'hair_system'").run();
     await visit({ oneVisit: "booked" });
     const me = await clientGet<Me>("/api/me");
     expect(me.next_visit?.one_visit).toEqual({ amount: null, from: false, code: null });

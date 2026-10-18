@@ -41,7 +41,7 @@
   text-align: right;
 }
 
-/* The Care team: a member's leave as a short list, and the forms that set their days off and add leave. */
+/* The Care team: a member's leave as a short list, their days off as boxes in place, and adding leave. */
 .leave {
   display: flex;
   flex-direction: column;
@@ -59,7 +59,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-8) var(--sp-16);
-  margin-bottom: var(--sp-12);
+}
+
+.addLeave {
+  margin-top: var(--sp-12);
 }
 
 /* The client beside the chat: a short list of facts, then the ways into their page. */

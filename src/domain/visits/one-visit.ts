@@ -8,6 +8,7 @@
 // A visit closed partly done, or as a no-show, stays a one visit still to be decided: ops follow it up from the
 // Tasks board, as any visit so closed, and nothing is charged or sent.
 
+import { onPackageBooked } from "../clients/client-package.ts";
 import { STANDARD_TIER } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import type { Decision } from "../../policy/one-visit.ts";
@@ -65,6 +66,7 @@ export async function closeOneVisit(
   }
   await db.batch([
     db.prepare("UPDATE appointments SET one_visit = 'fitted', tier = ?2 WHERE id = ?1").bind(job.id, decision.product),
+    onPackageBooked(db, { personId: job.personId, type: "first_fit", tier: decision.product }),
     boardMoved(db),
   ]);
   const visit = {

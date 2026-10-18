@@ -1,0 +1,17 @@
+/* A city's record (./CityRecord.tsx): what a new name moves, beneath its values, and the rules it sets for itself. */
+
+.renames {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+}
+
+.rules {
+  margin-top: var(--sp-24);
+}
+
+.rulesTitle {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-medium);
+}

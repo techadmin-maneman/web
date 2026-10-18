@@ -28,7 +28,6 @@ import { UNLOCK_HOUR } from "../../../../src/policy/job-visibility.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../../../src/policy/next-visit.ts";
 import { NO_SHOW_WAIT_MIN } from "../../../../src/policy/no-show.ts";
 import { TASK_SLA_HOURS } from "../../../../src/policy/tasks.ts";
-import { DEFAULT_PIECE_CYCLE_DAYS } from "../../../../src/config/pieces.ts";
 import { settings } from "../../../../apps/ops/src/content/settings.ts";
 
 const named = (name: string): OpsSetting => {
@@ -71,7 +70,7 @@ describe("the register", () => {
     expect(COMMITTED.noShowWaitMin).toEqual(NO_SHOW_WAIT_MIN);
     expect(COMMITTED.addressUnlockHour).toBe(UNLOCK_HOUR);
     expect(COMMITTED.taskSlaHours).toEqual(TASK_SLA_HOURS);
-    expect(COMMITTED.pieceCycleDays[DEFAULT_KEY]).toBe(DEFAULT_PIECE_CYCLE_DAYS);
+    expect(COMMITTED.poRupeesToOne[DEFAULT_KEY]).toBe(0);
   });
 
   // Ops were shown "no show decision" and "PLACEHOLDER STANDARD".
@@ -91,8 +90,8 @@ describe("the register", () => {
     for (const choice of Object.values(setting.choices).flat()) expect(names[choice], choice).toBeTruthy();
   });
 
-  it("offers ops no made-up base: every base falls to the one figure until ops name one", () => {
-    expect(named("piece_cycle_days").fallback).toEqual({ [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS });
+  it("offers ops no made-up currency: every currency falls to the one figure until ops name one", () => {
+    expect(named("po_rupees_to_one").fallback).toEqual({ [DEFAULT_KEY]: 0 });
   });
 
   // Review of #145, item 5: the note said the charge was not in force until plan piece C3 built it, which it now is
@@ -146,7 +145,7 @@ describe("what a rule will take", () => {
     expect(allowed(numbered("checkin_radius_m"))).toBe("50–1000 metres");
     expect(allowed(numbered("no_show_wait_min"))).toBe("5–120 minutes");
     expect(allowed(numbered("task_sla_hours"))).toBe("1–720 hours");
-    expect(allowed(numbered("piece_cycle_days"))).toBe("30–1095 days");
+    expect(allowed(numbered("lost_after_days"))).toBe("30–365 days");
   });
 
   it("wants one figure for each of a closed set’s keys, and refuses a set that is short or long", () => {
@@ -163,15 +162,15 @@ describe("what a rule will take", () => {
       expect(checked.refusals.map((refusal) => refusal.field)).toEqual(["task_sla_hours.referral_review"]);
   });
 
-  it("lets ops name a base of their own, but never without a default to fall back on", () => {
-    const cycles = named("piece_cycle_days");
-    expect(checkValue(cycles, { [DEFAULT_KEY]: 180, "Lace base": 120 }).ok).toBe(true);
-    expect(checkValue(cycles, { "Lace base": 120 }).ok).toBe(false);
+  it("lets ops name a currency of their own, but never without a default to fall back on", () => {
+    const rates = named("po_rupees_to_one");
+    expect(checkValue(rates, { [DEFAULT_KEY]: 0, USD: 84 }).ok).toBe(true);
+    expect(checkValue(rates, { USD: 84 }).ok).toBe(false);
   });
 
-  it("caps how many bases the register holds, since the whole of it is read on the hot path", () => {
-    const many = Object.fromEntries(Array.from({ length: MAX_OPEN_KEYS + 1 }, (_, n) => [`base${String(n)}`, 180]));
-    expect(checkValue(named("piece_cycle_days"), { ...many, [DEFAULT_KEY]: 180 }).ok).toBe(false);
+  it("caps how many currencies the register holds, since the whole of it is read on the hot path", () => {
+    const many = Object.fromEntries(Array.from({ length: MAX_OPEN_KEYS + 1 }, (_, n) => [`C${String(n)}`, 80]));
+    expect(checkValue(named("po_rupees_to_one"), { ...many, [DEFAULT_KEY]: 0 }).ok).toBe(false);
   });
 
   it("refuses an array, which JSON would otherwise take for an object", () => {
@@ -191,7 +190,7 @@ describe("what a rule will take", () => {
       ]);
     }
     expect(allowed(days, "first_fit_lead")).toBe("0–30 days");
-    expect(allowed(days, "service_cadence")).toBe("14–90 days");
+    expect(allowed(days, "reminder_before_due")).toBe("1–14 days");
     expect(allowed(days)).toBe("0–90 days");
   });
 });

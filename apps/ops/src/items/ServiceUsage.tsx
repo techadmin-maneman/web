@@ -1,23 +1,21 @@
 // What each service is expected to use, where the technician's steppers start
-// (docs/decisions/0087-consumables-and-stock.md), a kind at a time; a retired service is listed too, since a visit sold
-// before it was retired is still done. The list is sent whole, after a check of each changed figure (ADR 0071). An
-// empty box is none.
+// (docs/decisions/0087-consumables-and-stock.md), a service at a time; a retired service is listed too, since a visit
+// sold before it was retired is still done. Each figure changes where it reads (docs/decisions/0212-editing-in-place.md),
+// and the service's list goes whole with it. An empty box is none.
 
-import { amountOf } from "@maneman/web-kit/figures";
-import { CheckLine } from "../components/CheckPanel.tsx";
-import { Field, Fieldset, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { longDate } from "@maneman/web-kit/dates";
+import { amountOf } from "@maneman/web-kit/figures";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type Consumables, type ServiceUse } from "../api.ts";
+import { figureOrNone, FigureRow } from "../components/RecordRows.tsx";
+import form from "../components/forms.module.css";
 import { dispatch } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
-import { review } from "../content/common.ts";
-import form from "../components/forms.module.css";
-import styles from "./service-usage.module.css";
-import { SettingForm, sentOf, useSteps, type Sent } from "../settings/index.ts";
 import { itemsApi } from "./items-api.ts";
 
 const copy = settings.consumables;
@@ -27,171 +25,96 @@ const keyOf = (service: ServiceUse) => `${service.visit_type}/${service.tier}`;
 const serviceName = (service: ServiceUse) =>
   words.serviceName(service.name, service.retired_date === null ? null : longDate(service.retired_date));
 
-/** Each consumable's box, as text: the figure the service expects, or empty for none. */
-type Draft = Readonly<Record<string, string>>;
-
-const draftOf = (service: ServiceUse | undefined): Draft =>
-  Object.fromEntries((service?.expected ?? []).map((each) => [each.code, String(each.quantity)]));
-
 /**
  * Every consumable offered, and any retired one this service still expects, so a save never drops it unseen. Never a
  * hair system: it is fitted to the client, not used by a service.
  */
-const listedFor = (consumable: Consumables["consumables"][number], expected: ReadonlySet<string>) =>
+const listedFor = (consumable: Consumables["consumables"][number], expected: ReadonlyMap<string, number>) =>
   consumable.hair_system === null && (consumable.offered || expected.has(consumable.code));
 
-/** The service chosen, and each listed consumable's box. */
-function UsageFields(props: {
-  consumables: Consumables;
-  chosen: string;
-  listed: Consumables["consumables"];
-  draft: Draft;
-  mayChange: boolean;
-  onChoose: (key: string) => void;
-  onFigure: (code: string, text: string) => void;
-}) {
-  const { consumables, listed, draft } = props;
+/** The services, a kind of visit at a time. */
+function ServiceChoice(props: { consumables: Consumables; chosen: string; onChoose: (key: string) => void }) {
+  const { services } = props.consumables;
   return (
-    <>
-      <Field label={words.service} className={form.field}>
-        {(control) => (
-          <Select
-            {...control}
-            width="choice"
-            value={props.chosen}
-            onChange={(event) => {
-              props.onChoose(event.target.value);
-            }}
-          >
-            {[...new Set(consumables.services.map((each) => each.visit_type))].map((kind) => (
-              <optgroup key={kind} label={dispatch.typeNames[kind]}>
-                {consumables.services
-                  .filter((each) => each.visit_type === kind)
-                  .map((each) => (
-                    <option key={keyOf(each)} value={keyOf(each)}>
-                      {serviceName(each)}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-          </Select>
-        )}
-      </Field>
-      {listed.length === 0 ? (
-        <Note>{words.noneOffered}</Note>
-      ) : (
-        <ul className={styles.uses}>
-          {listed.map((each) => (
-            <li className={styles.use} key={each.code}>
-              <Field label={words.quantity(each.name, each.unit)}>
-                {(control) => (
-                  <TextInput
-                    {...control}
-                    width="figure"
-                    inputMode="numeric"
-                    maxLength={3}
-                    readOnly={!props.mayChange}
-                    value={draft[each.code] ?? ""}
-                    onChange={(event) => {
-                      props.onFigure(each.code, event.target.value);
-                    }}
-                  />
-                )}
-              </Field>
-            </li>
+    <Field label={words.service} className={form.field}>
+      {(control) => (
+        <Select
+          {...control}
+          width="choice"
+          value={props.chosen}
+          onChange={(event) => {
+            props.onChoose(event.target.value);
+          }}
+        >
+          {[...new Set(services.map((each) => each.visit_type))].map((kind) => (
+            <optgroup key={kind} label={dispatch.typeNames[kind]}>
+              {services
+                .filter((each) => each.visit_type === kind)
+                .map((each) => (
+                  <option key={keyOf(each)} value={keyOf(each)}>
+                    {serviceName(each)}
+                  </option>
+                ))}
+            </optgroup>
           ))}
-        </ul>
+        </Select>
       )}
-    </>
+    </Field>
   );
 }
 
-interface ServiceUsageProps {
+export function ServiceUsage({
+  consumables,
+  onSaved,
+}: {
   consumables: Consumables;
   onSaved: (consumables: Consumables) => void;
-}
-
-export function ServiceUsage({ consumables, onSaved }: ServiceUsageProps) {
+}) {
   const [chosen, setChosen] = useState(() => {
     const first = consumables.services[0];
     return first === undefined ? "" : keyOf(first);
   });
-  const service = consumables.services.find((each) => keyOf(each) === chosen);
-  const [draft, setDraft] = useState<Draft>(() => draftOf(service));
-  const [saved, setSaved] = useState(false);
   const mayChange = useAccess().mayCall("POST /api/service-usage");
+  const service = consumables.services.find((each) => keyOf(each) === chosen);
+  const expected = new Map(service?.expected.map((each) => [each.code, each.quantity]) ?? []);
+  const listed = consumables.consumables.filter((each) => listedFor(each, expected));
 
-  const expectedCodes = new Set(service?.expected.map((each) => each.code) ?? []);
-  const listed = consumables.consumables.filter((each) => listedFor(each, expectedCodes));
-  const was = new Map(service?.expected.map((each) => [each.code, each.quantity]) ?? []);
-  const figure = (code: string) => (draft[code] ?? "").trim();
-  const valid = listed.every((each) => figure(each.code) === "" || /^\d{1,3}$/.test(figure(each.code)));
-  const items = listed.flatMap((each) => {
-    const quantity = Number(figure(each.code));
-    return figure(each.code) === "" || quantity === 0 ? [] : [{ code: each.code, quantity }];
-  });
-  const lines = listed.flatMap((each) => {
-    const before = was.get(each.code) ?? null;
-    const after = items.find((item) => item.code === each.code)?.quantity ?? null;
-    if (before === after) return [];
-    const said = (quantity: number | null) => (quantity === null ? words.confirm.none : amountOf(quantity, each.unit));
-    return [words.confirm.line(each.name, said(before), said(after))];
-  });
-  const steps = useSteps(
-    async (): Promise<Sent<{ next: Consumables }>> => {
-      if (service === undefined) return { ok: false, code: "not_found" };
-      const answer = await itemsApi.setServiceUsage({ visit_type: service.visit_type, tier: service.tier, items });
-      return sentOf(answer, (next) => ({ next }));
-    },
-    (sent) => {
-      setSaved(true);
-      steps.edit();
-      onSaved(sent.next);
-    },
-  );
-  const title = service === undefined ? words.title : serviceName(service);
-  const fields = (
-    <UsageFields
-      consumables={consumables}
-      chosen={chosen}
-      listed={listed}
-      draft={draft}
-      mayChange={mayChange}
-      onChoose={(key) => {
-        setChosen(key);
-        setDraft(draftOf(consumables.services.find((each) => keyOf(each) === key)));
-        setSaved(false);
-        steps.edit();
-      }}
-      onFigure={(code, text) => {
-        setDraft({ ...draft, [code]: text });
-        setSaved(false);
-        steps.edit();
-      }}
-    />
-  );
+  const save = (code: string) => async (typed: string) => {
+    const quantity = figureOrNone(typed);
+    if (service === undefined) return errorText(copy.errors, { code: "not_found" });
+    if (quantity === undefined || (quantity ?? 0) > 999) return words.whole;
+    const items = listed.flatMap((each) => {
+      const figure = each.code === code ? quantity : (expected.get(each.code) ?? null);
+      return figure === null || figure === 0 ? [] : [{ code: each.code, quantity: figure }];
+    });
+    const answer = await itemsApi.setServiceUsage({ visit_type: service.visit_type, tier: service.tier, items });
+    if (!answer.ok) return errorText(copy.errors, answer);
+    onSaved(answer.body);
+    return null;
+  };
 
   return (
     <Panel titleId="service-usage" title={words.title} padded>
-      {mayChange ? (
-        <SettingForm
-          said={saved ? words.saved : null}
-          title={title}
-          steps={steps}
-          ready={service !== undefined && listed.length > 0 && valid}
-          errors={copy.errors}
-          onCancel={null}
-          sendable={lines.length > 0}
-          checking={(lines.length === 0 ? [review.nothing] : lines).map((line) => (
-            <CheckLine key={line}>{line}</CheckLine>
-          ))}
-        >
-          {fields}
-        </SettingForm>
+      <ServiceChoice consumables={consumables} chosen={chosen} onChoose={setChosen} />
+      {listed.length === 0 ? (
+        <Note>{words.noneOffered}</Note>
       ) : (
-        <Fieldset className={form.group} legend={title} legendLook="title">
-          {fields}
-        </Fieldset>
+        <div className={form.record}>
+          {listed.map((each) => {
+            const quantity = expected.get(each.code) ?? null;
+            return (
+              <FigureRow
+                key={`${chosen}/${each.code}`}
+                label={each.name}
+                value={quantity}
+                shown={quantity === null ? words.none : amountOf(quantity, each.unit)}
+                unit={each.unit}
+                mayChange={mayChange}
+                save={save(each.code)}
+              />
+            );
+          })}
+        </div>
       )}
     </Panel>
   );

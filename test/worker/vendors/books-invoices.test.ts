@@ -1,6 +1,7 @@
 // The invoice a finished visit gets in Books without FSM: raised from our own figures, sent when it totals what was
 // sold. Every name and number here is made up.
 
+import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { NO_GST, type GstRegistration } from "../../../src/config/gst.ts";
@@ -166,6 +167,7 @@ beforeEach(async () => {
   await itemKept("service", "standard", "item-service");
   await itemKept("first_fit", "standard", "item-first-fit");
   await itemKept("replacement", "standard", "item-replacement");
+  await aGenericFirstFit();
 });
 
 describe("the invoice a finished visit gets", () => {
@@ -266,16 +268,16 @@ describe("the invoice a finished visit gets", () => {
   });
 
   it("invoices a one visit on the product the client chose, at the price their link paid", async () => {
-    await env.DB.batch([
-      env.DB.prepare(
-        `INSERT INTO services (kind, tier, name, minutes, sort, books_item_id, updated_by, updated_at)
-         VALUES ('first_fit', 'mane_classic', 'Mane Classic', 120, 1, 'item-classic', 'ops@localhost', ?1)`,
-      ).bind(NOW.toISOString()),
-      env.DB.prepare(
-        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-         VALUES ('first_fit', 'mane_classic', 2500000, 0, '2026-09-22')`,
-      ),
-    ]);
+    await aPackage({
+      code: "mane_classic",
+      name: "Mane Classic",
+      firstFit: 2_500_000,
+      firstFitMinutes: 120,
+      validFrom: "2026-09-22",
+    });
+    await env.DB.prepare(
+      "UPDATE services SET books_item_id = 'item-classic' WHERE kind = 'first_fit' AND tier = 'mane_classic'",
+    ).run();
     await visit({ type: "first_fit", tier: "mane_classic", oneVisit: "fitted" });
     await paid(2_500_000);
     const books = createStubBooks();

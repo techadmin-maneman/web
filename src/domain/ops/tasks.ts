@@ -10,6 +10,9 @@
 // is, where ops made it someone's, is kept apart and read beside it
 // (src/domain/ops/task-owners.ts).
 
+import { z } from "zod";
+import { storedJson } from "../../lib/stored-json.ts";
+import { cadenceRange } from "../booking/packages.ts";
 import { PARTIAL_REASONS } from "../../config/job-sheet.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
@@ -160,14 +163,19 @@ function nextVisitDays(row: Row, days: NextVisitDays): Row {
     return { ...row, since: firstFitToBookFrom(indiaDate(new Date(row.since)), days) };
   if (row.group !== "at_risk_client") return row;
   const lastVisitDay = indiaDate(new Date(row.since));
-  const due = serviceDue(lastVisitDay, days);
+  const every = everyOf(row.facts);
+  const due = serviceDue(lastVisitDay, every);
   return {
     ...row,
-    since: atRiskFrom(lastVisitDay, days),
+    since: atRiskFrom(lastVisitDay, days, every),
     detail: `${row.since} ${due}`,
     facts: JSON.stringify({ last_visit_at: row.since, due_on: due }),
   };
 }
+
+/** The days the at-risk queue read the client's service as falling due after. */
+const everyOf = (facts: string | null): number =>
+  storedJson(z.object({ every: z.number() }), facts ?? "", "at_risk_client facts").every;
 
 /** A replacement is due on a calendar date; everything else waits from an instant. */
 const instantOf = (since: string) => (since.length === 10 ? indiaInstant(since, "00:00").toISOString() : since);
@@ -234,17 +242,23 @@ async function countsOf(
 }
 
 /** The moments the queues compare with, from India's date today. */
-function readAt(now: Date, days: NextVisitDays, lostAfter: number): ReadAt {
+function readAt(
+  now: Date,
+  days: NextVisitDays,
+  { lostAfter, every }: { lostAfter: number; every: { readonly least: number; readonly most: number } },
+): ReadAt {
   const today = indiaDate(now);
   // The first moment after each last day, as the instants the visits' starts are compared with.
   const after = (day: string) => indiaInstant(addDays(day, 1), "00:00").toISOString();
-  const standing = { cadence: days.service_cadence, grace: days.at_risk_after_due, lostAfter };
+  // The widest any package's cadence reads; each client is then held to their own.
+  const standing = { cadence: every.most, grace: days.at_risk_after_due, lostAfter };
   return {
     today,
     todayStarts: indiaInstant(today, "00:00").toISOString(),
     now: now.toISOString(),
     days,
-    atRiskBefore: after(atRiskIfDoneBy(today, days)),
+    lostAfter,
+    atRiskBefore: after(atRiskIfDoneBy(today, days, every.least)),
     notLostFrom: after(lostIfDoneBy(today, standing)),
     toBookBefore: after(firstFitToBookIfConsultedBy(today, days)),
     linksClosedIfSentBy: closedIfSentBy(now).toISOString(),
@@ -259,7 +273,7 @@ export async function outstandingTasks(
   scope: BoardScope = {},
 ): Promise<Outstanding> {
   const { days = NEXT_VISIT_DAYS, hours = CARE_HOURS, lostAfter = LOST_AFTER_DAYS } = scope;
-  const at = readAt(now, days, lostAfter);
+  const at = readAt(now, days, { lostAfter, every: await cadenceRange(db) });
   const [answers, schedule] = await Promise.all([
     db.batch<Row>(QUEUES.map((queue) => statementOf(db, queue, { at, scope, read: withOwners }))),
     loadSlotSchedule(db),

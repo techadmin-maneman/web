@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import type { Settings } from "../../../src/config/settings.ts";
-import { NOW } from "../helpers.ts";
+import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { JOB, working, type Working } from "../job-fixtures.ts";
 
 /** Mane Man Natural, at Rs. 45,000 with no GST, as staging's book has no GST. */
@@ -28,17 +28,9 @@ export async function oneVisit(
   settings: Partial<Settings> = {},
 ): Promise<Working> {
   const job = await working("first_fit", vendors, settings);
-  await env.DB.batch([
-    env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(JOB),
-    env.DB.prepare(
-      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-       VALUES ('first_fit', ?1, ?2, 180, 1, 'ops@localhost', ?3)`,
-    ).bind(NATURAL.tier, NATURAL.name, NOW.toISOString()),
-    env.DB.prepare(
-      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-       VALUES ('first_fit', ?1, ?2, 0, '2026-09-01')`,
-    ).bind(NATURAL.tier, NATURAL.amount),
-  ]);
+  await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(JOB).run();
+  await aGenericFirstFit();
+  await aPackage({ code: NATURAL.tier, name: NATURAL.name, firstFit: NATURAL.amount, validFrom: "2026-09-01" });
   return job;
 }
 

@@ -40,7 +40,8 @@ import { bookableService, offeredProducts, type PricedService } from "./services
 import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
 import { REMAKE_TERMS, remakeBookedStatement, remakesOwed, type Remake } from "./remakes.ts";
-import { replacementWears } from "../inventory/stock-gap.ts";
+import { packageWanted } from "../clients/client-package.ts";
+import { pricedFor } from "./client-prices.ts";
 import type { LinkHold } from "./booked-hold.ts";
 import { cityOfPerson } from "../cities/cities.ts";
 import type { DriveCheck } from "./drive-check.ts";
@@ -235,9 +236,10 @@ export async function saleFor(
   if (asked.date < opens || asked.date > last) return refused({ code: "not_bookable" });
   if (await alreadyToCome(db, asked, now)) return refused({ code: "already_booked" });
 
-  const [wears, city] = await Promise.all([replacementWears(db, asked), cityOfPerson(db, asked.personId)]);
-  const service = await bookableService(db, { kind: asked.kind, tier: asked.tier, on: asked.date, wears, city });
-  if (service === null) return refused({ code: await noServiceRefusal(db, asked) });
+  const [onPackage, city] = await Promise.all([packageWanted(db, asked), cityOfPerson(db, asked.personId)]);
+  const offered = await bookableService(db, { kind: asked.kind, tier: asked.tier, on: asked.date, onPackage, city });
+  if (offered === null) return refused({ code: await noServiceRefusal(db, asked) });
+  const service = (await pricedFor(db, [offered], { personId: asked.personId, on: asked.date, city }))[0] ?? offered;
   if (asked.covers !== undefined) {
     const covers = await remakeAsked(db, asked);
     if (covers === false) return refused({ code: "invalid_request", fields: ["covers"] });

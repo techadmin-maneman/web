@@ -10,7 +10,7 @@ import { createLogger } from "../../../src/log.ts";
 import { createPaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
-import { aPayment, aPaymentLink, aVisit } from "../fixtures/index.ts";
+import { aGenericFirstFit, aPayment, aPaymentLink, aVisit, aPackage } from "../fixtures/index.ts";
 import { IMRAN, NATURAL, ROHIT, bindings, rohit, technician } from "./ops-visits-fixtures.ts";
 
 /** The console where no payment can be taken online: PAYMENTS_PROVIDER is none. */
@@ -40,17 +40,9 @@ const bookFit = () =>
 beforeEach(async () => {
   captureLogs();
   await markDatabase();
+  await aGenericFirstFit();
   await technician(IMRAN, "Imran Qureshi", "IQ");
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-       VALUES ('first_fit', ?1, ?2, 180, 1, 'ops@localhost', ?3)`,
-    ).bind(NATURAL.tier, NATURAL.name, NOW.toISOString()),
-    env.DB.prepare(
-      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-       VALUES ('first_fit', ?1, ?2, 0, '2026-09-01')`,
-    ).bind(NATURAL.tier, NATURAL.amount),
-  ]);
+  await aPackage({ code: NATURAL.tier, name: NATURAL.name, firstFit: NATURAL.amount, validFrom: "2026-09-01" });
   await rohit("consulted");
 });
 

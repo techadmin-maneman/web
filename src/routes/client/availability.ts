@@ -8,7 +8,8 @@ import { availability } from "../../domain/booking/availability.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import { currentAddress } from "../../domain/clients/profile.ts";
 import { isServed } from "../../domain/clients/service-area.ts";
-import { type Price, priceOf } from "../../domain/money/price-book.ts";
+import type { Price } from "../../domain/money/price-book.ts";
+import { visitPriceOf } from "../../domain/booking/client-prices.ts";
 import { termsInForce } from "../../domain/visits/visit-changes.ts";
 import { bookable, movedService, moveTermsFor, rangeFor } from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
@@ -200,7 +201,9 @@ export function registerClientAvailability(app: App): void {
     const city = await cityOfPerson(db, session.subjectId);
     const priceOn = async (date: string): Promise<Price> => {
       if (move !== null && move.terms.move.cost !== "charged") return price;
-      return (await priceOf(db, type, { on: date, tier: service.tier, city })) ?? price;
+      return (
+        (await visitPriceOf(db, { type, tier: service.tier, on: date, city, personId: session.subjectId })) ?? price
+      );
     };
     // A day before the bookable days open, or past the last, is offered to nobody. Each window says its hours that day,
     // and whether a visit booked in it now would already cost the client to change.

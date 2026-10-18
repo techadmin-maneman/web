@@ -8,6 +8,7 @@ import { errorText, formError, type Failure } from "@maneman/web-kit/refusal";
 import { useEffect, type ReactNode } from "react";
 import { isChanged, LATEST } from "../content/common.ts";
 import { useRefreshPage } from "../lib/refresh.ts";
+import form from "./forms.module.css";
 
 /** Reads the page again when the refusal shown, if any, is one `changed` named. */
 export function useRereadOnChange(said: string | null): void {
@@ -62,4 +63,13 @@ export function FormRefusal(props: {
       <span role="alert">{said}</span>
     </VisuallyHidden>
   );
+}
+
+/** The line a refused write leaves beneath its form, but for a refusal its `boxes` say on their own Fields. */
+export function Refused(props: {
+  readonly failed: Failure | null;
+  readonly errors: Readonly<Record<string, string>>;
+  readonly boxes?: readonly string[];
+}) {
+  return <FormRefusal className={form.error} errors={props.errors} failure={props.failed} boxes={props.boxes ?? []} />;
 }

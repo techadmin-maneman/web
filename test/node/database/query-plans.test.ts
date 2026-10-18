@@ -87,6 +87,8 @@ const SMALL_TABLES = new Set([
   "fsm_items",
   // A row a service, which grows with what ops sell, not with who buys it (docs/decisions/0085-services-ops-can-edit.md).
   "services",
+  // A row a package, which grows with what ops sell, as services does (docs/decisions/0211-packages.md).
+  "packages",
   // What ops set: prices as they change, the day's windows, closed days, the job sheet's lists and the consumables.
   "price_book",
   "slot_times",

@@ -1,10 +1,7 @@
 /*
- * Settings' Consumables and Job sheet (docs/decisions/0087-consumables-and-stock.md).
- * No board draws either, so both are built from what Settings already draws
- * (settings.module.css): its panels, its 34 px table rows, its square boxes and
- * its check before a change. These are the few things those panels lack: a
- * unit beneath a name, a list whose items can be moved, and the row of a
- * service's expected use.
+ * Items' consumables (docs/decisions/0087-consumables-and-stock.md), drawn from what Settings already draws: its
+ * panels, its table rows and a record's rows. These are the few things those lack: a unit beside a name, a retired
+ * one read quieter, and retiring from a day asked in place.
  */
 
 /* What one is counted in, beneath its name in the table's first column. */
@@ -15,9 +12,16 @@
   color: var(--ui-text-muted);
 }
 
-/* A cell that carries its buttons after its words keeps them on the one line. */
-.actions {
-  white-space: nowrap;
+/* Retiring from a day, asked in place at the record's foot: its day, what it does, and its buttons. */
+.asking {
+  display: grid;
+  flex-basis: 100%;
+  gap: var(--sp-8);
+}
+
+.question {
+  margin: 0;
+  color: var(--ui-text-muted);
 }
 
 /* A consumable retired reads quieter than one in order. */

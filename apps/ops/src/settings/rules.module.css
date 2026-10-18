@@ -19,22 +19,27 @@
   color: var(--ui-text);
 }
 
-.refusal,
-.saved {
-  margin: 0 var(--sp-20) var(--sp-12);
+.refusal {
+  margin: 0;
+  flex-basis: 100%;
 }
 
-.check {
-  padding: var(--sp-16) var(--sp-20);
+/* Back to the standard figures, under a rule set by hand. */
+.standard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  padding: var(--sp-8) var(--sp-20) var(--sp-12);
+}
+
+/* An open-keyed rule's new key and its figure, on one line beneath its rows. */
+.addKey {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-12) var(--sp-20);
   border-top: var(--hairline) solid var(--ui-line);
-}
-
-.checkList {
-  margin: var(--sp-8) 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
 }
 
 /* What storage and the database hold, two plain lines under the console's heading. */

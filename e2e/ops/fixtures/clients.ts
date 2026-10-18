@@ -170,6 +170,12 @@ export const RECORD = {
     since: "2026-10-20T06:00:00.000Z",
     attached: null,
   },
+  /** On the package their first fit was booked as (docs/decisions/0211-packages.md). */
+  package: { code: "essential", name: "Mane Man Essential", chosen: true },
+  packages: [
+    { code: "essential", name: "Mane Man Essential" },
+    { code: "natural", name: "Mane Man Natural" },
+  ],
   auto_refunds: [],
   lost_reasons: [],
 } satisfies ClientRecord;
@@ -193,6 +199,7 @@ export const NEW_RECORD = {
     replacement_due: null,
   },
   invite: null,
+  package: null,
 } satisfies ClientRecord;
 
 const ANGLES = ["front", "top", "left", "right", "hair"] as const;

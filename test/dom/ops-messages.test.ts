@@ -14,6 +14,7 @@ import {
   RemediesScreen,
 } from "../../apps/ops/src/care/MessagesScreen.tsx";
 import { care as copy } from "../../apps/ops/src/content/care.ts";
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 import { shortDate } from "../../packages/web-kit/dates.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
@@ -503,10 +504,19 @@ describe("the Messages page", () => {
     expect(team.textContent).toContain(copy.team.you.on("9 am"));
   });
 
+  /** A member's record, opened from their row beside the table. */
+  const openMember = async (email: string) => {
+    await act(async () => {
+      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.team.open(email)}"]`)?.click();
+      await answered();
+    });
+  };
+
   it("moves every client of one member to another", async () => {
     await showSettings();
+    await openMember("ravi@maneman.test");
     await act(async () => {
-      page
+      document.body
         .querySelector<HTMLButtonElement>(`button[aria-label="${copy.team.moveAllLabel("ravi@maneman.test")}"]`)
         ?.click();
       await answered();
@@ -532,11 +542,12 @@ describe("the Messages page", () => {
     expect(posted.at(-1)).toEqual({ path: "/api/care-team/shift", body: { on: false } });
   });
 
-  it("sets the name clients know a member by", async () => {
+  it("sets the name clients know a member by, where it reads", async () => {
     await showSettings();
+    await openMember("ravi@maneman.test");
     await act(async () => {
-      page
-        .querySelector<HTMLButtonElement>(`button[aria-label="${copy.team.editNameLabel("ravi@maneman.test")}"]`)
+      document.body
+        .querySelector<HTMLButtonElement>(`button[aria-label="${EDITING.change} ${copy.team.columns.name}"]`)
         ?.click();
       await answered();
     });
@@ -548,7 +559,7 @@ describe("the Messages page", () => {
       }
     });
     await act(async () => {
-      [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.save)?.click();
+      [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === EDITING.save)?.click();
       await answered();
     });
     expect(posted.at(-1)).toEqual({ path: "/api/care-team/name", body: { email: "ravi@maneman.test", name: "Ravi" } });
@@ -566,14 +577,16 @@ describe("the Messages page", () => {
     const button = (label: string) => document.body.querySelector(`button[aria-label="${label}"]`);
     const named = (text: string) =>
       [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
-    await click(button(copy.team.editDaysLabel("ravi@maneman.test")));
+    await openMember("ravi@maneman.test");
+    await click(button(`${EDITING.change} ${copy.team.columns.daysOff}`));
     const monday = [...document.body.querySelectorAll('input[type="checkbox"]')][1];
     await click(monday);
-    await click(named(copy.team.save));
+    await click(named(EDITING.save));
     expect(posted.at(-1)).toEqual({
       path: "/api/care-team/days-off",
       body: { email: "ravi@maneman.test", weekdays: [0, 1] },
     });
+    await openMember("asha@maneman.test");
     await click(button(copy.team.addLeaveLabel("asha@maneman.test")));
     const dates = [...document.body.querySelectorAll<HTMLInputElement>('input[type="date"]')];
     act(() => {

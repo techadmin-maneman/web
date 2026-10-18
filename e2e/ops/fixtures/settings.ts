@@ -41,21 +41,6 @@ export const SETTINGS = {
       set_by: "ops@maneman.in",
       set_at: "2027-09-20T06:00:00.000Z",
     },
-    {
-      name: "piece_cycle_days",
-      kind: "number",
-      title: "Replacement cycle",
-      note: "How long a piece on each base lasts before it is due for replacement.",
-      unit: "days",
-      min: 30,
-      max: 1095,
-      keys: "open",
-      bounds: null,
-      value: { default: 180 },
-      default: { default: 180 },
-      set_by: null,
-      set_at: null,
-    },
     // One input for the next visit's days, each figure with its own bounds (docs/decisions/0086-the-next-visit-is-offered.md).
     {
       name: "booking_days",
@@ -67,7 +52,6 @@ export const SETTINGS = {
       max: 90,
       keys: [
         "first_fit_lead",
-        "service_cadence",
         "reminder_before_due",
         "at_risk_after_due",
         "first_fit_to_book",
@@ -77,7 +61,6 @@ export const SETTINGS = {
       ],
       bounds: {
         first_fit_lead: { min: 0, max: 30, unit: "days" },
-        service_cadence: { min: 14, max: 90, unit: "days" },
         reminder_before_due: { min: 1, max: 14, unit: "days" },
         at_risk_after_due: { min: 1, max: 60, unit: "days" },
         first_fit_to_book: { min: 1, max: 60, unit: "days" },
@@ -87,7 +70,6 @@ export const SETTINGS = {
       },
       value: {
         first_fit_lead: 0,
-        service_cadence: 30,
         reminder_before_due: 7,
         at_risk_after_due: 7,
         first_fit_to_book: 7,
@@ -97,7 +79,6 @@ export const SETTINGS = {
       },
       default: {
         first_fit_lead: 0,
-        service_cadence: 30,
         reminder_before_due: 7,
         at_risk_after_due: 7,
         first_fit_to_book: 7,
@@ -443,3 +424,91 @@ export const SERVICE_AREA = {
   ],
   cities: ["Gurgaon", "Delhi", "Mumbai"],
 } satisfies OpsReply<"/api/service-area">;
+
+/** A price row of the book, in force or still to come. */
+const priceRow = (item: string, tier: string, amountExGst: number, validFrom: string, inForce: boolean) => ({
+  item: item as PriceRow["item"],
+  tier,
+  amount_ex_gst: amountExGst,
+  gst_percent: 0,
+  valid_from: validFrom,
+  in_force: inForce,
+});
+
+const price = (amountExGst: number) => ({ amount_ex_gst: amountExGst, amount: amountExGst, gst_percent: 0 });
+
+/** Two packages (docs/decisions/0211-packages.md): Essential on sale with two hair systems, Natural not yet priced. */
+export const PACKAGES = {
+  today: "2027-09-21",
+  packages: [
+    {
+      code: "essential",
+      name: "Mane Man Essential",
+      description: "Built for everyday wear.",
+      sort: 1,
+      retired_date: null,
+      offered: true,
+      deletable: false,
+      first_fit: { minutes: 180, from: price(3_200_000) },
+      service: {
+        minutes: 90,
+        every_days: 30,
+        price: price(220_000),
+        prices: [
+          priceRow("service", "essential", 250_000, "2027-10-01", false),
+          priceRow("service", "essential", 220_000, "2027-01-01", true),
+        ],
+      },
+      replacement: {
+        minutes: 135,
+        after_months: 6,
+        price: price(1_280_000),
+        total: price(1_500_000),
+        prices: [priceRow("replacement", "essential", 1_280_000, "2027-01-01", true)],
+      },
+      hair_systems: [
+        {
+          code: "hs_essential_8x10_1b",
+          name: "Mane Man Essential · 8 × 10 in · #1B · 0% grey · 100% density",
+          base_width_in: 8,
+          base_length_in: 10,
+          colour: "1B",
+          grey_percent: 0,
+          density_percent: 100,
+          unit_cost: 800_000,
+          retired_date: null,
+          offered: true,
+          used: true,
+          price: price(2_980_000),
+          prices: [priceRow("hair_system", "hs_essential_8x10_1b", 2_980_000, "2027-01-01", true)],
+        },
+      ],
+      updated_by: "ops@maneman.in",
+      updated_at: "2027-09-01T06:00:00.000Z",
+    },
+    {
+      code: "natural",
+      name: "Mane Man Natural",
+      description: null,
+      sort: 2,
+      retired_date: null,
+      offered: false,
+      deletable: true,
+      first_fit: { minutes: 180, from: null },
+      service: { minutes: 90, every_days: 30, price: null, prices: [] },
+      replacement: { minutes: 135, after_months: 6, price: null, total: null, prices: [] },
+      hair_systems: [],
+      updated_by: "ops@maneman.in",
+      updated_at: "2027-09-01T06:00:00.000Z",
+    },
+  ],
+  min_minutes: 30,
+  max_minutes: 360,
+  min_every_days: 7,
+  max_every_days: 90,
+  min_after_months: 1,
+  max_after_months: 36,
+  max_description: 160,
+  max_amount_ex_gst: 100_000_000,
+  max_gst_percent: 28,
+} satisfies OpsReply<"/api/packages">;

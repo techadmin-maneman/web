@@ -1,6 +1,7 @@
 // Referral codes, the landing's APIs, the waitlist and the credit ledger (docs/decisions/0048-referrals.md).
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
+import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
@@ -9,6 +10,7 @@ import { REFERRER, person, pincode, client, site, codeOf, post, FRIEND, ADDRESS 
 
 beforeEach(async () => {
   await markDatabase();
+  await aGenericFirstFit();
   captureLogs();
   await person(REFERRER, "Rohit Malhotra", "+919810000001");
   await env.DB.prepare(

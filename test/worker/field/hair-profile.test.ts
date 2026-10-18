@@ -4,6 +4,7 @@
 // carries them. None of it reaches FSM, a log line or the audit log. NOW is Monday 21 September 2026, 12 noon in
 // India; the visit is today at 13:00. Every name and number is made up.
 
+import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
@@ -41,6 +42,7 @@ let logs: ReturnType<typeof captureLogs>;
 beforeEach(async () => {
   logs = captureLogs();
   await markDatabase();
+  await aGenericFirstFit();
 });
 
 /** Today's consultation, checked in and started, its before photographs sent. */

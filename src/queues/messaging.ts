@@ -34,7 +34,6 @@ import { composeDeletionRejected } from "../domain/privacy/deletion.ts";
 import { composeConcernAnswered } from "../domain/ops/grievances.ts";
 import { composeNextServiceReminder } from "../domain/visits/next-visit.ts";
 import { composeLinkPaid } from "../domain/money/payment-links-paid.ts";
-import { readOpsInputs } from "../domain/platform/ops-settings.ts";
 import {
   composeFriendCredited,
   composeFriendFitted,
@@ -216,10 +215,8 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   switch (row.kind) {
     case "tryon_result":
       return resultContent(db, config, row, now);
-    case "next_service_reminder": {
-      const days = (await readOpsInputs(db, now)).nextVisitDays;
-      return composeNextServiceReminder(db, row.subject_id, row.person_id, { days, now });
-    }
+    case "next_service_reminder":
+      return composeNextServiceReminder(db, row.subject_id, row.person_id, now);
     case "booking_refunded":
       return composeBookingRefunded(db, row.subject_id, row.person_id);
     case "link_paid":

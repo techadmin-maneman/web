@@ -100,7 +100,9 @@ test("shows a person who may only look each rule's value, with no box", async ({
 });
 
 // A person who could only look at the discount codes saw an empty column where the actions go.
-test("gives a person who may only look at the discount codes no column of actions", async ({ page }) => {
+test("gives a person who may only look at the discount codes no column of actions, nor any in a record", async ({
+  page,
+}) => {
   await answer(page, {
     "GET /api/whoami": signedIn("viewer@maneman.in", true, [...ONLY_SIGNED_IN, "GET /api/discount-codes"]),
     "GET /api/discount-codes": json(DISCOUNT_CODES),
@@ -108,7 +110,12 @@ test("gives a person who may only look at the discount codes no column of action
   await page.goto("/settings/discount-codes");
   const table = page.getByRole("main").getByRole("table").first();
   await expect(table.getByRole("row").first().getByRole("columnheader")).toHaveCount(9);
-  await expect(table.locator("tbody").getByRole("button")).toHaveCount(0);
+  // A row's one button is its name, which opens its record.
+  const [first] = DISCOUNT_CODES.codes;
+  await table.getByRole("button", { name: settingsCopy.discountCodes.open(first?.code ?? "") }).click();
+  const record = page.getByRole("dialog", { name: first?.code ?? "" });
+  await expect(record).toBeVisible();
+  await expect(record.getByRole("button")).toHaveCount(0);
 });
 
 test("opens each page that moved at its new address", async ({ page }) => {
@@ -148,7 +155,7 @@ test("titles each page by what it is, and says where it sits", async ({ page }) 
   const crumbs = page.getByRole("banner").getByRole("navigation", { name: opsCopy.shell.crumbs });
   await expect(crumbs.getByRole("listitem")).toHaveText([opsCopy.shell.nav.inventory, opsCopy.shell.sections.counts]);
   await page.goto("/settings/prices");
-  await expect(page).toHaveTitle("Services · Settings · Mane Man operations");
+  await expect(page).toHaveTitle("Consultation and fees · Settings · Mane Man operations");
 });
 
 test("says who is signed in, in the account's panel", async ({ page }) => {
@@ -352,9 +359,7 @@ test("goes to a page by its name from anywhere, with Ctrl K or Search", async ({
     .getByRole("banner")
     .getByRole("button", { name: new RegExp(opsCopy.shell.search) })
     .click();
-  await palette.getByLabel(opsCopy.shell.palette.label).fill("hair systems");
-  await palette
-    .getByRole("link", { name: opsCopy.shell.palette.setting(opsCopy.settingsPageNames["hair-systems"]) })
-    .click();
-  await expect(page).toHaveURL(/\/settings\/hair-systems$/);
+  await palette.getByLabel(opsCopy.shell.palette.label).fill("packages");
+  await palette.getByRole("link", { name: opsCopy.shell.palette.setting(opsCopy.settingsPageNames.packages) }).click();
+  await expect(page).toHaveURL(/\/settings\/packages$/);
 });
