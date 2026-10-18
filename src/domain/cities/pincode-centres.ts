@@ -36,7 +36,7 @@ export async function placePincodeCentres(pass: Pass): Promise<number> {
     .prepare(
       `SELECT pincode FROM serviceable_pincodes
        WHERE centre_lat IS NULL AND (centre_asked_at IS NULL OR centre_asked_at < ?1)
-       ORDER BY served DESC, pincode LIMIT ?2`,
+       LIMIT ?2`,
     )
     .bind(askedBefore, PER_PASS)
     .all<{ pincode: string }>();

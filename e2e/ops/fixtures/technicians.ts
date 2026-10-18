@@ -28,6 +28,8 @@ const technician = (
   out_of_codes: false,
   devices,
   leave,
+  hours: [],
+  home: null,
 });
 
 export const TECHNICIANS = {
@@ -64,7 +66,16 @@ export const TECHNICIANS = {
         },
       ],
       // Leave ops recorded here, which the dispatch board reads from the same rows (ADR 0062).
-      [{ id: "89000000-0000-4000-8000-000000000001", from: "2027-10-02", to: "2027-10-06", note: "Family wedding" }],
+      [
+        {
+          id: "89000000-0000-4000-8000-000000000001",
+          from: "2027-10-02",
+          to: "2027-10-06",
+          from_time: null,
+          to_time: null,
+          note: "Family wedding",
+        },
+      ],
     ),
     // Nobody has given them a city yet, so only national staff see them.
     technician(3, "Faizan Ali", "FA", null, [], [], null),
@@ -121,6 +132,8 @@ export const SANDEEP_LEAVE = {
       id: "89000000-0000-4000-8000-000000000001",
       from: "2027-10-02",
       to: "2027-10-06",
+      from_time: null,
+      to_time: null,
       note: "Family wedding",
       jobs: [
         {

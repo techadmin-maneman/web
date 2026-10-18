@@ -203,7 +203,16 @@ test("lists the technicians switched off apart, and switches one back on", async
     ...TECHNICIANS,
     technicians: [
       ...TECHNICIANS.technicians,
-      { ...RAVI, initials: "RK", sign_in_stopped_at: null, out_of_codes: false, devices: [], leave: [] },
+      {
+        ...RAVI,
+        initials: "RK",
+        sign_in_stopped_at: null,
+        out_of_codes: false,
+        devices: [],
+        leave: [],
+        hours: [],
+        home: null,
+      },
     ],
     switched_off: [],
   };

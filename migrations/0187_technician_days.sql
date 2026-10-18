@@ -30,3 +30,5 @@ ALTER TABLE technician_leave ADD COLUMN to_time TEXT CHECK (to_time IS NULL OR t
 ALTER TABLE serviceable_pincodes ADD COLUMN centre_lat REAL;
 ALTER TABLE serviceable_pincodes ADD COLUMN centre_lng REAL;
 ALTER TABLE serviceable_pincodes ADD COLUMN centre_asked_at TEXT;
+-- The pincodes still to place, so the hourly pass reads nothing once every one has its centre.
+CREATE INDEX serviceable_pincodes_unplaced ON serviceable_pincodes (centre_asked_at) WHERE centre_lat IS NULL;

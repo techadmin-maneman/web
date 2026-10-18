@@ -2400,6 +2400,10 @@ Made by `0021_referrals.sql`; changed by `0043_area_names.sql`, `0167_cities_as_
 | `centre_lng` | REAL | yes |  |  |  |
 | `centre_asked_at` | TEXT | yes |  |  |  |
 
+Indexes:
+
+- `serviceable_pincodes_unplaced`: on (`centre_asked_at`), where `centre_lat IS NULL`
+
 Triggers: `serviceable_pincodes_in_a_city`, `serviceable_pincodes_moved_to_a_city`.
 
 ## services
