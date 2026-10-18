@@ -75,7 +75,7 @@ test("the forms' error states meet WCAG 2.2 AA", async ({ page }) => {
   // The booking page asks for the name and number first, then the pincode, the visit and the address
   // (docs/decisions/0116-book-asks-for-the-name-and-number-first.md).
   await visit(page, "/book");
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await expect(page.getByText(referralCopy.referral.form.nameError)).toBeVisible();
   expect(await violations(page)).toEqual([]);
 

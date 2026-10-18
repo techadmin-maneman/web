@@ -100,10 +100,11 @@ describe("consent notices", () => {
   it("names the booking form's line on /book for the site, with the words the invite's page shows", () => {
     const site = findNotice(CONSULTATION_NOTICES.site_booking);
     const landing = findNotice(CONSULTATION_NOTICES.referral_landing);
-    expect(site?.version).toBe("site-consultation-v1");
-    expect(landing?.version).toBe("referral-consultation-v1");
+    expect(site?.version).toBe("site-consultation-v2");
+    expect(landing?.version).toBe("referral-consultation-v2");
     expect(site?.purpose).toBe(landing?.purpose);
     expect(site?.text).toEqual(landing?.text);
+    expect(site?.text).toEqual(["Send my booking confirmation and updates via WhatsApp."]);
   });
 
   it("carries the design's booking wording", () => {

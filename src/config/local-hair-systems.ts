@@ -5,5 +5,5 @@ export const LOCAL_HAIR_SYSTEMS = [
   { tier: "essential", name: "Mane Man Essential", price: 2_500_000 },
   { tier: "active", name: "Mane Man Active", price: 3_000_000 },
   { tier: "natural", name: "Mane Man Natural", price: 3_500_000 },
-  { tier: "natmax", name: "Mane Man NatMax", price: 4_000_000 },
+  { tier: "natmax", name: "Mane Man Celebrity", price: 4_000_000 },
 ] as const;

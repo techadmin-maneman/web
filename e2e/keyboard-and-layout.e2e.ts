@@ -76,6 +76,8 @@ function focusIsInSight(page: Page): Promise<{ what: string; inSight: boolean } 
 test("no control the keyboard reaches on the home page is hidden under the header or the sticky bar", async ({
   page,
 }) => {
+  // Where each control comes to rest is the question, so the page jumps to it rather than scrolling smoothly there.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const hidden: string[] = [];
   let previous = "";

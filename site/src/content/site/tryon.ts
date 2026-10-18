@@ -109,6 +109,10 @@ export const tryOn = {
     ],
     choose: "Choose a photo",
     camera: "Use the camera",
+    /** With the camera open in the page: the shutter, and the way back. */
+    snap: "Take the photo",
+    closeCamera: "Cancel",
+    cameraLabel: "The camera’s view of you",
     previewCaption: "Your photo appears here",
     previewAlt: "The photo you chose",
     oval: "Fill the oval",

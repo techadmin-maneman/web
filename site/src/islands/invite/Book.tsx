@@ -44,7 +44,11 @@ function BookPage(props: Props) {
         {bookingTitle(answer, plan)}
       </h1>
       <div class={styles.offer}>
-        <p>{answer?.served === false ? booking.introWaitlist : booking.intro}</p>
+        {answer?.served === false ? (
+          <p>{booking.introWaitlist}</p>
+        ) : (
+          booking.intro.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
+        )}
       </div>
       {step === "start" || kept === null ? (
         <AboutYou turnstileSiteKey={props.turnstileSiteKey} kept={kept} onKept={page.keepPerson} />

@@ -10,21 +10,9 @@
 export const DESIGN_PLACEHOLDERS = {
   whatsapp: ["919810040200", "WhatsApp · +91 98100 40200"],
   heroFootage: ["hero.mp4", "hero-phone.mp4", "hero-poster.jpg"],
-  whatPlate: ["membrane-on-skin.jpg"],
-  norwoodPhotos: ["nw-1.jpg", "nw-2.jpg", "nw-3.jpg", "nw-4.jpg", "nw-5.jpg", "nw-6.jpg", "nw-7.jpg"],
+  norwoodPhotos: ["nw-3.jpg", "nw-4.jpg", "nw-5.jpg", "nw-6.jpg", "nw-7.jpg"],
   teaserPair: ["ba-before.jpg", "ba-after.jpg"],
   stepPhotos: ["step-02-template.jpg", "step-03-fit.jpg", "step-04-kit.jpg"],
-  basePhotos: ["base-monofilament.jpg", "base-thinskin.jpg"],
-  technicians: ["Imran Qureshi", "Sandeep Rawat", "Vikas Chauhan", "tech-1.jpg", "tech-2.jpg", "tech-3.jpg"],
-  testimonials: [
-    "Client name",
-    "client-1.jpg",
-    "client-2.jpg",
-    "client-3.jpg",
-    "The technician came on a Sunday morning and was finished by eleven. I had a wedding that week and nobody said a word about my hair.",
-    "The first fit took the morning. What I didn’t expect was how easy the visits after it are — they lift it, clean the base, re-cut it, and are gone before lunch.",
-    "I asked what happens if I hate it. They gave me the 14-day terms before taking any money, which is why I went ahead.",
-  ],
   founderNote: [
     "I started losing my hair at twenty-six. By thirty I had been to four clinics, and not one would tell me a price before I was sitting in the chair with a consultant beside me.",
     "So Mane Man does two things differently. The technician comes to your home, so nobody sees you walk in anywhere. And you hear the price at the free consultation, before anything is fitted or paid.",

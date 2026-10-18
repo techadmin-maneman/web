@@ -13,6 +13,7 @@ export function HowItWorks() {
             <span class={styles.stepNumber}>{step.n}</span>
             <div>
               <h3 class={styles.stepTitle}>{step.title}</h3>
+              <p class={styles.stepLead}>{step.lead}</p>
               <p class={styles.stepBody}>{step.body}</p>
             </div>
           </li>

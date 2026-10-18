@@ -82,3 +82,16 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* The camera's view, as a mirror shows you, under the oval to fill. */
+.cameraView {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.cameraView ~ .oval {
+  position: relative;
+}

@@ -1,6 +1,7 @@
 ---
 // The fixed header. Below 760 px the section links and the area tag hide, and the design draws no menu button: the
-// footer, full on the home page and slim on every other, carries the way around.
+// footer, full on the home page and slim on every other, carries the way around. The booking button says less there, so
+// it fits beside the wordmark.
 import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { buttonLook } from "@maneman/ui/Button";
@@ -31,7 +32,8 @@ const booking = isBookingPage(pagePath(Astro.url.pathname));
     <span class={capsLook("area wide-only")}>{header.area}</span>
     {!booking && (
       <a class={buttonLook({ variant: "outlineOnInk", size: "small" })} href="/book">
-        {header.book}
+        <span class="wide-only">{header.book}</span>
+        <span class="phone-only">{header.bookShort}</span>
       </a>
     )}
   </div>
@@ -82,6 +84,11 @@ const booking = isBookingPage(pagePath(Astro.url.pathname));
   }
   @media (max-width: 760px) {
     .wide-only {
+      display: none;
+    }
+  }
+  @media (min-width: 761px) {
+    .phone-only {
       display: none;
     }
   }

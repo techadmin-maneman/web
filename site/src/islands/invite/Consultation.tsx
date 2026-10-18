@@ -39,6 +39,7 @@ import {
 } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
+import { CONSULTATION_START } from "./person.ts";
 import { byDoor, leadSent } from "./submit.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
@@ -215,7 +216,7 @@ function AddressPart(
 /**
  * The pincode is served, so the page books a free consultation. The form also takes the address the
  * consultation is at, so nothing is booked without one (ADR 0081). It may book the
- * consultation and fit in one visit instead: three hours, in the morning or the
+ * consultation and fit in one visit instead, in the morning or the
  * afternoon, paid for once the client is fitted (ADR 0105), and, on the site's own page, with a discount code that
  * comes off the hair system's price when they pay. That one is booked only once the WhatsApp code sent to
  * the number has been entered.
@@ -225,7 +226,7 @@ export function Consultation(props: ConsultationProps) {
   const form = useTurnstileForm(
     props.turnstileSiteKey,
     person === null ? MARKED_WITH_PERSON : MARKED_HERE,
-    person === null ? undefined : { ...person, consent: true },
+    person === null ? CONSULTATION_START : { ...person, consent: true },
   );
   const numberCode = useNumberCode();
   const [picked, setPicked] = useState<Slot>(() => ({ date: indiaTomorrow(), window: "morning", start: null }));

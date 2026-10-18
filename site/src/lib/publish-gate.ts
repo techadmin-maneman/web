@@ -1,8 +1,9 @@
 // The production build's gate (docs/site.md). A production build stops if
 // a published block still holds the design's placeholder material, if a
 // consent notice or a legal page's wording has not been approved, if a price
-// is typed into the site's or the landing's copy, which give none
-// (docs/decisions/0204-the-sites-price-pipeline-removed.md), or if a count of the
+// of ours is typed into the site's or the landing's copy, which give none
+// (docs/decisions/0204-the-sites-price-pipeline-removed.md; the comparison gives
+// other treatments' costs, ADR 0213), or if a count of the
 // visits a referral earns is typed rather than built from what ops set
 // (docs/decisions/0107-referral-rewards-in-the-console.md). Staging builds never run it.
 
@@ -17,13 +18,9 @@ type Block = { readonly publish: boolean };
 const BLOCKS: Record<PlaceholderBlockName, Block> = {
   whatsapp: site.whatsapp,
   heroFootage: site.heroFootage,
-  whatPlate: site.whatPlate,
   norwoodPhotos: site.norwoodPhotos,
   teaserPair: site.teaserPair,
   stepPhotos: site.stepPhotos,
-  basePhotos: site.basePhotos,
-  technicians: site.technicians,
-  testimonials: site.testimonials,
   founderNote: site.founderNote,
   privacy: site.legalPages.privacy,
   terms: site.legalPages.terms,
@@ -46,9 +43,16 @@ function stringsIn(value: unknown): string[] {
  */
 const TYPED_PRICE = /(?:Rs\.|₹)\s?\d/;
 
-/** Every price the pages give that is typed by hand, ours or anyone else's. */
+/** The comparison's typical costs of a transplant and of medication: other treatments' prices, never ours. */
+const THEIRS: ReadonlySet<string> = new Set(
+  site.comparison.rows
+    .flatMap((row): readonly site.ComparisonCell[] => row.cells.slice(0, 2))
+    .filter((cell): cell is string => typeof cell === "string"),
+);
+
+/** Every price of ours the pages give that is typed by hand. */
 function typedPrices(pages: readonly unknown[]): string[] {
-  return pages.flatMap(stringsIn).filter((text) => TYPED_PRICE.test(text));
+  return pages.flatMap(stringsIn).filter((text) => TYPED_PRICE.test(text) && !THEIRS.has(text));
 }
 
 /** A count of visits in figures written into a sentence, "3 service visits", where what a referral earns should build it. */

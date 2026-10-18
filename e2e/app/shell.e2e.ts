@@ -82,7 +82,7 @@ test("says the error when the API cannot be reached, with a way to try again", a
   await expect(page).toHaveTitle("We couldn’t load your account. · Mane Man");
   await expect(page.getByRole("link", { name: appCopy.change.message })).toHaveAttribute(
     "href",
-    "https://wa.me/919007973247",
+    "https://wa.me/919034572990",
   );
   expect(await axeViolations(page)).toEqual([]);
 

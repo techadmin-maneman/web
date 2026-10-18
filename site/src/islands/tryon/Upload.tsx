@@ -7,6 +7,7 @@ import { tryOn } from "../../content/site.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import shared from "./TryOn.module.css";
 import styles from "./upload.module.css";
+import { useCamera, type Camera } from "./useCamera.ts";
 
 /** The guide a photo is framed to: a dashed oval with gilt corners, and its line beneath. */
 function Oval() {
@@ -41,10 +42,83 @@ function Oval() {
   );
 }
 
-/** Step one: the guidelines, and a photograph from the files or the camera. */
+/** The buttons beneath the guidelines: a photo or the camera, and, once the camera is open, its shutter. */
+function Actions(props: { camera: Camera; onChoose: () => void; onCamera: () => void; onSnap: () => void }) {
+  if (props.camera.open) {
+    return (
+      <div class={styles.actions}>
+        <Button variant="light" size="action" onClick={props.onSnap}>
+          {tryOn.upload.snap}
+        </Button>
+        <Button variant="outlineOnInk" size="action" onClick={props.camera.close}>
+          {tryOn.upload.closeCamera}
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div class={styles.actions}>
+      <Button variant="light" size="action" onClick={props.onChoose}>
+        {tryOn.upload.choose}
+      </Button>
+      {props.camera.available && (
+        <Button variant="outlineOnInk" size="action" onClick={props.onCamera}>
+          {tryOn.upload.camera}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/** The frame beside them: the camera's view in the oval, the photo chosen, or the oval waiting for one. */
+function Preview(props: { camera: Camera; photo: string | null }) {
+  if (props.camera.open) {
+    return (
+      <div class={styles.preview}>
+        <video
+          ref={props.camera.video}
+          class={styles.cameraView}
+          autoplay
+          muted
+          playsInline
+          aria-label={tryOn.upload.cameraLabel}
+        />
+        <Oval />
+      </div>
+    );
+  }
+  if (props.photo !== null) {
+    return (
+      <div class={styles.preview}>
+        <img class={styles.previewPhoto} src={props.photo} alt={tryOn.upload.previewAlt} />
+      </div>
+    );
+  }
+  return (
+    <div class={styles.preview}>
+      <Oval />
+      <div class={styles.previewCaption}>{tryOn.upload.previewCaption}</div>
+    </div>
+  );
+}
+
+/**
+ * Step one: the guidelines, and a photograph from the files or the camera. The camera opens in the page, its view in
+ * the oval; where the page cannot open one, the phone's own camera is asked for through a file input.
+ */
 export function Upload(props: { photo: string | null; heading: HeadingRef; onChoose: (file: File) => void }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
+  const camera = useCamera();
+
+  async function openCamera() {
+    if (!(await camera.start())) cameraInput.current?.click();
+  }
+
+  async function snap() {
+    const file = await camera.take();
+    if (file !== null) props.onChoose(file);
+  }
 
   function chosen(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
@@ -72,39 +146,22 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
             </li>
           ))}
         </ol>
-        <div class={styles.actions}>
-          <Button
-            variant="light"
-            size="action"
-            onClick={() => {
-              fileInput.current?.click();
-            }}
-          >
-            {tryOn.upload.choose}
-          </Button>
-          <Button
-            variant="outlineOnInk"
-            size="action"
-            onClick={() => {
-              cameraInput.current?.click();
-            }}
-          >
-            {tryOn.upload.camera}
-          </Button>
-        </div>
+        <Actions
+          camera={camera}
+          onChoose={() => {
+            fileInput.current?.click();
+          }}
+          onCamera={() => {
+            void openCamera();
+          }}
+          onSnap={() => {
+            void snap();
+          }}
+        />
         <FileInput ref={fileInput} accept="image/jpeg,image/png" hidden onChange={chosen} />
         <FileInput ref={cameraInput} accept="image/*" capture="user" hidden onChange={chosen} />
       </div>
-      <div class={styles.preview}>
-        {props.photo === null ? (
-          <>
-            <Oval />
-            <div class={styles.previewCaption}>{tryOn.upload.previewCaption}</div>
-          </>
-        ) : (
-          <img class={styles.previewPhoto} src={props.photo} alt={tryOn.upload.previewAlt} />
-        )}
-      </div>
+      <Preview camera={camera} photo={props.photo} />
     </div>
   );
 }

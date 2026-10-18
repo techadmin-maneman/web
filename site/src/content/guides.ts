@@ -115,6 +115,75 @@ export const guides: readonly Guide[] = [
     ],
   },
   {
+    slug: "hair-system-materials",
+    publish: true,
+    published: "2026-10-19",
+    updated: "2026-10-19",
+    title: "Materials and construction",
+    description: "Lace, mono, skin and silk; knots, loops and density. What each hair system is made of, and why.",
+    lead: "What each hair system is made of, and what that means for how it looks, breathes and lasts.",
+    sections: [
+      {
+        heading: "The base: lace, mono, skin and silk",
+        paragraphs: [
+          "The base decides everything: how natural it looks, how cool it feels, how long it lasts. The thinner the base, the better it looks and the sooner it wears.",
+          "Lace: the finest, softest mesh. Its knots can be bleached until they vanish, which is why every hairline we fit is lace.",
+          "Mono: monofilament, a fine, tough mesh. It breathes, takes the most hair, and outlasts every other base.",
+          "Skin: a clear polyurethane film, 0.08 to 0.10 mm thin. No mesh to see, so the hair seems to grow straight from the scalp.",
+          "Silk, multi-layer: hair knotted onto a lace layer and drawn up through silk, so every knot sits hidden between the two. A parting shows scalp.",
+        ],
+      },
+      {
+        heading: "How the hair is tied in: knots and loops",
+        paragraphs: [
+          "Every hair is tied or looped into the base by hand. How it is tied decides how natural the root looks and how well it holds.",
+          "Single knot: one small knot for each hair. Fine and flat, on lace and skin.",
+          "Double knot: each hair knotted twice, for the sides and back of a mono base.",
+          "Bleached knot: knots lightened until they disappear. Only lace takes it, so it is kept for the hairline.",
+          "V-looped: no knot at all. Each hair is looped through the skin, so it seems to grow from it.",
+          "Injected: hair set into the skin so that it stands up from the root. Made for a parting or a brushed-back style.",
+        ],
+      },
+      {
+        heading: "The rim and the hairline",
+        paragraphs: [
+          "The edges are where a hair system is held, and where it is seen.",
+          "Clear PU rim: a thin, transparent polyurethane edge. The tape grips it, never the mesh, and it disappears at the temples.",
+          "NPU rim: polyurethane reinforced with mesh. Stronger and slightly thicker, so it is kept to the sides and back, where nobody looks.",
+          "Lace front: up to an inch of lace along the hairline, its knots bleached until they disappear. It is what lets a hairline pass a close look, and every hair system we fit has one.",
+        ],
+      },
+      {
+        heading: "How much hair: density",
+        paragraphs: [
+          "Density is how much hair is tied in, against a full natural head. More is not better: too much hair is what gives a hair system away. We match yours to the hair you still have at the sides, not the hair you had at twenty.",
+          "80%, light: the scalp shows at a parting. For men over sixty.",
+          "100%, medium light: natural, without much volume. Most men’s choice, and ours over forty.",
+          "120%, medium: visibly fuller, and holds a style. For younger men, and men whose own hair is thick.",
+          "140%, medium heavy: heavy for daily wear. On request only.",
+        ],
+      },
+      {
+        heading: "The hair",
+        paragraphs: [
+          "100% real human hair: cut, washed and styled like your own. It does not grow, so the hair system is renewed when it wears.",
+          "Indian remy hair, on Mane Man Natural: every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
+          "Matched to you: colour, grey and wave matched to your own hair in daylight, at the consultation.",
+        ],
+      },
+      {
+        heading: "What we do not fit, and why",
+        paragraphs: [
+          "Ultra-thin skin, 0.03 mm: the most invisible base made, and it lasts about a month.",
+          "Full Swiss lace: the most fragile base there is, lasting one to two months.",
+          "Lace with no rim: it must be glued along its whole edge every few weeks. A salon job, not a home service.",
+          "140% and denser, as standard: too much hair is what makes a hair system obvious.",
+          "European hair: finer, dearer, and a poor match for Indian hair.",
+        ],
+      },
+    ],
+  },
+  {
     slug: "how-a-hair-system-is-fitted",
     publish: true,
     published: "2026-10-11",

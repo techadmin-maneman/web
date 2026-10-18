@@ -32,7 +32,7 @@ describe("POST /api/lead", () => {
       { name: "Karan Bhatia", mobile_e164: "+919810000002", contactable: 1 },
     ]);
     expect(await rows("SELECT purpose, notice_version, source, granted FROM consents")).toEqual([
-      { purpose: "whatsapp_visits", notice_version: "site-consultation-v1", source: "site_booking", granted: 1 },
+      { purpose: "whatsapp_visits", notice_version: "site-consultation-v2", source: "site_booking", granted: 1 },
     ]);
     const leads = await rows("SELECT id, source, city, proposed_visit_date, utm_source, utm_campaign FROM leads");
     expect(leads).toEqual([

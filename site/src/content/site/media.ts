@@ -1,37 +1,68 @@
-// Pictures and the people the home page shows: the film, the stages, the technicians, the clients' words.
+// Pictures and the people the home page shows: the film, the results, the stages, the steps, the founder's words.
 
 export interface Picture {
   readonly file: string;
   readonly alt: string;
 }
 
+/** A fit filmed at a client's home: the hair system trimmed, its lace cut at the hairline, the hair styled. */
 export const heroFootage = {
-  publish: false,
-  video: "hero.mp4",
+  publish: true,
+  video: "fit-film.mp4",
   /**
-   * The same film for phones: its centre, upright, without sound, under 800 KB. Made from `video` with
-   * ffmpeg -i hero.mp4 -vf crop=406:720 -an -c:v libx264 -preset slow -crf 24 -movflags +faststart hero-phone.mp4
+   * The same film for phones: upright, without sound, under 800 KB. Both are cut from one montage of the fit's
+   * clips; the wide film is its middle band:
+   * ffmpeg -i montage.mp4 -vf crop=1080:608:0:576,scale=1280:720 -an -c:v libx264 -preset slow -crf 27 fit-film.mp4
+   * ffmpeg -i montage.mp4 -vf scale=406:720,crop=406:720 -an -c:v libx264 -preset slow -crf 30 fit-film-phone.mp4
    */
-  phoneVideo: "hero-phone.mp4",
-  poster: "hero-poster.jpg",
+  phoneVideo: "fit-film-phone.mp4",
+  /** The montage's first frame, upright: a phone shows it whole and a wide screen its middle. */
+  poster: "fit-film-poster.jpg",
   tag: "Placeholder footage",
 };
 
-export const whatPlate = {
-  publish: false,
-  image: {
-    file: "membrane-on-skin.jpg",
-    alt: "A hair-system membrane laid against scalp skin, individual hairs passing through it",
-  },
+export interface ResultPair {
+  readonly before: Picture;
+  readonly after: Picture;
+  readonly caption: string;
+  /** Made by AI, not taken of a client: tagged so. */
+  readonly illustration?: true;
+}
+
+/** The before-and-after strip beneath the hero. */
+export const resultPairs = {
+  publish: true,
+  pairs: [
+    {
+      before: { file: "result-1-before.jpg", alt: "A man with thinning hair on top, before the fit" },
+      after: { file: "result-1-after.jpg", alt: "The same man smiling, with a full head of hair" },
+      caption: "Ten years younger.",
+    },
+    {
+      before: { file: "result-2-before.jpg", alt: "The same man, bald on top, in a barber’s cape" },
+      after: { file: "result-2-after.jpg", alt: "The same man after the fit, hair swept back" },
+      caption: "Life-changing.",
+    },
+    {
+      before: { file: "result-3-before.jpg", alt: "The back of the head before the fit, bald at the crown" },
+      after: { file: "result-3-after.jpg", alt: "The back of the head after the fit, the crown covered" },
+      caption: "Head held high again.",
+    },
+    {
+      before: { file: "result-4-before.jpg", alt: "A young man in a mirror, checking thinning hair" },
+      after: { file: "result-4-after.jpg", alt: "The same young man with full hair" },
+      caption: "Love it.",
+      illustration: true,
+    },
+  ] satisfies ResultPair[],
 };
 
 export const norwoodPhotos = {
   publish: false,
   /** Where the photographs are not cleared, the line-drawn profiles stand in: "photos" or "drawings". */
   use: "photos" as "photos" | "drawings",
+  /** Stages III to VII, in order. */
   images: [
-    { file: "nw-1.jpg", alt: "A man at Norwood stage I, seen in three-quarter view" },
-    { file: "nw-2.jpg", alt: "A man at Norwood stage II, seen in three-quarter view" },
     { file: "nw-3.jpg", alt: "A man at Norwood stage III, seen in three-quarter view" },
     { file: "nw-4.jpg", alt: "A man at Norwood stage IV, seen in three-quarter view" },
     { file: "nw-5.jpg", alt: "A man at Norwood stage V, seen in three-quarter view" },
@@ -40,102 +71,36 @@ export const norwoodPhotos = {
   ] satisfies Picture[],
 };
 
-/** The before/after pair in the try-on teaser. */
+/** The scale's last card: a hairline restored with a hair system. */
+export const norwoodRestored = {
+  publish: true,
+  image: { file: "norwood-restored.jpg", alt: "A man’s full hairline, restored with a hair system" },
+};
+
+/** The try-on teaser's pair: a photograph, and the try-on's look on it. */
 export const teaserPair = {
-  publish: false,
-  before: { file: "ba-before.jpg", alt: "Before, crown thinning" },
-  after: { file: "ba-after.jpg", alt: "After a hair system is fitted" },
+  publish: true,
+  before: { file: "tryon-before.jpg", alt: "A man’s photo before the try-on, thinning on top" },
+  after: { file: "tryon-after.jpg", alt: "The same photo in the try-on’s side part look" },
 };
 
 export const stepPhotos = {
-  publish: false,
+  publish: true,
   images: [
-    { file: "step-02-template.jpg", alt: "Hands laying strips of tape over cling film on the crown of a head" },
-    { file: "step-03-fit.jpg", alt: "Barber’s scissors trimming hair at a bonded hairline" },
-    {
-      file: "step-04-kit.jpg",
-      alt: "A technician’s canvas tool roll laid open, scissors, comb, adhesive remover and brush in order",
-    },
+    { file: "step-consultation.jpg", alt: "A technician measuring a client’s head with a tape" },
+    { file: "step-first-fit.jpg", alt: "A client smiling after the first fit" },
+    { file: "step-service.jpg", alt: "A hair system laid out with its tape, ready to bond" },
   ] satisfies Picture[],
-};
-
-/** Two of the base materials up close, in "Materials and construction". */
-export const basePhotos = {
-  publish: false,
-  images: [
-    {
-      file: "base-monofilament.jpg",
-      alt: "Macro of a monofilament mesh base with hairs hand-tied into it as visible knots",
-    },
-    {
-      file: "base-thinskin.jpg",
-      alt: "Macro of a thin polyurethane base held between finger and thumb, hair passing through it",
-    },
-  ] satisfies Picture[],
-};
-
-export const technicians = {
-  publish: false,
-  title: "Who comes to your home",
-  yearsLabel: "years fitting",
-  fitsLabel: "fits completed",
-  people: [
-    {
-      name: "Imran Qureshi",
-      photo: { file: "tech-1.jpg", alt: "Imran Qureshi, hair-system technician" },
-      years: "11",
-      fits: "1,400",
-    },
-    {
-      name: "Sandeep Rawat",
-      photo: { file: "tech-2.jpg", alt: "Sandeep Rawat, hair-system technician" },
-      years: "8",
-      fits: "900",
-    },
-    {
-      name: "Vikas Chauhan",
-      photo: { file: "tech-3.jpg", alt: "Vikas Chauhan, hair-system technician" },
-      years: "6",
-      fits: "600",
-    },
-  ],
-};
-
-export const testimonials = {
-  publish: false,
-  title: "What clients say",
-  intro: "Three men who had a hair system fitted at home in the last year.",
-  quotes: [
-    {
-      photo: { file: "client-1.jpg", alt: "Portrait of a Mane Man client" },
-      quote:
-        "The technician came on a Sunday morning and was finished by eleven. I had a wedding that week and nobody said a word about my hair.",
-      name: "Client name",
-      meta: "Age · Norwood IV · Gurgaon",
-    },
-    {
-      photo: { file: "client-2.jpg", alt: "Portrait of a Mane Man client" },
-      quote:
-        "The first fit took the morning. What I didn’t expect was how easy the visits after it are — they lift it, clean the base, re-cut it, and are gone before lunch.",
-      name: "Client name",
-      meta: "Age · Norwood V · Noida",
-    },
-    {
-      photo: { file: "client-3.jpg", alt: "Portrait of a Mane Man client" },
-      quote:
-        "I asked what happens if I hate it. They gave me the 14-day terms before taking any money, which is why I went ahead.",
-      name: "Client name",
-      meta: "Age · Norwood III · Delhi",
-    },
-  ],
 };
 
 export const founderNote = {
-  publish: false,
+  publish: true,
   label: "A note from the founder",
   paragraphs: [
-    "I started losing my hair at twenty-six. By thirty I had been to four clinics, and not one would tell me a price before I was sitting in the chair with a consultant beside me.",
-    "So Mane Man does two things differently. The technician comes to your home, so nobody sees you walk in anywhere. And you hear the price at the free consultation, before anything is fitted or paid.",
+    "I started losing my hair at twenty-four. By thirty, I’d had a transplant and spent years on medication, trying to hold on to what I was losing. Over time, I realised these came with trade-offs I didn’t like. I was fighting a losing battle.",
+    "Hair loss is hard enough. Navigating an industry that can make you feel worse about yourself shouldn’t be part of it.",
+    "Losing your hair is natural. It’s nobody’s fault, and it doesn’t define you. You can own it, do something about it, or simply move on. What matters is feeling good about the person you see in the mirror, and getting on with being the best version of yourself.",
+    "That’s why I started Mane Man. A more private, straightforward way to get your hair back, on your terms.",
   ],
   signature: "Founder, Mane Man",
 };

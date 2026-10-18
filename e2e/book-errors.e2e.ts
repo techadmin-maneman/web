@@ -25,19 +25,18 @@ import {
 } from "./book-fixtures.ts";
 
 // An empty submit left focus on the button, with the first errors two or three screens above it.
-test("an empty first step marks the name, the number and the agreement, focuses the name, and keeps nothing", async ({
-  page,
-}) => {
+// The WhatsApp line starts ticked (ADR 0213), so an empty first step marks only the name and the number.
+test("an empty first step marks the name and the number, focuses the name, and keeps nothing", async ({ page }) => {
   await mockApi(page);
   const leads = await leadCalls(page);
   await visit(page, "/book");
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
 
   await expect(page.getByText(referralCopy.referral.form.nameError)).toBeVisible();
   await expect(page.getByText(siteCopy.tryOn.gate.mobileError)).toBeVisible();
-  await expect(page.getByText(referralCopy.referral.form.consentError)).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.form.consentError)).toHaveCount(0);
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toBeFocused();
-  await expect(page.getByText("Check the 3 fields marked above.")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
   expect(leads).toHaveLength(0);
 });
@@ -67,8 +66,8 @@ test("a number that is not a mobile is marked at its field, focused, and not sen
   await visit(page, "/book");
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("5876543210");
-  await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
 
   const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
   await expect(mobile).toHaveAttribute("aria-invalid", "true");
@@ -85,8 +84,8 @@ test("a name that is not letters is marked at its field, focused, and not sent",
   await visit(page, "/book");
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Win at example.com");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
-  await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
 
   const name = page.getByLabel(siteCopy.tryOn.gate.name);
   await expect(name).toHaveAttribute("aria-invalid", "true");
@@ -106,8 +105,8 @@ test("the fields the API refuses are marked where they are, the first focused, a
   await visit(page, "/book");
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
-  await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
 
   const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
   await expect(mobile).toHaveAttribute("aria-invalid", "true");

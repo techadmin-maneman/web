@@ -69,7 +69,7 @@ describe("POST /api/consultation", () => {
     expect(booked).toEqual({
       name: "Karan Bhatia",
       purpose: "whatsapp_visits",
-      notice_version: "site-consultation-v1",
+      notice_version: "site-consultation-v2",
       type: "consultation",
       amount: 0,
       source: "form",

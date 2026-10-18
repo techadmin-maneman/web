@@ -18,7 +18,10 @@ test("lists every guide, and each opens with its title and a way to book", async
   await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(0);
   for (const section of first.sections)
     await expect(page.getByRole("heading", { level: 2, name: section.heading })).toBeVisible();
-  await expect(page.getByRole("link", { name: guideCopy.guidesPage.book })).toHaveAttribute("href", "/book");
+  await expect(page.getByRole("main").getByRole("link", { name: guideCopy.guidesPage.book })).toHaveAttribute(
+    "href",
+    "/book",
+  );
 });
 
 // As built it names no city; the site's Worker writes in those ops serve (test/worker/site/site-worker-cities.test.ts).

@@ -7,6 +7,7 @@ import { booking } from "../../content/site.ts";
 import { leaveLead } from "../../lib/api.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { PersonFieldset, Send, StepLine } from "./fields.tsx";
+import { CONSULTATION_START } from "./person.ts";
 import styles from "./Invite.module.css";
 import { mobileToSend, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
 
@@ -20,7 +21,7 @@ export function AboutYou(props: {
   kept: PersonFields | null;
   onKept: (fields: PersonFields) => void;
 }) {
-  const form = useTurnstileForm(props.turnstileSiteKey, undefined, props.kept ?? undefined);
+  const form = useTurnstileForm(props.turnstileSiteKey, undefined, props.kept ?? CONSULTATION_START);
 
   function submit(event: Event) {
     const { fields } = form;
@@ -61,7 +62,7 @@ export function AboutYou(props: {
         failure={form.failure}
         marked={form.personBad.length}
         sending={form.sending}
-        label={booking.next}
+        label={booking.start}
         sendingLabel={booking.saving}
       />
     </form>

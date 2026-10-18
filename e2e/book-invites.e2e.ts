@@ -96,8 +96,9 @@ test("says nothing about an invite to someone who came here directly", async ({ 
 
   await openForm(page);
   // The page is headed and introduced once: the form beneath it repeats neither.
-  await expect(page.getByRole("heading", { name: referralCopy.referral.consultation.title })).toHaveCount(1);
-  await expect(page.getByText(/^Your technician measures your scalp and matches your colour/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: siteCopy.booking.title })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: referralCopy.referral.consultation.title })).toHaveCount(0);
+  await expect(page.getByText(/^In just 60 minutes, a specialist measures/)).toBeVisible();
   await expect(page.getByText(referralCopy.referral.consultation.body)).toHaveCount(0);
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 
@@ -277,7 +278,7 @@ test("a browser that blocks storage books on the invite’s page and here, and s
   await fillAddress(page);
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
-  await page.getByText(CONSULTATION_CONSENT).click();
+  await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();

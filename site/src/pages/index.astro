@@ -6,11 +6,9 @@ import Faq from "../components/home/Faq.astro";
 import GuaranteeFounder from "../components/home/GuaranteeFounder.astro";
 import Hero from "../components/home/Hero.astro";
 import HowItWorks from "../components/home/HowItWorks.astro";
-import Materials from "../components/home/Materials.astro";
 import Norwood from "../components/home/Norwood.astro";
 import Range from "../components/home/Range.astro";
-import Technicians from "../components/home/Technicians.astro";
-import Testimonials from "../components/home/Testimonials.astro";
+import Results from "../components/home/Results.astro";
 import TryOnTeaser from "../components/home/TryOnTeaser.astro";
 import WhatItIs from "../components/home/WhatItIs.astro";
 import { pageDescriptions, pageTitles } from "../content/site.ts";
@@ -29,16 +27,14 @@ const structuredData = [organization(), webSite(), localBusiness(), faqPage()];
     </script>
   </Fragment>
   <Hero />
+  <Results />
   <WhatItIs />
   <Norwood />
   <Comparison />
   <TryOnTeaser />
   <DiscretionBand />
   <HowItWorks />
-  <Technicians />
   <Range />
-  <Materials />
-  <Testimonials />
   <GuaranteeFounder />
   <Faq />
   <Closing />

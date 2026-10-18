@@ -1,0 +1,92 @@
+---
+// The results beneath the hero: before-and-after pairs, each card its two photographs side by side and a line, in
+// a strip that scrolls sideways. The strip takes the keyboard's focus, so it scrolls with the arrow keys too. A pair
+// made by AI says so on the card.
+import { capsLook } from "@maneman/ui/Caps";
+import { illustrationTag, resultPairs, results } from "../../content/site.ts";
+import { isShown } from "../../lib/build.ts";
+import DesignPicture from "../DesignPicture.astro";
+
+const sizes = "(min-width: 761px) 250px, 140px";
+const widths = [280, 560];
+---
+
+{isShown(resultPairs) && (
+  <section class="results" data-section="results">
+    <div class="container">
+      <h2 class="section-title title">{results.title}</h2>
+    </div>
+    <ul class="strip" tabindex="0" aria-label={results.label}>
+      {resultPairs.pairs.map((pair) => (
+        <li class="card">
+          <div class="pair">
+            <div class="frame photo">
+              <DesignPicture file={pair.before.file} alt={pair.before.alt} sizes={sizes} widths={widths} />
+              <span class={capsLook("label corner")}>{results.before}</span>
+            </div>
+            <div class="frame photo">
+              <DesignPicture file={pair.after.file} alt={pair.after.alt} sizes={sizes} widths={widths} />
+              <span class={capsLook("label corner")}>{results.after}</span>
+            </div>
+            {pair.illustration === true && <span class={capsLook("label tag")}>{illustrationTag}</span>}
+          </div>
+          <p class="caption">{pair.caption}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .results {
+    padding-top: var(--band-pad);
+  }
+  .title {
+    max-width: var(--measure-hero);
+    text-wrap: balance;
+  }
+  /* Full width, its first card level with the page's left edge, so it scrolls to the screen's edge. */
+  .strip {
+    display: flex;
+    gap: var(--space-2xs);
+    margin: var(--space-l) 0 0;
+    padding: 0 var(--gutter) var(--sp-16);
+    padding-inline-start: max(var(--gutter), calc((100% - var(--page-max)) / 2 + var(--gutter)));
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    overscroll-behavior-x: contain;
+  }
+  .card {
+    flex: 0 0 var(--result-card-w);
+    scroll-snap-align: start;
+  }
+  .pair {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--hairline);
+  }
+  .photo {
+    aspect-ratio: 4 / 5;
+  }
+  .corner {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    font-size: var(--fs-13);
+  }
+  .tag {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: var(--fs-13);
+  }
+  .caption {
+    margin: var(--sp-12) 0 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-115);
+  }
+</style>

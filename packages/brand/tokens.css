@@ -137,7 +137,7 @@
   /* ---- Motion: how long, and the one curve, apart ------------------------ */
   --duration-quick: 300ms; /* a state changing: a colour, a fade, a step sliding in */
   --duration-travel: 420ms; /* something crossing a distance: a sheet rising, the try-on's progress bar */
-  --duration-phrase: 1200ms; /* one phrase of the hero's opening line, faded in, held and faded out */
+  --duration-phrase: 3200ms; /* how long each phrase of the hero's opening line shows before the next */
   --ease-house: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* ---- Layers: what sits over what, from low to high ---------------------- */
