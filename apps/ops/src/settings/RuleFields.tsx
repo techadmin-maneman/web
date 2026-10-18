@@ -73,7 +73,9 @@ function FigureRow({ rule, figureKey, mayChange, onSaved }: RowProps & { readonl
           min={bounds.min}
           max={bounds.max}
           value={typed}
-          onChange={(event) => { type(event.target.value); }}
+          onChange={(event) => {
+            type(event.target.value);
+          }}
         />
       )}
     </EditableRow>
@@ -98,7 +100,14 @@ function ChoiceRow({
       save={(chosen) => saveRule(rule, { ...rule.value, [choiceKey]: chosen }, onSaved)}
     >
       {(control, chosen, choose) => (
-        <Select {...control} width="choice" value={chosen} onChange={(event) => { choose(event.target.value); }}>
+        <Select
+          {...control}
+          width="choice"
+          value={chosen}
+          onChange={(event) => {
+            choose(event.target.value);
+          }}
+        >
           {(rule.choices[choiceKey] ?? []).map((each) => (
             <option key={each} value={each}>
               {choiceLabel(rule, each)}
@@ -145,7 +154,9 @@ function AddKey({ rule, onSaved }: { readonly rule: NumberRule; readonly onSaved
         width="area"
         maxLength={64}
         value={key}
-        onChange={(event) => { setKey(event.target.value); }}
+        onChange={(event) => {
+          setKey(event.target.value);
+        }}
       />
       <NumberInput
         aria-label={copy.keyValue}
@@ -155,7 +166,9 @@ function AddKey({ rule, onSaved }: { readonly rule: NumberRule; readonly onSaved
         min={rule.min}
         max={rule.max}
         value={text}
-        onChange={(event) => { setText(event.target.value); }}
+        onChange={(event) => {
+          setText(event.target.value);
+        }}
       />
       <Button variant="outline" size="small" type="submit" busy={busy}>
         {copy.add}

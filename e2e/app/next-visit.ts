@@ -90,12 +90,24 @@ export async function seedNextVisit(): Promise<void> {
   // A consultation done two days ago at 1:30 pm in India, an afternoon.
   const consulted = indiaDay(-2);
   const firstFit = client("consultation", `${consulted}T08:00:00.000Z`, `${consulted}T09:00:00.000Z`);
-  // A first fit is sold only as a hair system set up in the console, so the local database offers one.
+  // A first fit is sold only as a package set up in the console (docs/decisions/0211-packages.md): its first fit,
+  // service visit and replacement, and a hair system priced, which with the service visit is Rs. 25,000.
+  const hairSystem = "hs_essential_8x10_1b";
   sql.push(
     `INSERT OR IGNORE INTO services (kind, tier, name, minutes, sort, updated_by, updated_at) VALUES
-       ${sqlRow("first_fit", "essential", "Mane Man Essential", 180, 1, "e2e", now)};`,
+       ${sqlRow("first_fit", "essential", "Mane Man Essential", 180, 1, "e2e", now)},
+       ${sqlRow("service", "essential", "Mane Man Essential service visit", 90, 1, "e2e", now)},
+       ${sqlRow("replacement", "essential", "Mane Man Essential replacement", 135, 1, "e2e", now)};`,
+    `INSERT OR IGNORE INTO packages (code, service_every_days, replace_after_months, updated_by, updated_at) VALUES
+       ${sqlRow("essential", 30, 6, "e2e", now)};`,
+    `INSERT OR IGNORE INTO consumables (code, name, unit, unit_cost, created_at, updated_at) VALUES
+       ${sqlRow(hairSystem, "Mane Man Essential · 8 × 10 in, #1B", "piece", 800_000, now, now)};`,
+    `INSERT OR IGNORE INTO hair_systems
+       (code, product, base_width_in, base_length_in, colour, grey_percent, density_percent) VALUES
+       ${sqlRow(hairSystem, "essential", 8, 10, "1B", 0, 100)};`,
     `INSERT OR IGNORE INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES
-       ${sqlRow("first_fit", "essential", 2_500_000, 0, "2026-01-01")};`,
+       ${sqlRow("service", "essential", 200_000, 0, "2026-01-01")},
+       ${sqlRow("hair_system", hairSystem, 2_300_000, 0, "2026-01-01")};`,
     `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at, product) VALUES
        ${sqlRow(crypto.randomUUID(), firstFit.person, firstFit.visit, "e2e-profile", technician, now, "essential")};`,
   );

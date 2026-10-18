@@ -96,7 +96,14 @@ export function AddConsumable(props: {
       onCancel={props.onCancel}
     >
       <div className={form.fields}>
-        <ConsumableEntry label={formWords.name} box="name" width="area" maxLength={60} value={draft.name} onChange={edit("name")} />
+        <ConsumableEntry
+          label={formWords.name}
+          box="name"
+          width="area"
+          maxLength={60}
+          value={draft.name}
+          onChange={edit("name")}
+        />
         <ConsumableEntry
           label={formWords.unit}
           box="unit"

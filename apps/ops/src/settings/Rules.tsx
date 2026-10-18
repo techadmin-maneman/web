@@ -47,7 +47,11 @@ function Standard({ rule, onSaved }: { readonly rule: OpsSetting; readonly onSav
         narrow
         busy={busy}
         aria-label={copy.resetLabel(rule.title)}
-        onClick={() => void once(async () => { setRefused(await saveRule(rule, null, onSaved)); })}
+        onClick={() =>
+          void once(async () => {
+            setRefused(await saveRule(rule, null, onSaved));
+          })
+        }
       >
         {copy.reset}
       </Button>
