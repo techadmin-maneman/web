@@ -277,8 +277,8 @@
         // The owner's key is in place (docs/provisioning.md, step 13); production waits for the release.
         "GEOCODE_PROVIDER": "google",
         "ANALYTICS_PROVIDER": "none",
-        // Until the owner switches on the Routes and Maps Static APIs for the key (docs/provisioning.md, step 13).
-        "ROUTES_PROVIDER": "none",
+        // The owner switched on the Routes and Maps Static APIs for the key (docs/provisioning.md, step 13a).
+        "ROUTES_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "false",
         "SELF_SERVE_CONSULTATIONS": "true",
         "REFERRER_NAME_ON_INVITE": "true",
