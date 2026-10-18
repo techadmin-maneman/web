@@ -25,6 +25,21 @@ const daysAfter = (date: string, days: number) =>
 /** The service the windows are for, as the local mm-api's standard one. */
 const SERVICE = { tier: "standard", name: "Service visit", minutes: 90 };
 
+/** Every half hour a day offers, from 9 am to 7:30 pm, India's clock, each open. */
+const startsOn = (date: string) =>
+  Array.from({ length: 22 }, (_, index) => {
+    const minutes = 9 * 60 + index * 30;
+    const time = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+    const startsAt = new Date(`${date}T${time}:00+05:30`);
+    return {
+      time,
+      starts_at: startsAt.toISOString(),
+      arrives_by: new Date(startsAt.getTime() + 30 * 60_000).toISOString(),
+      open: true,
+      change_charged: false,
+    };
+  });
+
 /** India's day tomorrow. */
 const tomorrow = () => daysAfter(indiaDate(new Date()), 1);
 
@@ -52,6 +67,7 @@ async function everyWindowOpen(page: Page): Promise<URL[]> {
           { window: "afternoon", start: "12:00", end: "16:00", open: true, change_charged: false },
           { window: "evening", start: "16:00", end: "20:00", open: true, change_charged: false },
         ],
+        starts: startsOn(daysAfter(start, index)),
       }));
       const last = daysAfter(tomorrow(), 44);
       const type = url.searchParams.get("type");
@@ -89,10 +105,8 @@ test("Home offers the next service on the day it falls due, and the sheet opens 
   await accessible(page);
   await dates.getByRole("button", { name: appCopy.booking.window.continueFree }).click();
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  await expect(windows.getByRole("radio", { checked: true })).toBeVisible();
-  await expect(windows.locator("label").filter({ has: page.getByRole("radio", { checked: true }) })).toContainText(
-    appCopy.WINDOW_NAMES.morning,
-  );
+  // The morning offered, at its first start.
+  await expect(windows.getByRole("radio", { checked: true })).toHaveAccessibleName("9 am");
   await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toBeEnabled();
   await windows.getByRole("button", { name: appCopy.booking.close }).click();
   await expect(windows).toHaveCount(0);
@@ -208,7 +222,6 @@ test("Home recaps the consultation, and offers the first fit as the hair system 
   expect(asked[0]?.searchParams.get("tier")).toBe("essential");
   await dates.getByRole("button", { name: appCopy.booking.window.continueFree }).click();
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  await expect(windows.locator("label").filter({ has: page.getByRole("radio", { checked: true }) })).toContainText(
-    appCopy.WINDOW_NAMES.afternoon,
-  );
+  // The afternoon offered, at its first start.
+  await expect(windows.getByRole("radio", { checked: true })).toHaveAccessibleName("12 pm");
 });
