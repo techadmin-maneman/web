@@ -228,7 +228,7 @@ export const StartSchema = z
   .strict()
   .openapi("Start");
 
-/** The start a site's form chose (docs/decisions/0210-booking-by-start-time.md), beside the window it falls in. */
+/** The start a site's form chose, beside the window it falls in. */
 export const FormStartSchema = z.iso.datetime().optional().openapi({
   description: "The start chosen, on `date`; left out, any start in the window, the best first.",
 });

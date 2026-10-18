@@ -9,7 +9,7 @@ import type { Pin } from "../../lib/geo.ts";
 import type { Alert } from "../../providers/alerts.ts";
 import type { RoutesProvider } from "../../providers/routes/index.ts";
 import type { Settings } from "../../config/settings.ts";
-import { driveThrough } from "../dispatch/day-route.ts";
+import { driveThrough } from "../platform/road-drives.ts";
 
 /** What Google is asked through, from the route's caller. */
 export interface DriveCheck {

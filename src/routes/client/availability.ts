@@ -82,7 +82,7 @@ async function addressOutsideArea(db: D1Database, personId: string): Promise<boo
   return !(await isServed(db, address.pincode));
 }
 
-/** A day's grid of starts as the API gives it (docs/decisions/0210-booking-by-start-time.md), each open or taken. */
+/** A day's grid of starts as the API gives it, each open or taken. */
 function startsOfDay(asked: {
   readonly day: { readonly date: string; readonly starts: readonly { readonly time: string }[] };
   readonly minutes: number;

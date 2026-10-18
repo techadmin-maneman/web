@@ -130,6 +130,11 @@ export function indiaClock(isoInstant: string): string {
   return `${String(hour)}${minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`} ${hours < 12 ? "am" : "pm"}`;
 }
 
+/** An instant's time of day on India's clock, "HH:MM": "2026-09-22T06:00:00Z" → "11:30". */
+export function indiaTimeOf(isoInstant: string): string {
+  return inIndia(isoInstant).toISOString().slice(11, 16);
+}
+
 /** A time of day on India's clock, as every surface writes one: "09:30" → "9:30 am"; "17:00" → "5 pm". */
 export function dayClock(time: string): string {
   return indiaClock(indiaInstant("2026-01-01", time).toISOString());

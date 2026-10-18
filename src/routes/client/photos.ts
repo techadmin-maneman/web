@@ -11,7 +11,8 @@ import {
   clientTryOns,
   ownTryOnImage,
 } from "../../domain/try-on/client-try-ons.ts";
-import { listVisits, ownPhotoKey, photoSets } from "../../domain/visits/client-visits.ts";
+import { listVisits, photoSets } from "../../domain/visits/client-visits.ts";
+import { ownPhotoKey } from "../../domain/visits/client-photo-keys.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

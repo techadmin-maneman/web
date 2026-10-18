@@ -37,7 +37,7 @@ export interface Hold {
   readonly window: BookingWindow;
   readonly technician: Technician;
   readonly startUnit: number;
-  /** When the visit starts (docs/decisions/0210-booking-by-start-time.md). */
+  /** When the visit starts. */
   readonly startsAt: Date;
   readonly price: Price;
   readonly expiresAt: string;

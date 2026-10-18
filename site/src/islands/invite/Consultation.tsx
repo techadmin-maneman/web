@@ -221,14 +221,13 @@ function AddressPart(
  * the number has been entered.
  */
 export function Consultation(props: ConsultationProps) {
-  const { person, stage } = props;
+  const { person, stage, plan } = props;
   const form = useTurnstileForm(
     props.turnstileSiteKey,
     person === null ? MARKED_WITH_PERSON : MARKED_HERE,
     person === null ? undefined : { ...person, consent: true },
   );
   const numberCode = useNumberCode();
-  const { plan } = props;
   const [picked, setPicked] = useState<Slot>(() => ({ date: indiaTomorrow(), window: "morning", start: null }));
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
   const [extent, setExtent] = useState<LossExtent | null>(null);

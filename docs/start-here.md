@@ -39,7 +39,7 @@ this map, or when the map names something that no longer exists.
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
   `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`, `site-notices`,
   `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
-  `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each),
+  `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each), `drive-check` (Google's drives either side of a start), `public-booking-code` (a site booking's discount code),
   `day-plans` (each technician's days as booking plans them)
 - **Rules** (`src/policy/`): `booking`, `slot-times`, `site-booking`, `moving-a-visit`, `prepayment`, `services`,
   `visit-length`, `day-plan` (where a visit can start in a technician's day)
@@ -53,7 +53,7 @@ this map, or when the map names something that no longer exists.
 ### A visit, and changing it
 
 - **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`, `visit-paid`,
-  `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
+  `visit-begun`, `client-visits`, `client-photo-keys`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
   `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `open-proposals`, `visit-upkeep` (what a write to a
   visit keeps up beside it),
   `no-show-notes`
@@ -296,7 +296,7 @@ this map, or when the map names something that no longer exists.
 
 ### The platform
 
-- **Database work** (`src/domain/platform/`): `audit` (the audit log every write adds to), `alerts`, `vendor-breakers` (a vendor held off while it keeps failing), `ops-settings`
+- **Database work** (`src/domain/platform/`): `audit` (the audit log every write adds to), `alerts`, `road-drives` (Google's drives between pins, kept a day), `vendor-breakers` (a vendor held off while it keeps failing), `ops-settings`
   (the Rules every module reads), `cron-runs`, `backups`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
   `enqueue`
 - **Rules** (`src/policy/`): `database-size`, `storage-share`, `launch`, `staging-test-records`

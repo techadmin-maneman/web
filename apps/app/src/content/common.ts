@@ -2,6 +2,7 @@
 // visit's windows, kinds and length, the messages it opens WhatsApp with, and the loading and failure lines.
 
 import type { EnvironmentName } from "@rules/config/environments.ts";
+import { indiaTimeOf } from "@maneman/web-kit/dates";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { notYetFittedLines } from "./refer.ts";
@@ -61,10 +62,6 @@ interface Hours {
 
 /** "12–4 pm", "9 am–12 noon": a window's hours as ops set them for its day. */
 export const windowHours = (hours: Hours) => timeRange(hours.start, hours.end, UNBROKEN);
-
-/** An instant's time of day in India, "HH:MM". */
-const indiaTimeOf = (instant: string): string =>
-  new Date(Date.parse(instant) + 330 * 60_000).toISOString().slice(11, 16);
 
 /**
  * "11:30 am–12 pm": when the technician arrives, from the visit's start to the end of its arrival window

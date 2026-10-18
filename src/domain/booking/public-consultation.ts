@@ -142,7 +142,7 @@ export interface Booked {
   readonly state: "booked" | "requested";
   readonly date: string;
   readonly window: BookingWindow;
-  /** When a booked visit starts (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of. */
+  /** When a booked visit starts; null for a request ops fix the hour of. */
   readonly startsAt: Date | null;
   /** The area once ops have named it, its city until then. */
   readonly area: string;

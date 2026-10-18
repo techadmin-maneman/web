@@ -7,7 +7,6 @@ import type { Availability, BookingWindow } from "../api.ts";
 import { booking } from "../content.ts";
 
 export type Day = Availability["days"][number];
-export type Start = Day["starts"][number];
 export const isFull = (day: Day): boolean => day.starts.every((start) => !start.open);
 
 /** Whether a visit booked now at any of the day's open starts would already cost the client to change. */

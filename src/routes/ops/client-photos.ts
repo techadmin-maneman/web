@@ -6,7 +6,7 @@ import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { PHOTO_VIEW_MINUTES, earlierViews, logPhotoView, viewInForce } from "../../domain/field/photo-views.ts";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
-import { ownPhotoKey } from "../../domain/visits/client-visits.ts";
+import { ownPhotoKey } from "../../domain/visits/client-photo-keys.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
