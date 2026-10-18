@@ -216,7 +216,7 @@ test("a count shows the figure it finds, and one that agrees says it records onl
   await form.getByRole("button", { name: stock.record.check }).click();
   await expect(form.getByRole("group", { name: review.title })).toContainText(stock.confirm.same);
 
-  await form.getByRole("button", { name: stockPlaces.edit }).click();
+  await form.getByRole("button", { name: review.edit }).click();
   await form.getByLabel(stock.record.counted).fill("2");
   await form.getByRole("button", { name: stock.record.check }).click();
   await expect(form.getByRole("group", { name: review.title })).toContainText("Imran Qureshi: 3 strips → 2 strips");
@@ -307,11 +307,13 @@ const withRoom = {
 test("adds a stockroom under the warehouse, and closes it again", async ({ page }) => {
   await open(page, { "POST /api/stock/places": json(withRoom), [`POST /api/stock/places/${ROOM}`]: json(STOCK) });
   const places = page.getByRole("region", { name: stockPlaces.title });
-  await expect(places.getByRole("rowheader", { name: WAREHOUSE })).toBeVisible();
-  await places.getByLabel(stockPlaces.add.name).fill("Gurgaon stockroom");
-  await places.getByLabel(stockPlaces.add.city).selectOption("Gurgaon");
+  await expect(places.getByRole("button", { name: stockPlaces.open(WAREHOUSE) })).toBeVisible();
+  await places.getByRole("button", { name: stockPlaces.add.title }).click();
+  const add = page.getByRole("dialog", { name: stockPlaces.add.title });
+  await add.getByLabel(stockPlaces.add.name).fill("Gurgaon stockroom");
+  await add.getByLabel(stockPlaces.add.city).selectOption("Gurgaon");
   const added = posted(page, "/api/stock/places");
-  await places.getByRole("button", { name: stockPlaces.add.send }).click();
+  await add.getByRole("button", { name: stockPlaces.add.add, exact: true }).click();
   expect((await added).postDataJSON()).toEqual({
     kind: "stockroom",
     name: "Gurgaon stockroom",
@@ -319,11 +321,14 @@ test("adds a stockroom under the warehouse, and closes it again", async ({ page 
     city: "Gurgaon",
   });
 
-  await places.getByRole("button", { name: stockPlaces.editLabel("Gurgaon stockroom") }).click();
+  await places.getByRole("button", { name: stockPlaces.open("Gurgaon stockroom") }).click();
+  const record = page.getByRole("dialog", { name: "Gurgaon stockroom" });
+  await record.getByRole("button", { name: stockPlaces.closing.label("Gurgaon stockroom") }).click();
+  await expect(record.getByText(stockPlaces.closing.warning("Gurgaon stockroom"))).toBeVisible();
   const closed = posted(page, `/api/stock/places/${ROOM}`);
-  await places.getByRole("button", { name: stockPlaces.change.close }).click();
+  await record.getByRole("button", { name: stockPlaces.closing.confirm, exact: true }).click();
   expect((await closed).postDataJSON()).toEqual({ active: false });
-  await expect(places.getByRole("rowheader", { name: "Gurgaon stockroom" })).toHaveCount(0);
+  await expect(places.getByRole("button", { name: stockPlaces.open("Gurgaon stockroom") })).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 });
 

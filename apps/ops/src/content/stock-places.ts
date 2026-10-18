@@ -5,11 +5,11 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const stockPlaces = {
   title: "Places",
-  columns: ["Place", "Kind", "Area", ""],
+  columns: ["Place", "Kind", "Area"],
   kinds: { warehouse: "Warehouse", hub: "Hub", stockroom: "Stockroom", kit: "Kit" },
   closed: "Closed",
-  edit: "Edit",
-  editLabel: (name: string) => `Edit ${name}`,
+  /** A row's name, read as what pressing it does. */
+  open: (name: string) => `Open ${name}`,
   add: {
     title: "Add a place",
     kind: "Kind",
@@ -17,14 +17,20 @@ export const stockPlaces = {
     under: "Under",
     zone: "Zone",
     city: "City",
-    send: "Add",
+    add: "Add",
+    cancel: "Cancel",
   },
   change: {
     name: "Name",
     under: "Under",
-    save: "Save",
-    close: "Close place",
     open: "Open again",
+  },
+  closing: {
+    open: "Close place",
+    label: (name: string) => `Close ${name}`,
+    warning: (name: string) => `Close ${name}? Nothing can be sent to it until it opens again.`,
+    confirm: "Close",
+    sending: "Closing…",
     cancel: "Cancel",
   },
   errors: {
