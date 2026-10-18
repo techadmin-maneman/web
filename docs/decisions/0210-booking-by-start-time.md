@@ -29,7 +29,7 @@ Every figure is an ops setting: `booking_rules`, `same_day_booking`, `working_ho
 ## Consequences
 
 - Built in phases, one PR each: the technician's days, the drive estimate and the settings; the engine (holds and claims by start time, with a lock on the technician's day); the client app and site; the console's booking and the dispatch day; the technician app, the rules that measure from a start, and analytics; then a run on staging.
-- The windows' half-slots, the window times page and `slot_times` go when the engine lands.
+- The windows' half-slots and the clash check by window went when the engine landed. The window times (`slot_times`) stay, as the morning, afternoon and evening each day's starts are listed under, and the window a start falls in.
 - On time comes to mean a check-in by the end of the arrival window, a stricter measure than before.
 - A technician's home is their personal data, kept only for the drive. It is shown to Operations staff in their city, and goes when the technician is deleted.
-- Tests: `test/node/policy/policy-start-times.test.ts`, `test/worker/dispatch/technician-days.test.ts`, `test/dom/ops-technician-hours.test.ts`, `test/node/dispatch/move-landing.test.ts`.
+- Tests: `test/node/policy/policy-start-times.test.ts`, `test/worker/dispatch/technician-days.test.ts`, `test/dom/ops-technician-hours.test.ts`, `test/node/dispatch/move-landing.test.ts`, `test/node/policy/policy-next-job.test.ts`, `test/worker/jobs/analytics-on-time.test.ts`.

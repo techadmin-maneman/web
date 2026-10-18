@@ -44,16 +44,22 @@ export async function copyNight(steps: Steps, run: CopyRun, date: string): Promi
   try {
     const begun = await steps.do("begin", STEP_RETRIES, async () => {
       if (await withWarehouse((warehouse) => warehouse.ranOn(date))) return null;
-      const { nextVisitDays, lostAfterDays } = await readOpsInputs(run.env.DB, new Date());
+      const { nextVisitDays, lostAfterDays, bookingRules } = await readOpsInputs(run.env.DB, new Date());
       const standing = {
         cadence: nextVisitDays.service_cadence,
         grace: nextVisitDays.at_risk_after_due,
         lostAfter: lostAfterDays,
       };
-      return { startedAt: new Date().toISOString(), standing };
+      return { startedAt: new Date().toISOString(), standing, arrivalMinutes: bookingRules.arrival };
     });
     if (begun === null) return;
-    const given: NightGiven = { secret, date, now: () => new Date(), standing: begun.standing };
+    const given: NightGiven = {
+      secret,
+      date,
+      now: () => new Date(),
+      standing: begun.standing,
+      arrivalMinutes: begun.arrivalMinutes,
+    };
     const staged: TableMeta[] = [];
     for (const part of NIGHT_PARTS) {
       const tables = await steps.do(`stage ${part.name}`, STEP_RETRIES, () =>

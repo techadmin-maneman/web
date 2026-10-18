@@ -46,6 +46,10 @@ export const today = {
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
   first: (time: string, sector: string) => `First at ${time} · ${sector}`,
   tomorrow: (count: number) => `Tomorrow · ${String(count)} ${count === 1 ? "job" : "jobs"}`,
+  /** The drive to the day's next job, by our estimate. */
+  drive: (minutes: number) => `${String(minutes)} min to the next job`,
+  /** A job under way that runs into the next: when to be done to reach it on time. */
+  runsOver: (finishBy: string, next: string) => `Running over · finish by ${finishBy} for the ${next} job`,
   /** Yesterday's jobs not yet closed, above today's, so their work can be finished and sent. */
   leftOpen: (count: number) => `Still open from yesterday · ${String(count)}`,
   signOut: "Sign out",

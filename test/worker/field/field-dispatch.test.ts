@@ -4,7 +4,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
-import { occupancy, placement } from "../../../src/domain/booking/occupancy.ts";
+import { loadDayPlans } from "../../../src/domain/booking/day-plans.ts";
+import { WORKING_HOURS } from "../../../src/policy/start-times.ts";
 import { NOW, request } from "../helpers.ts";
 import {
   AS_THE_BOARD_SHOWS_IT,
@@ -322,10 +323,15 @@ describe("leave", () => {
     ).json<{ leave: { technician_id: string }[] }>();
     expect(board.leave.map((period) => period.technician_id).sort()).toEqual([IMRAN, SAMEER].sort());
 
-    const held = await occupancy({ db: env.DB, from: "2026-09-24", to: "2026-09-24", now: NOW });
-    expect(held(IMRAN, "2026-09-24").onLeave).toBe(true);
-    // A service visit's two half-slots (src/policy/visit-length.ts).
-    expect(placement(held(IMRAN, "2026-09-24"), "morning", 2)).toBeNull();
-    expect(placement(held(IMRAN, "2026-09-25"), "morning", 2)).not.toBeNull();
+    const plans = await loadDayPlans({
+      db: env.DB,
+      technicianIds: [IMRAN],
+      from: "2026-09-24",
+      to: "2026-09-25",
+      now: NOW,
+      hours: WORKING_HOURS,
+    });
+    expect(plans.day(IMRAN, "2026-09-24")).toBeNull();
+    expect(plans.day(IMRAN, "2026-09-25")).not.toBeNull();
   });
 });

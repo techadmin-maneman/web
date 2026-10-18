@@ -65,7 +65,7 @@ function outcomeOf(booked: VisitBooked): string {
 
 function Booked({ booked }: { booked: VisitBooked }) {
   const technician = booked.technician.name;
-  const summary = copy.summary(booked.service.name, shortDate(booked.date), booked.window, technician);
+  const summary = copy.summary(booked.service.name, shortDate(booked.date), indiaClock(booked.starts_at), technician);
   const outcome = outcomeOf(booked);
   return (
     <div role="status">

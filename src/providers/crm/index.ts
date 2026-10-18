@@ -40,6 +40,8 @@ export interface CrmLead {
   readonly inviteCode: string | null;
   /** The window a booking asked for, where the lead carries no choice of its own from the first form. */
   readonly askedWindow: BookingWindow | null;
+  /** The start that booking held, an instant; null where it held none, as a request for ops does not. */
+  readonly askedStart: string | null;
   /** What a booking asked for: the consultation alone, or with the fit in one visit; null where none did. */
   readonly plan: Plan | null;
   /** The discount code given for a consultation and fit in one visit; null for none. */

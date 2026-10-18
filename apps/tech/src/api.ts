@@ -34,7 +34,8 @@ type Schema = components["schemas"];
 
 export type Me = Schema["TechnicianMe"];
 export type Challenge = Schema["TechnicianChallenge"];
-export type JobSummary = Schema["TechnicianJob"];
+/** A job on the day's list: its address once unlocked, and the next job still to do from it. */
+export type JobSummary = Schema["TechnicianDayJob"];
 /** A job's card. One an earlier build kept on the phone carries no check-in radius. */
 export type Job = Omit<Schema["TechnicianJobDetail"], "checkin_radius_m"> & {
   readonly checkin_radius_m: Schema["TechnicianJobDetail"]["checkin_radius_m"] | null;

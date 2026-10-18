@@ -1,12 +1,9 @@
-// The dispatch board's clash check and move reasons (src/policy/dispatch.ts).
+// The dispatch board's blocks and move reasons (src/policy/dispatch.ts).
 
 import { describe, expect, it } from "vitest";
-import { SLOTS_PER_DAY, UNITS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../../../src/config/scheduling.ts";
-import { clashes, clientNotice, keepsTheClientsNotice, MOVE_REASONS, slotsFor } from "../../../src/policy/dispatch.ts";
+import { SLOTS_PER_DAY, UNITS_PER_DAY, VISIT_BLOCKS } from "../../../src/config/scheduling.ts";
+import { clientNotice, keepsTheClientsNotice, MOVE_REASONS, slotsFor } from "../../../src/policy/dispatch.ts";
 import { unitsFor } from "../../../src/policy/visit-length.ts";
-
-/** A technician whose day already holds a job starting in each of these windows. */
-const day = (...windows: BookingWindow[]) => ({ windows: new Set(windows), onLeave: false });
 
 describe("dispatch", () => {
   it("divides each day into 4 slots, counted as 8 half-slots", () => {
@@ -31,14 +28,6 @@ describe("dispatch", () => {
     expect(VISIT_BLOCKS.service.minutes).toBe(90);
     expect(VISIT_BLOCKS.replacement.minutes).toBe(135);
     expect(VISIT_BLOCKS.first_fit.minutes).toBe(180);
-  });
-
-  it("never gives a technician two live jobs in one window on one date", () => {
-    expect(clashes(day("afternoon"), "afternoon")).toBe(true);
-    expect(clashes(day("afternoon"), "morning")).toBe(false);
-    expect(clashes(day(), "afternoon")).toBe(false);
-    // Two jobs on one date is fine, as long as they are in different windows.
-    expect(clashes(day("morning", "evening"), "afternoon")).toBe(false);
   });
 
   // A move tells the client of its new window. A WhatsApp message

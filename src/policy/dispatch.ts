@@ -1,17 +1,11 @@
-// The dispatch board: the clash check, and the reasons a move must carry (docs/decisions/0034-clash-check.md).
+// The dispatch board: how big a block is drawn, and the reasons a move must carry. Where a move lands, and why one is
+// refused, is the technician's day plan (docs/decisions/0210-booking-by-start-time.md;
+// src/domain/dispatch/dispatch-landing.ts), which booking runs too, so the two cannot disagree.
 //
-// The board counts in slots and the day in half-slots, so a replacement's slot
-// and a half is a whole number (docs/decisions/0035-window-slot-map.md). Where a
-// visit fits inside a window is src/domain/booking/occupancy.ts; both booking and
-// dispatch answer to the clash check below. A block's
-// size comes from its service's length rather than its kind's alone, by the
-// one rule in src/policy/visit-length.ts, which gives the board's four sizes for
-// the four kinds' own lengths (docs/decisions/0085-services-ops-can-edit.md).
-//
-// A move is written to our own database, and ops record leave in the console, where the same clash check reads it
-// (ADR 0062).
-
-import type { BookingWindow } from "../config/scheduling.ts";
+// The board draws in slots, so a replacement's slot and a half is a whole number (docs/decisions/0035-window-slot-map.md).
+// A block's size comes from its service's length rather than its kind's alone, by the one rule in
+// src/policy/visit-length.ts, which gives the board's four sizes for the four kinds' own lengths
+// (docs/decisions/0085-services-ops-can-edit.md).
 
 /**
  * How long a move to another day waits for the client's answer, or until the visit's own start if that is sooner
@@ -21,19 +15,6 @@ export const MOVE_PROPOSAL_HOURS = 48;
 
 /** A block's size on the board, in slots, from the half-slots it holds: 1, 1, 1.5 and 2 for the kinds' own lengths. */
 export const slotsFor = (units: number): number => units / 2;
-
-/**
- * What one technician already holds on one date: the windows their live jobs and
- * unexpired holds start in, and whether they are away. A visit being moved is left
- * out of its own day, as `occupancy` does with `exceptVisitId`.
- */
-interface TechnicianDay {
-  readonly windows: ReadonlySet<BookingWindow>;
-  readonly onLeave: boolean;
-}
-
-/** The clash: the technician already holds a live job in this window on this date. */
-export const clashes = (day: TechnicianDay, window: BookingWindow): boolean => day.windows.has(window);
 
 /** The reasons the design gives, in its own order. */
 export const MOVE_REASONS = [

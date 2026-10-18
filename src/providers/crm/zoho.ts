@@ -12,6 +12,7 @@
 // "trigger": [] turns workflows off; leaving the key out would run them.
 
 import { z } from "zod";
+import { indiaClock } from "@maneman/web-kit/dates";
 import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../../config/booking.ts";
 import {
   BOOKED_WINDOW_NAMES,
@@ -206,9 +207,12 @@ const PLAN_NAMES: Readonly<Record<Plan, string>> = {
 
 /** The lead's Description: what the booking asked for, and the discount code given for it. Null where none says. */
 function descriptionOf(lead: CrmLead): string | null {
-  if (lead.plan === null) return null;
-  const code = lead.discountCode === null ? "" : ` Discount code ${lead.discountCode}.`;
-  return `${PLAN_NAMES[lead.plan]}.${code}`;
+  const parts = [
+    lead.plan === null ? null : `${PLAN_NAMES[lead.plan]}.`,
+    lead.plan === null || lead.discountCode === null ? null : `Discount code ${lead.discountCode}.`,
+    lead.askedStart === null ? null : `Starts at ${indiaClock(lead.askedStart)}.`,
+  ].filter((part) => part !== null);
+  return parts.length === 0 ? null : parts.join(" ");
 }
 
 /** The source a new record names: a friend's invite, where the org can say so, else the page the lead came from. */
@@ -294,9 +298,13 @@ export function recordFor({
   return record;
 }
 
-/** The window a booking asked for, in the note's words: the first form's own choice, else the window booked. */
+/**
+ * When a booking asked for, in the note's words: the first form's own choice, else the start booked, else the window
+ * a request asked for.
+ */
 function windowWords(lead: CrmLead): string | null {
   if (lead.firstChoiceWindow !== null) return WINDOW_NAMES[lead.firstChoiceWindow].toLowerCase();
+  if (lead.askedStart !== null) return indiaClock(lead.askedStart);
   return lead.askedWindow;
 }
 

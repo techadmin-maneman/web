@@ -16,7 +16,16 @@ import { codeOnVisit, type VisitCode } from "../money/discount-code-uses.ts";
 import { decisionAtVisit } from "../visits/one-visit.ts";
 import { evidenceMessage, messageStateOf } from "../no-shows/no-shows.ts";
 import { piecesOf, type Piece } from "../inventory/pieces.ts";
-import { SELECT_JOB, listingOf, stateOf, type JobRow, type JobState, type JobSummary } from "./tech-jobs.ts";
+import {
+  addressOf,
+  SELECT_JOB,
+  listingOf,
+  stateOf,
+  type JobAddress,
+  type JobRow,
+  type JobState,
+  type JobSummary,
+} from "./tech-jobs.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { latestArrival } from "../visits/check-ins.ts";
 
@@ -26,22 +35,6 @@ interface JobClient {
   readonly note: string | null;
   /** Whether they take messages about their visits on WhatsApp, which the card's presets go as. */
   readonly whatsapp: boolean;
-}
-
-/** The address as the client saved it, the parts ADR 0054 added included: what gets them to the right door. */
-interface JobAddress {
-  readonly line1: string;
-  readonly line2: string | null;
-  readonly building: string | null;
-  readonly tower: string | null;
-  readonly floor: string | null;
-  readonly flat: string | null;
-  readonly landmark: string | null;
-  readonly locality: string;
-  readonly city: string;
-  readonly pincode: string;
-  readonly lat: number | null;
-  readonly lng: number | null;
 }
 
 /** One of the client's pieces, as the job card and the piece step's list show it. */
@@ -140,7 +133,16 @@ interface JobPaymentLink {
  */
 export async function jobDetail(
   db: D1Database,
-  options: { technicianId: string; jobId: string; now: Date; unlockHour: number; waits: Waits; phoneClock: PhoneClock },
+  options: {
+    technicianId: string;
+    jobId: string;
+    now: Date;
+    unlockHour: number;
+    /** The arrival window after a start, in minutes (booking_rules). */
+    arrivalMinutes: number;
+    waits: Waits;
+    phoneClock: PhoneClock;
+  },
 ): Promise<JobDetail | null> {
   const [row, schedule] = await Promise.all([
     db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>(),
@@ -159,7 +161,14 @@ export async function jobDetail(
     oneVisit ? decisionAtVisit(db, row.id) : null,
     unlocked(windowStart, options.now, options.unlockHour) ? unlockedPartsOf(db, row) : null,
   ]);
-  const summary = listingOf({ row, now: options.now, unlockHour: options.unlockHour, schedule, progress });
+  const summary = listingOf({
+    row,
+    now: options.now,
+    unlockHour: options.unlockHour,
+    arrivalMinutes: options.arrivalMinutes,
+    schedule,
+    progress,
+  });
   const locked = {
     ...summary,
     address: null,
@@ -311,24 +320,6 @@ async function reminderOf(db: D1Database, appointmentId: string): Promise<JobDet
   if (state === "delivered" || state === "sent") return { state, delivered_at: message.delivered_at };
   if (message.state === "queued" || message.state === "waiting") return { state: "on_its_way", delivered_at: null };
   return null;
-}
-
-function addressOf(row: JobRow): JobAddress | null {
-  if (row.line1 === null) return null;
-  return {
-    line1: row.line1,
-    line2: row.line2,
-    building: row.building,
-    tower: row.tower,
-    floor: row.floor,
-    flat: row.flat,
-    landmark: row.landmark,
-    locality: row.locality ?? "",
-    city: row.city ?? "",
-    pincode: row.pincode ?? "",
-    lat: row.lat,
-    lng: row.lng,
-  };
 }
 
 /**

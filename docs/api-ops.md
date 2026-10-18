@@ -31025,6 +31025,11 @@ Request body:
         "evening"
       ]
     },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start the visit is booked at."
+    },
     "technician": {
       "$ref": "#/components/schemas/FreeTechnician"
     },
@@ -31063,6 +31068,7 @@ Request body:
     "price",
     "date",
     "window",
+    "starts_at",
     "technician",
     "link"
   ],

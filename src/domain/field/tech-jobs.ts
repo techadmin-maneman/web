@@ -46,6 +46,10 @@ import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
 import type { AppointmentStatus } from "../visits/visit-status.ts";
 import { bookedMinutes } from "../booking/occupancy.ts";
 import { isOneOf } from "../../lib/one-of.ts";
+import { MINUTE_MS } from "../../lib/durations.ts";
+import type { DriveEstimate } from "../../policy/drive-estimate.ts";
+import { nextJobs, type NextJob } from "../../policy/next-job.ts";
+import type { BookingRules } from "../../policy/start-times.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
 import { tierOf } from "../../config/visit-types.ts";
@@ -58,6 +62,8 @@ export interface JobSummary {
   readonly day: JobDay;
   readonly date: string;
   readonly starts_at: string;
+  /** The end of the arrival window the client was promised. */
+  readonly arrives_by: string;
   readonly ends_at: string | null;
   readonly window_label: BookingWindow;
   readonly type: VisitType | null;
@@ -79,6 +85,28 @@ export interface JobSummary {
   readonly client_name: string | null;
   /** When the job began and how it closed, from the events that landed, so the list says what the card says. */
   readonly progress: JobState;
+}
+
+/** A job on the day's list: its address once it unlocks, for Navigate, and the next job still to do from it. */
+export interface DayJob extends JobSummary {
+  readonly address: JobAddress | null;
+  readonly next: NextJob | null;
+}
+
+/** The address as the client saved it, the parts ADR 0054 added included: what gets them to the right door. */
+export interface JobAddress {
+  readonly line1: string;
+  readonly line2: string | null;
+  readonly building: string | null;
+  readonly tower: string | null;
+  readonly floor: string | null;
+  readonly flat: string | null;
+  readonly landmark: string | null;
+  readonly locality: string;
+  readonly city: string;
+  readonly pincode: string;
+  readonly lat: number | null;
+  readonly lng: number | null;
 }
 
 export interface JobState {
@@ -157,20 +185,25 @@ export const SELECT_JOB = `
   LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
   WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`;
 
-/** The jobs on one India date, in time order. Statuses the technician can still act on, and what they closed today. */
+/**
+ * The jobs on one India date, in time order. Statuses the technician can still act on, and what they closed today;
+ * each with its address once unlocked, and the drive to the next job still to do.
+ */
 export async function jobsOn({
   db,
   technicianId,
   date,
   now,
   unlockHour,
+  rules,
 }: {
   db: D1Database;
   technicianId: string;
   date: string;
   now: Date;
   unlockHour: number;
-}): Promise<JobSummary[]> {
+  rules: { readonly booking: BookingRules; readonly drive: DriveEstimate };
+}): Promise<DayJob[]> {
   const from = indiaInstant(date, "00:00").toISOString();
   const to = indiaInstant(addDays(date, 1), "00:00").toISOString();
   const [jobs, schedule, landed] = await Promise.all([
@@ -181,9 +214,25 @@ export async function jobsOn({
     loadSlotSchedule(db),
     startsAndOutcomesOn(db, technicianId, from, to),
   ]);
-  return jobs.results
-    .filter((row) => isOneOf(SHOWN, row.status))
-    .map((row) => listingOf({ row, now, unlockHour, schedule, progress: stateOf(landed.get(row.id) ?? []) }));
+  const shown = jobs.results.filter((row) => isOneOf(SHOWN, row.status));
+  const arrivalMinutes = rules.booking.arrival;
+  const listed = shown.map((row) =>
+    listingOf({ row, now, unlockHour, arrivalMinutes, schedule, progress: stateOf(landed.get(row.id) ?? []) }),
+  );
+  const pinOf = (row: JobRow) => (row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng });
+  const nexts = nextJobs(
+    shown.map((row, index) => ({
+      startsAt: row.window_start,
+      minutes: listed[index]?.minutes ?? null,
+      status: row.status,
+      pin: pinOf(row),
+    })),
+    rules,
+  );
+  return listed.map((job, index) => {
+    const row = shown[index];
+    return { ...job, address: job.unlocked && row !== undefined ? addressOf(row) : null, next: nexts[index] ?? null };
+  });
 }
 
 /** A job event as the job's state is read from it. */
@@ -234,12 +283,14 @@ export function listingOf({
   row,
   now,
   unlockHour,
+  arrivalMinutes,
   schedule,
   progress,
 }: {
   row: JobRow;
   now: Date;
   unlockHour: number;
+  arrivalMinutes: number;
   schedule: SlotSchedule;
   progress: JobState;
 }): JobSummary {
@@ -250,6 +301,7 @@ export function listingOf({
     day: jobDay(starts, now),
     date: indiaDate(starts),
     starts_at: starts.toISOString(),
+    arrives_by: new Date(starts.getTime() + arrivalMinutes * MINUTE_MS).toISOString(),
     ends_at: row.window_end,
     window_label: schedule.at(starts).window,
     type: row.type,
@@ -285,3 +337,21 @@ function badgeOf(row: JobRow): PaymentBadge {
 }
 
 const outcomeOf = (body: string): string | null => storedOutcomeOf(JSON.parse(body))?.outcome ?? null;
+
+export function addressOf(row: JobRow): JobAddress | null {
+  if (row.line1 === null) return null;
+  return {
+    line1: row.line1,
+    line2: row.line2,
+    building: row.building,
+    tower: row.tower,
+    floor: row.floor,
+    flat: row.flat,
+    landmark: row.landmark,
+    locality: row.locality ?? "",
+    city: row.city ?? "",
+    pincode: row.pincode ?? "",
+    lat: row.lat,
+    lng: row.lng,
+  };
+}

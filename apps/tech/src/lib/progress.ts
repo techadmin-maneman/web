@@ -99,7 +99,11 @@ export type RowState = "closed" | "in_progress" | "at_the_door";
  * landed, then the visit's status. What landed is the list's word, or a write's answer `heard` since, whichever knows
  * more.
  */
-export function rowState(job: JobSummary, queued: readonly Queued[], heard: Heard | undefined): RowState | null {
+export function rowState(
+  job: Pick<JobSummary, "id" | "progress" | "status">,
+  queued: readonly Queued[],
+  heard: Heard | undefined,
+): RowState | null {
   const landed = {
     started_at: job.progress.started_at ?? heard?.started_at ?? null,
     outcome: job.progress.outcome ?? heard?.outcome ?? null,

@@ -75,6 +75,7 @@ interface LeadRow {
   tried_on: number;
   invite_code: string | null;
   asked_window: BookingWindow | null;
+  asked_start: string | null;
 }
 
 /**
@@ -89,6 +90,11 @@ const ASKED_WINDOW = `(SELECT asked FROM (
     WHERE person_id = l.person_id AND date = l.proposed_visit_date AND type = 'consultation'
   ) ORDER BY created_at DESC LIMIT 1)`;
 
+/** The start the slot a booking held for lead `l` keeps, for the day it proposed. */
+const ASKED_START = `(SELECT starts_at FROM slot_holds
+  WHERE person_id = l.person_id AND date = l.proposed_visit_date AND type = 'consultation'
+  ORDER BY created_at DESC LIMIT 1)`;
+
 /** The lead with its person, as the sync sends it; null for an ID no lead has. */
 function leadRowOf(db: D1Database, leadId: string): Promise<LeadRow | null> {
   return db
@@ -98,7 +104,7 @@ function leadRowOf(db: D1Database, leadId: string): Promise<LeadRow | null> {
               p.erased_at, p.name, p.mobile_e164, p.email, p.zoho_lead_id, p.contactable,
               EXISTS (SELECT 1 FROM leads t WHERE t.person_id = p.id AND t.source = 'tryon') AS tried_on,
               (SELECT r.code FROM referral_attributions r WHERE r.referred_person_id = p.id) AS invite_code,
-              ${ASKED_WINDOW} AS asked_window
+              ${ASKED_WINDOW} AS asked_window, ${ASKED_START} AS asked_start
        FROM leads l JOIN people p ON p.id = l.person_id
        WHERE l.id = ?1`,
     )
@@ -292,6 +298,7 @@ function toCrmLead(row: LeadRow, asked: AskedPlan | null): CrmLead {
     utmCampaign: row.utm_campaign,
     inviteCode: row.invite_code,
     askedWindow: row.first_choice_window === null ? row.asked_window : null,
+    askedStart: row.first_choice_window === null ? row.asked_start : null,
     plan: planOf(asked),
     discountCode: asked?.code ?? null,
   };

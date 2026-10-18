@@ -67,6 +67,7 @@ const OpsBookingSchema = z
     price: PriceSchema.openapi({ description: "What the client pays: the service's price less any code." }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
+    starts_at: z.iso.datetime().openapi({ description: "The start the visit is booked at." }),
     technician: TechnicianSchema,
     link: z
       .union([z.object({ url: z.string(), open_until: z.iso.datetime() }).strict(), z.null()])
@@ -212,6 +213,7 @@ const bookingBody = ({ hold, sale, outcome, visitId, link }: Answer) => ({
   price: sale.price,
   date: hold.date,
   window: hold.window,
+  starts_at: hold.startsAt.toISOString(),
   technician: { id: hold.technician.id, name: hold.technician.name },
   link,
 });

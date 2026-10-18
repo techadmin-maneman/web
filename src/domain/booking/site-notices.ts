@@ -11,9 +11,10 @@ import { currentAddress } from "../clients/profile.ts";
 import { isServed } from "../clients/service-area.ts";
 import { bookableTypes, liveVisitOf, type LiveVisit } from "./availability.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
-import { hoursOfWindow, NO_VISITS_CONSENT, type Composed } from "../messages/visit-message-text.ts";
+import { arrivalHours, hoursOfWindow, NO_VISITS_CONSENT, type Composed } from "../messages/visit-message-text.ts";
 import { isOneOf } from "../../lib/one-of.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 
 export type SiteNoticeKind = Extract<
   MessageKind,
@@ -59,7 +60,8 @@ async function nameOf(db: D1Database, personId: string): Promise<string | null> 
 /** A consultation and fit in one visit is the client's first fit as well as their consultation, at the same time. */
 async function visitName(db: D1Database, personId: string, consultation: LiveVisit, now: Date): Promise<string> {
   const fit = await liveVisitOf(db, personId, { type: "first_fit", now });
-  const oneVisit = fit !== null && fit.date === consultation.date && fit.window === consultation.window;
+  const oneVisit =
+    fit !== null && fit.date === consultation.date && fit.startsAt?.getTime() === consultation.startsAt?.getTime();
   return oneVisit ? "consultation and fit" : "consultation";
 }
 
@@ -67,7 +69,10 @@ async function consultationExists(db: D1Database, person: Person, now: Date): Pr
   const { personId, firstName } = person;
   const live = await liveVisitOf(db, personId, { type: "consultation", now });
   if (live === null) return { skip: "no consultation still to happen" };
-  const hours = hoursOfWindow(live.date, live.window, await loadSlotSchedule(db));
+  const hours =
+    live.startsAt === null
+      ? hoursOfWindow(live.date, live.window, await loadSlotSchedule(db))
+      : arrivalHours(live.startsAt, (await readOpsInputs(db, now)).bookingRules.arrival);
   const params = [firstName, await visitName(db, personId, live, now), shortDate(live.date), hours];
   return { template: "consultation_exists_v1", params };
 }

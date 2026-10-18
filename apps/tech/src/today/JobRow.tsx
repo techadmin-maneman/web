@@ -7,8 +7,10 @@ import { badgeLook, capsLook } from "@maneman/ui/Caps";
 import { GLYPHS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
+import { ButtonLink } from "@maneman/ui/Button";
 import type { JobSummary } from "../api.ts";
-import { badges, job as copy } from "../content.ts";
+import { badges, job as copy, today } from "../content.ts";
+import { wayTo } from "../lib/navigate.ts";
 import { kindName } from "../lib/kind.ts";
 import { clock, where } from "../lib/when.ts";
 import styles from "./today.module.css";
@@ -45,5 +47,35 @@ export function JobRow({
       </span>
       <Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" weight="heavy" />
     </Link>
+  );
+}
+
+/**
+ * Beneath a job on today's list: Navigate once its address unlocks, the drive to the next job, and, for a job under
+ * way that runs into the next, when to be done by.
+ */
+export function JobFoot({ job, next, over }: { job: JobSummary; next: JobSummary | undefined; over: boolean }) {
+  if (job.address === null && job.next === null) return null;
+  return (
+    <div className={styles.foot}>
+      {job.address !== null && (
+        // A new tab, so a technician who has taken the route back still has the app open behind it.
+        <ButtonLink
+          variant="outlineOnInk"
+          size="small"
+          className={styles.navigate}
+          href={wayTo(job.address)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Icon d={GLYPHS.pin} size="sm" weight="heavy" />
+          <span>{copy.navigate}</span>
+        </ButtonLink>
+      )}
+      {job.next !== null && <span className={styles.drive}>{today.drive(job.next.drive_minutes)}</span>}
+      {over && job.next !== null && next !== undefined && (
+        <p className={styles.over}>{today.runsOver(clock(job.next.finish_by), clock(next.starts_at))}</p>
+      )}
+    </div>
   );
 }

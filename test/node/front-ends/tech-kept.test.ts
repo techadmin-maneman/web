@@ -29,7 +29,7 @@ import {
 } from "../../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
-import { firstRelease, thirdRelease } from "./tech-first-release.ts";
+import { firstRelease, sixthRelease, thirdRelease } from "./tech-first-release.ts";
 
 afterEach(async () => {
   vi.unstubAllGlobals();
@@ -47,6 +47,7 @@ const summary = (id: string, date: string) =>
     day: date === TODAY ? "today" : "tomorrow",
     date,
     starts_at: `${date}T04:00:00.000Z`,
+    arrives_by: `${date}T04:30:00.000Z`,
     ends_at: null,
     window_label: "morning",
     type: "service",
@@ -61,6 +62,8 @@ const summary = (id: string, date: string) =>
     unlocks_at: `${date}T00:00:00.000Z`,
     client_name: null,
     progress: { started_at: null, outcome: null },
+    address: null,
+    next: null,
   }) as JobSummary;
 
 const card = (id: string, date: string) =>
@@ -405,6 +408,17 @@ describe("a job’s card", () => {
     const { lost_reasons: _none, ...earlier } = card("a", TODAY);
     await thirdRelease([{ ...earlier, v: 2 }]);
     expect((await keptJob("a"))?.lost_reasons).toEqual([]);
+  });
+});
+
+describe("a day and a card kept before jobs carried their arrival window", () => {
+  it("arrive within the half hour after the start, with no address on the row and no next job", async () => {
+    const { arrives_by: _row, address: _address, next: _next, ...row } = summary("a", TODAY);
+    const { arrives_by: _card, ...earlier } = card("a", TODAY);
+    await sixthRelease({ days: [{ date: TODAY, jobs: [row], v: 2 }], cards: [{ ...earlier, v: 2 }] });
+    const [kept] = (await keptDay(TODAY)) ?? [];
+    expect(kept).toMatchObject({ arrives_by: `${TODAY}T04:30:00.000Z`, address: null, next: null });
+    expect((await keptJob("a"))?.arrives_by).toBe(`${TODAY}T04:30:00.000Z`);
   });
 });
 

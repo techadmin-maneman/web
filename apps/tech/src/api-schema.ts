@@ -2749,7 +2749,88 @@ export interface components {
         TechnicianJobs: {
             /** Format: date */
             date: string;
-            jobs: components["schemas"]["TechnicianJob"][];
+            jobs: components["schemas"]["TechnicianDayJob"][];
+        };
+        TechnicianDayJob: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            day: "past" | "today" | "tomorrow" | "later";
+            /** Format: date */
+            date: string;
+            /** Format: date-time */
+            starts_at: string;
+            /**
+             * Format: date-time
+             * @description The end of the arrival window the client was promised: the start and the arrival minutes ops set.
+             */
+            arrives_by: string;
+            ends_at: string | null;
+            /** @enum {string} */
+            window_label: "morning" | "afternoon" | "evening";
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step. */
+            one_visit: boolean;
+            /** @description The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses. */
+            service: components["schemas"]["TechnicianService"] | null;
+            /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
+            sector: string | null;
+            /**
+             * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
+             * @enum {string}
+             */
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
+            /**
+             * @description Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount.
+             * @enum {string}
+             */
+            badge: "prepaid" | "credit" | "free" | "at_visit";
+            /** @description How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type. */
+            slots: number | null;
+            /** @description How long the visit is booked for, in minutes. Null for an unknown type. */
+            minutes: number | null;
+            unlocked: boolean;
+            /** Format: date-time */
+            unlocks_at: string;
+            /** @description The client's name, from the day before the visit as the card's client is; null until then. */
+            client_name: string | null;
+            progress: components["schemas"]["TechnicianJobState"];
+            /** @description Null until the day before the visit; the API enforces it, not the screen. */
+            address: {
+                line1: string;
+                line2: string | null;
+                building: string | null;
+                tower: string | null;
+                floor: string | null;
+                flat: string | null;
+                landmark: string | null;
+                locality: string;
+                city: string;
+                pincode: string;
+                lat: number | null;
+                lng: number | null;
+            } | null;
+            /** @description The day's next job still to do; null for the last, and for a job already closed. */
+            next: {
+                /** @description The drive to it, by our estimate. */
+                drive_minutes: number;
+                /**
+                 * Format: date-time
+                 * @description When this job must be done for its wrap-up and that drive to reach the next one by its start.
+                 */
+                finish_by: string;
+            } | null;
+        };
+        TechnicianService: {
+            /** @description Its code, which the hair profile names a first fit's product by. */
+            tier: string;
+            /** @description Its name in the console. */
+            name: string;
+        };
+        /** @description When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet. */
+        TechnicianJobState: {
+            started_at: string | null;
+            outcome: string | null;
         };
         TechnicianJob: {
             /** Format: uuid */
@@ -2760,6 +2841,11 @@ export interface components {
             date: string;
             /** Format: date-time */
             starts_at: string;
+            /**
+             * Format: date-time
+             * @description The end of the arrival window the client was promised: the start and the arrival minutes ops set.
+             */
+            arrives_by: string;
             ends_at: string | null;
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
@@ -2791,17 +2877,6 @@ export interface components {
             client_name: string | null;
             progress: components["schemas"]["TechnicianJobState"];
         };
-        TechnicianService: {
-            /** @description Its code, which the hair profile names a first fit's product by. */
-            tier: string;
-            /** @description Its name in the console. */
-            name: string;
-        };
-        /** @description When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet. */
-        TechnicianJobState: {
-            started_at: string | null;
-            outcome: string | null;
-        };
         TechnicianJobDetail: {
             /** Format: uuid */
             id: string;
@@ -2811,6 +2886,11 @@ export interface components {
             date: string;
             /** Format: date-time */
             starts_at: string;
+            /**
+             * Format: date-time
+             * @description The end of the arrival window the client was promised: the start and the arrival minutes ops set.
+             */
+            arrives_by: string;
             ends_at: string | null;
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";

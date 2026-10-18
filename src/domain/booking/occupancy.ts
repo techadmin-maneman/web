@@ -1,34 +1,11 @@
-// What a technician's days already hold (docs/decisions/0034-clash-check.md): eight half-slots a day, taken by
-// holds' claims, live visits and leave. Days ops black out are never offered.
+// Who may take a visit, and what booking reads beside each technician's day plan (./day-plans.ts): the days ops black
+// out, which are never offered, how long a visit already booked takes, and the fit a visit is.
 
-import { keepingItsTime, ownAtCheckout, ownUnpaid } from "./hold-stages.ts";
-import {
-  BOOKING_WINDOWS,
-  UNITS_PER_DAY,
-  VISIT_BLOCKS,
-  WINDOW_SLOT_MAP,
-  type BookingWindow,
-} from "../../config/scheduling.ts";
-import { isAFitting, tierOf, type VisitType } from "../../config/visit-types.ts";
-import { addDays, indiaInstant } from "../../lib/india-time.ts";
-import { clashes } from "../../policy/dispatch.ts";
-import { bookedLength, unitsFor } from "../../policy/visit-length.ts";
-import { unitAt, windowAt } from "../../policy/slot-times.ts";
-import { loadSlotSchedule } from "./slot-times.ts";
+import { VISIT_BLOCKS } from "../../config/scheduling.ts";
+import { isAFitting, type VisitType } from "../../config/visit-types.ts";
+import { bookedLength } from "../../policy/visit-length.ts";
 import { minutesBetween } from "../../lib/durations.ts";
-import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 import { fitCode } from "../inventory/stock-gap.ts";
-import { isOneOf } from "../../lib/one-of.ts";
-
-/** What one technician's day already holds. */
-export interface Day {
-  readonly units: Set<number>;
-  readonly windows: Set<BookingWindow>;
-  /** Leave: the whole day is out, whatever else is on it. */
-  onLeave: boolean;
-}
-
-const emptyDay = (): Day => ({ units: new Set(), windows: new Set(), onLeave: false });
 
 /** The days ops black out between two dates: nobody is offered a visit on them. */
 export async function loadBlackouts(
@@ -46,22 +23,6 @@ export async function loadBlackouts(
     .bind(from, to, place?.pincode ?? null, place?.personId ?? null)
     .all<{ date: string }>();
   return new Set(results.map((row) => row.date));
-}
-
-/** Whether every one of a visit's half-slots, starting at `start`, is free, and inside the day. */
-function fitsAt(day: Day, start: number, units: number): boolean {
-  if (start + units > UNITS_PER_DAY) return false;
-  for (let unit = start; unit < start + units; unit += 1) if (day.units.has(unit)) return false;
-  return true;
-}
-
-/**
- * Where a visit of this many half-slots can start in this window, given the day, at half-slot `earliest` or later;
- * null if it cannot.
- */
-export function placement(day: Day, window: BookingWindow, units: number, earliest = 0): number | null {
-  if (day.onLeave || clashes(day, window)) return null;
-  return WINDOW_SLOT_MAP[window].find((start) => start >= earliest && fitsAt(day, start, units)) ?? null;
 }
 
 /** A visit already booked: its kind, its service's length where the table has it, its times. */
@@ -171,141 +132,4 @@ export async function techniciansFor(
 export interface Moving {
   readonly visitId: string;
   readonly technicianId: string;
-}
-
-/** A client and the service they are booking, whose own hold already at Checkout is theirs to take again. */
-interface OwnCheckout {
-  readonly personId: string;
-  readonly type: string;
-  readonly tier: string;
-}
-
-/**
- * The claims of the holds keeping their time from `from` to `to`, but those occupancy leaves out. A dispatch move's
- * claims are let go in the batch that writes it.
- */
-function claimsHeld(held: {
-  db: D1Database;
-  from: string;
-  to: string;
-  now: Date;
-  exceptHoldId: string | null;
-  ownUnpaidOf: string | null;
-  ownCheckoutOf: OwnCheckout | null;
-}) {
-  return held.db
-    .prepare(
-      `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
-       WHERE c.date BETWEEN ?1 AND ?2 AND ${keepingItsTime("h", "?3")}
-         AND h.id IS NOT ?4 AND NOT (?5 IS NOT NULL AND ${ownUnpaid("h", "?5")})
-         AND NOT (?6 IS NOT NULL AND ${ownAtCheckout("h", { person: "?6", type: "?7", tier: "?8", now: "?3" })})`,
-    )
-    .bind(
-      held.from,
-      held.to,
-      held.now.toISOString(),
-      held.exceptHoldId,
-      held.ownUnpaidOf,
-      held.ownCheckoutOf?.personId ?? null,
-      held.ownCheckoutOf?.type ?? null,
-      held.ownCheckoutOf?.tier ?? null,
-    )
-    .all<{ technician_id: string; date: string; claim: string }>();
-}
-
-/**
- * What each technician's days already hold, from `from` to `to` (India's dates), as of `now`. The visit
- * `exceptVisitId` and the claims of the hold `exceptHoldId` are left out, and so are the claims of the client
- * `ownUnpaidOf`'s own unpaid holds, which the hold they are asking for lets go, and of `ownCheckoutOf`'s own hold
- * already at Checkout for the same service, which asking again gives back.
- */
-export async function occupancy({
-  db,
-  from,
-  to,
-  now,
-  exceptVisitId = null,
-  exceptHoldId = null,
-  ownUnpaidOf = null,
-  ownCheckoutOf = null,
-}: {
-  db: D1Database;
-  from: string;
-  to: string;
-  now: Date;
-  exceptVisitId?: string | null;
-  exceptHoldId?: string | null;
-  ownUnpaidOf?: string | null;
-  ownCheckoutOf?: OwnCheckout | null;
-}): Promise<(technicianId: string, date: string) => Day> {
-  const days = new Map<string, Day>();
-  const dayOf = (technicianId: string, date: string) => {
-    const key = `${technicianId}/${date}`;
-    const day = days.get(key) ?? emptyDay();
-    days.set(key, day);
-    return day;
-  };
-
-  const [claims, leave, visits, schedule] = await Promise.all([
-    claimsHeld({ db, from, to, now, exceptHoldId, ownUnpaidOf, ownCheckoutOf }),
-    db
-      .prepare(
-        `SELECT technician_id, from_date, to_date FROM technician_leave
-         WHERE cancelled_at IS NULL AND from_date <= ?2 AND to_date >= ?1`,
-      )
-      .bind(from, to)
-      .all<{ technician_id: string; from_date: string; to_date: string }>(),
-    // A visit is the standard tier's where it names no other (migration 0050).
-    db
-      .prepare(
-        `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes FROM appointments a
-         LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
-         WHERE a.deleted_at IS NULL AND a.technician_id IS NOT NULL
-           AND ${statusIn("a.status", VISIT_LIVE)}
-           AND a.window_start >= ?1 AND a.window_start < ?2 AND a.id IS NOT ?3`,
-      )
-      .bind(
-        indiaInstant(from, "00:00").toISOString(),
-        indiaInstant(addDays(to, 1), "00:00").toISOString(),
-        exceptVisitId,
-      )
-      .all<BookedVisit & { technician_id: string }>(),
-    loadSlotSchedule(db),
-  ]);
-
-  for (const { technician_id: technicianId, date, claim } of claims.results) {
-    const [kind, value = ""] = claim.split(":");
-    const day = dayOf(technicianId, date);
-    if (kind === "unit") day.units.add(Number(value));
-    else if (kind === "at") {
-      // A quarter hour a hold by start time claims (docs/decisions/0210-booking-by-start-time.md): its half-slot and
-      // window, as the dispatch board still counts them.
-      const time = claim.slice("at:".length);
-      day.units.add(unitAt(time, schedule.on(date)));
-      day.windows.add(windowAt(time, schedule.on(date)));
-    } else if (kind === "rev") continue;
-    else if (isOneOf(BOOKING_WINDOWS, value)) day.windows.add(value);
-    else throw new Error(`slot_claims.claim names no window: ${claim}`);
-  }
-
-  // Leave takes the whole day, so the day is marked rather than its slots filled:
-  // ops are told the technician is away, not that every window happens to be busy.
-  for (const period of leave.results) {
-    // Both ends are inclusive, and the dates sort as they read, so a plain comparison walks the period.
-    let date = period.from_date < from ? from : period.from_date;
-    for (; date <= period.to_date && date <= to; date = addDays(date, 1)) {
-      dayOf(period.technician_id, date).onLeave = true;
-    }
-  }
-
-  for (const visit of visits.results) {
-    const { date, time, window } = schedule.at(visit.window_start);
-    const day = dayOf(visit.technician_id, date);
-    const start = unitAt(time, schedule.on(date));
-    const units = unitsFor(bookedMinutes(visit));
-    for (let unit = start; unit < Math.min(start + units, UNITS_PER_DAY); unit += 1) day.units.add(unit);
-    day.windows.add(window);
-  }
-
-  return (technicianId, date) => days.get(`${technicianId}/${date}`) ?? emptyDay();
 }

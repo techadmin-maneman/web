@@ -4045,7 +4045,7 @@ Request body:
     "jobs": {
       "type": "array",
       "items": {
-        "$ref": "#/components/schemas/TechnicianJob"
+        "$ref": "#/components/schemas/TechnicianDayJob"
       }
     }
   },
@@ -4055,6 +4055,399 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Jobs further out carry only time, type and sector."
+}
+```
+
+### TechnicianDayJob
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "day": {
+      "type": "string",
+      "enum": [
+        "past",
+        "today",
+        "tomorrow",
+        "later"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "arrives_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The end of the arrival window the client was promised: the start and the arrival minutes ops set."
+    },
+    "ends_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "window_label": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+    },
+    "service": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/TechnicianService"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses."
+    },
+    "sector": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "dispatched",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "terminated"
+      ],
+      "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
+    },
+    "badge": {
+      "type": "string",
+      "enum": [
+        "prepaid",
+        "credit",
+        "free",
+        "at_visit"
+      ],
+      "description": "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount."
+    },
+    "slots": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type."
+    },
+    "minutes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How long the visit is booked for, in minutes. Null for an unknown type."
+    },
+    "unlocked": {
+      "type": "boolean"
+    },
+    "unlocks_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobState"
+    },
+    "address": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "line1": {
+              "type": "string"
+            },
+            "line2": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "building": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "tower": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "floor": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "flat": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "landmark": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "locality": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "pincode": {
+              "type": "string"
+            },
+            "lat": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lng": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "line1",
+            "line2",
+            "building",
+            "tower",
+            "floor",
+            "flat",
+            "landmark",
+            "locality",
+            "city",
+            "pincode",
+            "lat",
+            "lng"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null until the day before the visit; the API enforces it, not the screen."
+    },
+    "next": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "drive_minutes": {
+              "type": "integer",
+              "description": "The drive to it, by our estimate."
+            },
+            "finish_by": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this job must be done for its wrap-up and that drive to reach the next one by its start."
+            }
+          },
+          "required": [
+            "drive_minutes",
+            "finish_by"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The day's next job still to do; null for the last, and for a job already closed."
+    }
+  },
+  "required": [
+    "id",
+    "day",
+    "date",
+    "starts_at",
+    "arrives_by",
+    "ends_at",
+    "window_label",
+    "type",
+    "one_visit",
+    "service",
+    "sector",
+    "status",
+    "badge",
+    "slots",
+    "minutes",
+    "unlocked",
+    "unlocks_at",
+    "client_name",
+    "progress",
+    "address",
+    "next"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string",
+      "description": "Its code, which the hair profile names a first fit's product by."
+    },
+    "name": {
+      "type": "string",
+      "description": "Its name in the console."
+    }
+  },
+  "required": [
+    "tier",
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianJobState
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "started_at",
+    "outcome"
+  ],
+  "additionalProperties": false,
+  "description": "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet."
 }
 ```
 
@@ -4084,6 +4477,11 @@ Request body:
     "starts_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "arrives_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The end of the arrival window the client was promised: the start and the arrival minutes ops set."
     },
     "ends_at": {
       "anyOf": [
@@ -4217,6 +4615,7 @@ Request body:
     "day",
     "date",
     "starts_at",
+    "arrives_by",
     "ends_at",
     "window_label",
     "type",
@@ -4233,66 +4632,6 @@ Request body:
     "progress"
   ],
   "additionalProperties": false
-}
-```
-
-### TechnicianService
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "tier": {
-      "type": "string",
-      "description": "Its code, which the hair profile names a first fit's product by."
-    },
-    "name": {
-      "type": "string",
-      "description": "Its name in the console."
-    }
-  },
-  "required": [
-    "tier",
-    "name"
-  ],
-  "additionalProperties": false
-}
-```
-
-### TechnicianJobState
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "started_at": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "date-time"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "outcome": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    }
-  },
-  "required": [
-    "started_at",
-    "outcome"
-  ],
-  "additionalProperties": false,
-  "description": "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet."
 }
 ```
 
@@ -4322,6 +4661,11 @@ Request body:
     "starts_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "arrives_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The end of the arrival window the client was promised: the start and the arrival minutes ops set."
     },
     "ends_at": {
       "anyOf": [
@@ -4903,6 +5247,7 @@ Request body:
     "day",
     "date",
     "starts_at",
+    "arrives_by",
     "ends_at",
     "window_label",
     "type",

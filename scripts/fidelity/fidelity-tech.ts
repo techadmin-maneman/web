@@ -72,15 +72,16 @@ const job = ({
   date: string;
   time: string;
   minutes: number;
-  type: Schemas["TechnicianJob"]["type"];
-  badge: Schemas["TechnicianJob"]["badge"];
+  type: Schemas["TechnicianDayJob"]["type"];
+  badge: Schemas["TechnicianDayJob"]["badge"];
   sector: string;
-}): Schemas["TechnicianJob"] => ({
+}): Schemas["TechnicianDayJob"] => ({
   id: jobId(id),
   day: date === DAY ? "today" : "tomorrow",
   date,
   // India is five and a half hours ahead, so the board's clock is this instant plus 5:30.
   starts_at: `${date}T${time}:00.000Z`,
+  arrives_by: new Date(new Date(`${date}T${time}:00.000Z`).getTime() + 30 * 60_000).toISOString(),
   ends_at: new Date(new Date(`${date}T${time}:00.000Z`).getTime() + minutes * 60_000).toISOString(),
   window_label: "morning",
   type,
@@ -95,6 +96,9 @@ const job = ({
   unlocks_at: `${date}T00:00:00.000Z`,
   client_name: CLIENTS[jobId(id)] ?? null,
   progress: { started_at: null, outcome: null },
+  // The board draws no Navigate or drive beneath a row.
+  address: null,
+  next: null,
 });
 
 const JOBS = [

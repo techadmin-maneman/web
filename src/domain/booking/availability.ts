@@ -59,6 +59,8 @@ export const ONE_AT_A_TIME: readonly VisitType[] = ["consultation", "first_fit"]
 export interface LiveVisit {
   readonly date: string;
   readonly window: BookingWindow;
+  /** Its start; null for a hold paid for before holds kept their start. */
+  readonly startsAt: Date | null;
 }
 
 /**
@@ -85,18 +87,23 @@ export async function liveVisitOf(
       .first<{ window_start: string }>(),
     db
       .prepare(
-        `SELECT date, window_label FROM slot_holds
+        `SELECT date, window_label, starts_at FROM slot_holds
          WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 1)) AND ${PAID_HOLD}
            AND id IS NOT ?3 LIMIT 1`,
       )
       .bind(personId, type, exceptHoldId)
-      .first<{ date: string; window_label: BookingWindow }>(),
+      .first<{ date: string; window_label: BookingWindow; starts_at: string | null }>(),
   ]);
   if (booked !== null) {
     const { date, window } = (await loadSlotSchedule(db)).at(booked.window_start);
-    return { date, window };
+    return { date, window, startsAt: new Date(booked.window_start) };
   }
-  return paid === null ? null : { date: paid.date, window: paid.window_label };
+  if (paid === null) return null;
+  return {
+    date: paid.date,
+    window: paid.window_label,
+    startsAt: paid.starts_at === null ? null : new Date(paid.starts_at),
+  };
 }
 
 interface WindowOffer {

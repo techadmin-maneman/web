@@ -269,6 +269,20 @@ describe("Zoho record and note contents", () => {
     });
   });
 
+  // A booking holds a start, which the Booked_Window pick-list cannot name: the record and the note say it in words.
+  it("says the start a booking held in the Description and the note", () => {
+    const booked = crmLead({
+      firstChoiceWindow: null,
+      plan: "consultation",
+      askedWindow: "morning",
+      askedStart: "2026-09-23T05:00:00.000Z",
+    });
+    expect(recordFor({ lead: booked, status: "New", isNew: true }).Description).toBe(
+      "Consultation. Starts at 10:30 am.",
+    );
+    expect(noteFor(booked).content).toBe("Asked for a visit in Gurgaon, 10:30 am, proposed 2026-09-23.");
+  });
+
   it("writes notes without personal data", () => {
     for (const source of ["form", "waitlist", "tryon"] as const) {
       const note = JSON.stringify(noteFor(crmLead({ source })));

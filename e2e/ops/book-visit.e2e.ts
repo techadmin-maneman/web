@@ -80,6 +80,7 @@ const LINK_SENT = {
   price: SERVICE_PRICE,
   date: "2027-09-23",
   window: "afternoon",
+  starts_at: "2027-09-23T06:30:00.000Z",
   technician: SANDEEP,
   link: { url: "https://rzp.io/i/stub4417", open_until: "2027-09-23T04:30:00.000Z" },
 } satisfies OpsReply<"/api/visits", "post", 201>;
@@ -125,7 +126,7 @@ test("books a fitted client’s service visit at a start someone is free at, sen
 
   await booking.getByRole("button", { name: opsCopy.clients.visits.book.book }).click();
   await expect(booking.getByRole("status")).toContainText("Payment link sent for Rs. 2,000.");
-  await expect(booking.getByRole("status")).toContainText("Service visit, Thu 23 Sep, afternoon, with Sandeep Rawat.");
+  await expect(booking.getByRole("status")).toContainText("Service visit, Thu 23 Sep, 12 pm, with Sandeep Rawat.");
   await expect(booking.getByRole("status")).toContainText("https://rzp.io/i/stub4417");
   expect(sent).toEqual([
     {
@@ -227,6 +228,7 @@ test("books a consultation asked for from its Tasks row, at the first start in t
           price: { ...SERVICE_PRICE, amount: 0, amount_ex_gst: 0 },
           date: "2027-09-24",
           window: "morning",
+          starts_at: "2027-09-24T03:30:00.000Z",
           technician: IMRAN,
           link: null,
         },

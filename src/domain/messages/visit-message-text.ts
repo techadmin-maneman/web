@@ -74,7 +74,7 @@ const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean =
  * "11:30 am–12 pm": when the technician arrives, from the visit's start to the end of its arrival window, as the app
  * writes it (docs/decisions/0210-booking-by-start-time.md).
  */
-function arrivalHours(start: Date, arrivalMinutes: number): string {
+export function arrivalHours(start: Date, arrivalMinutes: number): string {
   return timeRange(indiaTime(start), indiaTime(new Date(start.getTime() + arrivalMinutes * MINUTE_MS)));
 }
 

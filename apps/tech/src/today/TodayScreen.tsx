@@ -30,13 +30,13 @@ import { rowState, type RowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { clock, dayAfter, dayBefore, todayInIndia, where } from "../lib/when.ts";
+import { apiDate, clock, dayAfter, dayBefore, runsOver, todayInIndia, where } from "../lib/when.ts";
 import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { type Heard, keptStates } from "../store/jobs.ts";
 import { replay, type Queued } from "../store/outbox.ts";
 import { photoSets } from "../lib/sets.ts";
-import { JobRow } from "./JobRow.tsx";
+import { JobFoot, JobRow } from "./JobRow.tsx";
 import styles from "./today.module.css";
 
 /** Where a sign-out has got to: asking about unsent work, waiting on the API, or refused for want of signal. */
@@ -47,11 +47,6 @@ const ROW_STATES: Readonly<Record<RowState, string>> = {
   in_progress: jobCopy.states.inProgress,
   at_the_door: jobCopy.states.atTheDoor,
 };
-
-function stateOf(job: JobSummary, queued: readonly Queued[], heard: ReadonlyMap<string, Heard>): string | null {
-  const state = rowState(job, queued, heard.get(job.id));
-  return state === null ? null : ROW_STATES[state];
-}
 
 /** Yesterday's jobs not yet closed that the phone has work for: begun, or with steps still to send. */
 const stillOpen = (jobs: readonly JobSummary[], queued: readonly Queued[]): JobSummary[] =>
@@ -171,20 +166,28 @@ function EmptyDay({ tomorrowJobs }: { readonly tomorrowJobs: readonly JobSummary
   );
 }
 
-/** The day's jobs, each with how far it has got. */
+/** The day's jobs, each with how far it has got, the way there and the drive on to the next. */
 function Jobs(props: {
   readonly jobs: readonly JobSummary[];
   readonly names: ReadonlyMap<string, string>;
   readonly queued: readonly Queued[];
   readonly heard: ReadonlyMap<string, Heard>;
 }) {
+  const now = apiDate();
   return (
     <ul className={styles.list}>
-      {props.jobs.map((job) => (
-        <li key={job.id}>
-          <JobRow job={job} client={clientOf(job, props.names)} state={stateOf(job, props.queued, props.heard)} />
-        </li>
-      ))}
+      {props.jobs.map((job, index) => {
+        const state = rowState(job, props.queued, props.heard.get(job.id));
+        const next = props.jobs
+          .slice(index + 1)
+          .find((later) => later.status !== "completed" && later.status !== "terminated");
+        return (
+          <li key={job.id}>
+            <JobRow job={job} client={clientOf(job, props.names)} state={state === null ? null : ROW_STATES[state]} />
+            <JobFoot job={job} next={next} over={state === "in_progress" && runsOver(job, now)} />
+          </li>
+        );
+      })}
     </ul>
   );
 }

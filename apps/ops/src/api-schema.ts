@@ -21799,6 +21799,11 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            /**
+             * Format: date-time
+             * @description The start the visit is booked at.
+             */
+            starts_at: string;
             technician: components["schemas"]["FreeTechnician"];
             /** @description The payment link Razorpay texted the client, and when it closes and the slot goes. */
             link: {

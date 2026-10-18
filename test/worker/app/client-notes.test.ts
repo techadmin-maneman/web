@@ -69,6 +69,7 @@ describe("POST /api/appointments/:id/note", () => {
         jobId: VISIT,
         now: at,
         unlockHour: 18,
+        arrivalMinutes: 30,
         waits: NO_SHOW_WAIT_MIN,
         phoneClock: PHONE_CLOCK,
       });

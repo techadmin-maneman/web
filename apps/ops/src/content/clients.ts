@@ -277,8 +277,8 @@ export const clients = {
       book: "Book",
       booking: "Booking…",
       /** "Service visit, Wed 23 Sep, morning, with Sandeep Rawat." */
-      summary: (visit: string, day: string, window: string, technician: string) =>
-        `${visit}, ${day}, ${window}, with ${technician}.`,
+      summary: (visit: string, day: string, time: string, technician: string) =>
+        `${visit}, ${day}, ${time}, with ${technician}.`,
       outcomes: {
         booked: "Booked.",
         being_booked: "Booked.",

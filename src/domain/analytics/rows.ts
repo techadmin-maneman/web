@@ -169,8 +169,15 @@ interface VisitRow {
   readonly charge: number | null;
 }
 
-/** A row per visit, booked or done, with how it went: on time, its check-ins, its moves and any no-show. */
-export async function visitRows(db: D1Database, keys: ReadonlyMap<string, string>): Promise<TableRows> {
+/**
+ * A row per visit, booked or done, with how it went: on time, its check-ins, its moves and any no-show. On time is a
+ * check-in that passed by the end of the client's arrival window (docs/decisions/0210-booking-by-start-time.md).
+ */
+export async function visitRows(
+  db: D1Database,
+  keys: ReadonlyMap<string, string>,
+  arrivalMinutes: number,
+): Promise<TableRows> {
   const { results } = await db
     .prepare(
       `SELECT a.id, a.person_id, p.erased_at IS NOT NULL AS erased, a.window_start, a.window_end,
@@ -178,7 +185,7 @@ export async function visitRows(db: D1Database, keys: ReadonlyMap<string, string
          COALESCE(a.first_seen_at, a.synced_at) AS booked_at,
          v.outcome, v.partial_reason, v.duration_minutes AS minutes,
          EXISTS (SELECT 1 FROM checkins c WHERE c.appointment_id = a.id AND c.passed = 1
-           AND (a.window_end IS NULL OR c.at <= a.window_end)) AS on_time,
+           AND c.at <= strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '+' || ?1 || ' minutes')) AS on_time,
          EXISTS (SELECT 1 FROM checkins c WHERE c.appointment_id = a.id AND c.passed = 0) AS failed,
          a.checkin_waived_at IS NOT NULL AS waived,
          (SELECT COUNT(*) FROM dispatch_moves m WHERE m.appointment_id = a.id)
@@ -189,6 +196,7 @@ export async function visitRows(db: D1Database, keys: ReadonlyMap<string, string
        LEFT JOIN no_show_cases n ON n.appointment_id = a.id
        WHERE a.deleted_at IS NULL AND a.type IS NOT NULL AND a.window_start IS NOT NULL AND p.test_record = 0`,
     )
+    .bind(arrivalMinutes)
     .all<VisitRow>();
   return {
     table: "fact_visit",
