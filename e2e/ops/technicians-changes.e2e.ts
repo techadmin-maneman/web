@@ -5,6 +5,7 @@
 // technician until one is added and none has logged in. The clock is fixed to
 // the day the fixture's leave is read against.
 
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -106,39 +107,40 @@ test("asks for a mobile it can read before it sends anything", async ({ page }) 
   expect(sent).toEqual([]);
 });
 
-test("changes a technician’s details, sending only what changed", async ({ page }) => {
+// docs/decisions/0212-editing-in-place.md: each detail changed where it reads, and sent alone.
+test("changes a technician’s detail where it reads, sending only that one", async ({ page }) => {
   const { roster, reply } = rosterOf(TECHNICIANS);
   await openWith(page, { [CHANGE]: json({ id: IMRAN }) }, reply);
   const main = await pageOf(page, "Imran Qureshi");
   await expect(main.getByText("+91 98100 00001")).toBeVisible();
 
-  await main.getByRole("button", { name: "Edit Imran Qureshi’s details" }).click();
-  const form = page.getByRole("dialog", { name: "Imran Qureshi" });
-  await form.getByRole("textbox", { name: opsCopy.technicians.fields.zone }).fill("Sec 1–39");
+  await main.getByRole("button", { name: `${EDITING.change} ${opsCopy.technicians.details.zone}` }).click();
+  const zone = main.getByRole("textbox", { name: opsCopy.technicians.details.zone });
+  await zone.fill("Sec 1–39");
   const sent = page.waitForRequest((request) => request.method() === "PATCH");
   roster.current = {
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.map((each) => (each.id === IMRAN ? { ...each, zone: "Sec 1–39" } : each)),
   };
-  await form.getByRole("button", { name: opsCopy.technicians.details.save }).click();
+  await zone.press("Enter");
 
   expect((await sent).postDataJSON()).toEqual({ zone: "Sec 1–39" });
-  await expect(form).toBeHidden();
+  await expect(zone).toBeHidden();
   await expect(main).toContainText("Sec 1–39");
 });
 
 test("moves a technician to another city, or to none", async ({ page }) => {
   await openWith(page, { [CHANGE]: json({ id: IMRAN }) });
   const main = await pageOf(page, "Imran Qureshi");
-  await expect(main.getByRole("definition").filter({ hasText: "Gurgaon" })).toBeVisible();
+  const change = main.getByRole("button", { name: `${EDITING.change} ${opsCopy.technicians.details.city}` });
+  await expect(change).toContainText("Gurgaon");
 
-  await main.getByRole("button", { name: "Edit Imran Qureshi’s details" }).click();
-  const form = page.getByRole("dialog", { name: "Imran Qureshi" });
-  const city = form.getByRole("combobox", { name: opsCopy.technicians.fields.city });
+  await change.click();
+  const city = main.getByRole("combobox", { name: opsCopy.technicians.details.city });
   await expect(city).toHaveValue("Gurgaon");
   await city.selectOption("No city · no bookings");
   const sent = page.waitForRequest((request) => request.method() === "PATCH");
-  await form.getByRole("button", { name: opsCopy.technicians.details.save }).click();
+  await main.getByRole("button", { name: EDITING.save }).click();
 
   expect((await sent).postDataJSON()).toEqual({ city: null });
 });

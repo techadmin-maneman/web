@@ -169,7 +169,13 @@
   color: var(--ui-text-muted);
 }
 
-/* Edit, switch off and delete on one line beneath the facts, each opening its own question in place. */
+/* Their details, a value a row, each changed where it reads. */
+.rows {
+  margin-top: var(--sp-8);
+  border-top: var(--hairline) solid var(--ui-line);
+}
+
+/* Switch off and delete on one line beneath the details, each opening its own question in place. */
 .recordActions {
   display: flex;
   flex-wrap: wrap;
