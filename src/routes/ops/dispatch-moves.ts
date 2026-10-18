@@ -34,6 +34,13 @@ const EXPECTED = {
   expected_starts_at: z.iso.datetime().openapi({ description: "The start the board showed the job with." }),
 };
 
+const STARTS_AT = {
+  starts_at: z.iso.datetime().optional().openapi({
+    description:
+      "The start it goes to, in place of a date and window. With a date and window instead, it goes to the window's earliest start the technician's day has room for; with neither, it keeps its start.",
+  }),
+};
+
 const BLACKOUT_REASON = {
   blackout_reason: z.string().trim().min(1).max(REASON_MAX_CHARS).optional().openapi({
     description:
@@ -47,6 +54,7 @@ const AssignRequestSchema = z
     technician_id: z.uuid(),
     date: z.iso.date().optional(),
     window: z.enum(BOOKING_WINDOWS).optional(),
+    ...STARTS_AT,
     reason: z.enum(MOVE_REASONS),
     ...EXPECTED,
     ...BLACKOUT_REASON,
@@ -59,6 +67,7 @@ const MoveRequestSchema = z
     technician_id: z.uuid().optional().openapi({ description: "Left out keeps the technician it has." }),
     date: z.iso.date().optional(),
     window: z.enum(BOOKING_WINDOWS).optional(),
+    ...STARTS_AT,
     reason: z.enum(MOVE_REASONS),
     ...EXPECTED,
     ...BLACKOUT_REASON,
@@ -90,7 +99,7 @@ const assignRoute = opsRoute({
     400: errorResponse("invalid_request: fields names technician_id for one not in the caller's cities"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
-      "past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
+      "past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
     ),
   },
 });
@@ -103,7 +112,7 @@ const moveRoute = opsRoute({
   responses: {
     200: { description: "Moved, and the client told", ...json(MovedSchema) },
     400: errorResponse(
-      "invalid_request, including a move to the technician, day and window the job already has, or to a technician not in the caller's cities",
+      "invalid_request, including a move to the technician and start the job already has, or to a technician not in the caller's cities",
     ),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
@@ -238,6 +247,7 @@ function inputOf(c: Context<AppEnv>, request: MoveRequest): MoveInput {
     technicianId: request.technician_id ?? null,
     date: request.date ?? null,
     window: request.window ?? null,
+    startsAt: request.starts_at === undefined ? null : new Date(request.starts_at),
     reason: request.reason,
     actor: actorOf(c).id,
     expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
@@ -260,7 +270,8 @@ function refusedMove(c: Context<AppEnv>, outcome: Refused) {
   if (outcome.kind === "not_found") return refuse(c, "not_found");
   if (outcome.kind === "superseded") return refuse(c, "superseded", outcome.changed);
   if (outcome.kind === "in_progress") return refuse(c, "in_progress");
-  if (outcome.kind === "nothing_to_move") return refuse(c, "invalid_request", ["technician_id", "date", "window"]);
+  if (outcome.kind === "nothing_to_move")
+    return refuse(c, "invalid_request", ["technician_id", "date", "window", "starts_at"]);
   if (outcome.kind === "no_technician") return refuse(c, "invalid_request", ["technician_id"]);
   return c.json(errorBody(outcome.reason, c.var.requestId), 409);
 }

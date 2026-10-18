@@ -62,8 +62,8 @@ export async function proposeMove(
     db
       .prepare(
         `INSERT INTO move_proposals (id, appointment_id, technician_id, date, window_label, reason, proposed_by,
-           expected_technician_id, expected_start, created_at, expires_at, message_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+           expected_technician_id, expected_start, created_at, expires_at, message_id, starts_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
       )
       .bind(
         id,
@@ -78,6 +78,7 @@ export async function proposeMove(
         at,
         expiresAt,
         messageId,
+        move.start.toISOString(),
       ),
     ...(messageId === null
       ? []
@@ -102,6 +103,8 @@ interface ProposalRow {
   technician_id: string;
   date: string;
   window_label: BookingWindow;
+  /** Null for a proposal made before proposals kept their start. */
+  starts_at: string | null;
   reason: MoveInput["reason"];
   proposed_by: string;
   expected_technician_id: string | null;
@@ -132,7 +135,7 @@ export async function acceptProposal(
   const { now } = input;
   const proposal = await db
     .prepare(
-      `SELECT p.id, p.appointment_id, p.technician_id, p.date, p.window_label, p.reason, p.proposed_by,
+      `SELECT p.id, p.appointment_id, p.technician_id, p.date, p.window_label, p.starts_at, p.reason, p.proposed_by,
          p.expected_technician_id, p.expected_start, p.expires_at, a.window_start
        FROM move_proposals p JOIN appointments a ON a.id = p.appointment_id
        WHERE p.appointment_id = ?1 AND a.person_id = ?2 AND p.answered_at IS NULL`,
@@ -154,6 +157,7 @@ export async function acceptProposal(
       technicianId: proposal.technician_id,
       date: proposal.date,
       window: proposal.window_label,
+      startsAt: proposal.starts_at === null ? null : new Date(proposal.starts_at),
       reason: proposal.reason,
       actor: proposal.proposed_by,
       expected: { technicianId: proposal.expected_technician_id, startsAt: proposal.expected_start },

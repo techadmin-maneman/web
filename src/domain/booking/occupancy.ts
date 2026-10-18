@@ -49,7 +49,7 @@ export async function loadBlackouts(
 }
 
 /** Whether every one of a visit's half-slots, starting at `start`, is free, and inside the day. */
-export function fitsAt(day: Day, start: number, units: number): boolean {
+function fitsAt(day: Day, start: number, units: number): boolean {
   if (start + units > UNITS_PER_DAY) return false;
   for (let unit = start; unit < start + units; unit += 1) if (day.units.has(unit)) return false;
   return true;
@@ -62,12 +62,6 @@ export function fitsAt(day: Day, start: number, units: number): boolean {
 export function placement(day: Day, window: BookingWindow, units: number, earliest = 0): number | null {
   if (day.onLeave || clashes(day, window)) return null;
   return WINDOW_SLOT_MAP[window].find((start) => start >= earliest && fitsAt(day, start, units)) ?? null;
-}
-
-/** What a visit starting at a half-slot claims: each half-slot it covers, and its window. */
-export function claimsOf(start: number, units: number, window: BookingWindow): string[] {
-  const covered = Array.from({ length: units }, (_, index) => `unit:${String(start + index)}`);
-  return [...covered, `window:${window}`];
 }
 
 /** A visit already booked: its kind, its service's length where the table has it, its times. */

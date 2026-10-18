@@ -10,7 +10,6 @@ import { ClientScreen } from "./clients/ClientScreen.tsx";
 import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
 import { Shell } from "./components/Shell.tsx";
-import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
 import { useMayCall } from "./lib/access.ts";
 import { PageRefresh } from "./lib/refresh.ts";
 import {
@@ -27,6 +26,9 @@ import {
 import { PageBoundary } from "./states/ErrorBoundary.tsx";
 import { Loading } from "./states/States.tsx";
 
+const DispatchScreen = lazyScreen(() =>
+  import("./dispatch/DispatchScreen.tsx").then((module) => module.DispatchScreen),
+);
 const TodayScreen = lazyScreen(() => import("./today/TodayScreen.tsx").then((module) => module.TodayScreen));
 const TasksScreen = lazyScreen(() => import("./tasks/TasksScreen.tsx").then((module) => module.TasksScreen));
 const SettingsScreen = lazyScreen(() => import("./SettingsHub.tsx").then((module) => module.SettingsScreen));

@@ -8,10 +8,11 @@ import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { drawerFrame } from "@maneman/ui/Drawer";
-import { ChoiceGroup, Field, Radio, TextArea } from "@maneman/ui/Field";
+import { ChoiceGroup, Field, Radio, Select, TextArea } from "@maneman/ui/Field";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { MoveReason } from "../api.ts";
+import type { Sent } from "./useMove.ts";
 import { dispatch } from "../content.ts";
 import styles from "./move-picker.module.css";
 import { phoneWords } from "../lib/phone.ts";
@@ -79,15 +80,15 @@ function stoodWords(job: Job): string | null {
 interface Props {
   readonly job: Job;
   readonly to: Target;
-  /** The start the move takes there, as the server answered; null where it could not say. */
-  readonly landsAt: string | null;
+  /** The starts the move can take there, earliest first, as the server answered; none where it could not say. */
+  readonly starts: readonly string[];
   /** Ops blacked out the day the move goes to, so it goes only with a reason. */
   readonly blackout: boolean;
   readonly sending: boolean;
   /** Ops chose, after the drawer's warning, to clear the technician's check-in. */
   readonly clearingCheckIn: boolean;
   /** `asking`: the client is asked to confirm the move rather than told of it (ADR 0115). */
-  readonly onSend: (reason: MoveReason, blackoutReason: string | null, asking: boolean) => void;
+  readonly onSend: (sent: Sent) => void;
   readonly onCancel: () => void;
 }
 
@@ -98,8 +99,39 @@ function whenWords(stood: string | null, lands: string): string {
   return stood === lands ? copy.stays(lands) : copy.fromTo(stood, lands);
 }
 
-export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckIn, onSend, onCancel }: Props) {
+/** The start in the window the move goes to, the earliest chosen first. */
+function StartChoice(props: {
+  readonly starts: readonly string[];
+  readonly chosen: string | null;
+  readonly sending: boolean;
+  readonly onChoose: (start: string) => void;
+}) {
+  return (
+    <Field className={styles.start} label={dispatch.move.start}>
+      {(control) => (
+        <Select
+          {...control}
+          width="choice"
+          value={props.chosen ?? ""}
+          disabled={props.sending}
+          onChange={(event) => {
+            props.onChoose(event.target.value);
+          }}
+        >
+          {props.starts.map((start) => (
+            <option key={start} value={start}>
+              {indiaClock(start)}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
+  );
+}
+
+export function MovePicker({ job, to, starts, blackout, sending, clearingCheckIn, onSend, onCancel }: Props) {
   const [reason, setReason] = useState<MoveReason | null>(null);
+  const [landsAt, setLandsAt] = useState<string | null>(starts[0] ?? null);
   const [blackoutReason, setBlackoutReason] = useState("");
   const copy = dispatch.move;
 
@@ -122,6 +154,7 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
         {copy.title(nameOf(job), to.technician.name)}
       </h2>
       <p className={styles.pickerWhen}>{whenWords(stood, lands)}</p>
+      {starts.length > 1 && <StartChoice starts={starts} chosen={landsAt} sending={sending} onChoose={setLandsAt} />}
       <ChoiceGroup className={styles.reasons} legend={copy.legend} legendLook="hidden" disabled={sending} ruled>
         {copy.reasons.map((each) => (
           <Radio
@@ -164,7 +197,7 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
           disabled={!ready || sending}
           busy={sending}
           onClick={() => {
-            if (reason !== null) onSend(reason, blackout ? typed : null, asking);
+            if (reason !== null) onSend({ reason, blackoutReason: blackout ? typed : null, asking, startsAt: landsAt });
           }}
         >
           {sendLabel(job, sending, notice.messaged, asking)}

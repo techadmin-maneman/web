@@ -31,8 +31,8 @@ import { aPerson } from "../fixtures/index.ts";
 useFieldDay();
 
 describe("dispatch", () => {
-  it("refuses a move that would give one technician two jobs in one window", async () => {
-    // Sameer already has another client's job in Monday's afternoon window.
+  it("refuses a move that would give one technician two jobs at once", async () => {
+    // Sameer already has another client's job at 1 on Monday.
     await aPerson({ id: "p-other", name: "Kabir Sood" });
     await insertJob(OTHER_JOB, { start: "2026-09-21T07:30:00.000Z", technician: SAMEER, person: "p-other" });
 
@@ -40,8 +40,7 @@ describe("dispatch", () => {
       appointment_id: TODAY_JOB,
       ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
-      date: "2026-09-21",
-      window: "afternoon",
+      starts_at: "2026-09-21T07:30:00.000Z",
       reason: "zone_rebalance",
     });
 

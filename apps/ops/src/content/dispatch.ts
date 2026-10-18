@@ -186,6 +186,7 @@ export const dispatch = {
     to: (to: string) => `To ${to}`,
     /** Another technician, at the time it stood. */
     stays: (at: string) => `Same time, ${at}`,
+    start: "Start",
     legend: "Reason",
     /**
      * The design's five, in its order (src/policy/dispatch.ts), less "Skill needed · first fit certified": no

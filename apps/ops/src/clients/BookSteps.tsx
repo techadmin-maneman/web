@@ -125,7 +125,10 @@ export function WhenAndWho({
             value={technician}
             options={[
               { value: "", label: copy.anyone },
-              ...technicians.map((each) => ({ value: each.id, label: copy.withDrive(each.name, each.added_drive_minutes) })),
+              ...technicians.map((each) => ({
+                value: each.id,
+                label: copy.withDrive(each.name, each.added_drive_minutes),
+              })),
             ]}
             busy={busy}
             onChoose={(next) => {

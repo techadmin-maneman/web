@@ -20,8 +20,8 @@
 // one free, that waits to be booked: ops are told it is being moved.
 
 import { failedNotNullOn, failedUniqueOn } from "../../lib/d1-errors.ts";
-import { BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
-import { indiaDate } from "../../lib/india-time.ts";
+import type { BookingWindow } from "../../config/scheduling.ts";
+import { indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import {
   asksTheClient,
   clientNotice,
@@ -30,9 +30,10 @@ import {
   type MoveReason,
   type MoveRefusal,
 } from "../../policy/dispatch.ts";
-import { unitsFor } from "../../policy/visit-length.ts";
+import { claimsAt, placements, timeOf } from "../../policy/day-plan.ts";
+import { windowAt } from "../../policy/slot-times.ts";
 import { auditStatement, type AuditEntry } from "../platform/audit.ts";
-import { bookedMinutes, claimsOf, loadBlackouts, occupancy } from "../booking/occupancy.ts";
+import { loadBlackouts } from "../booking/occupancy.ts";
 import { visitsOfClient } from "../booking/technician-rotation.ts";
 import { allowedTechnicians, breaksRotation } from "../../policy/technician-rotation.ts";
 import { releaseDeadHolds } from "../booking/hold-slot.ts";
@@ -52,6 +53,8 @@ import {
   CLIENT_MOVING,
   timesAt,
   landingOf,
+  moveDays,
+  UNBARRED,
 } from "./dispatch-landing.ts";
 import { roomTechnicians, whyNotThem } from "./technician-fit.ts";
 import { visitUpkeep } from "../visits/visit-upkeep.ts";
@@ -60,9 +63,11 @@ export interface MoveInput {
   readonly appointmentId: string;
   /** The technician it goes to; absent keeps the one it has. */
   readonly technicianId?: string | null;
-  /** The India date and window it goes to; absent keeps the time it has. */
+  /** The India date and window it goes to, at the window's earliest start with room; absent keeps the time it has. */
   readonly date?: string | null;
   readonly window?: BookingWindow | null;
+  /** The start it goes to, in place of a date and window. */
+  readonly startsAt?: Date | null;
   readonly reason: MoveReason;
   /** The Access identity that made the move (ADR 0031). */
   readonly actor: string;
@@ -116,7 +121,7 @@ interface PlannedMove {
   readonly end: Date;
   /** Only the technician changes. */
   readonly keepsTime: boolean;
-  /** The India date of the technician's day the move claims, the window it goes to, and its half-slots there. */
+  /** The India date of the technician's day the move claims, the window its start falls in, and its claims there. */
   readonly date: string;
   readonly window: BookingWindow;
   readonly claims: readonly string[];
@@ -174,20 +179,22 @@ export async function planMove(db: D1Database, input: MoveInput, now: Date): Pro
   const clearCheckIn = input.clearCheckIn ?? null;
   if (!mayMove({ job, clearingCheckIn: clearCheckIn !== null })) return { kind: "in_progress" };
 
-  const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
   if (technicianId === null) return { kind: "no_technician" };
   const schedule = await loadSlotSchedule(db);
   // What ops left out keeps what the job has.
-  const date = input.date ?? indiaDate(wasStart);
-  const window = input.window ?? schedule.at(wasStart).window;
-  const target = targetOf({ job, technicianId, place: { date, window }, schedule, now });
+  const place = {
+    date: input.date ?? indiaDate(new Date(job.window_start)),
+    window: input.window ?? null,
+    startsAt: input.startsAt ?? null,
+  };
+  const target = targetOf({ job, technicianId, place, schedule, now });
   if (isWhereItIs(job, target)) return { kind: "nothing_to_move" };
 
-  // The check runs before anything is written. The job's own time does not
-  // count against its own move.
-  const [held, ontoBlackout, clientVisits, notThem, cityTechnicians] = await Promise.all([
-    occupancy({ db, from: date, to: date, now, exceptVisitId: job.id }),
+  // The check runs before anything is written. The job's own time does not count against its own move.
+  const { date } = target;
+  const [days, ontoBlackout, clientVisits, notThem, cityTechnicians] = await Promise.all([
+    moveDays(db, job, { from: date, to: date }, now),
     movesOntoBlackout(db, job, date),
     visitsOfClient(db, job.person_id, job.id),
     whyNotThem(db, job, technicianId),
@@ -195,29 +202,23 @@ export async function planMove(db: D1Database, input: MoveInput, now: Date): Pro
   ]);
   if (notThem !== null) return { kind: "refused", reason: notThem };
   const blackoutReason = ontoBlackout ? (input.blackoutReason ?? null) : null;
-  const placing = { minutes: bookedMinutes(job), start: wasStart };
-  const from = { technicianId: job.technician_id, date: indiaDate(wasStart) };
+  const from = { technicianId: job.technician_id, date: indiaDate(new Date(job.window_start)) };
+  const targetFor = (id: string) => targetOf({ job, technicianId: id, place, schedule, now });
+  const landsWith = (id: string, bars: { blackoutWithoutReason: boolean; beside: boolean }) =>
+    landingOf({ day: days.plans.day(id, date), job: days.visit, target: targetFor(id), rules: days.rules, ...bars });
   // Never the technician of the client's visit before or after, unless nobody else in the city has room.
-  const targetFor = (id: string) => targetOf({ job, technicianId: id, place: { date, window }, schedule, now });
-  const fits = (id: string) =>
-    landingOf({ day: held(id, date), job: placing, target: targetFor(id), blackoutWithoutReason: false, beside: false })
-      .kind !== "refused";
-  const candidates = [
-    technicianId,
-    ...cityTechnicians.map((each) => each.id).filter((id) => id !== technicianId && fits(id)),
-  ];
+  const others = cityTechnicians.map((each) => each.id).filter((id) => id !== technicianId);
+  const candidates = [technicianId, ...others.filter((id) => landsWith(id, UNBARRED).kind !== "refused")];
   const allowed = allowedTechnicians(candidates, (id) => breaksRotation(clientVisits, from, targetFor(id)));
-  const beside = !allowed.includes(technicianId);
-  const landing = landingOf({
-    day: held(technicianId, date),
-    job: placing,
-    target,
+  const landing = landsWith(technicianId, {
     blackoutWithoutReason: ontoBlackout && blackoutReason === null,
-    beside,
+    beside: !allowed.includes(technicianId),
   });
   if (landing.kind === "refused") return landing;
 
-  const times = timesAt(target, landing.start, placing, schedule);
+  const { minutes } = days.visit;
+  const time = timeOf(landing.start);
+  const times = timesAt(target, landing.start, minutes);
   const move: PlannedMove = {
     id: crypto.randomUUID(),
     job,
@@ -228,8 +229,8 @@ export async function planMove(db: D1Database, input: MoveInput, now: Date): Pro
     end: times.end,
     keepsTime: target.keepsTime,
     date,
-    window,
-    claims: claimsOf(landing.start, unitsFor(placing.minutes), window),
+    window: windowAt(time, schedule.on(date)),
+    claims: claimsAt(time, minutes + days.rules.booking.wrap_up, days.plans.revision(technicianId, date)),
     clearCheckIn: isUnderWay(job) ? clearCheckIn : null,
     blackoutReason,
     audit: input.audit ?? null,
@@ -390,7 +391,7 @@ export async function agreedToVisitMessages(db: D1Database, appointmentId: strin
   return latest?.granted === 1;
 }
 
-/** One half-slot of the technician's day, claimed for the move under the key holds use. */
+/** One claim on the technician's day, for the move, under the key holds use. */
 const claimOf = (db: D1Database, move: PlannedMove, claim: string): D1PreparedStatement =>
   db
     .prepare("INSERT INTO slot_claims (technician_id, date, claim, move_id) VALUES (?1, ?2, ?3, ?4)")
@@ -399,7 +400,7 @@ const claimOf = (db: D1Database, move: PlannedMove, claim: string): D1PreparedSt
 const releasingClaims = (db: D1Database, moveId: string): D1PreparedStatement =>
   db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId);
 
-/** A window the job would land in, and when it would start there. */
+/** A start the job would land at, and the window it falls in. */
 interface RoomStart {
   readonly window: BookingWindow;
   readonly starts_at: string;
@@ -408,7 +409,7 @@ interface RoomStart {
 interface Room {
   readonly technician_id: string;
   readonly date: string;
-  /** The windows the job would land in, by the check a move runs. */
+  /** The windows of those starts. */
   readonly windows: BookingWindow[];
   readonly starts: RoomStart[];
 }
@@ -419,10 +420,20 @@ interface Rooms {
   readonly blackouts: string[];
 }
 
+/** A start the job would land at with a technician, where it already is, or the client's visits bar them. */
+interface Offer {
+  readonly id: string;
+  readonly date: string;
+  readonly time: string;
+  /** Null where the job already is: it counts as room, beside nobody, but is not offered. */
+  readonly startsAt: string | null;
+  readonly beside: boolean;
+}
+
 /**
  * Where a job in hand can go in the week from `from`: each technician's day
- * with a window the job would land in, by the same check a move runs, so the
- * board offers no window the move would be refused. Not where it already is.
+ * with the starts the job would land at, by the same check a move runs, so the
+ * board offers no start the move would be refused. Not where it already is.
  * Null for a job no longer live, or one the technician has begun by more than
  * their check-in, which no move takes.
  */
@@ -435,61 +446,50 @@ export async function dispatchRoomFor(
   if (job === null || !mayMove({ job, clearingCheckIn: true })) return null;
   const dates = weekFrom(input.from);
   const to = dates[dates.length - 1] ?? input.from;
-  const [technicians, held, schedule, blackouts, clientVisits] = await Promise.all([
+  const [technicians, days, schedule, blackouts, clientVisits] = await Promise.all([
     roomTechnicians(db, job),
-    occupancy({ db, from: input.from, to, now, exceptVisitId: job.id }),
+    moveDays(db, job, { from: input.from, to }, now),
     loadSlotSchedule(db),
     loadBlackouts(db, input.from, to, { pincode: job.service_pincode, personId: job.person_id }),
     visitsOfClient(db, job.person_id, job.id),
   ]);
-  const visit = { minutes: bookedMinutes(job), start: new Date(job.window_start) };
-  const from = { technicianId: job.technician_id, date: indiaDate(visit.start) };
-  /** Where the job would land with a technician in a window, rotation aside; null where it would not. */
-  const landsWith = (technicianId: string, date: string, window: BookingWindow) => {
-    const target = targetOf({ job, technicianId, place: { date, window }, schedule, now });
-    if (isWhereItIs(job, target)) return null;
-    const landing = landingOf({
-      day: held(technicianId, date),
-      job: visit,
-      target,
-      blackoutWithoutReason: false,
-      beside: false,
+  const from = { technicianId: job.technician_id, date: indiaDate(new Date(job.window_start)) };
+  /** Each start a technician's day has room for the job at, rotation aside. */
+  const offersOf = (technicianId: string, date: string): Offer[] => {
+    const day = days.plans.day(technicianId, date);
+    if (day === null) return [];
+    return placements(day, days.visit, days.rules, 0).flatMap(({ start }): Offer[] => {
+      const time = timeOf(start);
+      const startsAt = indiaInstant(date, time);
+      const target = targetOf({ job, technicianId, place: { date, window: null, startsAt }, schedule, now });
+      if (isWhereItIs(job, target)) return [{ id: technicianId, date, time, startsAt: null, beside: false }];
+      const landing = landingOf({ day, job: days.visit, target, rules: days.rules, ...UNBARRED });
+      if (landing.kind === "refused") return [];
+      const beside = breaksRotation(clientVisits, from, target);
+      return [{ id: technicianId, date, time, startsAt: startsAt.toISOString(), beside }];
     });
-    if (landing.kind === "refused") return null;
-    const startsAt = timesAt(target, landing.start, visit, schedule).start.toISOString();
-    return { startsAt, beside: breaksRotation(clientVisits, from, target) };
   };
-  // Never the technician of the client's visit before or after, unless nobody else in the city has room. The job
-  // staying where it is counts as room, beside nobody: it need not go to the barred technician.
-  const allowedIn = (date: string, window: BookingWindow) =>
-    allowedTechnicians(
-      technicians.flatMap((technician): { id: string; startsAt: string | null; beside: boolean }[] => {
-        const target = targetOf({ job, technicianId: technician.id, place: { date, window }, schedule, now });
-        if (isWhereItIs(job, target)) return [{ id: technician.id, startsAt: null, beside: false }];
-        const lands = landsWith(technician.id, date, window);
-        return lands === null ? [] : [{ id: technician.id, ...lands }];
-      }),
-      (candidate) => candidate.beside,
-    );
-  const offered = dates.flatMap((date) =>
-    BOOKING_WINDOWS.flatMap((window) =>
-      allowedIn(date, window).flatMap(({ id, startsAt }) =>
-        startsAt === null ? [] : [{ id, date, window, startsAt }],
-      ),
-    ),
-  );
+  const atEachStart = new Map<string, Offer[]>();
+  for (const offer of technicians.flatMap((technician) => dates.flatMap((date) => offersOf(technician.id, date)))) {
+    const key = `${offer.date} ${offer.time}`;
+    atEachStart.set(key, [...(atEachStart.get(key) ?? []), offer]);
+  }
+  // Never the technician of the client's visit before or after, unless nobody else in the city has room then.
+  const offered = [...atEachStart.values()].flatMap((offers) => allowedTechnicians(offers, (offer) => offer.beside));
   const roomOn = (technicianId: string, date: string): Room => {
     const starts: RoomStart[] = offered
-      .filter((each) => each.id === technicianId && each.date === date)
-      .map((each) => ({ window: each.window, starts_at: each.startsAt }));
-    return { technician_id: technicianId, date, windows: starts.map((each) => each.window), starts };
+      .filter((offer) => offer.id === technicianId && offer.date === date)
+      .flatMap((offer) =>
+        offer.startsAt === null ? [] : [{ window: windowAt(offer.time, schedule.on(date)), starts_at: offer.startsAt }],
+      )
+      .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+    return { technician_id: technicianId, date, windows: [...new Set(starts.map((each) => each.window))], starts };
   };
-  const ownDate = indiaDate(visit.start);
   return {
     rooms: technicians
       .flatMap((technician) => dates.map((date) => roomOn(technician.id, date)))
       .filter((room) => room.starts.length > 0),
-    blackouts: dates.filter((date) => blackouts.has(date) && date !== ownDate),
+    blackouts: dates.filter((date) => blackouts.has(date) && date !== from.date),
   };
 }
 

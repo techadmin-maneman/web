@@ -665,6 +665,7 @@ export interface Rows {
     readonly answer: string | null;
     readonly move_id: string | null;
     readonly message_id: string | null;
+    readonly starts_at: string | null;
   };
   readonly no_show_cases: {
     readonly id: string;

@@ -224,6 +224,8 @@ export interface Landing {
   readonly technicianId: string;
   readonly date: string;
   readonly window: BookingWindow;
+  /** The start chosen in the window; null takes its earliest with room. */
+  readonly startsAt: string | null;
   readonly reason: MoveReason;
   /** Why the visit goes onto a day ops blacked out, as ops typed it; null for any other day. */
   readonly blackoutReason: string | null;
@@ -260,6 +262,7 @@ export const moveBody = (appointmentId: string, to: Landing, shown: Shown) => ({
   reason: to.reason,
   expected_technician_id: shown.technicianId,
   expected_starts_at: shown.startsAt,
+  ...(to.startsAt === null ? {} : { starts_at: to.startsAt }),
   ...(to.blackoutReason === null ? {} : { blackout_reason: to.blackoutReason }),
 });
 

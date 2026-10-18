@@ -1463,7 +1463,7 @@ Made by `0071_maintenance.sql`.
 
 A move to another day ops asked a client to confirm: where the visit would go, until when, and whether it was accepted, taken back or made moot (ADR 0115).
 
-Made by `0105_move_proposals.sql`.
+Made by `0105_move_proposals.sql`; changed by `0189_proposal_starts_at.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -1482,6 +1482,7 @@ Made by `0105_move_proposals.sql`.
 | `answer` | TEXT | yes |  |  |  |
 | `move_id` | TEXT | yes |  | → `dispatch_moves.id` |  |
 | `message_id` | TEXT | yes |  |  |  |
+| `starts_at` | TEXT | yes |  |  | The start a move proposal puts the visit at (docs/decisions/0210-booking-by-start-time.md), which the client's acceptance moves it to, in place of the window's earliest start with room. Only a new column; the code deployed neither reads nor writes it. |
 
 Indexes:
 

@@ -11,7 +11,7 @@
 // A move is written to our own database, and ops record leave in the console, where the same clash check reads it
 // (ADR 0062).
 
-import { WINDOW_SLOT_MAP, type BookingWindow } from "../config/scheduling.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
 
 /**
  * How long a move to another day waits for the client's answer, or until the visit's own start if that is sooner
@@ -79,31 +79,21 @@ export function begunFrom(landed: {
 }
 
 /**
- * Whether a move's target is still ahead: `past_day` for a day gone, `window_passed` for today's window once every
- * half-slot it offers has started, `ahead` otherwise.
+ * Whether a move's start is still ahead: `past_day` for a day gone, `window_passed` for a start on today already
+ * passed, or today's window once each of its starts has, `ahead` otherwise.
  */
 export type TargetTime = "past_day" | "window_passed" | "ahead";
 
-/** `firstUnitAhead`: the first of today's half-slots still to start. */
-export function targetTime(
-  target: { readonly date: string; readonly window: BookingWindow },
-  today: { readonly date: string; readonly firstUnitAhead: number },
-): TargetTime {
-  if (target.date < today.date) return "past_day";
-  if (target.date > today.date) return "ahead";
-  const startsAhead = WINDOW_SLOT_MAP[target.window].some((start) => start >= today.firstUnitAhead);
-  return startsAhead ? "ahead" : "window_passed";
-}
-
 /**
- * Why a job cannot go to this window of this technician's day; null when it can. The check runs on the server before
- * anything is written, so a refusal means nothing was written anywhere.
+ * Why a job cannot go to a technician's day where a move puts it (src/domain/dispatch/dispatch-landing.ts). The check
+ * runs on the server before anything is written, so a refusal means nothing was written anywhere.
  *
- * A time already gone is answered first; then leave, so ops are told the technician is away rather than busy; then
- * `back_to_back`, a technician who took the client's visit just before or just after this one, who never takes two in
- * a row (docs/decisions/0111-a-technician-never-takes-two-visits-in-a-row.md); then the clash, so a held window is
- * named as held. `does_not_fit`: nobody holds the window, but the visit has no room in
- * it at a start still ahead. A blacked-out day comes last, since ops may still move a visit onto one with a reason.
+ * A time already gone is answered first; then leave or a day off, so ops are told the technician is away rather than
+ * busy; then `back_to_back`, a technician who took the client's visit just before or just after this one, who never
+ * takes two in a row (docs/decisions/0111-a-technician-never-takes-two-visits-in-a-row.md); then the clash, a visit
+ * already at that time, so a taken time is named as taken; then `does_not_fit`, a day with no room for the visit
+ * there, with its drives and wrap-up, by its day plan. A blacked-out day comes last, since ops may still move a visit
+ * onto one with a reason. A hold or another move that took the time after it was checked is a clash too.
  */
 export type MoveRefusal =
   | Exclude<TargetTime, "ahead">
@@ -116,25 +106,6 @@ export type MoveRefusal =
   | "other_city"
   /** A first fit handed to a technician not trained to fit (ADR 0119). */
   | "not_trained";
-
-interface MoveCheck {
-  readonly time: TargetTime;
-  /** Whether the visit has room in the window, at a start still ahead (src/domain/booking/occupancy.ts). */
-  readonly fits: boolean;
-  /** The day is one ops blacked out, and they gave no reason for moving the visit onto it. */
-  readonly blackoutWithoutReason: boolean;
-  /** The technician took the client's visit just before or just after this one. */
-  readonly besideTheClient: boolean;
-}
-
-export function moveRefusal(day: TechnicianDay, window: BookingWindow, check: MoveCheck): MoveRefusal | null {
-  if (check.time !== "ahead") return check.time;
-  if (day.onLeave) return "on_leave";
-  if (check.besideTheClient) return "back_to_back";
-  if (clashes(day, window)) return "clash";
-  if (!check.fits) return "does_not_fit";
-  return check.blackoutWithoutReason ? "blackout" : null;
-}
 
 /**
  * How the client hears of a move ops made. The rule above ends "messages the

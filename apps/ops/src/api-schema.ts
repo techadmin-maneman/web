@@ -9589,7 +9589,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
+                /** @description past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -9647,7 +9647,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchMoved"];
                     };
                 };
-                /** @description invalid_request, including a move to the technician, day and window the job already has, or to a technician not in the caller's cities */
+                /** @description invalid_request, including a move to the technician and start the job already has, or to a technician not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -23342,6 +23342,11 @@ export interface components {
             date?: string;
             /** @enum {string} */
             window?: "morning" | "afternoon" | "evening";
+            /**
+             * Format: date-time
+             * @description The start it goes to, in place of a date and window. With a date and window instead, it goes to the window's earliest start the technician's day has room for; with neither, it keeps its start.
+             */
+            starts_at?: string;
             /** @enum {string} */
             reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
             /** @description The technician the board showed the job with; null for a job in the tray. */
@@ -23377,6 +23382,11 @@ export interface components {
             date?: string;
             /** @enum {string} */
             window?: "morning" | "afternoon" | "evening";
+            /**
+             * Format: date-time
+             * @description The start it goes to, in place of a date and window. With a date and window instead, it goes to the window's earliest start the technician's day has room for; with neither, it keeps its start.
+             */
+            starts_at?: string;
             /** @enum {string} */
             reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
             /** @description The technician the board showed the job with; null for a job in the tray. */

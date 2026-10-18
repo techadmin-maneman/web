@@ -22,6 +22,7 @@ import {
   shown,
 } from "./dispatch-fixtures.ts";
 import { pincode } from "../site/consultations-fixtures.ts";
+import { indiaTime } from "../../../src/lib/india-time.ts";
 
 let ops: App;
 
@@ -89,8 +90,7 @@ const TODAY = {
   date: "2026-09-21",
   "09:00": "2026-09-21T03:30:00.000Z",
   "12:00": "2026-09-21T06:30:00.000Z",
-  "13:00": "2026-09-21T07:30:00.000Z",
-  "16:00": "2026-09-21T10:30:00.000Z",
+  "12:30": "2026-09-21T07:00:00.000Z",
 } as const;
 
 const dispatchMoves = () =>
@@ -141,7 +141,7 @@ describe("a client's visits in a row", () => {
 });
 
 describe("where a job in hand can go", () => {
-  it("offers each window the job would land in, and none it would be refused", async () => {
+  it("offers each start the job would land at, and none it would be refused", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
     await insertJob(REPLACEMENT, { type: "replacement", start: TUESDAY["10:30"], technician: SAMEER, person: VIKRAM });
     expect((await opsPost(`/api/technicians/${SAMEER}/leave`, { from: "2026-09-24", to: "2026-09-24" })).status).toBe(
@@ -151,17 +151,25 @@ describe("where a job in hand can go", () => {
     const answer = await roomFor(FIT, "2026-09-22");
     expect(answer.status).toBe(200);
     const { rooms } = await answer.json<RoomBody>();
-    const windowsOf = (technician: string, date: string) =>
-      rooms.find((room) => room.technician_id === technician && room.date === date)?.windows ?? [];
+    const startsOf = (technician: string, date: string) =>
+      (rooms.find((room) => room.technician_id === technician && room.date === date)?.starts ?? []).map((start) =>
+        indiaTime(new Date(start.starts_at)),
+      );
 
-    // Imran's afternoon is where it already is; their morning has room, and no evening has room for a first fit.
-    expect(windowsOf(IMRAN, "2026-09-22")).toEqual(["morning"]);
-    // Sameer's replacement holds their morning and runs into the first fit's own 12:00.
-    expect(windowsOf(SAMEER, "2026-09-22")).toEqual([]);
-    expect(windowsOf(SAMEER, "2026-09-23")).toEqual(["morning", "afternoon"]);
+    // Imran's 12:00 is where it already is; a three-hour fit can start until 4:30, done with its wrap-up by 8.
+    expect(startsOf(IMRAN, "2026-09-22")).toEqual([
+      ...["09:00", "09:30", "10:00", "10:30", "11:00", "11:30"],
+      ...["12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"],
+    ]);
+    // Sameer's replacement runs to 12:45; the fit starts after its wrap-up, the drive and the break.
+    expect(startsOf(SAMEER, "2026-09-22")).toEqual(["14:00", "14:30", "15:00", "15:30", "16:00", "16:30"]);
+    expect(startsOf(SAMEER, "2026-09-23")[0]).toBe("09:00");
     // Away on Thursday.
-    expect(windowsOf(SAMEER, "2026-09-24")).toEqual([]);
-    expect(rooms.every((room) => room.windows.length > 0)).toBe(true);
+    expect(startsOf(SAMEER, "2026-09-24")).toEqual([]);
+    expect(rooms.find((room) => room.technician_id === SAMEER && room.date === "2026-09-22")?.windows).toEqual([
+      "afternoon",
+      "evening",
+    ]);
   });
 
   it("answers not found for a job no longer live", async () => {
@@ -187,8 +195,8 @@ describe("a move lands only at a start still ahead", () => {
     });
 
     expect(answer.status).toBe(200);
-    // 12:00 is now, so the afternoon's next start, 13:00, is where it lands.
-    expect(await shown(A)).toEqual({ technician_id: SAMEER, window_start: TODAY["13:00"] });
+    // 12:00 is now, so the afternoon's next start, 12:30, is where it lands.
+    expect(await shown(A)).toEqual({ technician_id: SAMEER, window_start: TODAY["12:30"] });
   });
 
   it("refuses today's window once every start in it has passed, and a day gone, writing nothing", async () => {
@@ -210,7 +218,7 @@ describe("a move lands only at a start still ahead", () => {
 
     expect(answer.status).toBe(200);
     expect(await answer.json()).toMatchObject({ client_notice: "call" });
-    expect(await shown(B)).toEqual({ technician_id: IMRAN, window_start: TODAY["13:00"] });
+    expect(await shown(B)).toEqual({ technician_id: IMRAN, window_start: TODAY["12:30"] });
   });
 
   it("gives a visit whose window has passed to another technician only at a later start", async () => {
@@ -237,21 +245,17 @@ describe("a move lands only at a start still ahead", () => {
       rooms.find((room) => room.technician_id === technician && room.date === date);
 
     expect(roomOf(SAMEER, "2026-09-20")).toBeUndefined();
-    expect(roomOf(SAMEER, TODAY.date)).toEqual({
-      technician_id: SAMEER,
-      date: TODAY.date,
-      windows: ["afternoon", "evening"],
-      starts: [
-        { window: "afternoon", starts_at: TODAY["13:00"] },
-        { window: "evening", starts_at: TODAY["16:00"] },
-      ],
-      km: null,
+    const today = roomOf(SAMEER, TODAY.date);
+    expect(today?.windows).toEqual(["afternoon", "evening"]);
+    // From the next start after now, to the last a 90-minute visit and its wrap-up end by 8.
+    expect(today?.starts[0]).toEqual({ window: "afternoon", starts_at: TODAY["12:30"] });
+    expect(today?.starts.at(-1)).toEqual({ window: "evening", starts_at: "2026-09-21T12:30:00.000Z" });
+    expect(today?.starts).toHaveLength(12);
+    // Imran's Tuesday 9:00 is where it already is.
+    expect(roomOf(IMRAN, "2026-09-22")?.starts[0]).toEqual({
+      window: "morning",
+      starts_at: "2026-09-22T04:00:00.000Z",
     });
-    // Imran's Tuesday morning is where it already is.
-    expect(roomOf(IMRAN, "2026-09-22")?.starts).toEqual([
-      { window: "afternoon", starts_at: TUESDAY["12:00"] },
-      { window: "evening", starts_at: "2026-09-22T10:30:00.000Z" },
-    ]);
   });
 });
 
