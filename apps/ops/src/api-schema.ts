@@ -21193,6 +21193,11 @@ export interface components {
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
+            /**
+             * Format: date-time
+             * @description The latest the technician arrives: the start and its arrival window.
+             */
+            arrives_by: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
@@ -21303,6 +21308,11 @@ export interface components {
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
+            /**
+             * Format: date-time
+             * @description The latest the technician arrives: the start and its arrival window.
+             */
+            arrives_by: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */

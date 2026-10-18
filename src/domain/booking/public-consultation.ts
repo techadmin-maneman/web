@@ -106,6 +106,8 @@ export interface ConsultationRequest {
   readonly addressSession: string | null;
   readonly date: string;
   readonly window: BookingWindow;
+  /** The start the form chose, in the window (docs/decisions/0210-booking-by-start-time.md); null for any start in it. */
+  readonly startsAt: Date | null;
   readonly lossExtent: LossExtent | null;
   readonly turnstileToken: string;
   readonly attribution: LeadAttribution;
@@ -268,6 +270,7 @@ async function holdOrRequest(
       service: visit.service,
       date: request.date,
       window: request.window,
+      ...(request.startsAt === null ? {} : { startsAt: request.startsAt }),
       price: visit.price,
       terms: visit.terms,
       oneVisit,

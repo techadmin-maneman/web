@@ -6605,6 +6605,11 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "arrives_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The latest the technician arrives: the start and its arrival window."
+    },
     "length_minutes": {
       "type": "integer"
     },
@@ -6740,6 +6745,7 @@ Request body:
     "window_hours",
     "starts_at",
     "ends_at",
+    "arrives_by",
     "length_minutes",
     "type",
     "service",
@@ -7988,6 +7994,11 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "arrives_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The latest the technician arrives: the start and its arrival window."
+    },
     "length_minutes": {
       "type": "integer"
     },
@@ -8243,6 +8254,7 @@ Request body:
     "window_hours",
     "starts_at",
     "ends_at",
+    "arrives_by",
     "length_minutes",
     "type",
     "service",

@@ -9,7 +9,7 @@ import { isAFitting, type VisitType } from "../../config/visit-types.ts";
 import { indiaTime } from "../../lib/india-time.ts";
 import { claimsAt, minuteOf, placedAt } from "../../policy/day-plan.ts";
 import type { SoldTerms } from "../../policy/moving-a-visit.ts";
-import { unitAt, windowTimesOf } from "../../policy/slot-times.ts";
+import { unitAt, windowAt, windowTimesOf } from "../../policy/slot-times.ts";
 import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
 import { loadDayPlans } from "./day-plans.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
@@ -287,7 +287,7 @@ export async function holdSlot({
   /** Google, to check the drives either side of the start before it is held, where the routes provider is on. */
   drives?: DriveCheck | null;
 }): Promise<Hold | null> {
-  const { personId, service, date, window, price, from = "app" } = input;
+  const { personId, service, date, price, from = "app" } = input;
   const [candidates, schedule, inputs] = await Promise.all([
     candidatesFor({ db, input, now }),
     loadSlotSchedule(db),
@@ -301,12 +301,14 @@ export async function holdSlot({
     if (!(await roadFits(technician.id, time))) continue;
     const id = crypto.randomUUID();
     const start = unitAt(time, schedule.on(date));
+    // A hold is labelled with the window its start falls in, whatever window it was asked in.
+    const held = { ...input, window: windowAt(time, schedule.on(date)) };
     const claims = claimsAt(time, service.minutes + inputs.bookingRules.wrap_up, revision);
     try {
       await db.batch([
         ...(input.alongside ?? []),
         ...releaseDeadHolds(db, now, from === "app" ? personId : null),
-        insertRow(db, "slot_holds", holdRow(input, { id, technician, start, startsAt, at, expiresAt, graceSeconds })),
+        insertRow(db, "slot_holds", holdRow(held, { id, technician, start, startsAt, at, expiresAt, graceSeconds })),
         ...claims.map((claim) =>
           db
             .prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, ?3, ?4)")
@@ -314,7 +316,7 @@ export async function holdSlot({
         ),
         ...(input.afterHold?.(id) ?? []),
       ]);
-      return { id, service, date, window, technician, startUnit: start, startsAt, price, expiresAt };
+      return { id, service, date, window: held.window, technician, startUnit: start, startsAt, price, expiresAt };
     } catch (error) {
       // Another hold took this technician's time, or changed their day, between the look and the write: the next one,
       // then. Any other

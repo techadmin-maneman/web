@@ -390,3 +390,8 @@
   font-size: var(--fs-15);
   color: var(--ink-soft);
 }
+
+/* A time inside the notice: a change is charged, said in oxblood. */
+.late {
+  color: var(--error-on-paper);
+}

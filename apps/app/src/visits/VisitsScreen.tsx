@@ -22,7 +22,7 @@ import { fullDate, listMonth, monthInIndia, shortDate, yearInIndia } from "@mane
 import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
-import { home, ONE_VISIT, VISIT_TYPES, visits, windowHours } from "../content.ts";
+import { arrivalHours, home, ONE_VISIT, VISIT_TYPES, visits, windowHours } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
 import { bookingName, oneVisitOf, technicianOf, visitTitle } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
@@ -60,7 +60,7 @@ function UpcomingCard({
 
 /** A visit, which opens its own page; the window, or where one that has begun stands. */
 function Upcoming({ visit }: { visit: VisitSummary }) {
-  const when = stageText(visit) ?? windowHours(visit.window_hours);
+  const when = stageText(visit) ?? arrivalHours(visit);
   // A one visit still to happen goes by that name; any other by its kind, and its service where that says more.
   const what = oneVisitOf(visit) === null ? visitTitle(visit) : ONE_VISIT;
   const parts = [what, when, ...technicianOf(visit)];

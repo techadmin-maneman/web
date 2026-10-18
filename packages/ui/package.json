@@ -75,6 +75,7 @@
     "./useScreenTitle": "./useScreenTitle.ts",
     "./useSecondsLeft": "./useSecondsLeft.ts",
     "./VisuallyHidden": "./VisuallyHidden.tsx",
+    "./TimeChoice": "./TimeChoice.tsx",
     "./WindowChoice": "./WindowChoice.tsx"
   },
   "dependencies": {

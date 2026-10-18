@@ -1,0 +1,80 @@
+/* The day's starts (./TimeChoice.tsx), under its periods, four to a row. */
+
+@layer base, ui;
+
+@layer ui {
+  .periods {
+    display: grid;
+    gap: var(--sp-16);
+  }
+
+  .period {
+    display: grid;
+    gap: var(--sp-8);
+  }
+
+  .name {
+    margin: 0;
+    font-size: var(--fs-13);
+    font-variant-caps: all-small-caps;
+    letter-spacing: var(--tracking-14);
+    color: var(--text-muted);
+  }
+
+  .full {
+    margin: 0;
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+
+  .times {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--sp-8);
+  }
+
+  .time {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tap-row);
+    border: var(--hairline) solid var(--paper-control);
+    background: var(--white);
+    font-size: var(--fs-15);
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .radio {
+    position: absolute;
+    z-index: var(--z-raised);
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: inherit;
+  }
+
+  .time:has(.radio:focus-visible) {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-offset);
+  }
+
+  .on {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* Taken: where it was, struck through, on the shade a full window has. */
+  .taken {
+    border-color: transparent;
+    background: var(--paper-shade);
+    color: var(--text-muted);
+    text-decoration: line-through;
+    cursor: default;
+  }
+}

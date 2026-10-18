@@ -7,7 +7,7 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold, MoveTerms } from "../../api.ts";
-import { booking, change, ONE_VISIT, windowHours } from "../../content.ts";
+import { arrivalHours, booking, change, ONE_VISIT } from "../../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../../lib/money.ts";
 import { CodeBox } from "../CodeBox.tsx";
@@ -154,7 +154,7 @@ export function PayStep(props: {
         <div className={styles.item}>
           <div>
             <p className={styles.itemName}>{itemName(hold, moving)}</p>
-            <p className={styles.itemWhen}>{`${shortDate(hold.date)}, ${windowHours(hold.hours)}`}</p>
+            <p className={styles.itemWhen}>{`${shortDate(hold.date)}, ${arrivalHours(hold)}`}</p>
             {/* The credit step draws "Two slots · 3 hours": the length is now the service's own (ADR 0085). */}
             {isFirstFit && <p className={styles.itemWhen}>{booking.length(hold.service.minutes)}</p>}
           </div>

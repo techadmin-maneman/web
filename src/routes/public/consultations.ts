@@ -52,6 +52,7 @@ import { addressOf } from "../schemas/address.ts";
 import { AddressSaveSchema, RequiredFlatSchema } from "../schemas/address.ts";
 import { AttributionSchema } from "../schemas/attribution.ts";
 import { bookedWithCode, bookFromForm, joinWaitlistFromForm } from "./forms.ts";
+import { FormStartSchema, startOnDate } from "../schemas/booking.ts";
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */
 const PincodeSchema = z
@@ -145,6 +146,7 @@ const ConsultationRequestSchema = z
     ...Person,
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
+    starts_at: FormStartSchema,
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
     number_code_id: OneVisitNumberCodeSchema,
@@ -162,7 +164,8 @@ const ConsultationRequestSchema = z
       }),
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
-  .strict();
+  .strict()
+  .refine(startOnDate, { message: "the start is on another day", path: ["starts_at"] });
 
 const WaitlistRequestSchema = z
   .object({
@@ -352,6 +355,7 @@ export function registerConsultations(app: App): void {
         addressSession: body.address.session_token ?? null,
         date: body.date,
         window: body.window,
+        startsAt: body.starts_at === undefined ? null : new Date(body.starts_at),
         lossExtent: body.loss_extent ?? null,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},

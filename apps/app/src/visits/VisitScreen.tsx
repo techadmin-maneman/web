@@ -223,8 +223,9 @@ function Visit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged: ()
           <AddToCalendar
             visit={{
               id: visit.id,
-              date: visit.date,
-              hours: visit.window_hours,
+              starts_at: visit.starts_at,
+              ends_at: visit.ends_at,
+              arrives_by: visit.arrives_by,
               name: oneVisitOf(visit) === null ? visitName(visit.type) : ONE_VISIT,
               technician: visit.technician === null ? null : firstNameOf(visit.technician.name),
             }}

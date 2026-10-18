@@ -1,5 +1,5 @@
 // Booking or moving a visit in the app (docs/decisions/0045-self-serve-booking.md): the service, the address where
-// none is saved, the date, the window, then paying through Razorpay Checkout. The steps are ./flow.ts's, the hold's
+// none is saved, the date, the start, then paying through Razorpay Checkout. The steps are ./flow.ts's, the hold's
 // clocks ./hold-clocks.ts's, and the day it opens on docs/decisions/0086-the-next-visit-is-offered.md's.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -28,7 +28,7 @@ import { DateStep } from "./steps/DateStep.tsx";
 import { LoadingStep, TITLE_ID } from "./steps/shared.tsx";
 import { PayStep } from "./steps/PayStep.tsx";
 import { ServiceStep, type Recommended } from "./steps/ServiceStep.tsx";
-import { WindowStep } from "./steps/WindowStep.tsx";
+import { TimeStep } from "./steps/TimeStep.tsx";
 import styles from "./booking.module.css";
 
 /**
@@ -40,7 +40,7 @@ function onlyOne(type: BookableType, services: readonly OfferedService[], moving
   return moving === undefined && only !== undefined ? { type: only.type, tier: only.tier } : { type };
 }
 
-/** The day and window a visit is offered on, which the sheet opens with chosen. */
+/** The day and window a visit is offered on: the sheet opens on its first open start in that window. */
 export interface Offered {
   readonly date: string;
   readonly window: BookingWindow | null;
@@ -68,8 +68,8 @@ interface Props {
   onClose: (changed: boolean) => void;
 }
 
-/** The day, then the window on it, which is held as the client goes on. */
-function DayAndWindow(props: {
+/** The day, then the start on it, which is held as the client goes on. */
+function DayAndTime(props: {
   step: Step;
   before: number;
   days: Days;
@@ -107,20 +107,21 @@ function DayAndWindow(props: {
   const day = availability.days.find((each) => each.date === days.date);
   if (step.kind !== "window" || day === undefined) return null;
   return (
-    <WindowStep
+    <TimeStep
       before={before}
       day={day}
+      minutes={availability.service.minutes}
       noticeHours={availability.change_notice_hours}
-      chosen={days.chosenWindow}
+      chosen={days.chosenStart}
       busy={props.busy}
       problem={props.problem}
-      onChoose={days.setChosenWindow}
+      onChoose={days.setChosenStart}
       onNext={props.onHold}
     />
   );
 }
 
-/** The steps once a window is held: paying for it, and what came of that. */
+/** The steps once a start is held: paying for it, and what came of that. */
 function HeldSteps(props: {
   step: Step;
   moving: MoveTerms | undefined;
@@ -211,7 +212,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
   const [remind, setRemind] = useState(false);
   const sheet = useSheetData({ dispatch, movingId, firstDay, offeredDate, offeredWindow, wanted, setWanted });
   const { days, reminders, setReminders, addressFirst, askForAddress, showNotServed, load, pick } = sheet;
-  const { availability, date, chosenWindow } = days;
+  const { availability, date, chosenStart } = days;
 
   // Each step's heading takes the focus the last step's button took with it, as it does when "Later dates" goes with
   // the last of them.
@@ -222,14 +223,14 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
 
   const close = () => dialog.current?.close();
 
-  const holdWindow = () =>
+  const holdStart = () =>
     once(async () => {
-      if (wanted === null || date === null || chosenWindow === null) return;
+      if (wanted === null || date === null || chosenStart === null) return;
       setProblem(null);
-      const answer = await api.hold(wanted, date, chosenWindow, movingId);
+      const answer = await api.hold(wanted, date, chosenStart, movingId);
       if (answer.ok) dispatch({ kind: "held", hold: answer.body });
       else if (answer.code === "taken") {
-        setProblem(booking.window.taken);
+        setProblem(booking.window.gone);
         await days.askAgainFrom(wanted, date);
       } else if (answer.code === "address_required") askForAddress(true);
       else if (answer.code === "not_served") showNotServed();
@@ -289,7 +290,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
           <AddressStep refused={step.refused} before={before} onSaved={() => void load(wanted)} />
         )}
         {step.kind === "notServed" && <NotServedStep address={step.address} onSaved={() => void load(wanted)} />}
-        <DayAndWindow
+        <DayAndTime
           step={step}
           before={before}
           days={days}
@@ -300,7 +301,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
           onDayTaken={() => {
             dispatch({ kind: "dayTaken" });
           }}
-          onHold={() => void holdWindow()}
+          onHold={() => void holdStart()}
         />
         <HeldSteps
           step={step}

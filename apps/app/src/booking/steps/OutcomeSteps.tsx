@@ -9,7 +9,7 @@ import { addDays, shortDate, todayInIndia, weekdayDate } from "@maneman/web-kit/
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold } from "../../api.ts";
-import { booking, change, messages, VISIT_TYPES, windowHours } from "../../content.ts";
+import { arrivalHours, booking, change, messages, VISIT_TYPES } from "../../content.ts";
 import { AddToCalendar } from "../../components/AddToCalendar.tsx";
 import { whatsappWith } from "../../lib/whatsapp.ts";
 import { NoteSheet } from "../NoteSheet.tsx";
@@ -94,7 +94,7 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
   const { hold, moved, reminded, onDone } = props;
   const copy = booking.confirmed;
   const technician = firstNameOf(hold.technician.name);
-  const when = `${weekdayDate(hold.date)}, ${windowHours(hold.hours)}`;
+  const when = `${weekdayDate(hold.date)}, ${arrivalHours(hold)}`;
   return (
     <div className={styles.confirmed} role="status">
       <h2 className={capsLook(styles.confirmedLabel)} id={TITLE_ID}>
@@ -110,8 +110,9 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
         <AddToCalendar
           visit={{
             id: hold.visit_id ?? hold.id,
-            date: hold.date,
-            hours: hold.hours,
+            starts_at: hold.starts_at,
+            ends_at: hold.ends_at,
+            arrives_by: hold.arrives_by,
             name: VISIT_TYPES[hold.type],
             technician,
           }}
