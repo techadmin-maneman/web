@@ -1,6 +1,6 @@
 // A technician's Hours tab (apps/ops/src/technicians/TechnicianHours.tsx; docs/decisions/0210-booking-by-start-time.md):
-// their week in lines, the days and hours ops set sent as one week, the city's hours sent as none, and where their
-// day starts. Every name is made up.
+// their week in lines, changed where it reads: the days and hours ops set sent as one week, the city's hours sent as
+// none; and where their day starts. Every name is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Hours, weekLines } from "../../apps/ops/src/technicians/TechnicianHours.tsx";
 import type { Technician } from "../../apps/ops/src/api.ts";
 import { technicians } from "../../apps/ops/src/content/technicians.ts";
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
 
@@ -36,6 +37,12 @@ let sent: { method: string; url: string; body: unknown }[];
 let changed: number;
 
 const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+const label = (text: string) => [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === text);
+const opened = () => {
+  act(() => {
+    page.querySelector<HTMLButtonElement>(`button[aria-label="${EDITING.change} ${copy.title}"]`)?.click();
+  });
+};
 
 function show(technician: Technician) {
   act(() => {
@@ -96,15 +103,15 @@ describe("a technician's week", () => {
   it("is sent as the days ticked, each at the hours chosen", async () => {
     show(IMRAN);
     expect(page.textContent).toContain(copy.city);
+    opened();
     act(() => {
-      button(copy.set)?.click();
+      label(copy.useCity)?.click();
     });
-    const sunday = [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === "Sunday");
     act(() => {
-      sunday?.click();
+      label("Sunday")?.click();
     });
     await act(async () => {
-      button(copy.save)?.click();
+      button(EDITING.save)?.click();
       await answered();
     });
     expect(sent).toEqual([
@@ -119,11 +126,12 @@ describe("a technician's week", () => {
 
   it("goes back to the city's hours as a week of no days", async () => {
     show({ ...IMRAN, hours: [{ weekday: 1, starts: "09:00", ends: "18:00" }] });
+    opened();
     act(() => {
-      button(copy.set)?.click();
+      label(copy.useCity)?.click();
     });
     await act(async () => {
-      button(copy.useCity)?.click();
+      button(EDITING.save)?.click();
       await answered();
     });
     expect(sent.map((each) => each.body)).toEqual([{ days: [] }]);

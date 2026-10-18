@@ -1,14 +1,18 @@
-// A technician's Hours tab (docs/decisions/0210-booking-by-start-time.md): the days they work and their hours, and the
-// place their day starts from. Booking offers a start only inside their hours, and counts the drive to their first
-// visit from that place. A technician with no week of their own works their city's hours every day.
+// A technician's Hours tab (docs/decisions/0210-booking-by-start-time.md): the days they work and their hours, changed
+// where they read (docs/decisions/0212-editing-in-place.md), and the place their day starts from. Booking offers a start
+// only inside their hours, and counts the drive to their first visit from that place. A technician with no week of their
+// own works their city's hours every day.
 
 import { AddressSearch } from "@maneman/ui/AddressSearch";
 import { Button } from "@maneman/ui/Button";
-import { Checkbox, Field, Fieldset, Select } from "@maneman/ui/Field";
+import { EditableRow } from "@maneman/ui/EditableRow";
+import { Checkbox, Field, Select } from "@maneman/ui/Field";
 import { dayClock } from "@maneman/web-kit/dates";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useRef, useState } from "react";
 import type { Technician } from "../api.ts";
 import { FormActions } from "../components/FormActions.tsx";
+import { EDITING } from "../content/common.ts";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { useWrite } from "../lib/write.ts";
@@ -64,61 +68,94 @@ export function weekLines(days: readonly Day[]): string[] {
   return lines;
 }
 
-function HoursForm(props: { technician: Technician; onDone: () => void; onCancel: () => void }) {
-  const { hours } = props.technician;
-  const [worked, setWorked] = useState<readonly number[]>(
-    hours.length === 0 ? [...WEEK] : hours.map((day) => day.weekday),
-  );
-  const [starts, setStarts] = useState(hours[0]?.starts ?? "09:00");
-  const [ends, setEnds] = useState(hours[0]?.ends ?? "20:00");
-  const { busy, failure, send } = useWrite<unknown>(props.onDone);
+/** A week as it is changed: the days worked and their hours, or the city's hours every day. */
+interface Week {
+  readonly city: boolean;
+  readonly worked: readonly number[];
+  readonly starts: string;
+  readonly ends: string;
+}
+
+const weekOf = (hours: readonly Day[]): Week => ({
+  city: hours.length === 0,
+  worked: hours.length === 0 ? [...WEEK] : hours.map((day) => day.weekday),
+  starts: hours[0]?.starts ?? "09:00",
+  ends: hours[0]?.ends ?? "20:00",
+});
+
+/** The week's boxes: the city's hours, or the days worked and when they start and end. */
+function WeekBoxes({ week, onWeek }: { week: Week; onWeek: (week: Week) => void }) {
   const toggle = (weekday: number) => {
-    setWorked((was) => (was.includes(weekday) ? was.filter((each) => each !== weekday) : [...was, weekday]));
+    onWeek({
+      ...week,
+      worked: week.worked.includes(weekday) ? week.worked.filter((each) => each !== weekday) : [...week.worked, weekday],
+    });
   };
-  const week = worked.map((weekday) => ({ weekday, starts, ends }));
   return (
-    <div className={styles.form}>
-      <Fieldset legend={copy.worksOn}>
-        <div className={styles.days}>
-          {WEEK.map((weekday) => (
-            <Checkbox
-              key={weekday}
-              label={nameOf(weekday)}
-              checked={worked.includes(weekday)}
-              onChange={() => {
-                toggle(weekday);
-              }}
-            />
+    <span className={styles.form}>
+      <Checkbox
+        label={copy.useCity}
+        checked={week.city}
+        onChange={(event) => {
+          onWeek({ ...week, city: event.target.checked });
+        }}
+      />
+      {!week.city && (
+        <>
+          <span className={styles.days} role="group" aria-label={copy.worksOn}>
+            {WEEK.map((weekday) => (
+              <Checkbox
+                key={weekday}
+                label={nameOf(weekday)}
+                checked={week.worked.includes(weekday)}
+                onChange={() => {
+                  toggle(weekday);
+                }}
+              />
+            ))}
+          </span>
+          <span className={form.fields}>
+            <TimeField label={copy.starts} value={week.starts} onChange={(starts) => { onWeek({ ...week, starts }); }} />
+            <TimeField label={copy.ends} value={week.ends} onChange={(ends) => { onWeek({ ...week, ends }); }} />
+          </span>
+        </>
+      )}
+    </span>
+  );
+}
+
+/** The technician's week, changed where it reads. */
+function WeekRow(props: { technician: Technician; mayChange: boolean; onChange: () => Promise<void> }) {
+  const { technician } = props;
+  return (
+    <EditableRow<Week>
+      label={copy.title}
+      words={EDITING}
+      mayChange={props.mayChange}
+      value={
+        <span className={styles.lines}>
+          {weekLines(technician.hours).map((line) => (
+            <span key={line}>{line}</span>
           ))}
-        </div>
-      </Fieldset>
-      <div className={form.fields}>
-        <TimeField label={copy.starts} value={starts} onChange={setStarts} />
-        <TimeField label={copy.ends} value={ends} onChange={setEnds} />
-      </div>
-      <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          disabled={busy || worked.length === 0 || ends <= starts}
-          onClick={() => void send(() => techniciansApi.setHours(props.technician.id, week))}
-        >
-          {copy.save}
-        </Button>
-        <Button
-          variant="outline"
-          size="small"
-          disabled={busy}
-          onClick={() => void send(() => techniciansApi.setHours(props.technician.id, []))}
-        >
-          {copy.useCity}
-        </Button>
-        <Button variant="outline" size="small" narrow onClick={props.onCancel}>
-          {copy.cancel}
-        </Button>
-      </FormActions>
-      <Refused failed={failure} errors={copy.errors} />
-    </div>
+        </span>
+      }
+      start={() => weekOf(technician.hours)}
+      save={async (week) => {
+        if (!week.city && week.worked.length === 0) return copy.errors.no_days;
+        if (!week.city && week.ends <= week.starts) return copy.errors.ends;
+        const days = week.city ? [] : week.worked.map((weekday) => ({ weekday, starts: week.starts, ends: week.ends }));
+        const answer = await techniciansApi.setHours(technician.id, days);
+        if (!answer.ok) return errorText(copy.errors, answer);
+        await props.onChange();
+        return null;
+      }}
+    >
+      {(control, week, setWeek) => (
+        <span id={control.id}>
+          <WeekBoxes week={week} onWeek={setWeek} />
+        </span>
+      )}
+    </EditableRow>
   );
 }
 
@@ -174,56 +211,37 @@ function HomeForm(props: { technician: Technician; onDone: () => void; onCancel:
   );
 }
 
-type Open = "none" | "hours" | "home";
-
 export function Hours({ technician, onChange }: { technician: Technician; onChange: () => Promise<void> }) {
   const access = useAccess();
-  const maySetHours = access.mayCall("POST /api/technicians/{id}/hours");
   const maySetHome = access.mayCall("POST /api/technicians/{id}/home");
-  const [open, setOpen] = useState<Open>("none");
+  const [home, setHome] = useState(false);
   const done = () => {
-    setOpen("none");
+    setHome(false);
     void onChange();
   };
   const close = () => {
-    setOpen("none");
+    setHome(false);
   };
   return (
     <div className={styles.hours}>
       <section className={styles.part} aria-label={copy.title}>
-        <h3 className={shared.sectionTitle}>{copy.title}</h3>
-        <ul className={styles.lines}>
-          {weekLines(technician.hours).map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-        {open === "hours" && <HoursForm technician={technician} onDone={done} onCancel={close} />}
-        {open !== "hours" && maySetHours && (
-          <div className={shared.actions}>
-            <Button
-              variant="outline"
-              size="small"
-              aria-label={copy.setLabel(technician.name)}
-              onClick={() => {
-                setOpen("hours");
-              }}
-            >
-              {copy.set}
-            </Button>
-          </div>
-        )}
+        <WeekRow
+          technician={technician}
+          mayChange={access.mayCall("POST /api/technicians/{id}/hours")}
+          onChange={onChange}
+        />
       </section>
       <section className={styles.part} aria-label={copy.home}>
         <h3 className={shared.sectionTitle}>{copy.home}</h3>
         <p className={styles.home}>{technician.home?.label ?? copy.noHome}</p>
-        {open === "home" && <HomeForm technician={technician} onDone={done} onCancel={close} />}
-        {open !== "home" && maySetHome && (
+        {home && <HomeForm technician={technician} onDone={done} onCancel={close} />}
+        {!home && maySetHome && (
           <div className={shared.actions}>
             <Button
               variant="outline"
               size="small"
               onClick={() => {
-                setOpen("home");
+                setHome(true);
               }}
             >
               {technician.home === null ? copy.setHome : copy.changeHome}
