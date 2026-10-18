@@ -224,6 +224,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0103](0103-the-home-pages-first-copy-round.md) The home page's first copy round
 - [0204](0204-the-sites-price-pipeline-removed.md) The site's price pipeline is removed
 - [0206](0206-trusted-types-and-a-nonce-per-page.md) Trusted Types enforced, and a nonce on every page
+- [0213](0213-the-sites-second-copy-round.md) The site's second copy round
 
 ### The ops console
 

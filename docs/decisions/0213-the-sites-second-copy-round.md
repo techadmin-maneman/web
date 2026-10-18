@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-19
-- Topic: The public site
+- Topic: The site
 - Amends [0103](0103-the-home-pages-first-copy-round.md) and [0204](0204-the-sites-price-pipeline-removed.md)
 
 ## Context
