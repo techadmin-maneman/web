@@ -1,13 +1,13 @@
-// Admin › Cities (docs/decisions/0198-cities-as-data.md): our cities with their states, a city added and renamed once
-// checked, a city's own rule and price, and a state's GST registration. Every name and number is made up.
+// Admin › Cities (docs/decisions/0198-cities-as-data.md): our cities with their states, a city added, and its record,
+// where each value and each rule it sets for itself changes where it reads (docs/decisions/0212-editing-in-place.md);
+// a city's price withdrawn, and a state's GST registration. Every name and number is made up.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, empty, json, type Answers, type OpsReply } from "./fixtures.ts";
-import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { cities as copy } from "../../apps/ops/src/content/cities.ts";
-import { review } from "../../apps/ops/src/content/common.ts";
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 
 const GURGAON = {
   name: "Gurgaon",
@@ -57,6 +57,14 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const cityRow = (page: Page, name: string) =>
   page.getByRole("region", { name: copy.list.panel }).getByRole("row").filter({ hasText: name });
 
+async function recordOf(page: Page, name: string) {
+  await page.getByRole("button", { name: copy.list.open(name) }).click();
+  return page.getByRole("dialog", { name });
+}
+
+const patched = (page: Page, path: string) =>
+  page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "PATCH");
+
 test("lists each city with its state, zone and status, and meets WCAG 2.2 AA", async ({ page }) => {
   await open(page);
   await expect(cityRow(page, "Gurgaon")).toContainText("Haryana (HR)");
@@ -65,19 +73,16 @@ test("lists each city with its state, zone and status, and meets WCAG 2.2 AA", a
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("adds a city once checked, a box to a line, and sends it as typed", async ({ page }) => {
+test("adds a city, sending it as typed", async ({ page }) => {
   const added = { ...MUMBAI, name: "Pune", sort: 70 };
   await open(page, { "POST /api/cities": json({ city: added }, 201) });
   await page.getByRole("button", { name: copy.list.add, exact: true }).click();
   const form = page.getByRole("group", { name: copy.form.addTitle, exact: true });
-  await expectOneBoxALine(page, copy.form.addTitle);
   await form.getByLabel(copy.form.name).fill("Pune");
   await form.getByLabel(copy.form.stateCode).fill("mh");
   await form.getByLabel(copy.form.state, { exact: true }).fill("Maharashtra");
-  await form.getByRole("button", { name: review.next }).click();
-  await expect(form).toContainText(copy.form.adding("Pune", "Maharashtra"));
   const sent = page.waitForRequest((request) => request.url().endsWith("/api/cities") && request.method() === "POST");
-  await form.getByRole("button", { name: review.send }).click();
+  await form.getByRole("button", { name: copy.form.add, exact: true }).click();
   expect((await sent).postDataJSON()).toEqual({
     name: "Pune",
     state_code: "MH",
@@ -89,33 +94,55 @@ test("adds a city once checked, a box to a line, and sends it as typed", async (
   await expect(page.getByText(copy.form.added)).toBeVisible();
 });
 
-test("says a rename moves every row naming the city before it is sent", async ({ page }) => {
-  await open(page, { "PATCH /api/cities/{name}": json({ city: { ...GURGAON, name: "Gurugram" } }) });
-  await page.getByRole("button", { name: copy.list.changeLabel("Gurgaon") }).click();
-  const form = page.getByRole("group", { name: copy.form.changeTitle("Gurgaon") });
-  await form.getByLabel(copy.form.name).fill("Gurugram");
-  await form.getByRole("button", { name: review.next }).click();
-  await expect(form).toContainText(copy.form.line(copy.form.name, "Gurgaon", "Gurugram"));
-  await expect(form).toContainText(copy.form.renames("Gurgaon", "Gurugram"));
+test("changes a city's value where it reads, says what a new name moves, and sends the rest as they stand", async ({
+  page,
+}) => {
+  await open(page, { "PATCH /api/cities/{name}": json({ city: { ...GURGAON, served: false } }) });
+  const record = await recordOf(page, "Gurgaon");
+  await expect(record).toContainText(copy.form.renames("Gurgaon"));
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.form.served}` }).click();
+  await record.getByRole("combobox", { name: copy.form.served }).selectOption(copy.form.no);
+  const sent = patched(page, "/api/cities/Gurgaon");
+  await record.getByRole("button", { name: EDITING.save }).click();
+  expect((await sent).postDataJSON()).toEqual({
+    name: "Gurgaon",
+    state_code: "HR",
+    state: "Haryana",
+    zone: "NCR",
+    served: false,
+    active: true,
+  });
 });
 
-test("shows a city’s own rule beside the national one, and gives it back to the national rule", async ({ page }) => {
+test("shows a city’s own rule beside the national one, and gives it back to the national rule once emptied", async ({
+  page,
+}) => {
   await open(page, { "DELETE /api/cities/{name}/rules/{rule}": empty() });
-  const rules = page.getByRole("region", { name: copy.rules.panel });
-  await rules.getByLabel(copy.rules.city).selectOption("Mumbai");
-  await expect(rules).toContainText(copy.rules.own("400 metres"));
-  await rules.getByRole("button", { name: copy.rules.back }).click();
-  await expect(rules).toContainText(copy.rules.backQuestion(copy.rules.names.checkin_radius_m, "Mumbai"));
-  await rules.getByRole("button", { name: review.send }).click();
-  await expect(rules.getByText(copy.rules.saved)).toBeVisible();
+  const record = await recordOf(page, "Mumbai");
+  const radius = record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.checkin_radius_m}` });
+  await expect(radius).toContainText("400 metres");
+  await expect(
+    record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.reminder_hour}` }),
+  ).toContainText(copy.rules.national);
+
+  await radius.click();
+  const box = record.getByRole("textbox", { name: copy.rules.names.checkin_radius_m });
+  await box.fill("");
+  const sent = page.waitForRequest((request) => request.method() === "DELETE");
+  await box.press("Enter");
+  expect((await sent).url()).toContain("/api/cities/Mumbai/rules/checkin_radius_m");
 });
 
 test("withdraws a city’s price still to come, asked first", async ({ page }) => {
   await open(page, { "DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}": empty() });
   const prices = page.getByRole("region", { name: copy.prices.panel });
-  await prices.getByRole("button", { name: copy.prices.withdrawLabel(copy.prices.items.service, "Mumbai") }).click();
-  await expect(prices).toContainText(copy.prices.withdrawQuestion(copy.prices.items.service, "Mumbai", "2027-10-01"));
-  await prices.getByRole("button", { name: review.send }).click();
+  await prices
+    .getByRole("button", { name: copy.prices.withdrawing.label(copy.prices.items.service, "Mumbai") })
+    .click();
+  await expect(prices).toContainText(
+    copy.prices.withdrawing.warning(copy.prices.items.service, "Mumbai", "2027-10-01"),
+  );
+  await prices.getByRole("button", { name: copy.prices.withdrawing.confirm, exact: true }).click();
   await expect(prices.getByText(copy.prices.withdrawn)).toBeVisible();
 });
 
@@ -127,7 +154,6 @@ test("refuses a GSTIN another state has, in the form’s own words", async ({ pa
   const form = page.getByRole("group", { name: copy.registrations.add });
   await form.getByLabel(copy.registrations.stateCode).fill("KA");
   await form.getByLabel(copy.registrations.gstin).fill("29AAACM1234A1Z3");
-  await form.getByRole("button", { name: review.next }).click();
-  await form.getByRole("button", { name: review.send }).click();
+  await form.getByRole("button", { name: copy.form.add, exact: true }).click();
   await expect(form.getByRole("alert")).toContainText(copy.registrations.errors.taken);
 });

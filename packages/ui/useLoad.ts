@@ -31,6 +31,8 @@ interface LiveLoad<T> {
   readonly loaded: Loaded<T>;
   /** Reads again, keeping what is shown until the answer comes; a failure keeps it too. */
   readonly refresh: () => void;
+  /** The same, for a change that waits on it: a value changed in place shows as it now stands once kept. */
+  readonly reread: () => Promise<void>;
   /** Reads again from loading, as "Try again" does. */
   readonly retry: () => void;
 }
@@ -72,8 +74,9 @@ export function useLiveLoad<T>(load: () => Promise<Answered<T>>, everyMs: number
     };
   }, [read, everyMs]);
   const refresh = useCallback(() => void read(true), [read]);
+  const reread = useCallback(() => read(true), [read]);
   const retry = useCallback(() => void read(false), [read]);
-  return { loaded, refresh, retry };
+  return { loaded, refresh, reread, retry };
 }
 
 function loadedOf<T>(settled: Settled<Answered<T>>): Loaded<T> {

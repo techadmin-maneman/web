@@ -1,18 +1,19 @@
 // The prices a city sets apart from the book's: each from its day, before the national price there. One still to come
-// may be withdrawn; the one in force and the spent ones stay, as an invoice may stand on them.
+// may be withdrawn, asked once in its row; the one in force and the spent ones stay, as an invoice may stand on them.
 
-import { CheckLine } from "../components/CheckPanel.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 import { Table } from "@maneman/ui/Table";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
+import { rupees } from "@maneman/web-kit/money";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { cities } from "../content.ts";
+import { AddForm } from "../components/AddForm.tsx";
+import { DeleteAction } from "../components/DeleteAction.tsx";
+import { cities } from "../content/cities.ts";
 import { useAccess } from "../lib/access.ts";
-import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import type { Cities, CityPrice } from "./types.ts";
 import { RowHead } from "../components/RowHead.tsx";
@@ -23,27 +24,28 @@ type Item = CityPrice["item"];
 // A first fit is priced by its hair system and its service visit, so a city prices those instead.
 const ITEMS = (Object.keys(copy.items) as Item[]).filter((item) => item !== "first_fit");
 
-function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => void }) {
+function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => Promise<void> }) {
   const item = copy.items[price.item];
   return (
-    <ActionCheck
-      label={copy.withdraw}
-      ariaLabel={copy.withdrawLabel(item, price.city)}
-      question={copy.withdrawQuestion(item, price.city, price.valid_from)}
-      send={async () =>
-        sentOf(await citiesApi.removePrice(price.city, price.item, price.tier, price.valid_from), () => ({}))
-      }
-      onDone={onDone}
-      errors={copy.errors}
+    <DeleteAction
+      name={price.city}
+      words={{
+        ...copy.withdrawing,
+        label: (city: string) => copy.withdrawing.label(item, city),
+        warning: (city: string) => copy.withdrawing.warning(item, city, price.valid_from),
+      }}
+      send={() => citiesApi.removePrice(price.city, price.item, price.tier, price.valid_from)}
+      refusal={(code) => errorText(copy.errors, { code })}
+      onDeleted={onDone}
     />
   );
 }
 
-function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => void }) {
+function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => Promise<void> }) {
   const mayWithdraw = useAccess().mayCall("DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}");
   if (cities.prices.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
-    <Table controls>
+    <Table>
       <thead>
         <tr>
           {copy.columns.map((column) => (
@@ -177,60 +179,50 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
   );
 }
 
-function PriceForm({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
-  const first: Draft = {
-    city: cities.cities[0]?.name ?? "",
+function PriceForm(props: { cities: Cities; onAdded: () => Promise<void>; onCancel: () => void }) {
+  const [draft, setDraft] = useState<Draft>({
+    city: props.cities.cities[0]?.name ?? "",
     item: "service",
     tier: "standard",
     amount: "",
     gst: "18",
     from: "",
-  };
-  const [draft, setDraft] = useState<Draft>(first);
-  const steps = useSteps(
-    async () =>
-      sentOf(
-        await citiesApi.addPrice(draft.city, {
+  });
+  return (
+    <AddForm
+      title={copy.add}
+      words={{ add: cities.form.add, cancel: copy.cancel }}
+      errors={copy.errors}
+      boxes={["item", "tier", "amount_ex_gst", "gst_percent", "valid_from"]}
+      send={() =>
+        citiesApi.addPrice(draft.city, {
           item: draft.item,
           tier: draft.tier.trim(),
           amount_ex_gst: Number(draft.amount) * 100,
           gst_percent: Number(draft.gst),
           valid_from: draft.from,
-        }),
-        () => ({}),
-      ),
-    () => {
-      setDraft(first);
-      onSaved();
-    },
-  );
-  const edit = (change: Partial<Draft>) => {
-    setDraft({ ...draft, ...change });
-    steps.edit();
-  };
-  const ready = /^\d{1,7}$/.test(draft.amount.trim()) && /^\d{1,2}$/.test(draft.gst.trim()) && draft.from !== "";
-  const line = copy.adding(draft.city, copy.items[draft.item], rupees(paiseFromRupees(draft.amount)), draft.from);
-  return (
-    <SettingForm
-      title={copy.add}
-      steps={steps}
-      ready={ready}
-      errors={copy.errors}
-      onCancel={null}
-      boxes={["item", "tier", "amount_ex_gst", "gst_percent", "valid_from"]}
-      checking={<CheckLine>{line}</CheckLine>}
+        })
+      }
+      onAdded={props.onAdded}
+      onCancel={props.onCancel}
     >
-      <PriceBoxes cities={cities} draft={draft} edit={edit} />
-    </SettingForm>
+      <PriceBoxes
+        cities={props.cities}
+        draft={draft}
+        edit={(change) => {
+          setDraft({ ...draft, ...change });
+        }}
+      />
+    </AddForm>
   );
 }
 
-export function CityPrices({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
+export function CityPrices({ cities, reread }: { cities: Cities; reread: () => Promise<void> }) {
   const mayAdd = useAccess().mayCall("POST /api/cities/{name}/prices");
   const [said, setSaid] = useState<string | null>(null);
-  const saved = (words: string) => () => {
+  const saved = (words: string) => async () => {
     setSaid(words);
-    onSaved();
+    await reread();
   };
   return (
     <Panel
@@ -243,10 +235,11 @@ export function CityPrices({ cities, onSaved }: { cities: Cities; onSaved: () =>
             {(close) => (
               <PriceForm
                 cities={cities}
-                onSaved={() => {
-                  saved(copy.added)();
+                onAdded={async () => {
                   close();
+                  await saved(copy.added)();
                 }}
+                onCancel={close}
               />
             )}
           </DrawerButton>

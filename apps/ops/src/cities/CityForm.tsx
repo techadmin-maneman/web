@@ -1,13 +1,11 @@
-// A city added, or changed: its name, its state for GST, its zone, and whether we serve it and offer it. The check
-// sets each change beside what it was, and a new name says what it moves (docs/decisions/0198-cities-as-data.md).
+// A city added (docs/decisions/0198-cities-as-data.md): its name, its state for GST, its zone, and whether we serve it
+// and offer it. Once added, each changes where it reads in its record.
 
-import { CheckLine } from "../components/CheckPanel.tsx";
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
-import { cities } from "../content.ts";
-import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
+import { AddForm } from "../components/AddForm.tsx";
 import form from "../components/forms.module.css";
-import type { City } from "./types.ts";
+import { cities } from "../content/cities.ts";
 import { citiesApi } from "./cities-api.ts";
 
 const formWords = cities.form;
@@ -21,104 +19,65 @@ interface Draft {
   readonly active: boolean;
 }
 
-const draftOf = (city: City | null): Draft => ({
-  name: city?.name ?? "",
-  stateCode: city?.state_code ?? "",
-  state: city?.state ?? "",
-  zone: city?.zone ?? "",
-  served: city?.served ?? false,
-  active: city?.active ?? true,
-});
+const BLANK: Draft = { name: "", stateCode: "", state: "", zone: "", served: false, active: true };
 
-const bodyOf = (draft: Draft) => ({
-  name: draft.name.trim(),
-  state_code: draft.stateCode.trim().toUpperCase(),
-  state: draft.state.trim(),
-  zone: draft.zone === "" ? null : draft.zone,
-  served: draft.served,
-  active: draft.active,
-});
+/** The words a city is named and placed by, each its own box. */
+const TEXTS = [
+  ["name", "name", 60],
+  ["stateCode", "state_code", 2],
+  ["state", "state", 60],
+] as const;
 
-const said = (value: string | boolean | null): string => {
-  if (typeof value === "boolean") return value ? formWords.yes : formWords.no;
-  return value ?? formWords.noZone;
-};
-
-/** Each field that changes, old beside new, and what a new name moves; empty where nothing changes. */
-function changes(was: City, draft: Draft): string[] {
-  const now = bodyOf(draft);
-  const fields = [
-    ["name", formWords.name],
-    ["state_code", formWords.stateCode],
-    ["state", formWords.state],
-    ["zone", formWords.zone],
-    ["served", formWords.served],
-    ["active", formWords.active],
-  ] as const;
-  const lines = fields
-    .filter(([field]) => was[field] !== now[field])
-    .map(([field, label]) => formWords.line(label, said(was[field]), said(now[field])));
-  return now.name === was.name ? lines : [...lines, formWords.renames(was.name, now.name)];
-}
-
-function Text(props: {
-  label: string;
-  value: string;
-  max: number;
-  hint?: string;
-  onChange: (text: string) => void;
-  box: string;
+export function AddCity(props: {
+  readonly zones: readonly string[];
+  readonly onAdded: () => Promise<void>;
+  readonly onCancel: () => void;
 }) {
+  const [draft, setDraft] = useState<Draft>(BLANK);
+  const edit = (change: Partial<Draft>) => {
+    setDraft({ ...draft, ...change });
+  };
   return (
-    <Field label={props.label} hint={props.hint} className={form.field} box={props.box}>
-      {(control) => (
-        <TextInput
-          {...control}
-          width="area"
-          maxLength={props.max}
-          value={props.value}
-          onChange={(event) => {
-            props.onChange(event.target.value);
-          }}
-        />
-      )}
-    </Field>
-  );
-}
-
-function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (change: Partial<Draft>) => void }) {
-  const { draft, edit } = props;
-  return (
-    <>
+    <AddForm
+      title={formWords.addTitle}
+      words={formWords}
+      errors={formWords.errors}
+      boxes={["name", "state_code", "state", "zone"]}
+      send={() =>
+        citiesApi.addCity({
+          name: draft.name.trim(),
+          state_code: draft.stateCode.trim().toUpperCase(),
+          state: draft.state.trim(),
+          zone: draft.zone === "" ? null : draft.zone,
+          served: draft.served,
+          active: draft.active,
+        })
+      }
+      onAdded={props.onAdded}
+      onCancel={props.onCancel}
+    >
       <div className={form.fields}>
-        <Text
-          label={formWords.name}
-          box="name"
-          value={draft.name}
-          max={60}
-          onChange={(name) => {
-            edit({ name });
-          }}
-        />
-        <Text
-          label={formWords.stateCode}
-          box="state_code"
-          hint={formWords.stateCodeHint}
-          value={draft.stateCode}
-          max={2}
-          onChange={(stateCode) => {
-            edit({ stateCode });
-          }}
-        />
-        <Text
-          label={formWords.state}
-          box="state"
-          value={draft.state}
-          max={60}
-          onChange={(state) => {
-            edit({ state });
-          }}
-        />
+        {TEXTS.map(([field, box, most]) => (
+          <Field
+            key={field}
+            label={formWords[field]}
+            hint={field === "stateCode" ? formWords.stateCodeHint : undefined}
+            className={form.field}
+            box={box}
+          >
+            {(control) => (
+              <TextInput
+                {...control}
+                width="area"
+                maxLength={most}
+                value={draft[field]}
+                onChange={(event) => {
+                  edit({ [field]: event.target.value });
+                }}
+              />
+            )}
+          </Field>
+        ))}
         <Field label={formWords.zone} className={form.field} box="zone">
           {(control) => (
             <Select
@@ -154,50 +113,6 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
           }}
         />
       </div>
-    </>
-  );
-}
-
-export function CityForm(props: {
-  /** The one to change; null to add a city. */
-  city: City | null;
-  zones: readonly string[];
-  onSaved: (said: string) => void;
-  onCancel: (() => void) | null;
-}) {
-  const { city } = props;
-  const [draft, setDraft] = useState<Draft>(() => draftOf(city));
-  const ready = draft.name.trim() !== "" && /^[A-Za-z]{2}$/.test(draft.stateCode.trim()) && draft.state.trim() !== "";
-  const steps = useSteps(
-    async () => {
-      const body = bodyOf(draft);
-      const answer = city === null ? await citiesApi.addCity(body) : await citiesApi.changeCity(city.name, body);
-      return sentOf(answer, () => ({}));
-    },
-    () => {
-      props.onSaved(city === null ? formWords.added : formWords.saved);
-    },
-  );
-  const edit = (change: Partial<Draft>) => {
-    setDraft({ ...draft, ...change });
-    steps.edit();
-  };
-  const body = bodyOf(draft);
-  const lines = city === null ? [formWords.adding(body.name, body.state)] : changes(city, draft);
-  return (
-    <SettingForm
-      title={city === null ? formWords.addTitle : formWords.changeTitle(city.name)}
-      steps={steps}
-      ready={ready}
-      errors={formWords.errors}
-      onCancel={props.onCancel}
-      boxes={["name", "state_code", "state", "zone"]}
-      sendable={lines.length > 0}
-      checking={(lines.length === 0 ? [formWords.nothing] : lines).map((line) => (
-        <CheckLine key={line}>{line}</CheckLine>
-      ))}
-    >
-      <CityBoxes draft={draft} zones={props.zones} edit={edit} />
-    </SettingForm>
+    </AddForm>
   );
 }
