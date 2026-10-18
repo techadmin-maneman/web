@@ -152,9 +152,16 @@ export const care = {
     text: "Answer",
     holes: "{name} becomes the client’s first name, and {next_visit} their next visit.",
     add: "Add",
+    cancel: "Cancel",
     addOne: "Add a quick reply",
-    retire: "Retire",
-    retireLabel: (title: string) => `Retire the quick reply ${title}`,
+    retiring: {
+      open: "Retire",
+      label: (title: string) => `Retire the quick reply ${title}`,
+      warning: (title: string) => `Retire ${title}? Care can’t pick it again.`,
+      confirm: "Retire",
+      sending: "Retiring…",
+      cancel: "Cancel",
+    },
     errors: { not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },
   },
   /** The client beside their chat (docs/decisions/0140-the-client-panel.md). */
