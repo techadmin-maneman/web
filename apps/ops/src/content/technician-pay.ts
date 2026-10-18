@@ -23,18 +23,13 @@ export const technicianPay = {
     none: "No grades yet.",
     grade: "Grade",
     technicians: "Technicians",
-    actions: "Actions",
+    /** A row's name, read as what pressing it does. */
+    open: (grade: string) => `Open ${grade}`,
     empty: "—",
     /** A city's cell with no rate of its own: every city's stands in. */
     inherited: (amount: string) => `${amount} (every city)`,
     later: (amount: string, date: string) => `${amount} from ${date}`,
     laterNone: (date: string) => `None from ${date}`,
-    setRate: "Set rate",
-    setRateLabel: (grade: string) => `Set a rate for ${grade}`,
-    rename: "Rename",
-    renameLabel: (grade: string) => `Rename ${grade}`,
-    delete: "Delete",
-    deleteLabel: (grade: string) => `Delete ${grade}`,
     inUse: "In use: a technician holds it, or a rate names it.",
   },
   technicians: {
@@ -46,38 +41,17 @@ export const technicianPay = {
     noCity: "No city",
     /** A technician with no grade is paid nothing for their visits until they have one. */
     noGrade: "No grade, so not paid",
-    change: "Change grade",
-    changeLabel: (name: string) => `Change the grade of ${name}`,
+    /** A row's name, read as what pressing it does. */
+    open: (name: string) => `Open ${name}`,
   },
   form: {
     addTitle: "New grade",
     name: "Name",
-    renameTitle: (grade: string) => `Rename ${grade}`,
-    rateTitle: (grade: string) => `New rate: ${grade}`,
-    kind: "Visit",
-    city: "City",
-    amount: "Per visit, Rs.",
-    none: "No rate from this day",
+    /** The heading over a grade's rates in its record: "Rates in Delhi", "Rates in every city". */
+    ratesIn: (city: string | null) => (city === null ? "Rates in every city" : `Rates in ${city}`),
     from: "Starts",
-    gradeTitle: (name: string) => `Grade: ${name}`,
-    grade: "Grade",
-    next: "Review",
+    add: "Add",
     cancel: "Cancel",
-  },
-  /** The check before anything is sent: what it is now, and what it will be. */
-  check: {
-    title: "Review the change",
-    add: (name: string) => `Add the grade ${name}.`,
-    rename: (was: string, now: string) => `${was} → ${now}`,
-    rate: (where: string, was: string, now: string, from: string) => `${where}: ${was} → ${now}, from ${from}`,
-    /** "Senior · Service visit · Delhi". */
-    where: (grade: string, kind: string, city: string) => `${grade} · ${kind} · ${city}`,
-    nothing: "none",
-    everyCitys: "every city’s rate",
-    grade: (name: string, was: string, now: string) => `${name}: ${was} → ${now}`,
-    send: "Confirm",
-    saving: "Saving…",
-    back: "Back",
   },
   /** The month's pay at the rates per visit, with its CSV. */
   statement: {
