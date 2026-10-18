@@ -24,7 +24,7 @@ type EditorProps = Parameters<typeof ListEditor>[0];
 
 /** One of the sheet's lists of reasons: to read, or to change where the caller may. */
 function Reasons(
-  props: Pick<EditorProps, "id" | "title" | "list" | "most" | "longest" | "send" | "pick" | "onSaved"> & {
+  props: Pick<EditorProps, "id" | "title" | "list" | "most" | "longest" | "send" | "onSaved"> & {
     mayChange: boolean;
   },
 ) {
@@ -86,7 +86,6 @@ export function JobSheet() {
           clientLabel={copy.clientWords}
           addLabel={copy.add}
           send={(items) => settingsApi.setChecklist(kind, items)}
-          pick={(saved) => saved.checklists.find((each) => each.visit_type === kind) ?? checklist}
           onSaved={setSheet}
         />
       )}
@@ -97,7 +96,6 @@ export function JobSheet() {
         most={current.max_partial_reasons}
         mayChange={mayChangeReasons}
         send={(items) => settingsApi.setPartialReasons(items)}
-        pick={(saved) => saved.partial_reasons}
         onSaved={setSheet}
         longest={current.max_label}
       />
@@ -108,7 +106,6 @@ export function JobSheet() {
         most={current.max_lost_reasons}
         mayChange={mayChangeLost}
         send={(items) => settingsApi.setLostReasons(items)}
-        pick={(saved) => saved.lost_reasons}
         onSaved={setSheet}
         longest={current.max_label}
       />

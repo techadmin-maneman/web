@@ -671,7 +671,7 @@ export const settings = {
     item: (position: number) => `Item ${String(position)}`,
     clientWords: (position: number) => `Item ${String(position)}, as the client reads it`,
     clientNote:
-      "The second box is what the client’s record says was done. Leave it empty for a step only the technician needs.",
+      "Beneath each item is what the client’s record says was done. Leave it empty for a step only the technician needs.",
     clientNone: "Only the technician sees it",
     reason: (position: number) => `Reason ${String(position)}`,
     /** The buttons beside an item: each names the item after what it does, so a screen reader says which. */
@@ -681,7 +681,6 @@ export const settings = {
     down: (label: string) => `Move down: ${label}`,
     removeButton: "Remove",
     remove: (label: string) => `Remove: ${label}`,
-    unnamed: "the empty item",
     add: "Add item",
     addReason: "Add reason",
     retired: "Removed",
@@ -689,23 +688,9 @@ export const settings = {
     putBackButton: "Restore",
     committed: "Default",
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
-    save: "Save",
-    saving: "Saving…",
+    addButton: "Add",
+    cancel: "Cancel",
     saved: "Saved.",
-    confirm: {
-      title: "Review the change",
-      was: "Was",
-      now: "Now",
-      added: (label: string) => `Added: ${label}`,
-      renamed: (was: string, now: string) => `Renamed: ${was} → ${now}`,
-      takenOff: (label: string) => `Removed: ${label}`,
-      clientReads: (label: string, words: string) => `${label}: the client reads “${words}”`,
-      clientNone: (label: string) => `${label}: only the technician sees it`,
-      moved: "Order changed.",
-      send: "Confirm",
-      back: "Edit",
-      nothing: "No changes.",
-    },
     /** A refusal of the list with the limits the API gave it. */
     limits: {
       items: (most: number) => `Keep 1 to ${String(most)} items.`,
