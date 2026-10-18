@@ -47,7 +47,7 @@ test.describe("a consumable added or changed", () => {
     await open(page, { "POST /api/consumables": json(CONSUMABLES) });
     await page.getByRole("button", { name: settingsCopy.consumables.add }).click();
     const add = page.getByRole("group", { name: settingsCopy.consumables.form.addTitle });
-    await add.getByLabel(settingsCopy.services.form.name).fill("Scalp wipes");
+    await add.getByLabel(settingsCopy.consumables.form.name).fill("Scalp wipes");
     await add.getByLabel(settingsCopy.consumables.form.unit).fill("wipe");
     await add.getByLabel(settingsCopy.consumables.form.cost).fill("7.5");
     await add.getByLabel(settingsCopy.consumables.form.confirm.fields.kit).fill("10");
@@ -78,7 +78,7 @@ test.describe("a consumable added or changed", () => {
 
     const form = page.getByRole("group", { name: "Change Tape strips" });
     await expect(form.getByLabel(settingsCopy.consumables.form.cost)).toHaveValue("12.5");
-    await form.getByLabel(settingsCopy.services.form.name).fill("Contour tape");
+    await form.getByLabel(settingsCopy.consumables.form.name).fill("Contour tape");
     await form.getByLabel(settingsCopy.consumables.form.cost).fill("15");
     await page.getByRole("group", { name: "Change Tape strips" }).getByRole("button", { name: review.next }).click();
 
@@ -104,7 +104,7 @@ test.describe("a consumable added or changed", () => {
     await open(page, { "POST /api/consumables": fails(400, "invalid_request", ["name"]) });
     await page.getByRole("button", { name: settingsCopy.consumables.add }).click();
     const add = page.getByRole("group", { name: settingsCopy.consumables.form.addTitle });
-    await add.getByLabel(settingsCopy.services.form.name).fill("tape strips");
+    await add.getByLabel(settingsCopy.consumables.form.name).fill("tape strips");
     await add.getByLabel(settingsCopy.consumables.form.unit).fill("strip");
     await add.getByLabel(settingsCopy.consumables.form.cost).fill("12");
     await add.getByRole("button", { name: review.next, exact: true }).click();
@@ -196,56 +196,6 @@ test.describe("what each service uses", () => {
         { code: "tape_strips", quantity: 6 },
       ],
     });
-  });
-});
-
-test.describe("hair systems", () => {
-  const words = settingsCopy.consumables.hairSystems;
-  /** The form that adds one, opened from the page's head. */
-  async function addForm(page: Page) {
-    await page.getByRole("button", { name: words.add }).click();
-    return page.getByRole("dialog", { name: words.add });
-  }
-
-  test("adds one by its spec, and reads the list again with it in", async ({ page }) => {
-    await open(page, { "POST /api/hair-systems": json({ code: "hs_standard_8x10_1b_g20_d100" }) });
-    const form = await addForm(page);
-    await form.getByLabel(words.product).selectOption({ label: "First fit" });
-    await form.getByLabel(words.width).fill("8");
-    await form.getByLabel(words.length).fill("10");
-    await form.getByLabel(words.colour).selectOption("1B");
-    await form.getByLabel(words.grey).fill("20");
-    await form.getByLabel(words.density).selectOption("100");
-    await form.getByLabel(words.cost).fill("12000");
-    const sent = posted(page, "/api/hair-systems");
-    const reread = page.waitForRequest((request) => request.url().endsWith("/api/consumables"));
-    await form.getByRole("button", { name: review.next }).click();
-    await form.getByRole("button", { name: review.send }).click();
-    expect((await sent).postDataJSON()).toEqual({
-      product: "standard",
-      base_width_in: 8,
-      base_length_in: 10,
-      colour: "1B",
-      grey_percent: 20,
-      density_percent: 100,
-      unit_cost: 1_200_000,
-      reorder_kit: null,
-      reorder_central: null,
-      reorder_store: null,
-    });
-    await reread;
-    await expect(page.getByRole("status")).toHaveText(words.added);
-  });
-
-  test("says when the spec is in stock already", async ({ page }) => {
-    await open(page, { "POST /api/hair-systems": fails(400, "invalid_request", ["hair_system"]) });
-    const form = await addForm(page);
-    await form.getByLabel(words.width).fill("8");
-    await form.getByLabel(words.length).fill("10");
-    await form.getByLabel(words.cost).fill("12000");
-    await form.getByRole("button", { name: review.next }).click();
-    await form.getByRole("button", { name: review.send }).click();
-    await expect(form.getByRole("alert")).toHaveText(words.errors.hair_system);
   });
 });
 

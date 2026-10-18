@@ -3,6 +3,7 @@
 // client. NOW is Monday 21 September 2026, 12 noon in India. Everyone here is
 // made up.
 
+import { aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
@@ -122,16 +123,7 @@ describe("the day's list", () => {
 
   // A client paid for Mane Man Essential, and the card said only "First fit".
   it("names the service a visit was sold as, and none for a kind's standard one or a one visit still to choose", async () => {
-    await env.DB.batch([
-      env.DB.prepare(
-        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-         VALUES ('first_fit', 'essential', 'Mane Man Essential', 90, 1, 'ops@localhost', ?1)`,
-      ).bind(NOW.toISOString()),
-      env.DB.prepare(
-        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-         VALUES ('first_fit', 'essential', 3200000, 0, '2026-01-01')`,
-      ),
-    ]);
+    await aPackage({ code: "essential", name: "Mane Man Essential", firstFit: 3_200_000, firstFitMinutes: 90 });
     await insertJob(LAST_VISIT, { start: "2026-09-21T09:30:00.000Z", type: "first_fit" });
     await insertJob(OLDER_VISIT, { start: "2026-09-21T11:30:00.000Z", type: "first_fit" });
     await env.DB.prepare("UPDATE appointments SET tier = 'essential' WHERE id IN (?1, ?2)")

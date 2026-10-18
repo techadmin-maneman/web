@@ -1,7 +1,9 @@
-// Every write Settings makes goes the one way (docs/decisions/0071-what-ops-see-before-a-setting-changes.md): sent
-// from a form's steps (useSteps), so it is reviewed first and sent only by Confirm; from a DeleteAction, which asks
-// once; or as the `send` of a part that hands it to the steps itself. A write sent straight from a button would save
-// in one press, as closing days once did.
+// Every write Settings makes goes one of the ways it is meant to: as the `save` of a value changed on its own row
+// (docs/decisions/0212-editing-in-place.md), which opens on the value as it stands and sends only on Enter or Save;
+// from a form's steps (useSteps), reviewed first and sent only by Confirm
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md); from a DeleteAction, which asks once; or as the
+// `send` of a part that hands it to the steps itself. A write sent straight from a button would save in one press, as
+// closing days once did.
 
 import { readdirSync, readFileSync } from "node:fs";
 import ts from "typescript";
@@ -56,10 +58,21 @@ const SENT_FOR_YOU: Readonly<Record<string, { readonly file: string; readonly pr
   Reasons: { file: "apps/ops/src/settings/JobSheet.tsx", proof: /<ListEditor \{\.\.\.list\}/ },
 };
 
-/** Whether a call sits in what useSteps sends, or in the send of a part that hands it on to them. */
+/** The functions a row's `save` hands its value to, each with the file that keeps it. */
+const SAVES: Readonly<Record<string, string>> = { saveRule: "apps/ops/src/settings/RuleFields.tsx" };
+
+/** Whether a call sits in what useSteps sends, a row's save, or the send of a part that hands it on to them. */
 function sentTheOneWay(node: ts.Node): boolean {
   for (let at = node.parent as ts.Node | undefined; at !== undefined; at = at.parent as ts.Node | undefined) {
     if (ts.isCallExpression(at) && ts.isIdentifier(at.expression) && at.expression.text === "useSteps") return true;
+    if (
+      ts.isJsxAttribute(at) &&
+      at.name.getText() === "save" &&
+      at.parent.parent.tagName.getText().startsWith("EditableRow")
+    ) {
+      return true;
+    }
+    if (ts.isFunctionDeclaration(at) && at.name !== undefined && at.name.text in SAVES) return true;
     if (ts.isJsxAttribute(at) && at.name.getText() === "send") {
       if (at.parent.parent.tagName.getText() in SENT_FOR_YOU) return true;
     }
@@ -90,7 +103,11 @@ describe("Settings", () => {
     expect(readFileSync(file, "utf8")).toMatch(proof);
   });
 
-  it("sends every write from a form’s steps or a DeleteAction", () => {
+  it.each(Object.entries(SAVES))("%s is a row's save", (name, file) => {
+    expect(readFileSync(file, "utf8")).toMatch(new RegExp(`save=\\{\\([^)]*\\) =>[\\s\\S]*?${name}\\(`));
+  });
+
+  it("sends every write from a row's save, a form’s steps or a DeleteAction", () => {
     const writes = writesOf();
     expect([...writes.values()].reduce((sum, members) => sum + members.size, 0)).toBeGreaterThan(20);
     expect(writes.get("settingsApi")?.size).toBeGreaterThan(3);

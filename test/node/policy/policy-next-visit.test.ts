@@ -19,23 +19,28 @@ import {
   offeredWindow,
   daysPastHorizon,
   remindedIfDoneBetween,
+  remindedIfDueBetween,
   serviceDue,
 } from "../../../src/policy/next-visit.ts";
+import { SERVICE_EVERY_DAYS } from "../../../src/policy/packages.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 
 /** Monday 21 September 2026, and the Tuesday after it. */
 const TODAY = "2026-09-21";
 const TOMORROW = "2026-09-22";
 
+/** A package's service visit, every 30 days as a new package's is (src/policy/packages.ts). */
+const EVERY = SERVICE_EVERY_DAYS.start;
+
 describe("the next visit", () => {
   it("makes the next service due 30 days on, with a reminder 7 days before and an At-risk task 7 days after", () => {
-    // Due 30 days after the last first fit, service or replacement.
-    expect(NEXT_VISIT_DAYS.service_cadence).toBe(30);
-    expect(serviceDue("2026-09-10", NEXT_VISIT_DAYS)).toBe("2026-10-10");
+    // Due its package's 30 days after the last first fit, service or replacement.
+    expect(EVERY).toBe(30);
+    expect(serviceDue("2026-09-10", EVERY)).toBe("2026-10-10");
     // The reminder 7 days before it is due, and the At-risk client task 7 days after.
     expect(NEXT_VISIT_DAYS.reminder_before_due).toBe(7);
     expect(NEXT_VISIT_DAYS.at_risk_after_due).toBe(7);
-    expect(atRiskFrom("2026-09-10", NEXT_VISIT_DAYS)).toBe("2026-10-17");
+    expect(atRiskFrom("2026-09-10", NEXT_VISIT_DAYS, EVERY)).toBe("2026-10-17");
     expect(TASK_GROUPS).toContain("at_risk_client");
   });
 
@@ -55,31 +60,31 @@ describe("the next visit", () => {
 
   it("offers whichever falls due first, the service or the hair system, and an overdue one for tomorrow", () => {
     // A service past its due day keeps that day, and is offered for tomorrow.
-    expect(nextVisitAfter("2026-08-01", null, TOMORROW, NEXT_VISIT_DAYS)).toEqual({
+    expect(nextVisitAfter("2026-08-01", null, TOMORROW, EVERY)).toEqual({
       type: "service",
       dueOn: "2026-08-31",
       offeredOn: TOMORROW,
     });
     // A piece falling due before the service is offered on its own day, not the service's.
-    expect(nextVisitAfter("2026-09-10", "2026-10-05", TOMORROW, NEXT_VISIT_DAYS)).toEqual({
+    expect(nextVisitAfter("2026-09-10", "2026-10-05", TOMORROW, EVERY)).toEqual({
       type: "replacement",
       dueOn: "2026-10-05",
       offeredOn: "2026-10-05",
     });
     // A piece already overdue is offered for tomorrow, under its own due day.
-    expect(nextVisitAfter("2026-09-10", "2026-09-01", TOMORROW, NEXT_VISIT_DAYS)).toEqual({
+    expect(nextVisitAfter("2026-09-10", "2026-09-01", TOMORROW, EVERY)).toEqual({
       type: "replacement",
       dueOn: "2026-09-01",
       offeredOn: TOMORROW,
     });
     // Both overdue, the service first: the overdue piece is still the visit offered, for tomorrow.
-    expect(nextVisitAfter("2026-08-01", "2026-09-10", TOMORROW, NEXT_VISIT_DAYS)).toEqual({
+    expect(nextVisitAfter("2026-08-01", "2026-09-10", TOMORROW, EVERY)).toEqual({
       type: "replacement",
       dueOn: "2026-09-10",
       offeredOn: TOMORROW,
     });
     // A piece falling due after the service is offered stays a service.
-    expect(nextVisitAfter("2026-09-10", "2026-10-11", TOMORROW, NEXT_VISIT_DAYS)).toMatchObject({ type: "service" });
+    expect(nextVisitAfter("2026-09-10", "2026-10-11", TOMORROW, EVERY)).toMatchObject({ type: "service" });
   });
 
   it("opens the fit the day after the consultation, unless ops set a lead time", () => {
@@ -102,15 +107,21 @@ describe("the next visit", () => {
     const last = lastBookableDay(TOMORROW, NEXT_VISIT_DAYS);
     expect(last).toBe("2026-11-05");
     // A service due 30 days after a visit done today is inside it.
-    expect(serviceDue(TODAY, NEXT_VISIT_DAYS) <= last).toBe(true);
+    expect(serviceDue(TODAY, EVERY) <= last).toBe(true);
   });
 
   it("reminds of a service due up to a week from now, one past its day until the client is at risk, and never of one done today", () => {
-    expect(remindedIfDoneBetween(TODAY, NEXT_VISIT_DAYS)).toEqual({ from: "2026-08-16", to: "2026-08-29" });
+    const one = { least: EVERY, most: EVERY };
+    expect(remindedIfDueBetween(TODAY, NEXT_VISIT_DAYS)).toEqual({ from: "2026-09-15", to: "2026-09-28" });
+    expect(remindedIfDoneBetween(TODAY, NEXT_VISIT_DAYS, one)).toEqual({ from: "2026-08-16", to: "2026-08-29" });
     // A reminder as long as the cadence would fall the day the visit was done: it goes the day after instead.
-    expect(remindedIfDoneBetween(TODAY, { ...NEXT_VISIT_DAYS, service_cadence: 14, reminder_before_due: 14 })).toEqual({
-      from: "2026-09-01",
-      to: "2026-09-20",
+    expect(
+      remindedIfDoneBetween(TODAY, { ...NEXT_VISIT_DAYS, reminder_before_due: 14 }, { least: 14, most: 14 }),
+    ).toEqual({ from: "2026-09-01", to: "2026-09-20" });
+    // Packages of different cadences read the widest range, each visit then held to its own due day.
+    expect(remindedIfDoneBetween(TODAY, NEXT_VISIT_DAYS, { least: 21, most: 45 })).toEqual({
+      from: "2026-08-01",
+      to: "2026-09-07",
     });
   });
 
@@ -124,8 +135,8 @@ describe("the next visit", () => {
 
   it("makes a client at risk the day that is a week past their due day", () => {
     // Done 15 August, due 14 September, at risk from 21 September.
-    expect(atRiskIfDoneBy(TODAY, NEXT_VISIT_DAYS)).toBe("2026-08-15");
-    expect(atRiskFrom("2026-08-15", NEXT_VISIT_DAYS)).toBe(TODAY);
+    expect(atRiskIfDoneBy(TODAY, NEXT_VISIT_DAYS, EVERY)).toBe("2026-08-15");
+    expect(atRiskFrom("2026-08-15", NEXT_VISIT_DAYS, EVERY)).toBe(TODAY);
   });
 
   it("gives both of ops' new groups the allowance every group starts with", () => {
@@ -152,11 +163,8 @@ describe("the figures ops set", () => {
   // The app offers a visit on the day it falls due, so the horizon must reach as far as any of them.
   it("name the figures that reach past the horizon, and none for the committed ones", () => {
     expect(daysPastHorizon(NEXT_VISIT_DAYS)).toEqual([]);
-    expect(daysPastHorizon({ ...NEXT_VISIT_DAYS, service_cadence: 60, horizon: 45 })).toEqual(["service_cadence"]);
-    expect(daysPastHorizon({ ...NEXT_VISIT_DAYS, service_cadence: 45, horizon: 45 })).toEqual([]);
-    expect(daysPastHorizon({ ...NEXT_VISIT_DAYS, first_fit_lead: 30, service_cadence: 14, horizon: 20 })).toEqual([
-      "first_fit_lead",
-    ]);
+    expect(daysPastHorizon({ ...NEXT_VISIT_DAYS, first_fit_lead: 30, horizon: 20 })).toEqual(["first_fit_lead"]);
+    expect(daysPastHorizon({ ...NEXT_VISIT_DAYS, first_fit_lead: 20, horizon: 20 })).toEqual([]);
   });
 
   it("let the lead time be nought, and no other figure", () => {

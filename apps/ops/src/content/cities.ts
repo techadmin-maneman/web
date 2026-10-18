@@ -80,6 +80,7 @@ export const cities = {
       first_fit: "First fit",
       service: "Service visit",
       replacement: "Replacement",
+      hair_system: "Hair system",
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
     },

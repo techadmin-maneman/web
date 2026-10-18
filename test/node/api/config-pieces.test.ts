@@ -1,21 +1,21 @@
-// The two figures for pieces
-// (src/config/pieces.ts): the replacement cycle, and the label a technician
-// types. Both are read by the job sheet and by the mirror of FSM's assets, so
-// they are pinned here rather than only in what they compute.
+// The label a technician types for a piece (src/config/pieces.ts), read by the job sheet and by the mirror of FSM's
+// assets, so it is pinned here rather than only in what it computes. When a piece falls due is its package's
+// (src/policy/packages.ts).
 
 import { describe, expect, it } from "vitest";
-import { cycleDaysFor, DEFAULT_PIECE_CYCLE_DAYS, isPieceCode } from "../../../src/config/pieces.ts";
+import { isPieceCode } from "../../../src/config/pieces.ts";
+import { monthsAfter } from "../../../src/lib/india-time.ts";
+import { REPLACE_AFTER_MONTHS } from "../../../src/policy/packages.ts";
 
-describe("the replacement cycle", () => {
-  it("is 180 days, the same for every base", () => {
-    expect(DEFAULT_PIECE_CYCLE_DAYS).toBe(180);
-    for (const base of ["Standard base", "Mono", "Lace", "PLACEHOLDER_STANDARD"]) {
-      expect(cycleDaysFor(base), base).toBe(180);
-    }
+describe("when a piece falls due", () => {
+  it("is six months after its fit for a new package, the same day of the month", () => {
+    expect(REPLACE_AFTER_MONTHS.start).toBe(6);
+    expect(monthsAfter("2026-09-21", REPLACE_AFTER_MONTHS.start)).toBe("2027-03-21");
   });
 
-  it("gives a piece whose base FSM did not name the same cycle as one it did", () => {
-    expect(cycleDaysFor(null)).toBe(cycleDaysFor("Standard base"));
+  it("is the month's last day where the month is shorter", () => {
+    expect(monthsAfter("2026-08-31", 6)).toBe("2027-02-28");
+    expect(monthsAfter("2027-08-31", 6)).toBe("2028-02-29");
   });
 });
 

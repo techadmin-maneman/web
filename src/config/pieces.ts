@@ -1,24 +1,5 @@
-// Pieces, as the pieces tab reads them. These are the figures computed from a piece as it is recorded.
-//
-// A piece falls due for replacement 180 days after it is fitted, whatever its
-// base. Ops may give a base a cycle of its own in the console (Settings · Rules).
-
-/** How long a piece on each base lasts before it is due for replacement, in days. */
-export type Cycles = Readonly<Record<string, number>>;
-
-/** The map stays per base so a base can be given its own cycle without touching anything that reads it. */
-export const PIECE_CYCLE_DAYS: Cycles = {};
-
-/** The cycle used for a base with no figure of its own, which is every base: 6 months. */
-export const DEFAULT_PIECE_CYCLE_DAYS = 180;
-
-/**
- * The cycle for a base: the one ops have set, or the map above. The cycles are
- * an ops-editable input (docs/decisions/0061-ops-editable-inputs.md), where
- * `default` holds the figure for a base with none of its own.
- */
-export const cycleDaysFor = (base: string | null, cycles: Cycles = PIECE_CYCLE_DAYS): number =>
-  (base === null ? undefined : cycles[base]) ?? cycles.default ?? DEFAULT_PIECE_CYCLE_DAYS;
+// Pieces, as the pieces tab reads them. A piece falls due for replacement its package's months after it is fitted
+// (src/policy/packages.ts).
 
 /**
  * The label a technician types, e.g. "MM-STD-4417-B": "MM", a base code, digits

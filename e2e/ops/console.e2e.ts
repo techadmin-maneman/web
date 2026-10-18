@@ -148,7 +148,7 @@ test("titles each page by what it is, and says where it sits", async ({ page }) 
   const crumbs = page.getByRole("banner").getByRole("navigation", { name: opsCopy.shell.crumbs });
   await expect(crumbs.getByRole("listitem")).toHaveText([opsCopy.shell.nav.inventory, opsCopy.shell.sections.counts]);
   await page.goto("/settings/prices");
-  await expect(page).toHaveTitle("Services · Settings · Mane Man operations");
+  await expect(page).toHaveTitle("Consultation and fees · Settings · Mane Man operations");
 });
 
 test("says who is signed in, in the account's panel", async ({ page }) => {
@@ -352,9 +352,7 @@ test("goes to a page by its name from anywhere, with Ctrl K or Search", async ({
     .getByRole("banner")
     .getByRole("button", { name: new RegExp(opsCopy.shell.search) })
     .click();
-  await palette.getByLabel(opsCopy.shell.palette.label).fill("hair systems");
-  await palette
-    .getByRole("link", { name: opsCopy.shell.palette.setting(opsCopy.settingsPageNames["hair-systems"]) })
-    .click();
-  await expect(page).toHaveURL(/\/settings\/hair-systems$/);
+  await palette.getByLabel(opsCopy.shell.palette.label).fill("packages");
+  await palette.getByRole("link", { name: opsCopy.shell.palette.setting(opsCopy.settingsPageNames.packages) }).click();
+  await expect(page).toHaveURL(/\/settings\/packages$/);
 });

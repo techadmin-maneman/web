@@ -20,7 +20,8 @@ import { citiesApi } from "./cities-api.ts";
 
 const copy = cities.prices;
 type Item = CityPrice["item"];
-const ITEMS = Object.keys(copy.items) as Item[];
+// A first fit is priced by its hair system and its service visit, so a city prices those instead.
+const ITEMS = (Object.keys(copy.items) as Item[]).filter((item) => item !== "first_fit");
 
 function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => void }) {
   const item = copy.items[price.item];

@@ -3,6 +3,9 @@
 // Both keep to the caller's cities: a client elsewhere is not found, and only the technicians there are offered. The
 // booking is audited in the batch that holds its slot (ADR 0031).
 
+import { clientPackage } from "../../domain/clients/client-package.ts";
+import { pricedFor } from "../../domain/booking/client-prices.ts";
+import { forPackage } from "../../policy/services.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { FormStartSchema, startOnDate } from "../schemas/booking.ts";
 import { latestProfile, recommendedProduct } from "../../domain/clients/hair-profiles.ts";
@@ -317,10 +320,14 @@ async function availability(c: Context<AppEnv>, query: AvailabilityQuery) {
 
   const range = bookableRange(now, await opsInputs(c));
   const start = stripStart(from, range, BOOKING_DAYS);
-  const [services, recommended] = await Promise.all([
-    offeredServices(db, start, [kind], await cityOfPerson(db, client)),
+  const city = await cityOfPerson(db, client);
+  const [offered, recommended, onPackage] = await Promise.all([
+    offeredServices(db, start, [kind], city),
     kind === "first_fit" ? recommendedProduct(db, client) : Promise.resolve(null),
+    clientPackage(db, client),
   ]);
+  // Their package's service visit or replacement, and each first fit priced for the hair system made to them.
+  const services = await pricedFor(db, forPackage(offered, onPackage), { personId: client, on: start, city });
   const service = serviceAsked(services, { tier, recommended });
   if (service === undefined) {
     const refusal = kind === "first_fit" && services.length === 0 ? "no_product" : "not_bookable";

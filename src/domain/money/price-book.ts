@@ -8,10 +8,13 @@
 // a hold keeps its price and its late fee, and a payment the split before GST it
 // was taken at (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
-// A visit's price is its service's: the row's item is the service's kind and
-// its tier the service's code, so a price is set only for a service the
-// services table holds, and not from a day it is retired by. The two late fees
-// are items of their own, one figure a kind (docs/decisions/0085-services-ops-can-edit.md).
+// A service's price is the row whose item is its kind and whose tier is its
+// code, so a price is set only for a service the services table holds, and not
+// from a day it is retired by. A hair system's is the row under hair_system and
+// its stock code; a first fit costs its hair system and its package's service
+// visit, so it has no row of its own (docs/decisions/0211-packages.md). The two
+// late fees are items of their own, one figure a kind
+// (docs/decisions/0085-services-ops-can-edit.md).
 
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
 import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
@@ -22,8 +25,8 @@ import { auditStatement, type AuditActor, type AuditEntry } from "../platform/au
 import { serviceOf } from "../booking/services.ts";
 import { priceFrom, priceInForce, type Price } from "./price-lookup.ts";
 
-/** What the book prices: each kind of visit, by its services' tiers, and the two late fees. */
-export const PRICE_ITEMS = [...VISIT_TYPES, "late_fee_first_fit", "late_fee_replacement"] as const;
+/** What the book prices: each kind of visit, by its services' tiers, each hair system, and the two late fees. */
+export const PRICE_ITEMS = [...VISIT_TYPES, "hair_system", "late_fee_first_fit", "late_fee_replacement"] as const;
 export type PriceItem = (typeof PRICE_ITEMS)[number];
 
 export type { Price };
@@ -112,6 +115,10 @@ const isVisit = (item: PriceItem): item is VisitType => VISIT_TYPES.some((type) 
 export async function priceRefusal(db: D1Database, price: PriceChange, today: string): Promise<PriceRefusal | null> {
   const figures = checkPrice(price, today);
   if (figures !== null) return figures;
+  if (price.item === "first_fit") {
+    return { field: "item", says: "A first fit costs its hair system and its service visit. Price those." };
+  }
+  if (price.item === "hair_system") return hairSystemRefusal(db, price);
   if (!isVisit(price.item)) {
     if (price.tier === STANDARD_TIER) return null;
     return { field: "tier", says: "A late fee has one figure for its kind of visit, the standard tier's." };
@@ -120,6 +127,19 @@ export async function priceRefusal(db: D1Database, price: PriceChange, today: st
   if (service === null) return { field: "tier", says: "No service of that kind has that code. Add the service first." };
   if (!isOffered(service.retired_date, price.valid_from)) {
     return { field: "valid_from", says: "The service is retired by that day.", retired: true };
+  }
+  return null;
+}
+
+/** Why a hair system's price cannot be set: no such stock code, or one retired by the day it would apply from. */
+async function hairSystemRefusal(db: D1Database, price: PriceChange): Promise<PriceRefusal | null> {
+  const held = await db
+    .prepare("SELECT c.retired_date FROM hair_systems h JOIN consumables c ON c.code = h.code WHERE h.code = ?1")
+    .bind(price.tier)
+    .first<{ retired_date: string | null }>();
+  if (held === null) return { field: "tier", says: "No hair system has that code." };
+  if (!isOffered(held.retired_date, price.valid_from)) {
+    return { field: "valid_from", says: "The hair system is retired by that day.", retired: true };
   }
   return null;
 }

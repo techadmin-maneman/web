@@ -135,10 +135,10 @@ describe("setting one", () => {
     expect((await post("/api/settings/task_sla_hours", { value: COMMITTED.taskSlaHours })).status).toBe(200);
   });
 
-  it("lets ops name a base of their own and give it its own cycle", async () => {
-    const answer = await post("/api/settings/piece_cycle_days", { value: { default: 180, "Lace base": 120 } });
+  it("lets ops name a currency of their own and give it its own rate", async () => {
+    const answer = await post("/api/settings/po_rupees_to_one", { value: { default: 0, USD: 84 } });
     expect(answer.status).toBe(200);
-    expect((await answer.json<Setting>()).value).toEqual({ default: 180, "Lace base": 120 });
+    expect((await answer.json<Setting>()).value).toEqual({ default: 0, USD: 84 });
   });
 
   it("puts the committed figure back, and forgets who set it", async () => {
@@ -185,7 +185,7 @@ describe("the next visit's days", () => {
   });
 
   it("takes a figure inside its own key's bounds, a lead time of nought among them", async () => {
-    const value = { ...NEXT_VISIT_DAYS, first_fit_lead: 0, service_cadence: 28, horizon: 60 };
+    const value = { ...NEXT_VISIT_DAYS, first_fit_lead: 0, reminder_before_due: 5, horizon: 60 };
     const answer = await post("/api/settings/booking_days", { value });
     expect(answer.status).toBe(200);
     expect(await answer.json<Setting>()).toMatchObject({ value, set_by: "ops@localhost" });
@@ -197,21 +197,25 @@ describe("the next visit's days", () => {
     const answer = await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, horizon: 10 } });
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { fields: ["booking_days.horizon"] } });
-    const cadence = await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, service_cadence: 0 } });
-    expect(await cadence.json()).toMatchObject({ error: { fields: ["booking_days.service_cadence"] } });
+    const reminder = await post("/api/settings/booking_days", {
+      value: { ...NEXT_VISIT_DAYS, reminder_before_due: 0 },
+    });
+    expect(await reminder.json()).toMatchObject({ error: { fields: ["booking_days.reminder_before_due"] } });
     expect((await named("booking_days")).value).toEqual(NEXT_VISIT_DAYS);
     expect((await auditFor("setting.change")).results).toHaveLength(0);
   });
 
   // With services every 60 days and a horizon of 45, Home offered a day the sheet could not show.
   it("refuses figures that fit their own bounds but not each other, naming the box and the one it must reach", async () => {
-    const value = { ...NEXT_VISIT_DAYS, service_cadence: 60, horizon: 45 };
+    await env.DB.prepare("UPDATE packages SET service_every_days = 60 WHERE code = 'standard'").run();
+    const value = { ...NEXT_VISIT_DAYS, horizon: 45 };
     const answer = await post("/api/settings/booking_days", { value });
     expect(answer.status).toBe(422);
     expect(await answer.json()).toMatchObject({
-      error: { code: "figures_conflict", fields: ["booking_days.horizon", "booking_days.service_cadence"] },
+      error: { code: "figures_conflict", fields: ["booking_days.horizon", "packages.service_every_days"] },
     });
-    const lead = { ...NEXT_VISIT_DAYS, first_fit_lead: 30, service_cadence: 14, horizon: 20 };
+    await env.DB.prepare("UPDATE packages SET service_every_days = 14 WHERE code = 'standard'").run();
+    const lead = { ...NEXT_VISIT_DAYS, first_fit_lead: 30, horizon: 20 };
     expect(await (await post("/api/settings/booking_days", { value: lead })).json()).toMatchObject({
       error: { fields: ["booking_days.horizon", "booking_days.first_fit_lead"] },
     });
@@ -224,13 +228,13 @@ describe("the next visit's days", () => {
   });
 
   it("records who changed them, the old figures beside the new, and puts the committed ones back", async () => {
-    await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, service_cadence: 28 } });
+    await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, reminder_before_due: 5 } });
     await post("/api/settings/booking_days", { value: null });
     const { results } = await auditFor("setting.change");
     expect(results.map((entry) => entry.subject_id)).toEqual(["booking_days", "booking_days"]);
     expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({
       from: JSON.stringify(NEXT_VISIT_DAYS),
-      to: JSON.stringify({ ...NEXT_VISIT_DAYS, service_cadence: 28 }),
+      to: JSON.stringify({ ...NEXT_VISIT_DAYS, reminder_before_due: 5 }),
       reset: false,
     });
     expect(JSON.parse(results[1]?.detail ?? "{}")).toMatchObject({ to: JSON.stringify(NEXT_VISIT_DAYS), reset: true });

@@ -40,7 +40,15 @@ export {
   TASKS_READ_ON,
 } from "./fixtures/queues.ts";
 export { HELD, REFERRERS } from "./fixtures/referrals.ts";
-export { BLACKOUTS, DISCOUNT_CODES, PRICE_ROWS, SERVICE_AREA, SERVICES, SETTINGS } from "./fixtures/settings.ts";
+export {
+  BLACKOUTS,
+  DISCOUNT_CODES,
+  PACKAGES,
+  PRICE_ROWS,
+  SERVICE_AREA,
+  SERVICES,
+  SETTINGS,
+} from "./fixtures/settings.ts";
 export { CONSUMABLES, IMRAN, JOB_SHEET, SAMEER, STOCK } from "./fixtures/stock.ts";
 export {
   LEAVE_CANCELLED,

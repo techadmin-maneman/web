@@ -5,11 +5,22 @@ import type { Page } from "@playwright/test";
 import { expect } from "../support.ts";
 import { settingsPageNames } from "../../apps/ops/src/content/settings-shell.ts";
 import type { SettingsTab } from "../../apps/ops/src/route.ts";
-import { answer, BLACKOUTS, DISCOUNT_CODES, json, SERVICE_AREA, SERVICES, SETTINGS, type Answers } from "./fixtures.ts";
+import {
+  answer,
+  BLACKOUTS,
+  DISCOUNT_CODES,
+  json,
+  PACKAGES,
+  SERVICE_AREA,
+  SERVICES,
+  SETTINGS,
+  type Answers,
+} from "./fixtures.ts";
 
 export const ROUTES: Answers = {
   "GET /api/settings": json(SETTINGS),
   "GET /api/services": json(SERVICES),
+  "GET /api/packages": json(PACKAGES),
   "GET /api/standard-costs": json({ products: [] }),
   "GET /api/service-area": json(SERVICE_AREA),
   "GET /api/blackouts": json(BLACKOUTS),

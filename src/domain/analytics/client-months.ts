@@ -7,7 +7,8 @@
 // Records marked as tests are left out.
 
 import { addDays, addMonths, indiaDate, indiaDateSql, monthOf } from "../../lib/india-time.ts";
-import { standingOn, type StandingDays } from "../../policy/client-standing.ts";
+import { standingOn, type StandingDays, type StandingRules } from "../../policy/client-standing.ts";
+import { everyDaysSql } from "../booking/packages.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
 import type { FirstTouch } from "./leads.ts";
 import { tierOf } from "../../config/visit-types.ts";
@@ -20,6 +21,8 @@ interface VisitRow {
   readonly earned: number;
   /** The visit's costs in paise; null where its hair system has no standard cost set. */
   readonly cost: number | null;
+  /** Days from a fitting to the client's next service, by their package. */
+  readonly every: number;
 }
 
 interface Visit {
@@ -51,7 +54,7 @@ const VISITS_DONE = `SELECT a.person_id, a.window_start, a.service_city AS city,
     a.type IN ('first_fit', 'service', 'replacement') AS fitting,
     (SELECT COALESCE(SUM(COALESCE(y.amount_ex_gst, y.amount) * (y.amount - y.refunded_amount) / y.amount), 0)
        FROM payments y WHERE y.appointment_id = a.id AND y.captured_at IS NOT NULL AND y.amount > 0) AS earned,
-    ${COST} AS cost
+    ${COST} AS cost, ${everyDaysSql("p.package")} AS every
   FROM appointments a JOIN people p ON p.id = a.person_id
   WHERE a.status = 'completed' AND a.deleted_at IS NULL AND a.window_start IS NOT NULL
     AND p.test_record = 0 AND p.erased_at IS NULL
@@ -100,14 +103,14 @@ export async function clientMonthRows(
   input: {
     readonly keys: ReadonlyMap<string, string>;
     readonly firstTouch: ReadonlyMap<string, FirstTouch>;
-    readonly days: StandingDays;
+    readonly days: StandingRules;
     readonly today: string;
   },
 ): Promise<TableRows> {
   const { results } = await db.prepare(VISITS_DONE).all<VisitRow>();
-  const byPerson = new Map<string, { visits: Visit[]; city: string | null }>();
+  const byPerson = new Map<string, { visits: Visit[]; city: string | null; every: number }>();
   for (const row of results) {
-    const held = byPerson.get(row.person_id) ?? { visits: [], city: null };
+    const held = byPerson.get(row.person_id) ?? { visits: [], city: null, every: row.every };
     const visit = {
       day: indiaDate(new Date(row.window_start)),
       fitting: row.fitting === 1,
@@ -122,7 +125,7 @@ export async function clientMonthRows(
   for (const [personId, held] of byPerson) {
     const key = input.keys.get(personId);
     if (key === undefined) continue;
-    const months = monthsOf(held.visits, held.city, input.today, input.days);
+    const months = monthsOf(held.visits, held.city, input.today, { ...input.days, cadence: held.every });
     const cohort = months[0]?.month;
     for (const month of months) {
       rows.push({

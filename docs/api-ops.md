@@ -20032,7 +20032,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be; in_use: the service is a package's, changed with it at /api/packages
 
 ```json
 {
@@ -20050,7 +20050,8 @@ Request body:
               "type": "string",
               "enum": [
                 "service_exists",
-                "last_of_kind"
+                "last_of_kind",
+                "in_use"
               ]
             }
           },
@@ -20198,7 +20199,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be; in_use: the service is a package's, changed with it at /api/packages
 
 ```json
 {
@@ -20216,7 +20217,8 @@ Request body:
               "type": "string",
               "enum": [
                 "service_exists",
-                "last_of_kind"
+                "last_of_kind",
+                "in_use"
               ]
             }
           },
@@ -20364,7 +20366,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be; in_use: the service is a package's, changed with it at /api/packages
 
 ```json
 {
@@ -20382,7 +20384,8 @@ Request body:
               "type": "string",
               "enum": [
                 "service_exists",
-                "last_of_kind"
+                "last_of_kind",
+                "in_use"
               ]
             }
           },
@@ -20530,7 +20533,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be; in_use: the service is a package's, changed with it at /api/packages
 
 ```json
 {
@@ -20548,7 +20551,8 @@ Request body:
               "type": "string",
               "enum": [
                 "service_exists",
-                "last_of_kind"
+                "last_of_kind",
+                "in_use"
               ]
             }
           },
@@ -20696,7 +20700,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be; in_use: the service is a package's, changed with it at /api/packages
 
 ```json
 {
@@ -20714,7 +20718,8 @@ Request body:
               "type": "string",
               "enum": [
                 "service_exists",
-                "last_of_kind"
+                "last_of_kind",
+                "in_use"
               ]
             }
           },
@@ -20862,7 +20867,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be; in_use: the service is a package's, changed with it at /api/packages
 
 ```json
 {
@@ -20880,7 +20885,8 @@ Request body:
               "type": "string",
               "enum": [
                 "service_exists",
-                "last_of_kind"
+                "last_of_kind",
+                "in_use"
               ]
             }
           },
@@ -21020,7 +21026,7 @@ Offer a retired service again, or take back a retirement still to come
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be; in_use: the service is a package's, changed with it at /api/packages
 
 ```json
 {
@@ -21038,7 +21044,1133 @@ Offer a retired service again, or take back a retirement still to come
               "type": "string",
               "enum": [
                 "service_exists",
-                "last_of_kind"
+                "last_of_kind",
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/packages
+
+Every package with its hair systems, service visit and replacement, and every price each has had
+
+**200**: Every package as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/Packages"
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/packages
+
+Add a package. Clients see it once a hair system and its service visit have prices
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PackageAdd"
+}
+```
+
+**201**: Every package as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/Packages"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no package has that code
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: service_exists: another service has one of its names, or another package its code (fields names which); in_use: something was sold under it, a client is on it or a hair system is in it, so it is retired instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "service_exists",
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### PATCH /api/packages/{code}
+
+Change what ops set of a package, a box or more at a time. Visits already booked keep their lengths
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PackageChange"
+}
+```
+
+**200**: Every package as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/Packages"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no package has that code
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: service_exists: another service has one of its names, or another package its code (fields names which); in_use: something was sold under it, a client is on it or a hair system is in it, so it is retired instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "service_exists",
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### DELETE /api/packages/{code}
+
+Delete a package added by mistake, while nothing was sold under it
+
+**204**: Deleted
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no package has that code
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: service_exists: another service has one of its names, or another package its code (fields names which); in_use: something was sold under it, a client is on it or a hair system is in it, so it is retired instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "service_exists",
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/packages/order
+
+The packages in another order, as the console, the app and the site list them
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PackageOrder"
+}
+```
+
+**200**: Every package as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/Packages"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no package has that code
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: service_exists: another service has one of its names, or another package its code (fields names which); in_use: something was sold under it, a client is on it or a hair system is in it, so it is retired instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "service_exists",
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/packages/{code}/retire
+
+Stop selling a package from a day, today or later. Its clients keep their service visits and replacements
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PackageRetire"
+}
+```
+
+**200**: Every package as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/Packages"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no package has that code
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: service_exists: another service has one of its names, or another package its code (fields names which); in_use: something was sold under it, a client is on it or a hair system is in it, so it is retired instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "service_exists",
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/packages/{code}/restore
+
+Sell a retired package again, or take back a retirement still to come
+
+**200**: Every package as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/Packages"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no package has that code
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: service_exists: another service has one of its names, or another package its code (fields names which); in_use: something was sold under it, a client is on it or a hair system is in it, so it is retired instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "service_exists",
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/package
+
+Put a client on a package. Their next service visit and replacement follow it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientPackage"
+}
+```
+
+**200**: Put on it
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "package": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "package"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client within the caller's cities, or no such package
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
               ]
             }
           },
@@ -28307,6 +29439,54 @@ Request body:
       ],
       "description": "The invite they came with, or ops attached; null for none."
     },
+    "package": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "chosen": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "name",
+            "chosen"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The package they are on: the one they booked or ops chose (chosen), else their consultation's recommendation; null for neither."
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The packages they may be put on: those sold today, and their own."
+    },
     "auto_refunds": {
       "type": "array",
       "items": {
@@ -28350,6 +29530,8 @@ Request body:
     "history",
     "next_visit",
     "invite",
+    "package",
+    "packages",
     "auto_refunds",
     "lost_reasons"
   ],
@@ -37325,6 +38507,11 @@ Request body:
         "service.reorder",
         "service.retire",
         "service.restore",
+        "package.add",
+        "package.change",
+        "package.reorder",
+        "package.delete",
+        "client.package",
         "credit.adjust",
         "dispatch.client_told",
         "dispatch.check_in_cleared",
@@ -42162,7 +43349,6 @@ Request body:
         "phone_clock",
         "task_sla_hours",
         "task_lapse_days",
-        "piece_cycle_days",
         "payment_hold",
         "dispute_window_days",
         "technician_work",
@@ -42357,7 +43543,6 @@ Request body:
         "phone_clock",
         "task_sla_hours",
         "task_lapse_days",
-        "piece_cycle_days",
         "payment_hold",
         "dispute_window_days",
         "technician_work",
@@ -42520,6 +43705,7 @@ Request body:
         "first_fit",
         "service",
         "replacement",
+        "hair_system",
         "late_fee_first_fit",
         "late_fee_replacement"
       ]
@@ -42568,15 +43754,16 @@ Request body:
         "first_fit",
         "service",
         "replacement",
+        "hair_system",
         "late_fee_first_fit",
         "late_fee_replacement"
       ],
-      "description": "A kind of visit, or one of the two late fees."
+      "description": "A kind of visit, a hair system, or one of the two late fees."
     },
     "tier": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]{0,31}$",
-      "description": "For a visit, the code of one of its kind's services; for a late fee, standard."
+      "description": "For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard."
     },
     "amount_ex_gst": {
       "type": "integer",
@@ -42617,15 +43804,16 @@ Request body:
         "first_fit",
         "service",
         "replacement",
+        "hair_system",
         "late_fee_first_fit",
         "late_fee_replacement"
       ],
-      "description": "A kind of visit, or one of the two late fees."
+      "description": "A kind of visit, a hair system, or one of the two late fees."
     },
     "tier": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]{0,31}$",
-      "description": "For a visit, the code of one of its kind's services; for a late fee, standard."
+      "description": "For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard."
     },
     "amount_ex_gst": {
       "type": "integer",
@@ -42672,6 +43860,7 @@ Request body:
         "first_fit",
         "service",
         "replacement",
+        "hair_system",
         "late_fee_first_fit",
         "late_fee_replacement"
       ]
@@ -43049,6 +44238,7 @@ Request body:
         "first_fit",
         "service",
         "replacement",
+        "hair_system",
         "late_fee_first_fit",
         "late_fee_replacement"
       ]
@@ -43174,6 +44364,7 @@ Request body:
         "first_fit",
         "service",
         "replacement",
+        "hair_system",
         "late_fee_first_fit",
         "late_fee_replacement"
       ]
@@ -43980,6 +45171,481 @@ Request body:
   },
   "required": [
     "from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Packages
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Package"
+      }
+    },
+    "min_minutes": {
+      "type": "integer"
+    },
+    "max_minutes": {
+      "type": "integer"
+    },
+    "min_every_days": {
+      "type": "integer"
+    },
+    "max_every_days": {
+      "type": "integer"
+    },
+    "min_after_months": {
+      "type": "integer"
+    },
+    "max_after_months": {
+      "type": "integer"
+    },
+    "max_description": {
+      "type": "integer"
+    },
+    "max_amount_ex_gst": {
+      "type": "integer"
+    },
+    "max_gst_percent": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "today",
+    "packages",
+    "min_minutes",
+    "max_minutes",
+    "min_every_days",
+    "max_every_days",
+    "min_after_months",
+    "max_after_months",
+    "max_description",
+    "max_amount_ex_gst",
+    "max_gst_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Package
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "The code its services and hair systems name it by; never changed."
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sort": {
+      "type": "integer"
+    },
+    "retired_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "India's date from which it is no longer sold; null while it is. Its clients keep their visits."
+    },
+    "offered": {
+      "type": "boolean",
+      "description": "Sold today: not retired, and a hair system and its service visit priced."
+    },
+    "deletable": {
+      "type": "boolean",
+      "description": "Nothing sold under it, no client on it, no hair system in it."
+    },
+    "first_fit": {
+      "type": "object",
+      "properties": {
+        "minutes": {
+          "type": "integer"
+        },
+        "from": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/PriceNow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Its cheapest hair system and its service visit, today."
+        }
+      },
+      "required": [
+        "minutes",
+        "from"
+      ],
+      "additionalProperties": false
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "minutes": {
+          "type": "integer"
+        },
+        "every_days": {
+          "type": "integer"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/PriceNow"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/Price"
+          }
+        }
+      },
+      "required": [
+        "minutes",
+        "every_days",
+        "price",
+        "prices"
+      ],
+      "additionalProperties": false
+    },
+    "replacement": {
+      "type": "object",
+      "properties": {
+        "minutes": {
+          "type": "integer"
+        },
+        "after_months": {
+          "type": "integer"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/PriceNow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The replacement alone, today."
+        },
+        "total": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/PriceNow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The replacement and its service visit, as it is sold today."
+        },
+        "prices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/Price"
+          }
+        }
+      },
+      "required": [
+        "minutes",
+        "after_months",
+        "price",
+        "total",
+        "prices"
+      ],
+      "additionalProperties": false
+    },
+    "hair_systems": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/PackageHairSystem"
+      }
+    },
+    "updated_by": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "description",
+    "sort",
+    "retired_date",
+    "offered",
+    "deletable",
+    "first_fit",
+    "service",
+    "replacement",
+    "hair_systems",
+    "updated_by",
+    "updated_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PriceNow
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
+    "gst_percent": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "amount_ex_gst",
+    "amount",
+    "gst_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PackageHairSystem
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Its stock code, which the price book prices it under."
+    },
+    "name": {
+      "type": "string"
+    },
+    "base_width_in": {
+      "type": "number"
+    },
+    "base_length_in": {
+      "type": "number"
+    },
+    "colour": {
+      "type": "string"
+    },
+    "grey_percent": {
+      "type": "integer"
+    },
+    "density_percent": {
+      "type": "integer"
+    },
+    "unit_cost": {
+      "type": "integer",
+      "description": "What one costs us, in paise."
+    },
+    "retired_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "offered": {
+      "type": "boolean"
+    },
+    "used": {
+      "type": "boolean",
+      "description": "Stock of it has moved or a job used it: it may be retired, not deleted."
+    },
+    "price": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/PriceNow"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it sells for today; null while it has no price."
+    },
+    "prices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Price"
+      }
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent",
+    "unit_cost",
+    "retired_date",
+    "offered",
+    "used",
+    "price",
+    "prices"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PackageAdd
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "Left out, made from its name."
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PackageChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "first_fit_minutes": {
+      "type": "integer"
+    },
+    "service_minutes": {
+      "type": "integer"
+    },
+    "service_every_days": {
+      "type": "integer"
+    },
+    "replacement_minutes": {
+      "type": "integer"
+    },
+    "replace_after_months": {
+      "type": "integer"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### PackageOrder
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "codes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "minItems": 1,
+      "maxItems": 64
+    }
+  },
+  "required": [
+    "codes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PackageRetire
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientPackage
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "package": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+    }
+  },
+  "required": [
+    "package"
   ],
   "additionalProperties": false
 }

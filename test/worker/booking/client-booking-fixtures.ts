@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
-import { aPerson } from "../fixtures/index.ts";
+import { aGenericFirstFit, aPackage, aPerson } from "../fixtures/index.ts";
 import { appFor, fakeDependencies, NOW, savedAddress } from "../helpers.ts";
 
 export const IMRAN = "t1";
@@ -23,21 +23,15 @@ export async function technician(id: string, name: string, initials: string, cit
 }
 
 /**
- * A hair system ops offer in the console, at the price and length the migrations gave the generic first fit, which
- * is retired from 2 October 2026.
+ * A package ops sell in the console, its first fit at the price and length the migrations gave the generic first fit,
+ * which is retired from 2 October 2026.
  */
 export async function essential(): Promise<void> {
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-       VALUES ('first_fit', 'essential', 'Mane Man Essential', 180, 1, 'ops@localhost', ?1)`,
-    ).bind(NOW.toISOString()),
-    env.DB.prepare(
-      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-       VALUES ('first_fit', 'essential', 3000000, 0, '2026-01-01')`,
-    ),
-  ]);
+  await aPackage({ code: "essential", firstFit: 3000000 });
 }
+
+/** The generic first fit the migrations began with, sold by a hair system of its own until 2 October 2026. */
+export const theFirstFit = aGenericFirstFit;
 
 export let people = 0;
 

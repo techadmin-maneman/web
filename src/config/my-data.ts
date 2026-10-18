@@ -22,6 +22,7 @@ export const MY_DATA = {
         email: text("E-mail"),
         contactable: yesNo("We may contact you"),
         created_at: time("With us since"),
+        package_name: text("Your package"),
       },
     },
     addresses: {

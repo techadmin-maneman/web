@@ -1,6 +1,7 @@
 // A technician's day: each step, piece and move is written in the request that makes it. NOW is Monday 21 September
 // 2026, 12 noon in India; today's job is at 13:00. Every name, number and label here is made up.
 
+import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
@@ -53,6 +54,7 @@ async function work(sentAt: Date, jobId: string, steps: readonly (readonly [stri
 
 beforeEach(async () => {
   await markDatabase();
+  await aGenericFirstFit();
   messageQueue = fakeQueue();
   const at = NOW.toISOString();
   await env.DB.batch([
@@ -146,9 +148,9 @@ describe("the piece", () => {
         appointment_id: REPLACEMENT,
         base: "Standard base",
         supplier_lot: "LOT-2026-09",
-        // Fitted on the 21st in India, whatever day the write arrived; due 180 days on.
+        // Fitted on the 21st in India, whatever day the write arrived; due its package's six months on.
         fitted_at: "2026-09-21",
-        replacement_due_at: "2027-03-20",
+        replacement_due_at: "2027-03-21",
         failure_reason: null,
       },
       expect.objectContaining({ piece_code: "MM-STD-9999-A", person_id: NEIGHBOUR }),

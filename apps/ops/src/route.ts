@@ -96,8 +96,8 @@ export const SETTINGS_PAGES = [
   { tab: "field", group: "visits", reads: "GET /api/settings", rules: ["field"] },
   { tab: "reminders", group: "visits", reads: "GET /api/settings", rules: ["reminders"] },
   { tab: "job-sheet", group: "visits", reads: "GET /api/job-sheet" },
+  { tab: "packages", group: "prices", reads: "GET /api/packages" },
   { tab: "services", group: "prices", reads: "GET /api/services" },
-  { tab: "hair-systems", group: "prices", reads: "GET /api/standard-costs" },
   { tab: "discount-codes", group: "prices", reads: "GET /api/discount-codes" },
   { tab: "referrals", group: "growth", reads: "GET /api/settings", rules: ["referrals"] },
   { tab: "partners", group: "growth", reads: "GET /api/referral-channels" },
@@ -187,6 +187,7 @@ const TECHNICIAN_PATH = new RegExp(`^/technicians(?:/${ID}(?:/${oneOf(TECHNICIAN
 const MOVED: Readonly<Record<string, string>> = {
   "/prices": "/settings/services",
   "/settings/prices": "/settings/services",
+  "/settings/hair-systems": "/settings/packages",
   "/discount-codes": "/settings/discount-codes",
   "/staff": "/settings/staff",
   "/cities": "/settings/cities",

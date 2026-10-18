@@ -341,7 +341,11 @@ describe("closing a one visit the client was fitted at", () => {
   it("names the hair system, not its code, when the book has no price for it that day", async () => {
     const job = await oneVisit();
     await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
-    await env.DB.prepare("DELETE FROM price_book WHERE item = 'first_fit' AND tier = ?1").bind(NATURAL.tier).run();
+    await env.DB.prepare(
+      "DELETE FROM price_book WHERE item = 'hair_system' AND tier IN (SELECT code FROM hair_systems WHERE product = ?1)",
+    )
+      .bind(NATURAL.tier)
+      .run();
 
     expect((await closeAsDone(job)).status).toBe(202);
     expect(job.deps.alerts).toHaveLength(1);

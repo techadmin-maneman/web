@@ -97,19 +97,6 @@
   color: var(--ui-text-muted);
 }
 
-.fieldRow {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-8);
-}
-
-/* The unit beside the box, so nobody has to guess whether 15 is minutes or hours. */
-.unit {
-  margin-top: var(--sp-8);
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
-}
-
 .set {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-13);

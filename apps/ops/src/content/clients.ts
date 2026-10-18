@@ -566,6 +566,19 @@ export const clients = {
       already_invited: "Already attached.",
     },
   },
+  /** The package a client is on (docs/decisions/0211-packages.md). */
+  package: {
+    title: "Package",
+    label: "On",
+    none: "None yet",
+    recommended: (name: string) => `${name}, as recommended`,
+    errors: {
+      not_found: "That package or client is gone. Here’s the latest.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
   /** Every piece the client has been fitted with. */
   pieces: {
     title: "Hair systems",

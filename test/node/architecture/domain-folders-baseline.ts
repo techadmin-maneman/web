@@ -2,6 +2,7 @@
 // it names is gone, and goes on when a new one is made on purpose.
 
 export const FOLDER_EDGES: readonly string[] = [
+  "analytics -> booking",
   "analytics -> clients",
   "analytics -> dispatch",
   "analytics -> field",

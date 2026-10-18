@@ -191,7 +191,8 @@ describe("the ops console’s routes", () => {
 
   it("titles each page by what it is, never by whom, so no two share a title (WCAG 2.4.2)", () => {
     expect(titleOf(routeOf("/"))).toBe("Today · Mane Man operations");
-    expect(titleOf(routeOf("/settings/services"))).toBe("Services · Settings · Mane Man operations");
+    expect(titleOf(routeOf("/settings/services"))).toBe("Consultation and fees · Settings · Mane Man operations");
+    expect(titleOf(routeOf("/settings/packages"))).toBe("Packages · Settings · Mane Man operations");
     expect(titleOf(routeOf("/settings/stock"))).toBe("Stock · Settings · Mane Man operations");
     expect(titleOf(routeOf("/stock"))).toBe("Stock · Mane Man operations");
     expect(titleOf(routeOf(`/clients/${CLIENT}/consents`))).toBe("Consents · Clients · Mane Man operations");

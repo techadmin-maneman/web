@@ -23,9 +23,10 @@ import { PriceRowSchema } from "../schemas/prices.ts";
 
 /** A price as ops set one: what it prices, the figures, and the day it applies from. */
 const PriceFields = {
-  item: z.enum(PRICE_ITEMS).openapi({ description: "A kind of visit, or one of the two late fees." }),
+  item: z.enum(PRICE_ITEMS).openapi({ description: "A kind of visit, a hair system, or one of the two late fees." }),
   tier: z.string().regex(PRICE_TIER).openapi({
-    description: "For a visit, the code of one of its kind's services; for a late fee, standard.",
+    description:
+      "For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard.",
   }),
   amount_ex_gst: z.number().int().min(PRICE_BOUNDS.minPaise).max(PRICE_BOUNDS.maxPaise),
   gst_percent: z.number().int().min(PRICE_BOUNDS.minGstPercent).max(PRICE_BOUNDS.maxGstPercent),

@@ -8,6 +8,7 @@
 // never lands, every change is recorded under the Access identity behind it,
 // and neither ops nor a file can leave the business with nowhere to go.
 
+import { aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
@@ -91,10 +92,10 @@ describe("the price book", () => {
   });
 
   // A tier is a service now, added in the console before it is priced (docs/decisions/0085-services-ops-can-edit.md).
-  it("prices a service ops added to a kind, which is how a new kind of base is priced", async () => {
-    expect((await post("/api/services", { kind: "first_fit", name: "Lace" })).status).toBe(201);
+  it("prices a service ops added to a kind, which is how a new kind of visit is priced", async () => {
+    expect((await post("/api/services", { kind: "consultation", name: "Lace" })).status).toBe(201);
     const answer = await post("/api/prices", {
-      item: "first_fit",
+      item: "consultation",
       tier: "lace",
       amount_ex_gst: 4_000_000,
       gst_percent: 0,
@@ -103,14 +104,24 @@ describe("the price book", () => {
     expect(answer.status).toBe(200);
     const body = await answer.json<{ prices: { item: string; tier: string; amount_ex_gst: number }[] }>();
     expect(body.prices).toContainEqual(
-      expect.objectContaining({ item: "first_fit", tier: "lace", amount_ex_gst: 4_000_000 }),
+      expect.objectContaining({ item: "consultation", tier: "lace", amount_ex_gst: 4_000_000 }),
     );
+  });
+
+  // A hair system sells at a price of its own, by its stock code (docs/decisions/0211-packages.md).
+  it("prices a hair system by its stock code, and refuses a code no hair system has", async () => {
+    const { hairSystem } = await aPackage({ code: "lace", name: "Lace", firstFit: 3_000_000 });
+    const priced = { item: "hair_system", amount_ex_gst: 3_200_000, gst_percent: 18, valid_from: "2026-09-22" };
+    expect((await post("/api/prices", { ...priced, tier: hairSystem })).status).toBe(200);
+    const unknown = await post("/api/prices", { ...priced, tier: "hs_nothing" });
+    expect(unknown.status).toBe(400);
+    expect(await unknown.json()).toMatchObject({ error: { code: "invalid_request", fields: ["tier"] } });
   });
 
   // A price for a tier no service carries is a price nobody could ever be sold.
   it("refuses a tier no service of the kind carries, and names the box", async () => {
     const answer = await post("/api/prices", {
-      item: "first_fit",
+      item: "consultation",
       tier: "lace",
       amount_ex_gst: 4_000_000,
       gst_percent: 0,
@@ -149,9 +160,9 @@ describe("the price book", () => {
 
   // The first price of a service once was recorded as from -1.
   it("records from as null where the book had no price for it", async () => {
-    await post("/api/services", { kind: "first_fit", name: "Lace" });
+    await post("/api/services", { kind: "consultation", name: "Lace" });
     await post("/api/prices", {
-      item: "first_fit",
+      item: "consultation",
       tier: "lace",
       amount_ex_gst: 4_000_000,
       gst_percent: 0,

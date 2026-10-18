@@ -10,6 +10,7 @@
 // holds, and not from the day it is retired by; the services themselves are
 // src/routes/ops/services.ts's (docs/decisions/0085-services-ops-can-edit.md).
 
+import { packagesPastHorizon } from "../../domain/booking/packages.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { setOpsSetting, settingStates } from "../../domain/platform/ops-settings.ts";
@@ -194,7 +195,8 @@ export function registerOpsSettings(app: App): void {
         const fields = checked.refusals.map((refusal) => refusal.field);
         return refuse(c, "invalid_request", fields);
       }
-      const conflict = conflictOf(setting, checked.value);
+      const conflict =
+        conflictOf(setting, checked.value) ?? (await packagesPastHorizon(c.env.DB, setting.name, checked.value));
       if (conflict !== null) return refuse(c, "figures_conflict", conflict);
       await setOpsSetting(c.env.DB, {
         setting,

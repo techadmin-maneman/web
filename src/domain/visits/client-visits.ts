@@ -15,7 +15,7 @@ import { tickedItemsOf } from "../field/job-event-bodies.ts";
 import { jobSheet } from "../field/job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-show-notes.ts";
 import { oneVisitPrice, type OneVisitPrice } from "../money/one-visit-money.ts";
-import { priceOf } from "../money/price-book.ts";
+import { visitPriceOf } from "../booking/client-prices.ts";
 import { currentAddress } from "../clients/profile.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
@@ -364,10 +364,12 @@ type InvoiceHeld = "credit" | "checking";
 async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boolean> {
   if (row.status !== "completed") return false;
   if (row.type === null) return true;
-  const price = await priceOf(db, row.type, {
-    on: indiaDate(new Date(row.window_start)),
+  const price = await visitPriceOf(db, {
+    type: row.type,
     tier: row.tier ?? STANDARD_TIER,
+    on: indiaDate(new Date(row.window_start)),
     city: row.service_city,
+    personId: null,
   });
   return price === null || price.amount_ex_gst > 0;
 }

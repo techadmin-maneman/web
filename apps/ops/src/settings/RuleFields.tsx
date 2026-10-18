@@ -1,49 +1,70 @@
-// A rule's rows in a Settings page of policies (./Rules.tsx), one figure or one choice a row: a figure with its unit,
-// and the range it may take said only once what is typed falls outside it; a choice from those its key may take; an
-// open-keyed rule's new key; and, for a person who may only look, each value as it reads, with no box.
+// A rule's rows in a Settings page of policies (./Rules.tsx), one figure or one choice a row, each changed where it
+// reads (docs/decisions/0212-editing-in-place.md): a figure with its unit, refused with the range it may take; a choice
+// from those its key may take; an open-keyed rule's new key; and, for a person who may only look, each value as it
+// reads, with nothing to press. A row saves its own figure, the rule's others as they stand.
 
 import { Button } from "@maneman/ui/Button";
+import { EditableRow } from "@maneman/ui/EditableRow";
 import { NumberInput, Select, TextInput } from "@maneman/ui/Field";
-import { SettingRow, SettingValue } from "@maneman/ui/SettingRow";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
-import { type ChoiceRule, type NumberRule, type OpsSetting } from "../api.ts";
+import type { ChoiceRule, NumberRule, OpsSetting, SettingValue } from "../api.ts";
+import { Refusal } from "../components/Refusal.tsx";
+import { EDITING } from "../content/common.ts";
 import { settings } from "../content/settings.ts";
-import { FormActions } from "../components/FormActions.tsx";
-import { keyLabel, boundsOf, choiceLabel, rangeWords, whole, READ_AS, type Draft } from "./rule-drafts.ts";
+import { boundsOf, choiceLabel, keyLabel, rangeWords, READ_AS, ruleRefusal, whole } from "./rule-drafts.ts";
+import { settingsApi } from "./settings-api.ts";
+import styles from "./rules.module.css";
 
 const copy = settings.rules;
 
-/** A figure's unit: the unit itself, or for an hour or a day of the week, the figure read in words. */
-function unitOf(unit: string, text: string, fits: boolean): string {
-  const reading = READ_AS[unit];
-  if (reading === undefined) return unit;
-  return fits ? reading.say(Number(text)) : "";
+/** Sends a rule's whole value, or null to put its standard back: null once kept, else the words of why not. */
+export async function saveRule(
+  rule: OpsSetting,
+  value: SettingValue | null,
+  onSaved: (saved: OpsSetting) => void,
+): Promise<string | null> {
+  const answer = await settingsApi.setSetting(rule.name, value);
+  if (!answer.ok) return ruleRefusal(rule, answer.code, answer.fields) ?? copy.errors.unknown;
+  onSaved(answer.body);
+  return null;
 }
 
-function FigureRow({
-  id,
-  label,
-  bounds,
-  text,
-  onChange,
-}: {
-  id: string | undefined;
-  label: string;
-  bounds: { min: number; max: number; unit: string };
-  text: string;
-  onChange: (text: string) => void;
-}) {
-  const fits = whole(text, bounds.min, bounds.max);
-  // A figure outside the bounds is not a change the page can send, so the row says why.
-  const outside = text.trim() !== "" && !fits;
+/** "200 metres", "6 pm", "Monday". */
+function valueWords(figure: number, unit: string): string {
+  return READ_AS[unit]?.say(figure) ?? copy.confirm.figure(figure, unit);
+}
+
+interface RowProps {
+  readonly rule: OpsSetting;
+  readonly mayChange: boolean;
+  readonly onSaved: (saved: OpsSetting) => void;
+}
+
+/** One figure: the rule's only one, under its own name, or one of its keys. */
+function FigureRow({ rule, figureKey, mayChange, onSaved }: RowProps & { readonly figureKey: string }) {
+  if (rule.kind !== "number") return null;
+  const single = typeof rule.value === "number";
+  const bounds = boundsOf(rule, figureKey);
+  const current = typeof rule.value === "number" ? rule.value : (rule.value[figureKey] ?? 0);
+  const valueWith = (figure: number): SettingValue =>
+    typeof rule.value === "number" ? figure : { ...rule.value, [figureKey]: figure };
   return (
-    <SettingRow
-      id={id}
-      label={label}
-      unit={unitOf(bounds.unit, text, fits)}
-      error={outside ? rangeWords(bounds) : null}
+    <EditableRow<string>
+      id={single ? rule.name : undefined}
+      label={single ? rule.title : keyLabel(rule, figureKey)}
+      words={EDITING}
+      mayChange={mayChange}
+      value={valueWords(current, bounds.unit)}
+      unit={READ_AS[bounds.unit] === undefined ? bounds.unit : undefined}
+      start={() => String(current)}
+      save={(typed) =>
+        whole(typed, bounds.min, bounds.max)
+          ? saveRule(rule, valueWith(Number(typed)), onSaved)
+          : Promise.resolve(rangeWords(bounds))
+      }
     >
-      {(control) => (
+      {(control, typed, type) => (
         <NumberInput
           {...control}
           width="figure"
@@ -51,163 +72,113 @@ function FigureRow({
           step={1}
           min={bounds.min}
           max={bounds.max}
-          value={text}
-          onChange={(event) => {
-            onChange(event.target.value);
-          }}
+          value={typed}
+          onChange={(event) => { type(event.target.value); }}
         />
       )}
-    </SettingRow>
+    </EditableRow>
   );
 }
 
+/** One choice of a rule with a choice a key. */
 function ChoiceRow({
-  label,
   rule,
-  choices,
-  choice,
-  onChange,
-}: {
-  label: string;
-  rule: ChoiceRule;
-  choices: readonly string[];
-  choice: string;
-  onChange: (choice: string) => void;
-}) {
+  choiceKey,
+  mayChange,
+  onSaved,
+}: RowProps & { readonly rule: ChoiceRule; readonly choiceKey: string }) {
+  const current = rule.value[choiceKey] ?? "";
   return (
-    <SettingRow label={label}>
-      {(control) => (
-        <Select
-          {...control}
-          width="choice"
-          value={choice}
-          onChange={(event) => {
-            onChange(event.target.value);
-          }}
-        >
-          {choices.map((each) => (
+    <EditableRow<string>
+      label={keyLabel(rule, choiceKey)}
+      words={EDITING}
+      mayChange={mayChange}
+      value={choiceLabel(rule, current)}
+      start={() => current}
+      save={(chosen) => saveRule(rule, { ...rule.value, [choiceKey]: chosen }, onSaved)}
+    >
+      {(control, chosen, choose) => (
+        <Select {...control} width="choice" value={chosen} onChange={(event) => { choose(event.target.value); }}>
+          {(rule.choices[choiceKey] ?? []).map((each) => (
             <option key={each} value={each}>
               {choiceLabel(rule, each)}
             </option>
           ))}
         </Select>
       )}
-    </SettingRow>
+    </EditableRow>
   );
 }
 
-/** The extra pair an open-keyed rule needs, a row each: a base, and its own cycle. */
-export function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: string) => void }) {
+/** An open-keyed rule's new key and its figure, saved with the rest as they stand. */
+function AddKey({ rule, onSaved }: { readonly rule: NumberRule; readonly onSaved: (saved: OpsSetting) => void }) {
   const [key, setKey] = useState("");
   const [text, setText] = useState("");
-  const ready = key.trim() !== "" && whole(text, rule.min, rule.max);
+  const [refused, setRefused] = useState<string | null>(null);
+  const [busy, once] = useOneAtATime();
+  const add = () =>
+    once(async () => {
+      if (key.trim() === "" || !whole(text, rule.min, rule.max)) {
+        setRefused(rangeWords(boundsOf(rule, rule.name)));
+        return;
+      }
+      const value = typeof rule.value === "number" ? rule.value : { ...rule.value, [key.trim()]: Number(text) };
+      const why = await saveRule(rule, value, onSaved);
+      setRefused(why);
+      if (why === null) {
+        setKey("");
+        setText("");
+      }
+    });
   return (
-    <>
-      <SettingRow label={copy.keyName}>
-        {(control) => (
-          <TextInput
-            {...control}
-            width="area"
-            maxLength={64}
-            value={key}
-            onChange={(event) => {
-              setKey(event.target.value);
-            }}
-          />
-        )}
-      </SettingRow>
-      <SettingRow label={copy.keyValue} unit={rule.unit}>
-        {(control) => (
-          <NumberInput
-            {...control}
-            width="figure"
-            inputMode="numeric"
-            step={1}
-            min={rule.min}
-            max={rule.max}
-            value={text}
-            onChange={(event) => {
-              setText(event.target.value);
-            }}
-          />
-        )}
-      </SettingRow>
-      <FormActions>
-        <Button
-          variant="outline"
-          size="small"
-          narrow
-          disabled={!ready}
-          onClick={() => {
-            onAdd(key.trim(), text);
-            setKey("");
-            setText("");
-          }}
-        >
-          {copy.add}
-        </Button>
-      </FormActions>
-    </>
+    <form
+      noValidate
+      className={styles.addKey}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void add();
+      }}
+    >
+      <TextInput
+        aria-label={copy.keyName}
+        placeholder={copy.keyName}
+        width="area"
+        maxLength={64}
+        value={key}
+        onChange={(event) => { setKey(event.target.value); }}
+      />
+      <NumberInput
+        aria-label={copy.keyValue}
+        width="figure"
+        inputMode="numeric"
+        step={1}
+        min={rule.min}
+        max={rule.max}
+        value={text}
+        onChange={(event) => { setText(event.target.value); }}
+      />
+      <Button variant="outline" size="small" type="submit" busy={busy}>
+        {copy.add}
+      </Button>
+      {refused !== null && <Refusal className={styles.refusal} said={refused} />}
+    </form>
   );
 }
 
-/** A rule's rows: a figure's or a choice's a row; the first row of a rule of one figure carries its anchor. */
-export function Fields({
-  rule,
-  draft,
-  onChange,
-}: {
-  rule: OpsSetting;
-  draft: Draft;
-  onChange: (key: string, text: string) => void;
-}) {
+/** A rule's rows: a figure's or a choice's a row, and an open-keyed rule's way to name another key. */
+export function RuleRows({ rule, mayChange, onSaved }: RowProps) {
   if (rule.kind === "choice") {
     return rule.keys.map((key) => (
-      <ChoiceRow
-        key={key}
-        label={keyLabel(rule, key)}
-        rule={rule}
-        choices={rule.choices[key] ?? []}
-        choice={draft[key] ?? ""}
-        onChange={(choice) => {
-          onChange(key, choice);
-        }}
-      />
+      <ChoiceRow key={key} rule={rule} choiceKey={key} mayChange={mayChange} onSaved={onSaved} />
     ));
   }
-  const single = typeof rule.value === "number";
-  return Object.entries(draft).map(([key, text]) => (
-    <FigureRow
-      key={key}
-      id={single ? rule.name : undefined}
-      label={single ? rule.title : keyLabel(rule, key)}
-      bounds={boundsOf(rule, key)}
-      text={text}
-      onChange={(next) => {
-        onChange(key, next);
-      }}
-    />
-  ));
-}
-
-/** A rule's values as they read, a row each, for a person who may only look. */
-export function Values({ rule }: { rule: OpsSetting }) {
-  if (typeof rule.value === "number" && rule.kind === "number") {
-    const bounds = boundsOf(rule, rule.name);
-    return <SettingValue id={rule.name} label={rule.title} value={valueWords(rule.value, bounds.unit)} />;
-  }
-  return Object.entries(rule.value).map(([key, value]) => (
-    <SettingValue
-      key={key}
-      label={keyLabel(rule, key)}
-      value={
-        rule.kind === "choice" ? choiceLabel(rule, String(value)) : valueWords(Number(value), boundsOf(rule, key).unit)
-      }
-    />
-  ));
-}
-
-/** "200 metres", "6 pm", "Monday". */
-function valueWords(figure: number, unit: string): string {
-  return READ_AS[unit]?.say(figure) ?? copy.confirm.figure(figure, unit);
+  const keys = typeof rule.value === "number" ? [rule.name] : Object.keys(rule.value);
+  return (
+    <>
+      {keys.map((key) => (
+        <FigureRow key={key} rule={rule} figureKey={key} mayChange={mayChange} onSaved={onSaved} />
+      ))}
+      {mayChange && rule.keys === "open" && <AddKey rule={rule} onSaved={onSaved} />}
+    </>
+  );
 }

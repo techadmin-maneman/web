@@ -1,6 +1,7 @@
 // Logging in to the client app (docs/decisions/0029-sessions.md, 0030-one-time-codes.md),
 // against the rules in src/policy/one-time-code.ts. Every number here is made up.
 
+import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
@@ -24,6 +25,7 @@ beforeEach(async () => {
   captureLogs();
   build();
   await markDatabase();
+  await aGenericFirstFit();
   await env.DB.batch([
     env.DB.prepare(
       "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-booked', ?1, ?2, 'Arjun Mehta', 1)",

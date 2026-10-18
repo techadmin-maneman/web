@@ -55,6 +55,8 @@ import { registerOpsReferrals } from "./referrals.ts";
 import { registerOpsRemedies } from "./remedies.ts";
 import { registerOpsServiceArea } from "./service-area.ts";
 import { registerOpsServices } from "./services.ts";
+import { registerOpsPackages } from "./packages.ts";
+import { registerOpsClientPackage } from "./client-package.ts";
 import { registerOpsSettings } from "./settings.ts";
 import { registerOpsSlotTimes } from "./slot-times.ts";
 import { registerOpsClientExport } from "./client-export.ts";
@@ -181,6 +183,8 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsBlackouts,
   // The services clients book (docs/decisions/0085-services-ops-can-edit.md).
   registerOpsServices,
+  registerOpsPackages,
+  registerOpsClientPackage,
   // The consumables, the job sheet and the stock (docs/decisions/0087-consumables-and-stock.md).
   registerOpsConsumables,
   // A hair system's stock code (docs/decisions/0156-hair-systems-in-stock.md).

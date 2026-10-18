@@ -251,6 +251,14 @@ export async function recommendedProduct(db: D1Database, personId: string): Prom
   return row?.product ?? null;
 }
 
+/** In SQL, the product the latest version of `person`'s profile recommends; null for none (docs/decisions/0211-packages.md). */
+export const recommendedProductSql = (person: string): string =>
+  `(SELECT h.product FROM hair_profiles h WHERE h.person_id = ${person} ORDER BY h.created_at DESC, h.rowid DESC LIMIT 1)`;
+
+/** In SQL, whether any version of any client's profile names `product`, which a package so named is kept for. */
+export const productNamedSql = (product: string): string =>
+  `EXISTS (SELECT 1 FROM hair_profiles WHERE product = ${product})`;
+
 /** The ID of the client's latest version; null before one is recorded. */
 async function latestIdOf(db: D1Database, personId: string): Promise<string | null> {
   const row = await db.prepare(latestIdQuery("?1")).bind(personId).first<{ id: string }>();

@@ -4,6 +4,7 @@
 // September 2026, 12 noon in India; staging's book has a service visit at Rs. 2,000 and a first fit at Rs. 30,000,
 // with no GST, from the 22nd. Every name, number and code here is made up.
 
+import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { grantCredits } from "../../../src/domain/money/credits.ts";
@@ -18,6 +19,7 @@ import { PERSON, make, cookies, uses } from "./discount-code-entries-fixtures.ts
 
 beforeEach(async () => {
   await markDatabase();
+  await aGenericFirstFit();
   captureLogs();
   cookies.clear();
 });
@@ -28,17 +30,8 @@ describe("the technician, before a one visit's payment link", () => {
 
   async function oneVisit(payments = createStubPayments()) {
     const job = await working("first_fit", { payments });
-    await env.DB.batch([
-      env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(JOB),
-      env.DB.prepare(
-        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-         VALUES ('first_fit', ?1, ?2, 180, 1, 'ops@localhost', ?3)`,
-      ).bind(NATURAL.tier, NATURAL.name, NOW.toISOString()),
-      env.DB.prepare(
-        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-         VALUES ('first_fit', ?1, ?2, 0, '2026-09-01')`,
-      ).bind(NATURAL.tier, NATURAL.amount),
-    ]);
+    await env.DB.batch([env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(JOB)]);
+    await aPackage({ code: NATURAL.tier, name: NATURAL.name, firstFit: NATURAL.amount, validFrom: "2026-09-01" });
     return job;
   }
 

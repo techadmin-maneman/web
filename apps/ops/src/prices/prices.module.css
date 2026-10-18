@@ -1,5 +1,0 @@
-/* What ./StandardCosts.tsx draws beside the shared rows: the check beneath the row it is about. */
-
-.check {
-  padding: 0 var(--sp-20) var(--sp-12);
-}

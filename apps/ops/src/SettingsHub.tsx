@@ -29,8 +29,8 @@ const SCREENS: Readonly<Record<ScreenTab, ComponentType>> = {
   "window-times": lazyScreen(() => import("./settings/WindowTimes.tsx").then((module) => module.WindowTimes)),
   "closed-days": lazyScreen(() => import("./settings/Blackouts.tsx").then((module) => module.Blackouts)),
   "job-sheet": lazyScreen(() => import("./settings/JobSheet.tsx").then((module) => module.JobSheet)),
+  packages: lazyScreen(() => import("./packages/PackagesScreen.tsx").then((module) => module.PackagesScreen)),
   services: lazyScreen(() => import("./prices/Services.tsx").then((module) => module.Services)),
-  "hair-systems": lazyScreen(() => import("./prices/StandardCosts.tsx").then((module) => module.StandardCosts)),
   "discount-codes": lazyScreen(() =>
     import("./discount-codes/DiscountCodesScreen.tsx").then((module) => module.DiscountCodesScreen),
   ),

@@ -20,7 +20,6 @@ import { DeleteAction } from "../components/DeleteAction.tsx";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ConsumableForm } from "./ConsumableForm.tsx";
-import { HairSystemForm } from "./HairSystemForm.tsx";
 import { Restoring, Retiring } from "./Retirement.tsx";
 import { ServiceUsage } from "./ServiceUsage.tsx";
 import styles from "./consumables.module.css";
@@ -232,19 +231,6 @@ function AddButtons({
                 close();
               }}
               onCancel={close}
-            />
-          )}
-        </DrawerButton>
-      )}
-      {may.addHairSystem && (
-        <DrawerButton label={copy.hairSystems.add}>
-          {(close) => (
-            <HairSystemForm
-              consumables={consumables}
-              onSaved={(next, words) => {
-                onSaved(next, words);
-                close();
-              }}
             />
           )}
         </DrawerButton>

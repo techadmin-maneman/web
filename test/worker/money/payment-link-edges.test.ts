@@ -3,6 +3,7 @@
 // link paid that names no visit of ours, and a receipt with nothing to say yet. NOW is Monday 21 September 2026,
 // 12 noon in India; every name, number and price is made up.
 
+import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
@@ -32,6 +33,7 @@ function linkDeps(allowlist: readonly string[] = []): LinkDeps {
 beforeEach(async () => {
   captureLogs();
   await markDatabase();
+  await aGenericFirstFit();
   deps = fakeDependencies();
   await env.DB.batch([
     env.DB.prepare(

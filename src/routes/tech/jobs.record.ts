@@ -115,13 +115,11 @@ export function refusalOf(c: Ctx, refused: Extract<StepResult, { ok: false }>): 
 
 /** What the write's step records, written with the event (src/domain/field/job-record.ts). */
 export async function recordsOf(c: Ctx, write: EventInput): Promise<D1PreparedStatement[]> {
-  const { pieceCycleDays } = await opsInputs(c);
   const step: LandingStep = {
     visit: write.job,
     kind: write.kind,
     body: write.body,
     occurredAt: write.occurredAt,
-    cycles: pieceCycleDays,
     now: write.now,
   };
   return jobRecordOf(c.env.DB, step);

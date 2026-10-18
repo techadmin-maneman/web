@@ -6,9 +6,6 @@ import { grantPhrasing } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
 import { tasks } from "./tasks.ts";
 
-/** A service's description in a check line: quoted, or "no description". */
-const descriptionWords = (line: string) => (line === "" ? "no description" : `“${line}”`);
-
 /**
  * Settings: the business inputs ops set for themselves. The design draws this
  * section and letters nothing inside it (docs/decisions/0061-ops-editable-inputs.md,
@@ -170,15 +167,14 @@ export const settings = {
     saving: "Saving…",
     saved: "Saved.",
     reset: "Reset to default",
-    changes: (count: number) => (count === 1 ? "1 change" : `${String(count)} changes`),
-    discard: "Discard",
+    resetLabel: (rule: string) => `Reset ${rule} to default`,
     /** Beside the title of a page of policies the person may read and not change. */
     viewOnly: "View only",
-    /** The open-keyed rule's extra row: a base, and the cycle for it. */
-    keyName: "Base, as the technician records it",
-    keyValue: "Days",
+    /** The open-keyed rule's extra row: a currency, and its rate. */
+    keyName: "Currency code, as USD",
+    keyValue: "Rupees",
     add: "Add",
-    defaultKey: "All other bases",
+    defaultKey: "Every other currency",
     /**
      * The boxes of a rule with one figure per key: the kinds of visit and the
      * task queues, as the rest of the console names them. A base ops name
@@ -233,7 +229,8 @@ export const settings = {
       // The days the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
       booking_days: {
         first_fit_lead: "Consultation to first fit",
-        service_cadence: "Between service visits",
+        /** Named where a package's cadence reaches past the horizon (Settings · Packages). */
+        service_every_days: "A package’s service visits",
         reminder_before_due: "Reminder before a service is due",
         at_risk_after_due: "At risk after the due date",
         first_fit_to_book: "First fit booked within",
@@ -313,19 +310,8 @@ export const settings = {
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /** The check before a rule is sent: each figure that moves, the old beside the new. */
     confirm: {
-      title: "Review the change",
-      change: (label: string, was: string, now: string) => `${label}: ${was} → ${now}`,
-      /** A figure as the check writes it: "200 metres". */
+      /** A figure as a row reads it: "200 metres". */
       figure: (value: number, unit: string) => `${String(value)} ${unit}`,
-      /** A base ops are naming for the first time had no figure of its own. */
-      noFigure: "none",
-      /** A base whose own figure is taken away takes the one for every other base. */
-      otherBases: "the figure for all other bases",
-      /** A box of a rule with many, named with its rule: "No-show wait · First fit". */
-      keyed: (rule: string, box: string) => `${rule} · ${box}`,
-      standard: (rule: string) => `Resets ${rule} to the defaults.`,
-      send: "Confirm",
-      back: "Edit",
     },
     /** A section's Save sends its rules one by one, so a refusal speaks for its own rule only. */
     outside: (field: string, range: string) => `${field}: ${range}`,
@@ -440,184 +426,29 @@ export const settings = {
       unknown: FAILED,
     },
   },
-  /** What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md). */
-  standardCosts: {
-    title: "Hair system costs",
-    unit: "Rs., before GST",
-    since: (date: string) => `since ${date}`,
-    kinds: { first_fit: "First fit", replacement: "Replacement" },
-    notSet: "Not set",
-    saved: "Saved.",
-    reviewLabel: (product: string) => `Review the cost of ${product}`,
-    change: (product: string, was: string, now: string) => `${product}: ${was} → ${now}, from today`,
-    errors: {
-      invalid_request: "Type whole rupees.",
-      not_found: changed("That product is no longer sold."),
-      not_permitted: NOT_PERMITTED,
-      offline: OFFLINE,
-      unconfirmed: UNCONFIRMED,
-      unknown: FAILED,
-    },
-  },
   /**
-   * No board draws the services (docs/decisions/0085-services-ops-can-edit.md). What a price or a change was is
-   * shown beside what it will be before anything is sent.
+   * Settings · Consultation and fees (docs/decisions/0085-services-ops-can-edit.md): the consultation clients book and
+   * the two late fees. Every other service is a package's (Settings · Packages, docs/decisions/0211-packages.md).
    */
   services: {
-    title: "Services and prices",
-    /** The four kinds, as the rest of the console names them. */
-    kinds: dispatch.typeNames,
-    /** Each kind's table: its services, then its late fee where it has one. */
-    columns: ["Service", "Length", "Before GST", "GST", "Next price"],
-    actionsColumn: "Actions",
+    consultation: "Consultation",
+    lateFees: "Late fees",
+    rows: { name: "Name", description: "Description", noDescription: "None", length: "Length", price: "Price" },
     minutes: (minutes: number) => `${String(minutes)} min`,
-    retiring: (from: string) => `Hidden from ${from}`,
-    retired: (from: string) => `Retired from ${from}`,
-    /** A price form's line: what it costs today. */
-    now: (price: string, since: string) => `${price} since ${since}`,
+    unit: "min",
     unpriced: "Not priced",
-    toCome: (price: string, from: string) => `${price} from ${from}`,
-    /** "Rs. 1,234 + 18% GST": a price as the check compares two. */
-    price: (rupees: string, gst: number) => `${rupees} + ${String(gst)}% GST`,
-    earlier: (prices: readonly string[]) => `Earlier: ${prices.join(" · ")}`,
-    percent: (value: number) => `${String(value)}%`,
-    /** The two late fees, each one figure for its kind, beside its kind's services. */
-    lateFee: "Late fee",
-    lateFees: {
-      late_fee_first_fit: "Late fee on a first fit",
-      late_fee_replacement: "Late fee on a replacement",
-    },
+    lateFeeNames: { late_fee_first_fit: "On a first fit", late_fee_replacement: "On a replacement" },
     /** The link to the rule that says when a late fee is charged. */
     lateFeeRule: "When it’s charged",
-    actions: {
-      edit: "Edit",
-      price: "New price",
-      correct: "Correct",
-      takeBack: "Withdraw",
-      rename: "Rename",
-      describe: "Description",
-      length: "Length",
-      retire: "Retire",
-      restore: "Restore",
-      up: "Move up",
-      down: "Move down",
-      add: (kind: string) => `Add to ${kind}`,
-      addHairSystem: "Add a hair system",
-    },
-    /** Each button named for a screen reader with what it acts on. */
-    labels: {
-      edit: (name: string) => `Edit ${name}`,
-      price: (name: string) => `Change the price of ${name}`,
-      correct: (name: string, from: string) => `Correct the ${name} price from ${from}`,
-      takeBack: (name: string, from: string) => `Withdraw the ${name} price from ${from}`,
-      rename: (name: string) => `Rename ${name}`,
-      describe: (name: string) => `Edit the description of ${name}`,
-      length: (name: string) => `Change the length of ${name}`,
-      retire: (name: string) => `Retire ${name}`,
-      restore: (name: string) => `Restore ${name}`,
-      up: (name: string) => `Move ${name} up`,
-      down: (name: string) => `Move ${name} down`,
-    },
-    form: {
-      priceTitle: (name: string) => `New price: ${name}`,
-      correctTitle: (name: string, from: string) => `Correct the ${name} price from ${from}`,
-      amount: "Price before GST, Rs.",
-      gst: "GST",
-      from: "Starts",
-      /** A day typed before tomorrow, said beside the box before anything is checked. */
-      fromTooSoon: "Choose tomorrow or later.",
-      setPrice: "Set price",
-      renameTitle: (name: string) => `Rename ${name}`,
-      name: "Name",
-      describeTitle: (name: string) => `Description: ${name}`,
-      description: "Description",
-      lengthTitle: (name: string) => `Length: ${name}`,
-      minutes: "Length, in minutes",
-      retireTitle: (name: string) => `Retire ${name}`,
-      retireFrom: "Hidden from",
-      addTitle: (kind: string) => `New ${kind} service`,
-      code: "Code",
-      /** What a kind's code does beyond pricing it: a replacement under a hair system's code is offered to its wearers. */
-      codeHints: {
-        replacement: "Give it the code of the hair system it replaces, and clients who wear that one are offered it.",
-      } as Readonly<Partial<Record<string, string>>>,
-      next: "Review",
-      cancel: "Cancel",
-    },
-    /** The check before anything is sent: what it is now, and what it will be. */
-    check: {
-      title: "Review the change",
-      price: (name: string, was: string, now: string, from: string) => `${name}: ${was} → ${now}, from ${from}`,
-      correct: ({
-        name,
-        was,
-        wasFrom,
-        now,
-        from,
-      }: {
-        name: string;
-        was: string;
-        wasFrom: string;
-        now: string;
-        from: string;
-      }) => `${name}: ${was} from ${wasFrom} → ${now} from ${from}`,
-      nothing: "nothing",
-      gstChanges: (was: number, now: number) => `GST: ${String(was)}% → ${String(now)}%`,
-      sameDay: "Replaces the price already set for that day.",
-      rename: (was: string, now: string, tier: string) => `${was} → ${now} (code stays ${tier})`,
-      describe: (name: string, was: string, now: string) =>
-        `${name}: ${descriptionWords(was)} → ${descriptionWords(now)}`,
-      length: (name: string, was: number, now: number) => `${name}: ${String(was)} → ${String(now)} minutes`,
-      retire: (name: string, from: string) => `${name} is hidden from ${from}.`,
-      restore: (name: string) => `Offer ${name} again?`,
-      order: (kind: string, was: string, now: string) => `${kind}: ${was} → ${now}`,
-      add: (kind: string, name: string, minutes: number, _tier: string) =>
-        `Add ${name} to ${kind}: ${String(minutes)} minutes. Hidden until priced.`,
-      takeBack: (from: string) => `Withdraw the price from ${from}?`,
-      send: "Confirm",
-      back: "Back",
-      takeBackConfirm: "Confirm withdrawal",
-      keep: "Keep price",
-    },
-    saving: "Saving…",
-    done: {
-      price: "Price set.",
-      takenBack: "Price withdrawn.",
-      saved: "Saved.",
-    },
-    /** A refusal of a box with the limit the API gave the form, as the API checks it (src/routes/ops/services.ts). */
-    limits: {
-      description: (most: number) => `Up to ${String(most)} characters, on one line.`,
-      minutes: (min: number, max: number) => `Enter ${String(min)}–${String(max)} minutes.`,
-      amount: (most: string) => `Enter whole rupees, up to ${most}.`,
-      gst: (most: number) => `Enter a whole percentage, 0–${String(most)}.`,
-    },
-    /** A refusal names the box it came from (src/routes/ops/services.ts, ops-settings.ts); these are said of each. */
     errors: {
       not_permitted: NOT_PERMITTED,
-      tier: "No such code, or none can be made from that name.",
       name: "2–60 characters, starting with a letter or digit.",
       description: "Keep it to one line.",
-      minutes: "Enter the minutes allowed.",
-      retired_date: "Retire from today or later. Restore a retired service first.",
-      order: changed("The order changed elsewhere."),
-      amount_ex_gst: "Enter whole rupees.",
-      gst_percent: "Enter a whole percentage.",
-      valid_from: "A new price starts tomorrow at the earliest.",
-      was_valid_from: "That price is already in effect, so it stays.",
-      service_exists: "That name or code is already in use.",
-      last_of_kind: "Each kind needs one priced service. Add and price its replacement first.",
-      service_retired: "It’s retired by then, so it can’t be priced.",
+      minutes: "Between 30 minutes and the length of a day.",
+      service_exists: "That name is already in use.",
       not_found: changed("No longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
-      unknown: FAILED,
-    },
-    /** Taking back a price that applies already, or has applied: it may stand on an invoice. */
-    takeBackErrors: {
-      not_permitted: NOT_PERMITTED,
-      valid_from: "That price is already in effect, so it stays.",
-      offline: OFFLINE,
       unknown: FAILED,
     },
   },
@@ -743,34 +574,6 @@ export const settings = {
     restore: "Restore",
     restoreLabel: (name: string) => `Restore ${name}`,
     // No design draws it (docs/decisions/0156-hair-systems-in-stock.md).
-    hairSystems: {
-      title: "Hair systems",
-      add: "Add a hair system",
-      noProducts: "Add a first-fit service in Services first.",
-      product: "Product",
-      width: "Base width, inches",
-      length: "Base length, inches",
-      colour: "Colour",
-      grey: "Grey, %",
-      density: "Density",
-      cost: "Cost each, Rs.",
-      kit: "Kit low at (optional)",
-      store: "Hub or stockroom low at (optional)",
-      central: "Warehouse low at (optional)",
-      formTitle: "Add a hair system",
-      /** The check's line: the spec the code is made to, and what one costs. */
-      adding: (spec: string, cost: string) => `${spec}, at ${cost} each`,
-      added: "Added.",
-      errors: {
-        product: "Choose a product from the list.",
-        hair_system: "That spec is already in stock.",
-        invalid_request: "Check the size in inches, and grey and density as percentages, 0–100.",
-        not_permitted: NOT_PERMITTED,
-        offline: OFFLINE,
-        unconfirmed: UNCONFIRMED,
-        unknown: FAILED,
-      },
-    },
     form: {
       addTitle: "Add a consumable",
       changeTitle: (name: string) => `Change ${name}`,

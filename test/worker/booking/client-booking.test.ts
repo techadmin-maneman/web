@@ -7,7 +7,17 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { DEFAULT_SLOT_TIMES, unitAt, windowAt } from "../../../src/policy/slot-times.ts";
 import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request } from "../helpers.ts";
-import { IMRAN, SANDEEP, SANA, technician, essential, client, visit, later } from "./client-booking-fixtures.ts";
+import {
+  IMRAN,
+  SANDEEP,
+  SANA,
+  technician,
+  essential,
+  client,
+  visit,
+  later,
+  theFirstFit,
+} from "./client-booking-fixtures.ts";
 
 let app: App;
 
@@ -25,6 +35,7 @@ beforeEach(async () => {
   await technician(SANDEEP, "Sandeep Rawat", "SR");
   await technician(SANA, "Sana Mirza", "SM");
   await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANA).run();
+  await theFirstFit();
 });
 
 describe("the working day", () => {

@@ -173,6 +173,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "standard_costs",
       "targets",
       "services",
+      "packages",
       "slot_times",
       "serviceable_pincodes",
       "technician_leave",
@@ -198,7 +199,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "site_word_publishes",
     ],
     leftAtT:
-      "A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back",
+      "A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back",
     putBackBy: "Setting it again in the console, which audits it",
   },
   {

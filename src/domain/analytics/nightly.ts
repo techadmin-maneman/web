@@ -6,7 +6,7 @@
 // what was sent, and the run logged in the copy itself.
 
 import { addDays } from "../../lib/india-time.ts";
-import { LOST_AFTER_DAYS, type StandingDays } from "../../policy/client-standing.ts";
+import { LOST_AFTER_DAYS, type StandingRules } from "../../policy/client-standing.ts";
 import { NEXT_VISIT_DAYS } from "../../policy/next-visit.ts";
 import type { RunLog, TableMeta, TableRows, WarehouseProvider } from "../../providers/warehouse/index.ts";
 import { capacityRows, CAPACITY_DAYS_AHEAD } from "./capacity.ts";
@@ -28,8 +28,7 @@ import { cityRows, clientRows, dateRows, paymentRows, serviceRows, technicianRow
 export const WAREHOUSE_ALERT_BYTES = 400 * 1024 * 1024;
 
 /** The figures that stand until ops set others. */
-const COMMITTED_STANDING: StandingDays = {
-  cadence: NEXT_VISIT_DAYS.service_cadence,
+const COMMITTED_STANDING: StandingRules = {
   grace: NEXT_VISIT_DAYS.at_risk_after_due,
   lostAfter: LOST_AFTER_DAYS,
 };
@@ -42,8 +41,8 @@ export interface NightGiven {
   readonly secret: string;
   readonly date: string;
   readonly now: () => Date;
-  /** The service cadence, its grace and the days to lost, as ops set them. */
-  readonly standing?: StandingDays;
+  /** The grace after a service falls due and the days to lost, as ops set them. */
+  readonly standing?: StandingRules;
   /** The arrival window after a start, in minutes, which a visit on time is checked in by; left out, booking's own. */
   readonly arrivalMinutes?: number;
 }

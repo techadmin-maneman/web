@@ -58,8 +58,9 @@ import { loadSlotSchedule, type SlotSchedule } from "../../domain/booking/slot-t
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
-import { wornProduct } from "../../domain/inventory/stock-gap.ts";
-import { replacementFor } from "../../policy/services.ts";
+import { clientPackage } from "../../domain/clients/client-package.ts";
+import { pricedFor } from "../../domain/booking/client-prices.ts";
+import { forPackage } from "../../policy/services.ts";
 import { cityOfPerson } from "../../domain/cities/cities.ts";
 import { selfServeKinds } from "../../policy/self-serve.ts";
 
@@ -321,7 +322,7 @@ export function registerClientMe(app: App): void {
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
     const missed = missedVisit(db, personId);
-    const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite, owed, recap, wears] =
+    const [person, upcoming, underWay, credits, fitted, form, types, sold, home, invite, owed, recap, onPackage] =
       await Promise.all([
         liveContact(db, personId),
         nextVisit(db, personId, now),
@@ -330,12 +331,12 @@ export function registerClientMe(app: App): void {
         isFitted(db, personId),
         formBookingOf(c, personId, today),
         bookableTypes(db, personId, now),
-        cityOfPerson(db, personId).then((city) => servicesOnDay(db, tomorrow, city)),
+        cityOfPerson(db, personId).then(async (city) => ({ city, services: await servicesOnDay(db, tomorrow, city) })),
         homeFactsOf(c, personId, now),
         pendingInviteOf(db, personId, now, nameOnInvite),
         owedPayments(db, personId),
         consultationRecap(db, personId),
-        wornProduct(db, personId),
+        clientPackage(db, personId),
       ]);
     if (person === null) return refuse(c, "session_required");
 
@@ -344,8 +345,9 @@ export function registerClientMe(app: App): void {
     // A form's consultation counts as booked while it stands, asked for or held.
     const booked = home.next.booked || upcoming !== null || form.proposal !== null;
     const { remake, offer } = whatHomeOffers(booked, home.prompt, home.next.offer);
-    // A replacement is the one priced for the hair system they wear, or else the single price.
-    const offered = replacementFor(offeredAmong(services, tomorrow, types), wears).map((service) => ({
+    // Their package's service visit and replacement, and each first fit priced for the hair system made to them.
+    const services = forPackage(offeredAmong(sold.services, tomorrow, types), onPackage);
+    const offered = (await pricedFor(db, services, { personId, on: tomorrow, city: sold.city })).map((service) => ({
       type: service.kind,
       tier: service.tier,
       name: service.name,

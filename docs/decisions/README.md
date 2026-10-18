@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0211. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0213. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -70,6 +70,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0118](0118-booking-never-dead-ends.md) Booking never dead-ends
 - [0119](0119-blackouts-by-city-and-trained-fitters.md) Blackouts by city, and trained fitters
 - [0210](0210-booking-by-start-time.md) Booking by start time
+- [0211](0211-packages.md) Packages
 
 ### Field work
 
@@ -243,6 +244,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0189](0189-the-staff-list-on-by-default.md) The Staff list on by default
 - [0193](0193-the-rest-of-the-rules-in-the-console.md) The rest of the rules in the console
 - [0208](0208-the-console-redesigned.md) The console redesigned: work first, Settings in one place, and two themes
+- [0212](0212-editing-in-place.md) Editing in place
 
 ## Every decision, oldest first
 
@@ -318,7 +320,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0068](0068-a-paid-hold-is-kept.md) | A paid hold is kept | 2026-09-25 | accepted | [0095](0095-a-booking-fsm-refuses-is-held.md) |
 | [0069](0069-dispatch-under-concurrency.md) | Dispatch under concurrency | 2026-09-25 | accepted |  |
 | [0070](0070-vendor-correctness.md) | What we write to Zoho is right, written once, and asked for sparingly | 2026-09-25 | accepted | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
-| [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | accepted | [0086](0086-the-next-visit-is-offered.md) |
+| [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | accepted | [0086](0086-the-next-visit-is-offered.md), [0212](0212-editing-in-place.md) |
 | [0072](0072-ops-clients-and-queues.md) | The ops console's clients and queues | 2026-09-26 | accepted | [0092](0092-task-owners.md) |
 | [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md), [0103](0103-the-home-pages-first-copy-round.md), [0204](0204-the-sites-price-pipeline-removed.md) |
 | [0074](0074-hand-offs-and-messages.md) | What each person learns when something changes for them | 2026-09-26 | accepted | [0092](0092-task-owners.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0099](0099-the-clients-note-in-fsm.md) |
@@ -332,8 +334,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0082](0082-try-ons-in-the-app.md) | A client's try-on in the app | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 | [0084](0084-a-clients-try-on-is-kept.md) |
 | [0083](0083-anyone-signed-in-can-refer.md) | Anyone signed in can refer | 2026-09-27 | withdrawn by the owner on 27 September 2026, the day it was made |  |
 | [0084](0084-a-clients-try-on-is-kept.md) | A client's try-on is kept | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 | [0093](0093-the-storage-meter.md), [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
-| [0085](0085-services-ops-can-edit.md) | Services ops can edit | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 |  |
-| [0086](0086-the-next-visit-is-offered.md) | The next visit is offered, and the client books it | 2026-09-27 | accepted | [0085](0085-services-ops-can-edit.md), [0105](0105-a-consultation-and-fit-in-one-visit.md) |
+| [0085](0085-services-ops-can-edit.md) | Services ops can edit | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0211](0211-packages.md) |
+| [0086](0086-the-next-visit-is-offered.md) | The next visit is offered, and the client books it | 2026-09-27 | accepted | [0085](0085-services-ops-can-edit.md), [0105](0105-a-consultation-and-fit-in-one-visit.md), [0211](0211-packages.md) |
 | [0087](0087-consumables-and-stock.md) | Consumables and their stock, and the job sheet, set in the console | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0085](0085-services-ops-can-edit.md) |
 | [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 | [0095](0095-a-booking-fsm-refuses-is-held.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0119](0119-blackouts-by-city-and-trained-fitters.md) |
 | [0089](0089-an-invite-is-not-lost.md) | An invite is not lost when the friend books away from its page | 2026-09-28 | accepted |  |
@@ -401,7 +403,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0153](0153-supply-and-credits-in-the-copy.md) | Supply and credits in the copy | 2026-10-12 | accepted |  |
 | [0154](0154-targets-and-reporting-access.md) | Targets and reporting access | 2026-10-12 | accepted |  |
 | [0155](0155-the-stock-place-tree.md) | The stock place tree | 2026-10-12 | accepted |  |
-| [0156](0156-hair-systems-in-stock.md) | Hair systems in stock | 2026-10-12 | accepted |  |
+| [0156](0156-hair-systems-in-stock.md) | Hair systems in stock | 2026-10-12 | accepted | [0211](0211-packages.md) |
 | [0157](0157-lots-and-expiry.md) | Lots and expiry | 2026-10-12 | accepted |  |
 | [0158](0158-transfers-in-transit.md) | Transfers in transit | 2026-10-12 | accepted |  |
 | [0159](0159-stock-views-and-expiry.md) | Stock views and expiry | 2026-10-12 | accepted |  |
@@ -456,3 +458,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted |  |
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted |  |
 | [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted |  |
+| [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
+| [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |

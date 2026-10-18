@@ -1,6 +1,7 @@
 // GET /api/published-prices: the figures the public site publishes, from the price book
 // (docs/decisions/0073-prices-from-the-price-book.md).
 
+import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { ErrorResponseSchema } from "../../../src/http/errors.ts";
@@ -23,6 +24,7 @@ async function pricesOn(deps = today()): Promise<Record<string, unknown>> {
 
 beforeEach(async () => {
   await markDatabase();
+  await aGenericFirstFit();
 });
 
 describe("GET /api/published-prices", () => {
@@ -35,7 +37,8 @@ describe("GET /api/published-prices", () => {
     const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
     const firstFit = { amount_ex_gst: 3_000_000, amount: 3_000_000, gst_percent: 0 };
     const service = { amount_ex_gst: 200_000, amount: 200_000, gst_percent: 0 };
-    const replacement = { amount_ex_gst: 1_500_000, amount: 1_500_000, gst_percent: 0 };
+    // A replacement costs the replacement and its service visit (docs/decisions/0211-packages.md).
+    const replacement = { amount_ex_gst: 1_700_000, amount: 1_700_000, gst_percent: 0 };
     expect(await response.json()).toEqual({
       on: "2026-09-26",
       tier: "standard",
@@ -52,18 +55,17 @@ describe("GET /api/published-prices", () => {
   });
 
   it("carries every service offered today, each in its kind, and leaves out one retired or unpriced", async () => {
-    const service = (kind: string, tier: string, name: string, sort: number, retired: string | null = null) =>
-      env.DB.prepare(
-        `INSERT INTO services (kind, tier, name, minutes, sort, retired_date, updated_by, updated_at)
-         VALUES (?1, ?2, ?3, 180, ?4, ?5, 'ops@localhost', '2026-09-22T06:30:00.000Z')`,
-      )
-        .bind(kind, tier, name, sort, retired)
-        .run();
-    await service("first_fit", "premium", "Premium first fit", 1);
-    await priceRow("first_fit", 4_000_000, 0, "2026-09-22", "premium");
-    await service("first_fit", "lace", "Lace first fit", 2, "2026-09-26");
-    await priceRow("first_fit", 4_500_000, 0, "2026-09-22", "lace");
-    await service("replacement", "premium", "Premium replacement", 1);
+    await aPackage({ code: "premium", name: "Premium first fit", firstFit: 4_000_000, validFrom: "2026-09-22" });
+    await aPackage({ code: "lace", name: "Lace first fit", firstFit: 4_500_000, sort: 2, validFrom: "2026-09-22" });
+    // Lace is no longer sold from today, and its clients keep their service visits and replacements.
+    await env.DB.prepare(
+      "UPDATE services SET retired_date = '2026-09-26' WHERE kind = 'first_fit' AND tier = 'lace'",
+    ).run();
+    // A package with no hair system priced has no first fit to sell.
+    await env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('first_fit', 'thin', 'Thin first fit', 180, 3, 'ops@localhost', '2026-09-22T06:30:00.000Z')`,
+    ).run();
 
     const body = (await pricesOn()) as { services: { type: string; tier: string }[] };
 
@@ -72,7 +74,11 @@ describe("GET /api/published-prices", () => {
       "first_fit/standard",
       "first_fit/premium",
       "service/standard",
+      "service/premium",
+      "service/lace",
       "replacement/standard",
+      "replacement/premium",
+      "replacement/lace",
     ]);
   });
 
@@ -104,9 +110,10 @@ describe("GET /api/published-prices", () => {
     };
 
     expect(body.service).toEqual({ amount_ex_gst: 250_000, amount: 295_000, gst_percent: 18 });
+    // A first fit's own row is not read, and a first fit and a replacement each carry the new service visit price.
     const firstFit = body.services.find((each) => each.type === "first_fit");
-    expect(firstFit?.price).toEqual({ amount_ex_gst: 3_000_000, amount: 3_000_000, gst_percent: 0 });
-    expect(body.replacement).toEqual({ amount_ex_gst: 1_500_000, amount: 1_500_000, gst_percent: 0 });
+    expect(firstFit?.price).toEqual({ amount_ex_gst: 3_050_000, amount: 3_050_000, gst_percent: 0 });
+    expect(body.replacement).toEqual({ amount_ex_gst: 1_750_000, amount: 1_750_000, gst_percent: 0 });
   });
 
   it("reads the day in India", async () => {

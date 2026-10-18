@@ -1,5 +1,6 @@
 // The hourly check of each service's Books item, without FSM. Every name and number here is made up.
 
+import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAlertOnce, createResolveAlert } from "../../../src/domain/platform/alerts.ts";
@@ -19,12 +20,15 @@ const PRICES_LINK = "http://ops.localhost:4323/settings/prices";
 
 let alerted: string[];
 
-/** What Books holds that agrees with the seeded services on the day: each kind's standard one, at its price. */
+/**
+ * What Books holds that agrees with the seeded services on the day: each kind's standard one, at its price; a first
+ * fit's and a replacement's with its service visit's (docs/decisions/0211-packages.md).
+ */
 const AGREEING: readonly BooksItem[] = [
   { id: "item-consultation", name: "Consultation", rate: 0, active: true, sac: null },
   { id: "item-first-fit", name: "First fit", rate: 3_000_000, active: true, sac: null },
   { id: "item-service", name: "Service visit", rate: 200_000, active: true, sac: null },
-  { id: "item-replacement", name: "Replacement", rate: 1_500_000, active: true, sac: null },
+  { id: "item-replacement", name: "Replacement", rate: 1_700_000, active: true, sac: null },
 ];
 
 function check(books: StubBooks, options: Partial<BooksItemsOptions> = {}) {
@@ -47,9 +51,10 @@ const keptItems = async () => {
   return results;
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   alerted = [];
   captureLogs();
+  await aGenericFirstFit();
 });
 
 describe("each service's Books item", () => {
@@ -106,7 +111,7 @@ describe("each service's Books item", () => {
 
     const checked = await check(books, { push: true, now: sunday });
     expect(books.made.itemsMade).toEqual([{ name: "Service visit", rate: 210_000, sac: null }]);
-    expect(books.made.itemUpdates).toEqual([{ itemId: before?.id, name: "Replacement", rate: 1_575_000, sac: null }]);
+    expect(books.made.itemUpdates).toEqual([{ itemId: before?.id, name: "Replacement", rate: 1_785_000, sac: null }]);
     expect(checked).toEqual({ differs: [], written: 2 });
     const kept = await keptItems();
     expect(kept).toContainEqual({ kind: "service", books_item_id: expect.stringMatching(/^stub-item-/) as string });
@@ -129,7 +134,7 @@ describe("each service's Books item", () => {
     // Ops gave the replacement's old item a new name, the service visit's: it is still the replacement's.
     const items = [
       ...AGREEING.filter((item) => item.id !== "item-service" && item.id !== "item-replacement"),
-      { id: "item-replacement", name: "Service visit", rate: 1_500_000, active: true, sac: null },
+      { id: "item-replacement", name: "Service visit", rate: 1_700_000, active: true, sac: null },
     ];
     await env.DB.prepare("UPDATE services SET books_item_id = 'item-replacement' WHERE kind = 'replacement'").run();
     const books = createStubBooks({ items });
@@ -137,7 +142,7 @@ describe("each service's Books item", () => {
     await check(books, { push: true });
     expect(books.made.itemsMade).toEqual([{ name: "Service visit", rate: 200_000, sac: null }]);
     expect(books.made.itemUpdates).toEqual([
-      { itemId: "item-replacement", name: "Replacement", rate: 1_500_000, sac: null },
+      { itemId: "item-replacement", name: "Replacement", rate: 1_700_000, sac: null },
     ]);
   });
 

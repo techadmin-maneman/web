@@ -2,6 +2,7 @@
 // referral landing takes, without an invite. NOW is Monday 21 September 2026, noon in India.
 // Every name and number here is made up.
 
+import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
@@ -10,6 +11,7 @@ import { ADDRESS, pincode, VISITOR, post, site, BOOKED_MORNING } from "./consult
 
 beforeEach(async () => {
   await markDatabase();
+  await aGenericFirstFit();
   await env.DB.prepare(
     "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city, fits_trained) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1, 'Gurgaon', 1)",
   )
@@ -234,17 +236,8 @@ describe("a consultation and fit in one visit", () => {
   });
 
   it("holds the first hair system ops offer for its length, the client choosing theirs at the visit", async () => {
-    await env.DB.batch([
-      env.DB.prepare("UPDATE services SET retired_date = '2026-09-01' WHERE kind = 'first_fit'"),
-      env.DB.prepare(
-        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
-         VALUES ('first_fit', 'essential', 'Mane Man Essential', 180, 1, 'ops@localhost', ?1)`,
-      ).bind(NOW.toISOString()),
-      env.DB.prepare(
-        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
-         VALUES ('first_fit', 'essential', 3200000, 0, '2026-01-01')`,
-      ),
-    ]);
+    await env.DB.prepare("UPDATE services SET retired_date = '2026-09-01' WHERE kind = 'first_fit'").run();
+    await aPackage({ code: "essential", name: "Mane Man Essential", firstFit: 3_200_000 });
 
     expect((await book({ one_visit: true })).status).toBe(201);
     const held = await env.DB.prepare("SELECT type, tier, minutes, amount FROM slot_holds").first();

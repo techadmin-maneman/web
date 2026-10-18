@@ -2,6 +2,7 @@
 // payments, referrals, consents, photographs and history. The record is read once for the page, so moving between tabs
 // costs no request; an erased client's page keeps only their visits and money (Erase.tsx).
 
+import { ClientPackage } from "./ClientPackage.tsx";
 import { TextLink } from "@maneman/ui/TextLink";
 import { ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
@@ -129,7 +130,14 @@ function Tab({
   if (tab === "visits") {
     return <Visits clientId={clientId} record={record} address={address} onAddress={onAddress} onChanged={onChanged} />;
   }
-  if (tab === "pieces") return <Pieces clientId={clientId} />;
+  if (tab === "pieces") {
+    return (
+      <>
+        <ClientPackage clientId={clientId} record={record} onChanged={onChanged} />
+        <Pieces clientId={clientId} />
+      </>
+    );
+  }
   if (tab === "payments") {
     return (
       <Payments

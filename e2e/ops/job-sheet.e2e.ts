@@ -9,6 +9,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, JOB_SHEET, json, type Answers } from "./fixtures.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
+import { review } from "../../apps/ops/src/content/common.ts";
 import { settingsPageNames } from "../../apps/ops/src/content/settings-shell.ts";
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
@@ -51,7 +52,7 @@ test("renames, moves, takes off and adds, shows each before it is sent, and keep
   await list.getByLabel("Item 1, as the client reads it").fill("Hair system refitted");
   await list.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
 
-  const check = list.getByRole("group", { name: settingsCopy.rules.confirm.title });
+  const check = list.getByRole("group", { name: review.title });
   await expect(check).toBeFocused();
   await expect(check).toContainText("Renamed: Scalp cleaned → Scalp cleaned and dried");
   await expect(check).toContainText("Piece refitted: the client reads “Hair system refitted”");
@@ -105,7 +106,7 @@ test("sets the partial reasons the Tasks board reads", async ({ page }) => {
   await reasons.getByRole("button", { name: settingsCopy.jobSheet.addReason }).click();
   await reasons.getByLabel("Reason 3").fill("Power cut");
   await reasons.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
-  await expect(reasons.getByRole("group", { name: settingsCopy.rules.confirm.title })).toContainText(
+  await expect(reasons.getByRole("group", { name: review.title })).toContainText(
     "Added: Power cut",
   );
 
@@ -126,6 +127,6 @@ test("meets WCAG 2.2 AA, with a change being checked as well", async ({ page }) 
 
   await checklist(page).getByLabel("Item 1", { exact: true }).fill("Piece taken off");
   await checklist(page).getByRole("button", { name: settingsCopy.discountCodes.check }).click();
-  await expect(checklist(page).getByRole("group", { name: settingsCopy.rules.confirm.title })).toBeVisible();
+  await expect(checklist(page).getByRole("group", { name: review.title })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

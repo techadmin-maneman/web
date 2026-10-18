@@ -236,10 +236,14 @@ describe("ops, when the audit entry cannot be written", () => {
     const services = "SELECT kind, tier, name, minutes, sort, retired_date FROM services ORDER BY kind, tier";
     const before = await env.DB.prepare(services).all();
 
-    expect((await send(ops, "POST", "/api/services", { kind: "first_fit", name: "Premium" })).status).toBe(500);
-    expect((await send(ops, "POST", "/api/services/service/standard/name", { name: "Monthly" })).status).toBe(500);
-    expect((await send(ops, "POST", "/api/services/service/standard/length", { minutes: 100 })).status).toBe(500);
-    expect((await send(ops, "POST", "/api/services/service/order", { tiers: ["standard"] })).status).toBe(500);
+    expect((await send(ops, "POST", "/api/services", { kind: "consultation", name: "Premium" })).status).toBe(500);
+    const consultation = "/api/services/consultation/standard";
+    expect((await send(ops, "POST", `${consultation}/name`, { name: "Home visit" })).status).toBe(500);
+    expect((await send(ops, "POST", `${consultation}/length`, { minutes: 100 })).status).toBe(500);
+    expect((await send(ops, "POST", "/api/services/consultation/order", { tiers: ["standard"] })).status).toBe(500);
+    // A package is changed with its services, each under the same rule (docs/decisions/0211-packages.md).
+    expect((await send(ops, "POST", "/api/packages", { name: "Premium" })).status).toBe(500);
+    expect((await send(ops, "PATCH", "/api/packages/standard", { service_every_days: 28 })).status).toBe(500);
 
     expect((await env.DB.prepare(services).all()).results).toEqual(before.results);
   });

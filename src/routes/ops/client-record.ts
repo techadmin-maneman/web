@@ -1,6 +1,8 @@
 // A client's record in the console (./clients.ts): who they are, their address, visits, money, history and the invite
 // they came with. Of an erased client, only what is kept: when they were erased, their visits and their money.
 
+import { indiaDate } from "../../lib/india-time.ts";
+import { packageOfRecord } from "../../domain/clients/client-package.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
@@ -213,6 +215,15 @@ const ClientRecordSchema = z
     invite: z
       .union([ClientInviteSchema, z.null()])
       .openapi({ description: "The invite they came with, or ops attached; null for none." }),
+    package: z
+      .union([z.object({ code: z.string(), name: z.string(), chosen: z.boolean() }).strict(), z.null()])
+      .openapi({
+        description:
+          "The package they are on: the one they booked or ops chose (chosen), else their consultation's recommendation; null for neither.",
+      }),
+    packages: z
+      .array(z.object({ code: z.string(), name: z.string() }).strict())
+      .openapi({ description: "The packages they may be put on: those sold today, and their own." }),
     auto_refunds: z
       .array(AutoRefundSchema)
       .openapi({ description: "Bookings that refunded their payment by themselves; the latest refund first." }),
@@ -320,6 +331,7 @@ export function registerOpsClientRecord(app: App): void {
 
     const sheet = jobSheet(db);
     const next = opsInputs(c).then((inputs) => nextVisitFacts(db, id, now, inputs.nextVisitDays));
+    const onPackage = packageOfRecord(db, id, indiaDate(now));
     const [address, credits, visits, fitted, payments, links, invoices, history, invite, refunded] = await Promise.all([
       currentAddress(db, id),
       creditBalance(db, id, now),
@@ -350,6 +362,8 @@ export function registerOpsClientRecord(app: App): void {
         history,
         next_visit: nextVisitOf((await next).offer),
         invite,
+        package: (await onPackage).current,
+        packages: (await onPackage).choices,
         auto_refunds: refunded.map(autoRefundOf),
         lost_reasons: (await sheet).lostReasons.items.map((item) => ({ code: item.id, label: item.label })),
       },

@@ -26,6 +26,7 @@ import {
   offeredDay,
   offeredWindow,
   remindedIfDoneBetween,
+  remindedIfDueBetween,
   serviceDue,
   type NextVisitDays,
   type NextVisitType,
@@ -35,6 +36,8 @@ import { loadSlotSchedule } from "../booking/slot-times.ts";
 import { consentGiven } from "../privacy/consents.ts";
 import { serviceToOffer } from "../booking/services.ts";
 import { recommendedProduct } from "../clients/hair-profiles.ts";
+import { clientPackage } from "../clients/client-package.ts";
+import { cadenceRange, everyDaysSql } from "../booking/packages.ts";
 import { NO_VISITS_CONSENT, type Composed } from "../messages/visit-message-text.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
 import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE } from "../../config/statuses.ts";
@@ -86,13 +89,16 @@ const FACTS = `SELECT
      AND a.type = 'consultation' AND a.deleted_at IS NULL ORDER BY a.window_start DESC LIMIT 1) AS consulted_start,
   ${BOOKED} AS booked,
   (SELECT MIN(replacement_due_at) FROM pieces WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL
-     AND replaced_at IS NULL AND replacement_due_at IS NOT NULL) AS piece_due`;
+     AND replaced_at IS NULL AND replacement_due_at IS NOT NULL) AS piece_due,
+  ${everyDaysSql("(SELECT package FROM people WHERE id = ?1)")} AS every`;
 
 interface FactsRow {
   last_start: string | null;
   consulted_start: string | null;
   booked: number;
   piece_due: string | null;
+  /** Days from a visit to the service visit after it, by the client's package. */
+  every: number;
 }
 
 /**
@@ -118,9 +124,11 @@ export async function nextVisitFacts(
   const tomorrow = addDays(indiaDate(now), 1);
   if (row.last_start !== null) {
     const last = new Date(row.last_start);
-    const next = nextVisitAfter(indiaDate(last), row.piece_due, tomorrow, days);
+    const next = nextVisitAfter(indiaDate(last), row.piece_due, tomorrow, row.every);
     const [tier, schedule] = await Promise.all([
-      serviceToOffer(db, personId, { kind: next.type, on: next.offeredOn }),
+      clientPackage(db, personId).then((onPackage) =>
+        serviceToOffer(db, personId, { kind: next.type, on: next.offeredOn, preferred: onPackage }),
+      ),
       loadSlotSchedule(db),
     ]);
     return {
@@ -216,14 +224,18 @@ export async function queueNextServiceReminders(
   days: NextVisitDays,
   hour: ReminderHours = DAY_BEFORE_REMINDER_HOUR,
 ): Promise<string[]> {
-  const came = reminderHourCame("a.service_city", 4, hour, now);
+  const came = reminderHourCame("a.service_city", 6, hour, now);
   if (came === null) return [];
-  const { from, to } = remindedIfDoneBetween(indiaDate(now), days);
+  const today = indiaDate(now);
+  const { from, to } = remindedIfDoneBetween(today, days, await cadenceRange(db));
   if (to < from) return [];
+  const due = remindedIfDueBetween(today, days);
+  // The visits done in the widest range any package's cadence reads, each then held to its own client's due day.
   const { results } = await db
     .prepare(
       `SELECT a.id, a.person_id FROM appointments a JOIN people p ON p.id = a.person_id
        WHERE ${DONE} AND a.window_start >= ?1 AND a.window_start < ?2 AND p.erased_at IS NULL AND NOT ${BOOKED_SINCE}
+         AND date(a.window_start, '+330 minutes', '+' || ${everyDaysSql("p.package")} || ' days') BETWEEN ?4 AND ?5
          AND NOT EXISTS (SELECT 1 FROM outbound_messages m WHERE m.subject_id = a.id AND m.kind = 'next_service_reminder')
          AND ${came.sql}
        ORDER BY a.window_start LIMIT ?3`,
@@ -232,6 +244,8 @@ export async function queueNextServiceReminders(
       indiaInstant(from, "00:00").toISOString(),
       indiaInstant(addDays(to, 1), "00:00").toISOString(),
       REMINDERS_PER_PASS,
+      due.from,
+      due.to,
       ...came.values,
     )
     .all<{ id: string; person_id: string }>();
@@ -265,7 +279,7 @@ export async function composeNextServiceReminder(
   db: D1Database,
   visitId: string,
   personId: string,
-  { days, now }: { readonly days: NextVisitDays; readonly now: Date },
+  now: Date,
 ): Promise<Composed> {
   if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
   const row = await db
@@ -273,15 +287,15 @@ export async function composeNextServiceReminder(
       `SELECT a.window_start, p.name,
          (SELECT MIN(replacement_due_at) FROM pieces WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL
             AND replaced_at IS NULL AND replacement_due_at IS NOT NULL) AS piece_due,
-         ${BOOKED_SINCE} AS booked
+         ${BOOKED_SINCE} AS booked, ${everyDaysSql("p.package")} AS every
        FROM appointments a JOIN people p ON p.id = a.person_id
        WHERE a.id = ?2 AND a.person_id = ?1 AND ${DONE}`,
     )
     .bind(personId, visitId)
-    .first<{ window_start: string; name: string; piece_due: string | null; booked: number }>();
+    .first<{ window_start: string; name: string; piece_due: string | null; booked: number; every: number }>();
   if (row === null) return { skip: "no such visit" };
   if (row.booked === 1) return { skip: "a visit is booked" };
-  const due = serviceDue(indiaDate(new Date(row.window_start)), days);
+  const due = serviceDue(indiaDate(new Date(row.window_start)), row.every);
   const type = nextVisitType(due, row.piece_due);
   // A reminder whose window passed unsent, an outage or consent given since, goes once the day is past, and says so.
   return {

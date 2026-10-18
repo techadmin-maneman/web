@@ -79,6 +79,9 @@ export const clientsApi = {
   clientConsents: (id: string) => client.get("/api/clients/{id}/consents", { path: { id } }),
   /** The client's pieces. */
   clientPieces: (id: string) => client.get("/api/clients/{id}/pieces", { path: { id } }),
+  /** Puts the client on a package; their next service visit and replacement follow it. */
+  setPackage: (id: string, code: string) =>
+    client.post("/api/clients/{id}/package", { path: { id }, body: { package: code } }),
   /** The client's hair profile as it stands, and every version of it. */
   clientHairProfile: (id: string) => client.get("/api/clients/{id}/hair-profile", { path: { id } }),
   /** A correction: the whole profile as it now stands, a new version under the caller's name, audited. */

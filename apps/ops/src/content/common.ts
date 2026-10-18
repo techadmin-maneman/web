@@ -46,6 +46,9 @@ export const isChanged = (said: string): boolean => CHANGED.has(said);
 /** After a changed refusal, the page read again. */
 export const LATEST = "Here’s the latest.";
 
+/** What a value changed where it reads says (@maneman/ui/EditableRow). */
+export const EDITING = { change: "Change", save: "Save", cancel: "Cancel", saved: "Saved" } as const;
+
 /** Shown wherever a number would be, for a client erased since, whose number is gone. */
 export const ERASED_MOBILE = "Erased client";
 

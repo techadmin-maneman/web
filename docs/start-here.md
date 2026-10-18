@@ -40,12 +40,15 @@ this map, or when the map names something that no longer exists.
   `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`, `site-notices`,
   `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
   `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each), `drive-check` (Google's drives either side of a start), `public-booking-code` (a site booking's discount code), `new-number-state` (what a new number booking is answered),
-  `day-plans` (each technician's days as booking plans them)
+  `day-plans` (each technician's days as booking plans them), `packages` (each package and its figures, and when its
+  visits fall due), `packages-console` (a package added, changed, ordered or deleted in the console), `client-prices`
+  (a first fit priced by the hair system made to the client, and any visit's price from its parts)
 - **Rules** (`src/policy/`): `booking`, `slot-times`, `site-booking`, `moving-a-visit`, `prepayment`, `services`,
-  `visit-length`, `day-plan` (where a visit can start in a technician's day)
+  `visit-length`, `day-plan` (where a visit can start in a technician's day), `packages` (a visit's price from its
+  parts, and a package's bounds)
 - **Data** (`src/config/`): `booking`, `scheduling`, `visit-types`
 - **Routes** (`src/routes/`): `client/booking`, `client/changes`, `public/consultations`, `public/forms`,
-  `ops/slot-times`, `ops/services`, `ops/waitlist`
+  `ops/slot-times`, `ops/services`, `ops/packages`, `ops/client-package`, `ops/waitlist`
 - **Screens:** `apps/app/src/booking/`, `site/src/pages/book.astro`
 - **Tests:** `test/worker/booking/`, `e2e/app/booking.e2e.ts`, `e2e/book.e2e.ts`, `e2e/ops/book-visit.e2e.ts`,
   `e2e/ops/waitlist.e2e.ts`
@@ -146,7 +149,7 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/money/`): `payments`, `payment-links`, `payment-links-paid`, `client-payments`,
   `client-billing`, `refunds`, `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
   `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `discount-code-figures`, `requested-codes`,
-  `day-money`, `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `city-prices`,
+  `day-money`, `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `hair-system-prices` (what each hair system sells for), `city-prices`,
   `razorpay-catch-up`, `razorpay-events` (Razorpay's events, applied from their queue), `custom-order-links`,
   `custom-order-refunds`, `payment-refunds`, `upi-payments` (a visit paid by UPI at the visit, recorded by ops)
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
@@ -166,7 +169,7 @@ this map, or when the map names something that no longer exists.
 
 ### Clients
 
-- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-notes`,
+- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `client-notes`,
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`
 - **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `home-prompt`
 - **Vendor** (`src/providers/`): `geocode/`

@@ -1,0 +1,38 @@
+/* A price on its line (./PriceRow.tsx): the price in force, those to come beneath it, muted. */
+
+.prices {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.toCome {
+  color: var(--ui-text-muted);
+}
+
+.from {
+  font-size: var(--fs-14);
+  color: var(--ui-text-muted);
+}
+
+.list {
+  display: grid;
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0 var(--sp-20) var(--sp-12) calc(var(--setting-label-width) + var(--sp-36));
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-12);
+  font-size: var(--fs-14);
+  color: var(--ui-text-muted);
+}
+
+@media (max-width: 760px) {
+  .list {
+    padding-left: var(--sp-20);
+  }
+}

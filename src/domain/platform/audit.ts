@@ -140,6 +140,13 @@ export const AUDIT_ACTIONS = [
   "service.reorder",
   "service.retire",
   "service.restore",
+  // Packages (docs/decisions/0211-packages.md): one added, changed, put in another order or deleted, and the package
+  // ops put a client on.
+  "package.add",
+  "package.change",
+  "package.reorder",
+  "package.delete",
+  "client.package",
   // Ops putting a client's service-visit credits right by hand (docs/decisions/0068-a-paid-hold-is-kept.md).
   "credit.adjust",
   // Ops calling a client about a move they had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).

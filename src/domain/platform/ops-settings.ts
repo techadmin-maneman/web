@@ -27,7 +27,6 @@ import {
   type OpsValues,
   type SettingValue,
 } from "../../policy/ops-settings.ts";
-import type { Cycles } from "../../config/pieces.ts";
 import type { PaymentHold } from "../../config/scheduling.ts";
 import type { NextVisitDays } from "../../policy/next-visit.ts";
 import type { Charges } from "../../policy/moving-a-visit.ts";
@@ -71,7 +70,6 @@ export interface OpsInputs {
   readonly addressUnlockHour: number;
   readonly reminderHour: number;
   readonly taskSlaHours: Slas;
-  readonly pieceCycleDays: Cycles;
   readonly nextVisitDays: NextVisitDays;
   readonly paymentHold: PaymentHold;
   readonly technicianWork: TechnicianWorkFigures;
@@ -151,7 +149,6 @@ function shape(values: OpsValues): OpsInputs {
     addressUnlockHour: values.address_unlock_hour,
     reminderHour: values.reminder_hour,
     taskSlaHours: values.task_sla_hours,
-    pieceCycleDays: values.piece_cycle_days,
     nextVisitDays: values.booking_days,
     paymentHold: values.payment_hold,
     technicianWork: values.technician_work,
