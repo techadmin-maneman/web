@@ -115,7 +115,8 @@ export const purchasing = {
     invoice: "Supplier invoice (optional)",
     rate: (currency: string) => `Rupees to one ${currency}`,
     freight: "Freight, Rs.",
-    duty: "Duty, Rs.",
+    // The IGST paid on an import is claimed back as input credit, so only customs duty goes into the stock's cost.
+    duty: "Customs duty, without IGST, Rs.",
     clearing: "Clearing, Rs.",
     send: "Record receipt",
     done: "Received. Print the labels on the Stock page.",

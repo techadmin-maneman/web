@@ -24,10 +24,10 @@ describe("prepayment", () => {
       expect(invoiceHold(REPLACEMENT, { ...PAID, soldFor: null })).toBe("price_unknown");
     });
 
-    // Interim until the CA rules how a credit visit is invoiced (open point 14).
-    it("never issues an invoice for a visit a referral credit paid for, whatever it totals", () => {
-      expect(invoiceHold(REPLACEMENT, { ...PAID, paidWithCredit: true })).toBe("paid_with_credit");
-      expect(invoiceHold(0, { ...PAID, soldFor: 0, paidWithCredit: true })).toBe("paid_with_credit");
+    // The CA: a visit given free on a credit is a zero-priced invoice (open point 14).
+    it("issues the zero-priced invoice of a visit a credit paid for, and holds one that totals anything else", () => {
+      expect(invoiceHold(0, { ...PAID, soldFor: 0, paidWithCredit: true })).toBeNull();
+      expect(invoiceHold(REPLACEMENT, { ...PAID, soldFor: 0, paidWithCredit: true })).toBe("price_differs");
     });
 
     it("never issues one for a visit booked on a credit the client no longer had, until ops decide the charge", () => {

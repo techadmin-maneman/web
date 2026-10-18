@@ -4834,7 +4834,7 @@ export interface components {
             document_id: string | null;
             /** @description Whether this visit is billed at all: false for a free visit, and for one that is not finished. With no document_id and this false, no invoice will ever exist. */
             invoice_expected: boolean;
-            /** @description Why a finished visit's invoice is held back rather than still to come (ADR 0070): credit, a visit credit paid for it and its invoice waits on the accountant's ruling; checking, a draft ops are checking before it is sent. Null otherwise. */
+            /** @description Why a finished visit's invoice is not here yet (ADR 0070): credit, a free-visit credit paid for it and its zero-priced invoice is still to come; checking, a draft ops are checking before it is sent. Null otherwise. */
             invoice_held: ("credit" | "checking") | null;
             /** @description The client was not home for this visit: how long we waited, and what ops ruled. Null otherwise. */
             no_show: components["schemas"]["NoShowNote"] | null;

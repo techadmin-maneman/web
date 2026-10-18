@@ -10,14 +10,11 @@
 // can still be corrected or deleted, and ops are told
 // (docs/decisions/0070-vendor-correctness.md).
 
-/** Why an invoice raised in Books stays a draft rather than being issued. */
+/**
+ * Why an invoice raised in Books stays a draft rather than being issued. A visit a free-visit credit paid for was sold
+ * for nothing, and its invoice is a zero-priced line, issued like any other (the CA, docs/open-points.md, item 14).
+ */
 export type InvoiceHold =
-  /**
-   * A referral credit paid for the visit. How such a visit is invoiced waits
-   * for the CA: a zero-priced line, a discount, or no invoice at all
-   * (docs/open-points.md, item 14).
-   */
-  | "paid_with_credit"
   /**
    * Booked on a referral credit the client no longer had by then, so nothing paid for it, and ops were told to decide
    * the charge (src/domain/booking/bookings.ts). The invoice waits on their decision.
@@ -38,7 +35,6 @@ export interface SoldVisit {
 
 /** Why the invoice may not be issued; null when it may. An issued invoice is undone only by a credit note. */
 export function invoiceHold(invoiceTotal: number, visit: SoldVisit): InvoiceHold | null {
-  if (visit.paidWithCredit) return "paid_with_credit";
   if (visit.creditMissing) return "credit_missing";
   if (visit.soldFor === null) return "price_unknown";
   if (invoiceTotal !== visit.soldFor) return "price_differs";

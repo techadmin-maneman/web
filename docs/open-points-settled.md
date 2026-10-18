@@ -6,6 +6,7 @@ The points of `docs/open-points.md` that are settled, each with its answer, its 
 
 Each keeps its number. Where something follows from a ruling and is still owed, it is an open point of its own, named here.
 
+- **14. The invoice of a visit a credit paid for.** Settled 18 October 2026: the CA advised that a visit given free needs no tax invoice, and the owner chose a zero-priced one for the record. The invoice pass raises it at Rs. 0 as "Complimentary service visit" and sends it (`src/domain/books/books-invoices.ts`).
 - **28. The job-sheet template.** Settled 15 October 2026: the owner approved the checklists and partial reasons in `src/config/job-sheet.ts` as the launch lists; ops change them in Settings · Job sheet.
 - **7. Late fees, the refund route, a late-cancelled credit.** Settled 5 October 2026: the owner keeps C8, reached from C7's "Cancel the visit instead", as built; no designer's screen is owed.
 - **45. Words the site adds where no design draws any.** Settled 5 October 2026: the owner approved the booking form's, the confirmation's and the film's lines as they stand (`site/src/content/referral.ts`, `site/src/content/site.ts`).

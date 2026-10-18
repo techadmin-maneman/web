@@ -17,7 +17,7 @@ interface RefundLeft {
 }
 
 /** Why a visit's invoice is held as a draft in Books. */
-export type DraftHeld = "price_differs" | "price_unknown" | "paid_with_credit" | "credit_missing";
+export type DraftHeld = "price_differs" | "price_unknown" | "credit_missing";
 
 export const ALERT_WORDS = {
   // Bookings and visits.
@@ -147,7 +147,6 @@ export const ALERT_WORDS = {
     ({
       price_differs: `Correct invoice ${a.invoice} in Books to ${rupees(a.soldFor)}, what the visit was sold for: it totals ${rupees(a.total)}, so it is held as a draft until it matches.`,
       price_unknown: `Check invoice ${a.invoice}'s ${rupees(a.total)} in Books and send it there: nothing here says what the visit was sold for.`,
-      paid_with_credit: `Leave invoice ${a.invoice} as a draft in Books: the visit was paid with a referral credit, and how that is invoiced waits for the accountant.`,
       credit_missing: `Charge, send or delete draft invoice ${a.invoice} in Books: the visit was booked on a referral credit the client no longer had, so nothing paid for it.`,
     })[a.held] + ` Visit ${a.visit}.`,
   invoice_not_sent: (a: { readonly invoice: string; readonly visit: string }) =>
