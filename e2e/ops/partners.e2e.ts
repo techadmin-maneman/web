@@ -7,6 +7,7 @@ import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { HELD, REFERRERS, TASKS_READ_ON } from "./fixtures.ts";
 import { partners as copy } from "../../apps/ops/src/content/partners.ts";
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 
 const SALON = "7b0c8e3a-4d5f-4a6b-8c7d-2e3f4a5b6c7d";
 
@@ -43,8 +44,18 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }
 
+const NAME = "Looks Salon, Sector 29";
+
 const row = (page: Page) =>
-  page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Looks Salon, Sector 29" }) });
+  page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open(NAME) }) });
+
+async function recordOf(page: Page) {
+  await page.getByRole("button", { name: copy.open(NAME) }).click();
+  return page.getByRole("dialog", { name: NAME });
+}
+
+/** The terms as they stand, with the one changed. */
+const TERMS = { name: NAME, friend_visits: 2, valid_days: 180, commission: 150000, discount_code: null };
 
 test("lists each partner with its link, what its friend gets, its commission and what came through it", async ({
   page,
@@ -59,11 +70,10 @@ test("lists each partner with its link, what its friend gets, its commission and
     "2",
     "Rs. 3,000",
     "Rs. 1,500",
-    "QR codeEditPause",
   ]);
 });
 
-test("adds a partner in rupees once it is reviewed", async ({ page }) => {
+test("adds a partner in rupees", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "POST /api/referral-channels": (route: Route) => {
@@ -72,16 +82,13 @@ test("adds a partner in rupees once it is reviewed", async ({ page }) => {
     },
   });
   await page.getByRole("button", { name: copy.add }).click();
-  await page.getByRole("textbox", { name: copy.form.name, exact: true }).fill("Northside Gym");
-  await page.getByLabel(copy.form.friendVisits).fill("1");
-  await page.getByLabel(copy.form.validDays).fill("90");
-  await page.getByLabel(copy.form.commission).fill("1000");
-  await page.getByRole("button", { name: copy.form.next }).click();
-  await expect(page.getByText(copy.check.friendNew("1 visit · 90 days"))).toBeVisible();
-  await expect(page.getByText(copy.check.commissionNew("Rs. 1,000"))).toBeVisible();
-  expect(sent).toBeNull();
-  await page.getByRole("button", { name: copy.check.send }).click();
-  await expect(page.getByRole("status")).toHaveText(copy.done.added);
+  const add = page.getByRole("dialog", { name: copy.form.addTitle });
+  await add.getByRole("textbox", { name: copy.form.name, exact: true }).fill("Northside Gym");
+  await add.getByLabel(copy.form.friendVisits).fill("1");
+  await add.getByLabel(copy.form.validDays).fill("90");
+  await add.getByLabel(copy.form.commission).fill("1000");
+  await add.getByRole("button", { name: copy.form.add, exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText(copy.added);
   expect(sent).toEqual({
     name: "Northside Gym",
     friend_visits: 1,
@@ -91,7 +98,7 @@ test("adds a partner in rupees once it is reviewed", async ({ page }) => {
   });
 });
 
-test("changes a partner’s commission, and shows only what changes", async ({ page }) => {
+test("changes a partner’s commission where it reads, the other terms sent as they stand", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "PATCH /api/referral-channels/{id}": (route: Route) => {
@@ -99,22 +106,14 @@ test("changes a partner’s commission, and shows only what changes", async ({ p
       return json(PARTNERS)(route);
     },
   });
-  await row(page)
-    .getByRole("button", { name: copy.editLabel("Looks Salon, Sector 29") })
-    .click();
-  await page.getByLabel(copy.form.commission).fill("2000");
-  await page.getByRole("button", { name: copy.form.next }).click();
-  await expect(page.getByText(copy.check.commission("Rs. 1,500", "Rs. 2,000"))).toBeVisible();
-  await expect(page.getByText(/^Friend gets: /)).toHaveCount(0);
-  await page.getByRole("button", { name: copy.check.send }).click();
-  await expect(page.getByRole("status")).toHaveText(copy.done.saved);
-  expect(sent).toEqual({
-    name: "Looks Salon, Sector 29",
-    friend_visits: 2,
-    valid_days: 180,
-    commission: 200000,
-    discount_code: null,
-  });
+  const record = await recordOf(page);
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.rows.commission}` }).click();
+  const commission = record.getByRole("textbox", { name: copy.rows.commission });
+  await expect(commission).toHaveValue("1500");
+  await commission.fill("2000");
+  await commission.press("Enter");
+  await expect(record.getByRole("status")).toHaveText(EDITING.saved);
+  expect(sent).toEqual({ ...TERMS, commission: 200000 });
 });
 
 test("pauses a partner once it is confirmed", async ({ page }) => {
@@ -125,27 +124,24 @@ test("pauses a partner once it is confirmed", async ({ page }) => {
       return json(PARTNERS)(route);
     },
   });
-  await row(page)
-    .getByRole("button", { name: copy.pauseLabel("Looks Salon, Sector 29") })
-    .click();
-  await expect(page.getByText(copy.check.pauseLine)).toBeVisible();
-  await page.getByRole("button", { name: copy.check.send }).click();
-  await expect(page.getByRole("status")).toHaveText(copy.done.paused);
-  expect(sent).toEqual({ paused: true });
+  const record = await recordOf(page);
+  await record.getByRole("button", { name: copy.pausing.label(NAME) }).click();
+  await expect(record.getByText(copy.pausing.warning(NAME))).toBeVisible();
+  await record.getByRole("button", { name: copy.pausing.confirm, exact: true }).click();
+  await expect.poll(() => sent).toEqual({ paused: true });
 });
 
 test("downloads a partner’s link as a QR code to print", async ({ page }) => {
   await open(page);
+  const record = await recordOf(page);
   const saved = page.waitForEvent("download");
-  await row(page)
-    .getByRole("button", { name: copy.qrLabel("Looks Salon, Sector 29") })
-    .click();
+  await record.getByRole("button", { name: copy.qrLabel(NAME) }).click();
   const download = await saved;
   expect(download.suggestedFilename()).toBe("maneman-LSK7P2QX.svg");
   expect(readFileSync(await download.path(), "utf8")).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
 });
 
-test("gives a partner’s friends a discount code, shown in the review", async ({ page }) => {
+test("gives a partner’s friends a discount code, written in capitals", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "PATCH /api/referral-channels/{id}": (route: Route) => {
@@ -153,12 +149,10 @@ test("gives a partner’s friends a discount code, shown in the review", async (
       return json(PARTNERS)(route);
     },
   });
-  await row(page)
-    .getByRole("button", { name: copy.editLabel("Looks Salon, Sector 29") })
-    .click();
-  await page.getByLabel(copy.form.discountCode).fill("salon2k");
-  await page.getByRole("button", { name: copy.form.next }).click();
-  await expect(page.getByText(copy.check.discount(copy.check.none, "SALON2K"))).toBeVisible();
-  await page.getByRole("button", { name: copy.check.send }).click();
-  expect(sent).toMatchObject({ discount_code: "SALON2K" });
+  const record = await recordOf(page);
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.rows.discountCode}` }).click();
+  const code = record.getByRole("textbox", { name: copy.rows.discountCode });
+  await code.fill("salon2k");
+  await code.press("Enter");
+  await expect.poll(() => sent).toEqual({ ...TERMS, discount_code: "SALON2K" });
 });
