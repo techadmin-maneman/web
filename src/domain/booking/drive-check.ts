@@ -2,7 +2,7 @@
 // where the routes provider is on. Every start offered is planned on the free estimate; before one is held, Google
 // drives the road from the stop before it, or from home, and on to the stop after, and the start is held only where
 // both drives, and the time to park, still fit. Where Google cannot answer, the day's ceiling is spent, or a stop has
-// no pin, the estimate stands.
+// no pin, the estimate stands; where Google refuses, ops are told why.
 
 import { minuteOf, type PlanDay, type PlanRules } from "../../policy/day-plan.ts";
 import type { Pin } from "../../lib/geo.ts";
@@ -16,6 +16,10 @@ export interface DriveCheck {
   readonly routes: RoutesProvider;
   readonly alert: Alert;
   readonly settings: Settings;
+  /** Google refused, in its own words: ops are told, once, until it answers again. */
+  readonly refused: (detail: string) => Promise<void>;
+  /** Google answered: an alert about its refusing closes. */
+  readonly answered: () => Promise<void>;
 }
 
 const minutesOf = (seconds: number): number => Math.ceil(seconds / 60);
@@ -39,7 +43,11 @@ export async function drivesFit(
   if (visit.pin === null || (from === null && to === null)) return true;
   const points = [...(from === null ? [] : [from]), visit.pin, ...(to === null ? [] : [to])];
   const answer = await driveThrough(db, check, { points, at: { now: plan.now, settings: check.settings } });
-  if (!answer.ok) return true;
+  if (!answer.ok) {
+    if (answer.detail.startsWith("HTTP 4")) await check.refused(answer.detail);
+    return true;
+  }
+  await check.answered();
   const parking = rules.drive.parking;
   const [first, second] = answer.legs;
   if (from !== null && first !== undefined) {

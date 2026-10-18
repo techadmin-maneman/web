@@ -264,6 +264,9 @@ export const ALERT_WORDS = {
   turnstile_unavailable: (a: { readonly failed: number; readonly detail: string }) =>
     `Check Cloudflare's status and the API's Turnstile secret: Turnstile could not check ${String(a.failed)} ` +
     `visitors in the last hour (${a.detail}), so their bookings, try-ons and app logins were turned away.`,
+  routes_refused: (a: { readonly detail: string }) =>
+    `Check the Google key, its APIs and its quotas (provisioning, step 13a): Google refused the drive times ` +
+    `(${a.detail}), so starts are held on our estimate alone.`,
   google_refused: (a: { readonly detail: string }) =>
     `Check the Google key, its APIs and its quotas (provisioning, step 13): Google refused the address search ` +
     `(${a.detail}), so clients' addresses get no pin.`,

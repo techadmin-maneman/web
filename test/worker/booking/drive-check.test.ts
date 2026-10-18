@@ -22,21 +22,38 @@ const dayAt = (lat: number): PlanDay => ({
   away: [],
 });
 
-/** Google, answering every drive in `minutes`, or failing. */
-function google(minutes: number | null): { check: DriveCheck; asked: number[] } {
+/** Google, answering every drive in `minutes`, failing, or refusing with `refusal`; what ops were told. */
+function google(
+  minutes: number | null,
+  refusal: string | null = null,
+): { check: DriveCheck; asked: number[]; told: string[] } {
   const asked: number[] = [];
+  const told: string[] = [];
   const routes: RoutesProvider = {
     route: (stops) => {
       asked.push(stops.length);
       return Promise.resolve(
         minutes === null
-          ? { ok: false, detail: "down" }
+          ? { ok: false, detail: refusal ?? "down" }
           : { ok: true, legs: stops.slice(1).map(() => ({ seconds: minutes * 60, meters: 1000 })), polyline: null },
       );
     },
     map: () => Promise.resolve({ ok: false, detail: "no map here" }),
   };
-  return { check: { routes, alert: () => Promise.resolve(), settings: LOCAL_SETTINGS }, asked };
+  const check: DriveCheck = {
+    routes,
+    alert: () => Promise.resolve(),
+    settings: LOCAL_SETTINGS,
+    refused: (detail) => {
+      told.push(`refused: ${detail}`);
+      return Promise.resolve();
+    },
+    answered: () => {
+      told.push("answered");
+      return Promise.resolve();
+    },
+  };
+  return { check, asked, told };
 }
 
 beforeEach(async () => {
@@ -64,5 +81,19 @@ describe("Google's drives", () => {
     const unpinned = google(30);
     expect(await drivesFit(env.DB, unpinned.check, plan, { minutes: 60, pin: null, time: "11:50" })).toBe(true);
     expect(unpinned.asked).toEqual([]);
+  });
+
+  it("tell ops why Google refused, still holding on the estimate, and that it answers again", async () => {
+    const plan = { day: dayAt(28.45), rules: RULES, now: NOW };
+    const visit = { minutes: 60, pin: { lat: 28.47, lng: 77.05 }, time: "11:50" };
+    const blocked = google(null, "HTTP 403: PERMISSION_DENIED, Requests to this API are blocked.");
+    expect(await drivesFit(env.DB, blocked.check, plan, visit)).toBe(true);
+    expect(blocked.told).toEqual(["refused: HTTP 403: PERMISSION_DENIED, Requests to this API are blocked."]);
+    const down = google(null);
+    await drivesFit(env.DB, down.check, plan, visit);
+    expect(down.told).toEqual([]);
+    const back = google(5);
+    await drivesFit(env.DB, back.check, plan, visit);
+    expect(back.told).toEqual(["answered"]);
   });
 });
