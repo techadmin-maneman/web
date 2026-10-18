@@ -1,16 +1,24 @@
-// The bar above the board while a job is in hand: what is moving and how much of a day it takes, and the keyboard's way
-// to a destination, a list of the windows it would land in on the rows on screen, nearest first (ADR 0120).
+// The bar above the board while a job is in hand: what is moving and how much of a day it takes, and where it can go,
+// a list of the technicians' days on screen with room for it, each from its first free start, nearest first (ADR 0120).
+// The start itself is chosen in the move's sheet (./MovePicker.tsx).
 
 import { Field, Select } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
-import { shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useState, type Ref } from "react";
-import type { BoardRow, BookingWindow } from "../api.ts";
+import type { BoardRow, Room } from "../api.ts";
 import { dispatch } from "../content.ts";
 import shared from "./dispatch.module.css";
 import styles from "./move-bar.module.css";
-import type { InHand } from "./Grid.tsx";
-import { nameOf, type Target, windowWord } from "./job.ts";
+import { nameOf, type Job, type Target } from "./job.ts";
+
+/** A job in hand, and the starts each technician's day would take it at; null while the board is asking. */
+export interface InHand {
+  readonly job: Job;
+  readonly startsAt: (technicianId: string, date: string) => readonly Room["starts"][number][] | null;
+  /** As the crow flies, from the job to the technician's nearest other visit that day; null where unknown. */
+  readonly kmAt: (technicianId: string, date: string) => number | null;
+}
 
 /** "a first fit, 2 slots": the job's kind and the slots it takes. */
 function sizeOf(inHand: InHand): string {
@@ -31,18 +39,23 @@ interface Destination {
 /** The nearest first; a day with no distance after every one with, in the board's order. */
 const nearestFirst = (a: Destination, b: Destination) => (a.km ?? Infinity) - (b.km ?? Infinity);
 
-/** Every window the job would land in, on the rows shown, the nearest technician's day first. */
+/** Every technician's day on the rows shown with room for the job, from its first free start, the nearest first. */
 function destinationsOf(inHand: InHand, rows: readonly BoardRow[], dates: readonly string[]): Destination[] {
   return rows
     .flatMap((technician) =>
-      dates.flatMap((date) => {
+      dates.flatMap((date): Destination[] => {
+        const [first] = inHand.startsAt(technician.technician_id, date) ?? [];
+        if (first === undefined) return [];
         const km = inHand.kmAt(technician.technician_id, date);
-        return (inHand.windowsAt(technician.technician_id, date) ?? []).map((window: BookingWindow) => ({
-          key: `${technician.technician_id}/${date}/${window}`,
-          target: { technician, date, window },
-          label: dispatch.landing.listOption(technician.name, shortDate(date), windowWord(window), km),
-          km,
-        }));
+        const from = dispatch.landing.from(indiaClock(first.starts_at));
+        return [
+          {
+            key: `${technician.technician_id}/${date}`,
+            target: { technician, date, window: first.window },
+            label: dispatch.landing.listOption(technician.name, shortDate(date), from, km),
+            km,
+          },
+        ];
       }),
     )
     .sort(nearestFirst);

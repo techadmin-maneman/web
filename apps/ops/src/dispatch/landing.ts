@@ -6,7 +6,7 @@ import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import type { Board, Moved, Proposed } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
-import { idOf, nameOf, personOf, shownOf, typeOf, windowWord, type Job, type Target } from "./job.ts";
+import { atOf, idOf, nameOf, personOf, shownOf, typeOf, type Job, type Target } from "./job.ts";
 
 /** A line over the board: what a move did, or why it was refused. A call still to make carries its move. */
 export interface Notice {
@@ -41,7 +41,7 @@ export function doneNotice(job: Job, to: Target, moved: Moved): Notice {
 export function askedNotice(job: Job, to: Target, proposed: Proposed): Notice {
   const copy = dispatch.landing.asked;
   const person = personOf(job);
-  const when = `${shortDate(to.date)}, ${windowWord(to.window)}`;
+  const when = `${shortDate(to.date)}, ${atOf(to)}`;
   if (proposed.client_notice === "call" && person !== null) {
     return { tone: "done", text: copy.call(person.name, phoneWords(person.mobile), when), call: null };
   }
@@ -52,9 +52,9 @@ export function askedNotice(job: Job, to: Target, proposed: Proposed): Notice {
 export function moveRefusal(job: Job, to: Target, code: string): string {
   const copy = dispatch.landing;
   if (code === "past_day") return copy.pastDay(shortDate(to.date));
-  if (code === "window_passed") return copy.windowPassed(shortDate(to.date), windowWord(to.window));
+  if (code === "window_passed") return copy.windowPassed(shortDate(to.date), atOf(to));
   if (code === "blackout") return copy.blackout(shortDate(to.date));
-  if (code === "clash") return copy.clash(to.technician.name, shortDate(to.date), windowWord(to.window));
+  if (code === "clash") return copy.clash(to.technician.name, shortDate(to.date), atOf(to));
   if (code === "on_leave") return copy.onLeave(to.technician.name, shortDate(to.date));
   if (code === "back_to_back") return copy.backToBack(to.technician.name);
   if (code === "other_city") return copy.otherCity(to.technician.name);
@@ -62,7 +62,7 @@ export function moveRefusal(job: Job, to: Target, code: string): string {
   if (code === "does_not_fit") {
     const type = typeOf(job);
     const typeName = type === null ? nameOf(job) : dispatch.typeNames[type];
-    return copy.doesNotFit(typeName, to.technician.name, shortDate(to.date), windowWord(to.window));
+    return copy.doesNotFit(typeName, to.technician.name, shortDate(to.date), atOf(to));
   }
   const errors: Readonly<Record<string, string | undefined>> = copy.errors;
   return errors[code] ?? copy.errors.unknown;

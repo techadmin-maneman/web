@@ -1,6 +1,6 @@
 // The dispatch board: active technicians down, seven days across, and the jobs nobody holds in a tray
-// (src/policy/dispatch.ts). A job is moved by dragging it or from its drawer: the board offers only the windows it
-// would land in and asks a reason, and the server checks again (docs/decisions/0034-clash-check.md,
+// (src/policy/dispatch.ts). A job is moved from its drawer: the board lists only the technicians' days it would land on,
+// the sheet its starts there and a reason, and the server checks again (docs/decisions/0034-clash-check.md,
 // 0069-dispatch-under-concurrency.md). The address keeps the week, city, search and visit (./address.ts).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -12,10 +12,10 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { useAddressKeeps } from "./address.ts";
 import styles from "./dispatch-screen.module.css";
-import { Grid, type InHand } from "./Grid.tsx";
+import { Grid } from "./Grid.tsx";
 import { dispatchAsked } from "../route.ts";
 import { idOf, type Job } from "./job.ts";
-import { MoveBar } from "./MoveBar.tsx";
+import { MoveBar, type InHand } from "./MoveBar.tsx";
 import { MovePicker } from "./MovePicker.tsx";
 import { Toolbar } from "./Toolbar.tsx";
 import { Tray } from "./Tray.tsx";
@@ -26,7 +26,7 @@ import { NoticeLine } from "./NoticeLine.tsx";
 import { useOver, type Over } from "./over.ts";
 import { OpenedDrawer } from "./OpenedDrawer.tsx";
 import { DayRoutes } from "./DayRoutes.tsx";
-import { isBlackout, kmFrom, startsFrom, windowsFrom } from "./rooms.ts";
+import { isBlackout, kmFrom, startsFrom, daysFrom } from "./rooms.ts";
 import { useAskedVisit, useClientCalls } from "./useBoardCalls.ts";
 import { useMove, type Move } from "./useMove.ts";
 
@@ -166,7 +166,7 @@ export function DispatchScreen() {
   const { settled, rows, found } = useSearch(board, find);
   const inHand = useMemo(
     (): InHand | null =>
-      choosing && move !== null ? { job: move.job, windowsAt: windowsFrom(rooms), kmAt: kmFrom(rooms) } : null,
+      choosing && move !== null ? { job: move.job, startsAt: daysFrom(rooms), kmAt: kmFrom(rooms) } : null,
     [choosing, move, rooms],
   );
   const chosen = move?.to ?? null;
@@ -201,24 +201,15 @@ export function DispatchScreen() {
                 <Grid
                   board={board}
                   rows={rows}
-                  inHand={inHand}
                   found={found}
                   onOpen={open}
-                  onTake={access.mayCall("POST /api/dispatch/move") ? take : null}
-                  onLand={land}
                   onRoutes={access.mayCall("GET /api/dispatch/day") ? set.routesOn : null}
                 />
               )}
             </div>
           )}
         </div>
-        {board !== null && (
-          <Tray
-            unassigned={board.unassigned}
-            onOpen={open}
-            onTake={access.mayCall("POST /api/dispatch/assign") ? take : null}
-          />
-        )}
+        {board !== null && <Tray unassigned={board.unassigned} onOpen={open} />}
       </div>
 
       <BoardOverlays

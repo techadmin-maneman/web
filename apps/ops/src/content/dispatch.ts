@@ -207,8 +207,8 @@ export const dispatch = {
     call: (name: string, mobile: string) => `${name} isn’t on WhatsApp updates. Call ${mobile} with the new time.`,
     /** After the line, where the visit was paid for: prepaid, or with the client's credit. */
     carries: "Their payment carries over.",
-    /** A change of technician alone leaves the client's window as it was. */
-    sameTime: (job: string) => `${job} keeps the same window. No message sent.`,
+    /** A change of technician alone leaves the client's time as it was. */
+    sameTime: (job: string) => `${job} keeps the same time. No message sent.`,
     /** A client erased: nobody is left to tell. */
     noClient: "No client to notify.",
     /**
@@ -252,7 +252,7 @@ export const dispatch = {
     /** A drive longer than the gap between two visits. */
     tight: (minutes: number, gap: number) => `${String(minutes)} min drive, ${String(Math.max(gap, 0))} min gap`,
   },
-  /** Choosing where a job lands, which the design does by dragging. */
+  /** Choosing where a job lands: a technician's day from the list, then a start. */
   landing: {
     /** The bar above the board while a job is in hand, with the slot-size hint the brief asks for. */
     moving: (job: string, size: string) => `Moving ${job}, ${size}.`,
@@ -260,17 +260,14 @@ export const dispatch = {
     size: (type: string, slots: number) => `${type}, ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
     /** While the board asks where the job would fit. */
     checking: "Finding space…",
-    /** A day with no window the job would land in; the board offers nothing to drop on. */
-    noRoom: "No room",
-    /** Each window of each technician's day with room, while a job is in hand. */
-    choose: (job: string, technician: string, date: string, window: string) =>
-      `Move ${job} to ${technician}, ${date}, ${window}`,
-    /** The brief's "keyboard alternative: choose a destination from a list". */
-    list: "Or choose from a list",
-    listPrompt: "A technician, day and window",
+    /** Where it can go: a technician's day with room. */
+    list: "Move to",
+    listPrompt: "A technician and day",
+    /** A day's first free start: "from 9:30 am". */
+    from: (time: string) => `from ${time}`,
     /** With how far the job is from that technician's nearest other visit that day, where known. */
-    listOption: (technician: string, date: string, window: string, km: number | null) =>
-      [technician, date, window, km === null ? null : distance(km * 1000)].filter(Boolean).join(" · "),
+    listOption: (technician: string, date: string, from: string, km: number | null) =>
+      [technician, date, from, km === null ? null : distance(km * 1000)].filter(Boolean).join(" · "),
     listGo: "Choose",
     // A week with nowhere the job fits.
     nowhere: "No room this week.",
@@ -280,7 +277,7 @@ export const dispatch = {
       messaged: (job: string) => `Moved. ${job} gets the new time on WhatsApp.`,
       call: (job: string, name: string, mobile: string) =>
         `${job} moved. ${name} isn’t on WhatsApp updates: call ${mobile} with the new time.`,
-      unchanged: (job: string, technician: string) => `${job} is now with ${technician}. Same window.`,
+      unchanged: (job: string, technician: string) => `${job} is now with ${technician}. Same time.`,
       noClient: (job: string) => `${job} moved. No client to notify.`,
     },
     /** A client asked to confirm a move to another day: on WhatsApp, or by ops' call. */
@@ -306,12 +303,10 @@ export const dispatch = {
     // The board draws no way past the geofence.
     letIn: (technician: string, job: string) => `${technician} can check in to ${job}’s visit now.`,
     /**
-     * A refusal names the technician and the window it asked for: the clash check
-     * runs before anything is written (ADR 0034), and the API answers with the
-     * code alone.
+     * A refusal names the technician and the time it asked for: the check runs
+     * before anything is written (ADR 0034), and the API answers with the code alone.
      */
-    clash: (technician: string, date: string, window: string) =>
-      `${technician} already has a job on ${date}, ${window}.`,
+    clash: (technician: string, date: string, time: string) => `${technician} already has a job on ${date}, ${time}.`,
     /** Leave is named as leave, so ops know the day is off rather than merely full. */
     onLeave: (technician: string, date: string) => `${technician} is away on ${date}.`,
     /** A technician never takes two of a client's visits in a row (ADR 0111). */
@@ -319,12 +314,12 @@ export const dispatch = {
       `${technician} has this client’s visit just before or after. Choose someone else.`,
     /** A move lands only at a start still ahead. */
     pastDay: (date: string) => `${date} has passed. Choose a later day.`,
-    windowPassed: (date: string, window: string) => `Too late for ${date}, ${window}. Choose a later window.`,
+    windowPassed: (date: string, time: string) => `Too late for ${date}, ${time}. Choose a later time.`,
     /** The day was blacked out after the board offered it; picking it again asks for the reason. */
     blackout: (date: string) => `${date} is a closed day. Choose it again to give a reason.`,
-    /** The window is free, but the visit's block has no room in it. */
-    doesNotFit: (type: string, technician: string, date: string, window: string) =>
-      `${type}: no room in ${technician}’s ${window} on ${date}.`,
+    /** Nothing holds the time, but the technician's day has no room for the visit there, with its drives. */
+    doesNotFit: (type: string, technician: string, date: string, time: string) =>
+      `${type}: no room in ${technician}’s day at ${time} on ${date}.`,
     /** Another ops user moved the job while this one was choosing. */
     superseded: (job: string, where: string) => `${job} was just moved by someone else. It’s now ${where}.`,
     supersededWhere: (technician: string, date: string, time: string) => `with ${technician}, ${date}, ${time}`,
@@ -338,7 +333,7 @@ export const dispatch = {
     notTrained: (technician: string) => `${technician} isn’t trained to fit.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "That move isn’t possible. Choose another technician or window.",
+      invalid_request: "That move isn’t possible. Choose another technician or time.",
       not_found: "This visit no longer exists.",
       /** The technician began the visit after the board was read. */
       in_progress: "The technician has started this visit. It can’t be moved.",

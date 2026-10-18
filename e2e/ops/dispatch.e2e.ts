@@ -4,7 +4,8 @@ import {
   MOVE_IT,
   READ_BOARD,
   ROHIT_BLOCK,
-  TO_SANDEEP,
+  listed,
+  moveTo,
   ROHIT_JOB,
   open,
   press,
@@ -72,30 +73,35 @@ test("marks leave over part of a day with its hours, and not as a day away", asy
   await expect(page.getByText("Sandeep Yadav is away on Tue 23 Sep")).toHaveCount(0);
 });
 
-// The brief: "Drop it on a cell with room", with "a hint that shows its slot size".
-test("says how much of a day the job takes, and offers only the windows it would land in", async ({ page }) => {
+// A visit is moved from its drawer to a technician's day from the list, then a start; the board is not dragged on.
+test("says how much of a day the job takes, and lists only the technicians' days it would land on", async ({
+  page,
+}) => {
   await open(page);
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
 
   await expect(page.getByText("Moving Rohit M., service visit, 1 slot.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Move Rohit M. to Arjun Negi, Sun 21 Sep, morning" })).toBeVisible();
-  // Faizan is away on the Sunday; Sandeep's Saturday afternoon is full.
-  await expect(page.getByRole("button", { name: /Move Rohit M\. to Faizan Ali, Sun 21 Sep/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Move Rohit M\. to Faizan Ali, Tue 23 Sep/ })).toHaveCount(3);
-  await expect(page.getByRole("button", { name: "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, afternoon" })).toHaveCount(
-    0,
-  );
-  // Arjun's Tuesday has no room at all, and says so.
-  const arjun = page.getByRole("row", { name: /Arjun Negi/ });
-  await expect(arjun.getByRole("cell").nth(4)).toHaveText(opsCopy.dispatch.landing.noRoom);
+  const days = await listed(page).allInnerTexts();
+  expect(days).toContain("Arjun Negi · Sun 21 Sep · from 9 am");
+  expect(days).toContain("Faizan Ali · Tue 23 Sep · from 9 am");
+  // Faizan is away on the Sunday, and Arjun's Tuesday has no room at all.
+  expect(days.filter((day) => day.startsWith("Faizan Ali · Sun 21 Sep"))).toEqual([]);
+  expect(days.filter((day) => day.startsWith("Arjun Negi · Tue 23 Sep"))).toEqual([]);
+  // Nothing on the board is a drop target.
+  await expect(page.getByRole("button", { name: /^Move Rohit M\. to / })).toHaveCount(0);
+
+  // Sandeep's Saturday afternoon is full: his day's sheet offers the morning and the evening.
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
+  const starts = page.getByRole("dialog").getByLabel(opsCopy.dispatch.move.start).locator("option");
+  await expect(starts).toHaveText(["9 am", "4 pm"]);
 });
 
 test("names leave when the server refuses a move onto a day off", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "on_leave") });
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   await reason(page, "Client asked");
   await press(page, "Move and notify");
 
@@ -143,7 +149,7 @@ test("opens a tray job’s drawer, with the client, Assign and Open client", asy
     `/clients/${VIKRAM.id}/visits`,
   );
   // Nothing is in hand until Assign is pressed.
-  await expect(page.getByRole("button", { name: /^Move Vikram S. to / })).toHaveCount(0);
+  await expect(page.getByLabel(opsCopy.dispatch.landing.list)).toHaveCount(0);
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();

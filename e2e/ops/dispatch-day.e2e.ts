@@ -107,7 +107,6 @@ test("offers a job in hand to the nearest technician’s day first, with how far
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
   const options = page.getByLabel(opsCopy.dispatch.landing.list).locator("option:not([disabled])");
-  await expect(options.first()).toHaveText("Sandeep Yadav · Sat 20 Sep · morning · 2.4 km");
-  await expect(options.nth(2)).toContainText("Faizan Ali · Fri 19 Sep");
-  await expect(options.nth(2)).toContainText("8.1 km");
+  await expect(options.first()).toHaveText("Sandeep Yadav · Sat 20 Sep · from 9 am · 2.4 km");
+  await expect(options.nth(1)).toHaveText("Faizan Ali · Fri 19 Sep · from 9 am · 8.1 km");
 });

@@ -1,7 +1,7 @@
-// The job in hand on the dispatch board (./DispatchScreen.tsx): taken up, landed on a window, sent with a start and a
-// reason. The board first asks where the job would land, and offers only those windows; the server checks again before
-// anything is written (docs/decisions/0034-clash-check.md), and a move from a board gone stale is refused
-// (docs/decisions/0069-dispatch-under-concurrency.md).
+// The job in hand on the dispatch board (./DispatchScreen.tsx): taken up from its drawer, put on a technician's day from
+// the list, sent with a start and a reason. The board first asks where the job would land, and offers only those days;
+// the server checks again before anything is written (docs/decisions/0034-clash-check.md), and a move from a board gone
+// stale is refused (docs/decisions/0069-dispatch-under-concurrency.md).
 
 import { useCallback, useEffect, useRef, type Dispatch, type RefObject, type SetStateAction } from "react";
 import { type Board, type Landing, type MoveReason } from "../api.ts";
@@ -58,7 +58,9 @@ async function sendMove(
   sent: Sent,
   on: OnTheBoard & { readonly setMove: (move: Move | null) => void; readonly askRooms: () => void },
 ): Promise<void> {
-  const { job, to } = held;
+  const { job } = held;
+  // The start chosen names the move in what ops are told.
+  const to = sent.startsAt === null ? held.to : { ...held.to, start: sent.startsAt };
   on.setMove({ ...held, sending: true });
   const landing: Landing = {
     technicianId: to.technician.technician_id,

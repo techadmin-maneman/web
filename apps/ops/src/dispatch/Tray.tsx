@@ -48,26 +48,13 @@ function TrayLines({ each }: { each: Unassigned }) {
 
 type Take = (job: Job, from: HTMLElement) => void;
 
-/**
- * A job to open, and to drag onto a technician for a person who may put it on one.
- * The keyboard way to assign it is in the drawer it opens.
- */
-function TrayJob({ each, onOpen, onTake }: { each: Unassigned; onOpen: Take; onTake: Take | null }) {
+/** A job to open: its drawer assigns it, for a person who may put it on a technician. */
+function TrayJob({ each, onOpen }: { each: Unassigned; onOpen: Take }) {
   const job: Job = { kind: "unassigned", job: each };
   return (
     <Tile
       className={styles.trayJob}
-      draggable={onTake !== null}
       data-appointment={each.appointment_id}
-      onDragStart={
-        onTake === null
-          ? undefined
-          : (event) => {
-              event.dataTransfer.effectAllowed = "move";
-              event.dataTransfer.setData("text/plain", each.appointment_id);
-              onTake(job, event.currentTarget);
-            }
-      }
       onClick={(event) => {
         onOpen(job, event.currentTarget);
       }}
@@ -80,11 +67,9 @@ function TrayJob({ each, onOpen, onTake }: { each: Unassigned; onOpen: Take; onT
 interface Props {
   readonly unassigned: readonly Unassigned[];
   readonly onOpen: Take;
-  /** Null when the person's access does not let them put a job on a technician. */
-  readonly onTake: Take | null;
 }
 
-export function Tray({ unassigned, onOpen, onTake }: Props) {
+export function Tray({ unassigned, onOpen }: Props) {
   const empty = unassigned.length === 0;
   return (
     <aside
@@ -103,7 +88,7 @@ export function Tray({ unassigned, onOpen, onTake }: Props) {
         <ul className={styles.trayList}>
           {unassigned.map((each) => (
             <li key={each.appointment_id}>
-              <TrayJob each={each} onOpen={onOpen} onTake={onTake} />
+              <TrayJob each={each} onOpen={onOpen} />
             </li>
           ))}
         </ul>

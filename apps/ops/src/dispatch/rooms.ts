@@ -1,13 +1,13 @@
 // Where the job in hand would land in the week on screen (./DispatchScreen.tsx), so the board offers only those
-// windows and the starts in each, and the days ops blacked out.
+// technicians' days and the starts on each, and the days ops blacked out.
 
 import { useEffect, useReducer, useState } from "react";
 import { type Room } from "../api.ts";
-import type { InHand } from "./Grid.tsx";
-import { WINDOWS, type Target } from "./job.ts";
+import type { InHand } from "./MoveBar.tsx";
+import type { Target } from "./job.ts";
 import { dispatchApi } from "./dispatch-api.ts";
 
-/** As the server answered; "unknown" if it could not, and every window is offered. */
+/** As the server answered; "unknown" if it could not, and nowhere is offered. */
 type Rooms =
   | { readonly state: "checking" }
   | { readonly state: "known"; readonly rooms: readonly Room[]; readonly blackouts: readonly string[] }
@@ -41,12 +41,11 @@ export function useRooms(inHandId: string | null, weekFrom: string | null): [Roo
   return [rooms, askAgain];
 }
 
-/** The windows each day offers the job in hand: the server's answer; every window if it could not answer. */
-export function windowsFrom(rooms: Rooms): InHand["windowsAt"] {
-  if (rooms.state === "checking") return () => null;
-  if (rooms.state === "unknown") return () => WINDOWS;
+/** The starts each technician's day offers the job in hand, earliest first, as the server answered; none if it could not. */
+export function daysFrom(rooms: Rooms): InHand["startsAt"] {
+  if (rooms.state !== "known") return () => null;
   return (technicianId, date) =>
-    rooms.rooms.find((room) => room.technician_id === technicianId && room.date === date)?.windows ?? [];
+    rooms.rooms.find((room) => room.technician_id === technicianId && room.date === date)?.starts ?? [];
 }
 
 /** How near each day's other visits are, as the server answered; null where it could not say. */
@@ -56,11 +55,11 @@ export function kmFrom(rooms: Rooms): InHand["kmAt"] {
     rooms.rooms.find((room) => room.technician_id === technicianId && room.date === date)?.km ?? null;
 }
 
-/** The starts a move to this target can take, earliest first, as the server answered; none where it could not say. */
+/** Every start a move to this technician's day can take, earliest first, as the server answered; none where it could not say. */
 export function startsFrom(rooms: Rooms, to: Target): readonly string[] {
   if (rooms.state !== "known") return [];
   const room = rooms.rooms.find((each) => each.technician_id === to.technician.technician_id && each.date === to.date);
-  return (room?.starts ?? []).filter((each) => each.window === to.window).map((each) => each.starts_at);
+  return (room?.starts ?? []).map((each) => each.starts_at);
 }
 
 export const isBlackout = (rooms: Rooms, date: string): boolean =>
