@@ -37811,6 +37811,27 @@ Request body:
             "type": "string",
             "format": "date"
           },
+          "from_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Leave over part of one day, from and to these times on India's clock; null for whole days."
+          },
+          "to_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "note": {
             "anyOf": [
               {
@@ -37826,6 +37847,8 @@ Request body:
           "technician_id",
           "from",
           "to",
+          "from_time",
+          "to_time",
           "note"
         ],
         "additionalProperties": false

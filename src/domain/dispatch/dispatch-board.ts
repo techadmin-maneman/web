@@ -117,7 +117,15 @@ interface Board {
    * Leave ops recorded, clipped to the board's own week, so a column is drawn
    * away for exactly the days it is (ADR 0062).
    */
-  readonly leave: { technician_id: string; from: string; to: string; note: string | null }[];
+  readonly leave: {
+    technician_id: string;
+    from: string;
+    to: string;
+    /** India's clock over part of one day; null for whole days. */
+    from_time: string | null;
+    to_time: string | null;
+    note: string | null;
+  }[];
 }
 
 /**
@@ -275,6 +283,8 @@ export async function dispatchBoard(
     // Clipped to the week, so the board draws the days it has columns for and no others.
     from: period.from < options.from ? options.from : period.from,
     to: period.to > last ? last : period.to,
+    from_time: period.from_time,
+    to_time: period.to_time,
     note: period.note,
   }));
   return {
@@ -419,9 +429,12 @@ function shortName(name: string | null): string | null {
   return last === undefined ? (first ?? null) : `${first ?? ""} ${last.slice(0, 1)}.`;
 }
 
-/** Whether a technician is away on a date, by the leave the board holds; both ends are inclusive. */
+/** Whether a technician is away all of a date, by the leave the board holds; both ends are inclusive. */
 const isAway = (leave: Board["leave"], technicianId: string, date: string): boolean =>
-  leave.some((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
+  leave.some(
+    (period) =>
+      period.technician_id === technicianId && period.from <= date && date <= period.to && period.from_time === null,
+  );
 /**
  * "Each column head shows its utilisation, in per cent." The slots the day's
  * jobs take, done or still to do, out of the slots of the technicians working

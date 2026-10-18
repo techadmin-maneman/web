@@ -187,7 +187,9 @@ export const BOARD = {
   ],
   utilisation: DATES.map((date, day) => ({ date, percent: UTILISATION[day] ?? 0 })),
   /** Leave ops recorded, clipped to this week: Faizan is away on the Sunday and Monday (ADR 0062). */
-  leave: [{ technician_id: FAIZAN.id, from: DATES[2], to: DATES[3], note: "Family wedding" }],
+  leave: [
+    { technician_id: FAIZAN.id, from: DATES[2], to: DATES[3], from_time: null, to_time: null, note: "Family wedding" },
+  ],
 } satisfies Board;
 
 /**

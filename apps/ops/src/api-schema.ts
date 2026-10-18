@@ -23182,6 +23182,9 @@ export interface components {
                 from: string;
                 /** Format: date */
                 to: string;
+                /** @description Leave over part of one day, from and to these times on India's clock; null for whole days. */
+                from_time: string | null;
+                to_time: string | null;
                 note: string | null;
             }[];
         };

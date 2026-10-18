@@ -224,6 +224,9 @@ describe("dispatch, once the technician has begun", () => {
 // Leave goes through the same clash check as a visit, so nothing has to
 // remember to ask: the board refuses it, and so does the client's own booking.
 describe("leave", () => {
+  const boardFrom = async (from: string) =>
+    (await request(ops, `/api/dispatch?from=${from}`, {}, bindings())).json<{ leave: Record<string, unknown>[] }>();
+
   const recordLeave = (technicianId: string, from: string, to: string, note?: string) =>
     opsPost(`/api/technicians/${technicianId}/leave`, { from, to, ...(note === undefined ? {} : { note }) });
 
@@ -253,10 +256,18 @@ describe("leave", () => {
     // A fortnight from the 20th: the board's week ends on the 27th.
     expect((await recordLeave(IMRAN, "2026-09-20", "2026-10-03")).status).toBe(200);
 
-    const board = await (
-      await request(ops, "/api/dispatch?from=2026-09-21", {}, bindings())
-    ).json<{ leave: { technician_id: string; from: string; to: string; note: string | null }[] }>();
-    expect(board.leave).toEqual([{ technician_id: IMRAN, from: "2026-09-21", to: "2026-09-27", note: null }]);
+    const board = await boardFrom("2026-09-21");
+    expect(board.leave).toEqual([
+      { technician_id: IMRAN, from: "2026-09-21", to: "2026-09-27", from_time: null, to_time: null, note: null },
+    ]);
+  });
+
+  it("draws leave over part of a day with its hours", async () => {
+    const part = { from: "2026-09-23", to: "2026-09-23", from_time: "14:00", to_time: "17:00" };
+    expect((await opsPost(`/api/technicians/${SAMEER}/leave`, part)).status).toBe(200);
+
+    const board = await boardFrom("2026-09-21");
+    expect(board.leave).toEqual([{ technician_id: SAMEER, ...part, note: null }]);
   });
 
   it("takes leave back, and the day can be worked again", async () => {
