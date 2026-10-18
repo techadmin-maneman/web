@@ -14,12 +14,16 @@ import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { reachesCity } from "../../policy/access.ts";
 import { visitsToComeBy } from "../../domain/dispatch/unassigned.ts";
+import { homesOf, weeksOf } from "../../domain/dispatch/technician-days.ts";
+import { HomeSchema, WorkingDaySchema } from "../schemas/technician-days.ts";
 
 const LeaveSchema = z
   .object({
     id: z.uuid(),
     from: z.iso.date(),
     to: z.iso.date().openapi({ description: "Inclusive: a single day's leave has the same date twice." }),
+    from_time: z.union([z.string(), z.null()]).openapi({ description: "Leave over part of one day: when it starts." }),
+    to_time: z.union([z.string(), z.null()]).openapi({ description: "Leave over part of one day: when it ends." }),
     note: z.union([z.string(), z.null()]),
   })
   .strict()
@@ -78,6 +82,12 @@ const TechniciansSchema = z
           leave: z
             .array(LeaveSchema)
             .openapi({ description: "Leave that has not ended yet, soonest first (ADR 0062)." }),
+          hours: z.array(WorkingDaySchema).openapi({
+            description: "Their own week, each day they work; empty for one who works their city's hours every day.",
+          }),
+          home: z
+            .union([HomeSchema, z.null()])
+            .openapi({ description: "Where their day starts; null until ops set it." }),
         })
         .strict(),
     ),
@@ -119,7 +129,7 @@ const techniciansRoute = opsRoute({
 export function registerOpsField(app: App): void {
   app.openapi(techniciansRoute, async (c) => {
     // The phones and the leave are one read each for the whole roster, not one per technician.
-    const [roll, devices, leave, cities, reach, managed, toCome] = await Promise.all([
+    const [roll, devices, leave, cities, reach, managed, toCome, weeks, homes] = await Promise.all([
       roster(c.env.DB),
       devicesByTechnician(c.env.DB, c.var.deps.now()),
       leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
@@ -127,6 +137,8 @@ export function registerOpsField(app: App): void {
       routeReach(c),
       reachOf(c, "operations", "manage"),
       visitsToComeBy(c.env.DB, c.var.deps.now()),
+      weeksOf(c.env.DB),
+      homesOf(c.env.DB),
     ]);
     const everyone = roll.filter((technician) => reachesCity(reach, technician.city));
     const { settings } = c.var.config;
@@ -144,6 +156,10 @@ export function registerOpsField(app: App): void {
       fits_trained: technician.fitsTrained,
       visits_to_come: toCome.get(technician.id) ?? 0,
     });
+    const homeOf = (id: string) => {
+      const home = homes.get(id);
+      return home === undefined ? null : { label: home.label };
+    };
     const technicians = everyone
       .filter((technician) => technician.active)
       .map((technician) => ({
@@ -154,7 +170,9 @@ export function registerOpsField(app: App): void {
         devices: devices.get(technician.id) ?? [],
         leave: leave
           .filter((period) => period.technician_id === technician.id)
-          .map(({ id, from, to, note }) => ({ id, from, to, note })),
+          .map(({ id, from, to, from_time, to_time, note }) => ({ id, from, to, from_time, to_time, note })),
+        hours: weeks.get(technician.id) ?? [],
+        home: homeOf(technician.id),
       }));
     const switchedOff = everyone.filter((technician) => !technician.active).map(summaryOf);
     return c.json({ technicians, switched_off: switchedOff, cities: given }, 200);

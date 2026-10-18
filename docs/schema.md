@@ -29,7 +29,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, and a fit's stock risk is found or cleared again within the hour | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -169,7 +169,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
 - [task_spans](#task_spans): Each task the Tasks board has held, by its group, row and episode: the client's city, when it opened and the night it was first found gone, from which the reporting copy counts Care cases (ADR 0147).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
-- [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
+- [technician_hours](#technician_hours): A technician's own week: a row for each day they work, with its hours. One with no rows works their city's hours every day (ADR 0210).
+- [technician_leave](#technician_leave): A technician's leave, in whole days or between two times of one day, which the clash check reads beside `slot_claims` (ADR 0062, ADR 0210).
 - [technician_updates](#technician_updates): A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).
 - [technicians](#technicians): Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
@@ -2385,7 +2386,7 @@ Indexes:
 
 Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
 
-Made by `0021_referrals.sql`; changed by `0043_area_names.sql`, `0167_cities_as_data.sql`.
+Made by `0021_referrals.sql`; changed by `0043_area_names.sql`, `0167_cities_as_data.sql`, `0187_technician_days.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2395,6 +2396,13 @@ Made by `0021_referrals.sql`; changed by `0043_area_names.sql`, `0167_cities_as_
 | `served` | INTEGER | no | `0` |  |  |
 | `launched_at` | TEXT | yes |  |  | When a technician started coming, or will start. |
 | `area_named_by` | TEXT | yes |  |  |  |
+| `centre_lat` | REAL | yes |  |  | A pincode's centre, as Google places the pincode, and when it was last asked for, so one Google cannot place is not asked for every hour. |
+| `centre_lng` | REAL | yes |  |  |  |
+| `centre_asked_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `serviceable_pincodes_unplaced`: on (`centre_asked_at`), where `centre_lat IS NULL`
 
 Triggers: `serviceable_pincodes_in_a_city`, `serviceable_pincodes_moved_to_a_city`.
 
@@ -3115,11 +3123,26 @@ Indexes:
 - A `UNIQUE` constraint: unique on (`technician_id`, `device_id`)
 - `technician_devices_by_session`: on (`session_id`)
 
+## technician_hours
+
+A technician's own week: a row for each day they work, with its hours. One with no rows works their city's hours every day (ADR 0210).
+
+Made by `0187_technician_days.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `technician_id` | TEXT | no |  | primary key; → `technicians.id` |  |
+| `weekday` | INTEGER | no |  | primary key |  |
+| `starts` | TEXT | no |  |  |  |
+| `ends` | TEXT | no |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
+
 ## technician_leave
 
-A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
+A technician's leave, in whole days or between two times of one day, which the clash check reads beside `slot_claims` (ADR 0062, ADR 0210).
 
-Made by `0034_leave_and_asked_window.sql`; changed by `0090_board_version.sql`.
+Made by `0034_leave_and_asked_window.sql`; changed by `0090_board_version.sql`, `0187_technician_days.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3132,6 +3155,8 @@ Made by `0034_leave_and_asked_window.sql`; changed by `0090_board_version.sql`.
 | `created_at` | TEXT | no |  |  |  |
 | `cancelled_at` | TEXT | yes |  |  |  |
 | `cancelled_by` | TEXT | yes |  |  |  |
+| `from_time` | TEXT | yes |  |  | Leave over part of one day: the times it runs between, both NULL for whole days. |
+| `to_time` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -3163,7 +3188,7 @@ Indexes:
 
 Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`, `0106_technician_test_record.sql`, `0107_city_blackouts_and_fitters.sql`, `0108_technician_pay.sql`, `0133_stock_places.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`, `0106_technician_test_record.sql`, `0107_city_blackouts_and_fitters.sql`, `0108_technician_pay.sql`, `0133_stock_places.sql`, `0187_technician_days.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3181,6 +3206,10 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `test_record` | INTEGER | no | `0` |  |  |
 | `fits_trained` | INTEGER | no | `0` |  |  |
 | `pay_grade_id` | TEXT | yes |  | → `pay_grades.id` |  |
+| `home_label` | TEXT | yes |  |  | Where a technician's day starts: the place ops chose for them, its name as Google gave it, and its coordinate. |
+| `home_place_id` | TEXT | yes |  |  |  |
+| `home_lat` | REAL | yes |  |  |  |
+| `home_lng` | REAL | yes |  |  |  |
 
 Indexes:
 

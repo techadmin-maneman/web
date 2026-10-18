@@ -50,6 +50,7 @@ const HANDLED: Readonly<Record<string, string>> = {
   "technician_devices.technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts deletes their phones first",
   "technician_leave.technician_id -> technicians": "src/domain/dispatch/technician-roster.ts deletes their leave first",
+  "technician_hours.technician_id -> technicians": "src/domain/dispatch/technician-roster.ts deletes their week first",
   "job_events.device_id -> technician_devices":
     "src/domain/dispatch/technician-roster.ts deletes no phone of a technician a job event names",
   "appointments.technician_id -> technicians":

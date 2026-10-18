@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0210. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0211. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -69,6 +69,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0117](0117-a-technician-takes-visits-in-their-own-city.md) A technician takes visits in their own city
 - [0118](0118-booking-never-dead-ends.md) Booking never dead-ends
 - [0119](0119-blackouts-by-city-and-trained-fitters.md) Blackouts by city, and trained fitters
+- [0210](0210-booking-by-start-time.md) Booking by start time
 
 ### Field work
 
@@ -280,8 +281,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0031](0031-access-and-audit.md) | Access on the ops surface, and the audit log | 2026-09-22 | accepted | [0072](0072-ops-clients-and-queues.md) |
 | [0032](0032-fsm-mirror.md) | The FSM mirror, and Books documents | 2026-09-22 | superseded by 0110 on 4 October 2026: FSM's mirror is gone with FSM | [0070](0070-vendor-correctness.md), [0075](0075-tests-held-to-the-contract-and-the-local-stack.md), [0101](0101-phase-1s-path-into-fsm-removed.md), [0110](0110-field-work-without-fsm.md) |
 | [0033](0033-credit-ledger.md) | The credit ledger | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0107](0107-referral-rewards-in-the-console.md) |
-| [0034](0034-clash-check.md) | The clash check | 2026-09-22 | accepted | [0069](0069-dispatch-under-concurrency.md), [0117](0117-a-technician-takes-visits-in-their-own-city.md) |
-| [0035](0035-window-slot-map.md) | The window-to-slot map | 2026-09-22 | accepted, with placeholder times | [0102](0102-window-times.md) |
+| [0034](0034-clash-check.md) | The clash check | 2026-09-22 | accepted | [0069](0069-dispatch-under-concurrency.md), [0117](0117-a-technician-takes-visits-in-their-own-city.md), [0210](0210-booking-by-start-time.md) |
+| [0035](0035-window-slot-map.md) | The window-to-slot map | 2026-09-22 | accepted, with placeholder times | [0102](0102-window-times.md), [0210](0210-booking-by-start-time.md) |
 | [0036](0036-geocoding.md) | Geocoding, for the check-in's geofence | 2026-09-23 | accepted | [0054](0054-address-capture.md) |
 | [0037](0037-shared-packages.md) | Shared packages: the brand first | 2026-09-22 | accepted | [0076](0076-one-ui-layer-and-one-api-client.md), [0077](0077-a-token-scale-written-once.md) |
 | [0038](0038-offline-writes.md) | The technician app's offline writes, and what they write to FSM | 2026-09-23 | accepted |  |
@@ -308,7 +309,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0059](0059-a-clients-history.md) | A client's history, and where a customer lives in the CRM | 2026-09-24 | accepted for the derivation, the ops console and the client app |  |
 | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) | An invited friend reaches ops and the CRM | 2026-09-24 | accepted |  |
 | [0061](0061-ops-editable-inputs.md) | The business inputs ops change without a developer | 2026-09-24 | accepted | [0071](0071-what-ops-see-before-a-setting-changes.md), [0072](0072-ops-clients-and-queues.md), [0085](0085-services-ops-can-edit.md), [0086](0086-the-next-visit-is-offered.md), [0087](0087-consumables-and-stock.md), [0088](0088-every-policy-in-the-console.md) |
-| [0062](0062-leave-on-the-dispatch-board.md) | Leave on the dispatch board | 2026-09-24 | accepted | [0074](0074-hand-offs-and-messages.md) |
+| [0062](0062-leave-on-the-dispatch-board.md) | Leave on the dispatch board | 2026-09-24 | accepted | [0074](0074-hand-offs-and-messages.md), [0210](0210-booking-by-start-time.md) |
 | [0063](0063-the-asked-window.md) | The asked window and the offered one | 2026-09-24 | accepted | [0069](0069-dispatch-under-concurrency.md), [0070](0070-vendor-correctness.md), [0074](0074-hand-offs-and-messages.md), [0101](0101-phase-1s-path-into-fsm-removed.md) |
 | [0064](0064-converting-a-request.md) | Converting a Request by API | 2026-09-24 | superseded by 0110 on 4 October 2026: no booking becomes an FSM work order | [0101](0101-phase-1s-path-into-fsm-removed.md), [0110](0110-field-work-without-fsm.md) |
 | [0065](0065-a-technicians-writes-reach-fsm.md) | A technician's writes reach FSM, in order, on a clock we can hold him to | 2026-09-25 | accepted | [0087](0087-consumables-and-stock.md) |
@@ -346,7 +347,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0099](0099-the-clients-note-in-fsm.md) | The client's note in FSM | 2026-10-01 | superseded by 0110 on 4 October 2026: the client's note is kept on the visit in our own database | [0110](0110-field-work-without-fsm.md) |
 | [0100](0100-a-refund-is-made-once.md) | A refund is made once, however often it is asked for | 2026-10-01 | accepted |  |
 | [0101](0101-phase-1s-path-into-fsm-removed.md) | Phase 1's path into FSM is removed, and no booking carries a Request | 2026-10-01 | superseded by 0110 on 4 October 2026: with FSM gone there is no path into it to remove | [0110](0110-field-work-without-fsm.md) |
-| [0102](0102-window-times.md) | The window times in the console | 2026-10-01 | accepted, on the owner's rulings of 30 September and 1 October 2026 |  |
+| [0102](0102-window-times.md) | The window times in the console | 2026-10-01 | accepted, on the owner's rulings of 30 September and 1 October 2026 | [0210](0210-booking-by-start-time.md) |
 | [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted |  |
 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 |  |
 | [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length |  |
@@ -454,3 +455,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
 | [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted |  |
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted |  |
+| [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted |  |

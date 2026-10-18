@@ -65,8 +65,8 @@ this map, or when the map names something that no longer exists.
 ### Dispatch
 
 - **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
-  `technician-work`, `leave`, `blackouts`, `day-route`, `nearest`
-- **Rules** (`src/policy/`): `dispatch`, `technician-work`
+  `technician-work`, `technician-days` (a technician's own week and home), `leave`, `blackouts`, `day-route`, `nearest`
+- **Rules** (`src/policy/`): `dispatch`, `technician-work`, `start-times`, `drive-estimate`
 - **Vendor** (`src/providers/`): `routes/`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/dispatch-day`, `ops/blackouts`, `ops/technicians`,
   `ops/technician-leave`, `ops/technician-phones`
@@ -124,7 +124,7 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/cities/`): `cities` (each city, its state and zone, where a visit, a pincode or a
   client is), `city-changes` (a city added, changed or renamed), `city-rules` (the rules a city sets for itself),
   `gst-registrations` (a state's registration, and what supplies a visit), `served-cities` (the cities and areas the
-  public site says it comes to)
+  public site says it comes to), `pincode-centres` (each pincode's centre, placed hourly)
 - **Rules** (`src/policy/`): `city-settings`
 - **Data** (`src/config/`): `gst`
 - **Routes** (`src/routes/`): `ops/cities`

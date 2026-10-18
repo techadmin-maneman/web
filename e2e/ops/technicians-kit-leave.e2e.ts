@@ -112,6 +112,8 @@ test("records leave, saying first that nobody can be booked on those days, and s
         id: LEAVE_RECORDED.id,
         from: "2027-10-12",
         to: "2027-10-14",
+        from_time: null,
+        to_time: null,
         note: "Away",
         jobs: [
           {

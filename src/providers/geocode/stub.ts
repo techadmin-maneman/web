@@ -77,6 +77,25 @@ function locatedAddress(typed: string) {
   };
 }
 
+/**
+ * A pincode's centre: "000000" is one Google cannot place; any other a point in Gurugram, a little apart for each
+ * pincode, as the Geocoding API answers for a postal code.
+ */
+function pincodeCentre(pincode: string) {
+  if (pincode === "000000") return { status: "ZERO_RESULTS", results: [] };
+  const offset = (Number(pincode.slice(-3)) % 100) / 1000;
+  return {
+    status: "OK",
+    results: [
+      {
+        place_id: `stub-pincode-${pincode}`,
+        formatted_address: `Gurugram, Haryana ${pincode}, India`,
+        geometry: { location: { lat: 28.4 + offset, lng: 77.05 + offset }, location_type: "APPROXIMATE" },
+      },
+    ],
+  };
+}
+
 export function createStubGeocodeFetch(): typeof fetch {
   return async (input, init) => {
     const request = new Request(input, init);
@@ -133,6 +152,8 @@ export function createStubGeocodeFetch(): typeof fetch {
       }
       const typed = url.searchParams.get("address");
       if (typed !== null) return json(locatedAddress(typed));
+      const pincode = /postal_code:(\d{6})/.exec(url.searchParams.get("components") ?? "")?.[1];
+      if (pincode !== undefined) return json(pincodeCentre(pincode));
       const placeId = url.searchParams.get("place_id") ?? "";
       const known = PLACES.find((place) => place.placeId === placeId);
       if (known === undefined) return json({ status: "ZERO_RESULTS", results: [] });

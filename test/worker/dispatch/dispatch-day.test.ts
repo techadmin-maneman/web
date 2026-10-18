@@ -6,7 +6,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { kmBetween } from "../../../src/domain/dispatch/nearest.ts";
+import { kmBetween } from "../../../src/lib/geo.ts";
 import type { RoutesProvider } from "../../../src/providers/routes/index.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { A, B, FIT, IMRAN, insertJob, ROHIT, SAMEER, TUESDAY, VIKRAM, WEDNESDAY } from "./dispatch-fixtures.ts";

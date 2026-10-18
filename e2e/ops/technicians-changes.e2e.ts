@@ -1,6 +1,6 @@
 // Technicians: the roster, one row a technician, the jobs each has
 // finished and how those ran; and each technician's own page, which the roster's
-// names open: their details, then their week, leave, phones and kit, a tab at a time.
+// names open: their details, then their week, hours, leave, phones and kit, a tab at a time.
 // The API is answered from e2e/ops/fixtures.ts, since a local database has no
 // technician until one is added and none has logged in. The clock is fixed to
 // the day the fixture's leave is read against.
@@ -203,7 +203,16 @@ test("lists the technicians switched off apart, and switches one back on", async
     ...TECHNICIANS,
     technicians: [
       ...TECHNICIANS.technicians,
-      { ...RAVI, initials: "RK", sign_in_stopped_at: null, out_of_codes: false, devices: [], leave: [] },
+      {
+        ...RAVI,
+        initials: "RK",
+        sign_in_stopped_at: null,
+        out_of_codes: false,
+        devices: [],
+        leave: [],
+        hours: [],
+        home: null,
+      },
     ],
     switched_off: [],
   };

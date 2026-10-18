@@ -279,6 +279,7 @@ export async function deleteTechnician(
   try {
     await db.batch([
       theirs("DELETE FROM technician_leave WHERE technician_id = ?1"),
+      theirs("DELETE FROM technician_hours WHERE technician_id = ?1"),
       theirs("DELETE FROM technician_devices WHERE technician_id = ?1"),
       theirs("DELETE FROM otp_challenges WHERE technician_id = ?1"),
       theirs("DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id = ?1"),

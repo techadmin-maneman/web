@@ -12,12 +12,21 @@ import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
+import { DayTime } from "../schemas/technician-days.ts";
+
+/** Part of one day, India's clock; both null for whole days. */
+const LEAVE_TIMES = {
+  from_time: z.union([z.string(), z.null()]),
+  to_time: z.union([z.string(), z.null()]),
+};
 
 const LeaveRequestSchema = z
   .object({
     from: z.iso.date(),
     to: z.iso.date(),
     note: z.string().min(1).max(200).optional().openapi({ description: "Why, in ops' words. Never a medical detail." }),
+    from_time: DayTime.optional().openapi({ description: "For leave over part of one day: when it starts." }),
+    to_time: DayTime.optional().openapi({ description: "For leave over part of one day: when it ends." }),
   })
   .strict()
   .openapi("TechnicianLeaveRequest");
@@ -50,6 +59,7 @@ const StandingLeaveSchema = z
             id: z.uuid(),
             from: z.iso.date(),
             to: z.iso.date().openapi({ description: "Inclusive: a single day's leave has the same date twice." }),
+            ...LEAVE_TIMES,
             note: z.union([z.string(), z.null()]),
             jobs: z
               .array(JobOnLeaveSchema)
@@ -80,7 +90,9 @@ const leaveRoute = opsRoute({
   request: { params: z.object({ id: z.uuid() }), body: { required: true, ...json(LeaveRequestSchema) } },
   responses: {
     200: { description: "Recorded", ...json(LeaveRecordedSchema) },
-    400: errorResponse(`invalid_request: to is before from, or more than ${String(LEAVE_MAX_DAYS)} days ahead`),
+    400: errorResponse(
+      `invalid_request: to is before from, more than ${String(LEAVE_MAX_DAYS)} days ahead, or times for more than one day or the wrong way round`,
+    ),
     404: errorResponse("not_found: no such active technician in the caller's cities"),
   },
 });
@@ -108,6 +120,8 @@ export function registerOpsTechnicianLeave(app: App): void {
       id: period.id,
       from: period.from,
       to: period.to,
+      from_time: period.from_time,
+      to_time: period.to_time,
       note: period.note,
       jobs: period.jobs,
     }));
@@ -117,13 +131,21 @@ export function registerOpsTechnicianLeave(app: App): void {
   app.openapi(leaveRoute, async (c) => {
     const staff = actorOf(c);
     const { id } = c.req.valid("param");
-    const { from, to, note } = c.req.valid("json");
+    const { from, to, note, from_time: fromTime, to_time: toTime } = c.req.valid("json");
     const now = c.var.deps.now();
     if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
 
     const outcome = await recordLeave({
       db: c.env.DB,
-      leave: { technicianId: id, from, to, note: note ?? null, actor: staff.id },
+      leave: {
+        technicianId: id,
+        from,
+        to,
+        fromTime: fromTime ?? null,
+        toTime: toTime ?? null,
+        note: note ?? null,
+        actor: staff.id,
+      },
       today: indiaDate(now),
       now,
       audit: {
@@ -137,6 +159,7 @@ export function registerOpsTechnicianLeave(app: App): void {
     });
     if (outcome.kind === "no_such_technician") return refuse(c, "not_found");
     if (outcome.kind === "bad_dates") return refuse(c, "invalid_request", ["to"]);
+    if (outcome.kind === "bad_times") return refuse(c, "invalid_request", ["from_time", "to_time"]);
     return c.json({ id: outcome.id, jobs: outcome.jobs }, 200);
   });
 

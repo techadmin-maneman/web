@@ -187,6 +187,30 @@ export const settings = {
     keyNames: {
       no_show_wait_min: dispatch.typeNames,
       late_change_charge: dispatch.typeNames,
+      same_day_booking: dispatch.typeNames,
+      booking_rules: {
+        step: "Starts every",
+        arrival: "Arrives within",
+        wrap_up: "Wrap-up after each visit",
+        lead: "Today’s first start, from now",
+        break: "Break",
+        break_from: "Break taken from",
+        break_to: "Break taken by",
+        visits: "Most visits a day",
+        fits: "Most fits a day",
+      },
+      working_hours: { opens: "Day starts", closes: "Day ends" },
+      drive_estimate: {
+        road_factor: "Road against the straight line",
+        peak_kmh: "Speed in the rush",
+        offpeak_kmh: "Speed otherwise",
+        parking: "To park and reach the door",
+        least: "Shortest drive",
+        morning_from: "Morning rush from",
+        morning_to: "Morning rush until",
+        evening_from: "Evening rush from",
+        evening_to: "Evening rush until",
+      },
       no_show_charge: dispatch.typeNames,
       // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
       no_show_waiver: { payment: "The visit’s payment", credit: "The free service visit used" },
@@ -285,6 +309,7 @@ export const settings = {
       late_change_charge: { nothing: "Nothing", late_fee: "Late fee", visit: "The full visit" },
       no_show_charge: { nothing: "Nothing", late_fee: "Late fee", visit: "The full visit" },
       no_show_waiver: { refunded: "Refunded", kept: "Kept", returned: "Returned", spent: "Spent" },
+      same_day_booking: { yes: "Yes", no: "No" },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /** The check before a rule is sent: each figure that moves, the old beside the new. */
     confirm: {

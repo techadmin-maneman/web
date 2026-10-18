@@ -15,7 +15,18 @@ export const RULE_GROUPS = [
     id: "moves",
     rules: ["change_notice_hours", "late_change_charge", "no_show_charge", "no_show_waiver", "dispute_window_days"],
   },
-  { id: "booking", rules: ["payment_hold", "booking_days", "payment_links"] },
+  {
+    id: "booking",
+    rules: [
+      "booking_rules",
+      "same_day_booking",
+      "working_hours",
+      "drive_estimate",
+      "payment_hold",
+      "booking_days",
+      "payment_links",
+    ],
+  },
   {
     id: "field",
     rules: [

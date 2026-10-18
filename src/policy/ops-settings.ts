@@ -11,6 +11,7 @@
 // of their own (price_book, serviceable_pincodes) because a document already
 // issued depends on what was true then; the ADR gives the split.
 
+import { BOOKING_SETTINGS } from "./ops-settings-booking.ts";
 import { CARE_HOURS, CARE_HOURS_KEYS, careHoursConflicts } from "./care-hours.ts";
 import { CEILING_SETTINGS } from "./ops-settings-ceilings.ts";
 import { CHECKIN_RADIUS_M } from "./check-in.ts";
@@ -340,6 +341,7 @@ export const OPS_SETTINGS = [
     keys: null,
     fallback: LOST_AFTER_DAYS,
   },
+  ...BOOKING_SETTINGS,
   ...CLIENT_SETTINGS,
   ...STOCK_SETTINGS,
   ...CEILING_SETTINGS,

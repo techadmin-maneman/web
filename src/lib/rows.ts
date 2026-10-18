@@ -1136,6 +1136,9 @@ export interface Rows {
     readonly served: number;
     readonly launched_at: string | null;
     readonly area_named_by: string | null;
+    readonly centre_lat: number | null;
+    readonly centre_lng: number | null;
+    readonly centre_asked_at: string | null;
   };
   readonly services: {
     readonly kind: string;
@@ -1497,6 +1500,14 @@ export interface Rows {
     readonly revoked_by: string | null;
     readonly wiped_at: string | null;
   };
+  readonly technician_hours: {
+    readonly technician_id: string;
+    readonly weekday: number;
+    readonly starts: string;
+    readonly ends: string;
+    readonly set_by: string;
+    readonly set_at: string;
+  };
   readonly technician_leave: {
     readonly id: string;
     readonly technician_id: string;
@@ -1507,6 +1518,8 @@ export interface Rows {
     readonly created_at: string;
     readonly cancelled_at: string | null;
     readonly cancelled_by: string | null;
+    readonly from_time: string | null;
+    readonly to_time: string | null;
   };
   readonly technician_updates: {
     readonly id: string;
@@ -1532,6 +1545,10 @@ export interface Rows {
     readonly test_record: number;
     readonly fits_trained: number;
     readonly pay_grade_id: string | null;
+    readonly home_label: string | null;
+    readonly home_place_id: string | null;
+    readonly home_lat: number | null;
+    readonly home_lng: number | null;
   };
   readonly tryon_jobs: {
     readonly id: string;

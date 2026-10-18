@@ -214,6 +214,8 @@ export const ROWS_AT_T: readonly string[] = [
    VALUES (1, 'Mane Man Private Limited', NULL, 'Sector 37', 'ops@example.com', '${AT}')`,
   `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
      VALUES ('tl1', 't1', '2026-10-10', '2026-10-11', 'ops@example.com', '${AT}')`,
+  `INSERT INTO technician_hours (technician_id, weekday, starts, ends, set_by, set_at)
+     VALUES ('t1', 1, '09:00', '18:00', 'ops@example.com', '${AT}')`,
   `INSERT INTO alerts (id, key, message, count, first_seen_at, last_seen_at)
      VALUES ('al1', 'books_refund_refused:rf1', 'Books refused the refund.', 1, '${AT}', '${AT}')`,
   `INSERT INTO cron_jobs (job, failed_runs) VALUES ('sweeper', 1)`,

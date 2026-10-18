@@ -25,11 +25,27 @@ export const techniciansApi = {
   allowSignIn: (id: string) => client.post("/api/technicians/{id}/allow-sign-in", { path: { id } }),
   standingLeave: (id: string) => client.get("/api/technicians/{id}/leave", { path: { id } }),
   /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
-  recordLeave: (id: string, leave: { from: string; to: string; note: string | null }) =>
+  recordLeave: (
+    id: string,
+    leave: { from: string; to: string; note: string | null; times: { from: string; to: string } | null },
+  ) =>
     client.post("/api/technicians/{id}/leave", {
       path: { id },
-      body: { from: leave.from, to: leave.to, ...(leave.note === null ? {} : { note: leave.note }) },
+      body: {
+        from: leave.from,
+        to: leave.to,
+        ...(leave.note === null ? {} : { note: leave.note }),
+        ...(leave.times === null ? {} : { from_time: leave.times.from, to_time: leave.times.to }),
+      },
     }),
   cancelLeave: (id: string, leaveId: string) =>
     client.post("/api/technicians/{id}/leave/{leave}/cancel", { path: { id, leave: leaveId } }),
+  /** Each day they work and its hours; none returns them to their city's hours (ADR 0210). */
+  setHours: (id: string, days: readonly { weekday: number; starts: string; ends: string }[]) =>
+    client.post("/api/technicians/{id}/hours", { path: { id }, body: { days: [...days] } }),
+  /** One session token for the whole search, sent again with the place chosen. */
+  homeSuggestions: (id: string, q: string, session: string) =>
+    client.post("/api/technicians/{id}/home/suggestions", { path: { id }, body: { q, session } }),
+  setHome: (id: string, placeId: string, session: string) =>
+    client.post("/api/technicians/{id}/home", { path: { id }, body: { place_id: placeId, session_token: session } }),
 };

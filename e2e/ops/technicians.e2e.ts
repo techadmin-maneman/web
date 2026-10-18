@@ -145,9 +145,10 @@ test("opens a technician’s own page from their name, a tab at a time, each at 
   await expect(page).toHaveURL(new RegExp(`/technicians/${IMRAN}$`));
   await expect(page).toHaveTitle("This week · Technicians · Mane Man operations");
 
-  const tabs = main.getByRole("navigation", { name: "Imran Qureshi: week, leave, phones and kit" });
+  const tabs = main.getByRole("navigation", { name: "Imran Qureshi: week, hours, leave, phones and kit" });
   await expect(tabs.getByRole("link")).toHaveText([
     opsCopy.technicians.tabs.week,
+    opsCopy.technicians.tabs.hours,
     opsCopy.technicians.tabs.leave,
     opsCopy.technicians.tabs.phones,
     opsCopy.technicians.tabs.kit,

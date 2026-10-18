@@ -5,10 +5,10 @@
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { DateInput, Field, TextInput } from "@maneman/ui/Field";
+import { Checkbox, DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
-import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { dayClock, fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type JobOnLeave, type StandingLeave, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
@@ -21,11 +21,15 @@ import shared from "./technicians.module.css";
 import styles from "./technician-leave.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { techniciansApi } from "./technicians-api.ts";
+import { TimeField } from "./TechnicianHours.tsx";
 
 const copy = technicians.leave;
 
-/** "19 Sep 2026 to 23 Sep 2026", or one date on its own. */
-const periodOf = (leave: StandingLeave) => copy.period(fullDate(leave.from), fullDate(leave.to));
+/** "19 Sep 2026 to 23 Sep 2026", one date on its own, or one date and the hours of it away. */
+const periodOf = (leave: StandingLeave) =>
+  leave.from_time !== null && leave.to_time !== null
+    ? copy.hours(fullDate(leave.from), dayClock(leave.from_time), dayClock(leave.to_time))
+    : copy.period(fullDate(leave.from), fullDate(leave.to));
 
 /** Why it was refused, in the console's words; nothing changed either way. */
 function refusal(code: string): string {
@@ -131,6 +135,74 @@ interface Entry {
   readonly from: string;
   readonly to: string;
   readonly note: string;
+  /** Away between two times of one day, rather than for whole days. */
+  readonly partDay: boolean;
+  readonly fromTime: string;
+  readonly toTime: string;
+}
+
+/** When the leave is: its days, or one day and the times of it away. */
+function LeaveWhen({ entry, onChange }: { entry: Entry; onChange: (entry: Entry) => void }) {
+  const setEntry = onChange;
+  return (
+    <>
+      <div className={styles.fields}>
+        <Field className={styles.field} label={copy.from}>
+          {(control) => (
+            <DateInput
+              {...control}
+              required
+              // The form opens where the button that asked for it stood, so the keyboard goes to its first field.
+              autoFocus
+              value={entry.from}
+              onChange={(event) => {
+                setEntry({ ...entry, from: event.target.value });
+              }}
+            />
+          )}
+        </Field>
+        {!entry.partDay && (
+          <Field className={styles.field} label={copy.to}>
+            {(control) => (
+              <DateInput
+                {...control}
+                required
+                value={entry.to}
+                onChange={(event) => {
+                  setEntry({ ...entry, to: event.target.value });
+                }}
+              />
+            )}
+          </Field>
+        )}
+        {entry.partDay && (
+          <>
+            <TimeField
+              label={copy.fromTime}
+              value={entry.fromTime}
+              onChange={(time) => {
+                setEntry({ ...entry, fromTime: time });
+              }}
+            />
+            <TimeField
+              label={copy.toTime}
+              value={entry.toTime}
+              onChange={(time) => {
+                setEntry({ ...entry, toTime: time });
+              }}
+            />
+          </>
+        )}
+      </div>
+      <Checkbox
+        label={copy.partDay}
+        checked={entry.partDay}
+        onChange={(event) => {
+          setEntry({ ...entry, partDay: event.target.checked });
+        }}
+      />
+    </>
+  );
 }
 
 function LeaveForm({
@@ -142,7 +214,14 @@ function LeaveForm({
   onRecorded: () => Promise<void>;
   onCancel: () => void;
 }) {
-  const [entry, setEntry] = useState<Entry>({ from: "", to: "", note: "" });
+  const [entry, setEntry] = useState<Entry>({
+    from: "",
+    to: "",
+    note: "",
+    partDay: false,
+    fromTime: "14:00",
+    toTime: "17:00",
+  });
   const [sending, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -152,8 +231,9 @@ function LeaveForm({
       const note = entry.note.trim();
       const answer = await techniciansApi.recordLeave(technician.id, {
         from: entry.from,
-        to: entry.to,
+        to: entry.partDay ? entry.from : entry.to,
         note: note === "" ? null : note,
+        times: entry.partDay ? { from: entry.fromTime, to: entry.toTime } : null,
       });
       if (!answer.ok) {
         setFailed(refusal(answer.code));
@@ -170,34 +250,7 @@ function LeaveForm({
         void send();
       }}
     >
-      <div className={styles.fields}>
-        <Field className={styles.field} label={copy.from}>
-          {(control) => (
-            <DateInput
-              {...control}
-              required
-              // The form opens where the button that asked for it stood, so the keyboard goes to its first field.
-              autoFocus
-              value={entry.from}
-              onChange={(event) => {
-                setEntry({ ...entry, from: event.target.value });
-              }}
-            />
-          )}
-        </Field>
-        <Field className={styles.field} label={copy.to}>
-          {(control) => (
-            <DateInput
-              {...control}
-              required
-              value={entry.to}
-              onChange={(event) => {
-                setEntry({ ...entry, to: event.target.value });
-              }}
-            />
-          )}
-        </Field>
-      </div>
+      <LeaveWhen entry={entry} onChange={setEntry} />
       <Field className={styles.field} label={copy.note}>
         {(control) => (
           <TextInput

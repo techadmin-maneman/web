@@ -71,12 +71,17 @@ export interface GeocodeProvider {
    * would be wrong by a kilometre.
    */
   locate(address: string, pincode: string): Promise<ResolveResult>;
+  /**
+   * A pincode's centre, as the Geocoding API places the pincode itself: an area's, not a building's, which stands in
+   * for a client's pin when a drive is estimated before their address has one (ADR 0210).
+   */
+  centreOf(pincode: string): Promise<ResolveResult>;
 }
 
 /** Answers nothing, for an environment with no address provider. */
 function createNoGeocode(): GeocodeProvider {
   const off = () => Promise.resolve({ ok: false, reason: "unavailable", detail: "no address provider here" } as const);
-  return { suggest: off, resolve: off, locate: off };
+  return { suggest: off, resolve: off, locate: off, centreOf: off };
 }
 
 /** Google when there is a key; otherwise the stub, which fakes Google's HTTP API. */

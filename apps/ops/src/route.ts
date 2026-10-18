@@ -154,14 +154,14 @@ export type ClientTab = (typeof CLIENT_TABS)[number];
 const OPENING_TAB: ClientTab = "visits";
 
 /** A technician's page, a tab at a time, in its order. It opens on their week. */
-export const TECHNICIAN_TABS = ["week", "leave", "phones", "kit"] as const;
+export const TECHNICIAN_TABS = ["week", "hours", "leave", "phones", "kit"] as const;
 export type TechnicianTab = (typeof TECHNICIAN_TABS)[number];
 
 /**
  * A page, as its path names it. Three sections have pages beneath them:
  *
  *   /clients/:id/:tab       a client's page, a tab at a time
- *   /technicians/:id/:tab   a technician's page: their week, leave, phones and kit
+ *   /technicians/:id/:tab   a technician's page: their week, hours, leave, phones and kit
  *   /settings/:tab          one of Settings' pages
  *
  * Anything else, "/" included, is where the console opens: Today, or the first page the person may open.

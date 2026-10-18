@@ -12,6 +12,10 @@ const IST_OFFSET_MS = INDIA_OFFSET_MINUTES * MINUTE_MS;
 export const indiaDateSql = (column: string, ...modifiers: string[]): string =>
   `date(${[column, `'+${String(INDIA_OFFSET_MINUTES)} minutes'`, ...modifiers].join(", ")})`;
 
+/** In SQL, the time of day in India of the instant in `column`, "HH:MM". */
+export const indiaTimeSql = (column: string): string =>
+  `strftime('%H:%M', ${column}, '+${String(INDIA_OFFSET_MINUTES)} minutes')`;
+
 /** The calendar date in India at `instant`. */
 export function indiaDate(instant: Date): string {
   return new Date(instant.getTime() + IST_OFFSET_MS).toISOString().slice(0, 10);
