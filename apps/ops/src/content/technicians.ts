@@ -39,7 +39,7 @@ export const technicians = {
   /** Our words, all of them: the board draws the roster and no page for one technician. */
   page: {
     back: "All technicians",
-    tabsLabel: (name: string) => `${name}: week, leave, phones and kit`,
+    tabsLabel: (name: string) => `${name}: week, hours, leave, phones and kit`,
     notFound: "No longer on the roster.",
   },
   tabs: { week: "This week", hours: "Hours", leave: "Leave", phones: "Phones", kit: "Kit" },
