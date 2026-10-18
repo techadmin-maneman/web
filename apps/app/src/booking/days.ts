@@ -26,7 +26,9 @@ export function firstOpenFrom(days: readonly Day[], date: string): string | null
 export function firstOpenIn(day: Day | undefined, window: BookingWindow | null | undefined): string | null {
   const hours = day?.windows.find((each) => each.window === window);
   if (day === undefined || hours === undefined) return null;
-  return day.starts.find((start) => start.open && start.time >= hours.start && start.time < hours.end)?.starts_at ?? null;
+  return (
+    day.starts.find((start) => start.open && start.time >= hours.start && start.time < hours.end)?.starts_at ?? null
+  );
 }
 
 /** A start the client picked, where it is still open on the day; null otherwise. */

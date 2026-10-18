@@ -106,6 +106,7 @@ const visit = (n: number, date: string, type: NonNullable<VisitSummary["type"]>,
     window_hours: { start: "12:00", end: "16:00" },
     starts_at: `${date}T06:30:00.000Z`,
     ends_at: `${date}T08:00:00.000Z`,
+    arrives_by: `${date}T07:00:00.000Z`,
     length_minutes: 90,
     type,
     service: null,
@@ -290,6 +291,20 @@ const slot = (name: Window["window"], open: boolean): Window => ({
   open,
   change_charged: false,
 });
+/** A day's starts every half hour, 9 am to 6:30 pm, open from noon on a day with room. */
+const startsOn = (date: string, room: boolean) =>
+  Array.from({ length: 20 }, (_, index) => {
+    const minute = 9 * 60 + index * 30;
+    const time = `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+    const startsAt = new Date(`${date}T${time}:00+05:30`);
+    return {
+      time,
+      starts_at: startsAt.toISOString(),
+      arrives_by: new Date(startsAt.getTime() + 30 * 60_000).toISOString(),
+      open: room && minute >= 12 * 60,
+      change_charged: false,
+    };
+  });
 const AVAILABILITY = {
   type: "service",
   service: { tier: "standard", name: "Service visit", minutes: 90 },
@@ -302,6 +317,7 @@ const AVAILABILITY = {
     windows: FULL_DAYS.has(index)
       ? [slot("morning", false), slot("afternoon", false), slot("evening", false)]
       : [slot("morning", false), slot("afternoon", true), slot("evening", true)],
+    starts: startsOn(`2030-09-${String(16 + index)}`, !FULL_DAYS.has(index)),
   })),
 } satisfies Schemas["Availability"];
 /**
@@ -338,6 +354,7 @@ const hold = (type: "first_fit" | "service", price: Price, lateFee: Price | null
   hours: { start: "12:00", end: "16:00" },
   starts_at: "2030-09-19T06:30:00.000Z",
   ends_at: "2030-09-19T08:00:00.000Z",
+  arrives_by: "2030-09-19T07:00:00.000Z",
   technician: IMRAN,
   price,
   late_fee: lateFee,

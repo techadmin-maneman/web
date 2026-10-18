@@ -16,6 +16,7 @@ export function holdOf(over: Partial<Hold> = {}): Hold {
     hours: { start: "09:00", end: "12:00" },
     starts_at: "2026-10-20T03:30:00.000Z",
     ends_at: "2026-10-20T05:00:00.000Z",
+    arrives_by: "2026-10-20T04:00:00.000Z",
     technician: { name: "Imran Qureshi", initials: "IQ" },
     price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
     late_fee: null,

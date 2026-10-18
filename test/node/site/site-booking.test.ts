@@ -170,10 +170,22 @@ describe("the days and windows open", () => {
     afternoon: { start: "12:00", end: "16:00" },
     evening: { start: "16:00", end: "20:00" },
   };
+  /** Starts at 9 am, 12:30 and 4:30 pm on a day, open where its window is. */
+  const startsOf = (date: string, windows: typeof OPEN) => [
+    { time: "09:00", starts_at: `${date}T03:30:00.000Z`, open: windows.morning },
+    { time: "12:30", starts_at: `${date}T07:00:00.000Z`, open: windows.afternoon },
+    { time: "16:30", starts_at: `${date}T11:00:00.000Z`, open: windows.evening },
+  ];
+  const dayOf = (date: string, windows: typeof OPEN) => ({
+    date,
+    windows,
+    hours: HOURS,
+    starts: startsOf(date, windows),
+  });
   const days: OpenDays = [
-    { date: "2026-10-03", windows: SHUT, hours: HOURS },
-    { date: "2026-10-04", windows: { morning: false, afternoon: true, evening: true }, hours: HOURS },
-    { date: "2026-10-05", windows: OPEN, hours: HOURS },
+    dayOf("2026-10-03", SHUT),
+    dayOf("2026-10-04", { morning: false, afternoon: true, evening: true }),
+    dayOf("2026-10-05", OPEN),
   ];
   const ALL = ["morning", "afternoon", "evening"] as const;
   const ONE_VISIT = ["morning", "afternoon"] as const;
@@ -189,47 +201,51 @@ describe("the days and windows open", () => {
   it("closes a day with none of the plan’s windows open", () => {
     expect(dayOpen(days, "2026-10-03", ALL)).toBe(false);
     expect(dayOpen(days, "2026-10-04", ALL)).toBe(true);
-    const eveningsOnly: OpenDays = [
-      { date: "2026-10-04", windows: { morning: false, afternoon: false, evening: true }, hours: HOURS },
-    ];
+    const eveningsOnly: OpenDays = [dayOf("2026-10-04", { morning: false, afternoon: false, evening: true })];
     expect(dayOpen(eveningsOnly, "2026-10-04", ONE_VISIT)).toBe(false);
     expect(anyOpen(eveningsOnly, ONE_VISIT)).toBe(false);
   });
 
-  it("keeps the visitor’s pick while it is open", () => {
-    const picked = { date: "2026-10-04", window: "evening" } as const;
+  it("keeps the visitor’s pick while it is open, and starts it at its window's first open start", () => {
+    const picked = { date: "2026-10-04", window: "evening", start: "2026-10-04T11:00:00.000Z" } as const;
     expect(chosenSlot(days, ALL, picked)).toEqual(picked);
-    expect(chosenSlot(null, ALL, picked)).toEqual(picked);
+    expect(chosenSlot(days, ALL, { ...picked, start: null })).toEqual(picked);
+    expect(chosenSlot(null, ALL, { ...picked, start: null })).toEqual({ ...picked, start: null });
   });
 
   it("moves a full pick to the day’s first open window, else to the first day with one", () => {
-    expect(chosenSlot(days, ALL, { date: "2026-10-04", window: "morning" })).toEqual({
+    expect(chosenSlot(days, ALL, { date: "2026-10-04", window: "morning", start: null })).toEqual({
       date: "2026-10-04",
       window: "afternoon",
+      start: "2026-10-04T07:00:00.000Z",
     });
     // The form's first pick, tomorrow morning, on a day booked full.
-    expect(chosenSlot(days, ALL, { date: "2026-10-03", window: "morning" })).toEqual({
+    expect(chosenSlot(days, ALL, { date: "2026-10-03", window: "morning", start: null })).toEqual({
       date: "2026-10-04",
       window: "afternoon",
+      start: "2026-10-04T07:00:00.000Z",
     });
   });
 
   it("moves an evening pick to a window one visit can start in, before the answer and after it", () => {
-    expect(chosenSlot(null, ONE_VISIT, { date: "2026-10-05", window: "evening" })).toEqual({
+    expect(chosenSlot(null, ONE_VISIT, { date: "2026-10-05", window: "evening", start: null })).toEqual({
       date: "2026-10-05",
       window: "morning",
+      start: null,
     });
-    expect(chosenSlot(days, ONE_VISIT, { date: "2026-10-04", window: "evening" })).toEqual({
+    expect(chosenSlot(days, ONE_VISIT, { date: "2026-10-04", window: "evening", start: null })).toEqual({
       date: "2026-10-04",
       window: "afternoon",
+      start: "2026-10-04T07:00:00.000Z",
     });
   });
 
   it("leaves the pick where nothing is open at all", () => {
-    const full: OpenDays = [{ date: "2026-10-03", windows: SHUT, hours: HOURS }];
-    expect(chosenSlot(full, ALL, { date: "2026-10-03", window: "morning" })).toEqual({
+    const full: OpenDays = [dayOf("2026-10-03", SHUT)];
+    expect(chosenSlot(full, ALL, { date: "2026-10-03", window: "morning", start: null })).toEqual({
       date: "2026-10-03",
       window: "morning",
+      start: null,
     });
   });
 });

@@ -487,4 +487,3 @@ async function tellPrivately(form: FormRequest, personId: string, kind: SiteNoti
   await notice.statement.run();
   await queueMessage(form, notice.id);
 }
-

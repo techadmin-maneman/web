@@ -63,7 +63,8 @@ interface Hours {
 export const windowHours = (hours: Hours) => timeRange(hours.start, hours.end, UNBROKEN);
 
 /** An instant's time of day in India, "HH:MM". */
-const indiaTimeOf = (instant: string): string => new Date(Date.parse(instant) + 330 * 60_000).toISOString().slice(11, 16);
+const indiaTimeOf = (instant: string): string =>
+  new Date(Date.parse(instant) + 330 * 60_000).toISOString().slice(11, 16);
 
 /**
  * "11:30 am–12 pm": when the technician arrives, from the visit's start to the end of its arrival window
