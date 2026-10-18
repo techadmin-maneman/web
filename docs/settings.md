@@ -148,6 +148,10 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `care_hours` | Customer Care hours | hour of the day, in India | `{"opens":9,"closes":21,"first_reply":60,"answered_by":10}` |
 | `remedy_limit` | Remedies without approval | service visits | `{"visits":1,"days":90}` |
 | `lost_after_days` | Lost after | days | `90` |
+| `booking_rules` | Start times | minutes | `{"step":30,"arrival":30,"wrap_up":10,"lead":3,"break":30,"break_from":12,"break_to":16,"visits":5,"fits":2}` |
+| `same_day_booking` | Booking for today | a choice | `{"consultation":"yes","first_fit":"no","service":"yes","replacement":"yes"}` |
+| `working_hours` | Working hours | hour of the day, in India | `{"opens":9,"closes":20}` |
+| `drive_estimate` | Drive estimate | minutes | `{"road_factor":140,"peak_kmh":18,"offpeak_kmh":24,"parking":10,"least":10,"morning_from":8,"morning_to":11,"evening_from":17,"evening_to":21}` |
 | `payment_links` | Payment links | hours | `{"holds_hours":24,"closes_before_hours":2,"pay_within_days":14}` |
 | `arrival_notice_min` | Arrival message | minutes | `10` |
 | `move_proposal_hours` | Move proposals | hours | `48` |

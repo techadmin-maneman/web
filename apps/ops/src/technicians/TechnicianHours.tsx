@@ -50,7 +50,10 @@ export function weekLines(days: readonly Day[]): string[] {
   for (const weekday of WEEK) {
     const day = days.find((each) => each.weekday === weekday);
     const previous = run.at(-1);
-    if (day === undefined || (previous !== undefined && (day.starts !== previous.starts || day.ends !== previous.ends))) {
+    if (
+      day === undefined ||
+      (previous !== undefined && (day.starts !== previous.starts || day.ends !== previous.ends))
+    ) {
       close();
     }
     if (day !== undefined) run.push(day);
@@ -175,8 +178,8 @@ type Open = "none" | "hours" | "home";
 
 export function Hours({ technician, onChange }: { technician: Technician; onChange: () => Promise<void> }) {
   const access = useAccess();
-  const maySetHours = access.mayCall("PUT /api/technicians/{id}/hours");
-  const maySetHome = access.mayCall("PUT /api/technicians/{id}/home");
+  const maySetHours = access.mayCall("POST /api/technicians/{id}/hours");
+  const maySetHome = access.mayCall("POST /api/technicians/{id}/home");
   const [open, setOpen] = useState<Open>("none");
   const done = () => {
     setOpen("none");

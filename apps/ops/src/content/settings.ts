@@ -192,7 +192,7 @@ export const settings = {
         step: "Starts every",
         arrival: "Arrives within",
         wrap_up: "Wrap-up after each visit",
-        lead: "Today's first start, from now",
+        lead: "Today’s first start, from now",
         break: "Break",
         break_from: "Break taken from",
         break_to: "Break taken by",

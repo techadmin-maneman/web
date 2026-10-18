@@ -22,7 +22,7 @@ const technicianId = z.object({ id: z.uuid() });
 const unknownTechnician = errorResponse("not_found: no such technician in the caller's cities");
 
 const weekRoute = opsRoute({
-  method: "put",
+  method: "post",
   path: "/api/technicians/{id}/hours",
   summary: "Set the days a technician works and the hours of each, or return them to their city's hours",
   request: {
@@ -43,7 +43,9 @@ const weekRoute = opsRoute({
   },
   responses: {
     200: { description: "Set", ...json(z.object({ days: z.array(WorkingDaySchema) }).strict()) },
-    400: errorResponse("invalid_request: a day twice, a time off the quarter hour, or a day that ends before it starts"),
+    400: errorResponse(
+      "invalid_request: a day twice, a time off the quarter hour, or a day that ends before it starts",
+    ),
     404: unknownTechnician,
   },
 });
@@ -78,7 +80,7 @@ const suggestionsRoute = opsRoute({
 });
 
 const homeRoute = opsRoute({
-  method: "put",
+  method: "post",
   path: "/api/technicians/{id}/home",
   summary: "Set where a technician's day starts, from a place the search found",
   request: {

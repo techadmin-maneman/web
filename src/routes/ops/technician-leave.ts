@@ -137,7 +137,15 @@ export function registerOpsTechnicianLeave(app: App): void {
 
     const outcome = await recordLeave({
       db: c.env.DB,
-      leave: { technicianId: id, from, to, fromTime: fromTime ?? null, toTime: toTime ?? null, note: note ?? null, actor: staff.id },
+      leave: {
+        technicianId: id,
+        from,
+        to,
+        fromTime: fromTime ?? null,
+        toTime: toTime ?? null,
+        note: note ?? null,
+        actor: staff.id,
+      },
       today: indiaDate(now),
       now,
       audit: {

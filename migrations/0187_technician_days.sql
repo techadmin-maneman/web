@@ -1,7 +1,6 @@
--- What booking by start time reads of a technician's days (docs/decisions/0210-booking-by-start-time.md): their own
--- week of working hours, where ops set one; their home, where the drive to their first visit starts; and leave that
--- covers part of one day. A pincode's centre stands in for a client's pin until their address has one. Only new
--- columns and a new table, which the code deployed neither reads nor writes.
+-- What booking by start time reads (docs/decisions/0210-booking-by-start-time.md): a technician's own week, their
+-- home, leave over part of a day, and a pincode's centre. Only new columns and a new table, which the code deployed
+-- neither reads nor writes.
 
 -- A technician's week: a row for each day they work, with its hours. One with no rows works their city's hours every
 -- day. Times are India's, "HH:MM", on the quarter hour.

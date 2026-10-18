@@ -15826,7 +15826,7 @@ Per technician: jobs finished over a period, and how they ran against the planne
 }
 ```
 
-### PUT /api/technicians/{id}/hours
+### POST /api/technicians/{id}/hours
 
 Set the days a technician works and the hours of each, or return them to their city's hours
 
@@ -16133,7 +16133,7 @@ Request body:
 }
 ```
 
-### PUT /api/technicians/{id}/home
+### POST /api/technicians/{id}/home
 
 Set where a technician's day starts, from a place the search found
 

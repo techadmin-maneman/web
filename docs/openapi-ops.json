@@ -38285,7 +38285,7 @@
       }
     },
     "/api/technicians/{id}/hours": {
-      "put": {
+      "post": {
         "summary": "Set the days a technician works and the hours of each, or return them to their city's hours",
         "parameters": [
           {
@@ -38642,7 +38642,7 @@
       }
     },
     "/api/technicians/{id}/home": {
-      "put": {
+      "post": {
         "summary": "Set where a technician's day starts, from a place the search found",
         "parameters": [
           {

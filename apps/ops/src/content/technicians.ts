@@ -47,7 +47,7 @@ export const technicians = {
   hours: {
     weekdays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
     title: "Working hours",
-    city: "Their city's hours, every day",
+    city: "Their city’s hours, every day",
     /** "Monday to Saturday · 9:00 am to 6:00 pm", one line a run of days with the same hours. */
     line: (days: string, from: string, to: string) => `${days} · ${from} to ${to}`,
     run: (first: string, last: string) => (first === last ? first : `${first} to ${last}`),
@@ -58,7 +58,7 @@ export const technicians = {
     starts: "Starts",
     ends: "Ends",
     save: "Save hours",
-    useCity: "Use their city's hours",
+    useCity: "Use their city’s hours",
     cancel: "Cancel",
     home: "Day starts from",
     noHome: "Not set",
@@ -66,7 +66,7 @@ export const technicians = {
     changeHome: "Change",
     search: {
       label: "Search for a place",
-      unavailable: "Search isn't working right now. Try again shortly.",
+      unavailable: "Search isn’t working right now. Try again shortly.",
       attribution: "Powered by Google",
       found: (count: number) => `${String(count)} ${count === 1 ? "place" : "places"} found`,
     },
@@ -74,7 +74,7 @@ export const technicians = {
       not_permitted: NOT_PERMITTED,
       invalid_request: "Pick at least one time that ends after it starts.",
       not_found: changed("No longer exists."),
-      unavailable: "Google couldn't place it. Try another search.",
+      unavailable: "Google couldn’t place it. Try another search.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,

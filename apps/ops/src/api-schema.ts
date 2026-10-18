@@ -12086,8 +12086,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
         /** Set the days a technician works and the hours of each, or return them to their city's hours */
-        put: {
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -12169,7 +12170,6 @@ export interface paths {
                 };
             };
         };
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12298,8 +12298,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
         /** Set where a technician's day starts, from a place the search found */
-        put: {
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -12399,7 +12400,6 @@ export interface paths {
                 };
             };
         };
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;

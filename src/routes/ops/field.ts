@@ -85,7 +85,9 @@ const TechniciansSchema = z
           hours: z.array(WorkingDaySchema).openapi({
             description: "Their own week, each day they work; empty for one who works their city's hours every day.",
           }),
-          home: z.union([HomeSchema, z.null()]).openapi({ description: "Where their day starts; null until ops set it." }),
+          home: z
+            .union([HomeSchema, z.null()])
+            .openapi({ description: "Where their day starts; null until ops set it." }),
         })
         .strict(),
     ),

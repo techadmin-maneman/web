@@ -141,51 +141,11 @@ interface Entry {
   readonly toTime: string;
 }
 
-function LeaveForm({
-  technician,
-  onRecorded,
-  onCancel,
-}: {
-  technician: TechnicianSummary;
-  onRecorded: () => Promise<void>;
-  onCancel: () => void;
-}) {
-  const [entry, setEntry] = useState<Entry>({
-    from: "",
-    to: "",
-    note: "",
-    partDay: false,
-    fromTime: "14:00",
-    toTime: "17:00",
-  });
-  const [sending, once] = useOneAtATime();
-  const [failed, setFailed] = useState<string | null>(null);
-
-  const send = () =>
-    once(async () => {
-      setFailed(null);
-      const note = entry.note.trim();
-      const answer = await techniciansApi.recordLeave(technician.id, {
-        from: entry.from,
-        to: entry.partDay ? entry.from : entry.to,
-        note: note === "" ? null : note,
-        times: entry.partDay ? { from: entry.fromTime, to: entry.toTime } : null,
-      });
-      if (!answer.ok) {
-        setFailed(refusal(answer.code));
-        return;
-      }
-      await onRecorded();
-    });
-
+/** When the leave is: its days, or one day and the times of it away. */
+function LeaveWhen({ entry, onChange }: { entry: Entry; onChange: (entry: Entry) => void }) {
+  const setEntry = onChange;
   return (
-    <form
-      className={shared.leaveForm}
-      onSubmit={(event) => {
-        event.preventDefault();
-        void send();
-      }}
-    >
+    <>
       <div className={styles.fields}>
         <Field className={styles.field} label={copy.from}>
           {(control) => (
@@ -241,6 +201,56 @@ function LeaveForm({
           setEntry({ ...entry, partDay: event.target.checked });
         }}
       />
+    </>
+  );
+}
+
+function LeaveForm({
+  technician,
+  onRecorded,
+  onCancel,
+}: {
+  technician: TechnicianSummary;
+  onRecorded: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [entry, setEntry] = useState<Entry>({
+    from: "",
+    to: "",
+    note: "",
+    partDay: false,
+    fromTime: "14:00",
+    toTime: "17:00",
+  });
+  const [sending, once] = useOneAtATime();
+  const [failed, setFailed] = useState<string | null>(null);
+
+  const send = () =>
+    once(async () => {
+      setFailed(null);
+      const note = entry.note.trim();
+      const answer = await techniciansApi.recordLeave(technician.id, {
+        from: entry.from,
+        to: entry.partDay ? entry.from : entry.to,
+        note: note === "" ? null : note,
+        times: entry.partDay ? { from: entry.fromTime, to: entry.toTime } : null,
+      });
+      if (!answer.ok) {
+        setFailed(refusal(answer.code));
+        return;
+      }
+      await onRecorded();
+    });
+
+  return (
+    <form
+      className={shared.leaveForm}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void send();
+      }}
+    >
+      <LeaveWhen entry={entry} onChange={setEntry} />
       <Field className={styles.field} label={copy.note}>
         {(control) => (
           <TextInput

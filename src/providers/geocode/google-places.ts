@@ -209,8 +209,15 @@ export function createGooglePlaces(apiKey: string, deps: VendorFetchDependencies
     },
 
     async centreOf(pincode) {
-      const query = new URLSearchParams({ components: `country:IN|postal_code:${pincode}`, key: apiKey, region: REGION });
-      const read = readGeocode(await get("geocode_pincode", `${GEOCODE_URL}?${query.toString()}`, { method: "GET" }), scrub);
+      const query = new URLSearchParams({
+        components: `country:IN|postal_code:${pincode}`,
+        key: apiKey,
+        region: REGION,
+      });
+      const read = readGeocode(
+        await get("geocode_pincode", `${GEOCODE_URL}?${query.toString()}`, { method: "GET" }),
+        scrub,
+      );
       if (!read.ok) return read;
       const { first } = read;
       const { lat, lng } = first.geometry.location;

@@ -3,7 +3,7 @@
 // city's working hours; and the drive estimate.
 
 import { HOUR_OF_DAY } from "../config/setting-units.ts";
-import { DRIVE_ESTIMATE, DRIVE_ESTIMATE_KEYS, driveEstimateConflicts, type DriveEstimate } from "./drive-estimate.ts";
+import { DRIVE_ESTIMATE, DRIVE_ESTIMATE_KEYS, driveEstimateConflicts } from "./drive-estimate.ts";
 import type { OpsSetting } from "./ops-settings.ts";
 import {
   BOOKING_RULE_KEYS,
@@ -15,8 +15,6 @@ import {
   WORKING_HOURS,
   WORKING_HOURS_KEYS,
   workingHoursConflicts,
-  type BookingRules,
-  type WorkingHours,
 } from "./start-times.ts";
 
 export const BOOKING_SETTINGS = [
@@ -40,7 +38,7 @@ export const BOOKING_SETTINGS = [
       fits: { min: 0, max: 6, unit: "fits" },
     },
     fallback: BOOKING_RULES,
-    conflicts: (value) => bookingRuleConflicts(value as BookingRules),
+    conflicts: (value) => bookingRuleConflicts(value),
   },
   {
     name: "same_day_booking",
@@ -60,7 +58,7 @@ export const BOOKING_SETTINGS = [
     keys: WORKING_HOURS_KEYS,
     bounds: { opens: { min: 5, max: 12 }, closes: { min: 12, max: 23 } },
     fallback: WORKING_HOURS,
-    conflicts: (value) => workingHoursConflicts(value as WorkingHours),
+    conflicts: (value) => workingHoursConflicts(value),
   },
   {
     name: "drive_estimate",
@@ -82,6 +80,6 @@ export const BOOKING_SETTINGS = [
       evening_to: { min: 14, max: 23, unit: HOUR_OF_DAY },
     },
     fallback: DRIVE_ESTIMATE,
-    conflicts: (value) => driveEstimateConflicts(value as DriveEstimate),
+    conflicts: (value) => driveEstimateConflicts(value),
   },
 ] as const satisfies readonly OpsSetting[];

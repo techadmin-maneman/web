@@ -52,14 +52,14 @@ describe("a technician's own week", () => {
       { weekday: 3, starts: "10:00", ends: "19:00" },
       { weekday: 1, starts: "09:00", ends: "18:30" },
     ];
-    const set = await send("PUT", `/api/technicians/${IMRAN}/hours`, { days: week });
+    const set = await send("POST", `/api/technicians/${IMRAN}/hours`, { days: week });
     expect(set.status).toBe(200);
     expect((await imran()).hours).toEqual([
       { weekday: 1, starts: "09:00", ends: "18:30" },
       { weekday: 3, starts: "10:00", ends: "19:00" },
     ]);
 
-    await send("PUT", `/api/technicians/${IMRAN}/hours`, { days: [] });
+    await send("POST", `/api/technicians/${IMRAN}/hours`, { days: [] });
     expect((await imran()).hours).toEqual([]);
   });
 
@@ -72,14 +72,14 @@ describe("a technician's own week", () => {
         ],
         [{ weekday: 2, starts: "09:10", ends: "18:00" }],
         [{ weekday: 2, starts: "18:00", ends: "09:00" }],
-      ].map((days) => send("PUT", `/api/technicians/${IMRAN}/hours`, { days })),
+      ].map((days) => send("POST", `/api/technicians/${IMRAN}/hours`, { days })),
     );
     expect(refused.map((answer) => answer.status)).toEqual([400, 400, 400]);
     expect((await imran()).hours).toEqual([]);
   });
 
   it("answers not found for a technician nobody has added", async () => {
-    const answer = await send("PUT", "/api/technicians/33333333-3333-4333-8333-333333333339/hours", { days: [] });
+    const answer = await send("POST", "/api/technicians/33333333-3333-4333-8333-333333333339/hours", { days: [] });
     expect(answer.status).toBe(404);
   });
 });
@@ -90,7 +90,7 @@ describe("where a technician's day starts", () => {
     const { suggestions } = await search.json<{ suggestions: { place_id: string }[] }>();
     expect(suggestions[0]?.place_id).toBe("stub-place-sunrise");
 
-    const chosen = await send("PUT", `/api/technicians/${IMRAN}/home`, {
+    const chosen = await send("POST", `/api/technicians/${IMRAN}/home`, {
       place_id: "stub-place-sunrise",
       session_token: "s1",
     });
@@ -103,7 +103,7 @@ describe("where a technician's day starts", () => {
   });
 
   it("is refused for a place Google cannot find, and the home before it stays", async () => {
-    const answer = await send("PUT", `/api/technicians/${IMRAN}/home`, { place_id: "nowhere", session_token: "s2" });
+    const answer = await send("POST", `/api/technicians/${IMRAN}/home`, { place_id: "nowhere", session_token: "s2" });
     expect(answer.status).toBe(503);
     expect((await imran()).home).toBeNull();
   });

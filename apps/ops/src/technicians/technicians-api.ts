@@ -42,10 +42,10 @@ export const techniciansApi = {
     client.post("/api/technicians/{id}/leave/{leave}/cancel", { path: { id, leave: leaveId } }),
   /** Each day they work and its hours; none returns them to their city's hours (ADR 0210). */
   setHours: (id: string, days: readonly { weekday: number; starts: string; ends: string }[]) =>
-    client.put("/api/technicians/{id}/hours", { path: { id }, body: { days: [...days] } }),
+    client.post("/api/technicians/{id}/hours", { path: { id }, body: { days: [...days] } }),
   /** One session token for the whole search, sent again with the place chosen. */
   homeSuggestions: (id: string, q: string, session: string) =>
     client.post("/api/technicians/{id}/home/suggestions", { path: { id }, body: { q, session } }),
   setHome: (id: string, placeId: string, session: string) =>
-    client.put("/api/technicians/{id}/home", { path: { id }, body: { place_id: placeId, session_token: session } }),
+    client.post("/api/technicians/{id}/home", { path: { id }, body: { place_id: placeId, session_token: session } }),
 };
