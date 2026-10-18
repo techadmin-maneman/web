@@ -1,21 +1,10 @@
 // How far a job in hand is from each technician's other visits on a day, as the crow flies, so the move picker can
 // list the nearest first (ADR 0120). A straight line costs no call to Google and is close enough to rank by.
 
+import { kmBetween } from "../../lib/geo.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
-import type { Point } from "../../providers/routes/index.ts";
 import { pinsOf } from "./day-route.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
-
-const EARTH_KM = 6371;
-const radians = (degrees: number) => (degrees * Math.PI) / 180;
-
-/** The great-circle distance between two pins, in km. */
-export function kmBetween(a: Point, b: Point): number {
-  const dLat = radians(b.lat - a.lat);
-  const dLng = radians(b.lng - a.lng);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a.lat)) * Math.cos(radians(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * EARTH_KM * Math.asin(Math.sqrt(h));
-}
 
 interface Day {
   readonly technician_id: string;
