@@ -6,6 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fakeQueue, markDatabase, NOW, provedNumberCode, request } from "../helpers.ts";
 import { ADDRESS, pincode, VISITOR, post, site } from "./consultations-fixtures.ts";
+import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 
 beforeEach(async () => {
   await markDatabase();
@@ -69,13 +70,19 @@ describe("GET /api/availability/public", () => {
     expect(days.at(-1)?.date).toBe("2026-10-05");
   });
 
-  it("closes a window once it is full, as booking it would be refused, and a day ops blacked out", async () => {
+  it("closes a day once its technician's is full, as booking it would be refused, and a day ops blacked out", async () => {
+    // A visit a technician a day, so one booking fills Imran's day.
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('booking_rules', ?1, 'ops', ?2)",
+    )
+      .bind(JSON.stringify({ ...BOOKING_RULES, visits: 1 }), NOW.toISOString())
+      .run();
     expect((await book({ window: "afternoon" })).status).toBe(201);
     await env.DB.prepare("INSERT INTO visit_blackouts (date, reason) VALUES ('2026-09-24', 'Dussehra')").run();
 
     const days = await daysOf("pincode=122018&plan=consultation");
 
-    expect(windowsOn(days, "2026-09-23")).toEqual({ morning: true, afternoon: false, evening: true });
+    expect(windowsOn(days, "2026-09-23")).toEqual(NONE_OPEN);
     expect(windowsOn(days, "2026-09-24")).toEqual(NONE_OPEN);
     const second = await book({ mobile: "9810000003", window: "afternoon" });
     expect(second.status).toBe(409);
@@ -83,7 +90,7 @@ describe("GET /api/availability/public", () => {
   });
 
   it("offers one visit the morning and the afternoon only, where its three hours fit", async () => {
-    // The technician's afternoon consultation leaves the morning's first hours, too few for a fit.
+    // The technician's noon consultation leaves the morning too short for a fit, and the afternoon after it.
     expect((await book({ window: "afternoon" })).status).toBe(201);
 
     const days = await daysOf("pincode=122018&plan=one_visit");
@@ -93,7 +100,7 @@ describe("GET /api/availability/public", () => {
       windows: { morning: true, afternoon: true, evening: false },
       hours: HOURS,
     });
-    expect(windowsOn(days, "2026-09-23")).toEqual(NONE_OPEN);
+    expect(windowsOn(days, "2026-09-23")).toEqual({ morning: false, afternoon: true, evening: false });
     const proved = await provedNumberCode("+919810000003");
     const refused = await book({ mobile: "9810000003", one_visit: true, window: "morning", number_code_id: proved });
     expect(refused.status).toBe(409);

@@ -132,8 +132,9 @@ describe("POST /api/visits: what is booked at once", () => {
 
   it("refuses a window nobody is free in, and holds nothing", async () => {
     await rohit();
-    await visit(null, "service", "scheduled", "2026-09-23T03:30:00.000Z", IMRAN);
-    await visit(null, "service", "scheduled", "2026-09-23T03:30:00.000Z", SANDEEP);
+    // A three-hour fit each from 9 am, which leaves no start in the morning.
+    await visit(null, "first_fit", "scheduled", "2026-09-23T03:30:00.000Z", IMRAN);
+    await visit(null, "first_fit", "scheduled", "2026-09-23T03:30:00.000Z", SANDEEP);
     const answer = await book({ client: ROHIT, kind: "consultation", date: WEDNESDAY, window: "morning" });
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "taken" } });
@@ -307,8 +308,9 @@ describe("GET /api/visits/availability", () => {
     expect(body.days).toHaveLength(14);
     expect(body.days[0]?.date).toBe("2026-09-22");
     const tuesday = body.days[0]?.windows.map((each) => [each.window, each.technicians.map((one) => one.id)]);
+    // Sandeep's 9 am visit leaves him the morning from 11, and Imran alone the starts before it.
     expect(tuesday).toEqual([
-      ["morning", [IMRAN]],
+      ["morning", [IMRAN, SANDEEP]],
       ["afternoon", [SANDEEP]],
       ["evening", [SANDEEP]],
     ]);
