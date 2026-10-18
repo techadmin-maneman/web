@@ -3,14 +3,13 @@
 import { paidNotBooked } from "./hold-stages.ts";
 import { windowsFitting, type BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
-import { addDays } from "../../lib/india-time.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
+import { windowTimesOf } from "../../policy/slot-times.ts";
+import { startOffers } from "./start-offers.ts";
 import { FITTED } from "../clients/fitted.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
-import { loadBlackouts, occupancy, placement, techniciansFor, type Moving, type Technician } from "./occupancy.ts";
+import { type Moving, type Technician } from "./occupancy.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
-import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician-rotation.ts";
-import { visitsOfClient } from "./technician-rotation.ts";
 import type { Fitting } from "./occupancy.ts";
 import { missedDayOver, todayStartsOf } from "../visits/visit-begun.ts";
 
@@ -114,6 +113,8 @@ interface WindowTechnicians {
 
 /** A visit to place: how long it takes, and the day its service is retired from, if it is. */
 interface VisitToPlace {
+  /** Its kind, which decides whether it may be booked for today; left out, today is not offered. */
+  readonly type?: VisitType | null;
   readonly minutes: number;
   readonly until?: string | null;
   /** A fit, which only a technician trained to fit takes (ADR 0119), and one who can reach its piece. */
@@ -136,10 +137,9 @@ interface Placing {
 }
 
 /**
- * Each window of each day from `from` that a visit this long can start in, and the technicians free to take it: none
- * who took the client's visit just before or just after that day, unless nobody else is free (src/policy/technician-rotation.ts). A window the visit
- * is too long to start in, as a first fit's evening, is left out. A day ops black out, or from `until` on, is offered to
- * nobody.
+ * Each window of each day from `from` that a visit this long can start in, and the technicians free to take it: those
+ * who can take a start inside it (./start-offers.ts), best first. A window the visit is too long to start in, as a
+ * first fit's evening, is left out.
  */
 async function windowsOf({
   db,
@@ -155,32 +155,34 @@ async function windowsOf({
   now: Date;
 }): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
   const { personId, moving = null, replacing = null, ownUnpaid = false, atCheckout = null, pincode = null } = placing;
-  const units = unitsFor(visit.minutes);
-  const to = addDays(range.from, range.days - 1);
-  const [technicians, held, closed, visits] = await Promise.all([
-    techniciansFor(db, moving, { pincode, personId }, visit.fitting ?? null),
-    occupancy({
+  const [offers, schedule] = await Promise.all([
+    startOffers({
       db,
+      placing: {
+        personId,
+        moving,
+        replacing,
+        pincode,
+        leaving: {
+          ownUnpaidOf: ownUnpaid ? personId : null,
+          ownCheckoutOf: atCheckout === null || personId === null ? null : { personId, ...atCheckout },
+        },
+      },
+      visit,
       from: range.from,
-      to,
+      days: range.days,
       now,
-      exceptVisitId: moving?.visitId ?? null,
-      exceptHoldId: null,
-      ownUnpaidOf: ownUnpaid ? personId : null,
-      ownCheckoutOf: atCheckout === null || personId === null ? null : { personId, ...atCheckout },
     }),
-    loadBlackouts(db, range.from, to, { pincode, personId }),
-    visitsOfClient(db, personId, moving?.visitId ?? replacing),
+    loadSlotSchedule(db),
   ]);
-  const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
-  const startable = windowsFitting(units);
-  return Array.from({ length: range.days }, (_, index) => {
-    const date = addDays(range.from, index);
-    const beside = techniciansBarredOn(visits, date);
+  const startable = windowsFitting(unitsFor(visit.minutes));
+  return offers.map(({ date, starts }) => {
+    const hours = windowTimesOf(schedule.on(date));
     const windows = startable.map((window): WindowTechnicians => {
-      if (closed.has(date) || retired(date)) return { window, technicians: [] };
-      const free = technicians.filter((technician) => placement(held(technician.id, date), window, units) !== null);
-      return { window, technicians: allowedTechnicians(free, (technician) => beside.has(technician.id)) };
+      const inside = starts.filter((start) => start.time >= hours[window].start && start.time < hours[window].end);
+      const technicians = new Map<string, Technician>();
+      for (const start of inside) for (const taker of start.takers) technicians.set(taker.technician.id, taker.technician);
+      return { window, technicians: [...technicians.values()] };
     });
     return { date, windows };
   });

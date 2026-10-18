@@ -136,3 +136,19 @@ export const minuteOf = (time: string): number => {
 /** An "HH:MM" time of minutes from midnight. */
 export const timeOf = (minute: number): string =>
   `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+
+/** The claims a hold takes on its technician's day: a quarter hour at a time of its service and wrap-up. */
+export const TICK_MINUTES = 15;
+
+/**
+ * What a hold starting at `time` for `minutes` claims: each quarter hour it covers, "at:10:15", which two holds never
+ * share, and the lock on the day one past `revision`, "rev:4", so a hold planned on a day another changed since fails.
+ */
+export function claimsAt(time: string, minutes: number, revision: number): string[] {
+  const start = minuteOf(time);
+  const ticks: string[] = [];
+  for (let tick = Math.floor(start / TICK_MINUTES) * TICK_MINUTES; tick < start + minutes; tick += TICK_MINUTES) {
+    ticks.push(`at:${timeOf(tick)}`);
+  }
+  return [...ticks, `rev:${String(revision + 1)}`];
+}

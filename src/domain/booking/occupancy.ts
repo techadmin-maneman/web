@@ -13,7 +13,7 @@ import { isAFitting, tierOf, type VisitType } from "../../config/visit-types.ts"
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { clashes } from "../../policy/dispatch.ts";
 import { bookedLength, unitsFor } from "../../policy/visit-length.ts";
-import { unitAt } from "../../policy/slot-times.ts";
+import { unitAt, windowAt } from "../../policy/slot-times.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { minutesBetween } from "../../lib/durations.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
@@ -283,6 +283,13 @@ export async function occupancy({
     const [kind, value = ""] = claim.split(":");
     const day = dayOf(technicianId, date);
     if (kind === "unit") day.units.add(Number(value));
+    else if (kind === "at") {
+      // A quarter hour a hold by start time claims (docs/decisions/0210-booking-by-start-time.md): its half-slot and
+      // window, as the dispatch board still counts them.
+      const time = claim.slice("at:".length);
+      day.units.add(unitAt(time, schedule.on(date)));
+      day.windows.add(windowAt(time, schedule.on(date)));
+    } else if (kind === "rev") continue;
     else if (isOneOf(BOOKING_WINDOWS, value)) day.windows.add(value);
     else throw new Error(`slot_claims.claim names no window: ${claim}`);
   }
