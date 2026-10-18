@@ -28,7 +28,14 @@ const IMRAN = { id: "t1", name: "Imran Qureshi" };
 
 const SERVICE_PRICE = { amount_ex_gst: 200_000, amount: 200_000, gst_percent: 0 };
 
-/** Two days of windows: Thursday's morning is full, its afternoon has both technicians. */
+/** A start and who can take it, adding no drive. */
+const at = (time: string, startsAt: string, technicians: readonly { id: string; name: string }[]) => ({
+  time,
+  starts_at: startsAt,
+  technicians: technicians.map((each) => ({ ...each, added_drive_minutes: 0 })),
+});
+
+/** Two days of starts: Thursday's morning is full, its noon has both technicians. */
 const WINDOWS = {
   kind: "service",
   needs_profile: false,
@@ -46,6 +53,11 @@ const WINDOWS = {
         { window: "afternoon", start: "12:00", end: "16:00", technicians: [IMRAN, SANDEEP] },
         { window: "evening", start: "16:00", end: "20:00", technicians: [SANDEEP] },
       ],
+      starts: [
+        at("12:00", "2027-09-23T06:30:00.000Z", [IMRAN, SANDEEP]),
+        at("12:30", "2027-09-23T07:00:00.000Z", [IMRAN]),
+        at("16:00", "2027-09-23T10:30:00.000Z", [SANDEEP]),
+      ],
     },
     {
       date: "2027-09-24",
@@ -54,6 +66,7 @@ const WINDOWS = {
         { window: "afternoon", start: "12:00", end: "16:00", technicians: [] },
         { window: "evening", start: "16:00", end: "20:00", technicians: [] },
       ],
+      starts: [at("09:00", "2027-09-24T03:30:00.000Z", [IMRAN]), at("09:30", "2027-09-24T04:00:00.000Z", [IMRAN])],
     },
   ],
 } satisfies OpsReply<"/api/visits/availability">;
@@ -85,7 +98,7 @@ async function openVisits(page: Page, over: Answers = {}): Promise<void> {
 
 const panel = (page: Page) => page.getByRole("dialog", { name: `Book a visit for ${CLIENT.name}` });
 
-test("books a fitted client’s service visit in a window someone is free in, sending the payment link", async ({
+test("books a fitted client’s service visit at a start someone is free at, sending the payment link", async ({
   page,
 }) => {
   const sent: unknown[] = [];
@@ -98,10 +111,11 @@ test("books a fitted client’s service visit in a window someone is free in, se
   await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
   const booking = panel(page);
   await expect(booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true })).toHaveValue("service");
-  // Thursday's morning is full, so it is not offered.
-  await expect(booking.getByLabel(opsCopy.clients.visits.book.window, { exact: true }).getByRole("option")).toHaveText([
-    "Afternoon, 12–4 pm",
-    "Evening, 4–8 pm",
+  // Thursday's morning is full, so none of its starts is offered.
+  await expect(booking.getByLabel(opsCopy.clients.visits.book.start, { exact: true }).getByRole("option")).toHaveText([
+    "12 pm",
+    "12:30 pm",
+    "4 pm",
   ]);
   await booking
     .getByLabel(opsCopy.clients.visits.book.technician, { exact: true })
@@ -114,7 +128,15 @@ test("books a fitted client’s service visit in a window someone is free in, se
   await expect(booking.getByRole("status")).toContainText("Service visit, Thu 23 Sep, afternoon, with Sandeep Rawat.");
   await expect(booking.getByRole("status")).toContainText("https://rzp.io/i/stub4417");
   expect(sent).toEqual([
-    { client: CLIENT.id, kind: "service", tier: "standard", date: "2027-09-23", window: "afternoon", technician: "t2" },
+    {
+      client: CLIENT.id,
+      kind: "service",
+      tier: "standard",
+      date: "2027-09-23",
+      window: "afternoon",
+      starts_at: "2027-09-23T06:30:00.000Z",
+      technician: "t2",
+    },
   ]);
 });
 
@@ -148,7 +170,7 @@ test("says why a booking was refused, and books nothing", async ({ page }) => {
   await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.taken);
 });
 
-test("books a consultation asked for from its Tasks row, on the day and window asked, and the task goes", async ({
+test("books a consultation asked for from its Tasks row, at the first start in the window asked, and the task goes", async ({
   page,
 }) => {
   const asked = {
@@ -222,7 +244,14 @@ test("books a consultation asked for from its Tasks row, on the day and window a
   await booking.getByRole("button", { name: opsCopy.clients.visits.book.book }).click();
   await expect(booking.getByRole("status")).toContainText(opsCopy.clients.visits.book.outcomes.booked);
   expect(sent).toEqual([
-    { client: CLIENT.id, kind: "consultation", tier: "standard", date: "2027-09-24", window: "morning" },
+    {
+      client: CLIENT.id,
+      kind: "consultation",
+      tier: "standard",
+      date: "2027-09-24",
+      window: "morning",
+      starts_at: "2027-09-24T03:30:00.000Z",
+    },
   ]);
 
   await booking.getByRole("button", { name: opsCopy.clients.visits.book.close }).click();
@@ -308,6 +337,7 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
       tier: "natural",
       date: "2027-09-23",
       window: "afternoon",
+      starts_at: "2027-09-23T06:30:00.000Z",
       covers: FIT,
     },
   ]);

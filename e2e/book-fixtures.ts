@@ -15,6 +15,7 @@ export const BOOKED = {
   date: "2026-09-25",
   window: "morning",
   hours: { start: "09:00", end: "12:00" },
+  starts_at: null,
   area: SERVED.area,
   credits: false,
   invite: "unknown",
@@ -48,11 +49,12 @@ export const HOURS = {
 export const FULL = { morning: false, afternoon: false, evening: false };
 export type Windows = typeof ALL_OPEN;
 
-/** Fourteen days from Saturday 3 October 2026: the windows given for a day, else `otherwise`. */
+/** Fourteen days from Saturday 3 October 2026: the windows given for a day, else `otherwise`, and no starts. */
 export function openDays(given: Record<string, Windows> = {}, otherwise: Windows = ALL_OPEN) {
   return Array.from({ length: 14 }, (_, index) => {
     const date = new Date(Date.UTC(2026, 9, 3 + index)).toISOString().slice(0, 10);
-    return { date, windows: given[date] ?? otherwise, hours: HOURS };
+    // No starts: the form books by window, as it does before the day's starts are known.
+    return { date, windows: given[date] ?? otherwise, hours: HOURS, starts: [] };
   });
 }
 
