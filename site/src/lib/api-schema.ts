@@ -494,6 +494,11 @@ export interface paths {
                         date: string;
                         /** @enum {string} */
                         window: "morning" | "afternoon" | "evening";
+                        /**
+                         * Format: date-time
+                         * @description The start chosen, on `date`; left out, any start in the window, the best first.
+                         */
+                        starts_at?: string;
                         address: components["schemas"]["TypedAddress"];
                         /** @description true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone. */
                         one_visit?: boolean;
@@ -1267,6 +1272,11 @@ export interface paths {
                         date: string;
                         /** @enum {string} */
                         window: "morning" | "afternoon" | "evening";
+                        /**
+                         * Format: date-time
+                         * @description The start chosen, on `date`; left out, any start in the window, the best first.
+                         */
+                        starts_at?: string;
                         address: components["schemas"]["TypedAddress"];
                         /** @description true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone. */
                         one_visit?: boolean;
@@ -3092,6 +3102,8 @@ export interface components {
                     afternoon: components["schemas"]["WindowHours"];
                     evening: components["schemas"]["WindowHours"];
                 };
+                /** @description The day's starts a step apart, each open or taken (docs/decisions/0210-booking-by-start-time.md). */
+                starts: components["schemas"]["FormStart"][];
             }[];
         };
         /** @description The window's hours on its day, India's clock, as ops set them (ADR 0102). */
@@ -3100,6 +3112,12 @@ export interface components {
             start: string;
             /** @description India's clock, HH:MM. */
             end: string;
+        };
+        FormStart: {
+            time: string;
+            /** Format: date-time */
+            starts_at: string;
+            open: boolean;
         };
         Consultation: {
             /**
@@ -3112,6 +3130,8 @@ export interface components {
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
             hours: components["schemas"]["WindowHours"];
+            /** @description When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of. */
+            starts_at: string | null;
             /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */
@@ -3224,6 +3244,8 @@ export interface components {
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
             hours: components["schemas"]["WindowHours"];
+            /** @description When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of. */
+            starts_at: string | null;
             /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */

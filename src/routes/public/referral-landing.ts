@@ -215,6 +215,10 @@ const consultationRoute = createRoute({
               date: z.iso.date(),
               window: z.enum(BOOKING_WINDOWS),
               hours: WindowHoursSchema,
+              starts_at: z.union([z.iso.datetime(), z.null()]).openapi({
+                description:
+                  "When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of.",
+              }),
               area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
               credits: CreditsSchema,
               invite: InviteStateSchema,

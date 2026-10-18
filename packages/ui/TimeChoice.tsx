@@ -30,8 +30,8 @@ export function TimeChoice(props: {
   readonly fullWord: string;
   /** Read after a taken time, which is struck through on the screen. */
   readonly takenWord: string;
-  /** The heading above it, which names the choice. */
-  readonly labelledBy: string;
+  /** The heading above it, which names the choice; left out inside a fieldset, whose legend names it. */
+  readonly labelledBy?: string;
   readonly onChoose: (id: string) => void;
   readonly className?: string | undefined;
 }) {

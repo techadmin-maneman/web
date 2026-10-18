@@ -31,7 +31,7 @@
 // that, a code we do not have, or one not shaped like a code, is ignored, and the
 // booking goes ahead without an invite (docs/decisions/0089-an-invite-is-not-lost.md).
 
-import { indiaDate } from "../../lib/india-time.ts";
+import { indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -195,6 +195,10 @@ const ConsultationSchema = z
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
     hours: WindowHoursSchema,
+    starts_at: z.union([z.iso.datetime(), z.null()]).openapi({
+      description:
+        "When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of.",
+    }),
     area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
     credits: CreditsSchema,
     invite: InviteStateSchema,
@@ -245,6 +249,17 @@ const OpenWindowsSchema = z
               .object({ morning: WindowHoursSchema, afternoon: WindowHoursSchema, evening: WindowHoursSchema })
               .strict()
               .openapi({ description: "Each window's hours that day, as ops set them." }),
+            starts: z
+              .array(
+                z
+                  .object({ time: z.string(), starts_at: z.iso.datetime(), open: z.boolean() })
+                  .strict()
+                  .openapi("FormStart"),
+              )
+              .openapi({
+                description:
+                  "The day's starts a step apart, each open or taken (docs/decisions/0210-booking-by-start-time.md).",
+              }),
           })
           .strict(),
       )
@@ -338,7 +353,11 @@ export function registerConsultations(app: App): void {
     const { settings } = c.var.config;
     const days = await openDays(c.env.DB, { plan, pincode }, settings.selfServeConsultations, c.var.deps.now());
     await tellIfFullyBooked(c.env.DB, c.var.deps.alertOnce, { plan, pincode, days }, c.var.deps.now());
-    return c.json({ plan, days }, 200, { "Cache-Control": "public, max-age=60" });
+    const answered = days.map((day) => ({
+      ...day,
+      starts: day.starts.map((start) => ({ ...start, starts_at: indiaInstant(day.date, start.time).toISOString() })),
+    }));
+    return c.json({ plan, days: answered }, 200, { "Cache-Control": "public, max-age=60" });
   });
 
   app.openapi(consultationRoute, (c) => {

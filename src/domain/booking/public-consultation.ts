@@ -1,6 +1,7 @@
 // Booking a free consultation, or a consultation and fit in one visit, from the site's form or an invite (./public-booking.ts).
 
 import { type ToldNotice, CONSULTATION_NOTICES } from "../../config/notices.ts";
+import { oneVisitCode } from "./public-booking-code.ts";
 import type { LossExtent } from "../../config/booking.ts";
 import { HOLD_SECONDS, BOOKING_DAYS, type BookingWindow } from "../../config/scheduling.ts";
 import { type Plan, planStartsIn } from "../../policy/one-visit.ts";
@@ -12,10 +13,10 @@ import { type Address, currentAddress, firstAddressStatement } from "../clients/
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import { pincodeOf, type Pincode } from "../clients/service-area.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
-import { type OneVisitCode, useOnNewHold, codeOnHold, checkForOneVisit } from "../money/discount-code-holds.ts";
+import { type OneVisitCode, useOnNewHold, codeOnHold } from "../money/discount-code-holds.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
 import type { InviteState } from "../referrals/referrals.ts";
-import { clientCodeOf, isPartnerInvite, type AnyInvite } from "../referrals/channels.ts";
+import { clientCodeOf, type AnyInvite } from "../referrals/channels.ts";
 import { liveVisitOf, bookableTypes, availability } from "./availability.ts";
 import { siteVisit, type SiteVisit } from "./site-visit.ts";
 import { offeredProducts } from "./services.ts";
@@ -141,6 +142,8 @@ export interface Booked {
   readonly state: "booked" | "requested";
   readonly date: string;
   readonly window: BookingWindow;
+  /** When a booked visit starts (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of. */
+  readonly startsAt: Date | null;
   /** The area once ops have named it, its city until then. */
   readonly area: string;
   /** Whether the invite's service visits apply. */
@@ -254,14 +257,14 @@ async function holdOrRequest(
     alongside: readonly D1PreparedStatement[];
     code: OneVisitCode | null;
   },
-): Promise<{ ok: true; holdId: string | null } | Refusal> {
+): Promise<{ ok: true; holdId: string | null; startsAt: Date | null; window: BookingWindow } | Refusal> {
   const { db, now } = form;
   const oneVisit = request.plan === "one_visit";
   if (visit === null) {
     const asked = { personId, pincode: pincode.pincode, date: request.date, window: request.window };
     const kept = { oneVisit, invite: request.invite, discountCode: code?.code ?? null, now };
     await db.batch([...alongside, requestStatement(db, { ...asked, ...kept })]);
-    return { ok: true, holdId: null };
+    return { ok: true, holdId: null, startsAt: null, window: request.window };
   }
   const hold = await holdSlot({
     db,
@@ -284,7 +287,9 @@ async function holdOrRequest(
     holdSeconds: HOLD_SECONDS,
     drives: form.drives,
   });
-  return hold === null ? { ok: false, code: "taken" } : { ok: true, holdId: hold.id };
+  return hold === null
+    ? { ok: false, code: "taken" }
+    : { ok: true, holdId: hold.id, startsAt: hold.startsAt, window: hold.window };
 }
 
 /** The invite the booking came with, on record against the consultation it produced. */
@@ -376,7 +381,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     code,
   });
   if (!placed.ok) return placed;
-  const { holdId } = placed;
+  const { holdId, startsAt } = placed;
   // The code's use is written with the hold only while the code still has a use left for it, which another booking
   // may have taken a moment before.
   const codeStands = code !== null && (holdId === null || (await codeOnHold(db, holdId)) !== null);
@@ -409,7 +414,8 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     ok: true,
     state,
     date: request.date,
-    window: request.window,
+    window: placed.window,
+    startsAt,
     // The place typed, as a new number is told, wherever the visit goes.
     area: placeOf(pincode),
     credits: invited.credits,
@@ -442,6 +448,8 @@ async function answerAsForANewNumber(
     state,
     date: request.date,
     window: request.window,
+    // The start asked for, as a new number booking it is told; none for a window.
+    startsAt: state === "booked" ? request.startsAt : null,
     area: placeOf(pincode),
     ...inviteAsForANewNumber(request.invite, null, form.now),
     oneVisit,
@@ -480,37 +488,3 @@ async function tellPrivately(form: FormRequest, personId: string, kind: SiteNoti
   await queueMessage(form, notice.id);
 }
 
-/** The code asked for: typed on /book, else a partner's own, which its invite carries; null for none. */
-function askedCode(request: ConsultationRequest): { readonly text: string; readonly fromInvite: boolean } | null {
-  if (request.discountCode !== null) return { text: request.discountCode, fromInvite: false };
-  const { invite } = request;
-  if (invite === null || !isPartnerInvite(invite) || invite.discount === null) return null;
-  return { text: invite.discount.code, fromInvite: true };
-}
-
-/**
- * The code given, checked: only a consultation and fit in one visit takes one, a consultation costing nothing. One
- * typed that does not apply refuses the booking, so the client can take it out or put it right; the form says only
- * that it does not apply, and the reason is logged. A partner's own code is the invite's offer, never typed: where it
- * does not apply, the booking goes ahead without it (docs/decisions/0125-partner-discount-codes.md).
- */
-async function oneVisitCode(
-  form: FormRequest,
-  request: ConsultationRequest,
-  knownId: string | null,
-  oneVisit: boolean,
-): Promise<OneVisitCode | Refusal | null> {
-  const asked = askedCode(request);
-  if (asked === null) return null;
-  const notApplicable = asked.fromInvite
-    ? null
-    : ({ ok: false, code: "code_not_applicable", fields: ["discount_code"] } as const);
-  if (!oneVisit) {
-    if (!asked.fromInvite) form.log.info("discount_code_refused", { reason: "not_covered" });
-    return notApplicable;
-  }
-  const checked = await checkForOneVisit({ db: form.db, text: asked.text, personId: knownId, now: form.now });
-  if (checked.ok) return checked;
-  form.log.info("discount_code_refused", { reason: checked.reason, from_invite: asked.fromInvite });
-  return notApplicable;
-}

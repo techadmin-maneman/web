@@ -240,6 +240,9 @@ export const referral = {
     ] satisfies readonly { id: ReferralConsultation["window"]; label: string }[],
     // A window nobody is free in, and a fortnight with none open.
     full: "Full",
+    /** Under a part of the day with no start left, and read after a start that is taken. */
+    fullyBooked: "Fully booked",
+    taken: "taken",
     noneOpen: "Fully booked for the next two weeks.",
     noneOpenAction: "Message us on WhatsApp for the next opening",
     /** What to book, the consultation alone or the consultation and fit in one visit. */

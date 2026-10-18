@@ -33,8 +33,9 @@ function standingCodeBody(standing: StandingCode | null) {
 
 /** What a booking answers: the day, the window and its hours that day, the area, the credits and the invite. */
 export function bookedBody(booked: Booked, hours: WindowTimes) {
-  const { state, date, window, area, credits, invite, oneVisit } = booked;
-  return { state, date, window, hours, area, credits, invite, one_visit: oneVisit };
+  const { state, date, window, area, credits, invite, oneVisit, startsAt } = booked;
+  const starts_at = startsAt === null ? null : startsAt.toISOString();
+  return { state, date, window, hours, starts_at, area, credits, invite, one_visit: oneVisit };
 }
 
 /** What a booking on the site's own page answers: the same, with its discount code as it stands. */

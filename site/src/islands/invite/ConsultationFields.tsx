@@ -12,7 +12,9 @@ import { referral } from "../../content/referral.ts";
 import { whatsapp } from "../../content/site.ts";
 import type { OpenWindows } from "../../lib/api.ts";
 import { stripMonths, type StripDay } from "../../lib/dates.ts";
-import { dayOpen, hoursOn, isOpen, type OpenDays, type Slot } from "../../lib/open-windows.ts";
+import { dayOpen, hoursOn, isOpen, startsIn, type OpenDays, type Slot } from "../../lib/open-windows.ts";
+import { TimeChoice } from "@maneman/ui/TimeChoice";
+import { dayClock } from "@maneman/web-kit/dates";
 import shared from "./Invite.module.css";
 import styles from "./consultation-fields.module.css";
 
@@ -123,18 +125,51 @@ export function DayStrip({
   );
 }
 
-/** The windows the plan may start in, on the day picked: a full one says so in place of its hours. */
+/**
+ * The starts on the day picked, under the windows the plan may start in, open or taken
+ * (docs/decisions/0210-booking-by-start-time.md); or, before the day's starts are known, the windows themselves, a full
+ * one saying so in place of its hours.
+ */
 export function DayWindows({
   windows,
   slot,
   open,
   onWindow,
+  onStart,
 }: {
   windows: readonly WindowOption[];
   slot: Slot;
   open: OpenDays | null;
   onWindow: (window: Slot["window"]) => void;
+  onStart: (window: Slot["window"], start: string) => void;
 }) {
+  const periods = windows.map(({ id, label }) => ({
+    name: label,
+    times: startsIn(open, slot.date, id).map((start) => ({
+      id: start.starts_at,
+      label: dayClock(start.time),
+      open: start.open,
+    })),
+  }));
+  if (periods.some((period) => period.times.length > 0)) {
+    return (
+      <Fieldset legend={consultation.window} legendLook="caps">
+        <TimeChoice
+          name="start"
+          periods={periods}
+          chosen={slot.start}
+          fullWord={consultation.fullyBooked}
+          takenWord={consultation.taken}
+          onChoose={(start) => {
+            const window = windows.find((option) =>
+              startsIn(open, slot.date, option.id).some((each) => each.starts_at === start),
+            );
+            if (window !== undefined) onStart(window.id, start);
+          }}
+        />
+      </Fieldset>
+    );
+  }
   return (
     <WindowChoice
       name="window"
