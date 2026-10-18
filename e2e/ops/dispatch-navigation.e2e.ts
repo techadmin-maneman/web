@@ -104,11 +104,11 @@ test("finds a visit by its area or its client, and outlines the blocks it found"
   await find.fill("dlf 4");
   await expect(page.getByRole("rowheader")).toHaveCount(2);
   await expect(found).toHaveCount(2);
-  await expect(found.first()).toHaveAccessibleName("Vikram S., Fri 19 Sep, afternoon, matches the search");
+  await expect(found.first()).toHaveAccessibleName("Vikram S., Fri 19 Sep, 12 pm, matches the search");
 
   await find.fill("Sanjay");
   await expect(found).toHaveCount(1);
-  await expect(found).toHaveAccessibleName("Sanjay B., Sat 20 Sep, morning, matches the search");
+  await expect(found).toHaveAccessibleName("Sanjay B., Sat 20 Sep, 9 am, matches the search");
 
   // A technician found by name has no one block to point at.
   await find.fill("Faizan");

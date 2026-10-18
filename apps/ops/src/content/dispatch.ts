@@ -54,15 +54,15 @@ export const dispatch = {
   },
   board: {
     /** A block, for whoever is reading with a screen reader or moving by keyboard. */
-    block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
+    block: (job: string, date: string, time: string) => `${job}, ${date}, ${time}`,
     /** What a block's outline says while the search finds it. */
     found: (block: string) => `${block}, matches the search`,
     /** A block for a visit already done, which stays where it was worked and cannot be moved. */
-    doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
+    doneBlock: (job: string, date: string, time: string) => `${job}, ${date}, ${time}, done`,
     /** How far the technician has got, from their phone. A visit they have begun stays where it is. */
     begun: { arrived: "Arrived", started: "Started", closed: "Closed" },
-    begunBlock: (job: string, date: string, window: string, begun: string) =>
-      `${job}, ${date}, ${window}, ${begun.toLowerCase()}`,
+    begunBlock: (job: string, date: string, time: string, begun: string) =>
+      `${job}, ${date}, ${time}, ${begun.toLowerCase()}`,
     /** The board draws no board without technicians. */
     empty: "No technicians on this board.",
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
@@ -120,7 +120,7 @@ export const dispatch = {
     proposal: (name: string, when: string) => `Waiting for ${name} to confirm ${when}.`,
     withdraw: "Withdraw",
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
-    when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
+    when: (date: string, time: string, technician: string) => `${date} · ${time} · ${technician}`,
     // at_visit: a consultation and fit in one visit, paid once fitted (ADR 0105), or a visit paid by UPI there.
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
     badges: { prepaid: "Prepaid", credit: "Free visit", free: "No charge", at_visit: "Pays at the visit" },
@@ -202,9 +202,9 @@ export const dispatch = {
       { reason: "running_over", label: "Earlier visit running over" },
     ],
     /** The board's line, for a client who agreed to WhatsApp about their visits. */
-    note: (job: string) => `${job} gets the new window on WhatsApp.`,
+    note: (job: string) => `${job} gets the new time on WhatsApp.`,
     /** One who has not; the move goes to the Tasks board until ops say they called. */
-    call: (name: string, mobile: string) => `${name} isn’t on WhatsApp updates. Call ${mobile} with the new window.`,
+    call: (name: string, mobile: string) => `${name} isn’t on WhatsApp updates. Call ${mobile} with the new time.`,
     /** After the line, where the visit was paid for: prepaid, or with the client's credit. */
     carries: "Their payment carries over.",
     /** A change of technician alone leaves the client's window as it was. */
@@ -277,9 +277,9 @@ export const dispatch = {
     stop: "Stop moving",
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
     moved: {
-      messaged: (job: string) => `Moved. ${job} gets the new window on WhatsApp.`,
+      messaged: (job: string) => `Moved. ${job} gets the new time on WhatsApp.`,
       call: (job: string, name: string, mobile: string) =>
-        `${job} moved. ${name} isn’t on WhatsApp updates: call ${mobile} with the new window.`,
+        `${job} moved. ${name} isn’t on WhatsApp updates: call ${mobile} with the new time.`,
       unchanged: (job: string, technician: string) => `${job} is now with ${technician}. Same window.`,
       noClient: (job: string) => `${job} moved. No client to notify.`,
     },
@@ -327,7 +327,7 @@ export const dispatch = {
       `${type}: no room in ${technician}’s ${window} on ${date}.`,
     /** Another ops user moved the job while this one was choosing. */
     superseded: (job: string, where: string) => `${job} was just moved by someone else. It’s now ${where}.`,
-    supersededWhere: (technician: string, date: string, window: string) => `with ${technician}, ${date}, ${window}`,
+    supersededWhere: (technician: string, date: string, time: string) => `with ${technician}, ${date}, ${time}`,
     /** The job has left this week, or the city asked for, since. */
     supersededGone: "off this board",
     /** Another ops user's move of the same job is still being written. */

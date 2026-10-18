@@ -17,7 +17,7 @@ export const READ_ROOM = "GET /api/dispatch/room" as const satisfies Call;
 export const MOVE_IT = `POST ${MOVE}` as const satisfies Call;
 
 /** The block the design moves, and where it moves it to. */
-export const ROHIT_BLOCK = "Rohit M., Fri 19 Sep, morning";
+export const ROHIT_BLOCK = "Rohit M., Fri 19 Sep, 9 am";
 
 export const TO_SANDEEP = "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, morning";
 
