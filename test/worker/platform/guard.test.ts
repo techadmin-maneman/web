@@ -256,14 +256,22 @@ describe("validateStaticConfig: try-on and messaging", () => {
   it("insists on an allowlist while staging messaging is on, and reads it as E.164", () => {
     const staging = { ...stagingBase, MESSAGING_ENABLED: "true" };
     expect(problemsOf(staging)).toEqual([
-      "MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging",
+      'MESSAGING_ALLOWLIST must name the test handsets, or be "*", while messaging is on in staging',
     ]);
     const allowed = validateStaticConfig({ ...staging, MESSAGING_ALLOWLIST: "98100 00001, +91 98100-00002" });
     expect(allowed.settings.messaging.allowlist).toEqual(["+919810000001", "+919810000002"]);
     expect(problemsOf({ ...staging, MESSAGING_ALLOWLIST: "12345" })).toEqual([
       "MESSAGING_ALLOWLIST has an entry that is not an Indian mobile number",
-      "MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging",
+      'MESSAGING_ALLOWLIST must name the test handsets, or be "*", while messaging is on in staging',
     ]);
+  });
+
+  // The owner, to try the whole flow from any number: staging may message everyone, never in production.
+  it("takes \"*\" on staging as every number, and refuses it in production", () => {
+    const staging = { ...stagingBase, MESSAGING_ENABLED: "true", MESSAGING_ALLOWLIST: "*" };
+    expect(problemsOf(staging)).toEqual([]);
+    expect(validateStaticConfig(staging).settings.messaging).toMatchObject({ allowlist: [], everyone: true });
+    expect(problemsOf({ ...production, MESSAGING_ALLOWLIST: "*" })).toContain('MESSAGING_ALLOWLIST is never "*" in production');
   });
 });
 

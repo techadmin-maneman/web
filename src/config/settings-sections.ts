@@ -334,14 +334,17 @@ export function readMessaging(
   providers: ProvidersRead,
   environment: EnvironmentName | undefined,
 ): MessagingSettings {
+  const everyone = (read.optionalText("MESSAGING_ALLOWLIST") ?? "").trim() === "*";
   const messaging: MessagingSettings = {
     enabled: read.flag("MESSAGING_ENABLED"),
-    allowlist: read.mobiles("MESSAGING_ALLOWLIST"),
+    allowlist: everyone ? [] : read.mobiles("MESSAGING_ALLOWLIST"),
+    everyone,
     evolution: readEvolution(read, providers),
     msg91: readMsg91(read, providers),
   };
-  if (environment === "staging" && messaging.enabled && messaging.allowlist.length === 0) {
-    read.problems.push("MESSAGING_ALLOWLIST must name the test handsets while messaging is on in staging");
+  if (environment === "staging" && messaging.enabled && messaging.allowlist.length === 0 && !everyone) {
+    read.problems.push('MESSAGING_ALLOWLIST must name the test handsets, or be "*", while messaging is on in staging');
   }
+  if (environment === "production" && everyone) read.problems.push('MESSAGING_ALLOWLIST is never "*" in production');
   return messaging;
 }

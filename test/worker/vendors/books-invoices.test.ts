@@ -184,8 +184,9 @@ describe("the invoice a finished visit gets", () => {
         branchId: null,
         line: {
           itemId: "item-first-fit",
-          name: "First fit",
-          description: "Staging test: First fit, Wed 23 Sep",
+          // No hair system known for the client: the visit by its name alone, and no date (the owner, 18 October).
+          name: "First Fit",
+          description: "Staging test",
           rate: 3_000_000,
           discount: 0,
         },
@@ -282,9 +283,32 @@ describe("the invoice a finished visit gets", () => {
     expect(await invoicePass(books)).toEqual({ raised: 1, issued: 1 });
     expect(books.made.invoices[0]?.line).toMatchObject({
       itemId: "item-classic",
-      name: "Mane Classic",
+      name: "Mane Classic, First Fit",
       rate: 2_500_000,
     });
+  });
+
+  // The owner, 18 October: a service visit names the visit, then the hair system the client was fitted with.
+  it("names a service visit's line by the visit, then the client's hair system", async () => {
+    await env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, books_item_id, updated_by, updated_at)
+       VALUES ('first_fit', 'mane_classic', 'Mane Classic', 120, 1, 'item-classic', 'ops@localhost', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await visit({
+      id: "fit-earlier",
+      type: "first_fit",
+      tier: "mane_classic",
+      day: "2026-08-01",
+      invoiceId: "inv-old",
+    });
+    await visit();
+    await paid(500_000);
+    const books = createStubBooks();
+
+    await invoicePass(books);
+    expect(books.made.invoices.at(-1)?.line.name).toBe("Service Visit, Mane Classic");
   });
 
   it("invoices a visit paid before its price went up at what the client paid, and sends it", async () => {
@@ -421,7 +445,7 @@ describe("sending it", () => {
 
     expect(await invoicePass(books)).toEqual({ raised: 1, issued: 1 });
     expect(books.made.invoices[0]?.line).toMatchObject({ rate: 0, discount: 0 });
-    expect(books.made.invoices[0]?.line.description).toMatch(/Complimentary service visit, /);
+    expect(books.made.invoices[0]?.line.name).toMatch(/^Complimentary Service Visit/);
     expect(alerted).toEqual([]);
   });
 

@@ -68,7 +68,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
       youcamApiKey: null,
       refsUrl: "http://localhost:4321/refs/v1",
     },
-    messaging: { enabled: false, allowlist: [], evolution: null, msg91: null },
+    messaging: { enabled: false, allowlist: [], everyone: false, evolution: null, msg91: null },
     devRoutes: false,
   },
 };
