@@ -153,10 +153,10 @@ export async function loadDayPlans(input: {
 }): Promise<DayPlans> {
   const { db, from, to, now } = input;
   const ids = JSON.stringify(input.technicianIds);
-  const [weeks, homes, leave, visits, holds, revisions] = await db.batch([
-    ...statements(db, ids, { from, to, now, leaving: input.leaving ?? {} }),
+  const [[weeks, homes, leave, visits, holds, revisions], schedule] = await Promise.all([
+    db.batch([...statements(db, ids, { from, to, now, leaving: input.leaving ?? {} })]),
+    loadSlotSchedule(db),
   ]);
-  const schedule = await loadSlotSchedule(db);
   const stops = new Map<string, Stop[]>();
   const add = (technicianId: string, date: string, stop: Stop) => {
     const key = `${technicianId}/${date}`;

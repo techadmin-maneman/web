@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
 import { IMRAN, SANDEEP, SANA, technician, essential, client, visit, later } from "./client-booking-fixtures.ts";
+import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 
 /** The most round trips to D1 a hold may wait on in turn. It waited on 17 when each read waited for the one before. */
 const HOLD_TRIPS = 9;
@@ -28,6 +29,10 @@ beforeEach(async () => {
   await technician(SANDEEP, "Sandeep Rawat", "SR");
   await technician(SANA, "Sana Mirza", "SM");
   await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANA).run();
+  // A visit a technician a day, so each hold fills its technician's day and these tests count holds one a technician.
+  await env.DB.prepare("INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('booking_rules', ?1, 'ops', ?2)")
+    .bind(JSON.stringify({ ...BOOKING_RULES, visits: 1 }), NOW.toISOString())
+    .run();
 });
 
 describe("POST /api/holds", () => {
@@ -151,7 +156,7 @@ describe("POST /api/holds", () => {
     };
 
     beforeEach(async () => {
-      // One technician, so a window held by one hold is full to everyone else.
+      // One technician, so a day held by one hold is full to everyone else.
       await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANDEEP).run();
     });
 

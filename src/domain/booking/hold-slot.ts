@@ -127,12 +127,10 @@ async function candidatesFor({
   db,
   input,
   now,
-  inputs,
 }: {
   db: D1Database;
   input: HoldInput;
   now: Date;
-  inputs: OpsInputs;
 }): Promise<Candidate[]> {
   const { personId, service, date, window, moves, from = "app" } = input;
   const moving = moves?.kind === "move" ? moves.visit : null;
@@ -150,7 +148,6 @@ async function candidatesFor({
       from: date,
       days: 1,
       now,
-      inputs,
     }),
     loadSlotSchedule(db),
   ]);
@@ -246,8 +243,11 @@ export async function holdSlot({
   graceSeconds?: number;
 }): Promise<Hold | null> {
   const { personId, service, date, window, price, from = "app" } = input;
-  const inputs = await readOpsInputs(db, now);
-  const [candidates, schedule] = await Promise.all([candidatesFor({ db, input, now, inputs }), loadSlotSchedule(db)]);
+  const [candidates, schedule, inputs] = await Promise.all([
+    candidatesFor({ db, input, now }),
+    loadSlotSchedule(db),
+    readOpsInputs(db, now),
+  ]);
 
   const at = now.toISOString();
   const expiresAt = new Date(now.getTime() + holdSeconds * 1000).toISOString();
