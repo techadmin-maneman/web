@@ -7,7 +7,7 @@ import {
   READ_ROOM,
   MOVE_IT,
   ROHIT_BLOCK,
-  TO_SANDEEP,
+  moveTo,
   ROHIT_JOB,
   open,
   press,
@@ -155,7 +155,7 @@ test("meets WCAG 2.2 AA on the board, the drawer, a job in hand, the picker and 
   await expect(page.getByLabel(opsCopy.dispatch.landing.list)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("radio", { name: "Client asked" }).check();
@@ -168,7 +168,7 @@ test("Escape lets go of the picker, then of the move itself", async ({ page }) =
   await open(page);
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   await expect(page.getByRole("dialog")).toBeVisible();
 
   await page.keyboard.press("Escape");

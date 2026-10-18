@@ -258,11 +258,11 @@ export const moveBody = (appointmentId: string, to: Landing, shown: Shown) => ({
   appointment_id: appointmentId,
   technician_id: to.technicianId,
   date: to.date,
-  window: to.window,
+  // A start chosen says the time; with none, the window's earliest start with room is taken.
+  ...(to.startsAt === null ? { window: to.window } : { starts_at: to.startsAt }),
   reason: to.reason,
   expected_technician_id: shown.technicianId,
   expected_starts_at: shown.startsAt,
-  ...(to.startsAt === null ? {} : { starts_at: to.startsAt }),
   ...(to.blackoutReason === null ? {} : { blackout_reason: to.blackoutReason }),
 });
 

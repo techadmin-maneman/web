@@ -87,8 +87,7 @@
 
 /*
  * A day ops recorded leave on (ADR 0062). It is shaded and labelled rather than
- * merely greyed: nothing can be dropped on it, and the server refuses it by name
- * even if something is.
+ * merely greyed: the move list offers it nothing, and the server refuses it by name.
  */
 .away {
   background: var(--ui-shade);
@@ -125,7 +124,7 @@
   cursor: grab;
 }
 
-/* A visit done, or one the technician has begun, stays where it is, and opens its drawer rather than being dragged. */
+/* A visit done, or one the technician has begun, stays where it is: its drawer offers no move. */
 .finished {
   cursor: pointer;
 }
@@ -210,44 +209,6 @@
 
 .fit:focus-visible {
   outline-color: var(--paper);
-}
-
-.targets {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  margin-top: var(--sp-2);
-}
-
-.target {
-  min-height: var(--sp-28);
-  padding: 0 var(--sp-4);
-  border: var(--hairline) dashed var(--ui-line-control);
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
-  text-align: left;
-  cursor: pointer;
-}
-
-.target:hover {
-  border-style: solid;
-  background: var(--ui-strong);
-  color: var(--ui-on-strong);
-}
-
-.target:focus-visible {
-  outline: var(--focus-width) solid var(--focus-colour);
-  outline-offset: var(--focus-inset);
-}
-
-/* A day the job in hand has no room on: nothing to drop on, and it says so. */
-.noRoom {
-  display: block;
-  margin-top: var(--sp-2);
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
 }
 
 .dayMap {

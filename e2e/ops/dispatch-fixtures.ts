@@ -16,10 +16,8 @@ export const READ_ROOM = "GET /api/dispatch/room" as const satisfies Call;
 
 export const MOVE_IT = `POST ${MOVE}` as const satisfies Call;
 
-/** The block the design moves, and where it moves it to. */
+/** The block the design moves. */
 export const ROHIT_BLOCK = "Rohit M., Fri 19 Sep, 9 am";
-
-export const TO_SANDEEP = "Move Rohit M. to Sandeep Yadav, Sat 20 Sep, morning";
 
 export const ROHIT_JOB = BOARD.technicians[0]?.days[0]?.blocks[0];
 
@@ -40,6 +38,19 @@ export async function press(page: Page, name: string): Promise<void> {
 export async function reason(page: Page, label: string): Promise<void> {
   await page.getByRole("radio", { name: label }).focus();
   await page.keyboard.press("Space");
+}
+
+/** The technicians' days the move list offers the job in hand, each from its first free start. */
+export const listed = (page: Page) => page.getByLabel(dispatch.landing.list).locator("option:not([disabled])");
+
+/** Puts the job in hand on a technician's day from the move list, as ops do: the day, then Choose. */
+export async function moveTo(page: Page, technician: string, day: string): Promise<void> {
+  const list = page.getByLabel(dispatch.landing.list);
+  const labels = await listed(page).allInnerTexts();
+  const label = labels.find((each) => each.startsWith(`${technician} · ${day} · `));
+  if (label === undefined) throw new Error(`no ${technician} on ${day} in the move list: ${labels.join("; ")}`);
+  await list.selectOption({ label });
+  await press(page, dispatch.landing.listGo);
 }
 
 /** Every body the console sent to a path, in order. */

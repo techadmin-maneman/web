@@ -18,7 +18,7 @@ import {
   READ_ROOM,
   MOVE_IT,
   ROHIT_BLOCK,
-  TO_SANDEEP,
+  moveTo,
   ROHIT_JOB,
   open,
   press,
@@ -53,9 +53,8 @@ test("moves a job from a list, sends the board it was taken from, and says only 
 
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  // The keyboard's way: the list of destinations, then the same sheet.
-  await page.getByLabel(opsCopy.dispatch.landing.list).selectOption({ label: "Sandeep Yadav · Sat 20 Sep · morning" });
-  await press(page, "Choose");
+  // The list of technicians' days, then the sheet.
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
   // The exact start the move takes, not the window alone.
@@ -75,7 +74,6 @@ test("moves a job from a list, sends the board it was taken from, and says only 
       appointment_id: ROHIT_JOB?.appointment_id,
       technician_id: BOARD.technicians[1]?.technician_id,
       date: "2025-09-20",
-      window: "morning",
       starts_at: "2025-09-20T03:30:00.000Z",
       reason: "client_asked",
       expected_technician_id: BOARD.technicians[0]?.technician_id,
@@ -97,14 +95,16 @@ test("asks the client to confirm a move to another day, sending it as a proposal
 
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   await reason(page, "Zone rebalance");
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
   await expect(picker).toContainText("We’ll ask Rohit M. on WhatsApp. It moves when they accept.");
   await press(page, "Ask Rohit M. to confirm");
 
-  await expect(page.getByRole("status")).toHaveText("Asked Rohit M. on WhatsApp to confirm Sat 20 Sep, morning.");
-  expect(sent).toEqual([expect.objectContaining({ date: "2025-09-20", window: "morning", reason: "zone_rebalance" })]);
+  await expect(page.getByRole("status")).toHaveText("Asked Rohit M. on WhatsApp to confirm Sat 20 Sep, 9 am.");
+  expect(sent).toEqual([
+    expect.objectContaining({ date: "2025-09-20", starts_at: "2025-09-20T03:30:00.000Z", reason: "zone_rebalance" }),
+  ]);
   expect(moved).toEqual([]);
 });
 
@@ -141,8 +141,7 @@ test("says a payment carries over only where one was made", async ({ page }) => 
 
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await page.getByLabel(opsCopy.dispatch.landing.list).selectOption({ label: "Sandeep Yadav · Sat 20 Sep · morning" });
-  await press(page, "Choose");
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
   await expect(picker).toContainText("Rohit M. gets the new time on WhatsApp.");
@@ -194,10 +193,9 @@ test("carries a job in hand to the next week, asks where it fits there, and move
   const list = page.getByLabel(opsCopy.dispatch.landing.list);
   await expect(list.getByRole("option")).toHaveText([
     opsCopy.dispatch.landing.listPrompt,
-    "Sandeep Yadav · Fri 26 Sep · morning",
+    "Sandeep Yadav · Fri 26 Sep · from 9 am",
   ]);
-  await list.selectOption({ label: "Sandeep Yadav · Fri 26 Sep · morning" });
-  await press(page, "Choose");
+  await moveTo(page, "Sandeep Yadav", "Fri 26 Sep");
   await reason(page, "Client asked");
   await press(page, "Move and notify");
 
@@ -207,7 +205,6 @@ test("carries a job in hand to the next week, asks where it fits there, and move
       appointment_id: ROHIT_JOB?.appointment_id,
       technician_id: sandeep,
       date: NEXT[0],
-      window: "morning",
       starts_at: "2025-09-26T03:30:00.000Z",
       reason: "client_asked",
       expected_technician_id: BOARD.technicians[0]?.technician_id,
@@ -216,44 +213,33 @@ test("carries a job in hand to the next week, asks where it fits there, and move
   ]);
 });
 
-test("drags a block onto a window, which asks for the same reason", async ({ page }) => {
-  await open(page, { [MOVE_IT]: json(MOVED) });
-
-  // The windows are offered once the drag has begun, so the drop is walked by hand.
-  const carried = await page.evaluateHandle(() => new DataTransfer());
-  await page.getByRole("button", { name: ROHIT_BLOCK }).dispatchEvent("dragstart", { dataTransfer: carried });
-  const target = page.getByRole("button", { name: TO_SANDEEP });
-  await target.dispatchEvent("dragover", { dataTransfer: carried });
-  await target.dispatchEvent("drop", { dataTransfer: carried });
-
-  await expect(page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" })).toBeVisible();
-});
-
-test("says which technician and which window clashed, and keeps the job in hand", async ({ page }) => {
+test("says which technician and which time clashed, and keeps the job in hand", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "clash") });
 
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   await page.getByRole("radio", { name: "Client asked" }).check();
   await page.getByRole("button", { name: opsCopy.dispatch.move.send }).click();
 
-  await expect(page.getByRole("alert")).toHaveText("Sandeep Yadav already has a job on Sat 20 Sep, morning.");
+  await expect(page.getByRole("alert")).toHaveText("Sandeep Yadav already has a job on Sat 20 Sep, 9 am.");
   // The job is still in hand, so another window can be chosen without starting again.
   await expect(page.getByText("Moving Rohit M.")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 // A free window with no room was refused as a clash that did not exist.
-test("says a window has no room for the visit, rather than naming a clash", async ({ page }) => {
+test("says a technician’s day has no room for the visit at a time, rather than naming a clash", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "does_not_fit") });
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   await reason(page, "Client asked");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("alert")).toHaveText("Service visit: no room in Sandeep Yadav’s morning on Sat 20 Sep.");
+  await expect(page.getByRole("alert")).toHaveText(
+    "Service visit: no room in Sandeep Yadav’s day at 9 am on Sat 20 Sep.",
+  );
 });
 
 // A move lands only at a start still ahead, and the server names a window already over.
@@ -261,11 +247,11 @@ test("says a window’s starts have all passed, and keeps the job in hand", asyn
   await open(page, { [MOVE_IT]: fails(409, "window_passed") });
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   await reason(page, "Client asked");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("alert")).toHaveText("Too late for Sat 20 Sep, morning. Choose a later window.");
+  await expect(page.getByRole("alert")).toHaveText("Too late for Sat 20 Sep, 9 am. Choose a later time.");
   await expect(page.getByText("Moving Rohit M.")).toBeVisible();
 });
 
@@ -275,7 +261,7 @@ test("asks why before a move onto a blacked-out day, and sends the reason with i
   const sent = sentTo(page, MOVE);
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
   await expect(picker).toContainText("Sat 20 Sep is a closed day.");
@@ -299,7 +285,8 @@ test("assigns a tray job through the assign route, with no technician expected",
     .getByRole("dialog", { name: "Vikram Sethi" })
     .getByRole("button", { name: opsCopy.dispatch.drawer.assign })
     .click();
-  await page.getByRole("button", { name: "Move Vikram S. to Imran Qureshi, Sat 20 Sep, afternoon" }).click();
+  await moveTo(page, "Imran Qureshi", "Sat 20 Sep");
+  await page.getByRole("dialog").getByLabel(opsCopy.dispatch.move.start).selectOption({ label: "12 pm" });
   await page.getByRole("radio", { name: "Client asked" }).check();
   await page.getByRole("button", { name: opsCopy.dispatch.move.sendQuietly, exact: true }).click();
 
@@ -310,7 +297,6 @@ test("assigns a tray job through the assign route, with no technician expected",
       appointment_id: tray?.appointment_id,
       technician_id: BOARD.technicians[0]?.technician_id,
       date: "2025-09-20",
-      window: "afternoon",
       starts_at: "2025-09-20T06:30:00.000Z",
       reason: "client_asked",
       expected_technician_id: null,
@@ -329,7 +315,7 @@ test("asks ops to call a client who has not agreed to WhatsApp, and records the 
 
   await press(page, "Vikram S., Fri 19 Sep, 12 pm");
   await press(page, "Move visit");
-  await press(page, "Move Vikram S. to Sandeep Yadav, Sat 20 Sep, morning");
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   const picker = page.getByRole("dialog", { name: "Move Vikram S. to Sandeep Yadav" });
   await expect(picker).toContainText("Vikram Sethi isn’t on WhatsApp updates. Call +91 98100 00002 with the new time.");
   // No message goes, so the button promises none.
@@ -351,13 +337,13 @@ test("tells ops a change of technician alone messages nobody", async ({ page }) 
   await open(page, { [MOVE_IT]: json({ ...MOVED, client_notice: "unchanged" }) });
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, "Move Rohit M. to Sandeep Yadav, Fri 19 Sep, morning");
+  await moveTo(page, "Sandeep Yadav", "Fri 19 Sep");
 
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("Rohit M. keeps the same window. No message sent.");
+  await expect(picker).toContainText("Rohit M. keeps the same time. No message sent.");
   await reason(page, "Zone rebalance");
   await press(page, "Move");
-  await expect(page.getByRole("status")).toHaveText("Rohit M. is now with Sandeep Yadav. Same window.");
+  await expect(page.getByRole("status")).toHaveText("Rohit M. is now with Sandeep Yadav. Same time.");
 });
 
 // Escape during "Moving" let the same job be moved twice.
@@ -376,7 +362,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
 
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   await reason(page, "Client asked");
   await press(page, "Move and notify");
   await expect(page.getByRole("button", { name: opsCopy.dispatch.move.sending })).toBeDisabled();
@@ -408,7 +394,7 @@ test("refuses a move made from a stale board, and says where the job is now", as
 
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
-  await press(page, TO_SANDEEP);
+  await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   await reason(page, "Client asked");
   await press(page, "Move and notify");
 

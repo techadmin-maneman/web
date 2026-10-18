@@ -1,7 +1,7 @@
 // The board's grid: technicians down, seven days across, each day headed by its utilisation, the header and names
-// staying put as it scrolls. With a job in hand each day offers the windows it would land in (ADR 0062), for the mouse;
-// the keyboard chooses from the list above. A search outlines what it found. A row, a day and a block draw again only
-// when what they show changes.
+// staying put as it scrolls. A visit is moved from its drawer, to a day and start chosen from the list above the board
+// (./MoveBar.tsx), not dragged. A search outlines what it found. A row, a day and a block draw again only when what they
+// show changes.
 
 import { TextButton } from "@maneman/ui/TextLink";
 import { Table } from "@maneman/ui/Table";
@@ -13,19 +13,11 @@ import { useNearView } from "@maneman/ui/useNearView";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { memo, useMemo } from "react";
-import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
+import type { Block, Board, BoardRow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import label from "../components/label.module.css";
 import styles from "./grid.module.css";
-import { begunWord, isMovable, nameOf, type Job, type Target, windowWord } from "./job.ts";
-
-/** A job in hand, and the windows each technician's day would take it in; null while the board is asking. */
-export interface InHand {
-  readonly job: Job;
-  readonly windowsAt: (technicianId: string, date: string) => readonly BookingWindow[] | null;
-  /** As the crow flies, from the job to the technician's nearest other visit that day; null where unknown. */
-  readonly kmAt: (technicianId: string, date: string) => number | null;
-}
+import { begunWord, isMovable, nameOf, type Job } from "./job.ts";
 
 /** "Fri 19", as a column is headed. */
 const dayHead = (date: string) => shortDate(date).split(" ").slice(0, 2).join(" ");
@@ -87,9 +79,6 @@ function daysOf(board: Board): Days {
   return { blocks, away, awayHours };
 }
 
-/** Takes a job up to move it; null when the person's access does not let them move one. */
-type Take = ((job: Job, from: HTMLElement) => void) | null;
-
 /** Whether a block is one the search found; null when the search names no block. */
 type Found = ((block: Block) => boolean) | null;
 
@@ -100,7 +89,6 @@ interface BlockButtonProps {
   /** The search found it, so it is outlined and says so. */
   readonly matched: boolean;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
-  readonly onTake: Take;
 }
 
 /** The block as a screen reader names it: the visit, its day and start, and done or how far it has got. */
@@ -112,11 +100,8 @@ function blockLabel(job: Job & { readonly kind: "block" }): string {
   return begun === null ? dispatch.board.block(...where) : dispatch.board.begunBlock(...where, begun);
 }
 
-/**
- * One visit on a technician's day. A visit done, or one the technician has begun, opens its drawer and cannot be
- * dragged.
- */
-const BlockButton = memo(function BlockButton({ block, technician, date, matched, onOpen, onTake }: BlockButtonProps) {
+/** One visit on a technician's day, which opens its drawer. A visit done, or one the technician has begun, is drawn as such. */
+const BlockButton = memo(function BlockButton({ block, technician, date, matched, onOpen }: BlockButtonProps) {
   const job = { kind: "block", block, technician, date } as const;
   const movable = isMovable(block);
   const begun = begunWord(block);
@@ -125,14 +110,7 @@ const BlockButton = memo(function BlockButton({ block, technician, date, matched
       className={classes(styles.block, inkOf(block), sizeOf(block), !movable && styles.finished)}
       data-appointment={block.appointment_id}
       data-match={matched ? "" : undefined}
-      draggable={movable && onTake !== null}
       aria-label={matched ? dispatch.board.found(blockLabel(job)) : blockLabel(job)}
-      onDragStart={(event) => {
-        if (onTake === null) return;
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("text/plain", block.appointment_id);
-        onTake(job, event.currentTarget);
-      }}
       onClick={(event) => {
         onOpen(job, event.currentTarget);
       }}
@@ -155,11 +133,8 @@ interface CellProps {
   readonly away: boolean;
   /** Leave over part of the day, "2–5 pm": the day still takes jobs outside it. */
   readonly awayHours: string | null;
-  readonly inHand: InHand | null;
   readonly found: Found;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
-  readonly onTake: Take;
-  readonly onLand: (to: Target) => void;
 }
 
 /** The day's leave, and the jobs still booked on it, which the leave moved nowhere. */
@@ -190,24 +165,10 @@ function AwayHoursMark({ technician, date, hours }: { technician: BoardRow; date
 }
 
 /**
- * One technician's day: the blocks on it, and, while a job is in hand, the
- * windows it would land in. A day marked away still draws whatever it holds —
- * leave recorded after a job was assigned must not hide that job — and offers
- * no window to put another one in.
+ * One technician's day: the blocks on it. A day marked away still draws whatever it holds — leave recorded after a job
+ * was assigned must not hide that job.
  */
-const Cell = memo(function Cell({
-  technician,
-  date,
-  blocks,
-  away,
-  awayHours,
-  inHand,
-  found,
-  onOpen,
-  onTake,
-  onLand,
-}: CellProps) {
-  const windows = inHand === null || away ? null : inHand.windowsAt(technician.technician_id, date);
+const Cell = memo(function Cell({ technician, date, blocks, away, awayHours, found, onOpen }: CellProps) {
   return (
     <td className={away ? `${styles.cell ?? ""} ${styles.away ?? ""}` : styles.cell}>
       {away && <AwayMark technician={technician} date={date} blocks={blocks} />}
@@ -220,41 +181,8 @@ const Cell = memo(function Cell({
           date={date}
           matched={found?.(block) === true}
           onOpen={onOpen}
-          onTake={onTake}
         />
       ))}
-      {inHand !== null && windows !== null && windows.length === 0 && (
-        <span className={styles.noRoom}>{dispatch.landing.noRoom}</span>
-      )}
-      {inHand !== null && windows !== null && windows.length > 0 && (
-        <div className={styles.targets}>
-          {windows.map((window) => (
-            <Tile
-              className={styles.target}
-              key={window}
-              tabIndex={-1}
-              aria-label={dispatch.landing.choose(
-                nameOf(inHand.job),
-                technician.name,
-                shortDate(date),
-                windowWord(window),
-              )}
-              onDragOver={(event) => {
-                event.preventDefault();
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                onLand({ technician, date, window });
-              }}
-              onClick={() => {
-                onLand({ technician, date, window });
-              }}
-            >
-              {windowWord(window)}
-            </Tile>
-          ))}
-        </div>
-      )}
     </td>
   );
 });
@@ -307,16 +235,13 @@ interface GridProps {
   readonly board: Board;
   /** The technicians to draw: the board's, narrowed by what ops searched for. */
   readonly rows: readonly BoardRow[];
-  readonly inHand: InHand | null;
   readonly found: Found;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
-  readonly onTake: Take;
-  readonly onLand: (to: Target) => void;
   /** Opens a day's routes; null where the person's access does not reach them. */
   readonly onRoutes: ((date: string) => void) | null;
 }
 
-export const Grid = memo(function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRoutes }: GridProps) {
+export const Grid = memo(function Grid({ board, rows, found, onOpen, onRoutes }: GridProps) {
   const days = useMemo(() => daysOf(board), [board]);
   return (
     <Table plain className={styles.grid}>
@@ -360,10 +285,7 @@ export const Grid = memo(function Grid({ board, rows, inHand, found, onOpen, onT
               dates={board.dates}
               days={days}
               found={found}
-              inHand={inHand}
-              onLand={onLand}
               onOpen={onOpen}
-              onTake={onTake}
             />
           );
         })}

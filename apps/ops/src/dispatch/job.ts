@@ -3,12 +3,9 @@
 // written by the same two routes, so the board holds them under one type.
 
 import type { Block, Board, BoardClient, BookingWindow, BoardRow, MoveReason, Shown, Unassigned } from "../api.ts";
-import { indiaDate } from "@maneman/web-kit/dates";
+import { indiaDate, indiaClock } from "@maneman/web-kit/dates";
 import { asksTheClient } from "@rules/policy/dispatch.ts";
 import { dispatch } from "../content.ts";
-
-/** The three windows a day is booked in, in their order (src/config/scheduling.ts). */
-export const WINDOWS: readonly BookingWindow[] = ["morning", "afternoon", "evening"];
 
 /** A window as the board names it. */
 export const windowWord = (window: BookingWindow): string => dispatch.windows[window];
@@ -31,8 +28,14 @@ export type Job = BlockJob | TrayJob;
 export interface Target {
   readonly technician: BoardRow;
   readonly date: string;
+  /** The window of the day's first free start, which a move with no start chosen takes. */
   readonly window: BookingWindow;
+  /** The start chosen in the move's sheet, once it is sent. */
+  readonly start?: string;
 }
+
+/** When a move puts the job: "10:30 am" once a start is chosen, else its window. */
+export const atOf = (to: Target): string => (to.start === undefined ? windowWord(to.window) : indiaClock(to.start));
 
 export const idOf = (job: Job): string => (job.kind === "block" ? job.block.appointment_id : job.job.appointment_id);
 
