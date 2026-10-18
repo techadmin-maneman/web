@@ -265,13 +265,13 @@ test("sorts the movements by a column, and narrows them by a list or a search", 
   );
   await expect(rows.nth(1)).toContainText(stock.movements.reasons.used);
 
-  await movements.getByRole("button", { name: opsCopy.cities.list.change, exact: true }).click();
-  await expect(movements.getByRole("columnheader", { name: opsCopy.cities.list.change })).toHaveAttribute(
+  await movements.getByRole("button", { name: stock.movements.columns[3], exact: true }).click();
+  await expect(movements.getByRole("columnheader", { name: stock.movements.columns[3] })).toHaveAttribute(
     "aria-sort",
     "ascending",
   );
   await expect(rows.nth(1)).toContainText("-4");
-  await movements.getByRole("button", { name: opsCopy.cities.list.change, exact: true }).click();
+  await movements.getByRole("button", { name: stock.movements.columns[3], exact: true }).click();
   await expect(rows.nth(1)).toContainText("+100");
 
   await movements.getByLabel(opsCopy.clients.payments.refundReason).selectOption("Delivered");
