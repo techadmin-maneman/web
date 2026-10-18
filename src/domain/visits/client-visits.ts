@@ -363,11 +363,10 @@ async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boo
 }
 
 /**
- * Why a finished visit's invoice is held as a draft, as the invoice pass holds
- * it (src/domain/books/books-invoices.ts): never sent for a visit a credit paid for,
- * and one raised but not sent is being checked, its total not what the visit
- * was sold for or Books not sending it. Ops are told of either, and it waits on
- * their Tasks board as a draft invoice.
+ * Why a finished visit's invoice is not here yet, as the invoice pass raises it (src/domain/books/books-invoices.ts):
+ * a visit a credit paid for, whose zero-priced invoice is still to come; and one raised but not sent is being checked,
+ * its total not what the visit was sold for or Books not sending it. Ops are told of that, and it waits on their Tasks
+ * board as a draft invoice.
  */
 async function invoiceHeld(
   db: D1Database,

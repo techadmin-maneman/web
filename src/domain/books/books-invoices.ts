@@ -2,8 +2,8 @@
 //
 // One line on the visit's Books item: the price book's GST-inclusive price on the day, less any discount code before
 // tax, under the appointment's ID as its reference, by which a later pass finds it. Books works out the total. The
-// invoice is sent, and the client may open it, only when it totals what the visit was sold for, and never for a visit a
-// referral credit paid for; otherwise it stays a draft and ops are told. A draft under any other reference was made by
+// invoice is sent, and the client may open it, only when it totals what the visit was sold for; otherwise it stays a
+// draft and ops are told. A visit a free-visit credit paid for is a zero-priced line, complimentary, as the CA advised. A draft under any other reference was made by
 // hand, and is never sent from here. A consultation is free, and is not invoiced.
 //
 // Each visit is claimed before Books is asked, so overlapping runs never raise it twice. One that fails waits an hour;
@@ -209,11 +209,12 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
 
   const code = await codeOff(db, visit.id, price);
   const listed = discounted(price, code?.off ?? 0);
-  // A visit paid for before its price changed was sold at what was paid, so that is its line.
-  const { soldFor } = await soldVisit(db, visit, code?.off ?? 0);
+  // A visit paid for before its price changed was sold at what was paid, so that is its line; one a credit paid for,
+  // for nothing.
+  const { soldFor, paidWithCredit } = await soldVisit(db, visit, code?.off ?? 0);
   const line =
-    soldFor === null || soldFor === listed.amount
-      ? { rate: price.amount, discount: price.amount - listed.amount }
+    paidWithCredit || soldFor === null || soldFor === listed.amount
+      ? { rate: paidWithCredit ? 0 : price.amount, discount: paidWithCredit ? 0 : price.amount - listed.amount }
       : { rate: soldFor, discount: 0 };
   const day = indiaDate(new Date(visit.window_start));
   const label = options.labelAsTest ? "Staging test: " : "";
@@ -227,7 +228,7 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
     line: {
       itemId: item.itemId,
       name: item.name,
-      description: `${label}${VISIT_TYPE_NAMES[visit.type]}, ${shortDate(day)}`,
+      description: `${label}${paidWithCredit ? complimentary(visit.type) : VISIT_TYPE_NAMES[visit.type]}, ${shortDate(day)}`,
       ...line,
     },
   };
@@ -236,6 +237,9 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
   await keepInvoice(pass, visit.id, raised.id);
   return raised;
 }
+
+/** A visit given free on a credit, as its invoice line names it: "Complimentary service visit". */
+const complimentary = (type: VisitType) => `Complimentary ${VISIT_TYPE_NAMES[type].toLowerCase()}`;
 
 /** Sends a draft of ours if it totals what the visit was sold for; otherwise holds it and tells ops. True if sent. */
 async function sendIfSold(pass: Pass, visit: Visit, invoice: BooksInvoice): Promise<boolean> {
@@ -318,6 +322,8 @@ async function soldVisit(db: D1Database, visit: PricedVisit, off: number): Promi
     .first<{ paid: number | null; with_credit: number; on_credit: number }>();
   const paidWithCredit = row?.with_credit === 1;
   const creditMissing = row?.on_credit === 1 && !paidWithCredit;
+  // A credit paid for it: it was sold for nothing.
+  if (paidWithCredit) return { soldFor: 0, paidWithCredit, creditMissing };
   const paid = row?.paid ?? null;
   if (paid !== null) return { soldFor: paid, paidWithCredit, creditMissing };
   const price = await listPrice(db, visit);

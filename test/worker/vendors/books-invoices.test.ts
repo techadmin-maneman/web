@@ -405,7 +405,7 @@ describe("sending it", () => {
     expect(books.stub.made.invoices).toHaveLength(1);
   });
 
-  it("never sends the invoice of a visit a referral credit paid for, until the CA rules how", async () => {
+  it("invoices a visit a free-visit credit paid for at nothing, as complimentary, and sends it", async () => {
     await visit();
     await env.DB.batch([
       env.DB.prepare(
@@ -419,13 +419,10 @@ describe("sending it", () => {
     ]);
     const books = createStubBooks();
 
-    expect(await invoicePass(books)).toEqual({ raised: 1, issued: 0 });
-    expect(alerted[0]).toContain("was paid with a referral credit");
-    expect(alerted[0]).toContain("waits for the accountant");
-    await invoicePass(books, later(RECHECK_AFTER_MS + 1000));
-    expect(books.made.issued).toEqual([]);
-    expect(books.made.invoices).toHaveLength(1);
-    expect(alerted).toHaveLength(1);
+    expect(await invoicePass(books)).toEqual({ raised: 1, issued: 1 });
+    expect(books.made.invoices[0]?.line).toMatchObject({ rate: 0, discount: 0 });
+    expect(books.made.invoices[0]?.line.description).toMatch(/Complimentary service visit, /);
+    expect(alerted).toEqual([]);
   });
 
   it("never sends the invoice of a visit booked on a credit the client no longer had, until ops decide", async () => {

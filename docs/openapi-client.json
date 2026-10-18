@@ -2569,7 +2569,7 @@
                 "type": "null"
               }
             ],
-            "description": "Why a finished visit's invoice is held back rather than still to come (ADR 0070): credit, a visit credit paid for it and its invoice waits on the accountant's ruling; checking, a draft ops are checking before it is sent. Null otherwise."
+            "description": "Why a finished visit's invoice is not here yet (ADR 0070): credit, a free-visit credit paid for it and its zero-priced invoice is still to come; checking, a draft ops are checking before it is sent. Null otherwise."
           },
           "no_show": {
             "anyOf": [
