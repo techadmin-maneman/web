@@ -172,7 +172,7 @@ describe("where a job in hand can go", () => {
     ]);
   });
 
-  // On staging the owner's own technician record sat beside the test ones, and a test client's visit was offered it.
+  // A real technician's record beside the test ones takes no test client's visit, nor a test one a client's.
   it("offers a test client's visit to test technicians only, as booking does", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
     await env.DB.batch([

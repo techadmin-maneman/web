@@ -19,7 +19,6 @@ export const MOST_STOPS = 12;
 
 const waypoint = (point: Point) => ({ location: { latLng: { latitude: point.lat, longitude: point.lng } } });
 
-/** Google writes a duration as seconds with an "s"; a leg of no distance leaves its distance out. */
 /** Why Google refused, as its error body says: "PERMISSION_DENIED, Requests to this API … are blocked." */
 const Refusal = z.object({ error: z.object({ status: z.string().catch(""), message: z.string().catch("") }) });
 
@@ -34,6 +33,7 @@ function why(body: unknown): string {
   return words === "" ? "" : `: ${words}`;
 }
 
+/** Google writes a duration as seconds with an "s"; a leg of no distance leaves its distance out. */
 const Reply = z.looseObject({
   routes: z
     .array(
