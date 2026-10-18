@@ -100,7 +100,9 @@ test("shows a person who may only look each rule's value, with no box", async ({
 });
 
 // A person who could only look at the discount codes saw an empty column where the actions go.
-test("gives a person who may only look at the discount codes no column of actions", async ({ page }) => {
+test("gives a person who may only look at the discount codes no column of actions, nor any in a record", async ({
+  page,
+}) => {
   await answer(page, {
     "GET /api/whoami": signedIn("viewer@maneman.in", true, [...ONLY_SIGNED_IN, "GET /api/discount-codes"]),
     "GET /api/discount-codes": json(DISCOUNT_CODES),
@@ -108,7 +110,12 @@ test("gives a person who may only look at the discount codes no column of action
   await page.goto("/settings/discount-codes");
   const table = page.getByRole("main").getByRole("table").first();
   await expect(table.getByRole("row").first().getByRole("columnheader")).toHaveCount(9);
-  await expect(table.locator("tbody").getByRole("button")).toHaveCount(0);
+  // A row's one button is its name, which opens its record.
+  const [first] = DISCOUNT_CODES.codes;
+  await table.getByRole("button", { name: settingsCopy.discountCodes.open(first?.code ?? "") }).click();
+  const record = page.getByRole("dialog", { name: first?.code ?? "" });
+  await expect(record).toBeVisible();
+  await expect(record.getByRole("button")).toHaveCount(0);
 });
 
 test("opens each page that moved at its new address", async ({ page }) => {
