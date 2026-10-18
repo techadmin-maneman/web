@@ -28,7 +28,7 @@ interface Props {
 }
 
 /** One line of the check: what changes, the old beside the new. */
-export function CheckLine({ children }: { children: ReactNode }) {
+function CheckLine({ children }: { children: ReactNode }) {
   return <p className={look.line}>{children}</p>;
 }
 

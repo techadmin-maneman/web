@@ -33,7 +33,7 @@ const NONE = "none";
 const NEW_GRANT: StaffGrant = { department: "operations", level: "view", geography: "national", place: null };
 
 /** Where a grant reaches, as its box offers it: nationally, a zone, or a city. */
-export function WhereChoice(props: {
+function WhereChoice(props: {
   readonly staff: StaffList;
   readonly value: string;
   readonly onChange: (value: string) => void;
