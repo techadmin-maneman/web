@@ -84,7 +84,7 @@ export const LOCAL_SETTINGS: Settings = {
     youcamApiKey: null,
     refsUrl: "https://maneman.in/refs/v1",
   },
-  messaging: { enabled: true, allowlist: [], evolution: null, msg91: null },
+  messaging: { enabled: true, allowlist: [], everyone: false, evolution: null, msg91: null },
   devRoutes: false,
 };
 

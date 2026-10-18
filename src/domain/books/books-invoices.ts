@@ -1,15 +1,15 @@
 // The invoice for a finished visit, raised in Books from our own figures.
 //
 // One line on the visit's Books item: the price book's GST-inclusive price on the day, less any discount code before
-// tax, under the appointment's ID as its reference, by which a later pass finds it. Books works out the total. The
-// invoice is sent, and the client may open it, only when it totals what the visit was sold for; otherwise it stays a
-// draft and ops are told. A visit a free-visit credit paid for is a zero-priced line, complimentary, as the CA advised. A draft under any other reference was made by
-// hand, and is never sent from here. A consultation is free, and is not invoiced.
+// tax, under the appointment's ID as its reference, by which a later pass finds it. The line names the hair system and
+// the visit: "Mane Man Active, First Fit"; "Service Visit, Mane Man Active". Books works out the total. The invoice is
+// sent, and the client may open it, only when it totals what the visit was sold for; otherwise it stays a draft and ops
+// are told. A visit a free-visit credit paid for is a zero-priced line, complimentary. A draft under any other
+// reference was made by hand, and is never sent from here. A consultation is free, and is not invoiced.
 //
 // Each visit is claimed before Books is asked, so overlapping runs never raise it twice. One that fails waits an hour;
 // ops hear of a refusal at once and of any other failure on its third time.
 
-import { shortDate } from "@maneman/web-kit/dates";
 import type { GstRegistration } from "../../config/gst.ts";
 import { STANDARD_TIER, VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
@@ -217,7 +217,7 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
       ? { rate: paidWithCredit ? 0 : price.amount, discount: paidWithCredit ? 0 : price.amount - listed.amount }
       : { rate: soldFor, discount: 0 };
   const day = indiaDate(new Date(visit.window_start));
-  const label = options.labelAsTest ? "Staging test: " : "";
+  const product = await productOf(db, visit);
   const supply = (await supplyFor(db, options.gst))(visit.service_city);
   const invoice: NewBooksInvoice = {
     customerId,
@@ -227,8 +227,8 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
     branchId: supply.branchId,
     line: {
       itemId: item.itemId,
-      name: item.name,
-      description: `${label}${paidWithCredit ? complimentary(visit.type) : VISIT_TYPE_NAMES[visit.type]}, ${shortDate(day)}`,
+      name: lineName({ type: visit.type, service: item.name, product, complimentary: paidWithCredit }),
+      description: options.labelAsTest ? STAGING_TEST : "",
       ...line,
     },
   };
@@ -238,8 +238,49 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
   return raised;
 }
 
-/** A visit given free on a credit, as its invoice line names it: "Complimentary service visit". */
-const complimentary = (type: VisitType) => `Complimentary ${VISIT_TYPE_NAMES[type].toLowerCase()}`;
+/** What marks an invoice made on staging, in the line's description. */
+const STAGING_TEST = "Staging test";
+
+/** "Service visit" as the invoice writes it: "Service Visit". */
+const titled = (words: string) =>
+  words.replace(/(^|\s)(\S)/g, (_whole, space: string, first: string) => space + first.toUpperCase());
+
+/**
+ * The line's name: a fit or a replacement by its hair system first, "Mane Man Active, First Fit"; any other visit by
+ * its service, then the client's hair system, "Service Visit, Mane Man Active". A visit a credit paid for is
+ * complimentary. Without a hair system known, the visit's name alone.
+ */
+function lineName(named: {
+  readonly type: VisitType;
+  readonly service: string;
+  readonly product: string | null;
+  readonly complimentary: boolean;
+}): string {
+  const fit = named.type === "first_fit" || named.type === "replacement";
+  const visit = titled(fit ? VISIT_TYPE_NAMES[named.type] : named.service);
+  const what = named.complimentary ? `Complimentary ${visit}` : visit;
+  if (named.product === null) return what;
+  return fit ? `${named.product}, ${what}` : `${what}, ${named.product}`;
+}
+
+/**
+ * The hair system the visit is for, by the name it is sold under: the visit's own where its service names one, else
+ * the one the client was last fitted with. Null where none is known.
+ */
+async function productOf(db: D1Database, visit: Visit): Promise<string | null> {
+  const row = await db
+    .prepare(
+      `SELECT s.name FROM services s WHERE s.kind = 'first_fit' AND s.tier = COALESCE(
+         NULLIF(?2, ?3),
+         (SELECT a.tier FROM appointments a
+           WHERE a.person_id = ?1 AND a.type IN ('first_fit', 'replacement') AND a.status = 'completed'
+             AND a.deleted_at IS NULL AND a.tier IS NOT NULL AND a.tier <> ?3
+           ORDER BY a.window_start DESC LIMIT 1))`,
+    )
+    .bind(visit.person_id, visit.tier ?? STANDARD_TIER, STANDARD_TIER)
+    .first<{ name: string }>();
+  return row?.name ?? null;
+}
 
 /** Sends a draft of ours if it totals what the visit was sold for; otherwise holds it and tells ops. True if sent. */
 async function sendIfSold(pass: Pass, visit: Visit, invoice: BooksInvoice): Promise<boolean> {

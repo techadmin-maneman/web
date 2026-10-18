@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { firstNameOf } from "../../../src/lib/names.ts";
 import { isStagingTestName, withoutTestMark } from "../../../src/lib/test-names.ts";
-import { testRecordAtCreation } from "../../../src/policy/staging-test-records.ts";
+import { isMessageHeldBack, testRecordAtCreation } from "../../../src/policy/staging-test-records.ts";
 
 describe("a staging test record", () => {
   it("knows a record our own scripts made by its name", () => {
@@ -40,5 +40,21 @@ describe("a staging test record", () => {
       expect(withoutTestMark(name), name).toBe(name);
     }
     expect(firstNameOf("Rohit Malhotra")).toBe("Rohit");
+  });
+});
+
+describe("staging's allowlist", () => {
+  const messaging = { enabled: true, allowlist: [], everyone: true, evolution: null, msg91: null };
+  const sent = { automatic: true, testRecord: false, mobileE164: "+919810000001" };
+
+  // Anyone signing in on staging sees the whole flow, reminders included.
+  it("lets a reminder go to any real person's number when it is everyone", () => {
+    expect(isMessageHeldBack(messaging, sent)).toBe(false);
+  });
+
+  // Our scripts invent numbers that are likely someone's: "*" never reaches them.
+  it("still holds back anything about a record our own scripts made", () => {
+    expect(isMessageHeldBack(messaging, { ...sent, testRecord: true })).toBe(true);
+    expect(isMessageHeldBack(messaging, { ...sent, automatic: false, testRecord: true })).toBe(true);
   });
 });

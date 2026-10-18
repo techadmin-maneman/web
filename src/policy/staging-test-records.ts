@@ -33,5 +33,7 @@ export function isMessageHeldBack(
   messaging: MessagingSettings,
   sent: { readonly automatic: boolean; readonly testRecord: boolean; readonly mobileE164: string },
 ): boolean {
+  // "*" opens staging to every real person's number, never to the numbers our scripts invent.
+  if (sent.testRecord && messaging.everyone) return true;
   return (sent.automatic || sent.testRecord) && !onAllowlist(messaging, sent.mobileE164);
 }

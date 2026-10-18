@@ -57,6 +57,11 @@ export interface MessagingSettings {
    * acted go anywhere regardless (`MESSAGE_CLASSES`, src/config/message-templates.ts; ADR 0097).
    */
   readonly allowlist: readonly string[];
+  /**
+   * Staging's allowlist set to "*": every real person's number, so anyone signing in sees the whole flow, reminders
+   * included. A record our own scripts made (a test record) is still messaged only on a list naming it.
+   */
+  readonly everyone: boolean;
   /** Present when MESSAGING_PROVIDER is "evolution". */
   readonly evolution: EvolutionSettings | null;
   /** Present when MESSAGING_PROVIDER is "msg91". */
@@ -65,7 +70,7 @@ export interface MessagingSettings {
 
 /** A number an automatic message may go to: every number, unless there is an allowlist and it does not name this one. */
 export const onAllowlist = (messaging: MessagingSettings, mobileE164: string): boolean =>
-  messaging.allowlist.length === 0 || messaging.allowlist.includes(mobileE164);
+  messaging.everyone || messaging.allowlist.length === 0 || messaging.allowlist.includes(mobileE164);
 
 export interface ZohoSettings {
   readonly clientId: string;
