@@ -1,23 +1,15 @@
-// Adding a supplier, or changing one (docs/decisions/0165-suppliers.md): its name, GST number, country and currency,
-// a contact, and its payment terms and warranty. The check shows each field that changes, old beside new, before
-// anything is sent (ADR 0071).
+// Adding a supplier (docs/decisions/0165-suppliers.md): its name, GST number, country and currency, a contact, and its
+// payment terms and warranty. Once added, each changes where it reads in its record.
 
-import { CheckLine } from "../components/CheckPanel.tsx";
-import type { Success } from "@maneman/web-kit/api";
 import { Field, TextInput, type BoxWidth } from "@maneman/ui/Field";
 import { useState } from "react";
-import type { paths } from "../api-schema.ts";
-import { settings } from "../content/settings.ts";
+import { AddForm } from "../components/AddForm.tsx";
 import form from "../components/forms.module.css";
-import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import { suppliersApi } from "./suppliers-api.ts";
-
-export type Suppliers = Success<paths["/api/suppliers"]["get"]>;
-export type Supplier = Suppliers["suppliers"][number];
+import { settings } from "../content/settings.ts";
+import { suppliersApi, type Suppliers } from "./suppliers-api.ts";
 
 const copy = settings.suppliers;
 const formWords = copy.form;
-const WHOLE = /^\d{1,4}$/;
 
 interface Draft {
   readonly name: string;
@@ -31,232 +23,74 @@ interface Draft {
   readonly warranty: string;
 }
 
-const draftOf = (supplier: Supplier | null): Draft => ({
-  name: supplier?.name ?? "",
-  gstin: supplier?.gstin ?? "",
-  country: supplier?.country ?? "IN",
-  currency: supplier?.currency ?? "INR",
-  contactName: supplier?.contact_name ?? "",
-  contactPhone: supplier?.contact_phone ?? "",
-  contactEmail: supplier?.contact_email ?? "",
-  terms: String(supplier?.payment_terms_days ?? 0),
-  warranty: String(supplier?.warranty_days ?? 0),
-});
+const BLANK: Draft = {
+  name: "",
+  gstin: "",
+  country: "IN",
+  currency: "INR",
+  contactName: "",
+  contactPhone: "",
+  contactEmail: "",
+  terms: "0",
+  warranty: "0",
+};
 
 const orNull = (text: string) => (text.trim() === "" ? null : text.trim());
 
-function bodyOf(draft: Draft) {
-  return {
-    name: draft.name.trim(),
-    gstin: orNull(draft.gstin.toUpperCase()),
-    country: draft.country.trim().toUpperCase(),
-    currency: draft.currency.trim().toUpperCase(),
-    contact_name: orNull(draft.contactName),
-    contact_phone: orNull(draft.contactPhone),
-    contact_email: orNull(draft.contactEmail),
-    payment_terms_days: Number(draft.terms),
-    warranty_days: Number(draft.warranty),
-  };
-}
+/** Each box: what it fills, the name the API refuses it by, how wide it is and how much it takes. */
+const BOXES: readonly (readonly [keyof Draft, string, BoxWidth, number])[] = [
+  ["name", "name", "area", 80],
+  ["gstin", "gstin", "area", 15],
+  ["country", "country", "figure", 2],
+  ["currency", "currency", "figure", 3],
+  ["contactName", "contact_name", "area", 80],
+  ["contactPhone", "contact_phone", "area", 16],
+  ["contactEmail", "contact_email", "area", 120],
+  ["terms", "payment_terms_days", "figure", 3],
+  ["warranty", "warranty_days", "figure", 4],
+];
 
-/** What the change is, field by field, each old beside new; empty when nothing changes. */
-function changes(was: Supplier, draft: Draft): string[] {
-  const now = bodyOf(draft);
-  const said = (value: string | number | null) => (value === null ? formWords.confirm.none : String(value));
-  const fields: readonly (readonly [keyof typeof now, string])[] = [
-    ["name", formWords.name],
-    ["gstin", formWords.gstin],
-    ["country", formWords.country],
-    ["currency", formWords.currency],
-    ["contact_name", formWords.contactName],
-    ["contact_phone", formWords.contactPhone],
-    ["contact_email", formWords.contactEmail],
-    ["payment_terms_days", formWords.terms],
-    ["warranty_days", formWords.warranty],
-  ];
-  return fields
-    .filter(([field]) => was[field] !== now[field])
-    .map(([field, label]) => formWords.confirm.line(label, said(was[field]), said(now[field])));
-}
-
-function SupplierEntry(props: {
-  label: string;
-  value: string;
-  width?: BoxWidth;
-  max: number;
-  onChange: (text: string) => void;
-  box: string;
-}) {
+export function AddSupplier(props: { readonly onAdded: (suppliers: Suppliers) => void; readonly onCancel: () => void }) {
+  const [draft, setDraft] = useState<Draft>(BLANK);
   return (
-    <Field label={props.label} className={form.field} box={props.box}>
-      {(control) => (
-        <TextInput
-          {...control}
-          width={props.width}
-          maxLength={props.max}
-          value={props.value}
-          onChange={(event) => {
-            props.onChange(event.target.value);
-          }}
-        />
-      )}
-    </Field>
-  );
-}
-
-/** How long the supplier gives to pay, and how long it stands behind what it supplies. */
-function SupplierTerms({ draft, edit }: { draft: Draft; edit: (field: keyof Draft) => (text: string) => void }) {
-  return (
-    <div className={form.fields}>
-      <SupplierEntry
-        label={formWords.terms}
-        box="payment_terms_days"
-        value={draft.terms}
-        width="figure"
-        max={3}
-        onChange={edit("terms")}
-      />
-      <SupplierEntry
-        label={formWords.warranty}
-        box="warranty_days"
-        value={draft.warranty}
-        width="figure"
-        max={4}
-        onChange={edit("warranty")}
-      />
-    </div>
-  );
-}
-
-/** The supplier's boxes, each holding text as typed. */
-function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draft) => (text: string) => void }) {
-  return (
-    <>
-      <div className={form.fields}>
-        <SupplierEntry
-          label={formWords.name}
-          value={draft.name}
-          width="area"
-          max={80}
-          onChange={edit("name")}
-          box="name"
-        />
-        <SupplierEntry
-          label={formWords.gstin}
-          box="gstin"
-          value={draft.gstin}
-          width="area"
-          max={15}
-          onChange={edit("gstin")}
-        />
-        <SupplierEntry
-          label={formWords.country}
-          box="country"
-          value={draft.country}
-          width="figure"
-          max={2}
-          onChange={edit("country")}
-        />
-        <SupplierEntry
-          label={formWords.currency}
-          box="currency"
-          value={draft.currency}
-          width="figure"
-          max={3}
-          onChange={edit("currency")}
-        />
-      </div>
-      <div className={form.fields}>
-        <SupplierEntry
-          label={formWords.contactName}
-          box="contact_name"
-          value={draft.contactName}
-          width="area"
-          max={80}
-          onChange={edit("contactName")}
-        />
-        <SupplierEntry
-          label={formWords.contactPhone}
-          box="contact_phone"
-          value={draft.contactPhone}
-          width="area"
-          max={16}
-          onChange={edit("contactPhone")}
-        />
-        <SupplierEntry
-          label={formWords.contactEmail}
-          box="contact_email"
-          value={draft.contactEmail}
-          width="area"
-          max={120}
-          onChange={edit("contactEmail")}
-        />
-      </div>
-      <SupplierTerms draft={draft} edit={edit} />
-    </>
-  );
-}
-
-export function SupplierForm({
-  supplier,
-  onSaved,
-  onCancel,
-}: {
-  /** The one to change; null to add a new one. */
-  supplier: Supplier | null;
-  onSaved: (suppliers: Suppliers, said: string) => void;
-  onCancel: (() => void) | null;
-}) {
-  const [draft, setDraft] = useState<Draft>(() => draftOf(supplier));
-  const ready =
-    draft.name.trim() !== "" &&
-    /^[A-Za-z]{2}$/.test(draft.country.trim()) &&
-    /^[A-Za-z]{3}$/.test(draft.currency.trim()) &&
-    WHOLE.test(draft.terms.trim()) &&
-    WHOLE.test(draft.warranty.trim());
-  const steps = useSteps(
-    async () => {
-      const body = bodyOf(draft);
-      const answer =
-        supplier === null ? await suppliersApi.addSupplier(body) : await suppliersApi.changeSupplier(supplier.id, body);
-      return sentOf(answer, (suppliers) => ({ suppliers }));
-    },
-    (sent) => {
-      onSaved(sent.suppliers, supplier === null ? formWords.added : formWords.saved);
-    },
-  );
-  const edit = (field: keyof Draft) => (text: string) => {
-    setDraft({ ...draft, [field]: text });
-    steps.edit();
-  };
-  const body = bodyOf(draft);
-  const lines =
-    supplier === null ? [formWords.confirm.adding(body.name, body.country, body.currency)] : changes(supplier, draft);
-
-  return (
-    <SettingForm
-      title={supplier === null ? formWords.addTitle : formWords.changeTitle(supplier.name)}
-      steps={steps}
-      ready={ready}
+    <AddForm
+      title={formWords.addTitle}
+      words={formWords}
       errors={copy.errors}
-      onCancel={onCancel}
-      boxes={[
-        "name",
-        "gstin",
-        "country",
-        "currency",
-        "contact_name",
-        "contact_phone",
-        "contact_email",
-        "payment_terms_days",
-        "warranty_days",
-      ]}
-      sendable={lines.length > 0}
-      checking={(lines.length === 0 ? [formWords.confirm.nothing] : lines).map((line) => (
-        <CheckLine key={line}>{line}</CheckLine>
-      ))}
+      boxes={BOXES.map(([, box]) => box)}
+      send={() =>
+        suppliersApi.addSupplier({
+          name: draft.name.trim(),
+          gstin: orNull(draft.gstin.toUpperCase()),
+          country: draft.country.trim().toUpperCase(),
+          currency: draft.currency.trim().toUpperCase(),
+          contact_name: orNull(draft.contactName),
+          contact_phone: orNull(draft.contactPhone),
+          contact_email: orNull(draft.contactEmail),
+          payment_terms_days: Number(draft.terms),
+          warranty_days: Number(draft.warranty),
+        })
+      }
+      onAdded={props.onAdded}
+      onCancel={props.onCancel}
     >
-      <SupplierBoxes draft={draft} edit={edit} />
-    </SettingForm>
+      <div className={form.fields}>
+        {BOXES.map(([field, box, width, most]) => (
+          <Field key={field} label={formWords[field]} className={form.field} box={box}>
+            {(control) => (
+              <TextInput
+                {...control}
+                width={width}
+                maxLength={most}
+                value={draft[field]}
+                onChange={(event) => {
+                  setDraft({ ...draft, [field]: event.target.value });
+                }}
+              />
+            )}
+          </Field>
+        ))}
+      </div>
+    </AddForm>
   );
 }

@@ -1,0 +1,27 @@
+/* A supplier's record (./SupplierRecord.tsx): beneath its values, what it supplies, a line an item. */
+
+.items {
+  display: grid;
+  gap: var(--sp-8);
+  margin-top: var(--sp-24);
+}
+
+.itemsTitle {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-medium);
+}
+
+.itemList {
+  display: grid;
+  gap: var(--sp-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* An item opened: its values beneath its line. */
+.item {
+  margin-top: var(--sp-8);
+  border-top: var(--hairline) solid var(--ui-line);
+}

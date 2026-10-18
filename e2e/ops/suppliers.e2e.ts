@@ -1,12 +1,12 @@
 // Settings, Suppliers (docs/decisions/0165-suppliers.md): who we buy stock from and on what terms, and what each
-// supplies, every change checked old beside new before it is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// supplies. A row opens its record, where each value changes where it reads (docs/decisions/0212-editing-in-place.md).
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
-import { review } from "../../apps/ops/src/content/common.ts";
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 
 const copy = settingsCopy.suppliers;
 
@@ -51,9 +51,14 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
-test("lists each supplier with its terms, and adds one once checked", async ({ page }) => {
+async function recordOf(page: Page) {
+  await page.getByRole("button", { name: copy.open("Lumina Hair Co") }).click();
+  return page.getByRole("dialog", { name: "Lumina Hair Co" });
+}
+
+test("lists each supplier with its terms, and adds one", async ({ page }) => {
   await open(page, { "POST /api/suppliers": json(BOOK) });
-  const row = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Lumina Hair Co" }) });
+  const row = page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open("Lumina Hair Co") }) });
   await expect(row).toContainText("CN · USD");
   await expect(row).toContainText(copy.terms(30));
   await expect(row).toContainText(copy.warranty(90));
@@ -63,10 +68,8 @@ test("lists each supplier with its terms, and adds one once checked", async ({ p
   await form.getByLabel(copy.form.name, { exact: true }).fill("Kesh Supplies");
   await form.getByLabel(copy.form.gstin).fill("07aabck1234m1z5");
   await form.getByLabel(copy.form.terms).fill("15");
-  await form.getByRole("button", { name: review.next }).click();
-  await expect(form.getByText(copy.form.confirm.adding("Kesh Supplies", "IN", "INR"))).toBeVisible();
   const sent = posted(page, "/api/suppliers");
-  await form.getByRole("button", { name: review.send }).click();
+  await form.getByRole("button", { name: copy.form.add, exact: true }).click();
   expect((await sent).postDataJSON()).toEqual({
     name: "Kesh Supplies",
     gstin: "07AABCK1234M1Z5",
@@ -78,25 +81,55 @@ test("lists each supplier with its terms, and adds one once checked", async ({ p
     payment_terms_days: 15,
     warranty_days: 0,
   });
+  await expect(page.getByRole("status").filter({ hasText: copy.added })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("shows what a supplier supplies, and sets a price old beside new", async ({ page }) => {
-  await open(page, { "POST /api/suppliers/{id}/items": json(BOOK) });
-  await page.getByRole("button", { name: copy.itemsLabel("Lumina Hair Co") }).click();
-  const items = page.getByRole("region", { name: copy.item.title("Lumina Hair Co") });
-  const solvent = items.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Solvent" }) });
-  await expect(solvent).toContainText("USD 12.50 per ml");
+test("changes a supplier's value where it reads, the rest sent as they stand", async ({ page }) => {
+  await open(page, { "POST /api/suppliers/{id}": json(BOOK) });
+  const record = await recordOf(page);
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.rows.terms}` }).click();
+  const terms = record.getByRole("textbox", { name: copy.rows.terms });
+  await expect(terms).toHaveValue("30");
+  await terms.fill("45");
+  const sent = posted(page, "/api/suppliers/sup-1");
+  await terms.press("Enter");
+  expect((await sent).postDataJSON()).toEqual({
+    name: "Lumina Hair Co",
+    gstin: null,
+    country: "CN",
+    currency: "USD",
+    contact_name: "Wei Chen",
+    contact_phone: null,
+    contact_email: null,
+    payment_terms_days: 45,
+    warranty_days: 90,
+  });
+});
 
-  await items.getByRole("button", { name: copy.item.addOne }).click();
-  const form = page.getByRole("dialog", { name: copy.item.title("Lumina Hair Co") });
-  await form.getByLabel(copy.item.consumable).selectOption({ label: "Solvent" });
-  await form.getByLabel(copy.item.price("USD", "ml")).fill("13");
-  await form.getByRole("button", { name: review.next }).click();
-  await expect(form).toContainText("USD 12.50");
-  await expect(form).toContainText("USD 13.00");
-  const sent = posted(page, "/api/suppliers/sup-1/items");
-  await form.getByRole("button", { name: review.send }).click();
+test("retires a supplier once asked", async ({ page }) => {
+  await open(page, { "POST /api/suppliers/{id}/retire": json(BOOK) });
+  const record = await recordOf(page);
+  await record.getByRole("button", { name: copy.retiring.label("Lumina Hair Co") }).click();
+  await expect(record.getByText(copy.retiring.warning("Lumina Hair Co"))).toBeVisible();
+  const sent = posted(page, "/api/suppliers/sup-1/retire");
+  await record.getByRole("button", { name: copy.retiring.confirm, exact: true }).click();
+  await sent;
+});
+
+test("shows what a supplier supplies, sets a price where it reads, and adds an item", async ({ page }) => {
+  await open(page, { "POST /api/suppliers/{id}/items": json(BOOK) });
+  const record = await recordOf(page);
+  const items = record.getByRole("region", { name: copy.item.title("Lumina Hair Co") });
+  await items.getByRole("button", { name: /^Solvent · USD 12.50 per ml/ }).click();
+
+  const solvent = items.getByRole("group", { name: "Solvent" });
+  await solvent.getByRole("button", { name: `${EDITING.change} ${copy.item.rows.price("ml")}` }).click();
+  const price = solvent.getByRole("textbox", { name: copy.item.rows.price("ml") });
+  await expect(price).toHaveValue("12.5");
+  await price.fill("13");
+  let sent = posted(page, "/api/suppliers/sup-1/items");
+  await price.press("Enter");
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "solvent",
     their_code: "SV-500",
@@ -104,6 +137,22 @@ test("shows what a supplier supplies, and sets a price old beside new", async ({
     pack_size: 12,
     minimum_order: 24,
     lead_time_days: 21,
+  });
+
+  await items.getByRole("button", { name: copy.item.addOne }).click();
+  const add = items.getByRole("group", { name: copy.item.addOne });
+  await expect(add.getByLabel(copy.item.consumable)).toHaveValue("tape_strips");
+  await add.getByLabel(copy.item.price("USD", "strip")).fill("0.4");
+  await add.getByLabel(copy.item.lead).fill("14");
+  sent = posted(page, "/api/suppliers/sup-1/items");
+  await add.getByRole("button", { name: copy.form.add, exact: true }).click();
+  expect((await sent).postDataJSON()).toEqual({
+    consumable_code: "tape_strips",
+    their_code: null,
+    unit_price: 40,
+    pack_size: 1,
+    minimum_order: 1,
+    lead_time_days: 14,
   });
   expect(await axeViolations(page)).toEqual([]);
 });
