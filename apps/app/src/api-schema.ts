@@ -2726,8 +2726,16 @@ export interface paths {
                         tier?: string;
                         /** Format: date */
                         date: string;
-                        /** @enum {string} */
-                        window: "morning" | "afternoon" | "evening";
+                        /**
+                         * @description Any start inside it, the best first; or name the start.
+                         * @enum {string}
+                         */
+                        window?: "morning" | "afternoon" | "evening";
+                        /**
+                         * Format: date-time
+                         * @description The start the client chose, on `date` (docs/decisions/0210-booking-by-start-time.md); or name a window.
+                         */
+                        starts_at?: string;
                         /**
                          * Format: uuid
                          * @description One of the client's visits, to move instead.
@@ -2744,6 +2752,24 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Hold"];
+                    };
+                };
+                /** @description invalid_request: a window and a start both, or neither, or a start on another day */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
                     };
                 };
                 /** @description session_required */
@@ -5271,6 +5297,8 @@ export interface components {
                 /** Format: date */
                 date: string;
                 price: components["schemas"]["Price"] & unknown;
+                /** @description The day's starts a step apart, each open or taken (docs/decisions/0210-booking-by-start-time.md). */
+                starts: components["schemas"]["Start"][];
                 windows: {
                     /** @enum {string} */
                     window: "morning" | "afternoon" | "evening";
@@ -5293,6 +5321,24 @@ export interface components {
             /** @description How long the visit is booked for. */
             minutes: number;
         };
+        Start: {
+            /** @description India's clock, as 11:30. */
+            time: string;
+            /**
+             * Format: date-time
+             * @description When the visit starts.
+             */
+            starts_at: string;
+            /**
+             * Format: date-time
+             * @description The latest the technician arrives: the start and its arrival window.
+             */
+            arrives_by: string;
+            /** @description Whether a technician can take it, with room for the drives either side. False when taken. */
+            open: boolean;
+            /** @description Booked now, moving or cancelling it would already cost the client: it starts inside the notice. */
+            change_charged: boolean;
+        };
         Hold: {
             /** Format: uuid */
             id: string;
@@ -5310,6 +5356,11 @@ export interface components {
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
+            /**
+             * Format: date-time
+             * @description The latest the technician arrives: the start and its arrival window.
+             */
+            arrives_by: string;
             technician: {
                 name: string;
                 initials: string;

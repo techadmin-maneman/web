@@ -36,7 +36,7 @@ export interface StartPlacing {
 }
 
 /** A technician who can take a start, the driving it adds to their day, and the lock the hold on their day takes. */
-export interface Taker {
+interface Taker {
   readonly technician: Technician;
   readonly addedDrive: number;
   readonly revision: number;

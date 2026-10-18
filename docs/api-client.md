@@ -3401,7 +3401,13 @@ Request body:
         "morning",
         "afternoon",
         "evening"
-      ]
+      ],
+      "description": "Any start inside it, the best first; or name the start."
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start the client chose, on `date` (docs/decisions/0210-booking-by-start-time.md); or name a window."
     },
     "moving": {
       "type": "string",
@@ -3411,8 +3417,7 @@ Request body:
   },
   "required": [
     "type",
-    "date",
-    "window"
+    "date"
   ],
   "additionalProperties": false
 }
@@ -3423,6 +3428,42 @@ Request body:
 ```json
 {
   "$ref": "#/components/schemas/Hold"
+}
+```
+
+**400**: invalid_request: a window and a start both, or neither, or a start on another day
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -9932,6 +9973,13 @@ Request body:
               }
             ]
           },
+          "starts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Start"
+            },
+            "description": "The day's starts a step apart, each open or taken (docs/decisions/0210-booking-by-start-time.md)."
+          },
           "windows": {
             "type": "array",
             "items": {
@@ -9976,6 +10024,7 @@ Request body:
         "required": [
           "date",
           "price",
+          "starts",
           "windows"
         ],
         "additionalProperties": false
@@ -10019,6 +10068,46 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "The service the windows are for: a move's is its visit's."
+}
+```
+
+### Start
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "time": {
+      "type": "string",
+      "description": "India's clock, as 11:30."
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the visit starts."
+    },
+    "arrives_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The latest the technician arrives: the start and its arrival window."
+    },
+    "open": {
+      "type": "boolean",
+      "description": "Whether a technician can take it, with room for the drives either side. False when taken."
+    },
+    "change_charged": {
+      "type": "boolean",
+      "description": "Booked now, moving or cancelling it would already cost the client: it starts inside the notice."
+    }
+  },
+  "required": [
+    "time",
+    "starts_at",
+    "arrives_by",
+    "open",
+    "change_charged"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -10077,6 +10166,11 @@ Request body:
     "ends_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "arrives_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The latest the technician arrives: the start and its arrival window."
     },
     "technician": {
       "type": "object",
@@ -10248,6 +10342,7 @@ Request body:
     "hours",
     "starts_at",
     "ends_at",
+    "arrives_by",
     "technician",
     "price",
     "late_fee",

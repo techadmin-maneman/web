@@ -111,7 +111,14 @@ export function placedAt(day: PlanDay, visit: VisitToPlan, start: number, rules:
     saved = driveIn(day, before, after.pin, rules.drive);
   }
   const placed: Stop = { start, end, pin: visit.pin, fit: visit.fit };
-  if (!breakFits(day, [...stops, placed].sort((a, b) => a.start - b.start), rules)) return null;
+  if (
+    !breakFits(
+      day,
+      [...stops, placed].sort((a, b) => a.start - b.start),
+      rules,
+    )
+  )
+    return null;
   return { start, addedDrive: arriving + leaving - saved };
 }
 
@@ -138,7 +145,7 @@ export const timeOf = (minute: number): string =>
   `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
 
 /** The claims a hold takes on its technician's day: a quarter hour at a time of its service and wrap-up. */
-export const TICK_MINUTES = 15;
+const TICK_MINUTES = 15;
 
 /**
  * What a hold starting at `time` for `minutes` claims: each quarter hour it covers, "at:10:15", which two holds never

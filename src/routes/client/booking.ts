@@ -4,7 +4,7 @@
 // The windows open are ./availability.ts; holding one, and booking it, are here.
 
 import { z } from "@hono/zod-openapi";
-import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
+import { BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { holdSlot } from "../../domain/booking/hold-slot.ts";
 import { clientHold, holdAtCheckout, releaseHold, takeBackAtCheckout } from "../../domain/booking/holds.ts";
@@ -31,6 +31,24 @@ import { driveCheckOf } from "../../http/drive-check.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import { indiaDate, indiaTime } from "../../lib/india-time.ts";
 import { windowAt } from "../../policy/slot-times.ts";
+import type { OpsInputs } from "../../domain/platform/ops-settings.ts";
+import type { Moving } from "../../domain/booking/occupancy.ts";
+
+/**
+ * The window and start a hold asks for: the start the client chose, in its window that day; or a window, any start in
+ * it. Null for a start on another day than the hold's.
+ */
+async function askedTime(
+  db: D1Database,
+  asked: { readonly date: string; readonly window: BookingWindow | undefined; readonly startText: string | undefined },
+): Promise<{ readonly window: BookingWindow; readonly startsAt: Date | undefined } | null> {
+  if (asked.startText === undefined) {
+    return asked.window === undefined ? null : { window: asked.window, startsAt: undefined };
+  }
+  const startsAt = new Date(asked.startText);
+  if (indiaDate(startsAt) !== asked.date) return null;
+  return { window: windowAt(indiaTime(startsAt), (await loadSlotSchedule(db)).on(asked.date)), startsAt };
+}
 
 const holdRoute = selfServeRoute({
   method: "post",
@@ -149,15 +167,34 @@ async function creditPays(
   return (await spendableCredits(db, hold.personId, now)).visits > 0;
 }
 
+/** What a hold moves: the visit in place, or a new visit replacing it where moving it is charged. */
+const movesOf = (
+  move: { readonly moving: Moving; readonly terms: { readonly move: { readonly cost: string } } } | null,
+) =>
+  move === null
+    ? undefined
+    : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
+
+/** The client's own hold at Checkout given back to them, its countdown started again; null where it is gone. */
+async function resumeAtCheckout(
+  db: D1Database,
+  holdId: string,
+  asked: { readonly personId: string; readonly now: Date; readonly inputs: OpsInputs },
+) {
+  const holdSeconds = asked.inputs.paymentHold.countdown * 60;
+  await takeBackAtCheckout(db, { holdId, personId: asked.personId, now: asked.now, holdSeconds });
+  return clientHold(db, holdId, asked.personId, asked.now);
+}
+
 export function registerClientBooking(app: App): void {
   app.openapi(holdRoute, async (c) => {
     const personId = clientOf(c).subjectId;
     const { type, tier, date, window: asked, starts_at: startText, moving: movingId } = c.req.valid("json");
     if (!servesItself(c, type)) return refuse(c, "ops_assisted");
     const now = c.var.deps.now();
-    const startsAt = startText === undefined ? undefined : new Date(startText);
-    if (startsAt !== undefined && indiaDate(startsAt) !== date) return refuse(c, "invalid_request", ["starts_at"]);
-    const window = asked ?? windowAt(indiaTime(startsAt ?? now), (await loadSlotSchedule(c.env.DB)).on(date));
+    const time = await askedTime(c.env.DB, { date, window: asked, startText });
+    if (time === null) return refuse(c, "invalid_request", ["starts_at"]);
+    const { window, startsAt } = time;
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const [move, offered, range, address, inputs] = await Promise.all([
       movingId === undefined ? null : moveTermsFor({ c, personId, visitId: movingId, type, on: date }),
@@ -168,10 +205,7 @@ export function registerClientBooking(app: App): void {
     ]);
     if (movingId !== undefined && move === null) return refuse(c, "not_changeable");
     if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
-    const moves =
-      move === null
-        ? undefined
-        : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
+    const moves = movesOf(move);
     const moveKind = moves?.kind ?? null;
     const [service, sold, useCredit, served, atCheckout] = await Promise.all([
       move === null ? offered : movedService(c, move.terms.visit),
@@ -190,12 +224,9 @@ export function registerClientBooking(app: App): void {
     }
     if (!isFullAddress(address)) return refuse(c, "address_required");
     if (!served) return refuse(c, "not_served");
-    if (atCheckout !== null) {
-      const holdSeconds = inputs.paymentHold.countdown * 60;
-      await takeBackAtCheckout(c.env.DB, { holdId: atCheckout, personId, now, holdSeconds });
-      const resumed = await clientHold(c.env.DB, atCheckout, personId, now);
-      if (resumed !== null) return c.json(resumed, 201);
-    }
+    const resumed =
+      atCheckout === null ? null : await resumeAtCheckout(c.env.DB, atCheckout, { personId, now, inputs });
+    if (resumed !== null) return c.json(resumed, 201);
     // A visit moved late books a new one in its place, which keeps the visit's discount code, unless a credit pays it
     // (docs/decisions/0108-discount-codes.md).
     const carried =

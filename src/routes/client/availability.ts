@@ -15,6 +15,7 @@ import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
+import type { OpsInputs } from "../../domain/platform/ops-settings.ts";
 import { selfServeRoute } from "../../http/session-routes.ts";
 import { servesItself } from "../../http/self-serve.ts";
 import { indiaInstant } from "../../lib/india-time.ts";
@@ -79,6 +80,32 @@ async function addressOutsideArea(db: D1Database, personId: string): Promise<boo
   const address = await currentAddress(db, personId);
   if (address === null) return false;
   return !(await isServed(db, address.pincode));
+}
+
+/** A day's grid of starts as the API gives it (docs/decisions/0210-booking-by-start-time.md), each open or taken. */
+function startsOfDay(asked: {
+  readonly day: { readonly date: string; readonly starts: readonly { readonly time: string }[] };
+  readonly minutes: number;
+  readonly shut: boolean;
+  readonly inputs: OpsInputs;
+  readonly terms: Parameters<typeof changeChargedOnBooking>[2];
+  readonly now: Date;
+}) {
+  const { day, inputs } = asked;
+  const grid = startGrid(
+    { hours: inputs.workingHours, step: inputs.bookingRules.step, minutes: asked.minutes },
+    day.starts.map((start) => start.time),
+  );
+  return grid.map(({ time, open }) => {
+    const startsAt = indiaInstant(day.date, time);
+    return {
+      time,
+      starts_at: startsAt.toISOString(),
+      arrives_by: new Date(startsAt.getTime() + inputs.bookingRules.arrival * MINUTE_MS).toISOString(),
+      open: !asked.shut && open,
+      change_charged: changeChargedOnBooking(startsAt, asked.now, asked.terms),
+    };
+  });
 }
 
 /** A service as the API names it. */
@@ -182,20 +209,7 @@ export function registerClientAvailability(app: App): void {
         const changeCharged = changeChargedOnBooking(indiaInstant(day.date, times.start), now, terms);
         return { ...each, ...times, open: !shut && each.open, change_charged: changeCharged };
       });
-      const grid = startGrid(
-        { hours: inputs.workingHours, step: inputs.bookingRules.step, minutes: service.minutes },
-        day.starts.map((start) => start.time),
-      );
-      const starts = grid.map(({ time, open }) => {
-        const startsAt = indiaInstant(day.date, time);
-        return {
-          time,
-          starts_at: startsAt.toISOString(),
-          arrives_by: new Date(startsAt.getTime() + inputs.bookingRules.arrival * MINUTE_MS).toISOString(),
-          open: !shut && open,
-          change_charged: changeChargedOnBooking(startsAt, now, terms),
-        };
-      });
+      const starts = startsOfDay({ day, minutes: service.minutes, shut, inputs, terms, now });
       return { date: day.date, windows, starts };
     });
     return c.json(

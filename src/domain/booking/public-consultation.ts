@@ -1,5 +1,4 @@
-// Booking a free consultation, or the consultation and the fit in one visit, from the site's form or an invite's
-// landing (./public-booking.ts says how, and what it leaves).
+// Booking a free consultation, or a consultation and fit in one visit, from the site's form or an invite (./public-booking.ts).
 
 import { type ToldNotice, CONSULTATION_NOTICES } from "../../config/notices.ts";
 import type { LossExtent } from "../../config/booking.ts";
@@ -282,8 +281,7 @@ async function holdOrRequest(
     holdSeconds: HOLD_SECONDS,
     drives: form.drives,
   });
-  if (hold === null) return { ok: false, code: "taken" };
-  return { ok: true, holdId: hold.id };
+  return hold === null ? { ok: false, code: "taken" } : { ok: true, holdId: hold.id };
 }
 
 /** The invite the booking came with, on record against the consultation it produced. */

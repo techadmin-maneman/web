@@ -1,5 +1,6 @@
-// Holding a window while the client pays. The claims' key stops two holds taking the same time, and a booked visit
-// then holds it itself; holds nobody is paying for are let go first.
+// Holding a start while the client pays (docs/decisions/0210-booking-by-start-time.md). The claims' key stops two holds
+// taking the same quarter hour, or planning on a day another changed since, and a booked visit then holds its time
+// itself; holds nobody is paying for are let go first.
 
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
 import { graceEnds, ownUnpaid } from "./hold-stages.ts";
@@ -264,9 +265,10 @@ function holdRow(
 }
 
 /**
- * Holds a window for the client with whoever has the least (compareTechniciansForHold), never the technician who took the client's
- * visit just before or just after it (src/domain/booking/technician-rotation.ts).
- * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
+ * Holds the start the client chose, or the best start in their window, with whoever it adds the least driving to
+ * (./start-offers.ts), never the technician who took the client's visit just before or just after it
+ * (src/domain/booking/technician-rotation.ts). Where Google is on, the drives either side are checked first. Holds
+ * nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
  * `holdSeconds` for payment, and keeps its time for `graceSeconds` after, both as ops set them when it is made.
  */
 export async function holdSlot({
