@@ -71,8 +71,8 @@ function CityTargets({ list, city, onSaved }: { list: Targets; city: string; onS
   const save = (measure: Measure, set: number | null) => async (typed: string) => {
     // A target runs to crores, as Indian figures are written: "1,00,00,000".
     const text = typed.replaceAll(",", "").trim();
-    const figure = text === "" ? null : /^d{1,9}$/.test(text) ? Number(text) : undefined;
-    if (figure === undefined) return copy.errors.invalid_request;
+    if (text !== "" && !/^\d{1,9}$/.test(text)) return copy.errors.invalid_request;
+    const figure = text === "" ? null : Number(text);
     if (figure === null && set === null) return null;
     if (figure === null && !mayRemove) return copy.errors.not_permitted;
     const answer =
