@@ -100,7 +100,7 @@ export async function composeBookingRefunded(db: D1Database, holdId: string, per
 async function composeGivenBack(db: D1Database, holdId: string, personId: string): Promise<Composed> {
   const hold = await db
     .prepare(
-      `SELECT h.type, h.minutes, h.date, h.start_unit, h.move_kind, h.use_credit, p.name,
+      `SELECT h.type, h.minutes, h.date, h.start_unit, h.starts_at, h.move_kind, h.use_credit, p.name,
               (SELECT pay.amount FROM payments pay WHERE pay.razorpay_order_id = h.razorpay_order_id
                  AND ${statusIn("pay.status", PAYMENT_TAKEN)} ORDER BY pay.created_at LIMIT 1) AS paid,
               (SELECT pay.method FROM payments pay WHERE pay.razorpay_order_id = h.razorpay_order_id
@@ -114,6 +114,7 @@ async function composeGivenBack(db: D1Database, holdId: string, personId: string
       minutes: number | null;
       date: string;
       start_unit: number;
+      starts_at: string | null;
       move_kind: "move" | "replace" | null;
       use_credit: number;
       name: string;

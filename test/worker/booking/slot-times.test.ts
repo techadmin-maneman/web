@@ -147,7 +147,7 @@ describe("a change of times", () => {
 describe("a day under a change of times", () => {
   it("starts a held visit at its half-slot's time on that day", async () => {
     await set(EARLIEST);
-    const before = { date: "2026-11-05", start_unit: 2, type: "service" as const, minutes: 90 };
+    const before = { date: "2026-11-05", start_unit: 2, starts_at: null, type: "service" as const, minutes: 90 };
     const after = { ...before, date: EARLIEST };
     expect((await heldVisitTimes(env.DB, before)).start.toISOString()).toBe("2026-11-05T06:30:00.000Z"); // 12:00
     expect((await heldVisitTimes(env.DB, after)).start.toISOString()).toBe(`${EARLIEST}T07:00:00.000Z`); // 12:30

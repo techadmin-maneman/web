@@ -13,6 +13,9 @@
 // the committed default. The system runs on the numbers in the code until
 // somebody sets one, and it never runs on a nought.
 
+import type { DriveEstimate } from "../../policy/drive-estimate.ts";
+import type { BookingRules, WorkingHours } from "../../policy/start-times.ts";
+import type { VisitType } from "../../config/visit-types.ts";
 import type { CareHours } from "../../policy/care-hours.ts";
 import type { RemedyLimit } from "../../policy/remedies.ts";
 import {
@@ -51,6 +54,11 @@ export const SETTINGS_TTL_MS = MINUTE_MS;
 
 /** Every ops-set input, resolved: what the store holds, or the committed default. */
 export interface OpsInputs {
+  /** Booking by start time (docs/decisions/0210-booking-by-start-time.md). */
+  readonly bookingRules: BookingRules;
+  readonly sameDayBooking: Readonly<Record<VisitType, string>>;
+  readonly workingHours: WorkingHours;
+  readonly driveEstimate: DriveEstimate;
   readonly checkinRadiusM: number;
   readonly noShowWaitMin: Waits;
   readonly phoneClock: PhoneClock;
@@ -128,6 +136,10 @@ export const COMMITTED: OpsInputs = shape(fallbacks());
 /** The register's names against the fields the code reads them by. */
 function shape(values: OpsValues): OpsInputs {
   return {
+    bookingRules: values.booking_rules,
+    sameDayBooking: values.same_day_booking,
+    workingHours: values.working_hours,
+    driveEstimate: values.drive_estimate,
     checkinRadiusM: values.checkin_radius_m,
     noShowWaitMin: values.no_show_wait_min,
     phoneClock: values.phone_clock,

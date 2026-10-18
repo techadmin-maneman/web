@@ -11,6 +11,7 @@ import {
   timeOf,
   type PlanDay,
   type PlanRules,
+  type VisitToPlan,
 } from "../../../src/policy/day-plan.ts";
 import { DRIVE_ESTIMATE } from "../../../src/policy/drive-estimate.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
@@ -39,7 +40,7 @@ const DAY: PlanDay = {
 const CONSULTATION = { minutes: 60, pin: north(70), fit: false };
 const FIT = { minutes: 180, pin: north(70), fit: true };
 
-const startsOf = (day: PlanDay, visit: typeof CONSULTATION) =>
+const startsOf = (day: PlanDay, visit: VisitToPlan) =>
   placements(day, visit, RULES, 0).map((placed) => timeOf(placed.start));
 
 describe("a day's starts", () => {

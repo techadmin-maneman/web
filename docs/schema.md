@@ -2494,7 +2494,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`, `0091_razorpay_catch_up.sql`, `0181_pay_at_visit.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`, `0091_razorpay_catch_up.sql`, `0181_pay_at_visit.sql`, `0188_hold_starts_at.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2547,6 +2547,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `auto_refund_reason` | TEXT | yes |  |  |  |
 | `payment_checked_at` | TEXT | yes |  |  |  |
 | `pay_at_visit` | INTEGER | no | `0` |  | A paid visit ops booked while online payment is off: nothing is taken at booking, the client pays by UPI at the visit, and ops record the payment once it reaches the account (docs/decisions/0209-paid-at-the-visit-by-upi.md). |
+| `starts_at` | TEXT | yes |  |  | The start a hold keeps (docs/decisions/0210-booking-by-start-time.md): the instant its visit starts, which booking by start time chose, in place of the window's half-slot. Only a new column; the code deployed neither reads nor writes it, and keeps the window and half-slot it reads beside it. |
 
 Indexes:
 
