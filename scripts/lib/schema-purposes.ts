@@ -209,7 +209,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   task_spans:
     "Each task the Tasks board has held, by its group, row and episode: the client's city, when it opened and the night it was first found gone, from which the reporting copy counts Care cases (ADR 0147).",
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
-  technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",
+  technician_hours:
+    "A technician's own week: a row for each day they work, with its hours. One with no rows works their city's hours every day (ADR 0210).",
+  technician_leave:
+    "A technician's leave, in whole days or between two times of one day, which the clash check reads beside `slot_claims` (ADR 0062, ADR 0210).",
   technicians:
     "Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).",
   tryon_jobs: "One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).",

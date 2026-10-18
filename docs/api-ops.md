@@ -13489,7 +13489,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: to is before from, or more than 365 days ahead
+**400**: invalid_request: to is before from, more than 365 days ahead, or times for more than one day or the wrong way round
 
 ```json
 {
@@ -15826,6 +15826,487 @@ Per technician: jobs finished over a period, and how they ran against the planne
 }
 ```
 
+### PUT /api/technicians/{id}/hours
+
+Set the days a technician works and the hours of each, or return them to their city's hours
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianWeek"
+}
+```
+
+**200**: Set
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "days": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/WorkingDay"
+      }
+    }
+  },
+  "required": [
+    "days"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: a day twice, a time off the quarter hour, or a day that ends before it starts
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such technician in the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/technicians/{id}/home/suggestions
+
+Places matching what ops have typed of where a technician's day starts
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianHomeSearch"
+}
+```
+
+**200**: The suggestions, which may be empty
+
+```json
+{
+  "$ref": "#/components/schemas/AddressSuggestions"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such technician in the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable",
+                "busy"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### PUT /api/technicians/{id}/home
+
+Set where a technician's day starts, from a place the search found
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianHomeChoice"
+}
+```
+
+**200**: Set
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "home": {
+      "$ref": "#/components/schemas/TechnicianHome"
+    }
+  },
+  "required": [
+    "home"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such technician in the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: Google could not place it, or today's address-lookup ceiling is reached
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/technician-pay
 
 The grades, each technician's grade, and the rates per visit
@@ -17982,7 +18463,9 @@ Request body:
       "type": "string",
       "enum": [
         "checkin_radius_m",
-        "reminder_hour"
+        "reminder_hour",
+        "working_hours",
+        "drive_estimate"
       ]
     },
     "value": {
@@ -36721,6 +37204,8 @@ Request body:
         "technician.deactivate",
         "technician.reactivate",
         "technician.delete",
+        "technician.hours",
+        "technician.home",
         "technician.pay_grade",
         "pay_grade.add",
         "pay_grade.rename",
@@ -38662,6 +39147,24 @@ Request body:
               "$ref": "#/components/schemas/TechnicianLeave"
             },
             "description": "Leave that has not ended yet, soonest first (ADR 0062)."
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkingDay"
+            },
+            "description": "Their own week, each day they work; empty for one who works their city's hours every day."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TechnicianHome"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where their day starts; null until ops set it."
           }
         },
         "required": [
@@ -38676,7 +39179,9 @@ Request body:
           "sign_in_stopped_at",
           "out_of_codes",
           "devices",
-          "leave"
+          "leave",
+          "hours",
+          "home"
         ],
         "additionalProperties": false
       }
@@ -38783,6 +39288,28 @@ Request body:
       "format": "date",
       "description": "Inclusive: a single day's leave has the same date twice."
     },
+    "from_time": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Leave over part of one day: when it starts."
+    },
+    "to_time": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Leave over part of one day: when it ends."
+    },
     "note": {
       "anyOf": [
         {
@@ -38798,9 +39325,62 @@ Request body:
     "id",
     "from",
     "to",
+    "from_time",
+    "to_time",
     "note"
   ],
   "additionalProperties": false
+}
+```
+
+### WorkingDay
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "weekday": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 6,
+      "description": "0 for Sunday to 6 for Saturday."
+    },
+    "starts": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):(00|15|30|45)$",
+      "description": "India's clock, on the quarter hour: 09:00, 17:30."
+    },
+    "ends": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):(00|15|30|45)$",
+      "description": "India's clock, on the quarter hour: 09:00, 17:30."
+    }
+  },
+  "required": [
+    "weekday",
+    "starts",
+    "ends"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianHome
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "label": {
+      "type": "string",
+      "description": "The place, as Google writes its address."
+    }
+  },
+  "required": [
+    "label"
+  ],
+  "additionalProperties": false,
+  "description": "Where the technician's day starts, and the drive to their first visit."
 }
 ```
 
@@ -38828,6 +39408,26 @@ Request body:
             "format": "date",
             "description": "Inclusive: a single day's leave has the same date twice."
           },
+          "from_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "note": {
             "anyOf": [
               {
@@ -38850,6 +39450,8 @@ Request body:
           "id",
           "from",
           "to",
+          "from_time",
+          "to_time",
           "note",
           "jobs"
         ],
@@ -38962,6 +39564,16 @@ Request body:
       "minLength": 1,
       "maxLength": 200,
       "description": "Why, in ops' words. Never a medical detail."
+    },
+    "from_time": {
+      "type": "string",
+      "pattern": "^([01]d|2[0-3]):(00|15|30|45)$",
+      "description": "For leave over part of one day: when it starts."
+    },
+    "to_time": {
+      "type": "string",
+      "pattern": "^([01]d|2[0-3]):(00|15|30|45)$",
+      "description": "For leave over part of one day: when it ends."
     }
   },
   "required": [
@@ -40914,6 +41526,80 @@ Request body:
 }
 ```
 
+### TechnicianWeek
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "days": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/WorkingDay"
+      },
+      "maxItems": 7,
+      "description": "Each day they work. None returns them to their city's hours every day."
+    }
+  },
+  "required": [
+    "days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianHomeSearch
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "q": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "What ops have typed so far."
+    },
+    "session": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "One token for the whole search, sent again when the place is chosen."
+    }
+  },
+  "required": [
+    "q",
+    "session"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianHomeChoice
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "place_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "session_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    }
+  },
+  "required": [
+    "place_id",
+    "session_token"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### TechnicianPay
 
 ```json
@@ -41367,6 +42053,10 @@ Request body:
         "care_hours",
         "remedy_limit",
         "lost_after_days",
+        "booking_rules",
+        "same_day_booking",
+        "working_hours",
+        "drive_estimate",
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
@@ -41558,6 +42248,10 @@ Request body:
         "care_hours",
         "remedy_limit",
         "lost_after_days",
+        "booking_rules",
+        "same_day_booking",
+        "working_hours",
+        "drive_estimate",
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
@@ -42052,7 +42746,9 @@ Request body:
             "type": "string",
             "enum": [
               "checkin_radius_m",
-              "reminder_hour"
+              "reminder_hour",
+              "working_hours",
+              "drive_estimate"
             ]
           },
           "value": {
@@ -42084,7 +42780,9 @@ Request body:
         "type": "string",
         "enum": [
           "checkin_radius_m",
-          "reminder_hour"
+          "reminder_hour",
+          "working_hours",
+          "drive_estimate"
         ]
       },
       "description": "The rules a city may set."

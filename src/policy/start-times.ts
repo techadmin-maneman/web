@@ -75,3 +75,20 @@ export const hoursOfCity = (hours: WorkingHours): { readonly starts: string; rea
 
 /** A time of day as ops type it on a technician's week: "09:00" to "23:30", on the half hour or the quarter. */
 export const isDayTime = (value: string): boolean => /^([01]\d|2[0-3]):(00|15|30|45)$/.test(value);
+
+/** One day of a technician's own week: 0 for Sunday to 6 for Saturday, and the hours they work, India's clock. */
+export interface WorkingDay {
+  readonly weekday: number;
+  readonly starts: string;
+  readonly ends: string;
+}
+
+/** What is wrong with a week ops are setting, as codes the console names; none for one that may be set. */
+export function weekProblems(days: readonly WorkingDay[]): string[] {
+  const problems: string[] = [];
+  const weekdays = days.map((day) => day.weekday);
+  if (new Set(weekdays).size !== weekdays.length) problems.push("day_twice");
+  if (days.some((day) => !isDayTime(day.starts) || !isDayTime(day.ends))) problems.push("not_a_time");
+  else if (days.some((day) => day.ends <= day.starts)) problems.push("ends_before_it_starts");
+  return problems;
+}

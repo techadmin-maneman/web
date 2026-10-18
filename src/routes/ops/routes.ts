@@ -79,6 +79,7 @@ import { registerOpsTasks } from "./tasks.ts";
 import { registerOpsTechnicianLeave } from "./technician-leave.ts";
 import { registerOpsTechnicianPay } from "./technician-pay.ts";
 import { registerOpsTechnicianPhones } from "./technician-phones.ts";
+import { registerOpsTechnicianDays } from "./technician-days.ts";
 import { registerOpsTechnicians } from "./technicians.ts";
 import { registerOpsVisitChanges } from "./visit-changes.ts";
 import { registerOpsUpiPayments } from "./upi-payments.ts";
@@ -165,6 +166,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   // A one visit's payment link texted to the client again.
   registerOpsPaymentLinks,
   registerOpsTechnicians,
+  registerOpsTechnicianDays,
   // What technicians are paid for each visit (docs/decisions/0122-technician-pay-per-visit.md).
   registerOpsTechnicianPay,
   registerOpsSettings,

@@ -3,16 +3,22 @@
 // Tasks board until ops move it.
 
 import type { VisitType } from "../../config/visit-types.ts";
-import { addDays, indiaDateSql } from "../../lib/india-time.ts";
+import { addDays, indiaDateSql, indiaInstant, indiaTimeSql } from "../../lib/india-time.ts";
+import { isDayTime } from "../../policy/start-times.ts";
 import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 
-/** One period, both ends inclusive, as ops recorded it. */
+/**
+ * One period, both ends inclusive, as ops recorded it: whole days, or between two times of one day
+ * (docs/decisions/0210-booking-by-start-time.md).
+ */
 interface LeavePeriod {
   readonly id: string;
   readonly technician_id: string;
   readonly from: string;
   readonly to: string;
+  readonly from_time: string | null;
+  readonly to_time: string | null;
   readonly note: string | null;
 }
 
@@ -23,6 +29,9 @@ interface NewLeave {
   readonly technicianId: string;
   readonly from: string;
   readonly to: string;
+  /** Between two times of one day, India's clock; both null for whole days. */
+  readonly fromTime: string | null;
+  readonly toTime: string | null;
   readonly note: string | null;
   /** The Access identity that recorded it (ADR 0031). */
   readonly actor: string;
@@ -38,28 +47,42 @@ interface JobOnLeave {
 }
 
 /**
- * Whether technician leave `l` covers the India day of appointment `a`: the leave the board draws and the Tasks
- * board reads, as the clash check reads it.
+ * Whether technician leave `l` covers appointment `a`: its India day, and for leave over part of a day, its time
+ * on it. The leave the board draws and the Tasks board reads, as the clash check reads it.
  */
 export const LEAVE_ON_THE_DAY = `l.technician_id = a.technician_id AND l.cancelled_at IS NULL
-  AND l.from_date <= ${indiaDateSql("a.window_start")} AND l.to_date >= ${indiaDateSql("a.window_start")}`;
+  AND l.from_date <= ${indiaDateSql("a.window_start")} AND l.to_date >= ${indiaDateSql("a.window_start")}
+  AND (l.from_time IS NULL OR (${indiaTimeSql("a.window_start")} < l.to_time
+    AND ${indiaTimeSql("COALESCE(a.window_end, a.window_start)")} > l.from_time))`;
 
-/** The technician's jobs still booked on the days from `from` to `to`, soonest first. */
+/**
+ * The technician's jobs still booked on the days from `from` to `to`, soonest first; for leave over part of a day,
+ * those whose time on it the leave covers.
+ */
 async function jobsOnLeave(
   db: D1Database,
-  input: { technicianId: string; from: string; to: string },
+  input: { technicianId: string; from: string; to: string; fromTime: string | null; toTime: string | null },
 ): Promise<JobOnLeave[]> {
   const { results } = await db
     .prepare(
-      `SELECT a.id AS appointment_id, a.window_start AS starts_at, a.type, p.name AS client
+      `SELECT a.id AS appointment_id, a.window_start AS starts_at, a.window_end AS ends_at, a.type, p.name AS client
        FROM appointments a LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
        WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
          AND ${indiaDateSql("a.window_start")} BETWEEN ?2 AND ?3
        ORDER BY a.window_start`,
     )
     .bind(input.technicianId, input.from, input.to)
-    .all<JobOnLeave>();
-  return results;
+    .all<JobOnLeave & { ends_at: string | null }>();
+  const { fromTime, toTime } = input;
+  const covered =
+    fromTime === null || toTime === null
+      ? results
+      : results.filter(
+          (job) =>
+            new Date(job.starts_at) < indiaInstant(input.from, toTime) &&
+            new Date(job.ends_at ?? job.starts_at) > indiaInstant(input.from, fromTime),
+        );
+  return covered.map(({ ends_at: _ends, ...job }) => job);
 }
 
 type LeaveOutcome =
@@ -71,13 +94,22 @@ type LeaveOutcome =
     }
   | { readonly kind: "no_such_technician" }
   /** The dates are the wrong way round, or reach further ahead than LEAVE_MAX_DAYS. */
-  | { readonly kind: "bad_dates" };
+  | { readonly kind: "bad_dates" }
+  /** Times for more than one day, only one of the two, off the quarter hour, or the wrong way round. */
+  | { readonly kind: "bad_times" };
+
+/** Whether leave's times are none, or two of one day the right way round. */
+function timesHold(leave: NewLeave): boolean {
+  if (leave.fromTime === null && leave.toTime === null) return true;
+  if (leave.fromTime === null || leave.toTime === null || leave.from !== leave.to) return false;
+  return isDayTime(leave.fromTime) && isDayTime(leave.toTime) && leave.toTime > leave.fromTime;
+}
 
 /** Leave overlapping the days from `from` to `to`, clipped to nothing: the board clips it itself. */
 export async function leaveBetween(db: D1Database, from: string, to: string): Promise<LeavePeriod[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, technician_id, from_date AS "from", to_date AS "to", note FROM technician_leave
+      `SELECT id, technician_id, from_date AS "from", to_date AS "to", from_time, to_time, note FROM technician_leave
        WHERE cancelled_at IS NULL AND from_date <= ?2 AND to_date >= ?1
        ORDER BY from_date, technician_id`,
     )
@@ -90,7 +122,7 @@ export async function leaveBetween(db: D1Database, from: string, to: string): Pr
 export async function leaveFrom(db: D1Database, from: string): Promise<LeavePeriod[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, technician_id, from_date AS "from", to_date AS "to", note FROM technician_leave
+      `SELECT id, technician_id, from_date AS "from", to_date AS "to", from_time, to_time, note FROM technician_leave
        WHERE cancelled_at IS NULL AND to_date >= ?1
        ORDER BY from_date, technician_id`,
     )
@@ -111,7 +143,7 @@ interface StandingLeave extends LeavePeriod {
 export async function standingLeave(db: D1Database, technicianId: string, today: string): Promise<StandingLeave[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, technician_id, from_date AS "from", to_date AS "to", note FROM technician_leave
+      `SELECT id, technician_id, from_date AS "from", to_date AS "to", from_time, to_time, note FROM technician_leave
        WHERE technician_id = ?1 AND cancelled_at IS NULL AND to_date >= ?2
        ORDER BY from_date, created_at`,
     )
@@ -120,7 +152,13 @@ export async function standingLeave(db: D1Database, technicianId: string, today:
   return Promise.all(
     results.map(async (period) => {
       const from = period.from < today ? today : period.from;
-      const jobs = await jobsOnLeave(db, { technicianId, from, to: period.to });
+      const jobs = await jobsOnLeave(db, {
+        technicianId,
+        from,
+        to: period.to,
+        fromTime: period.from_time,
+        toTime: period.to_time,
+      });
       return { ...period, jobs };
     }),
   );
@@ -145,6 +183,7 @@ export async function recordLeave({
   audit: AuditEntry;
 }): Promise<LeaveOutcome> {
   if (leave.to < leave.from || leave.to > addDays(today, LEAVE_MAX_DAYS)) return { kind: "bad_dates" };
+  if (!timesHold(leave)) return { kind: "bad_times" };
 
   const technician = await db
     .prepare("SELECT id FROM technicians WHERE id = ?1 AND active = 1")
@@ -156,13 +195,29 @@ export async function recordLeave({
   await db.batch([
     db
       .prepare(
-        `INSERT INTO technician_leave (id, technician_id, from_date, to_date, note, actor, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
+        `INSERT INTO technician_leave (id, technician_id, from_date, to_date, from_time, to_time, note, actor, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
       )
-      .bind(id, leave.technicianId, leave.from, leave.to, leave.note, leave.actor, now.toISOString()),
+      .bind(
+        id,
+        leave.technicianId,
+        leave.from,
+        leave.to,
+        leave.fromTime,
+        leave.toTime,
+        leave.note,
+        leave.actor,
+        now.toISOString(),
+      ),
     auditStatement(db, audit, now),
   ]);
-  const jobs = await jobsOnLeave(db, { technicianId: leave.technicianId, from: leave.from, to: leave.to });
+  const jobs = await jobsOnLeave(db, {
+    technicianId: leave.technicianId,
+    from: leave.from,
+    to: leave.to,
+    fromTime: leave.fromTime,
+    toTime: leave.toTime,
+  });
   return { kind: "recorded", id, jobs };
 }
 

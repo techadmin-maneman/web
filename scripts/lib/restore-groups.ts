@@ -176,6 +176,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "slot_times",
       "serviceable_pincodes",
       "technician_leave",
+      "technician_hours",
       "visit_blackouts",
       "city_blackouts",
       "cities",

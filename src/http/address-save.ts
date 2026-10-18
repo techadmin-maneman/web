@@ -165,3 +165,24 @@ export async function saveClientAddress(
   await saveAddress(c.env.DB, { personId, address, pin, now, givenToOps });
   await queueContactSync(c, personId);
 }
+
+/**
+ * A place ops chose from the building search, other than a client's address, as a technician's home is: its
+ * coordinate and the address Google writes for it, geocoded once within the day's ceiling. Null where the ceiling is
+ * reached or Google could not place it.
+ */
+export async function placeFor(
+  c: Context<AppEnv>,
+  placeId: string,
+  sessionToken: string,
+): Promise<{ readonly placeId: string; readonly label: string; readonly lat: number; readonly lng: number } | null> {
+  if (!(await withinGeocodeCeiling(c, c.var.deps.now()))) return null;
+  const resolved = await c.var.deps.geocode.resolve(placeId, sessionToken);
+  if (!resolved.ok) {
+    await lookupFailed(c, "place_resolve_failed", resolved);
+    return null;
+  }
+  await c.var.deps.resolveAlert(GOOGLE_REFUSED);
+  const { lat, lng, formattedAddress } = resolved.place;
+  return { placeId, label: formattedAddress, lat, lng };
+}

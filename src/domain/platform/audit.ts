@@ -92,6 +92,9 @@ export const AUDIT_ACTIONS = [
   "technician.reactivate",
   // One added by mistake, deleted before any work of theirs was recorded.
   "technician.delete",
+  // A technician's own week of working hours, and where their day starts (docs/decisions/0210-booking-by-start-time.md).
+  "technician.hours",
+  "technician.home",
   // A technician's seniority grade, the grades and the rates per visit (docs/decisions/0122-technician-pay-per-visit.md).
   "technician.pay_grade",
   "pay_grade.add",
