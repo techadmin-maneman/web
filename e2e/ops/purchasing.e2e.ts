@@ -7,6 +7,7 @@ import { axeViolations } from "../a11y.ts";
 import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { purchasing as copy } from "../../apps/ops/src/content/purchasing.ts";
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 
 const ORDER = {
   id: "po-1",
@@ -285,4 +286,16 @@ test("a manager sets the letterhead, and a printed order carries it with what th
   await expect(sheet).toContainText("Payment: 30 days");
   await expect(sheet).toContainText("Approved by Ops desk");
   await expect(sheet).toContainText("Date: 21 Sep 2026");
+});
+
+test("changes a line of the letterhead where it reads, the rest sent as they stand", async ({ page }) => {
+  const set = { ...BOOK, letterhead: LETTERHEAD };
+  await open(page, { "GET /api/purchase-orders": json(set), "POST /api/purchase-orders/letterhead": json(set) });
+  const letterhead = page.getByRole("region", { name: copy.letterhead.title });
+  await letterhead.getByRole("button", { name: `${EDITING.change} ${copy.letterhead.gstin}` }).click();
+  const gstin = letterhead.getByRole("textbox", { name: copy.letterhead.gstin });
+  await gstin.fill("07aabcm1234a1z5");
+  const sent = posted(page, "/api/purchase-orders/letterhead");
+  await gstin.press("Enter");
+  expect((await sent).postDataJSON()).toEqual({ ...LETTERHEAD, gstin: "07AABCM1234A1Z5" });
 });

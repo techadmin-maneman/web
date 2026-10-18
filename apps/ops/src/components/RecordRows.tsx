@@ -3,10 +3,11 @@
 // its own value; `save` answers null once kept, else the words of why not.
 
 import { EditableRow } from "@maneman/ui/EditableRow";
-import { NumberInput, Select, TextInput } from "@maneman/ui/Field";
+import { NumberInput, Select, TextArea, TextInput } from "@maneman/ui/Field";
 import { rupees, rupeesTyped } from "@maneman/web-kit/money";
 import type { ReactNode } from "react";
 import { EDITING } from "../content/common.ts";
+import rows from "./record-rows.module.css";
 
 interface RowProps {
   readonly label: string;
@@ -40,6 +41,33 @@ export function TextRow(
           type={props.type ?? "text"}
           width="area"
           autoComplete="off"
+          maxLength={props.maxLength}
+          value={typed}
+          onChange={(event) => {
+            type(event.target.value);
+          }}
+        />
+      )}
+    </EditableRow>
+  );
+}
+
+/** Words of a few lines, as an address prints: its line breaks kept as it reads. */
+export function LinesRow(props: RowProps & { readonly value: string; readonly shown?: ReactNode; readonly maxLength: number; readonly lines: number }) {
+  return (
+    <EditableRow<string>
+      id={props.id}
+      label={props.label}
+      words={EDITING}
+      mayChange={props.mayChange}
+      value={<span className={rows.lines}>{props.shown ?? props.value}</span>}
+      start={() => props.value}
+      save={props.save}
+    >
+      {(control, typed, type) => (
+        <TextArea
+          {...control}
+          rows={props.lines}
           maxLength={props.maxLength}
           value={typed}
           onChange={(event) => {

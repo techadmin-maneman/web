@@ -91,6 +91,7 @@ export const purchasing = {
     gstin: "GSTIN (optional)",
     deliverTo: "Deliver to",
     deliverHint: "The address, as it prints, a line at a time.",
+    none: "None",
     save: "Save letterhead",
     saved: "Letterhead saved.",
     errors: {
