@@ -50,12 +50,14 @@ interface EditableRowProps<Draft> {
   readonly unit?: string | undefined;
   /** The row's id, which a link to it names. */
   readonly id?: string | undefined;
+  /** Opened already, its box holding `start`: as a line opens on an earlier wording chosen from its history. */
+  readonly opened?: boolean;
   readonly className?: string | undefined;
 }
 
 /** A row's state: the draft while its box is open, what was refused, whether it just saved, and the focus between. */
-function useEditing<Draft>(start: () => Draft, save: (draft: Draft) => Promise<string | null>) {
-  const [draft, setDraft] = useState<Draft | null>(null);
+function useEditing<Draft>(start: () => Draft, save: (draft: Draft) => Promise<string | null>, opened: boolean) {
+  const [draft, setDraft] = useState<Draft | null>(() => (opened ? start() : null));
   const [refusal, setRefusal] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, once] = useOneAtATime();
@@ -76,16 +78,16 @@ function useEditing<Draft>(start: () => Draft, save: (draft: Draft) => Promise<s
       returning.current = false;
       return;
     }
-    const opened = form.current;
-    opened?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+    const editor = form.current;
+    editor?.querySelector<HTMLElement>("input, select, textarea")?.focus();
     const escape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
       close();
     };
-    opened?.addEventListener("keydown", escape);
+    editor?.addEventListener("keydown", escape);
     return () => {
-      opened?.removeEventListener("keydown", escape);
+      editor?.removeEventListener("keydown", escape);
     };
   }, [editing]);
   useEffect(() => {
@@ -160,10 +162,11 @@ export function EditableRow<Draft>({
   unit,
   id,
   className,
+  opened = false,
 }: EditableRowProps<Draft>) {
   const boxId = useId();
   const errorId = useId();
-  const row = useEditing(start, save);
+  const row = useEditing(start, save, opened);
 
   if (!mayChange || row.draft === null) {
     return (

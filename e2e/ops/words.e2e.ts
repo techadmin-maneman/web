@@ -1,9 +1,10 @@
-// Growth · Words (docs/decisions/0126-the-words-page.md), which no board draws. Every name is made up.
+// Growth · Words (docs/decisions/0126-the-words-page.md), which no board draws. A row opens the line's record, where
+// its wording changes where it reads (docs/decisions/0212-editing-in-place.md). Every name is made up.
 
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
-import { review } from "../../apps/ops/src/content/common.ts";
+import { EDITING, review } from "../../apps/ops/src/content/common.ts";
 import { words as copy } from "../../apps/ops/src/content/words.ts";
 
 type Word = OpsReply<"/api/words">["words"][number];
@@ -46,6 +47,7 @@ const FAQ: Word = {
 async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
   await answer(page, {
     "GET /api/words": json({ words: [REMINDER, HERO, FAQ], published: null, messages: "at_once" }),
+    "GET /api/words/history": json({ versions: [] }),
     ...extra,
   });
   await page.goto("/words");
@@ -53,7 +55,12 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
 }
 
 const row = (page: Page, place: string) =>
-  page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: place, exact: true }) });
+  page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open(place), exact: true }) });
+
+async function recordOf(page: Page, place: string) {
+  await page.getByRole("button", { name: copy.open(place), exact: true }).click();
+  return page.getByRole("dialog", { name: place });
+}
 
 test("lists every line with the wording in force, who changed it, and whether the site has it", async ({ page }) => {
   await open(page);
@@ -64,7 +71,7 @@ test("lists every line with the wording in force, who changed it, and whether th
   await expect(row(page, "Visit reminder")).toBeVisible();
 });
 
-test("changes a message once the change is reviewed, keeping its details", async ({ page }) => {
+test("changes a message where its wording reads, keeping its details", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "POST /api/words": (route: Route) => {
@@ -75,18 +82,15 @@ test("changes a message once the change is reviewed, keeping its details", async
       })(route);
     },
   });
-  await row(page, "Visit reminder")
-    .getByRole("button", { name: copy.editLabel("Visit reminder") })
-    .click();
-  await expect(page.getByText(copy.form.keep("{{1}}, {{2}}, {{3}}, {{4}}, {{5}}"), { exact: false })).toBeVisible();
+  const record = await recordOf(page, "Visit reminder");
+  await expect(record.getByText(copy.form.keep("{{1}}, {{2}}, {{3}}, {{4}}, {{5}}"), { exact: false })).toBeVisible();
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.form.wording}` }).click();
   const reworded = "Hi {{1}}, see you tomorrow.\n{{2}}: {{3}}, {{4}}, with {{5}}.";
-  await page.getByLabel(copy.form.wording).fill(reworded);
-  await page.getByRole("button", { name: copy.form.next }).click();
-  await expect(page.getByText(/^Now: Hi \{\{1\}\}, see you tomorrow\./)).toBeVisible();
-  expect(sent).toBeNull();
-  await page.getByRole("button", { name: copy.check.send }).click();
-  await expect(page.getByRole("status")).toHaveText(copy.done);
+  await record.getByRole("textbox", { name: copy.form.wording }).fill(reworded);
+  await record.getByRole("button", { name: EDITING.save }).click();
+  await expect(record.getByRole("status")).toHaveText(EDITING.saved);
   expect(sent).toEqual({ key: REMINDER.key, text: reworded });
+  await expect(row(page, "Visit reminder")).toContainText("see you tomorrow.");
 });
 
 test("says why words are refused", async ({ page }) => {
@@ -96,18 +100,18 @@ test("says why words are refused", async ({ page }) => {
       400,
     ),
   });
-  await row(page, "Visit reminder")
-    .getByRole("button", { name: copy.editLabel("Visit reminder") })
-    .click();
-  await page
+  const record = await recordOf(page, "Visit reminder");
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.form.wording}` }).click();
+  await record
     .getByLabel(copy.form.wording)
     .fill("Hi {{1}}, your fitting is tomorrow.\nYour {{2}} is {{3}}, {{4}}, with {{5}}.");
-  await page.getByRole("button", { name: copy.form.next }).click();
-  await page.getByRole("button", { name: copy.check.send }).click();
-  await expect(page.getByRole("alert")).toHaveText(copy.errors.first_line);
+  await record.getByRole("button", { name: EDITING.save }).click();
+  await expect(record.getByRole("alert")).toHaveText(copy.errors.first_line);
 });
 
-test("puts a line back to the code’s wording from its history", async ({ page }) => {
+test("puts a line back to the code’s wording from its history, read in its box before it is kept", async ({
+  page,
+}) => {
   let sent: unknown = null;
   await open(page, {
     "GET /api/words/history": json({
@@ -125,14 +129,14 @@ test("puts a line back to the code’s wording from its history", async ({ page 
       return json({ word: { ...HERO, now: HERO.text, changed: null } })(route);
     },
   });
-  await row(page, "Top of the page · Title")
-    .getByRole("button", { name: copy.historyLabel("Top of the page · Title") })
-    .click();
-  await page.getByRole("button", { name: copy.form.toCode }).click();
-  await expect(page.getByLabel(copy.form.wording)).toHaveValue(HERO.text);
-  await page.getByRole("button", { name: copy.form.next }).click();
-  await page.getByRole("button", { name: copy.check.send }).click();
-  expect(sent).toEqual({ key: HERO.key, text: null });
+  const record = await recordOf(page, "Top of the page · Title");
+  await record.getByRole("button", { name: copy.form.toCode }).click();
+  const box = record.getByRole("textbox", { name: copy.form.wording });
+  await expect(box).toHaveValue(HERO.text);
+  await expect(box).toBeFocused();
+  expect(sent).toBeNull();
+  await record.getByRole("button", { name: EDITING.save }).click();
+  await expect.poll(() => sent).toEqual({ key: HERO.key, text: null });
 });
 
 test("publishes the site’s changed words once confirmed", async ({ page }) => {

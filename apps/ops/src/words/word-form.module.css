@@ -1,17 +1,16 @@
 /* What ./WordForm.tsx alone draws; what it shares is in ./words.module.css. */
 
-/* The form's box, as wide as the line it holds. */
-.wording {
-  flex: 1;
-  max-width: var(--ops-measure);
+/* The line's wording as it reads, its own line breaks kept. */
+.said {
+  white-space: pre-line;
 }
 
+/* Its box, as wide as the line it holds. */
 .box {
   width: 100%;
   white-space: pre-wrap;
 }
 
-.code,
 .hint {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-13);
