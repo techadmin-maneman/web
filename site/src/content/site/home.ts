@@ -85,13 +85,19 @@ export const hero = {
   play: "Play",
 };
 
-/** The before-and-after strip beneath the hero. Its pairs are in media.ts (resultPairs). */
+/** The before and after beneath the hero, a pair at a time. Its pairs are in media.ts (resultPairs). */
 export const results = {
   title: "10,000+ transformations by our specialists. Quietly.",
-  /** What a screen reader calls the strip, which scrolls sideways. */
+  /** What a screen reader calls the section. */
   label: "Before and after",
   before: "Before",
   after: "After",
+  /** Where the pair shown stands among them: "1 of 4". */
+  count: "{at} of {count}",
+  previous: "Previous",
+  next: "Next",
+  /** The compare's name, apart from the try-on teaser's. */
+  sliderLabel: "Compare this client’s before and after",
 };
 
 export const whatItIs = {

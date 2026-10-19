@@ -11,16 +11,18 @@ import styles from "./sent.module.css";
 /** The photograph beside the look made from it, on the shared compare. */
 function Look(props: { photo: string; look: string }) {
   return (
-    <BeforeAfter
-      className={styles.look}
-      start={tryOnTeaser.start_percent}
-      beforeLabel={tryOnTeaser.before}
-      afterLabel={tryOnTeaser.after}
-      sliderLabel={tryOnTeaser.sliderLabel}
-      sliderValue={tryOnTeaser.sliderValue}
-      before={<img src={props.photo} alt={tryOn.sent.ready.photoAlt} />}
-      after={<img src={props.look} alt={tryOn.sent.ready.lookAlt} />}
-    />
+    <div class={styles.lookFrame}>
+      <BeforeAfter
+        className={styles.look}
+        start={tryOnTeaser.start_percent}
+        beforeLabel={tryOnTeaser.before}
+        afterLabel={tryOnTeaser.after}
+        sliderLabel={tryOnTeaser.sliderLabel}
+        sliderValue={tryOnTeaser.sliderValue}
+        before={<img src={props.photo} alt={tryOn.sent.ready.photoAlt} />}
+        after={<img src={props.look} alt={tryOn.sent.ready.lookAlt} />}
+      />
+    </div>
   );
 }
 

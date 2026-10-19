@@ -63,8 +63,9 @@
   --hero-min-h: clamp(520px, 82vh, 780px);
   --hero-tag-top: clamp(16px, 2.4vw, 26px);
 
-  /* A before-and-after card: its two photographs side by side. */
-  --result-card-w: clamp(280px, 40vw, 500px);
+  /* The results' before and after at its widest, and its arrows. */
+  --result-picture-max: 520px;
+  --result-arrow: 48px;
   --what-pad-top: clamp(48px, 7vw, 104px);
   --norwood-flow-basis: 150px;
   --norwood-flow-max: 210px;

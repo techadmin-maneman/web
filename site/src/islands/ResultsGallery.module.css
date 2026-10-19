@@ -1,0 +1,66 @@
+/* The results' gallery (./ResultsGallery.tsx): the picture large, its line and the arrows beside it on a wide screen,
+   beneath it on a phone. */
+.gallery {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-s);
+  align-items: end;
+}
+@media (min-width: 761px) {
+  .gallery {
+    grid-template-columns: minmax(0, var(--result-picture-max)) minmax(0, 1fr);
+    gap: var(--space-2xl);
+  }
+}
+
+.picture {
+  width: 100%;
+}
+
+/* The pair at its photographs' own shape, not the teaser's band: two classes, so it wins over the band's height. */
+.picture .compare {
+  height: auto;
+  aspect-ratio: 4 / 5;
+}
+
+.words {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+}
+
+.caption {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-h2);
+  line-height: var(--lh-115);
+  letter-spacing: var(--tracking-heading);
+  color: var(--paper);
+  text-wrap: balance;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding-top: var(--sp-16);
+  border-top: var(--hairline) solid var(--ink-rule);
+}
+
+.count {
+  margin: 0;
+  font-size: var(--fs-15);
+  letter-spacing: var(--tracking-18);
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.arrows {
+  display: flex;
+  gap: var(--sp-12);
+}
+
+.arrow {
+  --icon-button-size: var(--result-arrow);
+}
