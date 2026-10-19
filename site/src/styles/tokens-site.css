@@ -77,6 +77,8 @@
 
   --teaser-frame-h: clamp(280px, 42vw, 420px);
   --teaser-handle: 46px;
+  /* The try-on's look beside its photograph, on the sent screen. */
+  --look-frame-max: 420px;
 
   --band-max: 1100px;
   --discretion-pad-y: clamp(120px, 20vw, 280px);

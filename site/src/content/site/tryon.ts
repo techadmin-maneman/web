@@ -168,6 +168,12 @@ export const tryOn = {
   sent: {
     frame: "On its way to your WhatsApp",
     title: "Your new look is on its way.",
+    /** Once the look is ready, shown here beside the photograph as well as sent. */
+    ready: {
+      title: "Here’s your new look.",
+      photoAlt: "Your photo",
+      lookAlt: "Your photo with the look you chose",
+    },
     /** The number the visitor gave goes between the two. */
     to: { before: "It’ll reach WhatsApp on ", after: " within minutes." },
     // Production's RESULT_RETENTION_DAYS, as the privacy notice gives it.

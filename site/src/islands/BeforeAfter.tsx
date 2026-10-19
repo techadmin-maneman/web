@@ -21,12 +21,14 @@ interface Props {
   sliderValue: string;
   /** The design's "Placeholder" tag, when this pair is placeholder material. */
   tag?: string | undefined;
+  /** A frame of its own size, where the pair is not the teaser's band. */
+  className?: string | undefined;
 }
 
 export default function BeforeAfter(props: Props) {
   return (
     <Compare
-      className={styles.teaser}
+      className={classes(styles.teaser, props.className)}
       start={props.start}
       label={props.sliderLabel}
       valueText={(at) => fill(props.sliderValue, { before: String(at), after: String(100 - at) })}

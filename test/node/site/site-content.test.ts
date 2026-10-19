@@ -94,18 +94,18 @@ describe("content", () => {
     expect(site.gateCopy(site.notices.gate).title).toBe("Where should we send it?");
   });
 
-  // ADR 0104: the look goes to WhatsApp only, never to the site, so every build shows the notices that say so, which
-  // await counsel and still keep a client's try-on (ADR 0084).
-  it("says on every page of the try-on that the look goes to WhatsApp only, and never promises it on screen", () => {
-    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v5", "gate-v5"]);
+  // The look goes to WhatsApp, and is shown on the page that proved the number once ready (ADR 0214), so every build
+  // shows the notices that say so, which await counsel and still keep a client's try-on (ADR 0084).
+  it("says on every page of the try-on that the look goes to WhatsApp and is shown here once ready", () => {
+    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v6", "gate-v6"]);
     expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([false, false]);
     expect(site.tryOnSendsCopy).toBe(true);
     const privacy = textOf(site.legalPages.privacy);
-    expect(privacy).toContain("we send the simulation to that number on WhatsApp, and it is never shown on this site");
+    expect(privacy).toContain("we send the simulation to that number on WhatsApp, and show it on this site");
     expect(privacy).toContain("we keep a small copy of your photograph in your Mane Man account as your before photo");
     expect(privacy).not.toMatch(/show it to you again|optional/);
     expect(site.tryOnTeaser.body).toContain("sent privately to your WhatsApp");
-    expect(textOf(site.legalPages.terms)).toContain("never shown on this site");
+    expect(textOf(site.legalPages.terms)).toContain("shown on this site once it is ready");
     const words = JSON.stringify({ tryOn: site.tryOn, notices: [site.notices.photo, site.notices.gate] });
     expect(words).not.toMatch(/next screen|Download|Drag the handle|hair patch/i);
   });
@@ -331,8 +331,8 @@ describe("the publish gate", () => {
   // wording for the apps, and for nothing else.
   it("stops production on what awaits counsel alone: every published block is real", () => {
     expect(publishProblems()).toEqual([
-      "the photo notice (photo-v5) is not approved",
-      "the gate notice (gate-v5) is not approved",
+      "the photo notice (photo-v6) is not approved",
+      "the gate notice (gate-v6) is not approved",
       "the consultation notice (referral-consultation-v2) is not approved",
       "the privacy page’s wording is not approved",
       "the terms page’s wording is not approved",

@@ -13,7 +13,7 @@
 // rule empties: what is kept stays until deleted.
 
 /** The photo notices that tell the visitor a client's try-on is kept. */
-export const KEEPING_NOTICES: readonly string[] = ["photo-v2", "photo-v3", "photo-v4", "photo-v5"];
+export const KEEPING_NOTICES: readonly string[] = ["photo-v2", "photo-v3", "photo-v4", "photo-v5", "photo-v6"];
 
 export interface HeldTryOn {
   readonly id: string;

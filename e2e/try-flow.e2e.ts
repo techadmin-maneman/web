@@ -154,7 +154,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   await expect.poll(() => named(seen, "upload").length).toBe(1);
   expect(named(seen, "uploadUrl")[0]?.postDataJSON()).toEqual({
     photo_consent: true,
-    notice_version: "photo-v5",
+    notice_version: "photo-v6",
     turnstile_token: DUMMY_TOKEN,
   });
   expect(await named(seen, "upload")[0]?.headerValue("content-type")).toBe("image/jpeg");
@@ -185,7 +185,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
     mobile: "9810000000",
     number_code_id: CODE_ID,
     stage: "crown",
-    notice_version: "gate-v5",
+    notice_version: "gate-v6",
     attribution: { landing_path: "/try" },
   });
   expect(await claim?.headerValue("idempotency-key")).toMatch(/^[0-9a-f-]{36}$/);
@@ -200,7 +200,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
     preset: "quiff",
   });
 
-  // The page watches the render until it is ready, and never asks for the look.
+  // The page watches the render until it is ready; a status that gives no look shows none.
   await page.clock.runFor(10_000);
   expect(named(seen, "result")).toHaveLength(0);
   await expect(page.locator("[data-screen] img")).toHaveCount(0);
@@ -216,6 +216,28 @@ test("the whole try-on: uploaded during the choices, the number given before the
     "try_on_completed",
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
+});
+
+// The look was on WhatsApp only; the page that proved the number now shows it too, once ready (ADR 0214).
+test("the look, once ready, is shown beside the photograph, and still goes to WhatsApp", async ({ page }) => {
+  const look = "/api/result/signed-look";
+  await mockApi(page, {
+    status: [
+      { status: 200, json: { job_id: JOB, state: "rendering" } },
+      { status: 200, json: { job_id: JOB, state: "ready", look } },
+    ],
+  });
+  await visit(page, "/try");
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
+  await screenIs(page, "sent");
+  await page.clock.runFor(10_000);
+
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.ready.title })).toBeVisible();
+  await expect(page.getByRole("img", { name: siteCopy.tryOn.sent.ready.lookAlt })).toHaveAttribute("src", look);
+  await expect(page.getByRole("img", { name: siteCopy.tryOn.sent.ready.photoAlt, exact: true })).toBeVisible();
+  await expect(page.getByRole("slider", { name: siteCopy.tryOnTeaser.sliderLabel })).toBeVisible();
+  await expect(page.getByText("It’ll reach WhatsApp on +91 98100 00000", { exact: false })).toBeVisible();
 });
 
 // The gate made a lead of any number typed, and sent its look there.

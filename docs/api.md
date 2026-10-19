@@ -5605,7 +5605,7 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "photo-v5",
+      "example": "photo-v6",
       "description": "The photo notice shown: the current one, the only one recorded."
     },
     "turnstile_token": {
@@ -5667,6 +5667,10 @@ Razorpay's webhook: payments and refunds
         "unavailable"
       ],
       "description": "Only when state is failed, and only where YouCam named the fault, or the try-on is paused."
+    },
+    "look": {
+      "type": "string",
+      "description": "Only when state is ready, for a try-on whose number the gate proved: the look, by a signed link that expires within the hour."
     }
   },
   "required": [
@@ -5780,7 +5784,7 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "gate-v5",
+      "example": "gate-v6",
       "description": "The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md)."
     },
     "attribution": {

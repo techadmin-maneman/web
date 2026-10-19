@@ -3424,7 +3424,7 @@ export interface components {
             photo_consent: true;
             /**
              * @description The photo notice shown: the current one, the only one recorded.
-             * @example photo-v5
+             * @example photo-v6
              */
             notice_version: string;
             turnstile_token: string;
@@ -3444,6 +3444,8 @@ export interface components {
              * @enum {string}
              */
             failure_reason?: "no_face" | "no_shoulders" | "face_angle" | "several_people" | "not_styleable" | "refused" | "unavailable";
+            /** @description Only when state is ready, for a try-on whose number the gate proved: the look, by a signed link that expires within the hour. */
+            look?: string;
         };
         /** @description The look, for the stage the gate's claim gave the try-on. */
         GenerateRequest: {
@@ -3482,7 +3484,7 @@ export interface components {
             stage: "crown" | "receding" | "advanced";
             /**
              * @description The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
-             * @example gate-v5
+             * @example gate-v6
              */
             notice_version?: string;
             attribution?: components["schemas"]["Attribution"];

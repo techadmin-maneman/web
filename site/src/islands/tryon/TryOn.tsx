@@ -18,7 +18,7 @@
 
 import { capsLook } from "@maneman/ui/Caps";
 import { TextButton } from "@maneman/ui/TextLink";
-import { useEffect, useReducer, useRef } from "preact/hooks";
+import { useEffect, useReducer, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { notices, tryOn, tryOnSendsCopy } from "../../content/site.ts";
@@ -127,7 +127,9 @@ function TryOnFlow(props: Props) {
   }, [screen, demo]);
 
   // Once the look is on its way, a render that fails sends the visitor to the error screen; its message is skipped.
-  useRenderWatch(!demo && screen === "sent" && !state.returning, jobId, fail);
+  // One that is ready is shown on the sent screen too.
+  const [look, setLook] = useState<string | null>(null);
+  useRenderWatch(!demo && screen === "sent" && !state.returning, jobId, fail, setLook);
   const wroteHistory = useScreenHistory(screen, send, !demo);
 
   // The photograph is shown from memory; its object URL is released when replaced.
@@ -221,7 +223,9 @@ function TryOnFlow(props: Props) {
           />
         )}
         {screen === "gate" && <Gate notice={notices.gate} heading={heading} {...gate} />}
-        {screen === "sent" && <Sent mobile={mobile} returning={state.returning} heading={heading} />}
+        {screen === "sent" && (
+          <Sent mobile={mobile} returning={state.returning} heading={heading} photo={state.photo} look={look} />
+        )}
         {screen === "error" && (
           <Failed
             kind={state.errorKind}

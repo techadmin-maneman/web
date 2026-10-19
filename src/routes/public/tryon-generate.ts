@@ -1,8 +1,8 @@
 // POST /api/tryon/generate and GET /api/tryon/status/:job_id.
 //
 // A look is made only for a try-on the gate has claimed, since the number is
-// where it goes: to WhatsApp only, never to the site
-// (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md). It is made for
+// where it goes: to WhatsApp, and, once ready, to the page that proved the
+// number at the gate too, by a signed link the status gives (ADR 0214). It is made for
 // the stage the claim gave, the lead's extent of hair loss too. One look per
 // visitor (docs/decisions/0018-one-look-pro-only-lead-notices.md):
 // the first generate for an upload renders it; the same look asked for again
@@ -18,6 +18,8 @@ import { FAILURE_CODES, FAILURE_REASONS, HAIR_COLORS, JOB_STATES } from "../../c
 import { withinCeiling } from "../../domain/platform/ceilings.ts";
 import { takeOne } from "../../domain/sign-in/rate-limit.ts";
 import { failJob, loadJob, type JobRow, type RenderChoice } from "../../domain/try-on/tryon.ts";
+import { signToken } from "../../lib/signed-token.ts";
+import { RESULT_LINK_MESSAGE_TTL_MS } from "../../config/tryon.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { setLookCookie } from "../../http/look-cookie.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
@@ -47,6 +49,14 @@ const JobStatusSchema = z
     failure_reason: z.enum(FAILURE_REASONS).optional().openapi({
       description: "Only when state is failed, and only where YouCam named the fault, or the try-on is paused.",
     }),
+    look: z
+      .string()
+      .optional()
+      .openapi({
+        description:
+          "Only when state is ready, for a try-on whose number the gate proved: the look, by a signed path on the site " +
+          "that expires within the hour.",
+      }),
   })
   .strict()
   .openapi("JobStatus");
@@ -118,8 +128,17 @@ export function registerTryonGenerate(app: App): void {
   app.openapi(statusRoute, async (c) => {
     const job = await loadJob(c.env.DB, c.req.valid("param").job_id);
     if (job === null) return refuse(c, "not_found");
-    return c.json(statusOf(job), 200);
+    return c.json({ ...statusOf(job), ...(await lookOf(c, job)) }, 200);
   });
+}
+
+/** The look's signed link, for a ready try-on whose number the gate proved; nothing for any other. */
+async function lookOf(c: Context<AppEnv>, job: JobRow): Promise<{ look?: string }> {
+  if (job.state !== "ready" || job.result_key === null || job.number_proved_at === null) return {};
+  const { config, deps } = c.var;
+  const expiresAt = new Date(deps.now().getTime() + RESULT_LINK_MESSAGE_TTL_MS);
+  const token = await signToken(config.settings.tryon.linkSigningKey, "result", job.result_key, expiresAt);
+  return { look: `/api/result/${token}` };
 }
 
 export function statusOf(job: Pick<JobRow, "id" | "state" | "failure_code" | "failure_reason">): JobStatus {

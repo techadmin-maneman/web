@@ -217,7 +217,7 @@ test.describe("gate", () => {
   test("asks where to send the look before it is made, and needs both fields", async ({ page }) => {
     await open(page, "gate");
     await expect(page.getByText("We make your simulation once we have your number", { exact: false })).toBeVisible();
-    await expect(page.getByText("never shown on this site", { exact: false })).toBeVisible();
+    await expect(page.getByText("shown here once it’s ready", { exact: false })).toBeVisible();
     await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveAttribute("aria-required", "true");
     await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAttribute("aria-required", "true");
     await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
