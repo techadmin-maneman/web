@@ -200,6 +200,9 @@ test.describe("home sections", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.hero.title);
     const phrases = line.locator(".phrase");
     await expect(phrases.nth(0)).toHaveClass(/\bon\b/);
+    // Long enough to read: still the first a second and a half in, then the second.
+    await page.waitForTimeout(1_500);
+    await expect(phrases.nth(0)).toHaveClass(/\bon\b/);
     await expect(phrases.nth(1)).toHaveClass(/\bon\b/, { timeout: 5_000 });
     await page.getByRole("button", { name: siteCopy.hero.pause }).click();
     const shown = await line.locator(".phrase.on").textContent();
