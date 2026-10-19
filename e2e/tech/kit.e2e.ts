@@ -131,7 +131,8 @@ test("says its writes need signal, with none", async ({ page, context }) => {
   const fake = await fakeTech(page);
   withAKit(fake);
   await page.goto("/kit");
-  await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
+  // The heading draws before the kit has loaded, so the signal goes only once the kit is on screen.
+  await expect(page.getByRole("region", { name: copy.held.title })).toBeVisible();
   // No signal at all: the fake answers nothing either, as the network would not.
   fake.online = false;
   await context.setOffline(true);
