@@ -84,7 +84,7 @@ export function refundedMessage(
  * booking a free service visit was to pay for says the visit is still theirs.
  */
 const REFUNDED_TEMPLATES = {
-  booking: { paid: "booking_refunded_v1", unpaid: "booking_not_made_v1", credit: "booking_not_made_credit_v1" },
+  booking: { paid: "booking_refunded_v2", unpaid: "booking_not_made_v2", credit: "booking_not_made_credit_v2" },
   move: { paid: "move_refunded_v1", unpaid: "move_not_made_v1", credit: "move_not_made_v1" },
 } as const;
 

@@ -27,8 +27,8 @@ function promiseOf(reward: Reward | null): string {
   return `${fitted} you get ${freeServiceVisits(mine)}, and your friend gets ${String(theirs)}.`;
 }
 
-/** The promise as it reads before the client's own first fit: "Then, when a friend you refer is fitted, …". */
-const afterTheFit = (promise: string): string => `Then, ${promise.charAt(0).toLowerCase()}${promise.slice(1)}`;
+/** The promise as it reads before Refer opens: "Then, when a friend you refer is fitted, …". */
+const afterOpening = (promise: string): string => `Then, ${promise.charAt(0).toLowerCase()}${promise.slice(1)}`;
 
 /** The invite a client not yet fitted came with: who sent it, where the invite names them. */
 interface PendingInvite {
@@ -36,18 +36,18 @@ interface PendingInvite {
 }
 
 /**
- * Refer for a client not yet fitted. Their own invite opens at their first
- * fit; an invite they came with comes first, with the visits it gives them.
+ * Refer before it opens. Their own invite opens at their first consultation;
+ * an invite they came with comes first, with the visits it gives them.
  */
-export function notYetFittedLines(reward: Reward | null, invite: PendingInvite | null): readonly [string, string] {
+export function notYetOpenLines(reward: Reward | null, invite: PendingInvite | null): readonly [string, string] {
   const theirs = reward?.friend_visits ?? 0;
   if (invite === null || theirs === 0)
-    return ["Referrals go live after your first fit.", afterTheFit(promiseOf(reward))];
+    return ["Referrals go live after your first consultation.", afterOpening(promiseOf(reward))];
   const whose = invite.referrer_first_name === null ? "Your friend’s invite" : `${invite.referrer_first_name}’s invite`;
   const arrive = theirs === 1 ? "arrives" : "arrive";
   return [
     `${whose}: your ${freeServiceVisits(theirs)} ${arrive} when you’re fitted.`,
-    "Your own referrals go live after your first fit.",
+    "Your own referrals go live after your first consultation.",
   ];
 }
 

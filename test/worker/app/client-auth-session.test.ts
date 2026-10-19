@@ -62,6 +62,7 @@ describe("the session", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       state: "lead",
+      refers: false,
       name: "Arjun Mehta",
       first_name: "Arjun",
       initials: "AM",

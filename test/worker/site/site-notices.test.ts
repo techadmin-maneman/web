@@ -93,7 +93,7 @@ describe("a consultation still to happen", () => {
     await consentToVisitMessages();
     await consultationToCome();
     expect((await send("consultation_exists")).text).toBe(
-      "Hi Karan, this number was just used to book on our site.\nYour consultation is already booked for Wed 23 Sep, 9–9:30 am, so we haven't booked another. See or move it in the Mane Man app.",
+      "Hi Karan, you're already booked, so we haven't booked again.\nYour consultation is Wed 23 Sep, 9–9:30 am. See or move it in the Mane Man app.",
     );
   });
 
@@ -107,18 +107,14 @@ describe("a consultation still to happen", () => {
     )
       .bind(PERSON, NOW.toISOString())
       .run();
-    expect((await send("consultation_exists")).text).toContain(
-      "Your consultation and fit is already booked for Wed 23 Sep, 9–9:30 am",
-    );
+    expect((await send("consultation_exists")).text).toContain("Your consultation and fit is Wed 23 Sep, 9–9:30 am");
   });
 
   it("is named the consultation alone when a first fit is booked for another day", async () => {
     await consentToVisitMessages();
     await consultationToCome();
     await appointment("first_fit", "scheduled", "2026-09-30T03:30:00.000Z", "2026-09-30T06:30:00.000Z");
-    expect((await send("consultation_exists")).text).toContain(
-      "Your consultation is already booked for Wed 23 Sep, 9–9:30 am",
-    );
+    expect((await send("consultation_exists")).text).toContain("Your consultation is Wed 23 Sep, 9–9:30 am");
   });
 
   it("is not sent once the consultation has gone", async () => {
@@ -140,7 +136,7 @@ describe("a client past consultations", () => {
     await consentToVisitMessages();
     await fitted();
     expect((await send("book_in_app")).text).toBe(
-      "Hi Karan, this number was just used to book on our site.\nAs a Mane Man client, you book in the Mane Man app. Sign in with this number.",
+      "Hi Karan, nothing was booked on our site.\nAs a client, you book in the Mane Man app. Sign in with this number.",
     );
   });
 
@@ -187,7 +183,7 @@ describe("an address on the account in a pincode we do not come to", () => {
   it("is why nothing was booked, which the number is told with its pincode alone", async () => {
     const { text } = await send("address_not_served");
     expect(text).toBe(
-      "Hi Karan, this number was just used to book on our site.\nThe address on your account is at pincode 400050, which we don't cover yet, so nothing was booked. If you've moved, change your address in the Mane Man app and book there.",
+      "Hi Karan, nothing was booked on our site.\nWe don't come to pincode 400050, your address on file, yet. Moved? Change your address in the Mane Man app and book there.",
     );
     expect(text).not.toContain("House 12");
   });

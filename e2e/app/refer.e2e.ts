@@ -12,6 +12,7 @@ import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { expect, outsideContract, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
+import { nextVisitClients } from "./next-visit.ts";
 import { logIn, signIn } from "./signed-in.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
@@ -460,17 +461,16 @@ test("draws a lead’s empty Refer, with no count, where the Home carries no rew
   await changed(page, "/api/me", ({ referral_reward: _gone, ...me }) => me);
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
-  await expect(page.getByText("Referrals go live after your first fit.")).toBeVisible();
+  await expect(page.getByText("Referrals go live after your first consultation.")).toBeVisible();
   await expect(page.getByText("Then, when a friend you refer is fitted, we tell you.")).toBeVisible();
 });
 
-// Before their first fit a client has nothing to vouch for, and the invite's own words would not be
-// true, so Refer is reachable but empty. It once
+// Before their first consultation a client has nothing to vouch for, so Refer is reachable but empty. It once
 // told them that nobody they referred had been fitted.
-test("a client not yet fitted sees Refer’s empty state, with no invite to send", async ({ page }) => {
+test("a client with no consultation done sees Refer’s empty state, with no invite to send", async ({ page }) => {
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
-  await expect(page.getByText("Referrals go live after your first fit.")).toBeVisible();
+  await expect(page.getByText("Referrals go live after your first consultation.")).toBeVisible();
   await expect(
     page.getByText("Then, when a friend you refer is fitted, you both get 3 free service visits."),
   ).toBeVisible();
@@ -485,5 +485,19 @@ test("a client not yet fitted who came with an invite is told what it gives them
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
   await expect(page.getByText("Rohit’s invite: your 3 free service visits arrive when you’re fitted.")).toBeVisible();
-  await expect(page.getByText("Your own referrals go live after your first fit.")).toBeVisible();
+  await expect(page.getByText("Your own referrals go live after your first consultation.")).toBeVisible();
+});
+
+// Refer waited for a first fit; it opens at the first consultation, with the example card until the fit's photos.
+test("opens at a first consultation done, offering the example card until the first fit's photographs", async ({
+  page,
+}) => {
+  const { firstFit } = nextVisitClients();
+  await logIn(page, firstFit.mobile);
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
+  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
+  await expect(sheet.getByText(appCopy.refer.card.mineNotYet)).toBeVisible();
+  await expect(sheet.getByRole("radio", { name: /My before and after/ })).toHaveCount(0);
+  await expect(sheet.getByRole("radio", { name: /The Mane Man example card/ })).toBeVisible();
 });

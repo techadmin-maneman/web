@@ -5,7 +5,7 @@
 
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { FITTED } from "../clients/fitted.ts";
+import { FITTED, REFERS } from "../clients/fitted.ts";
 import { openProposalJson, openProposalOf, type ProposedMove } from "./open-proposals.ts";
 import { signToken, type SigningSecret } from "../../lib/signed-token.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
@@ -272,6 +272,12 @@ export function clientStateOf(fitted: boolean, hasBooking: boolean): ClientState
 export async function isFitted(db: D1Database, personId: string): Promise<boolean> {
   const row = await db.prepare(`SELECT ${FITTED} AS fitted`).bind(personId).first<{ fitted: number }>();
   return row?.fitted === 1;
+}
+
+/** Whether the client may refer: their first consultation, or a fit, has been done. */
+export async function canRefer(db: D1Database, personId: string): Promise<boolean> {
+  const row = await db.prepare(`SELECT ${REFERS} AS refers`).bind(personId).first<{ refers: number }>();
+  return row?.refers === 1;
 }
 
 /**

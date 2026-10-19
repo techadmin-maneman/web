@@ -8,7 +8,7 @@ import { isOneOf } from "../lib/one-of.ts";
 export const TEMPLATES = {
   // The try-on's look, to the number that claimed it: {{1}} the first name, {{2}} where to book a consultation.
   tryon_result_v1:
-    "Hi {{1}}, your new look is ready.\nIt's an illustration: your hair system is matched to your own hair. See it for real at a free consultation: {{2}}",
+    "Hi {{1}}, here's your new look.\nIt's an illustration. See the real thing at a free consultation: {{2}}",
   // The login code, {{1}}.
   login_code_v1: "{{1}} is your Mane Man code. It expires in 10 minutes. Don't share it with anyone.",
   // A visit's params: {{1}} first name, {{2}} visit, {{3}} day ("Thu 24 Sep"), {{4}} arrival ("11:30 am–12 pm"),
@@ -96,8 +96,8 @@ export const TEMPLATES = {
   visit_cancelled_credit_v1:
     "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. Your free service visit is back.",
   // Cancelled too late, so the credit is spent, as the cancel sheet warned.
-  visit_cancelled_credit_lost_v1:
-    "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. As it was cancelled late, the free service visit it used can't be returned.",
+  visit_cancelled_credit_lost_v2:
+    "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. Cancelled late, it uses its free service visit.",
   // Cancelled in time, but the credit's grant has since expired or been withdrawn.
   visit_cancelled_credit_gone_v1:
     "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. The free service visit it used has expired, so we can't return it.",
@@ -111,12 +111,12 @@ export const TEMPLATES = {
   launch_alert_v1: "Hi {{1}}, Mane Man now comes to {{2}}. Book your free consultation: {{3}}",
   // To a referrer once the friend is fitted: {{2}} friend's name, {{3}} referrer's visits, {{4}} expiry, {{5}} friend's.
   friend_fitted_v2:
-    "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.\nYou each get {{3}} free, to use by {{4}}.",
+    "Hi {{1}}, {{2}} has joined Mane Man. Thank you for sending them our way.\nYou each get {{3}} free to use by {{4}}. They're in the app.",
   friend_fitted_each_v1:
-    "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.\nYou get {{3}} free, to use by {{4}}, and {{2}} gets {{5}}.",
+    "Hi {{1}}, {{2}} has joined Mane Man. Thank you for sending them our way.\nYou get {{3}} free to use by {{4}}, and {{2}} gets {{5}}. They're in the app.",
   friend_fitted_yours_v1:
-    "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.\nYou get {{3}} free, to use by {{4}}.",
-  friend_fitted_thanks_v1: "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.",
+    "Hi {{1}}, {{2}} has joined Mane Man. Thank you for sending them our way.\nYou get {{3}} free to use by {{4}}. They're in the app.",
+  friend_fitted_thanks_v1: "Hi {{1}}, {{2}} has joined Mane Man. Thank you for sending them our way.",
   // To the friend once credited ({{2}} visits, {{3}} expiry); in a rejection to the referrer, {{2}} is the friend.
   friend_credited_v2:
     "Hi {{1}}, welcome to Mane Man.\nYour invite gives you {{2}} free, to use by {{3}}. They're in the app.",
@@ -130,13 +130,13 @@ export const TEMPLATES = {
   visit_cancelled_refund_v1:
     "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. We've refunded {{6}} to your {{8}} (5 to 7 working days).",
   // A booking given back, with a visit's params: one paid after its hold lapsed, or a move whose visit had begun.
-  booking_refunded_v1:
-    "Hi {{1}}, we couldn't confirm your booking.\nYour {{2}} on {{3}} didn't go through, so we've refunded {{6}} to your {{8}} (5 to 7 working days). Book another time in the Mane Man app. Our apologies.",
-  booking_not_made_v1:
-    "Hi {{1}}, we couldn't confirm your booking.\nYour {{2}} on {{3}} didn't go through. Book another time in the Mane Man app. Our apologies.",
+  booking_refunded_v2:
+    "Hi {{1}}, your booking didn't go through.\nWe've refunded {{6}} for your {{2}} on {{3}} to your {{8}} (5 to 7 working days). Book another time in the Mane Man app.",
+  booking_not_made_v2:
+    "Hi {{1}}, your booking didn't go through.\nYour {{2}} on {{3}} isn't booked. Book another time in the Mane Man app.",
   // The same, for a booking a free service visit was to pay for, which the client still has.
-  booking_not_made_credit_v1:
-    "Hi {{1}}, we couldn't confirm your booking.\nYour {{2}} on {{3}} didn't go through, but your free service visit is still yours. Book another time in the Mane Man app. Our apologies.",
+  booking_not_made_credit_v2:
+    "Hi {{1}}, your booking didn't go through.\nYour {{2}} on {{3}} isn't booked, and your free service visit is still yours. Book another time in the Mane Man app.",
   // The same, for a booking that moved a visit, which stays as it was: {{3}} is the day it was to move to.
   move_refunded_v1:
     "Hi {{1}}, your booking hasn't changed.\nWe couldn't move your {{2}} to {{3}}, so it stays as booked. We've refunded {{6}} to your {{8}} (5 to 7 working days).",
@@ -145,23 +145,23 @@ export const TEMPLATES = {
   // To a number our site's booking form was just sent for, since the page tells every number the same thing
   // (src/domain/booking/site-notices.ts): {{1}} the first name, and for a consultation still to happen {{2}} the visit, {{3}}
   // its day and {{4}} its window.
-  consultation_exists_v1:
-    "Hi {{1}}, this number was just used to book on our site.\nYour {{2}} is already booked for {{3}}, {{4}}, so we haven't booked another. See or move it in the Mane Man app.",
-  book_in_app_v1:
-    "Hi {{1}}, this number was just used to book on our site.\nAs a Mane Man client, you book in the Mane Man app. Sign in with this number.",
+  consultation_exists_v2:
+    "Hi {{1}}, you're already booked, so we haven't booked again.\nYour {{2}} is {{3}}, {{4}}. See or move it in the Mane Man app.",
+  book_in_app_v2:
+    "Hi {{1}}, nothing was booked on our site.\nAs a client, you book in the Mane Man app. Sign in with this number.",
   address_on_account_v1:
     "Hi {{1}}, we'll come to the address on your account, not the one typed on our site.\nTo change it, open the Mane Man app.",
   // {{2}} the pincode of the address on the account.
-  address_not_served_v1:
-    "Hi {{1}}, this number was just used to book on our site.\nThe address on your account is at pincode {{2}}, which we don't cover yet, so nothing was booked. If you've moved, change your address in the Mane Man app and book there.",
+  address_not_served_v2:
+    "Hi {{1}}, nothing was booked on our site.\nWe don't come to pincode {{2}}, your address on file, yet. Moved? Change your address in the Mane Man app and book there.",
   // Ops' decision on a client's request to delete their account. {{2}} is ops' reason, which they write knowing the
   // client reads it.
   deletion_rejected_v1:
     "Hi {{1}}, we haven't deleted your Mane Man account.\nOur reason: {{2}} Message us if you disagree.",
   // What follows a visit (src/domain/visits/follow-ups.ts). {{2}} the care guide's address. The first lines name no
   // hair system: a lock screen shows them.
-  consultation_follow_up_v1:
-    "Hi {{1}}, thank you for your time today.\nYour technician's recommendation is in the Mane Man app, with your fit to book when you're ready. Or reply here and we'll arrange it.",
+  consultation_follow_up_v2:
+    "Hi {{1}}, thank you for today.\nYour technician's recommendation is in the Mane Man app. Book your fit there when you're ready, or reply here.",
   fit_aftercare_v1:
     "Hi {{1}}, thank you for today.\nHow to look after your hair system: {{2}}\nAny question at all, reply here.",
   first_check_in_v1:

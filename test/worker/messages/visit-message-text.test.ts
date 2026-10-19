@@ -125,7 +125,7 @@ describe("what a visit message says", () => {
     it("says the credit is gone, when it was cancelled inside the notice", async () => {
       await cancelledOnCredit("late");
       expect(await text("cancel_confirmation")).toBe(
-        "Hi Rohit, your booking is cancelled.\nThat's your service visit on Thu 24 Sep. As it was cancelled late, the free service visit it used can't be returned.",
+        "Hi Rohit, your booking is cancelled.\nThat's your service visit on Thu 24 Sep. Cancelled late, it uses its free service visit.",
       );
     });
 
@@ -142,7 +142,7 @@ describe("what a visit message says", () => {
       await cancelledOnCredit("late");
       await env.DB.prepare("UPDATE visit_changes SET cancelled_by = 'ops@localhost', ops_terms = 'client'").run();
       expect(await text("visit_cancelled")).toBe(
-        "Hi Rohit, your booking is cancelled.\nThat's your service visit on Thu 24 Sep. As it was cancelled late, the free service visit it used can't be returned.",
+        "Hi Rohit, your booking is cancelled.\nThat's your service visit on Thu 24 Sep. Cancelled late, it uses its free service visit.",
       );
     });
   });

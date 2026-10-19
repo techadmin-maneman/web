@@ -4903,7 +4903,7 @@ The client's own card while it is live: the JPEG the invite shows
 }
 ```
 
-**403**: not_fitted: Refer opens once the client's first fit is done
+**403**: not_consulted: Refer opens once the client's first consultation is done
 
 ```json
 {
@@ -4920,7 +4920,7 @@ The client's own card while it is live: the JPEG the invite shows
             "code": {
               "type": "string",
               "enum": [
-                "not_fitted"
+                "not_consulted"
               ]
             }
           },
@@ -5033,7 +5033,7 @@ Make the client's referral card from their first fit's front photographs, before
 }
 ```
 
-**403**: not_fitted: Refer opens once the client's first fit is done, or no front photograph of their first fit, before and after, is stored
+**403**: not_consulted: Refer opens once the client's first consultation is done; not_fitted: no front photograph of their first fit, before and after, is stored
 
 ```json
 {
@@ -5050,6 +5050,7 @@ Make the client's referral card from their first fit's front photographs, before
             "code": {
               "type": "string",
               "enum": [
+                "not_consulted",
                 "not_fitted"
               ]
             }
@@ -5231,7 +5232,7 @@ The client's code, credits and fitted friends
 }
 ```
 
-**403**: not_fitted: Refer opens once the client's first fit is done
+**403**: not_consulted: Refer opens once the client's first consultation is done
 
 ```json
 {
@@ -5248,7 +5249,7 @@ The client's code, credits and fitted friends
             "code": {
               "type": "string",
               "enum": [
-                "not_fitted"
+                "not_consulted"
               ]
             }
           },
@@ -5515,6 +5516,7 @@ Request body:
             "not_changeable",
             "terms_changed",
             "consent_required",
+            "not_consulted",
             "not_fitted",
             "not_paid",
             "device_revoked",
@@ -5954,6 +5956,10 @@ Request body:
         "lead",
         "nothing_booked"
       ]
+    },
+    "refers": {
+      "type": "boolean",
+      "description": "Whether Refer is open: the client's first consultation, or a fit, has been done (ADR 0218)."
     },
     "name": {
       "type": "string"
@@ -6482,6 +6488,7 @@ Request body:
   },
   "required": [
     "state",
+    "refers",
     "name",
     "first_name",
     "initials",

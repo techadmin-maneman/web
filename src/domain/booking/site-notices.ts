@@ -74,13 +74,13 @@ async function consultationExists(db: D1Database, person: Person, now: Date): Pr
       ? hoursOfWindow(live.date, live.window, await loadSlotSchedule(db))
       : arrivalHours(live.startsAt, (await readOpsInputs(db, now)).bookingRules.arrival);
   const params = [firstName, await visitName(db, personId, live, now), shortDate(live.date), hours];
-  return { template: "consultation_exists_v1", params };
+  return { template: "consultation_exists_v2", params };
 }
 
 async function bookInApp(db: D1Database, person: Person, now: Date): Promise<Composed> {
   const { personId, firstName } = person;
   if ((await bookableTypes(db, personId, now)).includes("consultation")) return { skip: "may book from the site now" };
-  return { template: "book_in_app_v1", params: [firstName] };
+  return { template: "book_in_app_v2", params: [firstName] };
 }
 
 async function addressOnAccount(db: D1Database, personId: string, firstName: string): Promise<Composed> {
@@ -92,7 +92,7 @@ async function addressNotServed(db: D1Database, personId: string, firstName: str
   const address = await currentAddress(db, personId);
   if (address === null) return { skip: "no address on the account" };
   if (await isServed(db, address.pincode)) return { skip: "we come to the address on the account now" };
-  return { template: "address_not_served_v1", params: [firstName, address.pincode] };
+  return { template: "address_not_served_v2", params: [firstName, address.pincode] };
 }
 
 /** What a queued notice says, as the person stands now; or why it is not sent. */

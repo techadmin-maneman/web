@@ -83,7 +83,7 @@ describe("what follows a visit", () => {
       { kind: "fit_aftercare", subject_id: fitted },
     ]);
     expect(await compose("consultation_follow_up", consulted)).toEqual({
-      template: "consultation_follow_up_v1",
+      template: "consultation_follow_up_v2",
       params: ["Rohit"],
     });
     expect(await compose("fit_aftercare", fitted)).toEqual({

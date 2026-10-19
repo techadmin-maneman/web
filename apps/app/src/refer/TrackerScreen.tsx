@@ -159,7 +159,7 @@ export function TrackerScreen() {
   const { me } = useSession();
   return (
     <Shell header={{ kind: "back", title: refer.fitted.title, to: "/refer", label: refer.fitted.back }} tab="/refer">
-      {me.state === "fitted" ? (
+      {me.refers ? (
         <Tracker />
       ) : (
         <EmptyState look="page" lines={empty.refer.lines(rewardOf(me), pendingInviteOf(me))} />

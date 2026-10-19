@@ -22,7 +22,7 @@ import { chromium, type Browser, type Page, type Route } from "@playwright/test"
 import sharp from "sharp";
 import { pair, rest, routeDesignLibraries, STILL } from "../lib/fidelity.ts";
 import { serveDirectory } from "../lib/static-server.ts";
-import { CHALLENGE, NOT_DRAWN, SERVICE_PRICE } from "./fidelity-app-fixtures.ts";
+import { BOOKS_NOTHING, CHALLENGE, NOT_DRAWN, SERVICE_PRICE, VISIT_KINDS } from "./fidelity-app-fixtures.ts";
 import type { components } from "../../apps/app/src/api-schema.ts";
 
 type Schemas = components["schemas"];
@@ -39,11 +39,9 @@ const STATUS_BAR = 44;
 
 // ---- The design's example, as the API would answer it -------------------------
 
-/** Booking in the app off for every kind, as where ops book. */
-const BOOKS_NOTHING = { self_serve: false, self_serve_kinds: [] };
-const VISIT_KINDS = ["consultation", "first_fit", "service", "replacement"] as const;
 const ME = {
   state: "lead",
+  refers: false,
   name: "Rohit Malhotra",
   first_name: "Rohit",
   initials: "RM",
@@ -157,6 +155,7 @@ const HISTORY = {
 const ME_FITTED = {
   ...ME,
   state: "fitted",
+  refers: true,
   consultation: null,
   next_visit: NEXT,
   credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z", expiring_visits: 2 },

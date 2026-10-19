@@ -68,8 +68,9 @@ export const ERROR_CODES = [
   "terms_changed",
   // A referral card without the client's consent to photographs on referral cards (docs/decisions/0048-referrals.md).
   "consent_required",
-  // Refer is a fitted client's, since the invite says they were fitted; and a
-  // held referral whose friend's consultation and fit is not paid yet cannot be approved.
+  // Refer opens once the client's first consultation is done; a card of their own waits for their first fit's
+  // photographs; and a held referral whose friend's consultation and fit is not paid yet cannot be approved.
+  "not_consulted",
   "not_fitted",
   "not_paid",
   // The technician app (docs/decisions/0052-technician-sessions.md, 0038-offline-writes.md):
@@ -273,6 +274,7 @@ export const ERROR_STATUS = {
   not_changeable: 409,
   terms_changed: 409,
   consent_required: 409,
+  not_consulted: 403,
   not_fitted: 403,
   not_paid: 409,
   device_revoked: 401,

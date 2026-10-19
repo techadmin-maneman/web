@@ -2,16 +2,17 @@
 // balance, and the tracker, which shows completed fits only: each friend's first name and the month they were
 // fitted, never opens, consultations or pending referrals.
 //
-// Refer is a fitted client's (ADR 0048; ADR 0083, withdrawn): the invite says "Had my hair system fitted", and a lead
-// could otherwise invite their own first number from a second. So every route but the revoke answers 403 not_fitted
-// before a first fit, as the app's tab shows its empty state; and a card of their own waits for that fit's photographs.
+// Refer opens once the client's first consultation is done (ADR 0218): the invite says nothing of their own hair,
+// and a lead with a visit only booked could otherwise invite their own first number from a second. So every route but
+// the revoke answers 403 not_consulted before then, as the app's tab shows its empty state; and a card of their own
+// waits for their first fit's photographs, answering not_fitted.
 // The API makes the card itself: nothing the client sends becomes one.
 
 import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { PUBLIC_ORIGIN } from "../../config/environments.ts";
-import { isFitted } from "../../domain/visits/client-visits.ts";
+import { canRefer } from "../../domain/visits/client-visits.ts";
 import { spendableCredits, type Balance } from "../../domain/money/credits.ts";
 import { liveCard, makeCard, revokeCard } from "../../domain/referrals/referral-cards.ts";
 import { inviteOf } from "../../domain/referrals/referrals.ts";
@@ -111,7 +112,7 @@ function inviteCredits(
   return INVITE_CREDITS[invited.grant_state] ?? null;
 }
 
-const NOT_FITTED = "not_fitted: Refer opens once the client's first fit is done";
+const NOT_CONSULTED = "not_consulted: Refer opens once the client's first consultation is done";
 
 const referRoute = clientRoute({
   method: "get",
@@ -120,7 +121,7 @@ const referRoute = clientRoute({
   responses: {
     200: { description: "Their referrals", content: { "application/json": { schema: ReferSchema } } },
     401: errorResponse("session_required"),
-    403: errorResponse(NOT_FITTED),
+    403: errorResponse(NOT_CONSULTED),
   },
 });
 
@@ -134,7 +135,9 @@ const cardRoute = clientRoute({
       content: { "application/json": { schema: z.object({ version: z.number().int() }).strict() } },
     },
     401: errorResponse("session_required"),
-    403: errorResponse(`${NOT_FITTED}, or no front photograph of their first fit, before and after, is stored`),
+    403: errorResponse(
+      `${NOT_CONSULTED}; not_fitted: no front photograph of their first fit, before and after, is stored`,
+    ),
     409: errorResponse("consent_required: the client has not agreed to photographs on referral cards"),
     503: errorResponse("unavailable: the card could not be made just now"),
   },
@@ -166,7 +169,7 @@ const liveCardRoute = clientRoute({
   responses: {
     200: { description: "The card", content: { "image/jpeg": { schema: z.string() } } },
     401: errorResponse("session_required"),
-    403: errorResponse(NOT_FITTED),
+    403: errorResponse(NOT_CONSULTED),
     404: errorResponse("not_found: no card of theirs is live: none made, taken down, the consent off, or erased"),
   },
 });
@@ -176,7 +179,7 @@ export function registerClientRefer(app: App): void {
     const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
-    if (!(await isFitted(db, session.subjectId))) return refuse(c, "not_fitted");
+    if (!(await canRefer(db, session.subjectId))) return refuse(c, "not_consulted");
     const code = await codeOf(db, session.subjectId, now);
     const stores = { photos: c.env.CLIENT_PHOTOS, cards: c.env.REFERRAL_CARDS };
     const made = await makeCard(db, stores, c.var.deps.cards, { personId: session.subjectId, code, now }).catch(
@@ -205,7 +208,7 @@ export function registerClientRefer(app: App): void {
     const session = clientOf(c);
     const db = c.env.DB;
     const now = c.var.deps.now();
-    if (!(await isFitted(db, session.subjectId))) return refuse(c, "not_fitted");
+    if (!(await canRefer(db, session.subjectId))) return refuse(c, "not_consulted");
     const code = await codeOf(db, session.subjectId, now);
     const [card, invite, balance, fitted, invited] = await Promise.all([
       cardOf(db, code),
@@ -244,7 +247,7 @@ export function registerClientRefer(app: App): void {
 function registerLiveCard(app: App): void {
   app.openapi(liveCardRoute, async (c) => {
     const session = clientOf(c);
-    if (!(await isFitted(c.env.DB, session.subjectId))) return refuse(c, "not_fitted");
+    if (!(await canRefer(c.env.DB, session.subjectId))) return refuse(c, "not_consulted");
     const code = await codeOf(c.env.DB, session.subjectId, c.var.deps.now());
     // Live exactly when the landing's preview would show it: stored, the consent still given, the client not erased.
     const card = await liveCard(c.env.DB, c.env.REFERRAL_CARDS, code);

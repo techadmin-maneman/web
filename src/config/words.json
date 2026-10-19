@@ -5468,8 +5468,8 @@
     "surface": "message",
     "group": "Messages",
     "where": "tryon_result_v1",
-    "text": "Hi {{1}}, your new look is ready.\nIt's an illustration: your hair system is matched to your own hair. See it for real at a free consultation: {{2}}",
-    "reviewed": true
+    "text": "Hi {{1}}, here's your new look.\nIt's an illustration. See the real thing at a free consultation: {{2}}",
+    "reviewed": false
   },
   {
     "key": "message:consultation_booked_v1",
@@ -5752,12 +5752,12 @@
     "reviewed": true
   },
   {
-    "key": "message:visit_cancelled_credit_lost_v1",
+    "key": "message:visit_cancelled_credit_lost_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "visit_cancelled_credit_lost_v1",
-    "text": "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. As it was cancelled late, the free service visit it used can't be returned.",
-    "reviewed": true
+    "where": "visit_cancelled_credit_lost_v2",
+    "text": "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. Cancelled late, it uses its free service visit.",
+    "reviewed": false
   },
   {
     "key": "message:visit_cancelled_credit_gone_v1",
@@ -5796,32 +5796,32 @@
     "surface": "message",
     "group": "Messages",
     "where": "friend_fitted_v2",
-    "text": "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.\nYou each get {{3}} free, to use by {{4}}.",
-    "reviewed": true
+    "text": "Hi {{1}}, {{2}} has joined Mane Man. Thank you for sending them our way.\nYou each get {{3}} free to use by {{4}}. They're in the app.",
+    "reviewed": false
   },
   {
     "key": "message:friend_fitted_each_v1",
     "surface": "message",
     "group": "Messages",
     "where": "friend_fitted_each_v1",
-    "text": "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.\nYou get {{3}} free, to use by {{4}}, and {{2}} gets {{5}}.",
-    "reviewed": true
+    "text": "Hi {{1}}, {{2}} has joined Mane Man. Thank you for sending them our way.\nYou get {{3}} free to use by {{4}}, and {{2}} gets {{5}}. They're in the app.",
+    "reviewed": false
   },
   {
     "key": "message:friend_fitted_yours_v1",
     "surface": "message",
     "group": "Messages",
     "where": "friend_fitted_yours_v1",
-    "text": "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.\nYou get {{3}} free, to use by {{4}}.",
-    "reviewed": true
+    "text": "Hi {{1}}, {{2}} has joined Mane Man. Thank you for sending them our way.\nYou get {{3}} free to use by {{4}}. They're in the app.",
+    "reviewed": false
   },
   {
     "key": "message:friend_fitted_thanks_v1",
     "surface": "message",
     "group": "Messages",
     "where": "friend_fitted_thanks_v1",
-    "text": "Hi {{1}}, {{2}} has joined Mane Man: thank you for sending them our way.",
-    "reviewed": true
+    "text": "Hi {{1}}, {{2}} has joined Mane Man. Thank you for sending them our way.",
+    "reviewed": false
   },
   {
     "key": "message:friend_credited_v2",
@@ -5864,28 +5864,28 @@
     "reviewed": true
   },
   {
-    "key": "message:booking_refunded_v1",
+    "key": "message:booking_refunded_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "booking_refunded_v1",
-    "text": "Hi {{1}}, we couldn't confirm your booking.\nYour {{2}} on {{3}} didn't go through, so we've refunded {{6}} to your {{8}} (5 to 7 working days). Book another time in the Mane Man app. Our apologies.",
-    "reviewed": true
+    "where": "booking_refunded_v2",
+    "text": "Hi {{1}}, your booking didn't go through.\nWe've refunded {{6}} for your {{2}} on {{3}} to your {{8}} (5 to 7 working days). Book another time in the Mane Man app.",
+    "reviewed": false
   },
   {
-    "key": "message:booking_not_made_v1",
+    "key": "message:booking_not_made_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "booking_not_made_v1",
-    "text": "Hi {{1}}, we couldn't confirm your booking.\nYour {{2}} on {{3}} didn't go through. Book another time in the Mane Man app. Our apologies.",
-    "reviewed": true
+    "where": "booking_not_made_v2",
+    "text": "Hi {{1}}, your booking didn't go through.\nYour {{2}} on {{3}} isn't booked. Book another time in the Mane Man app.",
+    "reviewed": false
   },
   {
-    "key": "message:booking_not_made_credit_v1",
+    "key": "message:booking_not_made_credit_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "booking_not_made_credit_v1",
-    "text": "Hi {{1}}, we couldn't confirm your booking.\nYour {{2}} on {{3}} didn't go through, but your free service visit is still yours. Book another time in the Mane Man app. Our apologies.",
-    "reviewed": true
+    "where": "booking_not_made_credit_v2",
+    "text": "Hi {{1}}, your booking didn't go through.\nYour {{2}} on {{3}} isn't booked, and your free service visit is still yours. Book another time in the Mane Man app.",
+    "reviewed": false
   },
   {
     "key": "message:move_refunded_v1",
@@ -5904,20 +5904,20 @@
     "reviewed": true
   },
   {
-    "key": "message:consultation_exists_v1",
+    "key": "message:consultation_exists_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "consultation_exists_v1",
-    "text": "Hi {{1}}, this number was just used to book on our site.\nYour {{2}} is already booked for {{3}}, {{4}}, so we haven't booked another. See or move it in the Mane Man app.",
-    "reviewed": true
+    "where": "consultation_exists_v2",
+    "text": "Hi {{1}}, you're already booked, so we haven't booked again.\nYour {{2}} is {{3}}, {{4}}. See or move it in the Mane Man app.",
+    "reviewed": false
   },
   {
-    "key": "message:book_in_app_v1",
+    "key": "message:book_in_app_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "book_in_app_v1",
-    "text": "Hi {{1}}, this number was just used to book on our site.\nAs a Mane Man client, you book in the Mane Man app. Sign in with this number.",
-    "reviewed": true
+    "where": "book_in_app_v2",
+    "text": "Hi {{1}}, nothing was booked on our site.\nAs a client, you book in the Mane Man app. Sign in with this number.",
+    "reviewed": false
   },
   {
     "key": "message:address_on_account_v1",
@@ -5928,12 +5928,12 @@
     "reviewed": true
   },
   {
-    "key": "message:address_not_served_v1",
+    "key": "message:address_not_served_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "address_not_served_v1",
-    "text": "Hi {{1}}, this number was just used to book on our site.\nThe address on your account is at pincode {{2}}, which we don't cover yet, so nothing was booked. If you've moved, change your address in the Mane Man app and book there.",
-    "reviewed": true
+    "where": "address_not_served_v2",
+    "text": "Hi {{1}}, nothing was booked on our site.\nWe don't come to pincode {{2}}, your address on file, yet. Moved? Change your address in the Mane Man app and book there.",
+    "reviewed": false
   },
   {
     "key": "message:deletion_rejected_v1",
@@ -5944,12 +5944,12 @@
     "reviewed": true
   },
   {
-    "key": "message:consultation_follow_up_v1",
+    "key": "message:consultation_follow_up_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "consultation_follow_up_v1",
-    "text": "Hi {{1}}, thank you for your time today.\nYour technician's recommendation is in the Mane Man app, with your fit to book when you're ready. Or reply here and we'll arrange it.",
-    "reviewed": true
+    "where": "consultation_follow_up_v2",
+    "text": "Hi {{1}}, thank you for today.\nYour technician's recommendation is in the Mane Man app. Book your fit there when you're ready, or reply here.",
+    "reviewed": false
   },
   {
     "key": "message:fit_aftercare_v1",

@@ -3570,6 +3570,7 @@ Request body:
             "not_changeable",
             "terms_changed",
             "consent_required",
+            "not_consulted",
             "not_fitted",
             "not_paid",
             "device_revoked",
