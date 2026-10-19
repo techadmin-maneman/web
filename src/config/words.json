@@ -5912,11 +5912,11 @@
     "reviewed": false
   },
   {
-    "key": "message:book_in_app_v2",
+    "key": "message:book_in_app_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "book_in_app_v2",
-    "text": "Hi {{1}}, nothing was booked on our site.\nAs a client, you book in the Mane Man app. Sign in with this number.",
+    "where": "book_in_app_v3",
+    "text": "Hi {{1}}, we couldn't take your booking on our site.\nAs a client, you book your visits in the Mane Man app, signed in with this number.",
     "reviewed": false
   },
   {

@@ -136,7 +136,7 @@ describe("a client past consultations", () => {
     await consentToVisitMessages();
     await fitted();
     expect((await send("book_in_app")).text).toBe(
-      "Hi Karan, nothing was booked on our site.\nAs a client, you book in the Mane Man app. Sign in with this number.",
+      "Hi Karan, we couldn't take your booking on our site.\nAs a client, you book your visits in the Mane Man app, signed in with this number.",
     );
   });
 

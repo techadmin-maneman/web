@@ -80,7 +80,7 @@ async function consultationExists(db: D1Database, person: Person, now: Date): Pr
 async function bookInApp(db: D1Database, person: Person, now: Date): Promise<Composed> {
   const { personId, firstName } = person;
   if ((await bookableTypes(db, personId, now)).includes("consultation")) return { skip: "may book from the site now" };
-  return { template: "book_in_app_v2", params: [firstName] };
+  return { template: "book_in_app_v3", params: [firstName] };
 }
 
 async function addressOnAccount(db: D1Database, personId: string, firstName: string): Promise<Composed> {

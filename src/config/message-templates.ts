@@ -147,8 +147,8 @@ export const TEMPLATES = {
   // its day and {{4}} its window.
   consultation_exists_v2:
     "Hi {{1}}, you're already booked, so we haven't booked again.\nYour {{2}} is {{3}}, {{4}}. See or move it in the Mane Man app.",
-  book_in_app_v2:
-    "Hi {{1}}, nothing was booked on our site.\nAs a client, you book in the Mane Man app. Sign in with this number.",
+  book_in_app_v3:
+    "Hi {{1}}, we couldn't take your booking on our site.\nAs a client, you book your visits in the Mane Man app, signed in with this number.",
   address_on_account_v1:
     "Hi {{1}}, we'll come to the address on your account, not the one typed on our site.\nTo change it, open the Mane Man app.",
   // {{2}} the pincode of the address on the account.
