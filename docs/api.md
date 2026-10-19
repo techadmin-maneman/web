@@ -5670,7 +5670,7 @@ Razorpay's webhook: payments and refunds
     },
     "look": {
       "type": "string",
-      "description": "Only when state is ready, for a try-on whose number the gate proved: the look, by a signed link that expires within the hour."
+      "description": "Only when state is ready, for a try-on whose number the gate proved: the look, by a signed path on the site that expires within the hour."
     }
   },
   "required": [

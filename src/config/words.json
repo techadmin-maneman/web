@@ -336,6 +336,38 @@
     "reviewed": false
   },
   {
+    "key": "site:home/results.count",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "{at} of {count}",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.previous",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "Previous",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.next",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "Next",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.sliderLabel",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "Compare this client’s before and after",
+    "reviewed": false
+  },
+  {
     "key": "site:home/whatItIs.title",
     "surface": "site",
     "group": "Home",
@@ -2230,6 +2262,30 @@
     "where": "tryOn",
     "text": "Your new look is on its way.",
     "reviewed": true
+  },
+  {
+    "key": "site:tryon/tryOn.sent.ready.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Here’s your new look.",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.sent.ready.photoAlt",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your photo",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.sent.ready.lookAlt",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your photo with the look you chose",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.sent.to.before",

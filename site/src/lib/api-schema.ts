@@ -3444,7 +3444,7 @@ export interface components {
              * @enum {string}
              */
             failure_reason?: "no_face" | "no_shoulders" | "face_angle" | "several_people" | "not_styleable" | "refused" | "unavailable";
-            /** @description Only when state is ready, for a try-on whose number the gate proved: the look, by a signed link that expires within the hour. */
+            /** @description Only when state is ready, for a try-on whose number the gate proved: the look, by a signed path on the site that expires within the hour. */
             look?: string;
         };
         /** @description The look, for the stage the gate's claim gave the try-on. */
