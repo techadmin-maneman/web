@@ -158,6 +158,7 @@ export const RECORD = {
     first_fit_on: "2026-11-14",
     last_visit_on: "2027-08-22",
     spend: 4_956_000,
+    spend_has_gst: false,
     replacement_due: { on: "2028-03-01", month: "2028-03", piece_code: "MM-STD-4417-C" },
   },
   // A visit to come, so the app offers nothing next.
@@ -196,6 +197,7 @@ export const NEW_RECORD = {
     first_fit_on: null,
     last_visit_on: null,
     spend: 0,
+    spend_has_gst: false,
     replacement_due: null,
   },
   invite: null,

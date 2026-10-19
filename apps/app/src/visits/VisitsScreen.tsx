@@ -131,7 +131,7 @@ function Record({ history }: { history: Visits["history"] }) {
   const month = due === null ? "" : listMonth(due.month, yearInIndia(now));
   return (
     <section className={styles.record} aria-labelledby="record">
-      <h2 className={classes(styles.label, styles.recordLabel)} id="record">
+      <h2 className={capsLook(classes(styles.label, styles.recordLabel))} id="record">
         {copy.label}
       </h2>
       {due !== null && (
@@ -146,7 +146,11 @@ function Record({ history }: { history: Visits["history"] }) {
         />
         <Fact label={copy.rows.services} value={String(history.services)} />
         <Fact label={copy.rows.replacements} value={String(history.replacements)} />
-        <Fact label={copy.rows.spend} value={rupees(history.spend)} note={copy.gst} />
+        <Fact
+          label={copy.rows.spend}
+          value={rupees(history.spend)}
+          note={history.spend_has_gst ? copy.gst : undefined}
+        />
       </dl>
     </section>
   );
@@ -163,7 +167,7 @@ function pastLine(visit: VisitSummary): string {
   return [visitTitle(visit), ...after()].join(" · ");
 }
 
-function Fact({ label, value, note }: { label: string; value: string; note?: string }) {
+function Fact({ label, value, note }: { label: string; value: string; note?: string | undefined }) {
   return (
     <div className={styles.fact}>
       <dt>{label}</dt>
@@ -195,7 +199,7 @@ function VisitList({ list, me }: { list: Visits; me: Me }) {
       )}
       {past.length > 0 && (
         <>
-          <h2 className={classes(styles.label, styles.pastLabel)}>{visits.past}</h2>
+          <h2 className={capsLook(classes(styles.label, styles.pastLabel))}>{visits.past}</h2>
           <ul className={styles.past}>
             {past.map((visit) => (
               <li key={visit.id}>

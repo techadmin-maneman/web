@@ -9,6 +9,7 @@
 
 import { APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
@@ -85,7 +86,7 @@ function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
       {/* The board puts the two ways on at the foot of the screen, above the tabs. */}
       <div className={shared.actions}>
         <ShareButton state={state} onChanged={onChanged} />
-        <AppLink className={shared.quiet} to="/refer/fitted">
+        <AppLink className={textLinkLook({ tone: "brass", className: shared.quiet })} to="/refer/fitted">
           <span>{refer.tracker}</span>
         </AppLink>
       </div>

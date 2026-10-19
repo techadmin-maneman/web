@@ -7924,6 +7924,10 @@ Request body:
       "type": "integer",
       "description": "In paise: every payment captured, less what has gone back. A credit adds nothing."
     },
+    "spend_has_gst": {
+      "type": "boolean",
+      "description": "Whether any payment in the spend carried GST."
+    },
     "replacement_due": {
       "anyOf": [
         {
@@ -7953,6 +7957,7 @@ Request body:
     "first_fit_on",
     "last_visit_on",
     "spend",
+    "spend_has_gst",
     "replacement_due"
   ],
   "additionalProperties": false,

@@ -3,22 +3,13 @@
 import { Button } from "@maneman/ui/Button";
 import { TimeChoice } from "@maneman/ui/TimeChoice";
 import { dayClock, indiaClock, weekdayDate } from "@maneman/web-kit/dates";
+import { lengthWords } from "@maneman/web-kit/visit-length";
 import { BOOKING_WINDOW_ORDER, booking, WINDOW_NAMES } from "../../content.ts";
 import { timeContinue, type Day } from "../days.ts";
 import styles from "../booking.module.css";
 import { TITLE_ID, stepOf, Heading } from "./shared.tsx";
 
 const copy = booking.window;
-
-/** "45 minutes", "an hour", "1½ hours", "3 hours": a visit's length to the quarter hour. */
-export function lengthWords(minutes: number): string {
-  const quarters = Math.round(minutes / 15);
-  if (quarters < 4) return `${String(quarters * 15)} minutes`;
-  if (quarters === 4) return "an hour";
-  const hours = Math.floor(quarters / 4);
-  const part = ["", "¼", "½", "¾"][quarters % 4] ?? "";
-  return `${String(hours)}${part} hours`;
-}
 
 /**
  * The day's starts a step apart, under its morning, afternoon and evening, open or taken. Who comes is never promised:

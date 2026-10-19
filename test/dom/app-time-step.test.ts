@@ -6,7 +6,8 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { lengthWords, TimeStep } from "../../apps/app/src/booking/steps/TimeStep.tsx";
+import { TimeStep } from "../../apps/app/src/booking/steps/TimeStep.tsx";
+import { lengthWords } from "@maneman/web-kit/visit-length";
 import type { Day } from "../../apps/app/src/booking/days.ts";
 import { booking } from "../../apps/app/src/content.ts";
 
@@ -77,7 +78,7 @@ describe("the day's times", () => {
     expect(labels.map((label) => label.textContent)).toEqual(["9 am, taken", "11:30 am", "12 pm, taken", "4 pm"]);
     expect(labels.map((label) => label.querySelector("input")?.disabled)).toEqual([true, false, true, false]);
     expect(page.textContent).toContain(booking.window.fullyBooked);
-    expect(page.textContent).toContain("Takes about 1½ hours");
+    expect(page.textContent).toContain("Takes about 90 minutes");
   });
 
   it("send the start chosen, and say when the technician arrives by", () => {
@@ -98,13 +99,14 @@ describe("the day's times", () => {
   });
 });
 
+// The sheet said "1½ hours" where the card said "1 hour 30 minutes" and the site "90 minutes".
 describe("a visit's length", () => {
-  it("reads to the quarter hour", () => {
+  it("reads as the site says it", () => {
     expect([45, 60, 90, 135, 180].map(lengthWords)).toEqual([
       "45 minutes",
-      "an hour",
-      "1½ hours",
-      "2¼ hours",
+      "60 minutes",
+      "90 minutes",
+      "2 hours 15 minutes",
       "3 hours",
     ]);
   });

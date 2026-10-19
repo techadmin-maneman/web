@@ -32,7 +32,7 @@ async function visit(type: string, date: string, status = "completed"): Promise<
 }
 
 let payments = 0;
-async function payment(amount: number, refunded = 0, captured = true): Promise<void> {
+async function payment(amount: number, refunded = 0, captured = true, gstPercent: number | null = null): Promise<void> {
   const id = `55555555-5555-4555-8555-${String(++payments).padStart(12, "0")}`;
   await aPayment({
     id,
@@ -43,6 +43,7 @@ async function payment(amount: number, refunded = 0, captured = true): Promise<v
     status: refunded === 0 ? "captured" : "partially_refunded",
     refunded_amount: refunded,
     captured_at: captured ? "2026-09-01T06:00:00.000Z" : null,
+    gst_percent: gstPercent,
     created_at: "2026-09-01T06:00:00.000Z",
     updated_at: "2026-09-01T06:00:00.000Z",
   });
@@ -104,6 +105,7 @@ describe("the derivation", () => {
       first_fit_on: "2026-01-14",
       last_visit_on: "2026-08-22",
       spend: 3_776_000,
+      spend_has_gst: false,
       replacement_due: { on: "2027-02-18", month: "2027-02", piece_code: "MM-STD-4417-C" },
     });
   });
@@ -116,6 +118,7 @@ describe("the derivation", () => {
       first_fit_on: null,
       last_visit_on: null,
       spend: 0,
+      spend_has_gst: false,
       replacement_due: null,
     });
   });
@@ -146,6 +149,16 @@ describe("the derivation", () => {
     await payment(236_000, 100_000);
     await payment(500_000, 0, false);
     expect((await clientHistory(env.DB, PERSON)).spend).toBe(136_000);
+  });
+
+  // The record said "GST included" beneath a total no GST was charged on.
+  it("says whether a captured payment in it carried GST", async () => {
+    await payment(236_000);
+    expect((await clientHistory(env.DB, PERSON)).spend_has_gst).toBe(false);
+    await payment(500_000, 0, false, 18);
+    expect((await clientHistory(env.DB, PERSON)).spend_has_gst).toBe(false);
+    await payment(118_000, 0, true, 18);
+    expect((await clientHistory(env.DB, PERSON)).spend_has_gst).toBe(true);
   });
 });
 
