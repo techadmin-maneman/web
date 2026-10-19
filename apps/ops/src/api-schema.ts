@@ -22319,6 +22319,8 @@ export interface components {
             last_visit_on: string | null;
             /** @description In paise: every payment captured, less what has gone back. A credit adds nothing. */
             spend: number;
+            /** @description Whether any payment in the spend carried GST. */
+            spend_has_gst: boolean;
             /** @description When the piece now in wear falls due; null when the client is wearing none. */
             replacement_due: {
                 /** Format: date */

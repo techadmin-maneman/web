@@ -24,10 +24,11 @@
     inset: calc((var(--sp-24) - var(--tap)) / 2 - var(--hairline)) 0;
   }
 
+  /* Off, the knob in a control's edge colour, 3:1 against the box, so off reads as off and not as unusable. */
   .knob {
     width: var(--sp-20);
     height: var(--sp-20);
-    background: var(--ui-line);
+    background: var(--ui-line-control);
   }
 
   .switch[aria-checked="true"] {

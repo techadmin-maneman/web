@@ -135,7 +135,7 @@ test("offers every service of the kind it books, the one offered chosen, with ho
   // The service the app offers the next visit as, which the client may keep or change.
   const standard = kind.getByRole("radio", { name: /^Service visit/ });
   await expect(standard).toBeChecked();
-  await expect(kind).toContainText("1 hour 30 minutes");
+  await expect(kind).toContainText("90 minutes");
   await expect(kind).toContainText(PRICE.service);
   await expect(kind).toContainText("2 hours");
   // The line ops wrote for a service sits under its name; one with none shows its name alone.

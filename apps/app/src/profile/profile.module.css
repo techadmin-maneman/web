@@ -217,15 +217,15 @@ a.secondary {
   margin-top: var(--sp-16);
 }
 
+/* A section of its own, ruled as the address and the agreements above it are: one pattern for the whole page. */
 .card {
-  padding: var(--sp-20);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper);
+  padding-top: var(--sp-16);
+  border-top: var(--hairline) solid var(--text);
 }
 
 .cardLabel {
   margin-bottom: var(--sp-16);
-  font-size: var(--fs-14);
+  font-size: var(--fs-15);
 }
 
 .cardBody {

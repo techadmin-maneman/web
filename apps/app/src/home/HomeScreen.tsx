@@ -13,6 +13,7 @@
 import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
 import { BookButton, BookNext, ProblemLink, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
+import { NumberedSteps } from "@maneman/ui/NumberedSteps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { monthInIndia, shortDate } from "@maneman/web-kit/dates";
@@ -215,16 +216,7 @@ function WhatToExpect({ steps }: { steps: readonly string[] }) {
       <h2 className={capsLook(styles.label)} id="expect">
         {home.expect.label}
       </h2>
-      <ol className={styles.steps}>
-        {steps.map((step, index) => (
-          <li key={step} className={styles.step}>
-            <span className={styles.number} aria-hidden="true">
-              {index + 1}
-            </span>
-            <span>{step}</span>
-          </li>
-        ))}
-      </ol>
+      <NumberedSteps steps={steps} />
     </section>
   );
 }

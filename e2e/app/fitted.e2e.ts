@@ -1,4 +1,4 @@
-import { fullDate, listMonth, shortDate } from "../../packages/web-kit/dates.ts";
+import { fullDate, listDate, listMonth, shortDate, yearInIndia } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
@@ -14,7 +14,7 @@ test("Home shows a fitted client’s next visit, with the technician, and Resche
   await expect(page.getByText(shortDate(client.next.date))).toBeVisible();
   await expect(page.getByText("12–12:30 pm", { exact: true })).toBeVisible();
   await expect(page.getByText("Imran", { exact: true })).toBeVisible();
-  await expect(page.getByText("Service visit · 1 hour 30 minutes")).toBeVisible();
+  await expect(page.getByText("Service visit · 90 minutes")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
   // Home's one prompt: this client has given no address, which comes before the replacement falling due.
   await expect(page.getByText(appCopy.home.prompt.address)).toBeVisible();
@@ -37,14 +37,21 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   const visits = page.getByRole("main").getByRole("link");
   await expect(visits).toHaveCount(4);
   await expect(visits.nth(0)).toContainText("Service visit · 12–12:30 pm · Imran");
-  await expect(visits.nth(1)).toContainText(`${fullDate(client.service.date)}Service visit · Imran`);
-  await expect(visits.nth(2)).toContainText(`${fullDate(client.firstFit.date)}First fit · Imran`);
-  await expect(visits.nth(3)).toContainText(`${fullDate(client.consultation.date)}Consultation · Imran`);
+  // Dated as the payments list dates its entries: the year only where it is not this one.
+  await expect(visits.nth(1)).toContainText(
+    `${listDate(client.service.date, yearInIndia(Date.now()))}Service visit · Imran`,
+  );
+  await expect(visits.nth(2)).toContainText(
+    `${listDate(client.firstFit.date, yearInIndia(Date.now()))}First fit · Imran`,
+  );
+  await expect(visits.nth(3)).toContainText(
+    `${listDate(client.consultation.date, yearInIndia(Date.now()))}Consultation · Imran`,
+  );
 
   await visits.nth(1).click();
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByText("Imran Qureshi")).toBeVisible();
-  await expect(page.getByText("1 hour 25 minutes")).toBeVisible();
+  await expect(page.getByText("85 minutes")).toBeVisible();
   // The visit's "What was done": the checklist the technician ticked, from their phone.
   await expect(page.getByRole("term").filter({ hasText: appCopy.visits.detail.done }).locator("+ dd")).toHaveText(
     "Hair system removed, scalp cleaned, hair system cleaned.",

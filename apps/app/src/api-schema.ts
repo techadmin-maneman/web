@@ -4808,6 +4808,8 @@ export interface components {
             last_visit_on: string | null;
             /** @description In paise: every payment captured, less what has gone back. A credit adds nothing. */
             spend: number;
+            /** @description Whether any payment in the spend carried GST. */
+            spend_has_gst: boolean;
             /** @description The month the piece now in wear falls due, and null when no piece is in wear. A month, not a day (ADR 0059). */
             replacement_due: {
                 month: string;

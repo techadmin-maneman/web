@@ -30,6 +30,13 @@ body[data-ground="ink"] {
   --column-max: var(--app-column-max);
 }
 
+/* A laptop's frame: the tabs' rail beside a page wide enough to read at, centred (./components/shell.module.css). */
+@media (min-width: 1024px) {
+  :root {
+    --column-max: calc(var(--app-column-max) * 2 + var(--sp-64));
+  }
+}
+
 #root {
   display: flex;
   flex-direction: column;
