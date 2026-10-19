@@ -1,16 +1,19 @@
 // The WhatsApp code that proves the number typed, before /book's consultation and fit in one visit or /try's gate
 // acts on it. A form asks for the code once its fields are complete, shows the code's field, and once the code is
 // entered sends what it acts on with the code's ID. A code is for the number it was sent to: another number needs
-// its own.
+// its own. A number proved is kept for the tab with the name typed beside it, so /book starts from them and a
+// booking for it goes on into the app signed in (../lib/visitor.ts, ADR 0214).
 
 import { CODE_TEXT } from "@rules/policy/one-time-code.ts";
 import { useState } from "preact/hooks";
 import { numberCode as words } from "../content/site.ts";
+import { rememberVisitor } from "../lib/visitor.ts";
 import { askForNumberCode, verifyNumberCode, type Answer, type NumberCode, type NumberCodeVerify } from "../lib/api.ts";
 
-/** The code sent, to the ten digits it went to, and whether it has been entered. */
+/** The code sent, to the ten digits it went to and the name typed beside them, and whether it has been entered. */
 interface Sent {
   readonly digits: string;
+  readonly name: string;
   readonly codeId: string;
   readonly proved: boolean;
 }
@@ -44,7 +47,7 @@ export function useNumberCode() {
   async function ask(digits: string, name: string, turnstileToken: string): Promise<Answer<NumberCode>> {
     const answer = await askForNumberCode({ mobile: digits, name, turnstile_token: turnstileToken });
     if (answer.ok) {
-      setSent({ digits, codeId: answer.body.code_id, proved: false });
+      setSent({ digits, name, codeId: answer.body.code_id, proved: false });
       setCode("");
       setFailure(null);
     }
@@ -64,6 +67,7 @@ export function useNumberCode() {
     setChecking(false);
     if (answer.ok && answer.body.verified) {
       setSent({ ...sent, proved: true });
+      rememberVisitor({ name: sent.name, mobile: sent.digits, proof: sent.codeId });
       setFailure(null);
       return sent.codeId;
     }

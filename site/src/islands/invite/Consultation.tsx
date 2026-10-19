@@ -39,8 +39,6 @@ import {
 } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
-import { goOnSignedIn } from "../../lib/app-sign-in.ts";
-import { proofFor } from "../../lib/visitor.ts";
 import { consultationStart } from "./person.ts";
 import { byDoor, leadSent } from "./submit.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
@@ -332,8 +330,6 @@ export function Consultation(props: ConsultationProps) {
         const page = leadSent(door, { served: true, area: props.answer.area, window: slot.window });
         track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
         props.onBooked({ result: booked, mobile: fields.mobile, code: sentCode });
-        // A number its code proved, here or at the try-on, goes on into the app signed in.
-        void goOnSignedIn(digits, numberCodeId ?? proofFor(digits));
       },
       addressComplete,
     );

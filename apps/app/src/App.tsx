@@ -27,7 +27,7 @@ import { PhotosScreen } from "./photos/PhotosScreen.tsx";
 import { VisitScreen } from "./visits/VisitScreen.tsx";
 import { VisitsScreen } from "./visits/VisitsScreen.tsx";
 import { Login } from "./login/Login.tsx";
-import type { LinkedSignIn } from "./login/linked-mobile.ts";
+import type { LinkedLogin } from "./login/linked-mobile.ts";
 import { go, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext } from "./session.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
@@ -103,7 +103,7 @@ function useConnection(setSession: Dispatch<SetStateAction<Session>>, refreshSoo
   }, [setSession, refreshSoon]);
 }
 
-export function App({ linkedMobile, linkedSignIn }: { linkedMobile: string; linkedSignIn: LinkedSignIn | null }) {
+export function App({ linked }: { linked: LinkedLogin }) {
   const [session, setSession] = useState<Session>({ kind: "checking" });
   const path = usePath();
 
@@ -194,14 +194,7 @@ export function App({ linkedMobile, linkedSignIn }: { linkedMobile: string; link
     case "failed":
       return <LoadFailed booked={session.booked} onRetry={() => void check()} />;
     case "out":
-      return (
-        <Login
-          ended={session.ended}
-          linkedMobile={linkedMobile}
-          linkedSignIn={linkedSignIn}
-          onSignedIn={() => void check()}
-        />
-      );
+      return <Login ended={session.ended} linked={linked} onSignedIn={() => void check()} />;
     case "in":
       return (
         <SessionContext value={{ me: session.me, offline: session.offline, refresh: () => void refresh(), logOut }}>

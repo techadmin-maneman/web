@@ -12,7 +12,7 @@ import { fill } from "../lib/text.ts";
 import BeforeAfter from "./BeforeAfter.tsx";
 import styles from "./ResultsGallery.module.css";
 
-export interface ShownPicture {
+interface ShownPicture {
   readonly src: string;
   readonly alt: string;
 }

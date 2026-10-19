@@ -4,7 +4,7 @@ import { keepUpToDate } from "@maneman/web-kit/sw-update";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
-import { carriesLogin, mobileInLink, signInInLink } from "./login/linked-mobile.ts";
+import { carriesLogin, mobileInLink, signInInLink, type LinkedLogin } from "./login/linked-mobile.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import "./styles/global.css";
 
@@ -15,7 +15,7 @@ takeSignInMark();
  * The number or the sign-in the app was opened with, taken off the address at once so neither is left in the
  * browser's history.
  */
-function takeLinkedLogin() {
+function takeLinkedLogin(): LinkedLogin {
   const { hash, pathname, search } = window.location;
   if (!carriesLogin(hash)) return { mobile: "", signIn: null };
   window.history.replaceState(window.history.state, "", `${pathname}${search}`);
@@ -28,7 +28,7 @@ const linked = takeLinkedLogin();
 createRoot(root).render(
   <StrictMode>
     <ErrorBoundary>
-      <App linkedMobile={linked.mobile} linkedSignIn={linked.signIn} />
+      <App linked={linked} />
     </ErrorBoundary>
   </StrictMode>,
 );

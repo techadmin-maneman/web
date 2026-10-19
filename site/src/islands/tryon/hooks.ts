@@ -2,7 +2,7 @@
 // WhatsApp, which hands the page the look once ready, the object URLs the page shows the photograph from, and a
 // history entry for each screen.
 
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { useLatest } from "../useLatest.ts";
 import { jobStatus } from "../../lib/api.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
@@ -14,18 +14,17 @@ const POLL_MS = 3_000;
 const WATCH_MS = 5 * 60_000;
 
 /**
- * While `watching`, asks after the render named by `jobId` until it is ready, hands over the look's link once it is
- * (ADR 0214), and reports how it failed, if it does. Only `watching` starts and stops it: the island draws new
- * callbacks each time, and the newest are the ones called.
+ * While `watching`, asks after the render named by `jobId` until it is ready, and reports how it failed, if it does.
+ * The look's link, once ready, is its answer (ADR 0214); null until then. Only `watching` starts and stops it: the
+ * island draws a new `onProblem` each time, and the newest is the one called.
  */
 export function useRenderWatch(
   watching: boolean,
   jobId: { readonly current: string | null },
   onProblem: (failure: Failure) => void,
-  onLook: (look: string) => void,
-): void {
+): string | null {
   const problem = useLatest(onProblem);
-  const looked = useLatest(onLook);
+  const [look, setLook] = useState<string | null>(null);
   useEffect(() => {
     if (!watching) return;
     const started = Date.now();
@@ -39,7 +38,7 @@ export function useRenderWatch(
       void jobStatus(id).then((answer) => {
         if (!answer.ok || jobId.current !== id) return;
         if (answer.body.state === "ready") clearInterval(timer);
-        if (answer.body.look !== undefined) looked.current(answer.body.look);
+        if (answer.body.look !== undefined) setLook(answer.body.look);
         const found = jobProblem(answer.body);
         if (found !== null) problem.current(found);
       });
@@ -47,7 +46,8 @@ export function useRenderWatch(
     return () => {
       clearInterval(timer);
     };
-  }, [watching, jobId, problem, looked]);
+  }, [watching, jobId, problem]);
+  return look;
 }
 
 /** Releases an object URL once it is replaced or the page is done with it. */

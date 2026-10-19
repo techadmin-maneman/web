@@ -241,8 +241,8 @@ export const NOTICES = [
       "No password, no account, no marketing. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days. If you book a visit in that time, the copy stays in your Mane Man account as your before photo, and the simulation until your first fit is photographed.",
     ],
   },
-  // gate-v5's words with the look shown on the page as well, once ready, to the browser that proved the number
-  // (ADR 0214). PLACEHOLDER: awaits counsel (docs/open-points.md, item 146).
+  // gate-v5's words with the look shown on the page as well, once ready, to the browser that proved the number,
+  // as photo-v6 says. PLACEHOLDER: awaits counsel (docs/open-points.md, item 146).
   {
     version: "gate-v6",
     purpose: "result_delivery",

@@ -25,3 +25,9 @@ export function signInInLink(hash: string): LinkedSignIn | null {
 
 /** Whether the address carries a number or a sign-in for the login, which is taken off once read. */
 export const carriesLogin = (hash: string): boolean => hash.startsWith("#mobile=") || hash.startsWith("#signin=");
+
+/** What the app was opened with for its login: the number to fill in, and a sign-in to finish at once. */
+export interface LinkedLogin {
+  readonly mobile: string;
+  readonly signIn: LinkedSignIn | null;
+}

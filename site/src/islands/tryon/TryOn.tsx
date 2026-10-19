@@ -18,7 +18,7 @@
 
 import { capsLook } from "@maneman/ui/Caps";
 import { TextButton } from "@maneman/ui/TextLink";
-import { useEffect, useReducer, useRef, useState } from "preact/hooks";
+import { useEffect, useReducer, useRef } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { notices, tryOn, tryOnSendsCopy } from "../../content/site.ts";
@@ -70,7 +70,7 @@ function usePhotoWidget(screen: Screen, siteKey: string) {
 
 function TryOnFlow(props: Props) {
   const [state, send] = useReducer(step, START);
-  const { screen, demo, mobile } = state;
+  const { screen, demo } = state;
   const heading = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
   const { box: turnstileBox, widget: turnstile } = usePhotoWidget(screen, props.turnstileSiteKey);
@@ -126,10 +126,8 @@ function TryOnFlow(props: Props) {
     if (screen === "gate" && !demo) track({ name: "try_on_gate_shown" });
   }, [screen, demo]);
 
-  // Once the look is on its way, a render that fails sends the visitor to the error screen; its message is skipped.
-  // One that is ready is shown on the sent screen too.
-  const [look, setLook] = useState<string | null>(null);
-  useRenderWatch(!demo && screen === "sent" && !state.returning, jobId, fail, setLook);
+  // Once the look is on its way, a render that fails sends the visitor to the error screen; one ready is shown.
+  const look = useRenderWatch(!demo && screen === "sent" && !state.returning, jobId, fail);
   const wroteHistory = useScreenHistory(screen, send, !demo);
 
   // The photograph is shown from memory; its object URL is released when replaced.
@@ -223,9 +221,7 @@ function TryOnFlow(props: Props) {
           />
         )}
         {screen === "gate" && <Gate notice={notices.gate} heading={heading} {...gate} />}
-        {screen === "sent" && (
-          <Sent mobile={mobile} returning={state.returning} heading={heading} photo={state.photo} look={look} />
-        )}
+        {screen === "sent" && <Sent state={state} look={look} heading={heading} />}
         {screen === "error" && (
           <Failed
             kind={state.errorKind}

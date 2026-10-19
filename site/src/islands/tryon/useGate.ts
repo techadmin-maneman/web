@@ -12,7 +12,6 @@ import { claimLook, jobStatus, type Code } from "../../lib/api.ts";
 import { startRender, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
 import { readAttribution } from "../../lib/visit.ts";
-import { rememberVisitor } from "../../lib/visitor.ts";
 import { useNumberCode } from "../useNumberCode.ts";
 import { useSubmission } from "../useSubmission.ts";
 import type { GateCode } from "./Gate.tsx";
@@ -127,8 +126,6 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
       await claimRefused(answer.code, answer.fields, upload.jobId);
       return;
     }
-    // Kept for this tab, so /book starts from them and its booking goes on into the app signed in.
-    rememberVisitor({ name: name.trim(), mobile: digits, proof: numberCodeId });
     // A claim answered again is the same lead, and the same conversion.
     if (claimCounted.current !== upload.jobId) {
       claimCounted.current = upload.jobId;

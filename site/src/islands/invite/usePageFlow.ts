@@ -4,6 +4,7 @@
 
 import { useEffect, useReducer, useRef } from "preact/hooks";
 import { flow, holdsConfirmation, OPENED, type Plan } from "./flow.ts";
+import { goOnSignedIn } from "../../lib/app-sign-in.ts";
 import type { Booking, Listing } from "./outcomes.ts";
 import { currentStep, keepForReload, pushStep } from "./history.ts";
 import { PREVIEW_PERSON, usePreview } from "./preview.ts";
@@ -81,8 +82,10 @@ export function usePageFlow(invited: boolean, allowStateSwitch: boolean) {
       pushStep("address", answer);
       dispatch({ type: "stepped", step: "address" });
     },
+    // A number its code proved, at the try-on or for the one visit, goes on into the app signed in (ADR 0214).
     booked: (booking: Booking) => {
       dispatch({ type: "booked", booking });
+      void goOnSignedIn(booking.mobile);
       keepForReload(null);
       if (answer !== null) pushStep("done", answer);
     },

@@ -471,7 +471,9 @@ test("a client not yet fitted sees Refer’s empty state, with no invite to send
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
   await expect(page.getByText("Referrals go live after your first fit.")).toBeVisible();
-  await expect(page.getByText("Then, when a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
+  await expect(
+    page.getByText("Then, when a friend you refer is fitted, you both get 3 free service visits."),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.refer.share })).toHaveCount(0);
   await scan(page);
 });
