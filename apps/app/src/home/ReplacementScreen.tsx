@@ -2,6 +2,7 @@
 // message to us (docs/open-points.md, item 46; ADR 0025, item 70; ADR 0086). A replacement is booked and paid for in
 // the app like any other visit, so a fitted client books it from here.
 
+import { NumberedSteps } from "@maneman/ui/NumberedSteps";
 import { BookButton } from "../booking/index.ts";
 import { replacement, messages } from "../content.ts";
 import { useSession } from "../session.ts";
@@ -24,16 +25,7 @@ export function ReplacementScreen() {
   return (
     <Shell header={{ kind: "back", title: replacement.title, to: "/", label: replacement.back }} tab="/" footer={book}>
       <div className={styles.home}>
-        <ol className={styles.steps}>
-          {replacement.lines.map((line, index) => (
-            <li key={line} className={styles.step}>
-              <span className={styles.number} aria-hidden="true">
-                {index + 1}
-              </span>
-              <span>{line}</span>
-            </li>
-          ))}
-        </ol>
+        <NumberedSteps steps={replacement.lines} />
       </div>
     </Shell>
   );

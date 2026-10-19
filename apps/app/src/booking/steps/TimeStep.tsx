@@ -55,7 +55,7 @@ export function TimeStep(props: {
         onChoose={props.onChoose}
       />
       {chosen !== undefined && (
-        <p className={styles.dayLine} role="status">
+        <p className={styles.arrival} role="status">
           {copy.arrives(indiaClock(chosen.starts_at), indiaClock(chosen.arrives_by))}
           {chosen.change_charged && <span className={styles.late}>{` ${copy.within(props.noticeHours)}`}</span>}
         </p>

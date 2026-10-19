@@ -110,12 +110,33 @@ test("shows the loading shape on paper while it asks whether there is a session,
   expect(await page.evaluate(() => document.body.dataset.ground)).toBe("ink");
 });
 
-test("keeps its column to a large phone’s width on a wide screen, centred", async ({ page }) => {
+// Below a laptop the column keeps a large phone's width; a laptop's frame was that strip in an empty field.
+test("keeps a large phone's column short of a laptop, and a laptop's frame beyond, centred", async ({ page }) => {
+  for (const [width, column] of [
+    [900, 480],
+    [1440, 1024],
+  ] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    const box = await page.locator("#root").boundingBox();
+    expect(box?.width).toBe(column);
+    expect(Math.round((box?.x ?? 0) * 2 + (box?.width ?? 0))).toBe(width);
+  }
+});
+
+test("puts the tabs in a rail down the left on a laptop, each named beside its icon", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
-  const box = await page.locator("#root").boundingBox();
-  expect(box?.width).toBe(480);
-  expect(Math.round((box?.x ?? 0) * 2 + (box?.width ?? 0))).toBe(1440);
+  await home(page);
+  const tabs = page.getByRole("navigation", { name: appCopy.tabsLabel });
+  const rail = await tabs.boundingBox();
+  const main = await page.getByRole("main").boundingBox();
+  expect(rail?.height ?? 0).toBeGreaterThan(rail?.width ?? 0);
+  expect((rail?.x ?? 0) + (rail?.width ?? 0)).toBeLessThanOrEqual(main?.x ?? 0);
+  const [first, second] = [
+    await tabs.getByRole("link").nth(0).boundingBox(),
+    await tabs.getByRole("link").nth(1).boundingBox(),
+  ];
+  expect(second?.y ?? 0).toBeGreaterThan(first?.y ?? 0);
 });
 
 test("meets WCAG 2.2 AA", async ({ page }) => {

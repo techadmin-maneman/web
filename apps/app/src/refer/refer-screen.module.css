@@ -18,3 +18,15 @@
   margin-top: var(--sp-8);
   padding: 0 var(--sp-20);
 }
+
+/* How a referral goes, beneath the promise, ruled from it. */
+.how {
+  padding-top: var(--sp-20);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.howLabel {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}

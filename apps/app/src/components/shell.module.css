@@ -144,3 +144,65 @@
 .tab:focus-visible {
   outline-offset: var(--focus-inset);
 }
+
+/*
+ * A laptop or wider: the five tabs become a rail down the left with their names beside their icons, and the page
+ * takes the width beside it, the header above it. The phone's column was a strip in an empty field.
+ */
+@media (min-width: 1024px) {
+  .shell {
+    --rail: calc(var(--sp-64) * 3.5);
+
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "tabs header"
+      "tabs status"
+      "tabs page"
+      "tabs footer";
+    border-inline: var(--hairline) solid var(--paper-line);
+  }
+
+  .header {
+    grid-area: header;
+    padding-inline: var(--sp-32);
+  }
+
+  .status {
+    grid-area: status;
+  }
+
+  .page {
+    grid-area: page;
+  }
+
+  .footer {
+    grid-area: footer;
+    padding-inline: var(--sp-32);
+  }
+
+  .tabs {
+    grid-area: tabs;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    height: auto;
+    padding: var(--sp-24) var(--sp-12);
+    border-top: 0;
+    border-right: var(--hairline) solid var(--paper-line);
+  }
+
+  .tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--sp-12);
+    min-height: var(--tap);
+    padding: 0 var(--sp-16);
+    font-size: var(--fs-15);
+  }
+
+  .tab[aria-current="page"] {
+    background: var(--paper);
+  }
+}

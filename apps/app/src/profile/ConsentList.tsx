@@ -80,7 +80,6 @@ export function ConsentList({
                     <p className={shared.consentName} id={`consent-${consent.purpose}`}>
                       {name}
                     </p>
-                    {/* The switch says whether it is given; beneath the name, only since when. */}
                     {consent.granted && consent.since !== null && (
                       <p className={shared.consentWhen}>{copy.given(longDate(consent.since))}</p>
                     )}

@@ -29,6 +29,7 @@
     "./Drawer": "./Drawer.tsx",
     "./EditableRow": "./EditableRow.tsx",
     "./EmptyState": "./EmptyState.tsx",
+    "./NumberedSteps": "./NumberedSteps.tsx",
     "./ErrorBoundary": "./ErrorBoundary.tsx",
     "./ErrorRef": "./ErrorRef.tsx",
     "./Field": "./Field.tsx",

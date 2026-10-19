@@ -18,7 +18,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { fullDate, listMonth, monthInIndia, shortDate, yearInIndia } from "@maneman/web-kit/dates";
+import { fullDate, listDate, listMonth, monthInIndia, shortDate, yearInIndia } from "@maneman/web-kit/dates";
 import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
@@ -205,7 +205,8 @@ function VisitList({ list, me }: { list: Visits; me: Me }) {
               <li key={visit.id}>
                 <AppLink className={styles.row} to={`/visits/${visit.id}`}>
                   <span>
-                    <span className={styles.rowDate}>{fullDate(visit.date)}</span>
+                    {/* As the payments list dates its entries: the year only where it is not this one. */}
+                    <span className={styles.rowDate}>{listDate(visit.date, yearInIndia(apiNow()))}</span>
                     <span className={styles.rowWhat}>{pastLine(visit)}</span>
                   </span>
                   <Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />
