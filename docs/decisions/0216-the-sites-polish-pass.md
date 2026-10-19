@@ -32,7 +32,7 @@ month, and the shared controls' sizes missing on the site.
 
 ## Consequences
 
-- The guarantee and the founder's note stand side by side, the note two paragraphs.
+- The guarantee and the founder's note stand side by side; the note keeps the founder's own words, as written.
 - How it works says "Regular service visits", every month or every two weeks on Celebrity, on the home page and /book.
 - The cities named on /areas still include one with no page of its own; which cities get pages is the owner's to say.
 - Tests: `e2e/home.e2e.ts`, `e2e/try.e2e.ts`, `e2e/try-flow.e2e.ts`, `test/worker/site/site-worker-cities.test.ts`.

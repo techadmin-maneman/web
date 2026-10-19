@@ -25,8 +25,9 @@ const DESIGN = "http://127.0.0.1:4312/Mane%20Man%20Site%20v2.dc.html";
 const OUT = resolve("docs/fidelity");
 
 /**
- * The home page's sections, in order: v2's top-level blocks pair with these. v2's two bases pair with Materials and
- * construction, which took their place, and its prices with nothing while the site gives none (ADR 0103).
+ * The home page's sections, in order: v2's top-level blocks pair with these. Its prices pair with nothing while the
+ * site gives none (ADR 0103), and so do the three the site no longer has: its technicians, its materials, which went to
+ * the guides, and its testimonials, which the results replaced.
  */
 const HOME_SECTIONS = [
   "hero",
@@ -36,10 +37,10 @@ const HOME_SECTIONS = [
   "teaser",
   "discretion",
   "how",
-  "technicians",
-  "materials",
   null,
-  "testimonials",
+  null,
+  null,
+  null,
   "guarantee",
   "faq",
   "closing",

@@ -22,7 +22,7 @@ import { chromium, type Browser, type Page, type Route } from "@playwright/test"
 import sharp from "sharp";
 import { pair, rest, routeDesignLibraries, STILL } from "../lib/fidelity.ts";
 import { serveDirectory } from "../lib/static-server.ts";
-import { CHALLENGE } from "./fidelity-app-login.ts";
+import { CHALLENGE, NOT_DRAWN, SERVICE_PRICE } from "./fidelity-app-fixtures.ts";
 import type { components } from "../../apps/app/src/api-schema.ts";
 
 type Schemas = components["schemas"];
@@ -278,7 +278,6 @@ const ME_BOOKING = {
   booking: { ...ME_FITTED.booking, self_serve: true, self_serve_kinds: [...VISIT_KINDS] },
 } satisfies Schemas["Me"];
 const FULL_DAYS = new Set([1, 8, 12]);
-const SERVICE_PRICE = { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 };
 type Window = Schemas["Availability"]["days"][number]["windows"][number];
 const WINDOW_TIMES = {
   morning: ["09:00", "12:00"],
@@ -508,7 +507,8 @@ async function openApp({
     }),
   );
   await page.route("**/api/**", (route) => {
-    const answer = api[new URL(route.request().url()).pathname] ?? signedOut;
+    const path = new URL(route.request().url()).pathname;
+    const answer = api[path] ?? NOT_DRAWN[path] ?? signedOut;
     return answer(route);
   });
   await page.goto(`${APP}${path}`);
@@ -567,7 +567,7 @@ async function login(browser: Browser, design: Page): Promise<void> {
   // they are shot at the frame's full height.
   await app.setViewportSize({ width: WIDTH, height: FRAME_HEIGHT });
   await app.getByRole("button", { name: "Send code on WhatsApp" }).click();
-  await app.getByRole("textbox", { name: "The six-digit code" }).fill("418");
+  await app.getByRole("textbox", { name: "The 6-digit code" }).fill("418");
   await app.clock.runFor(30_000);
   await pair({
     dir: OUT,
@@ -662,7 +662,7 @@ async function profile(browser: Browser, design: Page): Promise<void> {
       "/api/sessions": json(SESSIONS),
     },
   });
-  await app.getByRole("heading", { name: "Where we come" }).waitFor();
+  await app.getByRole("heading", { name: "Your address" }).waitFor();
   await pair({
     dir: OUT,
     width: WIDTH,
@@ -900,7 +900,8 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
         built: await shot(app),
       });
     await app.getByRole("button", { name: "Continue" }).click();
-    await app.getByRole("radio", { name: /Afternoon/ }).click();
+    // The day's starts every half hour (docs/decisions/0210-booking-by-start-time.md): the first open one, at noon.
+    await app.getByRole("radio", { name: "12 pm", exact: true }).click();
     if (shots)
       await pair({
         dir: OUT,
@@ -1082,7 +1083,7 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
   // The app adds a way from C7 to C8, which the design draws but does not reach; C8 says 5 to 7 working days,
   // as the owner ruled (ADR 0025, item 28), where the design says three to five.
   const free = await openApp({ browser, path: "/", api: api("free"), now: IN_2030 });
-  await free.getByRole("button", { name: "Reschedule" }).click();
+  await free.getByRole("button", { name: "Change" }).click();
   await free.getByText("Free to move. Your Rs. 2,360 carries over.").waitFor();
   await pair({
     dir: OUT,
@@ -1103,7 +1104,7 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
   await free.close();
 
   const late = await openApp({ browser, path: "/", api: api("late"), now: IN_2030 });
-  await late.getByRole("button", { name: "Reschedule" }).click();
+  await late.getByRole("button", { name: "Change" }).click();
   await late
     .getByText(/late change|inside \d+ hours costs/i)
     .first()
@@ -1168,7 +1169,7 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
   });
 
   // The example needs no consent: the sheet goes straight to the preview, the house card in the bubble.
-  await landing.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await landing.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await landing.getByRole("button", { name: "Continue to share" }).click();
   await landing.getByRole("heading", { name: /^Preview/ }).waitFor();
   await photographsIn(landing);
@@ -1185,7 +1186,7 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
     navigator.clipboard.writeText = () => Promise.reject(new DOMException("refused", "NotAllowedError"));
   });
   await landing.getByRole("button", { name: "Copy link" }).click();
-  await landing.getByText("The link didn’t generate. Nothing was sent.").waitFor();
+  await landing.getByText("Couldn’t create your link. Try again.").waitFor();
   await pair({
     dir: OUT,
     width: WIDTH,
@@ -1204,7 +1205,7 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
       "/api/refer": json({ ...REFER, card: { state: "personal", version: 2, consented: true } }),
     },
   });
-  await revoke.getByRole("button", { name: "Revoke the photo card" }).click();
+  await revoke.getByRole("button", { name: "Switch off your photo card" }).click();
   await revoke.getByRole("heading", { name: "Switch off your photos?" }).waitFor();
   await pair({
     dir: OUT,

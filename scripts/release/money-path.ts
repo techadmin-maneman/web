@@ -1,6 +1,8 @@
 // Every night, staging's money path as a client walks it: a service visit held in the first free window, its payment
 // started, which has Razorpay (test mode) make an order, and the hold let go. Nothing is paid, so nothing is captured
-// or refunded, and the window is free again at once.
+// or refunded, and the window is free again at once. While self-serve booking of a service visit is switched off, as
+// it is while ops book and the client pays by UPI at the visit, there is no path to walk: the run says so and passes,
+// and walks it again the night it is switched back on.
 //
 //   npm run watch:money-path
 //
@@ -92,7 +94,7 @@ function caller(token: string) {
 }
 
 interface Me {
-  booking: { types: string[]; services: { type: string; tier: string }[] };
+  booking: { types: string[]; services: { type: string; tier: string }[]; self_serve_kinds: string[] };
 }
 interface Availability {
   days: { date: string; windows: { window: string; open: boolean }[] }[];
@@ -112,7 +114,12 @@ async function walk(token: string): Promise<void> {
   const call = caller(token);
   const me = await call("GET", "/api/me");
   expectStatus("the client's Home", me.status, 200, me.body);
-  const service = (me.body as Me).booking.services.find((each) => each.type === "service");
+  const { booking } = me.body as Me;
+  if (!booking.self_serve_kinds.includes("service")) {
+    console.log("skip a service visit is not booked in the app while self-serve booking of one is off");
+    return;
+  }
+  const service = booking.services.find((each) => each.type === "service");
   if (service === undefined) throw new Error("the client's Home offers no service visit to book");
 
   const asked = await call("GET", `/api/availability?type=service&tier=${service.tier}`);
@@ -142,7 +149,7 @@ async function walk(token: string): Promise<void> {
 const { token, sessionId } = await signedIn();
 try {
   await walk(token);
-  console.log("the money path walks");
+  console.log("the money path walks, or is switched off");
 } finally {
   await execute([`DELETE FROM sessions WHERE id = ${sqlLiteral(sessionId)};`]);
 }
