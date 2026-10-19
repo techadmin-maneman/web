@@ -15,6 +15,7 @@ const copy = booking.pay;
 let page: HTMLElement;
 let root: Root;
 let paid: number;
+let reminded: boolean[];
 
 beforeEach(() => {
   Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
@@ -22,6 +23,7 @@ beforeEach(() => {
   document.body.append(page);
   root = createRoot(page);
   paid = 0;
+  reminded = [];
 });
 
 afterEach(() => {
@@ -31,16 +33,16 @@ afterEach(() => {
   page.remove();
 });
 
-const draw = (hold: Hold, over: { busy?: boolean; problem?: string | null } = {}) => {
+const draw = (hold: Hold, over: { busy?: boolean; problem?: string | null; askToRemind?: boolean } = {}) => {
   act(() => {
     root.render(
       createElement(PayStep, {
         hold,
         busy: over.busy ?? false,
         problem: over.problem ?? null,
-        askToRemind: false,
+        askToRemind: over.askToRemind ?? false,
         remind: false,
-        onRemind: () => undefined,
+        onRemind: (remind: boolean) => reminded.push(remind),
         onPay: () => (paid += 1),
         onHold: () => undefined,
       }),
@@ -90,6 +92,17 @@ describe("the pay step", () => {
   it("says a change is free at any time where ops sold it so", () => {
     draw(holdOf({ late_change_charge: "nothing" }));
     expect(page.textContent).toContain(copy.freeAnyTime);
+  });
+
+  it("asks to remind the client on WhatsApp, with the notice a link away, and passes on the tick", () => {
+    draw(holdOf(), { askToRemind: true });
+    const box = page.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    expect(box?.closest("label")?.textContent).toContain(copy.remind);
+    expect([...page.querySelectorAll("a")].some((link) => link.href.endsWith("#whatsapp"))).toBe(true);
+    act(() => {
+      box?.click();
+    });
+    expect(reminded).toEqual([true]);
   });
 
   it("shows the problem it was given, as an alert", () => {
