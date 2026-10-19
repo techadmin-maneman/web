@@ -485,7 +485,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     FRAME_HEIGHT,
   );
   await outcome.getByText("Outcome").first().waitFor();
-  await outcome.getByRole("button", { name: "Partial · pick a reason" }).click();
+  await outcome.getByRole("button", { name: "Partly done · pick a reason" }).click();
   await settle(outcome);
   await pair({ dir: OUT, width: WIDTH, name: "b4-outcome", design: outcomeBoard, built: await shot(outcome) });
   await outcome.close();
