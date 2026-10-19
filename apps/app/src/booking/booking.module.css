@@ -92,6 +92,13 @@
   color: var(--text-muted);
 }
 
+/* The time chosen's promise, clear of the last row of times. */
+.sheet .arrival {
+  margin: var(--sp-16) 0 var(--sp-20);
+  font-size: var(--fs-16);
+  color: var(--text);
+}
+
 .windows {
   display: flex;
   flex-direction: column;

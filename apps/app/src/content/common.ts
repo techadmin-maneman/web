@@ -1,6 +1,7 @@
 // The client app's words every screen may use: its name and titles, WhatsApp and the site's booking page, a
 // visit's windows, kinds and length, the messages it opens WhatsApp with, and the loading and failure lines.
 
+import { lengthWords } from "@maneman/web-kit/visit-length";
 import type { EnvironmentName } from "@rules/config/environments.ts";
 import { indiaTimeOf } from "@maneman/web-kit/dates";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
@@ -100,16 +101,8 @@ export const OTHER_VISIT = "Visit";
 // A consultation and fit in one visit, as the site and the technician's phone call it.
 export const ONE_VISIT = "Consultation and fit";
 
-/** How long a visit takes, or took, as the site says it: "3 hours", "1 hour 30 minutes", "45 minutes". */
-export function visitLength(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  const parts = [
-    hours === 0 ? "" : `${String(hours)} ${hours === 1 ? "hour" : "hours"}`,
-    rest === 0 ? "" : `${String(rest)} minutes`,
-  ];
-  return parts.filter((part) => part !== "").join(" ");
-}
+/** How long a visit takes, or took, word for word as the site says it: "90 minutes", "3 hours". */
+export const visitLength = lengthWords;
 
 /** A price's GST, beneath the amount charged once GST applies: "Rs. 1,000 + Rs. 180 GST". */
 export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;

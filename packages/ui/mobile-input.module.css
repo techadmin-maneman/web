@@ -38,7 +38,6 @@
     padding: 0 var(--sp-16);
     border-right: var(--hairline) solid;
     font-size: var(--fs-16);
-    font-variant-numeric: tabular-nums;
   }
 
   .onPaper .prefix {

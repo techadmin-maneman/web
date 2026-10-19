@@ -45,6 +45,8 @@ interface ClientHistory {
    * back. A visit covered by a credit cost nothing and adds nothing.
    */
   readonly spend: number;
+  /** Whether any payment in it carried GST: none does until a GSTIN is held, so nothing says "GST included". */
+  readonly spend_has_gst: boolean;
   /** Null when no piece is in wear, which has no date rather than a distant one. */
   readonly replacement_due: ReplacementDue | null;
 }
@@ -65,6 +67,8 @@ const HISTORY = `SELECT
   (SELECT MAX(window_start) FROM appointments WHERE ${DONE}) AS last_visit_at,
   (SELECT COALESCE(SUM(amount - refunded_amount), 0) FROM payments
      WHERE person_id = ?1 AND captured_at IS NOT NULL) AS spend,
+  EXISTS (SELECT 1 FROM payments
+     WHERE person_id = ?1 AND captured_at IS NOT NULL AND gst_percent > 0) AS spend_has_gst,
   (SELECT MIN(replacement_due_at) FROM pieces
      WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replaced_at IS NULL
        AND replacement_due_at IS NOT NULL) AS due_on,
@@ -80,6 +84,7 @@ interface Row {
   first_fit_at: string | null;
   last_visit_at: string | null;
   spend: number;
+  spend_has_gst: number;
   due_on: string | null;
   due_piece: string | null;
 }
@@ -91,6 +96,7 @@ const NOTHING: ClientHistory = {
   first_fit_on: null,
   last_visit_on: null,
   spend: 0,
+  spend_has_gst: false,
   replacement_due: null,
 };
 
@@ -111,6 +117,7 @@ export async function clientHistory(db: D1Database, personId: string): Promise<C
     first_fit_on: dateOf(row.first_fit_at),
     last_visit_on: dateOf(row.last_visit_at),
     spend: row.spend,
+    spend_has_gst: row.spend_has_gst === 1,
     replacement_due:
       row.due_on === null || row.due_piece === null
         ? null

@@ -64,6 +64,15 @@ export const refer = {
   },
   share: "Share an invite",
   tracker: "See who has been fitted",
+  /** Beneath the promise: how one goes, from the invite to the visits. */
+  how: {
+    label: "How it works",
+    steps: [
+      "Share your invite on WhatsApp.",
+      "Your friend books a free consultation at home.",
+      "Once they’re fitted, you both get the free visits.",
+    ],
+  },
   card: {
     title: "Which card?",
     what: "Pick the picture your friend sees. Your name and message go with it, never on it.",

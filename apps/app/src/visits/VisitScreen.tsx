@@ -16,7 +16,6 @@ import { Icon } from "@maneman/ui/Icon";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { TextLink } from "@maneman/ui/TextLink";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { api, documentUrl, receiptUrl, type VisitDetail } from "../api.ts";
@@ -169,6 +168,7 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
           </div>
         )}
       </dl>
+      <Receipt paid={visit.paid} />
       <Invoice visit={visit} />
       {visit.status === "completed" && (
         <ProblemLink about={{ about: "visit", visitId: visit.id }} className={styles.dispute} />
@@ -186,24 +186,26 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
   );
 }
 
-/** What the client paid for the visit, and its receipt once there is one. */
+/** What was paid, on a row as every other fact is. Its receipt is a document beside the invoice. */
 function Paid({ paid }: { paid: NonNullable<VisitDetail["paid"]> }) {
-  const copy = visits.detail;
   return (
-    <div className={styles.done}>
-      <dt>{copy.paid}</dt>
-      <dd>
-        {rupees(paid.amount)}
-        {paid.receipt !== null && (
-          <>
-            {" · "}
-            <TextLink tone="brass" href={receiptUrl(paid.receipt)} newTab>
-              {copy.receipt}
-            </TextLink>
-          </>
-        )}
-      </dd>
+    <div className={shared.fact}>
+      <dt>{visits.detail.paid}</dt>
+      <dd className={shared.numeric}>{rupees(paid.amount)}</dd>
     </div>
+  );
+}
+
+/** The payment's receipt, opened as the invoice is, once Books has recorded the payment. */
+function Receipt({ paid }: { paid: VisitDetail["paid"] }) {
+  const receipt = paid?.receipt ?? null;
+  if (receipt === null) return null;
+  return (
+    <OpenDocument url={receiptUrl(receipt)} notReady={payments.unavailable.receipt}>
+      <span>{visits.detail.receipt}</span>
+      <VisuallyHidden>{visits.detail.invoice.newTab}</VisuallyHidden>
+      <Icon className={styles.invoiceIcon} d={ICONS.download} size="sm" />
+    </OpenDocument>
   );
 }
 

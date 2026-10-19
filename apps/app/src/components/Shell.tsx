@@ -77,7 +77,7 @@ export function Shell({ header, tab, footer, kept = false, children }: Props) {
     <div className={styles.shell}>
       <PageHeader header={header} />
       {/* Always in the page, so a screen reader hears the banner come and go. */}
-      <div role="status">
+      <div className={styles.status} role="status">
         {offline && (
           <p className={styles.offline}>
             <Icon className={styles.offlineIcon} d={APP_ICONS.offline} size="sm" />

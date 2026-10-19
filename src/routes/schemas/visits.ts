@@ -188,6 +188,7 @@ export const HISTORY_FIGURES = {
     .number()
     .int()
     .openapi({ description: "In paise: every payment captured, less what has gone back. A credit adds nothing." }),
+  spend_has_gst: z.boolean().openapi({ description: "Whether any payment in the spend carried GST." }),
 };
 
 /** A visit paid for, or booked free, on its way to being booked (ADR 0068): GET /api/me's `being_booked`. */

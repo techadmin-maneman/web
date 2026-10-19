@@ -22,6 +22,7 @@ import { chromium, type Browser, type Page, type Route } from "@playwright/test"
 import sharp from "sharp";
 import { pair, rest, routeDesignLibraries, STILL } from "../lib/fidelity.ts";
 import { serveDirectory } from "../lib/static-server.ts";
+import { CHALLENGE } from "./fidelity-app-login.ts";
 import type { components } from "../../apps/app/src/api-schema.ts";
 
 type Schemas = components["schemas"];
@@ -138,9 +139,8 @@ const PAST = [
 const [AUGUST, JULY, , NOVEMBER] = PAST;
 
 /**
- * What those visits and board E1's ledger add up to (src/domain/visits/client-history.ts).
- * The spend is every entry the ledger draws as paid or charged, GST included;
- * the credited visit cost nothing and the refund has not gone back yet.
+ * What those visits and board E1's ledger add up to (src/domain/visits/client-history.ts). The spend is every entry the
+ * ledger draws as paid or charged, GST included; the credited visit cost nothing and the refund has not gone back yet.
  */
 const HISTORY = {
   visits: 4,
@@ -149,6 +149,7 @@ const HISTORY = {
   first_fit_on: "2026-11-14",
   last_visit_on: "2027-08-22",
   spend: 6_018_000,
+  spend_has_gst: true,
   replacement_due: { month: "2028-03" },
 } satisfies Schemas["ClientHistory"];
 
@@ -450,15 +451,6 @@ const PROFILE = {
   care_hours: { opens: 9, closes: 21, first_reply: 60 },
   grievances: [],
 } satisfies Schemas["Profile"];
-
-/** A code sent 30 seconds ago, as board A2 is drawn: SMS offered, WhatsApp's resend 18 s away. */
-const CHALLENGE = {
-  challenge_id: "0b6c2f0e-6a57-4f7e-9a51-3f0f5c1d2e44",
-  channel: "whatsapp",
-  expires_in_s: 600,
-  resend_in_s: 48,
-  sms_in_s: 30,
-} satisfies Schemas["LoginChallenge"];
 
 type Api = Readonly<Record<string, (route: Route) => Promise<void>>>;
 

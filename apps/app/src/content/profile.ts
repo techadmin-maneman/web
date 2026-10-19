@@ -11,7 +11,7 @@ export const profile = {
   back: "Back",
   where: "Your address",
   editAddress: "Edit address and access notes",
-  noAddress: "No address yet. Add it before you book.",
+  noAddress: "No address yet. Add it so your technician can find you.",
   addAddress: "Add your address and access notes",
   // The client types the landmark as they like, so it shows as typed.
   landmark: "Landmark",
@@ -59,7 +59,6 @@ export const profile = {
     whatsapp_launches: "WhatsApp about launches",
   },
   given: (date: string) => `Given ${date}`,
-  notGiven: "Not given",
   // What switching off visit messages means, since ops then call instead.
   visitsOff: "No visit updates on WhatsApp. We’ll call you about any change.",
   // Every visit is photographed for the client's record, so there is no switch for it, only this line.

@@ -73,7 +73,7 @@ export const booking = {
     fullyBooked: "Fully booked",
     /** Read after a time struck through. */
     taken: "taken",
-    /** "Takes about 1½ hours" */
+    /** "Takes about 90 minutes" */
     takes: (length: string) => `Takes about ${length}`,
     /** The promise of the time chosen: "Arrives between 11:30 am and 12 pm". */
     arrives: (from: string, to: string) => `Arrives between ${from} and ${to}`,

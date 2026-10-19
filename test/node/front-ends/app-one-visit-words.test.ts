@@ -42,10 +42,10 @@ describe("a visit’s name and length", () => {
     expect(summaryName(summary(null))).toBe("First fit");
   });
 
-  it("gives the length in hours and minutes, as booking does", () => {
+  it("gives the length as the site does", () => {
     expect(home.next.length("Consultation and fit", 180)).toBe("Consultation and fit · 3 hours");
-    expect(home.next.length("Service visit", 90)).toBe("Service visit · 1 hour 30 minutes");
-    expect(visitLength(60)).toBe("1 hour");
+    expect(home.next.length("Service visit", 90)).toBe("Service visit · 90 minutes");
+    expect(visitLength(60)).toBe("60 minutes");
     expect(visitLength(45)).toBe("45 minutes");
   });
 });

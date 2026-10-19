@@ -9,6 +9,9 @@
 
 import { APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { capsLook } from "@maneman/ui/Caps";
+import { NumberedSteps } from "@maneman/ui/NumberedSteps";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
@@ -78,6 +81,12 @@ function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
   return (
     <div className={shared.page}>
       <p className={shared.promise}>{refer.promise(rewardOf(me))}</p>
+      <section className={styles.how} aria-labelledby="refer-how">
+        <h2 className={capsLook(styles.howLabel)} id="refer-how">
+          {refer.how.label}
+        </h2>
+        <NumberedSteps steps={refer.how.steps} />
+      </section>
       <CreditTile credits={state.credits} />
       {state.invite_credits !== null && (
         <p className={styles.inviteCredits}>{refer.inviteCredits[state.invite_credits]}</p>
@@ -85,7 +94,7 @@ function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
       {/* The board puts the two ways on at the foot of the screen, above the tabs. */}
       <div className={shared.actions}>
         <ShareButton state={state} onChanged={onChanged} />
-        <AppLink className={shared.quiet} to="/refer/fitted">
+        <AppLink className={textLinkLook({ tone: "brass", className: shared.quiet })} to="/refer/fitted">
           <span>{refer.tracker}</span>
         </AppLink>
       </div>
