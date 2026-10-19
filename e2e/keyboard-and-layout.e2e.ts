@@ -1,10 +1,11 @@
 // What axe cannot see: whether a focused control is drawn as focused
 // (WCAG 2.4.7), whether it is hidden under the fixed header or the sticky bar
 // (2.4.11), and whether a page reflows into 320 px without scrolling sideways
-// (1.4.10). Each of these can break while every axe run passes.
+// (1.4.10), and whether a button's words fit it on one line. Each of these can break while every axe run passes.
 
 import type { Locator, Page } from "@playwright/test";
 import { expect, fakeTurnstile, test, visit } from "./support.ts";
+import { wrappedButtons } from "./wrapped-buttons.ts";
 
 test.beforeEach(async ({ page }) => {
   await fakeTurnstile(page);
@@ -103,4 +104,21 @@ test("the pages reflow into 320 px, with nothing to scroll sideways", async ({ p
     if (overflow > 0) wide.push(`${path} is ${String(overflow)} px too wide`);
   }
   expect(wide).toEqual([]);
+});
+
+// "Book your free at-home consultation →" ran onto two lines on a phone.
+test("keeps every button's words on one line", async ({ page }) => {
+  const wrapped: string[] = [];
+  for (const path of ["/", "/try", "/book", "/book?state=served", "/r/RM4K7P", "/r/RM4K7P?state=served"]) {
+    if (path === "/") await page.goto(path);
+    else await visit(page, path);
+    // Down the page, so the islands that wait to be seen are drawn.
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    for (let y = 0; y < height; y += 600)
+      await page.evaluate((to) => {
+        window.scrollTo(0, to);
+      }, y);
+    wrapped.push(...(await wrappedButtons(page)).map((button) => `${path}: ${button}`));
+  }
+  expect(wrapped).toEqual([]);
 });

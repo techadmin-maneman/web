@@ -119,7 +119,7 @@ export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
  * (docs/prompts/phase2-backend.md, "Booking").
  */
 export const messages = {
-  // Beneath "Change or cancel": the message fits either.
+  // Beneath "Change", which moves or cancels: the message fits either.
   reschedule: (what: string, date: string) => `I’d like to change or cancel my ${what.toLowerCase()} on ${date}.`,
   note: (what: string, date: string) => `A note about my ${what.toLowerCase()} on ${date}: `,
   // A booking's opening words, which the day, the window, the client and the hair system follow (booking.asking).

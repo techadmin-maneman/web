@@ -26,7 +26,7 @@ export const booking = {
   step: "Step {at} · {name}",
   steps: { you: "About you", area: "Your area", visit: "Your visit", address: "Your address", list: "The list" },
   /** The first step's button, which keeps the name and number before the pincode is asked. Its arrow keeps to the last word. */
-  start: "Book your free at-home consultation\u00a0→",
+  start: "Book your free consultation\u00a0→",
   next: "Continue",
   saving: "One moment…",
   /** Beneath the first step, the name and number it kept, and the way back to them. */

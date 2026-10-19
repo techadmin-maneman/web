@@ -8,12 +8,6 @@
  */
 
 :root {
-  --text-quiet: #4a453c; /* a window's hours beside its name, on white */
-  --paper-shade: #ded7c8; /* loading blocks; a full window; leave and replacement cells */
-  --brass-text: #7a5b24; /* brass for small text on paper: "Prepaid", the busiest day */
-  /* Something to look at, not yet to act on: brass on paper, gilt on the ink. */
-  --status-attention: var(--brass-text);
-
   /*
    * WhatsApp's own colours, never ours: only where a board draws a message as WhatsApp will show it, so the
    * client or ops see what the other side will. Nowhere else.
@@ -29,15 +23,9 @@
   --fs-app-title: var(--fs-34); /* a screen's title */
   --fs-app-title-long: var(--fs-32); /* a longer title */
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
-  --tap-row: var(--sp-64); /* rows, tabs, the code's boxes */
   --copy-target: var(--tap); /* an error's reference, copied; the technician app's is its own larger target */
   --switch-width: 46px; /* a consent's switch */
 
   --skeleton-label: 120px; /* the loading state's label */
   --skeleton-card: 150px; /* and its card */
-  --tracking-number: 0.04em; /* a mobile number, spaced for reading */
-}
-
-[data-ground="ink"] {
-  --status-attention: var(--gilt);
 }

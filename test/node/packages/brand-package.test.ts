@@ -162,7 +162,6 @@ const OFF_THE_SCALE = [
   "--switch-width",
   "--skeleton-label",
   "--skeleton-card",
-  "--tracking-number",
   "--tech-row",
   "--tech-time",
 ] as const;
