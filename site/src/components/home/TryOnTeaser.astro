@@ -54,7 +54,7 @@ const widths = [390, 780, 1200];
 
 <style>
   .teaser {
-    margin-top: var(--section-gap-lg);
+    margin-top: var(--section-gap);
     background: var(--ink-deep);
   }
   .inner {
@@ -88,7 +88,13 @@ const widths = [390, 780, 1200];
     max-width: var(--measure-short);
     text-wrap: pretty;
   }
+  /* Full width on a phone, its own width beside the picture. */
   .start {
     margin-top: var(--space-m);
+  }
+  @media (min-width: 761px) {
+    .start {
+      width: fit-content;
+    }
   }
 </style>

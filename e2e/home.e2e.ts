@@ -71,9 +71,12 @@ test.describe("header", () => {
 });
 
 test.describe("sticky bar and footer: the home page only", () => {
-  test("appear on the home page", async ({ page }) => {
+  // The bar is a phone's: on a wider screen the header's own button books.
+  test("appear on the home page, the bar on a phone only", async ({ page }, testInfo) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel })).toBeVisible();
+    const bar = page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel });
+    if (testInfo.project.name === "390") await expect(bar).toBeVisible();
+    else await expect(bar).toBeHidden();
     await expect(page.locator("footer")).toBeVisible();
     await expect(page.locator("footer")).toContainText(siteCopy.footer.entity);
     await expect(page.locator("footer")).toContainText(siteCopy.footer.area);
@@ -130,7 +133,8 @@ test.describe("skip link", () => {
   });
 
   // The bar sat outside every landmark, and at 1440 its button ran 1,350 px across the screen.
-  test("the bar is a landmark, and its button keeps to a phone’s width", async ({ page }) => {
+  test("the bar is a landmark, and its button keeps to a phone’s width", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "390", "the bar is a phone's");
     await page.goto("/");
     const book = page
       .getByRole("navigation", { name: siteCopy.stickyBar.label })
@@ -269,6 +273,7 @@ test.describe("home sections", () => {
   });
 
   test("comparison: seven rows, ticks and crosses read as Yes and No", async ({ page }) => {
+    test.skip(narrow(page.viewportSize()?.width), "a phone has the cards");
     await page.goto("/");
     const table = page.getByRole("table", { name: siteCopy.comparison.title });
     await expect(table.getByRole("row")).toHaveCount(8);
@@ -287,11 +292,32 @@ test.describe("home sections", () => {
     ]);
   });
 
-  test("comparison: below 760 px each label sits above its row, in three columns", async ({ page }) => {
+  // Three and four columns squeezed every cell onto four lines on a phone.
+  test("comparison and range: a card for each option to swipe through on a phone, a table on a wider screen", async ({
+    page,
+  }) => {
     await page.goto("/");
-    const above = page.locator('[data-section="comparison"] .label-above').first();
-    if (narrow(page.viewportSize()?.width)) await expect(above).toBeVisible();
-    else await expect(above).toBeHidden();
+    const phone = narrow(page.viewportSize()?.width);
+    for (const [title, count] of [
+      [siteCopy.comparison.title, 3],
+      [siteCopy.range.title, 4],
+    ] as const) {
+      const cards = page.getByRole("list", { name: title });
+      if (phone) {
+        await expect(cards.getByRole("listitem")).toHaveCount(count);
+        await expect(page.getByRole("table", { name: title })).toBeHidden();
+      } else {
+        await expect(cards).toBeHidden();
+        await expect(page.getByRole("table", { name: title })).toBeVisible();
+      }
+    }
+    if (!phone) return;
+    const comparison = page.getByRole("list", { name: siteCopy.comparison.title }).getByRole("listitem");
+    await expect(comparison.nth(0)).toContainText("Surgical risks");
+    await expect(comparison.nth(2)).toContainText("Nothing implanted or swallowed");
+    const celebrity = page.getByRole("list", { name: siteCopy.range.title }).getByRole("listitem").nth(3);
+    await expect(celebrity).toContainText("Celebrity");
+    await expect(celebrity).toContainText("Twice a month");
   });
 
   test("the teaser slider starts at 46% and moves with the keyboard", async ({ page }) => {
@@ -310,17 +336,14 @@ test.describe("home sections", () => {
     await page.goto("/");
     const steps = page.locator('[data-section="how"] ol > li');
     await expect(steps).toHaveCount(3);
-    await expect(steps.locator("h3")).toHaveText([
-      "Consultation at home",
-      "The first fit",
-      "Service visit, every month",
-    ]);
+    await expect(steps.locator("h3")).toHaveText(["Consultation at home", "The first fit", "Regular service visits"]);
   });
 
   test("the range: the four side by side in a table, each row naming all four", async ({ page }) => {
+    test.skip(narrow(page.viewportSize()?.width), "a phone has the cards");
     await page.goto("/");
     const table = page.getByRole("table", { name: siteCopy.range.title });
-    // The corner's own header is the table's name, and a phone hides it.
+    // The corner's own header is the table's name.
     await expect(
       table.getByRole("columnheader").filter({ hasText: /^(?:Essential|Active|Natural|Celebrity)$/ }),
     ).toHaveText(["Essential", "Active", "Natural", "Celebrity"]);
@@ -432,13 +455,15 @@ test.describe("WCAG on the home page", () => {
   test("a focused link is never under the header or the sticky bar", async ({ page }) => {
     await page.goto("/");
     const height = page.viewportSize()?.height ?? 0;
+    // The sticky bar is a phone's: a wider screen keeps no room for it at the foot.
+    const bar = narrow(page.viewportSize()?.width) ? 64 : 0;
     for (const name of ["Try-on", "Privacy", "Terms"]) {
       const link = page.locator("footer").getByRole("link", { name, exact: true });
       await link.focus();
       // The page scrolls smoothly; where the link comes to rest is what counts.
       const clear = async () => {
         const box = await link.boundingBox();
-        return box !== null && box.y >= 56 && box.y + box.height <= height - 64;
+        return box !== null && box.y >= 56 && box.y + box.height <= height - bar;
       };
       await expect.poll(clear, { message: name }).toBe(true);
     }

@@ -1,5 +1,6 @@
-// The results beneath the hero: one client's before and after at a time, large, on the shared compare, its line and
-// where it stands among the rest beside it, and the arrows to the next. The page draws no swipe of its own, since a
+// The results beneath the hero: one client's before and after at a time, large, on the shared compare. On a wide
+// screen the section's heading, the pair's line, where it stands among the rest and the arrows to the next stand
+// together beside it; on a phone the heading comes first and the rest beneath the picture. The page draws no swipe of its own, since a
 // drag on the picture moves the compare's divider. A pair made by AI says so on the picture.
 
 import "./refs-as-props.ts";
@@ -40,22 +41,27 @@ export interface ShownPair {
   readonly illustration: boolean;
 }
 
-export default function ResultsGallery(props: { pairs: readonly ShownPair[] }) {
+export default function ResultsGallery(props: { title: string; pairs: readonly ShownPair[] }) {
   const [at, setAt] = useState(0);
+  // The divider leans once on the first pair, to say it moves; not again on each one stepped to.
+  const [stepped, setStepped] = useState(false);
   const count = props.pairs.length;
   const pair = props.pairs[at];
   if (pair === undefined) return null;
   const go = (step: number) => {
+    setStepped(true);
     setAt((current) => (current + step + count) % count);
   };
 
   return (
     <div class={styles.gallery}>
+      <h2 class={`section-title ${styles.title ?? ""}`}>{props.title}</h2>
       <div class={styles.picture}>
         <BeforeAfter
           key={at}
           className={styles.compare}
           start={tryOnTeaser.start_percent}
+          lean={!stepped}
           beforeLabel={results.before}
           afterLabel={results.after}
           sliderLabel={results.sliderLabel}
@@ -65,34 +71,32 @@ export default function ResultsGallery(props: { pairs: readonly ShownPair[] }) {
           after={<Shown picture={pair.after} />}
         />
       </div>
-      <div class={styles.words}>
-        <p class={styles.caption} aria-live="polite">
-          {pair.caption}
-        </p>
-        <div class={styles.controls}>
-          <p class={capsLook(styles.count)}>{fill(results.count, { at: String(at + 1), count: String(count) })}</p>
-          <div class={styles.arrows}>
-            <IconButton
-              d={ICONS.handleLeft}
-              size="md"
-              edged
-              label={results.previous}
-              className={styles.arrow}
-              onClick={() => {
-                go(-1);
-              }}
-            />
-            <IconButton
-              d={ICONS.handleRight}
-              size="md"
-              edged
-              label={results.next}
-              className={styles.arrow}
-              onClick={() => {
-                go(1);
-              }}
-            />
-          </div>
+      <p class={styles.caption} aria-live="polite">
+        {pair.caption}
+      </p>
+      <div class={styles.controls}>
+        <p class={capsLook(styles.count)}>{fill(results.count, { at: String(at + 1), count: String(count) })}</p>
+        <div class={styles.arrows}>
+          <IconButton
+            d={ICONS.handleLeft}
+            size="md"
+            edged
+            label={results.previous}
+            className={styles.arrow}
+            onClick={() => {
+              go(-1);
+            }}
+          />
+          <IconButton
+            d={ICONS.handleRight}
+            size="md"
+            edged
+            label={results.next}
+            className={styles.arrow}
+            onClick={() => {
+              go(1);
+            }}
+          />
         </div>
       </div>
     </div>

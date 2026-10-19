@@ -7,12 +7,16 @@ import { scriptAddress } from "./trusted-scripts.ts";
 
 const SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
+/** The ground the widget sits on, so a challenge that has to show is drawn in its colours. */
+export type TurnstileGround = "light" | "dark";
+
 interface TurnstileApi {
   render(
     container: HTMLElement,
     options: {
       sitekey: string;
       appearance: "interaction-only";
+      theme: TurnstileGround;
       callback: (token: string) => void;
       "expired-callback": () => void;
       "error-callback": () => void;
@@ -59,7 +63,7 @@ export type TurnstileWidget = ReturnType<typeof turnstileWidget>;
  * `renew()` asks for another once a token has been used; `remove()` takes the
  * widget out when its container goes.
  */
-export function turnstileWidget(container: HTMLElement, siteKey: string) {
+export function turnstileWidget(container: HTMLElement, siteKey: string, ground: TurnstileGround = "light") {
   let current: string | null = null;
   let waiting: ((token: string | null) => void)[] = [];
   let widget: string | undefined;
@@ -81,6 +85,7 @@ export function turnstileWidget(container: HTMLElement, siteKey: string) {
         widget = turnstile.render(container, {
           sitekey: siteKey,
           appearance: "interaction-only",
+          theme: ground,
           callback: settle,
           "expired-callback": () => {
             settle(null);

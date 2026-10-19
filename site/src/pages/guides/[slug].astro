@@ -9,9 +9,25 @@ import { guides, guidesPage, type Guide } from "../../content/guides.ts";
 import TextPage from "../../layouts/TextPage.astro";
 import { isShown } from "../../lib/build.ts";
 import { breadcrumbs, guideArticle } from "../../lib/structured-data.ts";
+import DesignPicture from "../../components/DesignPicture.astro";
 
 /** How many of the other guides each guide links. */
 const RELATED = 3;
+/** A guide of this many sections or more opens with a link to each. */
+const CONTENTS_FROM = 4;
+
+/** A paragraph that names a term first, "Single knot: one small knot…": the term, up to three words, and the rest. */
+function termOf(paragraph: string): { term: string; rest: string } | null {
+  const found = /^([A-Z][\w,-]*(?: [\w,-]+){0,2}): (.+)$/.exec(paragraph);
+  return found === null ? null : { term: found[1] ?? "", rest: found[2] ?? "" };
+}
+
+/** A section's place on the page, from its heading: "the-base-lace-mono-skin-and-silk". */
+const anchorOf = (heading: string) =>
+  heading
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 export function getStaticPaths() {
   return guides.filter(isShown).map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
@@ -42,12 +58,43 @@ const trail = [
   structuredData={[guideArticle(guide), breadcrumbs(trail)]}
   ogType="article"
 >
+  {guide.picture !== undefined && (
+    <div class="frame picture">
+      <DesignPicture
+        file={guide.picture.file}
+        alt={guide.picture.alt}
+        sizes="(min-width: 761px) 680px, 100vw"
+        widths={[390, 780, 1200]}
+      />
+    </div>
+  )}
+  {guide.sections.length >= CONTENTS_FROM && (
+    <nav class="contents" aria-labelledby="guide-contents">
+      <h2 id="guide-contents">{guidesPage.contents}</h2>
+      <ol>
+        {guide.sections.map((section) => (
+          <li>
+            <a class={textLinkLook({ inline: true })} href={`#${anchorOf(section.heading)}`}>
+              {section.heading}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )}
   {guide.sections.map((section) => (
     <section>
-      <h2>{section.heading}</h2>
-      {section.paragraphs.map((paragraph) => (
-        <p>{paragraph}</p>
-      ))}
+      <h2 id={anchorOf(section.heading)}>{section.heading}</h2>
+      {section.paragraphs.map((paragraph) => {
+        const term = termOf(paragraph);
+        return term === null ? (
+          <p>{paragraph}</p>
+        ) : (
+          <p>
+            <strong class="term">{term.term}</strong>: {term.rest}
+          </p>
+        );
+      })}
     </section>
   ))}
   <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
@@ -80,6 +127,39 @@ const trail = [
 </TextPage>
 
 <style>
+  /* The photograph at 3:2, beneath the lead. */
+  .picture {
+    margin-top: var(--sp-32);
+    aspect-ratio: 3 / 2;
+    max-width: 100%;
+  }
+  .picture :global(picture),
+  .picture :global(img) {
+    position: absolute;
+    inset: 0;
+  }
+  .contents {
+    margin-top: var(--sp-32);
+    padding: var(--sp-20) 0;
+    border-block: var(--hairline) solid var(--paper-line);
+  }
+  .contents h2 {
+    margin: 0;
+    font-size: var(--fs-17);
+  }
+  .contents ol {
+    margin: var(--sp-12) 0 0;
+    padding-left: var(--sp-20);
+    display: grid;
+    gap: var(--sp-8);
+    font-size: var(--fs-17);
+  }
+  h2[id] {
+    scroll-margin-top: var(--bar-reserve);
+  }
+  .term {
+    font-weight: var(--weight-medium);
+  }
   .book {
     margin-top: var(--sp-48);
   }

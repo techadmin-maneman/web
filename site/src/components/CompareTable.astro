@@ -1,6 +1,7 @@
 ---
-// A comparison as a table: options across the top, a row for each way they differ. A table to assistive technology;
-// to the eye, the design's grid. Below 760 px each row's label moves above it, and the options keep their columns.
+// A comparison: options across the top, a row for each way they differ, as a table to assistive technology and the
+// design's grid to the eye. On a phone, where three or four columns squeezed every cell onto four lines, each option
+// is a card of its own instead, the cards side by side to swipe through, each listing every row.
 // A cell is words, or a tick (true) or a cross (false), read as Yes and No.
 import { hiddenLook } from "@maneman/ui/VisuallyHidden";
 import { capsLook } from "@maneman/ui/Caps";
@@ -33,30 +34,53 @@ const isMark = (cell: ComparisonCell): cell is boolean => typeof cell === "boole
     ))}
   </div>
   {rows.map((row) => (
-    <div class="entry" role="rowgroup">
-      <div class={capsLook("label-above")} aria-hidden="true">
+    <div class="row" role="row">
+      <div class={capsLook("label-cell")} role="rowheader">
         {row.label}
       </div>
-      <div class="row" role="row">
-        <div class={capsLook("label-cell row-label")} role="rowheader">
-          {row.label}
+      {row.cells.map((cell) => (
+        <div class="cell" role="cell">
+          {isMark(cell) ? (
+            <>
+              <Icon name={cell ? "tick" : "cross"} size="sm" class={cell ? "yes" : "no"} />
+              <span class={hiddenLook}>{cell ? yes : no}</span>
+            </>
+          ) : (
+            <span>{cell}</span>
+          )}
         </div>
-        {row.cells.map((cell) => (
-          <div class="cell" role="cell">
-            {isMark(cell) ? (
-              <>
-                <Icon name={cell ? "tick" : "cross"} size="sm" class={cell ? "yes" : "no"} />
-                <span class={hiddenLook}>{cell ? yes : no}</span>
-              </>
-            ) : (
-              <span>{cell}</span>
-            )}
-          </div>
-        ))}
-      </div>
+      ))}
     </div>
   ))}
 </div>
+
+<ul class="cards" aria-label={label} tabindex="0">
+  {columns.map((column, at) => (
+    <li class="card">
+      <p class="card-title">{column}</p>
+      <dl>
+        {rows.map((row) => {
+          const cell = row.cells[at];
+          return (
+            <div class="pair">
+              <dt class={capsLook("card-label")}>{row.label}</dt>
+              <dd>
+                {cell === undefined ? null : isMark(cell) ? (
+                  <>
+                    <Icon name={cell ? "tick" : "cross"} size="sm" class={cell ? "yes" : "no"} />
+                    <span class={hiddenLook}>{cell ? yes : no}</span>
+                  </>
+                ) : (
+                  cell
+                )}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+    </li>
+  ))}
+</ul>
 
 <style>
   .table {
@@ -67,6 +91,7 @@ const isMark = (cell: ComparisonCell): cell is boolean => typeof cell === "boole
     grid-template-columns: var(--comparison-label-w) repeat(3, 1fr);
     align-items: center;
     padding: var(--sp-20) 0;
+    border-top: var(--hairline) solid var(--paper-line);
   }
   .four .row {
     grid-template-columns: var(--comparison-label-w) repeat(4, 1fr);
@@ -74,21 +99,12 @@ const isMark = (cell: ComparisonCell): cell is boolean => typeof cell === "boole
   .head {
     align-items: stretch;
     padding: var(--space-2xs) 0 var(--space-2xs);
-  }
-  .entry {
-    border-top: var(--hairline) solid var(--paper-line);
-  }
-  .label-above {
-    display: none;
-    padding: var(--sp-16) 0 var(--sp-8);
-    letter-spacing: var(--tracking-12);
-    font-size: var(--fs-15);
-    color: var(--text-muted);
+    border-top: 0;
   }
   .label-cell {
     padding: 0 var(--sp-20) 0 0;
     letter-spacing: var(--tracking-12);
-    font-size: var(--fs-17);
+    font-size: var(--fs-18);
     color: var(--text-muted);
   }
   .cell {
@@ -115,47 +131,61 @@ const isMark = (cell: ComparisonCell): cell is boolean => typeof cell === "boole
   .no {
     color: var(--text-muted);
   }
+
+  /* A phone's cards, a little narrower than the screen so the next one shows at the edge. */
+  .cards {
+    display: none;
+  }
   @media (max-width: 760px) {
-    .row {
-      grid-template-columns: repeat(3, 1fr);
-      padding: 0 0 var(--sp-16);
-    }
-    .four .row {
-      grid-template-columns: repeat(4, 1fr);
-    }
-    .head {
-      padding: var(--space-2xs) 0 var(--space-2xs);
-    }
-    .corner {
+    .table {
       display: none;
     }
-    /* The label is above the row now; screen readers still hear it as the row header. */
-    .row-label {
-      position: absolute;
-      width: var(--sr-only-size);
-      height: var(--sr-only-size);
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
+    /* It scrolls within itself, a keyboard's arrows too, and never widens the page: positioned, so the words only a
+       screen reader hears scroll and clip with their card. */
+    .cards {
+      position: relative;
+      display: grid;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      grid-auto-flow: column;
+      grid-auto-columns: var(--compare-card-w);
+      gap: var(--sp-12);
+      margin: 0;
+      padding: 0 0 var(--sp-8);
+      list-style: none;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      overscroll-behavior-x: contain;
     }
-    .label-above {
-      display: block;
+    .card {
+      scroll-snap-align: start;
+      padding: var(--sp-20);
+      background: var(--paper-light);
+      border-top: var(--rule-strong) solid var(--ink);
     }
-    .cell {
-      font-size: var(--fs-15);
-    }
-    .four .cell {
-      padding: 0 var(--sp-8);
-      font-size: var(--fs-14);
-    }
-    .four .label-cell + .cell {
-      padding-left: 0;
-    }
-    .column-head {
+    .card-title {
+      margin: 0;
+      font-family: var(--font-serif);
       font-size: var(--fs-h5);
+      line-height: var(--lh-115);
     }
-    .four .column-head {
-      font-size: var(--fs-lead);
+    dl {
+      margin: var(--sp-12) 0 0;
+    }
+    .pair {
+      padding: var(--sp-12) 0;
+      border-top: var(--hairline) solid var(--paper-line);
+    }
+    .card-label {
+      letter-spacing: var(--tracking-12);
+      font-size: var(--fs-16);
+      color: var(--text-muted);
+    }
+    dd {
+      margin: var(--sp-4) 0 0;
+      font-size: var(--fs-17);
+      line-height: var(--lh-145);
     }
   }
 </style>

@@ -188,25 +188,25 @@ export const referral = {
   },
   howItWorks: {
     title: "How it works",
-    // The lengths are the backend's (service.ts).
+    // The lengths are the backend's (service.ts). The three steps are the home page's own, by name.
     steps: [
       {
         n: "1",
-        title: "A free consultation at home",
+        title: "Consultation at home",
         lead: `${capitalised(visitLength.consultation)}. Completely confidential.`,
         body: "We map your scalp, match your exact hair texture and tone, and let you feel the hair in person. Zero obligation, zero cost.",
       },
       {
         n: "2",
-        title: "Your first fit, same day or later",
+        title: "The first fit",
         lead: `${capitalised(visitLength.firstFit)}. Real-time transformation. Be the Main Man again.`,
         body: "Crafted, cut, blended and styled right in your living room. Look in the mirror and walk out with seamless, natural-looking hair.",
       },
       {
         n: "3",
-        title: "Effortless monthly care",
+        title: "Regular service visits",
         lead: "No trips to the salon. We come to you.",
-        body: "A regular tune-up to keep you looking sharp.",
+        body: "A tune-up every month, or every two weeks on Celebrity, to keep you looking sharp.",
       },
     ],
   },
@@ -342,10 +342,8 @@ export const referral = {
   /** Shared between the two forms. */
   form: {
     name: "Name",
-    namePlaceholder: "Your name",
     nameError: CLIENT_WORDS.nameError,
     mobile: "Mobile",
-    mobilePlaceholder: CLIENT_WORDS.mobilePlaceholder,
     mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",
     /** Beneath the agreement on every form that takes a name and number: what binds the visitor, and to read it. */

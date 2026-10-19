@@ -1,16 +1,18 @@
 ---
-// The guarantee, then the founder's note with the mark, in a narrow column.
+// The guarantee beside the founder's note with the mark: two columns on a wide screen, one after the other on a phone.
 import { capsLook } from "@maneman/ui/Caps";
 import { founderNote, guarantee } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 ---
 
-<section class="column" data-section="guarantee">
-  <h2 class={capsLook("label-title")}>{guarantee.label}</h2>
-  <p class="guarantee">{guarantee.text}</p>
+<section class="container pair" data-section="guarantee">
+  <div class="guarantee-part">
+    <h2 class={capsLook("label-title")}>{guarantee.label}</h2>
+    <p class="guarantee">{guarantee.text}</p>
+  </div>
   {isShown(founderNote) && (
-    <div data-section="founder">
-      <h2 class={capsLook("label-title founder")}>{founderNote.label}</h2>
+    <div class="founder-part" data-section="founder">
+      <h2 class={capsLook("label-title")}>{founderNote.label}</h2>
       {founderNote.paragraphs.map((paragraph) => (
         <p class="note">{paragraph}</p>
       ))}
@@ -28,10 +30,15 @@ import { isShown } from "../../lib/build.ts";
 </section>
 
 <style>
-  .column {
+  .pair {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-wide)), 1fr));
+    gap: var(--space-2xl);
+    padding-top: var(--section-gap);
+  }
+  .guarantee-part,
+  .founder-part {
     max-width: var(--measure-column);
-    margin: 0 auto;
-    padding: var(--section-gap-xl) var(--gutter) 0;
   }
   .label-title {
     margin: 0;
@@ -40,15 +47,12 @@ import { isShown } from "../../lib/build.ts";
     color: var(--text-muted);
   }
   .guarantee {
-    margin: var(--sp-20) 0 0;
+    margin: var(--sp-16) 0 0;
     font-family: var(--font-serif);
     font-size: var(--fs-h4);
     line-height: var(--lh-130);
     letter-spacing: var(--tracking-heading);
-    text-wrap: pretty;
-  }
-  .founder {
-    margin-top: var(--space-3xl);
+    text-wrap: balance;
   }
   .note {
     margin: var(--sp-16) 0 0;
@@ -57,11 +61,8 @@ import { isShown } from "../../lib/build.ts";
     color: var(--text);
     text-wrap: pretty;
   }
-  .founder + .note {
-    margin-top: var(--sp-20);
-  }
   .signature {
-    margin-top: var(--sp-32);
+    margin-top: var(--sp-24);
     display: flex;
     align-items: center;
     gap: var(--sp-16);

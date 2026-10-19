@@ -137,7 +137,7 @@ describe("content", () => {
     expect(site.howItWorks.steps.map((step) => step.meta)).toEqual([
       "60 minutes · free",
       "3 hours · at your home",
-      "Every month · 90 minutes",
+      "90 minutes · at your home",
     ]);
     expect(site.faq.items[2]?.a).toMatch(/About 90 minutes, at your home\.$/);
     expect(site.closing.title).toBe("The consultation takes 60 minutes and costs nothing.");

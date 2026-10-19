@@ -1,20 +1,38 @@
-/* The results' gallery (./ResultsGallery.tsx): the picture large, its line and the arrows beside it on a wide screen,
-   beneath it on a phone. */
+/* The results' gallery (./ResultsGallery.tsx). On a phone: the heading, the picture, then its line and the arrows. On
+   a wide screen: the heading, the line and the arrows together, centred beside the picture. */
 .gallery {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "title" "picture" "caption" "controls";
   gap: var(--space-s);
-  align-items: end;
+}
+.title {
+  grid-area: title;
+  margin: 0 0 var(--space-xs);
+  color: var(--paper);
+  text-wrap: balance;
+}
+.picture {
+  grid-area: picture;
+  width: 100%;
+}
+.caption {
+  grid-area: caption;
+}
+.controls {
+  grid-area: controls;
 }
 @media (min-width: 761px) {
   .gallery {
-    grid-template-columns: minmax(0, var(--result-picture-max)) minmax(0, 1fr);
-    gap: var(--space-2xl);
+    grid-template-columns: minmax(0, 1fr) minmax(0, var(--result-picture-max));
+    grid-template-rows: 1fr auto auto auto 1fr;
+    grid-template-areas: ". picture" "title picture" "caption picture" "controls picture" ". picture";
+    column-gap: var(--space-2xl);
+    row-gap: var(--space-m);
   }
-}
-
-.picture {
-  width: 100%;
+  .title {
+    margin: 0;
+  }
 }
 
 /* The pair at its photographs' own shape, not the teaser's band: two classes, so it wins over the band's height. */
@@ -23,19 +41,13 @@
   aspect-ratio: 4 / 5;
 }
 
-.words {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
-}
-
 .caption {
   margin: 0;
   font-family: var(--font-serif);
-  font-size: var(--fs-h2);
+  font-size: var(--fs-h3);
   line-height: var(--lh-115);
   letter-spacing: var(--tracking-heading);
-  color: var(--paper);
+  color: var(--ink-muted);
   text-wrap: balance;
 }
 

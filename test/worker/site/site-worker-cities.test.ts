@@ -103,6 +103,14 @@ describe("the site Worker on a city's page", () => {
     expect(html).toContain("<li>DLF Phase 2</li><li>Sector &#60;65&#62;</li>");
   });
 
+  // Gurgaon's page listed "Gurgaon" among Gurgaon's areas: the post office named for the city.
+  it("leaves out the area named for the city itself", async () => {
+    const html = await visit(() =>
+      Response.json({ cities: ["Gurgaon"], areas: { Gurgaon: ["DLF Phase 2", "Gurgaon", "Sohna"] } }),
+    );
+    expect(html).toContain("<li>DLF Phase 2</li><li>Sohna</li>");
+  });
+
   // Delhi's page said a technician comes to your home in Delhi, where no pincode was served.
   it("sends a city with no pincode served to the cities we come to", async () => {
     const response = await opened(() => Response.json({ cities: ["Noida"], areas: { Noida: ["Sector 18"] } }));

@@ -23,6 +23,8 @@ export interface Guide {
   /** The sentence beneath the title on the page. */
   readonly lead: string;
   readonly sections: readonly GuideSection[];
+  /** A photograph beneath the lead, from our own fits and hair systems; a guide of words alone has none. */
+  readonly picture?: { readonly file: string; readonly alt: string };
   /** When it was first published and last changed, as search engines are told: change `updated` with the words. */
   readonly published: string;
   readonly updated: string;
@@ -41,6 +43,8 @@ export const guidesPage = {
   questions: "Common questions",
   /** The way back a search result shows: Home › Guides › the guide. */
   home: "Home",
+  /** Above a long guide's sections: a link to each. */
+  contents: "On this page",
 };
 
 export const guides: readonly Guide[] = [
@@ -85,6 +89,10 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "what-is-a-hair-system",
+    picture: {
+      file: "guide-what-is-a-hair-system.jpg",
+      alt: "A hair system turned over: its fine base, lace at the front, the hair around it",
+    },
     publish: true,
     published: "2026-10-11",
     updated: "2026-10-13",
@@ -116,6 +124,7 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "hair-system-materials",
+    picture: { file: "guide-materials.jpg", alt: "A mono base with a lace border, seen from the inside" },
     publish: true,
     published: "2026-10-19",
     updated: "2026-10-19",
@@ -185,6 +194,10 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "how-a-hair-system-is-fitted",
+    picture: {
+      file: "guide-fitted.jpg",
+      alt: "A fitted hair system from the side, blended into the client’s own hair",
+    },
     publish: true,
     published: "2026-10-11",
     updated: "2026-10-13",
@@ -215,6 +228,7 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "looking-after-a-hair-system",
+    picture: { file: "guide-care.jpg", alt: "A hair system brushed gently with a wide paddle brush" },
     publish: true,
     published: "2026-10-11",
     updated: "2026-10-13",
@@ -245,6 +259,7 @@ export const guides: readonly Guide[] = [
   },
   {
     slug: "how-long-a-hair-system-lasts",
+    picture: { file: "guide-lasts.jpg", alt: "A thin skin base, the film that wears first" },
     publish: true,
     published: "2026-10-11",
     updated: "2026-10-13",

@@ -38,6 +38,12 @@
   gap: var(--sp-16);
   margin-top: var(--space-m);
 }
+/* On a phone the two stack at one width. */
+@media (max-width: 760px) {
+  .actions > * {
+    flex: 1 1 100%;
+  }
+}
 .preview {
   width: 100%;
   min-height: var(--preview-h);

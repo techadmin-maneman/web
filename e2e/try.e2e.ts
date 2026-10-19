@@ -13,11 +13,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 const SCREENS = {
-  upload: { label: "Step one of four", progress: 14 },
+  upload: { label: "Step 1 of 4", progress: 14 },
   consent: { label: "Before we begin", progress: 28 },
-  stage: { label: "Step two of four", progress: 44 },
-  looks: { label: "Step three of four", progress: 60 },
-  gate: { label: "Step four of four", progress: 90 },
+  stage: { label: "Step 2 of 4", progress: 44 },
+  looks: { label: "Step 3 of 4", progress: 60 },
+  gate: { label: "Step 4 of 4", progress: 90 },
   sent: { label: "Sent to WhatsApp", progress: 100 },
   error: { label: "Can’t use this photo", progress: 28 },
 } as const;
@@ -324,8 +324,8 @@ test.describe("error", () => {
     {
       kind: "unavailable",
       step: "Not available right now",
-      frame: "Paused",
-      heading: "The try-on is paused.",
+      frame: "WhatsApp",
+      heading: "We can’t send to WhatsApp just now.",
       another: false,
     },
   ];

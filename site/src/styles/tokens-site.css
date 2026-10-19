@@ -41,8 +41,6 @@
   --bar-h: var(--sp-64);
   --bar-reserve: 72px; /* the space the home page keeps for the sticky bar */
   --section-gap: clamp(56px, 8vw, 112px);
-  --section-gap-lg: clamp(64px, 10vw, 160px);
-  --section-gap-xl: clamp(72px, 12vw, 180px);
   --band-pad: clamp(48px, 7vw, 96px);
   --split-min: 300px;
   --split-min-mid: 340px;
@@ -66,7 +64,6 @@
   /* The results' before and after at its widest, and its arrows. */
   --result-picture-max: 540px;
   --result-arrow: var(--sp-48);
-  --what-pad-top: clamp(48px, 7vw, 104px);
   --norwood-flow-basis: 150px;
   --norwood-flow-max: 210px;
   /* Six cards at their widest, the five stages and the restored hairline: the row's width, from the left edge. */
@@ -75,24 +72,23 @@
   --norwood-thumb: 104px;
 
   --comparison-label-w: 260px;
+  --compare-card-w: 82%; /* a phone card, the next one showing at the edge */
 
   --teaser-frame-h: clamp(280px, 42vw, 420px);
-  --teaser-handle: 46px;
   /* The try-on's look beside its photograph, on the sent screen. */
   --look-frame-max: 420px;
 
   --band-max: 1100px;
-  --discretion-pad-y: clamp(120px, 20vw, 280px);
+  --discretion-pad-y: clamp(64px, 10vw, 144px);
   --discretion-pad-x: clamp(24px, 5vw, 64px);
-  --how-photo-h: clamp(200px, 26vw, 320px);
 
-  --faq-pad-top: clamp(64px, 10vw, 144px);
   --faq-intro-max: 380px;
 
   --closing-pad-y: clamp(40px, 6vw, 72px);
 
   --footer-pad-top: clamp(40px, 5vw, 64px);
   --footer-pad-bottom: 96px;
+  --column-min-narrow: 140px; /* a column of short links or names, two to a phone */
 
   /* ---- Try-on ------------------------------------------------------------ */
   --flow-pad-bottom: clamp(48px, 6vw, 72px);

@@ -1,41 +1,41 @@
 ---
-// The footer, on the home page only. The wordmark here is 132 px wide, so it is the display cut
-// (design/brand/README.md).
+// The footer, on the home page only: the brand, its line and the way to book, with the number and the company's
+// pages elsewhere beneath them, beside the links in two columns; then the company, its notices and the area on one
+// line. The wordmark here is 132 px wide, so it is the display cut (design/brand/README.md).
 import { WORDMARK } from "@maneman/brand/marks";
+import { buttonLook } from "@maneman/ui/Button";
 import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { business, footer, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { MORE_PAGES } from "../lib/more-pages.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import Social from "./Social.astro";
 
-const { service, reach, legal } = footer.columns;
+const { service, more, reach, legal } = footer.columns;
 // The number is given as WhatsApp alone: the footer offers no line to call.
 const showWhatsapp = isShown(whatsapp);
+const year = new Date().getFullYear();
 ---
 
 <footer class="footer on-ink">
   <div class="inner">
     <div class="top">
       <div class="brand">
-        <svg class="mark" viewBox="0 0 200 217.4" width="38" height="41" aria-hidden="true">
-          <use href="#mm"></use>
-        </svg>
-        <svg class="word" viewBox="-4 -4 741 108" width="132" height="19" role="img" aria-label={business.name}>
-          <path d={WORDMARK.d}></path>
-        </svg>
-      </div>
-      <div class="columns">
-        <div class="column">
-          <span class={capsLook("title")}>{service.title}</span>
-          {[...service.links, ...MORE_PAGES].map((link) => (
-            <a class={textLinkLook({ tone: "ink", quiet: true, className: "item" })} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </div>
+        <a class={textLinkLook({ tone: "ink", quiet: true, className: "lockup" })} href="/" aria-label={business.name}>
+          <svg class="mark" viewBox="0 0 200 217.4" width="38" height="41" aria-hidden="true">
+            <use href="#mm"></use>
+          </svg>
+          <svg class="word" viewBox="-4 -4 741 108" width="132" height="19" aria-hidden="true">
+            <path d={WORDMARK.d}></path>
+          </svg>
+        </a>
+        <p class="tagline">{footer.tagline}</p>
+        <a class={buttonLook({ variant: "light", size: "control", className: "book" })} href="/book">
+          {footer.book}
+        </a>
         {showWhatsapp && (
-          <div class="column">
+          <div class="reach">
             <span class={capsLook("title")}>{reach.title}</span>
             <a
               class={textLinkLook({ tone: "ink", quiet: true, className: "item number" })}
@@ -43,28 +43,50 @@ const showWhatsapp = isShown(whatsapp);
             >
               {whatsapp.label}
             </a>
+            <Social />
           </div>
         )}
+      </div>
+      <nav class="columns" aria-label={footer.pagesLabel}>
         <div class="column">
-          <span class={capsLook("title")}>{legal.title}</span>
-          {legal.links.map((link) => (
+          <span class={capsLook("title")}>{service.title}</span>
+          {service.links.map((link) => (
             <a class={textLinkLook({ tone: "ink", quiet: true, className: "item" })} href={link.href}>
               {link.label}
             </a>
           ))}
         </div>
-      </div>
+        {MORE_PAGES.length > 0 && (
+          <div class="column">
+            <span class={capsLook("title")}>{more.title}</span>
+            {MORE_PAGES.map((link) => (
+              <a class={textLinkLook({ tone: "ink", quiet: true, className: "item" })} href={link.href}>
+                {link.label}
+              </a>
+            ))}
+          </div>
+        )}
+      </nav>
     </div>
     <div class="bottom">
+      <div class="company">
+        <span>{`${footer.copyright} ${String(year)} ${footer.entity}`}</span>
+        <nav class="legal" aria-label={legal.title}>
+          {legal.links.map((link) => (
+            <a class={textLinkLook({ tone: "ink", quiet: true })} href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      </div>
       <span>{footer.area}</span>
-      <span>{footer.entity}</span>
     </div>
   </div>
 </footer>
 
 <style>
   .footer {
-    margin-top: var(--section-gap-xl);
+    margin-top: var(--section-gap);
     background: var(--ink);
   }
   .inner {
@@ -72,17 +94,27 @@ const showWhatsapp = isShown(whatsapp);
     margin: 0 auto;
     padding: var(--footer-pad-top) var(--gutter) var(--footer-pad-bottom);
   }
+  /* The brand on the left and the links in three columns on the right, on one grid; stacked on a phone. */
   .top {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: var(--space-l);
-    padding-bottom: var(--space-m);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-xl);
+    padding-bottom: var(--space-l);
     border-bottom: var(--hairline) solid var(--ink-rule);
+  }
+  @media (min-width: 761px) {
+    .top {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    }
   }
   .brand {
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-s);
+  }
+  .lockup {
+    display: inline-flex;
     align-items: center;
     gap: var(--sp-16);
   }
@@ -92,17 +124,33 @@ const showWhatsapp = isShown(whatsapp);
   .word {
     fill: var(--paper);
   }
-  .columns {
+  .tagline {
+    margin: 0;
+    max-width: var(--measure-short);
+    font-family: var(--font-serif);
+    font-size: var(--fs-h5);
+    line-height: var(--lh-115);
+    color: var(--paper);
+    text-wrap: balance;
+  }
+  .reach {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xl);
+    flex-direction: column;
+    gap: var(--sp-4);
+    margin-top: var(--sp-8);
+  }
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--column-min-narrow)), 1fr));
+    gap: var(--space-l);
+    align-content: start;
   }
   .column {
     display: flex;
     flex-direction: column;
   }
   .title {
-    font-size: var(--fs-15);
+    font-size: var(--fs-13);
     color: var(--ink-muted);
     min-height: var(--sp-36);
     display: flex;
@@ -114,11 +162,18 @@ const showWhatsapp = isShown(whatsapp);
   .number {
     font-variant-numeric: tabular-nums;
   }
+  .company,
+  .legal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-8) var(--space-s);
+  }
   .bottom {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    gap: var(--sp-12);
+    gap: var(--sp-12) var(--space-l);
     padding-top: var(--sp-24);
     font-size: var(--fs-14);
     color: var(--ink-muted);

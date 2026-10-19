@@ -1,6 +1,7 @@
 /*
  * A before and an after (./Compare.tsx): the stage on the frame's ink, the before layer clipped at the divider, a gilt
  * line, and the handle on it, which takes the range's focus ring. A surface sets the stage's size and the handle's.
+ * --at-n is the divider's place as a bare number, for a label to fade by as its picture narrows.
  */
 
 @layer base, ui;
@@ -8,7 +9,8 @@
 @layer ui {
   .stage {
     --at: 50%;
-    --compare-handle: var(--tap);
+    --at-n: 50;
+    --compare-handle: var(--btn-md);
 
     position: relative;
     overflow: hidden;

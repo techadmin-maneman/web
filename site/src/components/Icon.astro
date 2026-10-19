@@ -1,10 +1,12 @@
 ---
 // A line icon from @maneman/brand/icons, drawn in the surrounding text colour at one of the set's sizes, as the
 // shared Icon draws it in the islands and the apps.
-import { ICON_SIZES, ICON_STROKES, ICONS, type IconSize, type IconWeight } from "@maneman/brand/icons";
+import { ICON_SIZES, ICON_STROKES, ICONS, SOCIAL_ICONS, type IconSize, type IconWeight } from "@maneman/brand/icons";
+
+const PATHS = { ...ICONS, ...SOCIAL_ICONS };
 
 interface Props {
-  name: keyof typeof ICONS;
+  name: keyof typeof PATHS;
   size: IconSize;
   weight?: IconWeight;
   class?: string;
@@ -26,5 +28,5 @@ const px = ICON_SIZES[size];
   stroke-linejoin="round"
   aria-hidden="true"
 >
-  <path d={ICONS[name]}></path>
+  <path d={PATHS[name]}></path>
 </svg>

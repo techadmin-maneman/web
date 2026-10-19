@@ -29,8 +29,7 @@ const pairs: ShownPair[] = await Promise.all(
 {isShown(resultPairs) && (
   <section class="results on-ink" data-section="results" aria-label={results.label}>
     <div class="container inner">
-      <h2 class="section-title title">{results.title}</h2>
-      <ResultsGallery client:visible pairs={pairs} />
+      <ResultsGallery client:visible title={results.title} pairs={pairs} />
     </div>
   </section>
 )}
@@ -41,11 +40,5 @@ const pairs: ShownPair[] = await Promise.all(
   }
   .inner {
     padding-block: var(--band-pad);
-  }
-  .title {
-    margin-bottom: var(--space-l);
-    max-width: var(--measure-hero);
-    color: var(--paper);
-    text-wrap: balance;
   }
 </style>
