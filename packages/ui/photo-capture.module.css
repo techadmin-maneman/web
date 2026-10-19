@@ -10,8 +10,8 @@
   .frame {
     --focus-colour: var(--paper);
 
-    width: 100vw;
-    max-width: 100vw;
+    width: 100%;
+    max-width: 100%;
     height: 100dvh;
     max-height: 100dvh;
     margin: 0;
@@ -33,8 +33,11 @@
 
   @media (min-width: 761px) {
     .frame {
+      /* Most of a laptop's screen, at the phone column's width, never taller than half as tall again. */
+      --local-frame-h: min(88dvh, calc(var(--app-column-max) * 1.5));
+
       width: var(--app-column-max);
-      height: min(88dvh, calc(var(--app-column-max) * 1.5));
+      height: var(--local-frame-h);
       margin: auto;
       border: var(--hairline) solid var(--edge-on-ink);
     }
@@ -70,7 +73,7 @@
 
   @keyframes settle {
     from {
-      opacity: 0.4;
+      opacity: 0;
     }
   }
 
@@ -79,6 +82,9 @@
    * view allows without crowding the line above it; its shadow dims the view around it.
    */
   .face {
+    /* Far enough for the shadow to reach past every edge of the view. */
+    --local-scrim-reach: 100vmax;
+
     position: absolute;
     top: 44%;
     left: 50%;
@@ -87,7 +93,7 @@
     border: calc(var(--hairline) * 2) solid var(--gilt);
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 0 100vmax var(--camera-scrim);
+    box-shadow: 0 0 0 var(--local-scrim-reach) var(--camera-scrim);
     pointer-events: none;
   }
 
