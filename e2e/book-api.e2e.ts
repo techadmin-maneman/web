@@ -33,7 +33,7 @@ async function leaveDetails(page: Page, consent: string): Promise<void> {
 
 test("a served pincode books a real date and window, at the address given", async ({ page }) => {
   await visit(page, "/book");
-  await leaveDetails(page, referralCopy.referral.consultation.consent);
+  await leaveDetails(page, referralCopy.referral.consultation.consent.says);
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText(`We come to ${SERVED.area}`)).toBeVisible();
@@ -50,12 +50,12 @@ test("a served pincode books a real date and window, at the address given", asyn
 
 test("a pincode we do not serve takes the number instead", async ({ page }) => {
   await visit(page, "/book");
-  await leaveDetails(page, referralCopy.referral.consultation.consent);
+  await leaveDetails(page, referralCopy.referral.consultation.consent.says);
   await page.getByLabel(referralCopy.referral.pincode.label).fill(UNSERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText(`We’re not in ${UNSERVED.area} yet`)).toBeVisible();
 
-  await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
+  await page.getByText(referralCopy.referral.waitlist.contactConsent.says).click();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByRole("heading", { name: `You are on the ${UNSERVED.area} list` })).toBeVisible();

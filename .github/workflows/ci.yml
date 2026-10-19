@@ -327,7 +327,8 @@ jobs:
     name: browser tests (${{ matrix.shard }} of 2)
     needs: changes
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
-    runs-on: ubuntu-latest
+    # Ubuntu 24.04, not ubuntu-latest: on 26.04 Playwright's WebKit cannot find the ICU 74 library it is built against.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false

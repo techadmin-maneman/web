@@ -56,9 +56,12 @@ const PAGES: Readonly<Record<string, string>> = {
 /** Exports that hold no copy to change: structured details, and the staging-only placeholder tag. */
 const LOCKED_EXPORTS: ReadonlySet<string> = new Set(["contact/business", "home/placeholderTag"]);
 
-/** Keys whose values are not copy: links, files, slugs, numerals and settings, and the lists of our cities. */
+/**
+ * Keys whose values are not copy to change here: links, files, slugs, numerals and settings, the lists of our cities,
+ * and a consent's one line, whose words are its notice's (src/config/notices.ts).
+ */
 const NOT_COPY =
-  /\.(?:href|file|src|poster|slug|id|icon|version|url|video|number|numeral|n|anchor|kind|state|cities)(?:\.\d+)?$/;
+  /\.(?:href|file|src|poster|slug|id|icon|version|url|video|number|numeral|n|anchor|kind|state|cities|says|link)(?:\.\d+)?$/;
 
 /** Values that are not copy: a path, a link, a file, a date, digits, punctuation, or a hole alone. */
 function isCopy(text: string): boolean {

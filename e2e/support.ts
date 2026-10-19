@@ -158,9 +158,6 @@ export async function throughToGate(page: Page): Promise<void> {
     .first()
     .setInputFiles(await drawnHeadPhoto());
   await page.getByRole("button", { name: tryOn.upload.capture.use }).click();
-  await reach("consent");
-  await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-  await page.getByRole("button", { name: booking.next }).click();
   await reach("looks");
   await page.getByRole("radio", { name: /Quiff/ }).first().check();
   await page.getByRole("button", { name: booking.next }).click();

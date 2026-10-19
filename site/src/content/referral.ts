@@ -19,12 +19,12 @@ import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { rupees } from "@maneman/web-kit/money";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
-import { booking, notices, pageTitles, type Notice } from "./site.ts";
+import { booking, notices, pageTitles, type Notice, type NoticeWords } from "./site.ts";
 
-/** A one-line notice's words, as the backend records them with the consent (src/config/notices.ts). */
-function lineOf(notice: Notice): string {
-  const [line = ""] = notice.lines;
-  return line;
+/** A one-line notice's line, as the backend records it with the consent (src/config/notices.ts). */
+function lineOf(notice: Notice): NoticeWords {
+  if (notice.line === undefined) throw new Error(`notice ${notice.version} has no line`);
+  return notice.line;
 }
 
 /**

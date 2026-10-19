@@ -114,7 +114,7 @@ export async function openInvite(page: Page): Promise<void> {
 export const remembered = (page: Page) => page.evaluate(() => localStorage.getItem("mm_invite"));
 
 /** Where the agreement on /book's first step, and on the consultation's, is ticked. */
-export const CONSULTATION_CONSENT = referralCopy.referral.consultation.consent;
+export const CONSULTATION_CONSENT = referralCopy.referral.consultation.consent.says;
 
 /** /book's first step: the name, the number and the agreement, kept before anything else (ADR 0116). */
 export async function leaveDetails(page: Page, mobile = "9810000000"): Promise<void> {

@@ -222,28 +222,13 @@
   margin-top: var(--sp-16);
 }
 
-/*
- * What booking also agrees to, one tap away beneath Pay: quiet until it is opened, as the discount code is, then the
- * first line in the text's own ink and the card's lines after it muted.
- */
+/* What every visit's photographs are, one quiet line beneath Pay. */
 .consents {
-  margin-top: var(--sp-8);
+  margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
   line-height: var(--lh-145);
   color: var(--text-muted);
-}
-
-.consentsOpen {
-  justify-content: center;
-}
-
-.sheet .consents p + p {
-  margin-top: var(--sp-8);
-}
-
-.sheet .consentsOpen + p {
-  margin-top: var(--sp-4);
-  color: var(--text);
+  text-align: center;
 }
 
 /* A line no board draws under a step's heading: why the address comes first, or that the day offered is full. */

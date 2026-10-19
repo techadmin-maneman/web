@@ -133,11 +133,8 @@ test("the browser’s Back steps back through the try-on, and leaves it only fro
   await page.goBack();
   await screenIs(page, "looks");
   await page.goBack();
-  await screenIs(page, "consent");
-  expect(new URL(page.url()).pathname).toBe("/try");
-  // Its own Back goes the same way.
-  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
   await screenIs(page, "upload");
+  expect(new URL(page.url()).pathname).toBe("/try");
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
 });
@@ -152,7 +149,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   await expect.poll(() => named(seen, "upload").length).toBe(1);
   expect(named(seen, "uploadUrl")[0]?.postDataJSON()).toEqual({
     photo_consent: true,
-    notice_version: "photo-v6",
+    notice_version: "photo-v7",
     turnstile_token: DUMMY_TOKEN,
   });
   expect(await named(seen, "upload")[0]?.headerValue("content-type")).toBe("image/jpeg");
@@ -182,7 +179,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
     name: "Test Visitor",
     mobile: "9810000000",
     number_code_id: CODE_ID,
-    notice_version: "gate-v6",
+    notice_version: "gate-v7",
     attribution: { landing_path: "/try" },
   });
   expect(await claim?.headerValue("idempotency-key")).toMatch(/^[0-9a-f-]{36}$/);
@@ -340,8 +337,6 @@ test("a visitor whose upload is refused for having had their look is told it was
     .first()
     .setInputFiles(await drawnHeadPhoto());
   await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
-  await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-  await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
   await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
   expect((await analyticsEvents(page)).map(([name]) => name)).not.toContain("try_on_failed");
 });
@@ -385,8 +380,6 @@ for (const [name, answers, heading] of [
       .first()
       .setInputFiles(await drawnHeadPhoto());
     await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
-    await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-    await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
   });
 }
@@ -499,14 +492,14 @@ test("Back from the gate offers every look again, and nothing has been made", as
   await expect(page.getByRole("radio", { name: /^Quiff/ })).toBeChecked();
   await page.getByRole("radio", { name: /^Side part/ }).check();
   await expect(page.getByRole("radio", { name: /^Side part/ })).toBeChecked();
-  await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
+  await page.getByRole("button", { name: siteCopy.tryOn.looks.continue }).click();
   await screenIs(page, "gate");
   expect(named(seen, "generate")).toHaveLength(0);
 });
 
-// The agreement is to one photograph's use; a second photograph is asked for afresh.
-test("a new photograph asks for the agreement again", async ({ page }) => {
-  await mockApi(page);
+// The agreement is to one photograph's use: a second photograph used agrees to it afresh, and goes up on its own.
+test("a new photograph used is a new agreement, and goes up afresh", async ({ page }) => {
+  const seen = await mockApi(page);
   await visit(page, "/try");
   const reach = (screen: string) => page.locator(`[data-screen="${screen}"]`).waitFor();
   await page
@@ -514,9 +507,8 @@ test("a new photograph asks for the agreement again", async ({ page }) => {
     .first()
     .setInputFiles(await drawnHeadPhoto());
   await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
-  await reach("consent");
-  await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-  await expect(page.getByRole("checkbox")).toBeChecked();
+  await reach("looks");
+  await expect.poll(() => named(seen, "uploadUrl").length).toBe(1);
   await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
   await reach("upload");
   await page
@@ -524,8 +516,8 @@ test("a new photograph asks for the agreement again", async ({ page }) => {
     .first()
     .setInputFiles(await drawnHeadPhoto([90, 70, 50]));
   await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
-  await reach("consent");
-  await expect(page.getByRole("checkbox")).not.toBeChecked();
+  await reach("looks");
+  await expect.poll(() => named(seen, "uploadUrl").length).toBe(2);
 });
 
 // REQ-S4-05: the photograph is fitted within 4090 px, kept under 5 MB and stripped of its EXIF, the location
@@ -553,9 +545,7 @@ test("a large photograph with a location in it is uploaded smaller and without i
     .first()
     .setInputFiles({ name: "big.jpg", mimeType: "image/jpeg", buffer: large });
   await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
-  await page.locator('[data-screen="consent"]').waitFor({ timeout: 30_000 });
-  await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-  await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
+  await page.locator('[data-screen="looks"]').waitFor({ timeout: 30_000 });
   await expect.poll(() => named(seen, "upload").length, { timeout: 90_000 }).toBe(1);
 
   const sent = named(seen, "upload")[0]?.postDataBuffer() ?? Buffer.alloc(0);

@@ -320,7 +320,7 @@ test("asks for the consent before choosing their own card, and sends the example
   await page.getByRole("button", { name: appCopy.refer.share }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
   await expect(page.getByRole("heading", { name: appCopy.refer.consent.title })).toBeVisible();
-  await expect(page.getByText("Your first name appears on your invite.")).toBeVisible();
+  await expect(page.getByText(appCopy.profile.referralCards.line)).toBeVisible();
 
   const allow = page.getByRole("button", { name: appCopy.refer.consent.allow });
   await allow.click();

@@ -44,12 +44,10 @@
   max-width: var(--measure-form);
   text-wrap: pretty;
 }
+/* On a phone the frame and its caption go: the title says where the look goes, and the line beneath the button. */
 @media (max-width: 600px) {
-  .gateFrame {
+  .gateImage {
     display: none;
-  }
-  .gateCaption {
-    margin-top: 0;
   }
 }
 .fields {

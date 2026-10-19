@@ -85,7 +85,7 @@ describe("ci.yml on a pull request", () => {
   it("runs the full suite on every push, and nothing when a label is added", () => {
     expect(on.pull_request?.types).toEqual(["opened", "synchronize", "reopened", "ready_for_review"]);
     for (const key of ["static", "tests", "build", "browser", "smoke", "old-code-on-new-schema"]) {
-      expect(jobOf(CI, key)["runs-on"], key).toBe("ubuntu-latest");
+      expect(jobOf(CI, key)["runs-on"], key).toMatch(/^ubuntu-(latest|\d{2}\.04)$/);
       expect(jobOf(CI, key).if ?? "", key).not.toContain("outputs.full");
     }
     expect(allSteps(CI).filter(({ step }) => step.if?.includes("github.event.label") === true)).toEqual([]);

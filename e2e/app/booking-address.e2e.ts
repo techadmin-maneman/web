@@ -11,6 +11,7 @@ import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fa
 import { continueToPayment } from "./picking.ts";
 import { toPayment, toWindows, openSheet, profileAs, profileOf, PHOTOS, scanOf } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { CLIENT_WORDS } from "../../packages/web-kit/client-words.ts";
 import { PAY_SERVICE } from "./booking-fixtures.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
@@ -109,15 +110,12 @@ test("puts Pay above what every visit’s photographs are, one tap away, and sen
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   const payButton = pay.getByRole("button", { name: PAY_SERVICE });
-  const photos = pay.getByText(appCopy.booking.pay.photos.open);
+  // One line beneath Pay, where a fold once held it, with its link to the photos notice.
   const line = pay.getByText(appCopy.profile.visitPhotos);
   await expect(payButton).toBeInViewport();
-  await expect(photos).toBeInViewport();
-  expect(await bottomOf(payButton)).toBeLessThanOrEqual(await topOf(photos));
-  await expect(line).toBeHidden();
-
-  await photos.click();
-  await expect(line).toBeVisible();
+  await expect(line).toBeInViewport();
+  expect(await bottomOf(payButton)).toBeLessThanOrEqual(await topOf(line));
+  await expect(pay.getByRole("link", { name: CLIENT_WORDS.noticeMore })).toHaveAttribute("href", /\/notices#photos$/);
   // Referral cards are the client's choice when they share an invite, never booking's.
   await expect(pay.getByText("Anyone you send this card to can see your photographs.")).toHaveCount(0);
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);

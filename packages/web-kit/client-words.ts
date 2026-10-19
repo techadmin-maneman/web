@@ -7,6 +7,8 @@ export function codeMismatch(left: number): string {
 }
 
 export const CLIENT_WORDS = {
+  /** After a consent's one line that names no notice: the link to its full notice. */
+  noticeMore: "Details",
   /** A name the form refuses: empty, or not in letters. */
   nameError: "Enter your name.",
   mobilePlaceholder: "98100 00000",

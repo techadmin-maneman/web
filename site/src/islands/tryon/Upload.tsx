@@ -3,10 +3,12 @@ import { FileInput } from "@maneman/ui/Field";
 import { ICON_STROKES } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { NoticeLine } from "@maneman/ui/NoticeLine";
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { PhotoCapture } from "@maneman/ui/PhotoCapture";
 import { lightOf } from "@maneman/web-kit/small-jpeg";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { tryOn } from "../../content/site.ts";
+import { notices, tryOn } from "../../content/site.ts";
 import { useReleased } from "./hooks.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import shared from "./TryOn.module.css";
@@ -77,6 +79,13 @@ async function noteFor(photo: Blob): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/** What using the photo agrees to: the photo notice's one line. */
+function PhotoAgreement() {
+  const { line } = notices.photo;
+  if (line === undefined) return null;
+  return <NoticeLine line={line} href={line.href} more={CLIENT_WORDS.noticeMore} tone="ink" />;
 }
 
 /** Where the photo being looked at came from: this page's camera, the phone's own, or the files. */
@@ -218,6 +227,7 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
         <PhotoCapture
           still={looking?.url ?? null}
           note={looking?.note ?? null}
+          agreement={<PhotoAgreement />}
           words={{ ...capture, again: looking?.from === "files" ? capture.another : capture.retake }}
           onTaken={(photo) => {
             look("camera", new File([photo], "camera.jpg", { type: "image/jpeg" }));

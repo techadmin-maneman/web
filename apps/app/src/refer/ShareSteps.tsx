@@ -9,9 +9,12 @@ import { classes } from "@maneman/ui/classes";
 import { GLYPHS, ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
+import { NoticeLine } from "@maneman/ui/NoticeLine";
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { whatsappShare } from "@maneman/web-kit/whatsapp";
 import type { Refer } from "../api.ts";
 import { profile, refer } from "../content.ts";
+import { noticeUrl } from "../lib/notices.ts";
 import { useSession } from "../session.ts";
 import { CardPreview, type Shown } from "./CardPreview.tsx";
 import { rewardOf } from "./reward.ts";
@@ -104,7 +107,7 @@ export function ChoiceStep({ flow, onClose }: StepProps) {
   );
 }
 
-/** The consent sheet: the lines their own photographs on a card need agreeing to, and the card being composed once they do. */
+/** The consent sheet: the line their own photographs on a card need agreeing to, and the card being composed once they do. */
 export function ConsentStep({ flow, onClose }: StepProps) {
   return (
     <>
@@ -113,14 +116,13 @@ export function ConsentStep({ flow, onClose }: StepProps) {
         <h2 className={referSheet.sheetTitle} id={TITLE_ID}>
           {refer.consent.title}
         </h2>
-        <ul className={referSheet.lines}>
-          {profile.referralCards.lines.map((line) => (
-            <li key={line} className={referSheet.line}>
-              <span className={referSheet.bullet} aria-hidden="true" />
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
+        <p className={referSheet.line}>
+          <NoticeLine
+            line={{ says: profile.referralCards.line, link: null }}
+            href={noticeUrl("photos")}
+            more={CLIENT_WORDS.noticeMore}
+          />
+        </p>
         <Problem line={flow.problem} className={referSheet.problem} />
         {flow.step === "composing" && (
           <p className={referSheet.composing} role="status">

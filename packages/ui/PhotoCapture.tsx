@@ -6,7 +6,7 @@
 // The photograph is what the view showed: the part of the camera's frame the screen drew, mirrored as the view was
 // where the camera faces the person. The camera is ./useCamera.ts, open only while its view is drawn.
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "./Button.tsx";
 import { classes } from "./classes.ts";
@@ -148,6 +148,7 @@ function Camera(props: {
 function Still(props: {
   readonly src: string;
   readonly note: string | null;
+  readonly agreement: ReactNode;
   readonly words: PhotoCaptureWords;
   readonly onUse: () => void;
   readonly onAgain: () => void;
@@ -169,6 +170,7 @@ function Still(props: {
         </p>
       </div>
       <div className={classes(styles.bar, styles.answers)}>
+        {props.agreement !== null && <p className={styles.agreement}>{props.agreement}</p>}
         <Button variant="outlineOnInk" size="action" onClick={props.onAgain}>
           {props.words.again}
         </Button>
@@ -188,6 +190,8 @@ function Still(props: {
 export function PhotoCapture(props: {
   readonly still: string | null;
   readonly note?: string | null;
+  /** Beneath the photograph, above its answers: what using it agrees to, where using it is an agreement. */
+  readonly agreement?: ReactNode;
   readonly words: PhotoCaptureWords;
   readonly className?: string;
   readonly onTaken: (photo: Blob) => void;
@@ -237,6 +241,7 @@ export function PhotoCapture(props: {
         <Still
           src={props.still}
           note={props.note ?? null}
+          agreement={props.agreement ?? null}
           words={props.words}
           onUse={props.onUse}
           onAgain={props.onAgain}

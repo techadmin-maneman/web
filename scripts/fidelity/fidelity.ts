@@ -144,7 +144,8 @@ const click = (text: string) => async (page: Page) => {
 
 const TRY_ON_STEPS: Step[] = [
   { name: "try-1-upload", design: click("See yourself with hair"), site: "/try" },
-  { name: "try-2-consent", design: click("Choose a photograph"), site: "/try?state=consent" },
+  // The consent is one line on the photo now: the build has no consent screen (ADR 0219).
+  { name: "try-2-consent", design: click("Choose a photograph"), site: null },
   // The try-on asks nothing of where the hair loss is: the build has no stage screen (ADR 0217).
   {
     name: "try-3-stage",

@@ -80,24 +80,28 @@ describe("content", () => {
     expect(site.looks[2]).toMatchObject({ name: "Textured crop", detail: "Low fade" });
   });
 
-  it("builds the consent screen and the gate from the backend’s notices, word for word", () => {
-    const consent = site.consentCopy(site.notices.photo);
-    expect(consent.title).toBe("What happens to your photograph.");
-    expect(consent.rows.map((row) => row.label)).toEqual([
+  // The try-on asked for its photo on a screen of its own, five rows long; now one line links to the full notice.
+  it("gives the photo and the gate one line each, linking to the try-on notice on /notices", () => {
+    expect(site.notices.photo.line).toEqual({
+      says: "By using this photo, you agree to our try-on notice.",
+      link: "try-on notice",
+      href: "/notices#try-on",
+    });
+    expect(site.notices.gate.line?.says).toBe("By sending it, you agree to our try-on notice.");
+    expect(site.noticeSections["try-on"].rows.map((row) => row.label)).toEqual([
       "Used for",
       "Kept for",
       "Training",
       "Shared with",
+      "Marketing",
       "To withdraw",
     ]);
-    expect(consent.agreement).toBe("I understand, and I agree to my photograph being used this way.");
-    expect(site.gateCopy(site.notices.gate).title).toBe("Where should we send it?");
   });
 
   // The look goes to WhatsApp, and is shown on the page that proved the number once ready (ADR 0214), so every build
   // shows the notices that say so, which await counsel and still keep a client's try-on (ADR 0084).
   it("says on every page of the try-on that the look goes to WhatsApp and is shown here once ready", () => {
-    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v6", "gate-v6"]);
+    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v7", "gate-v7"]);
     expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([false, false]);
     expect(site.tryOnSendsCopy).toBe(true);
     const privacy = textOf(site.legalPages.privacy);
@@ -242,13 +246,11 @@ describe("the second copy round", () => {
     expect(JSON.stringify(site.tryOn)).not.toMatch(/\bHe\b/);
   });
 
-  // Only the gate's notice says where the look goes.
-  it("leaves where the look goes to the gate, and points to a privacy notice /try has", () => {
+  // Only the gate says where the look goes.
+  it("leaves where the look goes to the gate", () => {
     const screens = JSON.stringify(site.tryOn);
     expect(screens).not.toMatch(/never shown|privately|for your privacy/i);
-    expect(site.gateCopy(site.notices.gate).caption).toContain("WhatsApp");
-    const { before, link, after } = site.tryOn.consent.privacy;
-    expect(before + link + after).toBe("Read the full privacy notice.");
+    expect(site.tryOn.gate.caption).toContain("WhatsApp");
   });
 
   // No empty "Preview" box stands in for a look's picture.
@@ -341,8 +343,8 @@ describe("the publish gate", () => {
   // wording for the apps, and for nothing else.
   it("stops production on what awaits counsel alone: every published block is real", () => {
     expect(publishProblems()).toEqual([
-      "the photo notice (photo-v6) is not approved",
-      "the gate notice (gate-v6) is not approved",
+      "the photo notice (photo-v7) is not approved",
+      "the gate notice (gate-v7) is not approved",
       "the consultation notice (referral-consultation-v2) is not approved",
       "the privacy page’s wording is not approved",
       "the terms page’s wording is not approved",

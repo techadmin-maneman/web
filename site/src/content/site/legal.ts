@@ -136,3 +136,6 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
 // ---------------------------------------------------------------------------
 // Global
 // ---------------------------------------------------------------------------
+
+/** The page of full notices each one-line consent links to (/notices). */
+export const noticesPage = { title: "Notices" };

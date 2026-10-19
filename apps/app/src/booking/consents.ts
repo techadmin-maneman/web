@@ -5,5 +5,5 @@
 
 import { booking } from "../content.ts";
 
-/** The pay step's lines on photographs, one tap away beneath Pay. */
-export const photoLines = (): readonly string[] => booking.pay.photos.lines;
+/** The pay step's line on photographs, beneath Pay. */
+export const photoLine = (): string => booking.pay.photos.line;

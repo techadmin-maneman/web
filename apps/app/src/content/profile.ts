@@ -66,17 +66,11 @@ export const profile = {
   // A switch the API did not answer stays as it was.
   switchFailed: "Couldn’t save that. Try again.",
   /**
-   * The four lines shown before a card is turned on, and the line beside them that names the referrer; the consent's notice carries them all.
+   * The line shown before a card is turned on, as its notice says it, which names the referrer on their invite
+   * (ADR 0025, item 24); its link opens the rest of the notice.
    */
   referralCards: {
-    lines: [
-      "Anyone you send this card to can see your photographs.",
-      "They can forward it, and so can anyone who receives it.",
-      "You can switch it off at any time, and new opens will show our house example instead.",
-      "Cards already delivered stay in people’s chats. We cannot take those back.",
-      // A referrer is named on their invite only after reading this (ADR 0025, item 24).
-      "Your first name appears on your invite.",
-    ],
+    line: "Your before and after goes on the card your friends see, with your first name.",
     confirm: "Switch on",
     cancel: "Keep it off",
   },

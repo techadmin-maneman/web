@@ -18,15 +18,12 @@
   background: var(--gilt);
   transition: width var(--duration-travel) var(--ease-house);
 }
-.progress-upload {
-  width: 18%;
-}
-.progress-consent,
+.progress-upload,
 .progress-error {
-  width: 36%;
+  width: 24%;
 }
 .progress-looks {
-  width: 62%;
+  width: 58%;
 }
 .progress-gate {
   width: 90%;

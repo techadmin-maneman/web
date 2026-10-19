@@ -8,9 +8,11 @@ import { Checkbox } from "@maneman/ui/Field";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { useEffect, useRef } from "preact/hooks";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
+import { NoticeLine } from "@maneman/ui/NoticeLine";
 import { ICONS } from "@maneman/brand/icons";
 import { referral } from "../../content/referral.ts";
-import { booking, whatsapp } from "../../content/site.ts";
+import { booking, whatsapp, type NoticeWords } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
 import { fill } from "../../lib/text.ts";
 import { MobileField, NameField } from "../PersonFields.tsx";
@@ -50,7 +52,7 @@ export function PersonFieldset(props: {
   /** The fields to mark as wrong. */
   bad: readonly PersonField[];
   idPrefix: string;
-  consentLabel: string;
+  consentLabel: NoticeWords;
   consentNote: string;
   onChange: (fields: PersonFields) => void;
 }) {
@@ -92,10 +94,10 @@ export function PersonFieldset(props: {
   );
 }
 
-/** An agreement's box: its words, and a note after them, "Required" or "Optional". */
+/** An agreement's box: its line, linking to its full notice, and a note after it, "Required" or "Optional". */
 export function AgreementBox(props: {
   checked: boolean;
-  label: string;
+  label: NoticeWords;
   note: string;
   onChange: (checked: boolean) => void;
   /** Where the agreement is required: marked and described by its error. */
@@ -114,7 +116,7 @@ export function AgreementBox(props: {
       }}
       label={
         <span class={shared.consentText}>
-          {props.label}
+          <NoticeLine line={props.label} href={props.label.href} more={CLIENT_WORDS.noticeMore} />
           {props.note !== "" && <span class={shared.consentNote}>{` ${props.note}`}</span>}
         </span>
       }
@@ -127,7 +129,7 @@ export function ConsentBox(props: {
   checked: boolean;
   bad: boolean;
   idPrefix: string;
-  label: string;
+  label: NoticeWords;
   note: string;
   onChange: (checked: boolean) => void;
 }) {

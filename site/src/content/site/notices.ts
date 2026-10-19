@@ -1,15 +1,39 @@
 // The notices a consent is given under, as the backend records them, and which are approved.
 
-import { CURRENT_NOTICE, findNotice, LANDING_NOTICES, type NoticeLayout } from "@rules/config/notices.ts";
+import {
+  CURRENT_NOTICE,
+  findNotice,
+  LANDING_NOTICES,
+  NOTICE_SECTIONS,
+  type NoticeLayout,
+  type NoticeSection,
+} from "@rules/config/notices.ts";
 import { KEEPING_NOTICES } from "@rules/policy/kept-try-ons.ts";
+
+/** The site's page of full notices, which each one-line consent links to (ADR 0219). */
+export const NOTICES_PATH = "/notices";
+
+/** The full notices, a section each, as /notices shows them. */
+export const noticeSections = NOTICE_SECTIONS;
+
+/** A one-line consent as a screen draws it: its words, the words in it that link, and where they go. */
+export interface NoticeWords {
+  readonly says: string;
+  readonly link: string | null;
+  readonly href: string;
+}
+
+export const noticeHref = (section: NoticeSection): string => `${NOTICES_PATH}#${section}`;
 
 export interface Notice {
   readonly version: string;
   /** Counsel has signed off this wording. */
   readonly approved: boolean;
   readonly lines: readonly string[];
-  /** Its parts, where a screen lays them out (the try-on's consent). */
+  /** Its parts, where a screen lays them out. */
   readonly layout?: NoticeLayout;
+  /** A one-line notice's line. */
+  readonly line?: NoticeWords;
 }
 
 /**
@@ -28,7 +52,9 @@ function notice(version: string): Notice {
   const found = findNotice(version);
   if (found === undefined) throw new Error(`no notice ${version} in src/config/notices.ts`);
   const approved = APPROVED_NOTICES.includes(version);
-  return { version, approved, lines: found.text, ...("layout" in found ? { layout: found.layout } : {}) };
+  const { line: one } = found;
+  const line = one === undefined ? {} : { line: { says: one.says, link: one.link, href: noticeHref(one.section) } };
+  return { version, approved, lines: found.text, ...("layout" in found ? { layout: found.layout } : {}), ...line };
 }
 
 // ---------------------------------------------------------------------------
@@ -41,7 +67,7 @@ function notice(version: string): Notice {
  * so production's build waits for counsel to approve them.
  */
 export const notices = {
-  /** The try-on consent screen. */
+  /** The try-on's photo, agreed to by using it. */
   photo: notice(CURRENT_NOTICE.tryon_photo),
   /** The try-on gate. */
   gate: notice(CURRENT_NOTICE.result_delivery),

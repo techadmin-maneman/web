@@ -56,8 +56,9 @@ describe("where every workflow runs", () => {
       const jobs = Object.values(workflow(file).jobs);
       expect(jobs.length).toBeGreaterThan(0);
       for (const job of jobs) {
-        // A job that calls a reusable workflow runs where that workflow's own jobs say.
-        if (job.uses === undefined) expect(job["runs-on"]).toBe("ubuntu-latest");
+        // A job that calls a reusable workflow runs where that workflow's own jobs say. A job may name an Ubuntu
+        // release when ubuntu-latest moves on before a tool it runs does.
+        if (job.uses === undefined) expect(job["runs-on"]).toMatch(/^ubuntu-(latest|\d{2}\.04)$/);
       }
     },
   );

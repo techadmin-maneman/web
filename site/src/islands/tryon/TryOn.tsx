@@ -1,6 +1,7 @@
 // The try-on, on the API. The photograph is taken or chosen, and looked at
-// before it is used (Upload.tsx); it is prepared in the browser (lib/photo.ts)
-// and uploads while the visitor chooses a look. The gate then asks where to send
+// before it is used (Upload.tsx), which agrees to the photo notice in its one
+// line (ADR 0219); it is prepared in the browser (lib/photo.ts) and uploads
+// while the visitor chooses a look. The gate then asks where to send
 // the look, a WhatsApp code proves the number (useNumberCode.ts), the claim saves
 // it, and only then is the look made. The sent screen says it is on its way, and
 // watches the render until it is ready, to show it here too (ADR 0214), or in
@@ -27,7 +28,6 @@ import { preparePhoto, type PreparedPhoto } from "../../lib/photo.ts";
 import { onArrival, startUpload, type Arrival, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import type { Failure } from "../../lib/tryon-errors.ts";
 import { Icon } from "@maneman/ui/Icon";
-import { Consent } from "./Consent.tsx";
 import { Failed } from "./Failed.tsx";
 import { Gate } from "./Gate.tsx";
 import { useReleased, useRenderWatch, useScreenHistory } from "./hooks.ts";
@@ -48,8 +48,8 @@ interface Props {
 }
 
 /**
- * The page's Turnstile widget: made once a photograph is chosen, not as the page loads, so its token is ready by the
- * time the consent is read and no challenge runs for a page only looked at; it goes with the page.
+ * The page's Turnstile widget: made once a photograph is used, not as the page loads, so no challenge runs for a page
+ * only looked at; it goes with the page.
  */
 function usePhotoWidget(screen: Screen, siteKey: string) {
   const box = useRef<HTMLDivElement>(null);
@@ -147,18 +147,17 @@ function TryOnFlow(props: Props) {
     });
   }
 
-  function agree() {
-    if (!state.consent) return;
-    send({ type: "agreed" });
+  // The photograph used goes up as the looks open, once the widget it needs is made (usePhotoWidget, above).
+  useEffect(() => {
     const prepared = preparing.current;
-    if (prepared === null || uploading.current !== null) return;
+    if (screen !== "looks" || prepared === null || uploading.current !== null) return;
     const upload = startUpload(prepared, turnstile.current, notices.photo.version);
     uploading.current = upload;
     // A refusal shows at once, rather than after the visitor has chosen a look.
     void upload.then((outcome) => {
       if (!outcome.ok && uploading.current === upload) refused(outcome);
     });
-  }
+  });
 
   function back() {
     if (backFrom(screen) === "home") location.assign("/");
@@ -186,17 +185,6 @@ function TryOnFlow(props: Props) {
         <div ref={turnstileBox} class={styles.turnstile} />
 
         {screen === "upload" && <Upload photo={state.photo} heading={heading} onChoose={choosePhoto} />}
-        {screen === "consent" && (
-          <Consent
-            notice={notices.photo}
-            consent={state.consent}
-            heading={heading}
-            onTick={(consent) => {
-              send({ type: "consentTicked", consent });
-            }}
-            onAgree={agree}
-          />
-        )}
         {screen === "looks" && (
           <Looks
             look={state.look}
