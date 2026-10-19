@@ -3,6 +3,7 @@ import { holdOpen } from "./one-tap.ts";
 import { CODE } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { CLIENT_WORDS } from "../../packages/web-kit/client-words.ts";
 
 test("lists the four consents off, and switches one on with its date and off again", async ({ page }) => {
   await loggedIn(page);
@@ -51,7 +52,10 @@ test("shows the referral card’s line, which names the referrer, before that co
   const cards = page.getByRole("switch", { name: appCopy.profile.purposes.photos_referral_cards });
   await cards.click();
   await expect(page.getByText(appCopy.profile.referralCards.line)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Details" }).last()).toHaveAttribute("href", /\/notices#photos$/);
+  await expect(page.getByRole("link", { name: CLIENT_WORDS.noticeMore }).last()).toHaveAttribute(
+    "href",
+    /\/notices#photos$/,
+  );
   await page.getByRole("button", { name: appCopy.profile.referralCards.cancel }).click();
   await expect(cards).toHaveAttribute("aria-checked", "false");
 

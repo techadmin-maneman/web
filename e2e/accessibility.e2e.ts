@@ -25,7 +25,7 @@ const PAGES = [
   "/book?state=listed",
   "/book?state=expired",
   "/privacy",
-  "/notices",
+  siteCopy.NOTICES_PATH,
   "/terms",
   // Opened from a reminder's own link; with no token in the address, it says the link has run out.
   "/stop",

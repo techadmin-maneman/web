@@ -258,8 +258,9 @@ test.describe("the photo's agreement", () => {
       .first()
       .setInputFiles(await drawnHeadPhoto());
     const camera = cameraIn(page);
-    await expect(camera.getByText("By using this photo, you agree to our try-on notice.")).toBeVisible();
-    const notice = camera.getByRole("link", { name: "try-on notice" });
+    const { photo } = siteCopy.notices;
+    await expect(camera.getByText(photo.line?.says ?? "")).toBeVisible();
+    const notice = camera.getByRole("link", { name: photo.line?.link ?? "" });
     await expect(notice).toHaveAttribute("href", "/notices#try-on");
     await expect(notice).toHaveAttribute("target", "_blank");
     await expect(page.getByRole("checkbox")).toHaveCount(0);
@@ -267,8 +268,9 @@ test.describe("the photo's agreement", () => {
 
   test("the gate's is one line beneath its button, linking to the same notice", async ({ page }) => {
     await open(page, "gate");
-    await expect(page.getByText("By sending it, you agree to our try-on notice.")).toBeVisible();
-    await expect(page.getByRole("link", { name: "try-on notice" })).toHaveAttribute("href", "/notices#try-on");
+    const { gate } = siteCopy.notices;
+    await expect(page.getByText(gate.line?.says ?? "")).toBeVisible();
+    await expect(page.getByRole("link", { name: gate.line?.link ?? "" })).toHaveAttribute("href", "/notices#try-on");
   });
 });
 
