@@ -6,7 +6,7 @@ import { referral } from "../../content/referral.ts";
 import type { Answer, Code } from "../../lib/api.ts";
 import { useSubmission } from "../useSubmission.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
-import type { PersonFields } from "./person.ts";
+import { useRememberedPerson, type PersonFields } from "./person.ts";
 
 export type { PersonFields };
 
@@ -83,14 +83,17 @@ function useFormWidget(
  * sending them with a Turnstile token. The widget is made once the visitor starts on the form, and removed with it:
  * the box it renders into does not exist until the pincode has decided which form the page shows. `marks` are the fields, by the API's names, that the
  * form marks itself when a refusal names them; a refusal that names none of them is said by the button. On /book the
- * name and number are given first (./AboutYou.tsx), and the forms after it start from them.
+ * name and number are given first (./AboutYou.tsx), and the forms after it start from them. A form that `remembers`
+ * fills in the name and number given at the try-on, once it is drawn.
  */
 export function useTurnstileForm(
   siteKey: string,
   marks: readonly string[] = PERSON_FIELDS,
   given: PersonFields = { name: "", mobile: "", consent: false },
+  remembers = false,
 ) {
   const [fields, setFields] = useState<PersonFields>(given);
+  useRememberedPerson(remembers, setFields);
   const [sending, setSending] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const submission = useSubmission(marks);

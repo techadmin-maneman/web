@@ -410,3 +410,16 @@ test("starts from the try-on's name and number, and a booking for the number it 
   expect(new URL((await leaving).url()).origin).toMatch(/^http:\/\/app\.localhost:\d+$/);
   expect(handedOver).toEqual([{ code_id: "5a1e0000-0000-4000-8000-00000000c0de", mobile: "9810000000" }]);
 });
+
+// On staging the fields stayed empty: hydrating keeps the server's empty fields, and only the referral reward's answer
+// drawing the form again put the remembered name in them here. Held, it draws nothing.
+test("shows the try-on's name and number in its fields as soon as the page is drawn", async ({ page }) => {
+  await page.route("**/api/referral-reward", () => undefined);
+  await page.addInitScript(() => {
+    const visitor = { name: "Test Visitor", mobile: "9810000000", proof: "5a1e0000-0000-4000-8000-00000000c0de" };
+    sessionStorage.setItem("mm_visitor", JSON.stringify(visitor));
+  });
+  await visit(page, "/book");
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
+  await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveValue("98100 00000");
+});

@@ -39,7 +39,7 @@ import {
 } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
-import { consultationStart } from "./person.ts";
+import { PERSON_START } from "./person.ts";
 import { byDoor, leadSent } from "./submit.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
@@ -80,6 +80,13 @@ function submitLabel(plan: Plan, codeWaiting: boolean): string {
 /** The fields this form marks when a refusal names them, by the API's names; /book's name and number are its first step's. */
 const MARKED_HERE: readonly string[] = [...REQUIRED_API_FIELDS, "discount_code"];
 const MARKED_WITH_PERSON: readonly string[] = [...PERSON_FIELDS, ...MARKED_HERE];
+
+/** The form's marks and start: the person asked for here when no step before asked, from what the try-on gave. */
+function formFor(person: PersonFields | null): [readonly string[], PersonFields, boolean] {
+  return person === null
+    ? [MARKED_WITH_PERSON, PERSON_START, true]
+    : [MARKED_HERE, { ...person, consent: true }, false];
+}
 
 /** Whether a refusal means the strip is out of date: a window filled, or a day closed, since it was drawn. */
 const outOfDate = (code: Code): boolean => code === "taken" || code === "not_bookable";
@@ -223,11 +230,7 @@ function AddressPart(
  */
 export function Consultation(props: ConsultationProps) {
   const { person, stage, plan } = props;
-  const form = useTurnstileForm(
-    props.turnstileSiteKey,
-    person === null ? MARKED_WITH_PERSON : MARKED_HERE,
-    person === null ? consultationStart() : { ...person, consent: true },
-  );
+  const form = useTurnstileForm(props.turnstileSiteKey, ...formFor(person));
   const numberCode = useNumberCode();
   const [picked, setPicked] = useState<Slot>(() => ({ date: indiaTomorrow(), window: "morning", start: null }));
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
