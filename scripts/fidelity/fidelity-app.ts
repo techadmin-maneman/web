@@ -575,7 +575,7 @@ async function login(browser: Browser, design: Page): Promise<void> {
   // they are shot at the frame's full height.
   await app.setViewportSize({ width: WIDTH, height: FRAME_HEIGHT });
   await app.getByRole("button", { name: "Send code on WhatsApp" }).click();
-  await app.getByRole("textbox", { name: "The six-digit code" }).fill("418");
+  await app.getByRole("textbox", { name: "The 6-digit code" }).fill("418");
   await app.clock.runFor(30_000);
   await pair({
     dir: OUT,

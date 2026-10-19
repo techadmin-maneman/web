@@ -463,7 +463,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     },
     FRAME_HEIGHT,
   );
-  await piece.getByLabel("The new piece’s label").fill("MM-STD-4417-B");
+  await piece.getByLabel("The new hair system’s label").fill("MM-STD-4417-B");
   await piece.getByRole("button", { name: "Check the label", exact: true }).click();
   // The lookup fills the base in, as the board's "Base · Mono" reads it.
   await expect(piece.getByRole("textbox", { name: "Base", exact: true })).toHaveValue("Mono");
