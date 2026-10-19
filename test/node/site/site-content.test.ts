@@ -94,18 +94,18 @@ describe("content", () => {
     expect(site.gateCopy(site.notices.gate).title).toBe("Where should we send it?");
   });
 
-  // ADR 0104: the look goes to WhatsApp only, never to the site, so every build shows the notices that say so, which
-  // await counsel and still keep a client's try-on (ADR 0084).
-  it("says on every page of the try-on that the look goes to WhatsApp only, and never promises it on screen", () => {
-    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v5", "gate-v5"]);
+  // The look goes to WhatsApp, and is shown on the page that proved the number once ready (ADR 0214), so every build
+  // shows the notices that say so, which await counsel and still keep a client's try-on (ADR 0084).
+  it("says on every page of the try-on that the look goes to WhatsApp and is shown here once ready", () => {
+    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v6", "gate-v6"]);
     expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([false, false]);
     expect(site.tryOnSendsCopy).toBe(true);
     const privacy = textOf(site.legalPages.privacy);
-    expect(privacy).toContain("we send the simulation to that number on WhatsApp, and it is never shown on this site");
+    expect(privacy).toContain("we send the simulation to that number on WhatsApp, and show it on this site");
     expect(privacy).toContain("we keep a small copy of your photograph in your Mane Man account as your before photo");
     expect(privacy).not.toMatch(/show it to you again|optional/);
     expect(site.tryOnTeaser.body).toContain("sent privately to your WhatsApp");
-    expect(textOf(site.legalPages.terms)).toContain("never shown on this site");
+    expect(textOf(site.legalPages.terms)).toContain("shown on this site once it is ready");
     const words = JSON.stringify({ tryOn: site.tryOn, notices: [site.notices.photo, site.notices.gate] });
     expect(words).not.toMatch(/next screen|Download|Drag the handle|hair patch/i);
   });
@@ -159,23 +159,32 @@ describe("content", () => {
     expect(site.whatItIs.body).toMatch(/bonded to the skin\. It is not a wig\.$/);
   });
 
-  it("names the four hair systems as the product guide names them, each with its line", () => {
+  // The guide of 6 October 2026 compares them side by side, with no price; how long each lasts is its figure (ADR 0215).
+  it("names the four hair systems as the product guide names them, and compares each on every row", () => {
     expect(site.range.products.map((product) => product.name)).toEqual([
       "Mane Man Essential",
       "Mane Man Active",
       "Mane Man Natural",
       "Mane Man Celebrity",
     ]);
-    for (const product of site.range.products) expect(product.tagline, product.name).not.toBe("");
+    for (const row of site.range.rows) expect(row.cells, row.label).toHaveLength(site.range.products.length);
+    expect(JSON.stringify(site.range)).not.toMatch(/Rs\.|₹/);
+    expect(site.range.rows.find((row) => row.label === "Lasts")?.cells).toEqual([
+      "8 months",
+      "6 months",
+      "6 months",
+      "4 months",
+    ]);
   });
 
   // The product guide marks the multi-layer base "Test before promising" and measures no life of its own: the site
   // promises no life in months for any base we fit.
-  it("promises no life in months for a base we fit", () => {
+  // The range table gives the guide's own figures (ADR 0215); nowhere else says one.
+  it("promises no life in months for a base we fit, outside the range table", () => {
     const materials = guides.find((guide) => guide.slug === "hair-system-materials");
     const fitted = materials?.sections.filter((section) => section.heading !== "What we do not fit, and why");
     expect(fitted).toHaveLength(5);
-    const said = JSON.stringify({ fitted, faq: site.faq, range: site.range });
+    const said = JSON.stringify({ fitted, faq: site.faq });
     expect(said).not.toMatch(/\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|twelve)\b[^.]*\bmonths?\b/i);
   });
 
@@ -205,6 +214,7 @@ describe("content", () => {
     expect(published).toEqual([
       "whatsapp",
       "heroFootage",
+      "norwoodPhotos",
       "teaserPair",
       "stepPhotos",
       "founderNote",
@@ -331,8 +341,8 @@ describe("the publish gate", () => {
   // wording for the apps, and for nothing else.
   it("stops production on what awaits counsel alone: every published block is real", () => {
     expect(publishProblems()).toEqual([
-      "the photo notice (photo-v5) is not approved",
-      "the gate notice (gate-v5) is not approved",
+      "the photo notice (photo-v6) is not approved",
+      "the gate notice (gate-v6) is not approved",
       "the consultation notice (referral-consultation-v2) is not approved",
       "the privacy page’s wording is not approved",
       "the terms page’s wording is not approved",
@@ -358,7 +368,7 @@ describe("the publish gate", () => {
   it("stops a published block that still holds the design’s placeholder material", () => {
     const blocks = {
       ...BLOCKS,
-      norwoodPhotos: { ...site.norwoodPhotos, publish: true },
+      norwoodPhotos: { ...site.norwoodPhotos, images: [{ file: "nw-3.jpg", alt: "The design’s stage III" }] },
       privacy: realPage(site.legalPages.privacy),
       terms: realPage(site.legalPages.terms),
     };

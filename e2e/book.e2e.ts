@@ -382,3 +382,31 @@ test("offers the one visit the morning and the afternoon, never the evening, and
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON() as Record<string, unknown>).not.toHaveProperty("one_visit");
 });
+
+// Someone who gave their name and number at the try-on was asked for them again, and a booking left them to sign in
+// to the app with another code (ADR 0214).
+test("starts from the try-on's name and number, and a booking for the number it proved goes on into the app signed in", async ({
+  page,
+}) => {
+  const challenge = "3f2b8c1e-9a4d-4e7b-8c2a-1d5e6f7a8b9c";
+  await page.addInitScript(() => {
+    const visitor = { name: "Test Visitor", mobile: "9810000000", proof: "5a1e0000-0000-4000-8000-00000000c0de" };
+    sessionStorage.setItem("mm_visitor", JSON.stringify(visitor));
+  });
+  await mockApi(page);
+  const handedOver: unknown[] = [];
+  await page.route("**/api/number-code/sign-in", (route) => {
+    handedOver.push(route.request().postDataJSON());
+    return route.fulfill({ status: 201, json: { challenge_id: challenge, code: "123456" } });
+  });
+  await visit(page, "/book");
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
+  await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveValue("98100 00000");
+
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
+  await checkPincode(page, SERVED.pincode);
+  const leaving = page.waitForRequest((request) => request.isNavigationRequest() && request.url().includes("app."));
+  await continueAndBook(page);
+  expect(new URL((await leaving).url()).origin).toMatch(/^http:\/\/app\.localhost:\d+$/);
+  expect(handedOver).toEqual([{ code_id: "5a1e0000-0000-4000-8000-00000000c0de", mobile: "9810000000" }]);
+});

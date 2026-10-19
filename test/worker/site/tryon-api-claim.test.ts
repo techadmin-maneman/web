@@ -31,8 +31,8 @@ describe("POST /api/tryon/claim, before the look is made", () => {
       "SELECT purpose, notice_version, created_at, source FROM consents ORDER BY purpose",
     ).all();
     expect(consents.results).toEqual([
-      { purpose: "result_delivery", notice_version: "gate-v5", created_at: NOW.toISOString(), source: "try_on" },
-      { purpose: "tryon_photo", notice_version: "photo-v5", created_at: NOW.toISOString(), source: "try_on" },
+      { purpose: "result_delivery", notice_version: "gate-v6", created_at: NOW.toISOString(), source: "try_on" },
+      { purpose: "tryon_photo", notice_version: "photo-v6", created_at: NOW.toISOString(), source: "try_on" },
     ]);
     // The job keeps the claim's stage, which its render is made for.
     expect(await jobRow(jobId)).toMatchObject({
@@ -70,16 +70,16 @@ describe("POST /api/tryon/claim, before the look is made", () => {
   it("records the gate's current notice, and refuses any other", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
-    for (const version of ["gate-v1", "gate-v2", "gate-v3", "photo-v4"]) {
+    for (const version of ["gate-v1", "gate-v3", "gate-v5", "photo-v4"]) {
       const refused = await browser.claim(jobId, "98100 00001", {}, { notice_version: version });
       expect(refused.status).toBe(400);
       expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["notice_version"] } });
     }
-    expect((await browser.claim(jobId, "98100 00001", {}, { notice_version: "gate-v5" })).status).toBe(201);
+    expect((await browser.claim(jobId, "98100 00001", {}, { notice_version: "gate-v6" })).status).toBe(201);
     const consents = await env.DB.prepare("SELECT purpose, notice_version FROM consents ORDER BY purpose").all();
     expect(consents.results).toEqual([
-      { purpose: "result_delivery", notice_version: "gate-v5" },
-      { purpose: "tryon_photo", notice_version: "photo-v5" },
+      { purpose: "result_delivery", notice_version: "gate-v6" },
+      { purpose: "tryon_photo", notice_version: "photo-v6" },
     ]);
   });
 

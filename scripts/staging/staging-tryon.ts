@@ -79,7 +79,7 @@ async function waitForResult(jobId: string): Promise<string> {
 // 1. Consent and an upload link; 2. the photo.
 const link = await post("/api/tryon/upload-url", {
   photo_consent: true,
-  notice_version: "photo-v5",
+  notice_version: "photo-v6",
   turnstile_token: TURNSTILE_TEST_TOKEN,
 });
 step("upload link", { status: link.status, job_id: link.body.job_id });

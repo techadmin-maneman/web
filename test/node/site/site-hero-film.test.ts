@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import { rangeOf } from "../../../site/src/lib/byte-range.ts";
-import { playsByItself } from "../../../site/src/lib/hero-film.ts";
+import { milliseconds, playsByItself } from "../../../site/src/lib/hero-film.ts";
 
 describe("the range a Range header asks for", () => {
   const SIZE = 1000;
@@ -50,5 +50,18 @@ describe("when the hero film plays by itself", () => {
   it("waits for Play when the visitor asked for less data or reduced motion", () => {
     expect(playsByItself(false, { saveData: true, effectiveType: "4g" })).toBe(false);
     expect(playsByItself(true, undefined)).toBe(false);
+  });
+});
+
+// The hero's line read "3.2s" as 3.2 milliseconds, and its phrases flickered past faster than anyone could read.
+describe("a CSS time in milliseconds", () => {
+  it("reads seconds and milliseconds, as a browser gives either back", () => {
+    expect(milliseconds("3.2s")).toBe(3200);
+    expect(milliseconds(" 3200ms")).toBe(3200);
+  });
+
+  it("is not a number for anything else, so nothing turns on it", () => {
+    expect(milliseconds("")).toBeNaN();
+    expect(milliseconds("fast")).toBeNaN();
   });
 });

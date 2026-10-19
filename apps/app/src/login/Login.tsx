@@ -1,7 +1,8 @@
 // The login: a number, then its code. Every number gets the
 // same second screen, so the app never says whether a number has a booking
 // (docs/decisions/0030-one-time-codes.md). The site's booking confirmation
-// links here with the number typed there filled in (linked-mobile.ts).
+// links here with the number typed there filled in, or, for a number it
+// proved, with a sign-in the login finishes at once (linked-mobile.ts).
 //
 // Each step forward is an entry in the browser's history, so a phone's Back
 // steps back from the code to the number, as the screen's own back arrow does,
@@ -18,6 +19,7 @@ import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { apiNow } from "@maneman/web-kit/clock";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
+import type { LinkedLogin, LinkedSignIn } from "./linked-mobile.ts";
 import { MobileScreen } from "./MobileScreen.tsx";
 import { useTurnstile } from "./turnstile.ts";
 
@@ -92,26 +94,37 @@ function useSteps() {
   return { step, setStep, forward, lastChallenge };
 }
 
+/** The sign-in the site handed over, finished once as the app opens; one that no longer holds leaves the number. */
+function useHandedOver(
+  signIn: LinkedSignIn | null,
+  once: (work: () => Promise<void>) => Promise<void>,
+  done: () => void,
+) {
+  const handedOver = useRef(signIn);
+  useEffect(() => {
+    const given = handedOver.current;
+    handedOver.current = null;
+    if (given === null) return;
+    void once(async () => {
+      const answer = await api.verify(given.challengeId, given.code);
+      if (answer.ok && answer.body.verified) done();
+    });
+  }, [once, done]);
+}
+
 /**
- * `ended`: the session ended while the app was open, and the first screen says so. `linkedMobile`: the number the
- * site's booking confirmation opened the app with, or "".
+ * `ended`: the session ended while the app was open, and the first screen says so. `linked`: the number the site's
+ * booking confirmation opened the app with, or "", and the sign-in it handed over, if any.
  */
-export function Login({
-  ended,
-  linkedMobile,
-  onSignedIn,
-}: {
-  ended: boolean;
-  linkedMobile: string;
-  onSignedIn: () => void;
-}) {
+export function Login({ ended, linked, onSignedIn }: { ended: boolean; linked: LinkedLogin; onSignedIn: () => void }) {
   const { step, setStep, forward, lastChallenge } = useSteps();
   // The code sent, when, by the API's clock, and one request at a time: a second send bills a second code, voids the
   // first, and takes another from this number's daily ceiling, which can leave a client unable to log in at all.
   const otp = useOtpChallenge<LoginChallenge>(apiNow);
   const { busy, once } = otp;
+  useHandedOver(linked.signIn, once, onSignedIn);
 
-  const [mobile, setMobile] = useState(linkedMobile);
+  const [mobile, setMobile] = useState(linked.mobile);
   // The API's reason no code was sent.
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);

@@ -39,7 +39,7 @@ import {
 } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
-import { CONSULTATION_START } from "./person.ts";
+import { consultationStart } from "./person.ts";
 import { byDoor, leadSent } from "./submit.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
@@ -226,7 +226,7 @@ export function Consultation(props: ConsultationProps) {
   const form = useTurnstileForm(
     props.turnstileSiteKey,
     person === null ? MARKED_WITH_PERSON : MARKED_HERE,
-    person === null ? CONSULTATION_START : { ...person, consent: true },
+    person === null ? consultationStart() : { ...person, consent: true },
   );
   const numberCode = useNumberCode();
   const [picked, setPicked] = useState<Slot>(() => ({ date: indiaTomorrow(), window: "morning", start: null }));

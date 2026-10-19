@@ -4,10 +4,16 @@
 // The code goes to whatever number is typed, so asking for one needs Turnstile and counts against the number's day
 // and the address's hour, as a login code does, and against a day's ceiling of its own, so that codes asked for
 // here never stop clients and technicians signing in.
+//
+// A number proved here that a booking holds may also be signed in to the client app, so a visitor who has just
+// booked goes on into it: the app finishes the sign-in with the challenge and code this answers (ADR 0214).
 
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { App, AppEnv } from "../../http/context.ts";
 import { checkNumberCode, createNumberCode, mobileHashOf } from "../../domain/clients/number-codes.ts";
+import { findEligiblePerson } from "../../domain/sign-in/login.ts";
+import { createChallenge } from "../../domain/sign-in/one-time-codes.ts";
+import { provedNumber } from "../../http/number-proof.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json, PersonNameSchema } from "../../http/openapi.ts";
 import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../../http/send-code.ts";
@@ -53,6 +59,21 @@ export const NumberCodeIdSchema = z.uuid().openapi({
     "The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered.",
 });
 
+const SignInRequestSchema = z
+  .object({ code_id: NumberCodeIdSchema, mobile: z.string().max(20) })
+  .strict()
+  .openapi("NumberSignInRequest");
+
+const NumberSignInSchema = z
+  .object({
+    challenge_id: z.uuid(),
+    code: z.string().regex(CODE_TEXT),
+  })
+  .strict()
+  .openapi("NumberSignIn", {
+    description: "A sign-in the client app finishes once, within ten minutes, at POST /api/auth/verify.",
+  });
+
 const askRoute = createRoute({
   method: "post",
   path: "/api/number-code",
@@ -76,6 +97,20 @@ const verifyRoute = createRoute({
     200: { description: "Right; or wrong, with the attempts left", ...json(NumberCodeVerifySchema) },
     400: errorResponse("invalid_request"),
     410: errorResponse("code_expired: expired, already entered, or void after five wrong codes"),
+  },
+});
+
+const signInRoute = createRoute({
+  method: "post",
+  path: "/api/number-code/sign-in",
+  summary: "Sign a number proved here in to the client app, once a booking holds it",
+  request: { body: { required: true, ...json(SignInRequestSchema) } },
+  responses: {
+    201: { description: "The sign-in, for the app to finish", ...json(NumberSignInSchema) },
+    400: errorResponse("invalid_request"),
+    403: errorResponse("number_not_proved: the code did not prove this number, or proved it over 30 minutes ago"),
+    404: errorResponse("not_found: no booking holds the number"),
+    503: errorResponse("unavailable: this environment proves no number"),
   },
 });
 
@@ -123,7 +158,32 @@ const verify: RouteHandler<typeof verifyRoute, AppEnv> = async (c) => {
   return c.json({ verified: true as const }, 200);
 };
 
+/** The number proved: a sign-in to the app for whoever its booking is, with no message sent. */
+const signIn: RouteHandler<typeof signInRoute, AppEnv> = async (c) => {
+  const { code_id: codeId, mobile } = c.req.valid("json");
+  const { login, ipHashSalt } = c.var.config.settings;
+  if (login.codePepper === "") return refuse(c, "unavailable");
+  const mobileE164 = toE164(mobile);
+  if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
+  if (!(await provedNumber(c, codeId, mobileE164))) return refuse(c, "number_not_proved");
+  const person = await findEligiblePerson(c.env.DB, mobileE164);
+  if (person === null) return refuse(c, "not_found");
+
+  const code = newLoginCode();
+  const challenge = await createChallenge(c.env.DB, {
+    holder: "person",
+    holderId: person.id,
+    mobileHash: await mobileHashOf(ipHashSalt, mobileE164),
+    code,
+    pepper: login.codePepper,
+    now: c.var.deps.now(),
+  });
+  c.var.log.info("app_sign_in_handed_over", { person_id: person.id });
+  return c.json({ challenge_id: challenge.id, code }, 201);
+};
+
 export function registerNumberCodes(app: App): void {
   app.openapi(askRoute, ask);
   app.openapi(verifyRoute, verify);
+  app.openapi(signInRoute, signIn);
 }

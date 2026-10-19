@@ -42,9 +42,9 @@ describe("consent notices", () => {
   it("shows the try-on's notices that send the look to WhatsApp, which keep a client's try-on", () => {
     const photo = findNotice(CURRENT_NOTICE.tryon_photo);
     const gate = findNotice(CURRENT_NOTICE.result_delivery);
-    expect([photo?.version, gate?.version]).toEqual(["photo-v5", "gate-v5"]);
-    expect(photo?.text.join(" ")).toContain("sent to your WhatsApp and never shown on this site");
-    expect(gate?.text.join(" ")).toContain("never shown on this site");
+    expect([photo?.version, gate?.version]).toEqual(["photo-v6", "gate-v6"]);
+    expect(photo?.text.join(" ")).toContain("sent to your WhatsApp and shown here once it’s ready");
+    expect(gate?.text.join(" ")).toContain("shown here once it’s ready");
     expect(gate?.text.join(" ")).not.toContain("next screen");
     expect(KEEPING_NOTICES).toContain(CURRENT_NOTICE.tryon_photo);
     expect(Object.keys(PUBLISHED)).not.toContain(CURRENT_NOTICE.tryon_photo);

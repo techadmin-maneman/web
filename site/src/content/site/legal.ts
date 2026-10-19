@@ -6,7 +6,7 @@
  * (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md, 0084-a-clients-try-on-is-kept.md).
  */
 const TRY_ON_PRIVACY =
-  "If you use the try-on, your photograph is used to make your simulation. It is sent to YouCam (Perfect Corp), the service that generates it, which keeps its copy for 30 days; we never use it to train any model, and ours is deleted within the hour; a small copy stays with your simulation for 14 days at most. Before the simulation is made, you give us your name and mobile number: we send the simulation to that number on WhatsApp, and it is never shown on this site; the simulation itself is kept for 14 days. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.";
+  "If you use the try-on, your photograph is used to make your simulation. It is sent to YouCam (Perfect Corp), the service that generates it, which keeps its copy for 30 days; we never use it to train any model, and ours is deleted within the hour; a small copy stays with your simulation for 14 days at most. Before the simulation is made, you give us your name and mobile number: we send the simulation to that number on WhatsApp, and show it on this site, to the browser that gave the number, once it is ready; the simulation itself is kept for 14 days. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.";
 
 interface LegalSection {
   readonly heading: string;
@@ -116,7 +116,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         heading: "The try-on",
         paragraphs: [
           // The try-on's sentence on WhatsApp is ADR 0104's.
-          "The try-on is an illustrative simulation made by software from one photograph, and sent to the WhatsApp number you give, never shown on this site. It is not a photograph of a result, and not a promise of how your hair system will look: a hair system is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are 18 or over. Each person gets one look every 30 days.",
+          "The try-on is an illustrative simulation made by software from one photograph, sent to the WhatsApp number you give, and shown on this site once it is ready. It is not a photograph of a result, and not a promise of how your hair system will look: a hair system is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are 18 or over. Each person gets one look every 30 days.",
         ],
       },
       {

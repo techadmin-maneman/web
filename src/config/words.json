@@ -336,6 +336,38 @@
     "reviewed": false
   },
   {
+    "key": "site:home/results.count",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "{at} of {count}",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.previous",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "Previous",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.next",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "Next",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.sliderLabel",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "Compare this client’s before and after",
+    "reviewed": false
+  },
+  {
     "key": "site:home/whatItIs.title",
     "surface": "site",
     "group": "Home",
@@ -892,8 +924,8 @@
     "surface": "site",
     "group": "Home",
     "where": "range",
-    "text": "Four hair systems. Every one 100% real human hair.",
-    "reviewed": true
+    "text": "Four hair systems, every one 100% real human hair. Your technician helps you choose.",
+    "reviewed": false
   },
   {
     "key": "site:home/range.products.0.name",
@@ -904,20 +936,12 @@
     "reviewed": true
   },
   {
-    "key": "site:home/range.products.0.tagline",
+    "key": "site:home/range.products.0.short",
     "surface": "site",
     "group": "Home",
     "where": "range",
-    "text": "Built for everyday wear. The place to start.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/range.products.0.body",
-    "surface": "site",
-    "group": "Home",
-    "where": "range",
-    "text": "Fine mono, the strongest base we fit, with a soft lace hairline.",
-    "reviewed": true
+    "text": "Essential",
+    "reviewed": false
   },
   {
     "key": "site:home/range.products.1.name",
@@ -928,19 +952,11 @@
     "reviewed": true
   },
   {
-    "key": "site:home/range.products.1.tagline",
+    "key": "site:home/range.products.1.short",
     "surface": "site",
     "group": "Home",
     "where": "range",
-    "text": "Made for men who sweat.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/range.products.1.body",
-    "surface": "site",
-    "group": "Home",
-    "where": "range",
-    "text": "A French lace top, the most breathable base there is, and a bleached lace hairline. For the gym, the field and an Indian summer.",
+    "text": "Active",
     "reviewed": false
   },
   {
@@ -952,20 +968,12 @@
     "reviewed": true
   },
   {
-    "key": "site:home/range.products.2.tagline",
+    "key": "site:home/range.products.2.short",
     "surface": "site",
     "group": "Home",
     "where": "range",
-    "text": "A hairline that passes a close look.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/range.products.2.body",
-    "surface": "site",
-    "group": "Home",
-    "where": "range",
-    "text": "A fine skin base with a bleached lace front. No mesh to see, so the hair seems to grow from your scalp.",
-    "reviewed": true
+    "text": "Natural",
+    "reviewed": false
   },
   {
     "key": "site:home/range.products.3.name",
@@ -976,20 +984,252 @@
     "reviewed": false
   },
   {
-    "key": "site:home/range.products.3.tagline",
+    "key": "site:home/range.products.3.short",
     "surface": "site",
     "group": "Home",
     "where": "range",
-    "text": "Flawless, even at the parting.",
+    "text": "Celebrity",
     "reviewed": false
   },
   {
-    "key": "site:home/range.products.3.body",
+    "key": "site:home/range.rows.0.label",
     "surface": "site",
     "group": "Home",
     "where": "range",
-    "text": "A silk top over lace hides every knot, so a parting shows scalp, not mesh.",
-    "reviewed": true
+    "text": "Made for",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.0.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Everyday wear",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.0.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "The gym and sport",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.0.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "A visible parting",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.0.cells.3",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "A close look",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.1.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Base",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.1.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Fine mono",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.1.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "French lace",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.1.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Silk over lace",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.1.cells.3",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Thin skin",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.2.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Hairline",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.2.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Good",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.2.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Very good",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.2.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Very good",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.2.cells.3",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Best",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.3.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Breathes",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.3.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Moderate",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.3.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Highest",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.3.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Lowest",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.3.cells.3",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Low",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.4.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Lasts",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.4.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "8 months",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.4.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "6 months",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.4.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "6 months",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.4.cells.3",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "4 months",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.5.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Service visit",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.5.cells.0",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Monthly",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.5.cells.1",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Monthly",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.5.cells.2",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Monthly",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/range.rows.5.cells.3",
+    "surface": "site",
+    "group": "Home",
+    "where": "range",
+    "text": "Twice a month",
+    "reviewed": false
   },
   {
     "key": "site:home/guarantee.label",
@@ -2232,6 +2472,30 @@
     "reviewed": true
   },
   {
+    "key": "site:tryon/tryOn.sent.ready.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Here’s your new look.",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.sent.ready.photoAlt",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your photo",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.sent.ready.lookAlt",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your photo with the look you chose",
+    "reviewed": false
+  },
+  {
     "key": "site:tryon/tryOn.sent.to.before",
     "surface": "site",
     "group": "Try-on",
@@ -3300,7 +3564,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Indian remy hair, on Mane Man Natural: every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
+    "text": "Indian remy hair, on Mane Man Celebrity: every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
     "reviewed": false
   },
   {

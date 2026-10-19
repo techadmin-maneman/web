@@ -65,33 +65,33 @@ describe("the app’s promise of what a referral earns", () => {
 describe("Refer for a client not yet fitted", () => {
   const reward = { referrer_visits: 2, friend_visits: 4 };
 
-  it("says when their invite opens, and what a referral will earn", () => {
+  it("says referrals go live at their first fit, and what one will earn then", () => {
     expect(empty.refer.lines(reward, null)).toEqual([
-      "Your invite opens after your first fit.",
-      "When a friend you refer is fitted, you get 2 free service visits, and your friend gets 4.",
+      "Referrals go live after your first fit.",
+      "Then, when a friend you refer is fitted, you get 2 free service visits, and your friend gets 4.",
     ]);
     expect(empty.refer.lines(null, null)).toEqual([
-      "Your invite opens after your first fit.",
-      "When a friend you refer is fitted, we tell you.",
+      "Referrals go live after your first fit.",
+      "Then, when a friend you refer is fitted, we tell you.",
     ]);
   });
 
   it("names the invite they came with first, and the visits it gives them at their fit", () => {
     expect(empty.refer.lines(reward, { referrer_first_name: "Rohit" })).toEqual([
       "Rohit’s invite: your 4 free service visits arrive when you’re fitted.",
-      "Your own invite opens after your first fit.",
+      "Your own referrals go live after your first fit.",
     ]);
     expect(empty.refer.lines({ referrer_visits: 3, friend_visits: 1 }, { referrer_first_name: null })).toEqual([
       "Your friend’s invite: your 1 free service visit arrives when you’re fitted.",
-      "Your own invite opens after your first fit.",
+      "Your own referrals go live after your first fit.",
     ]);
   });
 
   it("promises nothing from an invite where the friend is given nothing, or the reward is not known", () => {
     const invite = { referrer_first_name: "Rohit" };
     const nothingForTheFriend = { referrer_visits: 3, friend_visits: 0 };
-    expect(empty.refer.lines(nothingForTheFriend, invite)[0]).toBe("Your invite opens after your first fit.");
-    expect(empty.refer.lines(null, invite)[0]).toBe("Your invite opens after your first fit.");
+    expect(empty.refer.lines(nothingForTheFriend, invite)[0]).toBe("Referrals go live after your first fit.");
+    expect(empty.refer.lines(null, invite)[0]).toBe("Referrals go live after your first fit.");
   });
 
   it("never says a discount cannot be combined", () => {

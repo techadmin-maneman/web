@@ -200,6 +200,9 @@ test.describe("home sections", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.hero.title);
     const phrases = line.locator(".phrase");
     await expect(phrases.nth(0)).toHaveClass(/\bon\b/);
+    // Long enough to read: still the first a second and a half in, then the second.
+    await page.waitForTimeout(1_500);
+    await expect(phrases.nth(0)).toHaveClass(/\bon\b/);
     await expect(phrases.nth(1)).toHaveClass(/\bon\b/, { timeout: 5_000 });
     await page.getByRole("button", { name: siteCopy.hero.pause }).click();
     const shown = await line.locator(".phrase.on").textContent();
@@ -219,24 +222,39 @@ test.describe("home sections", () => {
     await expect(video).toHaveAttribute("src", phone ? /\/fit-film-phone\.[^/]+\.mp4$/ : /\/fit-film\.[^/]+\.mp4$/);
   });
 
-  // The film, the results and the steps are real; only the Norwood stages are still the design's.
-  test("tags only the design’s material as Placeholder outside production", async ({ page }) => {
+  // Nothing on the home page is the design's material any more; the Norwood scale, made with an AI tool, says so.
+  test("tags nothing as Placeholder, and the Norwood scale as an illustration", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText(siteCopy.heroFootage.tag)).toHaveCount(0);
-    await expect(page.locator(".label", { hasText: /^Placeholder$/ })).toHaveCount(5);
-    await expect(page.locator('[data-section="norwood"] .label', { hasText: /^Placeholder$/ })).toHaveCount(5);
+    await expect(page.locator(".label", { hasText: /^Placeholder$/ })).toHaveCount(0);
+    await expect(
+      page.locator('[data-section="norwood"] .label').getByText(siteCopy.illustrationTag, { exact: true }),
+    ).toHaveCount(1);
   });
 
-  test("results: four pairs in a strip that scrolls sideways, the one made by AI tagged so", async ({ page }) => {
+  // A strip of small pairs read poorly at both widths: one large pair at a time, on the compare, with its line.
+  test("results: one pair at a time on the compare, its line, and the arrows to the rest", async ({ page }) => {
     await page.goto("/");
     const results = page.locator('[data-section="results"]');
     await expect(results.getByRole("heading", { level: 2 })).toHaveText(siteCopy.results.title);
-    await expect(results.locator(".card")).toHaveCount(4);
-    await expect(results.locator(".caption")).toHaveText(siteCopy.resultPairs.pairs.map((pair) => pair.caption));
-    await expect(results.getByText(siteCopy.illustrationTag)).toHaveCount(1);
-    const strip = results.getByRole("list", { name: siteCopy.results.label });
-    await expect(strip).toHaveAttribute("tabindex", "0");
-    expect(await strip.evaluate((list) => list.scrollWidth > list.clientWidth)).toBe(true);
+    const [first, second, , last] = siteCopy.resultPairs.pairs;
+    await expect(results.getByText(first?.caption ?? "")).toBeVisible();
+    await expect(results.getByText("1 of 4")).toBeVisible();
+    await expect(results.getByRole("slider", { name: siteCopy.results.sliderLabel })).toBeVisible();
+    await expect(results.getByRole("img", { name: first?.after.alt ?? "" })).toBeVisible();
+
+    // It hydrates once in view.
+    await results.scrollIntoViewIfNeeded();
+    await expect(results.locator("astro-island")).not.toHaveAttribute("ssr", "");
+    await results.getByRole("button", { name: siteCopy.results.next }).click();
+    await expect(results.getByText(second?.caption ?? "")).toBeVisible();
+    await expect(results.getByText("2 of 4")).toBeVisible();
+
+    // Round from the first to the last, the one made by AI, which says so.
+    await results.getByRole("button", { name: siteCopy.results.previous }).click();
+    await results.getByRole("button", { name: siteCopy.results.previous }).click();
+    await expect(results.getByText(last?.caption ?? "")).toBeVisible();
+    await expect(results.getByText(siteCopy.illustrationTag, { exact: true })).toBeVisible();
   });
 
   test("Norwood: the five stages we fit, a hairline restored, then Book a free consultation", async ({ page }) => {
@@ -299,14 +317,16 @@ test.describe("home sections", () => {
     ]);
   });
 
-  test("the range: four cards", async ({ page }) => {
+  test("the range: the four side by side in a table, each row naming all four", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator('[data-section="range"] h3')).toHaveText([
-      "Mane Man Essential",
-      "Mane Man Active",
-      "Mane Man Natural",
-      "Mane Man Celebrity",
-    ]);
+    const table = page.getByRole("table", { name: siteCopy.range.title });
+    // The corner's own header is the table's name, and a phone hides it.
+    await expect(
+      table.getByRole("columnheader").filter({ hasText: /^(?:Essential|Active|Natural|Celebrity)$/ }),
+    ).toHaveText(["Essential", "Active", "Natural", "Celebrity"]);
+    await expect(table.getByRole("row")).toHaveCount(siteCopy.range.rows.length + 1);
+    const service = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Service visit" }) });
+    await expect(service.getByRole("cell")).toHaveText(["Monthly", "Monthly", "Monthly", "Twice a month"]);
   });
 
   // The site gives no prices (ADR 0103).

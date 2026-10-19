@@ -211,8 +211,9 @@ export function renderMessage(name: TemplateName, params: readonly string[], wor
 
 const PARAM = /\{\{(\d+)\}\}/g;
 
-/** Whether a message sends the client to the app, and so ends with the app's address. */
-export const sendsToApp = (name: TemplateName): boolean => TEMPLATES[name].includes("Mane Man app");
+/** Whether a message sends the client to the app, "the Mane Man app" or "in the app", and so ends with its address. */
+export const sendsToApp = (name: TemplateName): boolean =>
+  name !== "app_link_v1" && /\bthe (?:Mane Man )?app\b/.test(TEMPLATES[name]);
 
 /** What a message's text may end with, and the words set for it: the app's address, and the link that stops it. */
 export interface TextExtras {

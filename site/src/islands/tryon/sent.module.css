@@ -3,3 +3,15 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* The look beside the photograph, at the photograph's own shape, once it is ready: two classes, so it wins over the
+   teaser band's height. */
+.lookFrame {
+  width: 100%;
+}
+.lookFrame .look {
+  height: auto;
+  aspect-ratio: 4 / 5;
+  max-width: var(--look-frame-max);
+  margin-inline: auto;
+}

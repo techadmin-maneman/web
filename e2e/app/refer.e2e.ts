@@ -460,8 +460,8 @@ test("draws a lead’s empty Refer, with no count, where the Home carries no rew
   await changed(page, "/api/me", ({ referral_reward: _gone, ...me }) => me);
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
-  await expect(page.getByText("Your invite opens after your first fit.")).toBeVisible();
-  await expect(page.getByText("When a friend you refer is fitted, we tell you.")).toBeVisible();
+  await expect(page.getByText("Referrals go live after your first fit.")).toBeVisible();
+  await expect(page.getByText("Then, when a friend you refer is fitted, we tell you.")).toBeVisible();
 });
 
 // Before their first fit a client has nothing to vouch for, and the invite's own words would not be
@@ -470,8 +470,10 @@ test("draws a lead’s empty Refer, with no count, where the Home carries no rew
 test("a client not yet fitted sees Refer’s empty state, with no invite to send", async ({ page }) => {
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
-  await expect(page.getByText("Your invite opens after your first fit.")).toBeVisible();
-  await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
+  await expect(page.getByText("Referrals go live after your first fit.")).toBeVisible();
+  await expect(
+    page.getByText("Then, when a friend you refer is fitted, you both get 3 free service visits."),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.refer.share })).toHaveCount(0);
   await scan(page);
 });
@@ -483,5 +485,5 @@ test("a client not yet fitted who came with an invite is told what it gives them
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
   await expect(page.getByText("Rohit’s invite: your 3 free service visits arrive when you’re fitted.")).toBeVisible();
-  await expect(page.getByText("Your own invite opens after your first fit.")).toBeVisible();
+  await expect(page.getByText("Your own referrals go live after your first fit.")).toBeVisible();
 });

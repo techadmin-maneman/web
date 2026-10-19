@@ -79,7 +79,7 @@ const showFootage = isShown(heroFootage);
   // has loaded, so until then nothing of it is fetched. Browsers pause media in
   // a background tab, so it is resumed when the tab returns. Reduced motion
   // shows the last phrase.
-  import { type Connection, PHONE_SCREEN, playsByItself } from "../../lib/hero-film.ts";
+  import { type Connection, milliseconds, PHONE_SCREEN, playsByItself } from "../../lib/hero-film.ts";
 
   const video = document.querySelector<HTMLVideoElement>("[data-hero-video]");
   const toggle = document.querySelector<HTMLButtonElement>("[data-hero-toggle]");
@@ -87,7 +87,7 @@ const showFootage = isShown(heroFootage);
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   const connection = (navigator as Navigator & { connection?: Connection }).connection;
   const line = document.querySelector<HTMLElement>(".sequence");
-  const holdMs = line === null ? 0 : parseFloat(getComputedStyle(line).getPropertyValue("--hold"));
+  const holdMs = line === null ? 0 : milliseconds(getComputedStyle(line).getPropertyValue("--hold"));
   let stopped = reduced.matches;
   let filmByItself = playsByItself(reduced.matches, connection);
   let shown = 0;
@@ -100,7 +100,7 @@ const showFootage = isShown(heroFootage);
   const turn = () => {
     window.clearInterval(turning);
     turning = undefined;
-    if (stopped || holdMs <= 0) return;
+    if (stopped || !(holdMs > 0)) return;
     turning = window.setInterval(() => {
       show((shown + 1) % phrases.length);
     }, holdMs);

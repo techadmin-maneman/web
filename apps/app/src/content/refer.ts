@@ -27,6 +27,9 @@ function promiseOf(reward: Reward | null): string {
   return `${fitted} you get ${freeServiceVisits(mine)}, and your friend gets ${String(theirs)}.`;
 }
 
+/** The promise as it reads before the client's own first fit: "Then, when a friend you refer is fitted, …". */
+const afterTheFit = (promise: string): string => `Then, ${promise.charAt(0).toLowerCase()}${promise.slice(1)}`;
+
 /** The invite a client not yet fitted came with: who sent it, where the invite names them. */
 interface PendingInvite {
   readonly referrer_first_name: string | null;
@@ -38,12 +41,13 @@ interface PendingInvite {
  */
 export function notYetFittedLines(reward: Reward | null, invite: PendingInvite | null): readonly [string, string] {
   const theirs = reward?.friend_visits ?? 0;
-  if (invite === null || theirs === 0) return ["Your invite opens after your first fit.", promiseOf(reward)];
+  if (invite === null || theirs === 0)
+    return ["Referrals go live after your first fit.", afterTheFit(promiseOf(reward))];
   const whose = invite.referrer_first_name === null ? "Your friend’s invite" : `${invite.referrer_first_name}’s invite`;
   const arrive = theirs === 1 ? "arrives" : "arrive";
   return [
     `${whose}: your ${freeServiceVisits(theirs)} ${arrive} when you’re fitted.`,
-    "Your own invite opens after your first fit.",
+    "Your own referrals go live after your first fit.",
   ];
 }
 

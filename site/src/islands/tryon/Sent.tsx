@@ -1,33 +1,71 @@
 import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
-import { tryOn } from "../../content/site.ts";
+import { tryOn, tryOnTeaser } from "../../content/site.ts";
 import { Icon } from "@maneman/ui/Icon";
+import BeforeAfter from "../BeforeAfter.tsx";
+import type { TryOnState } from "./machine.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import shared from "./TryOn.module.css";
 import styles from "./sent.module.css";
 
-/**
- * After the gate: the look is on its way to WhatsApp, and never shown here (ADR 0104). A visitor back after their
- * look is told it was sent, without the number, which the page does not know.
- */
-export function Sent(props: { mobile: string; returning: boolean; heading: HeadingRef }) {
+/** The photograph beside the look made from it, on the shared compare. */
+function Look(props: { photo: string; look: string }) {
+  return (
+    <div class={styles.lookFrame}>
+      <BeforeAfter
+        className={styles.look}
+        start={tryOnTeaser.start_percent}
+        beforeLabel={tryOnTeaser.before}
+        afterLabel={tryOnTeaser.after}
+        sliderLabel={tryOnTeaser.sliderLabel}
+        sliderValue={tryOnTeaser.sliderValue}
+        before={<img src={props.photo} alt={tryOn.sent.ready.photoAlt} />}
+        after={<img src={props.look} alt={tryOn.sent.ready.lookAlt} />}
+      />
+    </div>
+  );
+}
+
+/** The sent screen's heading: for a visitor back after their look, the look shown here, or the look on its way. */
+function titleOf({ returning, shown }: { returning: boolean; shown: boolean }): string {
   const { sent } = tryOn;
+  if (returning) return sent.returning.title;
+  return shown ? sent.ready.title : sent.title;
+}
+
+/**
+ * After the gate: the look is on its way to WhatsApp, and shown here beside the photograph once it is ready, to the
+ * page that proved the number (ADR 0214). A visitor back after their look is told it was sent, without the number,
+ * which the page does not know.
+ */
+export function Sent(props: {
+  state: Pick<TryOnState, "mobile" | "returning" | "photo">;
+  look: string | null;
+  heading: HeadingRef;
+}) {
+  const { sent } = tryOn;
+  const { mobile, returning, photo } = props.state;
+  const { look } = props;
   return (
     <div class={shared.notice}>
-      <div class={shared.noticeFrame}>
-        <Icon d={ICONS.whatsapp} size="xl" />
-        <div class={capsLook()}>{sent.frame}</div>
-      </div>
+      {look !== null && photo !== null ? (
+        <Look photo={photo} look={look} />
+      ) : (
+        <div class={shared.noticeFrame}>
+          <Icon d={ICONS.whatsapp} size="xl" />
+          <div class={capsLook()}>{sent.frame}</div>
+        </div>
+      )}
       <Title heading={props.heading} className={shared.noticeTitle}>
-        {props.returning ? sent.returning.title : sent.title}
+        {titleOf({ returning, shown: look !== null && photo !== null })}
       </Title>
-      {props.returning ? (
+      {returning ? (
         <p class={shared.noticeBody}>{sent.returning.body}</p>
       ) : (
         <p class={shared.noticeBody}>
           {sent.to.before}
-          <span class={styles.number}>{`+91 ${props.mobile}`}</span>
+          <span class={styles.number}>{`+91 ${mobile}`}</span>
           {`${sent.to.after} ${sent.privacy}`}
         </p>
       )}

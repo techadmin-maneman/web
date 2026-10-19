@@ -63,8 +63,9 @@
   --hero-min-h: clamp(520px, 82vh, 780px);
   --hero-tag-top: clamp(16px, 2.4vw, 26px);
 
-  /* A before-and-after card: its two photographs side by side. */
-  --result-card-w: clamp(280px, 40vw, 500px);
+  /* The results' before and after at its widest, and its arrows. */
+  --result-picture-max: 540px;
+  --result-arrow: var(--sp-48);
   --what-pad-top: clamp(48px, 7vw, 104px);
   --norwood-flow-basis: 150px;
   --norwood-flow-max: 210px;
@@ -77,13 +78,13 @@
 
   --teaser-frame-h: clamp(280px, 42vw, 420px);
   --teaser-handle: 46px;
+  /* The try-on's look beside its photograph, on the sent screen. */
+  --look-frame-max: 420px;
 
   --band-max: 1100px;
   --discretion-pad-y: clamp(120px, 20vw, 280px);
   --discretion-pad-x: clamp(24px, 5vw, 64px);
   --how-photo-h: clamp(200px, 26vw, 320px);
-
-  --range-card-min: var(--comparison-label-w);
 
   --faq-pad-top: clamp(64px, 10vw, 144px);
   --faq-intro-max: 380px;

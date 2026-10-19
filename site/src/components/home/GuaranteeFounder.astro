@@ -18,7 +18,10 @@ import { isShown } from "../../lib/build.ts";
         <svg class="mark" viewBox="0 0 200 217.4" width="30" height="33" aria-hidden="true">
           <use href="#mm" />
         </svg>
-        <span>{founderNote.signature}</span>
+        <div>
+          <p class="name">{founderNote.name}</p>
+          <p class="role">{founderNote.signature}</p>
+        </div>
       </div>
     </div>
   )}
@@ -66,9 +69,17 @@ import { isShown } from "../../lib/build.ts";
   .mark {
     fill: var(--ink);
   }
-  span {
+  .name,
+  .role {
+    margin: 0;
     font-family: var(--font-serif);
-    font-size: var(--fs-18);
+  }
+  .name {
+    font-size: var(--fs-lead);
+    color: var(--text);
+  }
+  .role {
+    font-size: var(--fs-16);
     color: var(--text-muted);
   }
 </style>

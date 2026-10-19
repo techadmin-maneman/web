@@ -167,7 +167,7 @@ export const guides: readonly Guide[] = [
         heading: "The hair",
         paragraphs: [
           "100% real human hair: cut, washed and styled like your own. It does not grow, so the hair system is renewed when it wears.",
-          "Indian remy hair, on Mane Man Natural: every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
+          "Indian remy hair, on Mane Man Celebrity: every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
           "Matched to you: colour, grey and wave matched to your own hair in daylight, at the consultation.",
         ],
       },

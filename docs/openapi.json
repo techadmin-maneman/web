@@ -559,6 +559,44 @@
         ],
         "additionalProperties": false
       },
+      "NumberSignIn": {
+        "type": "object",
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          }
+        },
+        "required": [
+          "challenge_id",
+          "code"
+        ],
+        "additionalProperties": false,
+        "description": "A sign-in the client app finishes once, within ten minutes, at POST /api/auth/verify."
+      },
+      "NumberSignInRequest": {
+        "type": "object",
+        "properties": {
+          "code_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered."
+          },
+          "mobile": {
+            "type": "string",
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "code_id",
+          "mobile"
+        ],
+        "additionalProperties": false
+      },
       "OpenWindows": {
         "type": "object",
         "properties": {
@@ -1362,7 +1400,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 40,
-            "example": "photo-v5",
+            "example": "photo-v6",
             "description": "The photo notice shown: the current one, the only one recorded."
           },
           "turnstile_token": {
@@ -1419,6 +1457,10 @@
               "unavailable"
             ],
             "description": "Only when state is failed, and only where YouCam named the fault, or the try-on is paused."
+          },
+          "look": {
+            "type": "string",
+            "description": "Only when state is ready, for a try-on whose number the gate proved: the look, by a signed path on the site that expires within the hour."
           }
         },
         "required": [
@@ -1517,7 +1559,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 40,
-            "example": "gate-v5",
+            "example": "gate-v6",
             "description": "The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md)."
           },
           "attribution": {
@@ -2104,6 +2146,185 @@
                               "type": "string",
                               "enum": [
                                 "code_expired"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/number-code/sign-in": {
+      "post": {
+        "summary": "Sign a number proved here in to the client app, once a booking holds it",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NumberSignInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The sign-in, for the app to finish",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NumberSignIn"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "number_not_proved: the code did not prove this number, or proved it over 30 minutes ago",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "number_not_proved"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no booking holds the number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable: this environment proves no number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "unavailable"
                               ]
                             }
                           },

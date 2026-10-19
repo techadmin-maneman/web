@@ -1,9 +1,9 @@
 ---
-// The Norwood scale: stages III–VII, the ones we fit, then a hairline restored. The stage photographs are
-// placeholders; where they are not shown, or content asks for them, the design's line drawings stand in.
+// The Norwood scale: stages III–VII, the ones we fit, then a hairline restored. Where the photographs are not
+// shown, or content asks for them, the design's line drawings stand in.
 import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
-import { norwood, norwoodPhotos, norwoodRestored, placeholderTag } from "../../content/site.ts";
+import { illustrationTag, norwood, norwoodPhotos, norwoodRestored, placeholderTag } from "../../content/site.ts";
 import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
 
@@ -56,6 +56,7 @@ const cards = norwood.stages.map((stage, index) => {
               widths={widths}
               class="focus-norwood"
             />
+            {norwoodRestored.illustration && <div class={capsLook("label placeholder")}>{illustrationTag}</div>}
           </div>
           <div class="head">
             <span class="name">{norwood.restored}</span>

@@ -18,3 +18,11 @@ export function playsByItself(reducedMotion: boolean, connection: Connection | u
   if (connection.saveData === true) return false;
   return connection.effectiveType === undefined || connection.effectiveType === "4g";
 }
+
+/** A CSS time as a number of milliseconds: a browser gives back "3200ms" as "3.2s". NaN for anything else. */
+export function milliseconds(time: string): number {
+  const value = time.trim();
+  if (value.endsWith("ms")) return parseFloat(value);
+  if (value.endsWith("s")) return parseFloat(value) * 1000;
+  return Number.NaN;
+}

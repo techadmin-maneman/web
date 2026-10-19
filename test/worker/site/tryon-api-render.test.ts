@@ -241,3 +241,30 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
     expect((await browser.uploadLink()).status).toBe(201);
   });
 });
+
+// The look was on WhatsApp only; the page that proved the number at the gate now shows it too, once ready (ADR 0214).
+describe("the look on the page", () => {
+  it("is a signed link in a ready try-on's status, for the try-on the gate's code proved, and opens the image", async () => {
+    const browser = visitor();
+    const jobId = await browser.claimed();
+    await makeReady(jobId);
+
+    const status = await (await browser.call(`/api/tryon/status/${jobId}`)).json<{ look?: string }>();
+    expect(status).toMatchObject({ job_id: jobId, state: "ready" });
+    const path = status.look ?? "";
+    expect(path).toMatch(/^\/api\/result\/[^/]+$/);
+    const image = await browser.call(path);
+    expect(image.status).toBe(200);
+    expect(image.headers.get("Content-Type")).toBe("image/png");
+  });
+
+  it("is not given before the look is ready, nor for a try-on no code proved", async () => {
+    const browser = visitor();
+    const jobId = await browser.claimed();
+    expect(await (await browser.call(`/api/tryon/status/${jobId}`)).json()).not.toHaveProperty("look");
+
+    await makeReady(jobId);
+    await env.DB.prepare("UPDATE tryon_jobs SET number_proved_at = NULL WHERE id = ?1").bind(jobId).run();
+    expect(await (await browser.call(`/api/tryon/status/${jobId}`)).json()).not.toHaveProperty("look");
+  });
+});

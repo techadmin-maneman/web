@@ -57,24 +57,25 @@ export const resultPairs = {
   ] satisfies ResultPair[],
 };
 
+/** Stages III to VII, in order, one man at each, made with an AI tool: the stages, not a client's own. */
 export const norwoodPhotos = {
-  publish: false,
+  publish: true,
   /** Where the photographs are not cleared, the line-drawn profiles stand in: "photos" or "drawings". */
   use: "photos" as "photos" | "drawings",
-  /** Stages III to VII, in order. */
   images: [
-    { file: "nw-3.jpg", alt: "A man at Norwood stage III, seen in three-quarter view" },
-    { file: "nw-4.jpg", alt: "A man at Norwood stage IV, seen in three-quarter view" },
-    { file: "nw-5.jpg", alt: "A man at Norwood stage V, seen in three-quarter view" },
-    { file: "nw-6.jpg", alt: "A man at Norwood stage VI, seen in three-quarter view" },
-    { file: "nw-7.jpg", alt: "A man at Norwood stage VII, seen in three-quarter view" },
+    { file: "norwood-3.jpg", alt: "A man at Norwood stage III: deep recession at both temples" },
+    { file: "norwood-4.jpg", alt: "The same man at stage IV: the front thinning further back" },
+    { file: "norwood-5.jpg", alt: "The same man at stage V: the front bare, fine hair on top" },
+    { file: "norwood-6.jpg", alt: "The same man at stage VI: bare from the forehead over the top" },
+    { file: "norwood-7.jpg", alt: "The same man at stage VII: hair only around the sides and back" },
   ] satisfies Picture[],
 };
 
-/** The scale's last card: a hairline restored with a hair system. */
+/** The scale's last card: the same man with a full hairline. Made with an AI tool like the stages, so it says so. */
 export const norwoodRestored = {
   publish: true,
-  image: { file: "norwood-restored.jpg", alt: "A man’s full hairline, restored with a hair system" },
+  illustration: true,
+  image: { file: "norwood-restored.jpg", alt: "The same man with a full head of hair" },
 };
 
 /** The try-on teaser's pair: a photograph, and the try-on's look on it. */
@@ -102,5 +103,6 @@ export const founderNote = {
     "Losing your hair is natural. It’s nobody’s fault, and it doesn’t define you. You can own it, do something about it, or simply move on. What matters is feeling good about the person you see in the mirror, and getting on with being the best version of yourself.",
     "That’s why I started Mane Man. A more private, straightforward way to get your hair back, on your terms.",
   ],
+  name: "Rishabh Gupta",
   signature: "Founder, Mane Man",
 };

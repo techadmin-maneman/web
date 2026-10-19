@@ -46,6 +46,8 @@ export interface JobRow {
   copy_key: string | null;
   kept_at: string | null;
   kept_look_key: string | null;
+  /** When the gate's WhatsApp code proved the number its look goes to. */
+  number_proved_at: string | null;
 }
 
 /** What a render is asked for: the look, for the stage the gate's claim gave. */
