@@ -98,7 +98,10 @@ test("says nothing about an invite to someone who came here directly", async ({ 
   // The page is headed and introduced once: the form beneath it repeats neither.
   await expect(page.getByRole("heading", { name: siteCopy.booking.title })).toHaveCount(1);
   await expect(page.getByRole("heading", { name: referralCopy.referral.consultation.title })).toHaveCount(0);
-  await expect(page.getByText(/^In just 60 minutes, a specialist measures/)).toBeVisible();
+  // Past the first step a phone goes straight to the form; a wider screen keeps the page's introduction.
+  const intro = page.getByText(/^In just 60 minutes, a specialist measures/);
+  if ((page.viewportSize()?.width ?? 0) <= 760) await expect(intro).toBeHidden();
+  else await expect(intro).toBeVisible();
   await expect(page.getByText(referralCopy.referral.consultation.body)).toHaveCount(0);
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 
