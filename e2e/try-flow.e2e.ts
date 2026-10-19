@@ -133,8 +133,6 @@ test("the browser’s Back steps back through the try-on, and leaves it only fro
   await page.goBack();
   await screenIs(page, "looks");
   await page.goBack();
-  await screenIs(page, "stage");
-  await page.goBack();
   await screenIs(page, "consent");
   expect(new URL(page.url()).pathname).toBe("/try");
   // Its own Back goes the same way.
@@ -184,7 +182,6 @@ test("the whole try-on: uploaded during the choices, the number given before the
     name: "Test Visitor",
     mobile: "9810000000",
     number_code_id: CODE_ID,
-    stage: "crown",
     notice_version: "gate-v6",
     attribution: { landing_path: "/try" },
   });
@@ -194,7 +191,6 @@ test("the whole try-on: uploaded during the choices, the number given before the
     .map((request) => callOf(request))
     .filter((call) => call === "code" || call === "verify" || call === "claim" || call === "generate");
   expect(gateCalls).toEqual(["code", "verify", "claim", "generate"]);
-  // The stage is the claim's, so the look is made for the stage the lead records.
   expect(named(seen, "generate")[0]?.postDataJSON()).toEqual({
     job_id: JOB,
     preset: "quiff",
@@ -312,7 +308,9 @@ test("a face the renderer cannot read, found once the look is on its way, blames
 const OWN_LOOK: Answer = { status: 200, json: { job_id: JOB, state: "ready" } };
 
 // The visitor used to choose a photograph and agree to its use before being told they had had their look.
-test("a visitor who has had their look is told on arrival that it was sent, and shown no look", async ({ page }) => {
+test("a visitor whose look is no longer kept is told on arrival that it was sent, and shown no look", async ({
+  page,
+}) => {
   const seen = await mockApi(page, { look: OWN_LOOK });
   await visit(page, "/try");
   await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
@@ -320,6 +318,17 @@ test("a visitor who has had their look is told on arrival that it was sent, and 
   expect(named(seen, "uploadUrl")).toHaveLength(0);
   expect(named(seen, "result")).toHaveLength(0);
   expect((await analyticsEvents(page)).map(([name]) => name)).toEqual([]);
+});
+
+// A returning visitor was told their look had gone to WhatsApp, and shown nothing of it.
+test("a visitor back while their look is kept is shown it on arrival", async ({ page }) => {
+  const look = "/api/result/signed-look";
+  const seen = await mockApi(page, { look: { status: 200, json: { job_id: JOB, state: "ready", look } } });
+  await visit(page, "/try");
+  await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.ready.title })).toBeVisible();
+  await expect(page.getByRole("img", { name: siteCopy.tryOn.sent.ready.lookAlt })).toHaveAttribute("src", look);
+  await expect(page.getByText("We sent it to the WhatsApp number you gave.", { exact: false })).toBeVisible();
+  expect(named(seen, "uploadUrl")).toHaveLength(0);
 });
 
 // The look made after the page opened, in another tab: the upload is refused, and the visitor told it was sent.
@@ -330,6 +339,7 @@ test("a visitor whose upload is refused for having had their look is told it was
     .locator('input[type="file"]')
     .first()
     .setInputFiles(await drawnHeadPhoto());
+  await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
   await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
   await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
@@ -374,6 +384,7 @@ for (const [name, answers, heading] of [
       .locator('input[type="file"]')
       .first()
       .setInputFiles(await drawnHeadPhoto());
+    await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
     await page.getByText("I understand, and I agree to my photograph being used this way.").click();
     await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
@@ -502,6 +513,7 @@ test("a new photograph asks for the agreement again", async ({ page }) => {
     .locator('input[type="file"]')
     .first()
     .setInputFiles(await drawnHeadPhoto());
+  await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
   await reach("consent");
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
   await expect(page.getByRole("checkbox")).toBeChecked();
@@ -511,6 +523,7 @@ test("a new photograph asks for the agreement again", async ({ page }) => {
     .locator('input[type="file"]')
     .first()
     .setInputFiles(await drawnHeadPhoto([90, 70, 50]));
+  await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
   await reach("consent");
   await expect(page.getByRole("checkbox")).not.toBeChecked();
 });
@@ -539,6 +552,7 @@ test("a large photograph with a location in it is uploaded smaller and without i
     .locator('input[type="file"]')
     .first()
     .setInputFiles({ name: "big.jpg", mimeType: "image/jpeg", buffer: large });
+  await page.getByRole("button", { name: siteCopy.tryOn.upload.capture.use }).click();
   await page.locator('[data-screen="consent"]').waitFor({ timeout: 30_000 });
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
   await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();

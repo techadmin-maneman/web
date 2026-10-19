@@ -1,6 +1,5 @@
 // The try-on's calls to the API around the gate. The upload starts as soon as
-// the visitor agrees to the photo notice, so it runs while they choose a stage
-// and a look; the render starts once the gate has the number the look goes to
+// the visitor agrees to the photo notice, so it runs while they choose a look; the render starts once the gate has the number the look goes to
 // (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md). Under a notice
 // that keeps a client's try-on, the photograph's small copy follows it; a copy
 // refused leaves the try-on as it is (ADR 0084).
@@ -29,8 +28,12 @@ const failed = (failure: Failure) => ({ ok: false, ...failure }) as const;
 /** An API refusal, by its code. */
 const refused = (code: Code) => failed({ kind: errorKindOf(code), code });
 
-/** Where a visitor stands on arrival: free to start, back after their look, or the try-on cannot run at all. */
-export type Arrival = "open" | "hadLook" | "unavailable";
+/**
+ * Where a visitor stands on arrival: free to start, back after their look, with the look while it is kept, or the
+ * try-on cannot run at all.
+ */
+export type Arrival =
+  { readonly kind: "open" | "unavailable" } | { readonly kind: "hadLook"; readonly look: string | null };
 
 /**
  * Asked on arrival, so that a visitor is not asked for a photograph the API would refuse. A look that failed
@@ -38,9 +41,10 @@ export type Arrival = "open" | "hadLook" | "unavailable";
  */
 export async function onArrival(): Promise<Arrival> {
   const [look, availability] = await Promise.all([fetchLook(), fetchAvailability()]);
-  if (look.ok && look.body !== null && look.body.state !== "failed") return "hadLook";
-  if (availability.ok && !availability.body.available) return "unavailable";
-  return "open";
+  if (look.ok && look.body !== null && look.body.state !== "failed")
+    return { kind: "hadLook", look: look.body.look ?? null };
+  if (availability.ok && !availability.body.available) return { kind: "unavailable" };
+  return { kind: "open" };
 }
 
 export async function startUpload(

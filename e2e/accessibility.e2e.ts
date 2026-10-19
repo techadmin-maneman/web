@@ -12,7 +12,6 @@ const PAGES = [
   "/",
   "/try",
   "/try?state=consent",
-  "/try?state=stage",
   "/try?state=looks",
   "/try?state=gate",
   "/try?state=sent",

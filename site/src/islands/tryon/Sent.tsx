@@ -27,17 +27,30 @@ function Look(props: { photo: string; look: string }) {
   );
 }
 
-/** The sent screen's heading: for a visitor back after their look, the look shown here, or the look on its way. */
+/** The sent screen's heading: the look shown here, a visitor back after one no longer kept, or the look on its way. */
 function titleOf({ returning, shown }: { returning: boolean; shown: boolean }): string {
   const { sent } = tryOn;
-  if (returning) return sent.returning.title;
-  return shown ? sent.ready.title : sent.title;
+  if (shown) return sent.ready.title;
+  return returning ? sent.returning.title : sent.title;
+}
+
+/** What the screen shows above its words: the look beside the photograph, the look alone, or where it went. */
+function Shown(props: { photo: string | null; look: string | null }) {
+  const { sent } = tryOn;
+  if (props.look !== null && props.photo !== null) return <Look photo={props.photo} look={props.look} />;
+  if (props.look !== null) return <img class={styles.lookOnly} src={props.look} alt={sent.ready.lookAlt} />;
+  return (
+    <div class={shared.noticeFrame}>
+      <Icon d={ICONS.whatsapp} size="xl" />
+      <div class={capsLook()}>{sent.frame}</div>
+    </div>
+  );
 }
 
 /**
  * After the gate: the look is on its way to WhatsApp, and shown here beside the photograph once it is ready, to the
- * page that proved the number (ADR 0214). A visitor back after their look is told it was sent, without the number,
- * which the page does not know.
+ * page that proved the number (ADR 0214). A visitor back after their look is shown it alone while it is kept, and
+ * told it was sent, without the number, which the page does not know.
  */
 export function Sent(props: {
   state: Pick<TryOnState, "mobile" | "returning" | "photo">;
@@ -49,16 +62,9 @@ export function Sent(props: {
   const { look } = props;
   return (
     <div class={shared.notice}>
-      {look !== null && photo !== null ? (
-        <Look photo={photo} look={look} />
-      ) : (
-        <div class={shared.noticeFrame}>
-          <Icon d={ICONS.whatsapp} size="xl" />
-          <div class={capsLook()}>{sent.frame}</div>
-        </div>
-      )}
+      <Shown photo={photo} look={look} />
       <Title heading={props.heading} className={shared.noticeTitle}>
-        {titleOf({ returning, shown: look !== null && photo !== null })}
+        {titleOf({ returning, shown: look !== null })}
       </Title>
       {returning ? (
         <p class={shared.noticeBody}>{sent.returning.body}</p>

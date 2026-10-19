@@ -197,7 +197,8 @@ test("a request waiting for ops to fix the hour offers no calendar", async ({ pa
   await expect(page.getByRole("link", { name: referralCopy.referral.booked.calendar.google })).toHaveCount(0);
 });
 
-test("a served pincode books, and sends where the hair loss is", async ({ page }) => {
+// No form asks where the hair loss is: a specialist sees it at the visit.
+test("a served pincode books, and asks nothing of where the hair loss is", async ({ page }) => {
   const requests = await mockApi(page);
   await openAtPincode(page);
   await checkPincode(page, SERVED.pincode);
@@ -205,12 +206,13 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
 
   await toAddress(page);
   await fillAddress(page);
-  await page.getByRole("radio", { name: "Receding front", exact: true }).check();
+  await expect(page.getByRole("radio", { name: "Receding front", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
-  expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "morning", consent: true, loss_extent: "receding" });
+  expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "morning", consent: true });
+  expect(sent).not.toHaveProperty("loss_extent");
   expect(sent.turnstile_token).toBeTruthy();
   // The consultation alone, as the form starts (ADR 0105).
   expect(sent).not.toHaveProperty("one_visit");
@@ -256,8 +258,6 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, window: "morning", consent: true, number_code_id: NUMBER_CODE_ID });
-  // Where the hair loss is was skipped, so nothing is said of it.
-  expect(sent).not.toHaveProperty("loss_extent");
 });
 
 test("books the one visit only with the right WhatsApp code", async ({ page }) => {

@@ -305,25 +305,6 @@
   color: var(--text-muted);
 }
 
-/* Where the hair loss is, on /book only. */
-.extents {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-8);
-}
-
-.extent {
-  align-items: center;
-  gap: var(--sp-8);
-  padding: var(--sp-16) var(--sp-8);
-}
-
-.extentText {
-  font-size: var(--fs-13);
-  text-align: center;
-  line-height: var(--lh-130);
-}
-
 /* One column as wide as the form, never as wide as its widest field's content: a 320 px screen scrolls nothing. */
 .fields {
   display: grid;

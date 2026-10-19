@@ -6,7 +6,7 @@ import { useRef, useState } from "preact/hooks";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { isPersonName } from "@maneman/web-kit/names";
 import type { TurnstileWidget } from "@maneman/web-kit/turnstile";
-import { looks, notices, stageOptions, tryOn } from "../../content/site.ts";
+import { looks, notices, tryOn } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import { claimLook, jobStatus, type Code } from "../../lib/api.ts";
 import { startRender, type Outcome, type Uploaded } from "../../lib/tryon.ts";
@@ -87,7 +87,7 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
       return;
     }
     if (code === "look_limit_reached") {
-      send({ type: "alreadySent" });
+      send({ type: "alreadySent", look: null });
       return;
     }
     if (code === "job_not_claimable") {
@@ -108,16 +108,14 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
    * claim carries the same key, so the API answers it as the first, and the render is asked again.
    */
   async function claimAndRender(upload: Uploaded, digits: string, numberCodeId: string) {
-    const stageId = stageOptions[state.stage]?.id;
     const preset = looks[state.look]?.id;
-    if (stageId === undefined || preset === undefined) return;
+    if (preset === undefined) return;
     const attribution = readAttribution();
     const claim = {
       job_id: upload.jobId,
       name: name.trim(),
       mobile: digits,
       number_code_id: numberCodeId,
-      stage: stageId,
       notice_version: notices.gate.version,
       ...(attribution === undefined ? {} : { attribution }),
     };

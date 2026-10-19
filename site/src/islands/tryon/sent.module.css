@@ -15,3 +15,13 @@
   max-width: var(--look-frame-max);
   margin-inline: auto;
 }
+
+/* A returning visitor's look alone: the page no longer holds their photograph to set beside it. */
+.lookOnly {
+  display: block;
+  width: 100%;
+  max-width: var(--look-frame-max);
+  aspect-ratio: 4 / 5;
+  margin-inline: auto;
+  object-fit: cover;
+}

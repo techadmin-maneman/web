@@ -50,9 +50,8 @@ export interface JobRow {
   number_proved_at: string | null;
 }
 
-/** What a render is asked for: the look, for the stage the gate's claim gave. */
+/** What a render is asked for: the look. */
 export interface RenderChoice {
-  readonly stage: LossExtent;
   readonly preset: string;
 }
 

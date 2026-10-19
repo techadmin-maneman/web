@@ -53,8 +53,9 @@ const ClaimRequestSchema = z
     name: PersonNameSchema,
     mobile: z.string().regex(INDIAN_MOBILE_PATTERN).openapi({ example: "98100 00000" }),
     number_code_id: NumberCodeIdSchema,
-    stage: z.enum(TRYON_STAGES).openapi({
-      description: "The hair-loss stage the visitor picked: the lead's, and the one the look is made for.",
+    stage: z.enum(TRYON_STAGES).optional().openapi({
+      description:
+        "Ignored: the try-on no longer asks where the hair loss is. Taken from the site of the release before.",
     }),
     notice_version: z
       .string()
@@ -193,7 +194,6 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
     mobileE164,
     name: request.name,
     testRecord: testRecordAtCreation(c.var.config.environment, request.name),
-    stage: request.stage,
     gateNotice,
     attribution: request.attribution ?? {},
     ipHash: visitor.ipHash,

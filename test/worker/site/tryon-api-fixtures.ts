@@ -78,14 +78,14 @@ export function visitor(
     claim: async (jobId: string, mobile = "98100 00001", headers: Record<string, string> = {}, body = {}) =>
       post(
         "/api/tryon/claim",
-        { job_id: jobId, name: "Arjun Mehta", mobile, stage: "crown", ...(await proofOf(mobile)), ...body },
+        { job_id: jobId, name: "Arjun Mehta", mobile, ...(await proofOf(mobile)), ...body },
         headers,
       ),
     proofOf,
-    /** Uploaded, and claimed at the gate for a stage: ready for its render. */
-    async claimed(mobile = "98100 00001", stage = "crown"): Promise<string> {
+    /** Uploaded, and claimed at the gate: ready for its render. */
+    async claimed(mobile = "98100 00001"): Promise<string> {
       const jobId = await this.uploaded();
-      expect((await this.claim(jobId, mobile, {}, { stage })).status).toBe(201);
+      expect((await this.claim(jobId, mobile)).status).toBe(201);
       return jobId;
     },
     generate: (jobId: string, body: Record<string, unknown> = {}) =>

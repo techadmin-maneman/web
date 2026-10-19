@@ -1,12 +1,12 @@
-// The try-on, on the API. The look goes to WhatsApp only, never to this site
-// (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md): the photograph is
-// prepared in the browser (lib/photo.ts) and uploads while the visitor chooses
-// a stage and a look; the gate then asks where to send the look, a WhatsApp
-// code proves the number (useNumberCode.ts), the claim saves it, and only then
-// is the look made. The sent screen says it is
-// on its way, and watches the render until it is ready, in case it fails. A
-// visitor who has had their look is told it was sent, and a visitor arriving
-// while WhatsApp cannot send a look is told the try-on is not available.
+// The try-on, on the API. The photograph is taken or chosen, and looked at
+// before it is used (Upload.tsx); it is prepared in the browser (lib/photo.ts)
+// and uploads while the visitor chooses a look. The gate then asks where to send
+// the look, a WhatsApp code proves the number (useNumberCode.ts), the claim saves
+// it, and only then is the look made. The sent screen says it is on its way, and
+// watches the render until it is ready, to show it here too (ADR 0214), or in
+// case it fails. A visitor who has had their look is shown it while it is kept,
+// and a visitor arriving while WhatsApp cannot send a look is told the try-on is
+// not available.
 //
 // The screens and what moves between them are machine.ts, the render's watch
 // hooks.ts, the gate's claim and render useGate.ts, and each screen draws
@@ -34,7 +34,6 @@ import { useReleased, useRenderWatch, useScreenHistory } from "./hooks.ts";
 import { Looks } from "./Looks.tsx";
 import { backFrom, screenNamed, START, step, type Screen } from "./machine.ts";
 import { Sent } from "./Sent.tsx";
-import { Stage } from "./Stage.tsx";
 import styles from "./TryOn.module.css";
 import { Upload } from "./Upload.tsx";
 import { useGate } from "./useGate.ts";
@@ -88,7 +87,7 @@ function TryOnFlow(props: Props) {
 
   /** A refused upload or render: a browser that has had its look is told it was sent; anything else is an error. */
   function refused(failure: Failure) {
-    if (failure.code === "look_limit_reached") send({ type: "alreadySent" });
+    if (failure.code === "look_limit_reached") send({ type: "alreadySent", look: null });
     else fail(failure);
   }
 
@@ -107,8 +106,8 @@ function TryOnFlow(props: Props) {
     arriving.current = asked;
     void asked.then((arrival) => {
       if (arriving.current !== asked) return;
-      if (arrival === "hadLook") send({ type: "alreadySent" });
-      if (arrival === "unavailable") send({ type: "failed", kind: "unavailable" });
+      if (arrival.kind === "hadLook") send({ type: "alreadySent", look: arrival.look });
+      if (arrival.kind === "unavailable") send({ type: "failed", kind: "unavailable" });
     });
   }, [props.allowStateSwitch]);
 
@@ -198,18 +197,6 @@ function TryOnFlow(props: Props) {
             onAgree={agree}
           />
         )}
-        {screen === "stage" && (
-          <Stage
-            stage={state.stage}
-            heading={heading}
-            onChoose={(chosen) => {
-              send({ type: "stageChosen", stage: chosen });
-            }}
-            onDone={() => {
-              send({ type: "stageDone" });
-            }}
-          />
-        )}
         {screen === "looks" && (
           <Looks
             look={state.look}
@@ -224,7 +211,7 @@ function TryOnFlow(props: Props) {
           />
         )}
         {screen === "gate" && <Gate notice={notices.gate} heading={heading} {...gate} />}
-        {screen === "sent" && <Sent state={state} look={look} heading={heading} />}
+        {screen === "sent" && <Sent state={state} look={look ?? state.returnedLook} heading={heading} />}
         {screen === "error" && (
           <Failed
             kind={state.errorKind}

@@ -30,27 +30,27 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     expect(browser.queues.RENDER_QUEUE.sent).toEqual([]);
   });
 
-  it("queues the first look of a claimed try-on, for the claim's stage, and sends it to the render queue", async () => {
+  it("queues the first look of a claimed try-on, for no stage, and sends it to the render queue", async () => {
     const browser = visitor();
-    const jobId = await browser.claimed("98100 00001", "receding");
+    const jobId = await browser.claimed();
 
     const response = await browser.generate(jobId, { preset: "crew-cut" });
     expect(response.status).toBe(202);
     expect(await response.json()).toEqual({ job_id: jobId, state: "queued" });
-    expect(await jobRow(jobId)).toMatchObject({ state: "queued", stage: "receding", preset: "crew-cut" });
+    expect(await jobRow(jobId)).toMatchObject({ state: "queued", stage: null, preset: "crew-cut" });
     expect(browser.queues.RENDER_QUEUE.sent).toEqual([{ job_id: jobId, request_id: expect.any(String) as string }]);
 
     const status = await browser.call(`/api/tryon/status/${jobId}`);
     expect(await status.json()).toEqual({ job_id: jobId, state: "queued" });
   });
 
-  // The stage is the claim's alone, so the lead and the render cannot disagree.
-  it("takes no stage of its own", async () => {
+  // A look is made for no stage: the try-on asks nothing of where the hair loss is.
+  it("takes no stage", async () => {
     const browser = visitor();
     const jobId = await browser.claimed();
     const refused = await browser.generate(jobId, { stage: "advanced" });
     expect(refused.status).toBe(400);
-    expect(await jobRow(jobId)).toMatchObject({ state: "awaiting_upload", stage: "crown" });
+    expect(await jobRow(jobId)).toMatchObject({ state: "awaiting_upload", stage: null });
   });
 
   // The look keeps the visitor's own colour; the site of the release before still sends one.
@@ -170,7 +170,8 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
     expect((await visitor().uploadLink()).status).toBe(503);
   });
 
-  it("hands a browser no look and no link to one, whoever it is", async () => {
+  // A visitor back after their look was told it had gone to WhatsApp, and shown nothing of it.
+  it("hands the browser that proved the number its ready look by a signed link, and no other browser", async () => {
     const browser = visitor();
     const jobId = await browser.claimed();
     await browser.generate(jobId);
@@ -179,17 +180,22 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
     const asked = await browser.call(`/api/tryon/result/${jobId}`);
     expect(asked.status).toBe(404);
     const look = await browser.call("/api/tryon/look");
-    expect(JSON.stringify(await look.json())).not.toMatch(/url|\/api\/result/);
+    expect(await look.json()).toEqual({
+      job_id: jobId,
+      state: "ready",
+      look: expect.stringMatching(/^\/api\/result\/[^/]+$/) as string,
+    });
+    expect((await visitor().call("/api/tryon/look")).status).toBe(204);
   });
 
-  // Its state alone: not the stage or the look asked for, which an erasure leaves on an expired job's row.
+  // Not the look asked for, which an erasure leaves on an expired job's row.
   it("tells a browser it has had its look, and nothing of what it asked, after the look is gone too", async () => {
     const browser = visitor();
     const none = await browser.call("/api/tryon/look");
     // No look yet is an answer, not an error, so a new visitor's console logs no failed request.
     expect(none.status).toBe(204);
     expect(await none.text()).toBe("");
-    const jobId = await browser.claimed("98100 00001", "receding");
+    const jobId = await browser.claimed();
     await browser.generate(jobId, { preset: "quiff" });
 
     const look = await browser.call("/api/tryon/look");
@@ -198,7 +204,7 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
 
     // Erased, and so expired, the browser has still had its look: the upload link refuses it another.
     expect(await eraseByMobile("+919810000001")).not.toBeNull();
-    expect(await jobRow(jobId)).toMatchObject({ state: "expired", stage: "receding", preset: "quiff" });
+    expect(await jobRow(jobId)).toMatchObject({ state: "expired", preset: "quiff" });
     expect(await (await browser.call("/api/tryon/look")).json()).toEqual({ job_id: jobId, state: "expired" });
     expect((await browser.uploadLink()).status).toBe(403);
   });

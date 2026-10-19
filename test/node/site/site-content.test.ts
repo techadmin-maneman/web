@@ -239,7 +239,7 @@ describe("the second copy round", () => {
   it("names who comes on /book and in the try-on before anything is said of them", () => {
     expect(site.booking.intro[0]).toMatch(/^In just 60 minutes, a specialist measures/);
     expect(site.pageDescriptions.book).toBe(site.booking.intro.join(" "));
-    expect(site.tryOn.stage.body).not.toMatch(/\bHe\b/);
+    expect(JSON.stringify(site.tryOn)).not.toMatch(/\bHe\b/);
   });
 
   // Only the gate's notice says where the look goes.

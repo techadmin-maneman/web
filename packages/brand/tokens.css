@@ -58,6 +58,8 @@
   /* Not drawn: what shows of the screen behind an app's sheet. The boards draw the sheet alone; ink at 72% keeps the
      screen it rose from in view, where solid ink hid it. A departure from the designs, recorded in ADR 0025, item 101. */
   --sheet-scrim: rgba(11, 18, 32, 0.72);
+  /* Not drawn: the camera's view around the oval a face is framed to, dimmed so the oval is where the eye goes. */
+  --camera-scrim: rgba(11, 18, 32, 0.55);
   --hero-scrim-up: linear-gradient(to top, #0b1220 0%, rgba(11, 18, 32, 0.68) 50%, rgba(11, 18, 32, 0.1) 100%);
   --hero-scrim-side: linear-gradient(
     to right,

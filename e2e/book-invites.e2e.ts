@@ -142,7 +142,6 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await openForm(page);
   await toAddress(page);
   await fillAddress(page);
-  await page.getByRole("radio", { name: "Receding front", exact: true }).check();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([

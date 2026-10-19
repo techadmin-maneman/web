@@ -1520,14 +1520,6 @@
     "reviewed": false
   },
   {
-    "key": "site:pages/booking.extent",
-    "surface": "site",
-    "group": "Book",
-    "where": "booking",
-    "text": "Extent of hair loss (optional)",
-    "reviewed": true
-  },
-  {
     "key": "site:pages/booking.step",
     "surface": "site",
     "group": "Book",
@@ -1832,126 +1824,6 @@
     "reviewed": true
   },
   {
-    "key": "site:tryon/stageOptions.0.title",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "Thinning at the crown",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.0.sub",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "The parting has widened · around stage III",
-    "reviewed": false
-  },
-  {
-    "key": "site:tryon/stageOptions.0.short",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "Crown thinning",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.0.hair",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "M13 28 C20 17 44 17 51 28",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.0.zone",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "M32 33 C41 33 46 38 46 44 C46 50 40 55 32 55 C24 55 18 50 18 44 C18 38 23 33 32 33 Z",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.1.title",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "Receding at the front",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.1.sub",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "The corners have gone back · stages III to IV",
-    "reviewed": false
-  },
-  {
-    "key": "site:tryon/stageOptions.1.short",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "Receding front",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.1.hair",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "M11 34 C16 22 24 18 32 18 C40 18 48 22 53 34",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.1.zone",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "M13 30 C18 19 25 25 32 25 C39 25 46 19 51 30",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.2.title",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "Advanced, front and crown",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.2.sub",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "Little left on top · stages V to VII",
-    "reviewed": false
-  },
-  {
-    "key": "site:tryon/stageOptions.2.short",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "Advanced",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.2.hair",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "M10 40 C14 30 22 26 32 26 C42 26 50 30 54 40",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/stageOptions.2.zone",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "stageOptions",
-    "text": "M12 34 C18 16 46 16 52 34 C46 28 18 28 12 34 Z",
-    "reviewed": true
-  },
-  {
     "key": "site:tryon/looks.0.label",
     "surface": "site",
     "group": "Try-on",
@@ -2084,7 +1956,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Step 1 of 4",
+    "text": "Step 1 of 3",
     "reviewed": false
   },
   {
@@ -2096,19 +1968,11 @@
     "reviewed": true
   },
   {
-    "key": "site:tryon/tryOn.stepLabels.stage",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Step 2 of 4",
-    "reviewed": false
-  },
-  {
     "key": "site:tryon/tryOn.stepLabels.looks",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Step 3 of 4",
+    "text": "Step 2 of 3",
     "reviewed": false
   },
   {
@@ -2116,7 +1980,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Step 4 of 4",
+    "text": "Step 3 of 3",
     "reviewed": false
   },
   {
@@ -2200,6 +2064,14 @@
     "reviewed": true
   },
   {
+    "key": "site:tryon/tryOn.upload.camera",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Take a photo",
+    "reviewed": false
+  },
+  {
     "key": "site:tryon/tryOn.upload.choose",
     "surface": "site",
     "group": "Try-on",
@@ -2208,15 +2080,31 @@
     "reviewed": true
   },
   {
-    "key": "site:tryon/tryOn.upload.camera",
+    "key": "site:tryon/tryOn.upload.capture.title",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Use the camera",
-    "reviewed": true
+    "text": "Your photo",
+    "reviewed": false
   },
   {
-    "key": "site:tryon/tryOn.upload.snap",
+    "key": "site:tryon/tryOn.upload.capture.view",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The camera’s view of you",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.capture.hint",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Fit your face in the oval",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.capture.shutter",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
@@ -2224,19 +2112,75 @@
     "reviewed": false
   },
   {
-    "key": "site:tryon/tryOn.upload.closeCamera",
+    "key": "site:tryon/tryOn.upload.capture.close",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Cancel",
+    "text": "Close",
     "reviewed": false
   },
   {
-    "key": "site:tryon/tryOn.upload.cameraLabel",
+    "key": "site:tryon/tryOn.upload.capture.still",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "The camera’s view of you",
+    "text": "Your photo",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.capture.check",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Face clear and well lit?",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.capture.use",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Use photo",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.capture.retake",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Retake",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.capture.another",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Choose another",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.capture.dark",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "A little dark. Face a window for a better look.",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.capture.blank",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We couldn’t see you. Try again.",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.blocked",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The camera is blocked here. Allow it in your browser’s settings, or choose a photo.",
     "reviewed": false
   },
   {
@@ -2293,30 +2237,6 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "privacy notice",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.stage.title",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Where are you now?",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.stage.body",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Pick whichever is closest. Your technician measures properly at the visit.",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.stage.continue",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Continue",
     "reviewed": true
   },
   {

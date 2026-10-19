@@ -12,7 +12,7 @@ import { tryOn } from "../../content/site.ts";
 import { ERROR_KINDS, type ErrorKind } from "../../lib/tryon-errors.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
 
-const SCREENS = ["upload", "consent", "stage", "looks", "gate", "sent", "error"] as const;
+const SCREENS = ["upload", "consent", "looks", "gate", "sent", "error"] as const;
 export type Screen = (typeof SCREENS)[number];
 
 export interface TryOnState {
@@ -22,8 +22,7 @@ export interface TryOnState {
   /** The chosen photograph, shown from memory. */
   readonly photo: string | null;
   readonly consent: boolean;
-  /** Indexes into stageOptions and looks; no look is -1. */
-  readonly stage: number;
+  /** An index into looks; no look is -1. */
   readonly look: number;
   /** The gate's fields, kept when the visitor goes back and returns. */
   readonly name: string;
@@ -31,6 +30,8 @@ export interface TryOnState {
   readonly errorKind: ErrorKind;
   /** On the sent screen: a visitor back after their look, whose number the page does not know. */
   readonly returning: boolean;
+  /** The look a returning visitor had, while it is kept; null once it is not, and for anyone else. */
+  readonly returnedLook: string | null;
 }
 
 export const START: TryOnState = {
@@ -38,12 +39,12 @@ export const START: TryOnState = {
   demo: false,
   photo: null,
   consent: false,
-  stage: 0,
   look: -1,
   name: "",
   mobile: "",
   errorKind: "photo",
   returning: false,
+  returnedLook: null,
 };
 
 export type TryOnEvent =
@@ -51,14 +52,12 @@ export type TryOnEvent =
   | { readonly type: "photoChosen"; readonly photo: string }
   | { readonly type: "consentTicked"; readonly consent: boolean }
   | { readonly type: "agreed" }
-  | { readonly type: "stageChosen"; readonly stage: number }
-  | { readonly type: "stageDone" }
   | { readonly type: "lookChosen"; readonly look: number }
   | { readonly type: "lookDone" }
   | { readonly type: "nameTyped"; readonly name: string }
   | { readonly type: "mobileTyped"; readonly mobile: string }
   | { readonly type: "sent" }
-  | { readonly type: "alreadySent" }
+  | { readonly type: "alreadySent"; readonly look: string | null }
   | { readonly type: "failed"; readonly kind: ErrorKind }
   | { readonly type: "back" }
   | { readonly type: "again" };
@@ -75,10 +74,8 @@ export function backFrom(screen: Screen): Screen | "home" {
       return "home";
     case "consent":
       return "upload";
-    case "stage":
-      return "consent";
     case "looks":
-      return "stage";
+      return "consent";
     case "gate":
       return "looks";
     case "sent":
@@ -116,11 +113,7 @@ export function step(state: TryOnState, event: TryOnEvent): TryOnState {
     case "consentTicked":
       return { ...state, consent: event.consent };
     case "agreed":
-      return state.consent ? { ...state, screen: "stage" } : state;
-    case "stageChosen":
-      return { ...state, stage: event.stage };
-    case "stageDone":
-      return { ...state, screen: "looks" };
+      return state.consent ? { ...state, screen: "looks" } : state;
     case "lookChosen":
       return { ...state, look: event.look };
     case "lookDone":
@@ -132,7 +125,7 @@ export function step(state: TryOnState, event: TryOnEvent): TryOnState {
     case "sent":
       return { ...state, screen: "sent", returning: false };
     case "alreadySent":
-      return { ...state, screen: "sent", returning: true };
+      return { ...state, screen: "sent", returning: true, returnedLook: event.look };
     case "failed":
       return { ...state, screen: "error", errorKind: event.kind };
     case "back": {
