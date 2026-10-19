@@ -363,6 +363,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/number-code/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign a number proved here in to the client app, once a booking holds it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NumberSignInRequest"];
+                };
+            };
+            responses: {
+                /** @description The sign-in, for the app to finish */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NumberSignIn"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description number_not_proved: the code did not prove this number, or proved it over 30 minutes ago */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "number_not_proved";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no booking holds the number */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description unavailable: this environment proves no number */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "unavailable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/availability/public": {
         parameters: {
             query?: never;
@@ -3082,6 +3194,20 @@ export interface components {
             /** Format: uuid */
             code_id: string;
             code: string;
+        };
+        /** @description A sign-in the client app finishes once, within ten minutes, at POST /api/auth/verify. */
+        NumberSignIn: {
+            /** Format: uuid */
+            challenge_id: string;
+            code: string;
+        };
+        NumberSignInRequest: {
+            /**
+             * Format: uuid
+             * @description The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered.
+             */
+            code_id: string;
+            mobile: string;
         };
         OpenWindows: {
             /** @enum {string} */

@@ -33,6 +33,7 @@ export type TypedAddress = Schemas["TypedAddress"];
 type NumberCodeRequest = Schemas["NumberCodeRequest"];
 export type NumberCode = Schemas["NumberCode"];
 export type NumberCodeVerify = Schemas["NumberCodeVerify"];
+type NumberSignIn = Schemas["NumberSignIn"];
 export type StoppedMessages = Schemas["StoppedMessages"];
 type PublicConsultationRequest = Body<"/api/consultation">;
 type PublicWaitlistRequest = Body<"/api/waitlist">;
@@ -109,6 +110,11 @@ export function askForNumberCode(request: NumberCodeRequest): Promise<Answer<Num
 
 export function verifyNumberCode(codeId: string, code: string): Promise<Answer<NumberCodeVerify>> {
   return post<NumberCodeVerify>("/api/number-code/verify", { code_id: codeId, code });
+}
+
+/** A sign-in to the client app for a number proved here that a booking holds, which the app finishes. */
+export function signInWithProof(codeId: string, mobile: string): Promise<Answer<NumberSignIn>> {
+  return post<NumberSignIn>("/api/number-code/sign-in", { code_id: codeId, mobile });
 }
 
 // The try-on, in order: whether it runs and whether this browser has had its

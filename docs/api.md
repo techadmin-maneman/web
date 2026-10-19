@@ -366,6 +366,170 @@ Request body:
 }
 ```
 
+### POST /api/number-code/sign-in
+
+Sign a number proved here in to the client app, once a booking holds it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NumberSignInRequest"
+}
+```
+
+**201**: The sign-in, for the app to finish
+
+```json
+{
+  "$ref": "#/components/schemas/NumberSignIn"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: number_not_proved: the code did not prove this number, or proved it over 30 minutes ago
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "number_not_proved"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no booking holds the number
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: this environment proves no number
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/availability/public
 
 The days and windows the booking form can book, open or full. Cacheable for a minute.
@@ -4502,6 +4666,54 @@ Razorpay's webhook: payments and refunds
   "required": [
     "code_id",
     "code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NumberSignIn
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "challenge_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    }
+  },
+  "required": [
+    "challenge_id",
+    "code"
+  ],
+  "additionalProperties": false,
+  "description": "A sign-in the client app finishes once, within ten minutes, at POST /api/auth/verify."
+}
+```
+
+### NumberSignInRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered."
+    },
+    "mobile": {
+      "type": "string",
+      "maxLength": 20
+    }
+  },
+  "required": [
+    "code_id",
+    "mobile"
   ],
   "additionalProperties": false
 }

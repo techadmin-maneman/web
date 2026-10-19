@@ -24,3 +24,11 @@ export function signInLink(appOrigin: string, typedMobile: string): string {
   if (digits === null) return appOrigin;
   return `${appOrigin}/#mobile=${digits}`;
 }
+
+/**
+ * The app opened signed in, for a sign-in the API handed over (POST /api/number-code/sign-in): the app finishes it
+ * with the challenge and code after the #, which the browser never sends to a server, and takes them off at once.
+ */
+export function signedInLink(appOrigin: string, challengeId: string, code: string): string {
+  return `${appOrigin}/#signin=${challengeId}.${code}`;
+}

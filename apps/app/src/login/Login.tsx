@@ -1,7 +1,8 @@
 // The login: a number, then its code. Every number gets the
 // same second screen, so the app never says whether a number has a booking
 // (docs/decisions/0030-one-time-codes.md). The site's booking confirmation
-// links here with the number typed there filled in (linked-mobile.ts).
+// links here with the number typed there filled in, or, for a number it
+// proved, with a sign-in the login finishes at once (linked-mobile.ts).
 //
 // Each step forward is an entry in the browser's history, so a phone's Back
 // steps back from the code to the number, as the screen's own back arrow does,
@@ -18,6 +19,7 @@ import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { apiNow } from "@maneman/web-kit/clock";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
+import type { LinkedSignIn } from "./linked-mobile.ts";
 import { MobileScreen } from "./MobileScreen.tsx";
 import { useTurnstile } from "./turnstile.ts";
 
@@ -94,15 +96,18 @@ function useSteps() {
 
 /**
  * `ended`: the session ended while the app was open, and the first screen says so. `linkedMobile`: the number the
- * site's booking confirmation opened the app with, or "".
+ * site's booking confirmation opened the app with, or "". `linkedSignIn`: the sign-in it handed over, finished as the
+ * login opens; one that no longer holds leaves the number to sign in with.
  */
 export function Login({
   ended,
   linkedMobile,
+  linkedSignIn,
   onSignedIn,
 }: {
   ended: boolean;
   linkedMobile: string;
+  linkedSignIn: LinkedSignIn | null;
   onSignedIn: () => void;
 }) {
   const { step, setStep, forward, lastChallenge } = useSteps();
@@ -116,6 +121,18 @@ export function Login({
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
   const turnstile = useTurnstile();
+
+  // The handed-over sign-in, finished once as the app opens.
+  const handedOver = useRef(linkedSignIn);
+  useEffect(() => {
+    const signIn = handedOver.current;
+    handedOver.current = null;
+    if (signIn === null) return;
+    void once(async () => {
+      const answer = await api.verify(signIn.challengeId, signIn.code);
+      if (answer.ok && answer.body.verified) onSignedIn();
+    });
+  }, [once, onSignedIn]);
 
   /** Back to the number, saying why no code was sent. */
   const refused = (code: string) => {

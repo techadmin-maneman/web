@@ -4,28 +4,31 @@ import { keepUpToDate } from "@maneman/web-kit/sw-update";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
-import { carriesMobile, mobileInLink } from "./login/linked-mobile.ts";
+import { carriesLogin, mobileInLink, signInInLink } from "./login/linked-mobile.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import "./styles/global.css";
 
 reportUncaughtErrors();
 takeSignInMark();
 
-/** The number the app was opened with, taken off the address at once so it is not left in the browser's history. */
-function takeLinkedMobile(): string {
+/**
+ * The number or the sign-in the app was opened with, taken off the address at once so neither is left in the
+ * browser's history.
+ */
+function takeLinkedLogin() {
   const { hash, pathname, search } = window.location;
-  if (!carriesMobile(hash)) return "";
+  if (!carriesLogin(hash)) return { mobile: "", signIn: null };
   window.history.replaceState(window.history.state, "", `${pathname}${search}`);
-  return mobileInLink(hash);
+  return { mobile: mobileInLink(hash), signIn: signInInLink(hash) };
 }
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("index.html has no #root");
-const linkedMobile = takeLinkedMobile();
+const linked = takeLinkedLogin();
 createRoot(root).render(
   <StrictMode>
     <ErrorBoundary>
-      <App linkedMobile={linkedMobile} />
+      <App linkedMobile={linked.mobile} linkedSignIn={linked.signIn} />
     </ErrorBoundary>
   </StrictMode>,
 );

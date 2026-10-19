@@ -41,7 +41,8 @@ interface PendingInvite {
  */
 export function notYetFittedLines(reward: Reward | null, invite: PendingInvite | null): readonly [string, string] {
   const theirs = reward?.friend_visits ?? 0;
-  if (invite === null || theirs === 0) return ["Referrals go live after your first fit.", afterTheFit(promiseOf(reward))];
+  if (invite === null || theirs === 0)
+    return ["Referrals go live after your first fit.", afterTheFit(promiseOf(reward))];
   const whose = invite.referrer_first_name === null ? "Your friend’s invite" : `${invite.referrer_first_name}’s invite`;
   const arrive = theirs === 1 ? "arrives" : "arrive";
   return [
