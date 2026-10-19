@@ -32,7 +32,7 @@ const TRANSACTIONAL_TEMPLATES: ReadonlySet<string> = new Set([
   "link_paid_v1",
   "upi_received_v1",
   "visit_cancelled_refund_v1",
-  "booking_refunded_v1",
+  "booking_refunded_v2",
   "move_refunded_v1",
   "no_show_charged_fee_v1",
   "no_show_waived_refund_v1",

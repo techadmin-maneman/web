@@ -1,5 +1,6 @@
 // Answers the client app's fidelity run (./fidelity-app.ts) gives that no screen's own fixture holds: the login's
-// code as board A2 draws it, a service visit's price, and what a screen asks for that no board draws.
+// code as board A2 draws it, booking in the app switched off, a service visit's price, and what a screen asks for
+// that no board draws.
 
 import type { Route } from "@playwright/test";
 import type { components } from "../../apps/app/src/api-schema.ts";
@@ -12,6 +13,10 @@ export const CHALLENGE = {
   resend_in_s: 48,
   sms_in_s: 30,
 } satisfies components["schemas"]["LoginChallenge"];
+
+/** Booking in the app off for every kind, as where ops book. */
+export const BOOKS_NOTHING = { self_serve: false, self_serve_kinds: [] };
+export const VISIT_KINDS = ["consultation", "first_fit", "service", "replacement"] as const;
 
 /** A service visit's price as the booking boards draw it: Rs. 2,000 and 18% GST. */
 export const SERVICE_PRICE = { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 };

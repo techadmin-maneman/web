@@ -6,7 +6,7 @@ import type { EnvironmentName } from "@rules/config/environments.ts";
 import { indiaTimeOf } from "@maneman/web-kit/dates";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
-import { notYetFittedLines } from "./refer.ts";
+import { notYetOpenLines } from "./refer.ts";
 
 export const app = {
   /** Last in the browser's title, after the screen's own name: "Visits · Mane Man". */
@@ -150,7 +150,7 @@ export const empty = {
   },
   refer: {
     title: "Refer",
-    lines: notYetFittedLines,
+    lines: notYetOpenLines,
   },
 } as const;
 

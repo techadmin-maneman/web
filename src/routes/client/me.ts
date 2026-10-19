@@ -35,7 +35,14 @@ import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
 import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/money/one-visit-money.ts";
 import { pendingInviteOf } from "../../domain/referrals/referrals.ts";
-import { CLIENT_STATES, clientStateOf, isFitted, missedVisit, nextVisit } from "../../domain/visits/client-visits.ts";
+import {
+  canRefer,
+  CLIENT_STATES,
+  clientStateOf,
+  isFitted,
+  missedVisit,
+  nextVisit,
+} from "../../domain/visits/client-visits.ts";
 import { consultationRecap } from "../../domain/visits/consultation-recap.ts";
 import { nextVisitFacts } from "../../domain/visits/next-visit.ts";
 import { clientOf } from "../../http/client-session.ts";
@@ -67,6 +74,9 @@ import { selfServeKinds } from "../../policy/self-serve.ts";
 const MeSchema = z
   .object({
     state: z.enum(CLIENT_STATES),
+    refers: z.boolean().openapi({
+      description: "Whether Refer is open: the client's first consultation, or a fit, has been done (ADR 0218).",
+    }),
     name: z.string(),
     first_name: z.string(),
     initials: z
@@ -322,6 +332,7 @@ export function registerClientMe(app: App): void {
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
     const missed = missedVisit(db, personId);
+    const refers = canRefer(db, personId);
     const [person, upcoming, underWay, credits, fitted, form, types, sold, home, invite, owed, recap, onPackage] =
       await Promise.all([
         liveContact(db, personId),
@@ -368,6 +379,7 @@ export function registerClientMe(app: App): void {
     return c.json(
       {
         state,
+        refers: await refers,
         name,
         first_name: firstNameOf(name),
         initials: initialsOf(name),

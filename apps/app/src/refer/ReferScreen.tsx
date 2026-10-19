@@ -3,9 +3,9 @@
 // fitted (/refer/fitted). The tracker shows completed fits only (docs/decisions/0048-referrals.md). A client who came through an invite whose credits ops are reviewing,
 // or refused, is told so beneath the credit (docs/decisions/0074-hand-offs-and-messages.md; the board draws none).
 //
-// Until their first fit a client has nothing to vouch for, and the invite's own words ("Got my hair system
-// fitted") would not be true: the design draws Refer for a lead as reachable but empty. It says when their invite
-// opens, and names the invite they came with while its visits wait on that fit.
+// Refer opens at the client's first consultation (ADR 0218): before it a client has nothing to vouch for, and the
+// design draws Refer for a lead as reachable but empty. It says when their invite opens, and names the invite they
+// came with while its visits wait on their fit.
 
 import { APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -102,7 +102,7 @@ function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
   );
 }
 
-function FittedInvite() {
+function OpenInvite() {
   const [loaded, retry] = useLoad(useCallback(() => api.refer(), []));
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PageFailed onRetry={retry} />;
@@ -113,8 +113,8 @@ export function ReferScreen() {
   const { me } = useSession();
   return (
     <Shell header={{ kind: "tab", title: refer.title }} tab="/refer">
-      {me.state === "fitted" ? (
-        <FittedInvite />
+      {me.refers ? (
+        <OpenInvite />
       ) : (
         <EmptyState look="page" lines={empty.refer.lines(rewardOf(me), pendingInviteOf(me))} />
       )}

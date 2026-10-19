@@ -65,7 +65,7 @@ describe("what a referral earns, as ops set it", () => {
     expect(await grantsOf(REFERRER)).toEqual([{ visits: 2, expires_at: expiry }]);
     expect(await grantsOf(FRIEND)).toEqual([{ visits: 4, expires_at: expiry }]);
     expect(await toldReferrer()).toBe(
-      "Hi Rohit, Karan has joined Mane Man: thank you for sending them our way.\nYou get 2 service visits free, to use by 20 Dec 2026, and Karan gets 4 service visits.",
+      "Hi Rohit, Karan has joined Mane Man. Thank you for sending them our way.\nYou get 2 service visits free to use by 20 Dec 2026, and Karan gets 4 service visits. They're in the app.",
     );
     await visitsConsent(FRIEND);
     expect(await told("friend_credited", FRIEND)).toBe(
@@ -79,7 +79,7 @@ describe("what a referral earns, as ops set it", () => {
     await rewardSet({ referrer_visits: 1, friend_visits: 1, valid_days: 30 });
     expect(await grantsOf(FRIEND)).toEqual([{ visits: 3, expires_at: "2027-09-21T18:29:59.999Z" }]);
     expect(await toldReferrer()).toBe(
-      "Hi Rohit, Karan has joined Mane Man: thank you for sending them our way.\nYou each get 3 service visits free, to use by 21 Sep 2027.",
+      "Hi Rohit, Karan has joined Mane Man. Thank you for sending them our way.\nYou each get 3 service visits free to use by 21 Sep 2027. They're in the app.",
     );
 
     const next = "55555555-5555-4555-8555-555555555555";
@@ -98,7 +98,7 @@ describe("what a referral earns, as ops set it", () => {
     expect(await grantsOf(FRIEND)).toEqual([]);
     expect(await messagesWritten()).toEqual([{ person_id: REFERRER, kind: "friend_fitted", subject_id: ATTRIBUTION }]);
     expect(await toldReferrer()).toBe(
-      "Hi Rohit, Karan has joined Mane Man: thank you for sending them our way.\nYou get 3 service visits free, to use by 21 Sep 2027.",
+      "Hi Rohit, Karan has joined Mane Man. Thank you for sending them our way.\nYou get 3 service visits free to use by 21 Sep 2027. They're in the app.",
     );
   });
 
@@ -108,7 +108,7 @@ describe("what a referral earns, as ops set it", () => {
     await referralsRun();
     expect(await grantsOf(REFERRER)).toEqual([]);
     expect(await grantsOf(FRIEND)).toEqual([{ visits: 1, expires_at: "2027-09-21T18:29:59.999Z" }]);
-    expect(await toldReferrer()).toBe("Hi Rohit, Karan has joined Mane Man: thank you for sending them our way.");
+    expect(await toldReferrer()).toBe("Hi Rohit, Karan has joined Mane Man. Thank you for sending them our way.");
     await visitsConsent(FRIEND);
     expect(await told("friend_credited", FRIEND)).toBe(
       "Hi Karan, welcome to Mane Man.\nYour invite gives you 1 service visit free, to use by 21 Sep 2027. They're in the app.",

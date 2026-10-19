@@ -270,7 +270,7 @@ describe("confirmBooking", () => {
     ]);
     expect(notified).toHaveLength(1);
     expect(await composeBookingRefunded(env.DB, holdId, PERSON)).toEqual({
-      template: "booking_refunded_v1",
+      template: "booking_refunded_v2",
       params: ["Rohit", "service visit", "Tue 22 Sep", "", "", "Rs. 2,000", "", "UPI"],
     });
     expect(await autoRefundsOf(env.DB, PERSON)).toEqual([
@@ -418,7 +418,7 @@ describe("the message a booking given back sends", () => {
       ).bind(PERSON, NOW.toISOString()),
     ]);
     expect(await composeBookingRefunded(env.DB, "hold-credit", PERSON)).toMatchObject({
-      template: "booking_not_made_credit_v1",
+      template: "booking_not_made_credit_v2",
     });
   });
 });

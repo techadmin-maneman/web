@@ -228,7 +228,7 @@ async function cancelMessage(db: D1Database, appointmentId: string, params: stri
   // Kept under the client's late terms, or drawn on a grant that has since expired or been clawed back.
   if (credit === "kept") {
     const keptAsLate = cancelled.notice === "late" && cancelled.ops_terms !== "free";
-    return { template: keptAsLate ? "visit_cancelled_credit_lost_v1" : "visit_cancelled_credit_gone_v1", params };
+    return { template: keptAsLate ? "visit_cancelled_credit_lost_v2" : "visit_cancelled_credit_gone_v1", params };
   }
   if (cancelled.refund_amount === 0) return { template: "visit_cancelled_v1", params };
   params[5] = rupees(cancelled.refund_amount);

@@ -66,6 +66,7 @@
                   "not_changeable",
                   "terms_changed",
                   "consent_required",
+                  "not_consulted",
                   "not_fitted",
                   "not_paid",
                   "device_revoked",
@@ -465,6 +466,10 @@
               "lead",
               "nothing_booked"
             ]
+          },
+          "refers": {
+            "type": "boolean",
+            "description": "Whether Refer is open: the client's first consultation, or a fit, has been done (ADR 0218)."
           },
           "name": {
             "type": "string"
@@ -993,6 +998,7 @@
         },
         "required": [
           "state",
+          "refers",
           "name",
           "first_name",
           "initials",
@@ -10916,7 +10922,7 @@
             }
           },
           "403": {
-            "description": "not_fitted: Refer opens once the client's first fit is done, or no front photograph of their first fit, before and after, is stored",
+            "description": "not_consulted: Refer opens once the client's first consultation is done; not_fitted: no front photograph of their first fit, before and after, is stored",
             "content": {
               "application/json": {
                 "schema": {
@@ -10933,6 +10939,7 @@
                             "code": {
                               "type": "string",
                               "enum": [
+                                "not_consulted",
                                 "not_fitted"
                               ]
                             }
@@ -11095,7 +11102,7 @@
             }
           },
           "403": {
-            "description": "not_fitted: Refer opens once the client's first fit is done",
+            "description": "not_consulted: Refer opens once the client's first consultation is done",
             "content": {
               "application/json": {
                 "schema": {
@@ -11112,7 +11119,7 @@
                             "code": {
                               "type": "string",
                               "enum": [
-                                "not_fitted"
+                                "not_consulted"
                               ]
                             }
                           },
@@ -11273,7 +11280,7 @@
             }
           },
           "403": {
-            "description": "not_fitted: Refer opens once the client's first fit is done",
+            "description": "not_consulted: Refer opens once the client's first consultation is done",
             "content": {
               "application/json": {
                 "schema": {
@@ -11290,7 +11297,7 @@
                             "code": {
                               "type": "string",
                               "enum": [
-                                "not_fitted"
+                                "not_consulted"
                               ]
                             }
                           },

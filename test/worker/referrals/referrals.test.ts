@@ -51,7 +51,7 @@ describe("referral codes", () => {
   });
 
   // The app showed Refer to the fitted alone, but the API made a code for any client signed in.
-  it("are a fitted client's alone: before a first fit, Refer and the card answer not_fitted", async () => {
+  it("wait for a first consultation: before one is done, Refer and the card answer not_consulted", async () => {
     const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
     for (const [method, path] of [
       ["GET", "/api/refer"],
@@ -63,9 +63,28 @@ describe("referral codes", () => {
         headers: { Cookie: cookie, Origin: "https://maneman.test" },
       });
       expect(answer.status).toBe(403);
-      expect(await answer.json()).toMatchObject({ error: { code: "not_fitted" } });
+      expect(await answer.json()).toMatchObject({ error: { code: "not_consulted" } });
     }
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM referral_codes").first()).toEqual({ n: 0 });
+  });
+
+  // Refer waited for a first fit; it opens at the first consultation.
+  it("open at a first consultation done, with a card of their own still waiting on their first fit", async () => {
+    await aVisit({
+      person_id: REFERRER,
+      type: "consultation",
+      status: "completed",
+      window_start: "2026-09-20T05:00:00.000Z",
+    });
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
+    const headers = { Cookie: cookie, Origin: "https://maneman.test" };
+    const refer = await request(client(), "/api/refer", { headers });
+    expect(refer.status).toBe(200);
+    expect(await refer.json()).toMatchObject({ code: expect.stringMatching(/^RM/) as string, fitted: [] });
+    await cardConsent("photos-referral-cards-v2");
+    const card = await request(client(), "/api/refer/card", { method: "POST", headers });
+    expect(card.status).toBe(403);
+    expect(await card.json()).toMatchObject({ error: { code: "not_fitted" } });
   });
 
   it("are made once, and give the invite link, the balance and the fitted friends", async () => {
