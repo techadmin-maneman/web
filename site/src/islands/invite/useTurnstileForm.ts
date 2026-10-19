@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { mobileDigits } from "@maneman/web-kit/mobile";
+import { formatMobileField, mobileDigits } from "@maneman/web-kit/mobile";
 import { isPersonName } from "@maneman/web-kit/names";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { referral } from "../../content/referral.ts";
 import type { Answer, Code } from "../../lib/api.ts";
 import { useSubmission } from "../useSubmission.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
+import { rememberedVisitor } from "../../lib/visitor.ts";
 import type { PersonFields } from "./person.ts";
 
 export type { PersonFields };
@@ -79,18 +80,36 @@ function useFormWidget(
 }
 
 /**
+ * The name and number given at the try-on in this tab, if any (ADR 0214), put in the fields once the form is drawn.
+ * The server drew the fields empty, and hydrating keeps what it drew, so fields that started from them would show
+ * nothing until something else drew the form again.
+ */
+function useRememberedPerson(empty: boolean, setFields: (fields: PersonFields) => void): void {
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current || !empty) return;
+    done.current = true;
+    const visitor = rememberedVisitor();
+    if (visitor !== null) setFields({ name: visitor.name, mobile: formatMobileField(visitor.mobile), consent: true });
+  }, [empty, setFields]);
+}
+
+/**
  * What the consultation and the waitlist forms share: the person's fields, whether they have been checked, and
  * sending them with a Turnstile token. The widget is made once the visitor starts on the form, and removed with it:
  * the box it renders into does not exist until the pincode has decided which form the page shows. `marks` are the fields, by the API's names, that the
  * form marks itself when a refusal names them; a refusal that names none of them is said by the button. On /book the
- * name and number are given first (./AboutYou.tsx), and the forms after it start from them.
+ * name and number are given first (./AboutYou.tsx), and the forms after it start from them. A form that `remembers`
+ * fills in the name and number given at the try-on, once it is drawn.
  */
 export function useTurnstileForm(
   siteKey: string,
   marks: readonly string[] = PERSON_FIELDS,
   given: PersonFields = { name: "", mobile: "", consent: false },
+  remembers = false,
 ) {
   const [fields, setFields] = useState<PersonFields>(given);
+  useRememberedPerson(remembers, setFields);
   const [sending, setSending] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const submission = useSubmission(marks);

@@ -43,7 +43,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "scripts/fidelity/fidelity-app.ts": { lines: 1100, fn: 167 },
   "scripts/fidelity/fidelity-tech.ts": { lines: 445, fn: 107 },
   "scripts/lib/wrangler-config-check.ts": { lines: 431 },
-  "site/src/islands/invite/Consultation.tsx": { fn: 150 },
+  "site/src/islands/invite/Consultation.tsx": { fn: 146 },
   "site/src/islands/invite/Waitlist.tsx": { fn: 97 },
   "site/src/islands/tryon/TryOn.tsx": { fn: 146 },
   "site/src/islands/tryon/useGate.ts": { fn: 141 },
