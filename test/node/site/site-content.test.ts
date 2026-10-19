@@ -159,23 +159,32 @@ describe("content", () => {
     expect(site.whatItIs.body).toMatch(/bonded to the skin\. It is not a wig\.$/);
   });
 
-  it("names the four hair systems as the product guide names them, each with its line", () => {
+  // The guide of 6 October 2026 compares them side by side, with no price; how long each lasts is its figure (ADR 0215).
+  it("names the four hair systems as the product guide names them, and compares each on every row", () => {
     expect(site.range.products.map((product) => product.name)).toEqual([
       "Mane Man Essential",
       "Mane Man Active",
       "Mane Man Natural",
       "Mane Man Celebrity",
     ]);
-    for (const product of site.range.products) expect(product.tagline, product.name).not.toBe("");
+    for (const row of site.range.rows) expect(row.cells, row.label).toHaveLength(site.range.products.length);
+    expect(JSON.stringify(site.range)).not.toMatch(/Rs\.|₹/);
+    expect(site.range.rows.find((row) => row.label === "Lasts")?.cells).toEqual([
+      "8 months",
+      "6 months",
+      "6 months",
+      "4 months",
+    ]);
   });
 
   // The product guide marks the multi-layer base "Test before promising" and measures no life of its own: the site
   // promises no life in months for any base we fit.
-  it("promises no life in months for a base we fit", () => {
+  // The range table gives the guide's own figures (ADR 0215); nowhere else says one.
+  it("promises no life in months for a base we fit, outside the range table", () => {
     const materials = guides.find((guide) => guide.slug === "hair-system-materials");
     const fitted = materials?.sections.filter((section) => section.heading !== "What we do not fit, and why");
     expect(fitted).toHaveLength(5);
-    const said = JSON.stringify({ fitted, faq: site.faq, range: site.range });
+    const said = JSON.stringify({ fitted, faq: site.faq });
     expect(said).not.toMatch(/\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|twelve)\b[^.]*\bmonths?\b/i);
   });
 
@@ -205,6 +214,7 @@ describe("content", () => {
     expect(published).toEqual([
       "whatsapp",
       "heroFootage",
+      "norwoodPhotos",
       "teaserPair",
       "stepPhotos",
       "founderNote",
@@ -358,7 +368,7 @@ describe("the publish gate", () => {
   it("stops a published block that still holds the design’s placeholder material", () => {
     const blocks = {
       ...BLOCKS,
-      norwoodPhotos: { ...site.norwoodPhotos, publish: true },
+      norwoodPhotos: { ...site.norwoodPhotos, images: [{ file: "nw-3.jpg", alt: "The design’s stage III" }] },
       privacy: realPage(site.legalPages.privacy),
       terms: realPage(site.legalPages.terms),
     };

@@ -1,25 +1,19 @@
 ---
-// The range: the four hair systems, each named, with its line and what it is made of.
-import { capsLook } from "@maneman/ui/Caps";
-import { range } from "../../content/site.ts";
+// The range: the four hair systems side by side, as the product guide compares them, with no price.
+import CompareTable from "../CompareTable.astro";
+import { comparison, range } from "../../content/site.ts";
 ---
 
 <section id="range" class="container range" data-section="range">
   <h2 class="section-title">{range.title}</h2>
   <p class="lead intro">{range.intro}</p>
-  <ul class="products">
-    {range.products.map((product) => (
-      <li class="product">
-        <h3 class={capsLook()}>{product.name}</h3>
-        <p class="tagline">
-          {product.tagline.split(/(?<=\.)\s+/).map((sentence) => (
-            <span class="sentence">{sentence}</span>
-          ))}
-        </p>
-        <p class="body">{product.body}</p>
-      </li>
-    ))}
-  </ul>
+  <CompareTable
+    label={range.title}
+    columns={range.products.map((product) => product.short)}
+    rows={range.rows}
+    yes={comparison.yes}
+    no={comparison.no}
+  />
 </section>
 
 <style>
@@ -31,44 +25,5 @@ import { range } from "../../content/site.ts";
   }
   .intro {
     margin: 0 0 var(--space-l);
-  }
-  .products {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--range-card-min)), 1fr));
-    column-gap: var(--space-2xl);
-    border-top: var(--hairline) solid var(--text);
-  }
-  .product {
-    padding: var(--space-s) 0;
-    border-bottom: var(--hairline) solid var(--paper-line);
-  }
-  h3 {
-    margin: 0;
-    font-weight: var(--weight-regular);
-    font-size: var(--fs-17);
-    color: var(--text-muted);
-  }
-  .tagline {
-    margin: var(--sp-12) 0 0;
-    font-family: var(--font-serif);
-    font-size: var(--fs-h4);
-    line-height: var(--lh-115);
-    letter-spacing: var(--tracking-heading);
-    text-wrap: balance;
-  }
-  /* Each sentence of a two-sentence line starts its own line, so a narrow column never strands a word. */
-  .sentence {
-    display: block;
-  }
-  .body {
-    margin: var(--sp-16) 0 0;
-    font-size: var(--fs-16);
-    line-height: var(--lh-160);
-    color: var(--text-soft);
-    max-width: var(--measure-short);
-    text-wrap: pretty;
   }
 </style>

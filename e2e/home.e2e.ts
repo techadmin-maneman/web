@@ -222,12 +222,14 @@ test.describe("home sections", () => {
     await expect(video).toHaveAttribute("src", phone ? /\/fit-film-phone\.[^/]+\.mp4$/ : /\/fit-film\.[^/]+\.mp4$/);
   });
 
-  // The film, the results and the steps are real; only the Norwood stages are still the design's.
-  test("tags only the design’s material as Placeholder outside production", async ({ page }) => {
+  // Nothing on the home page is the design's material any more; the Norwood scale, made with an AI tool, says so.
+  test("tags nothing as Placeholder, and the Norwood scale as an illustration", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText(siteCopy.heroFootage.tag)).toHaveCount(0);
-    await expect(page.locator(".label", { hasText: /^Placeholder$/ })).toHaveCount(5);
-    await expect(page.locator('[data-section="norwood"] .label', { hasText: /^Placeholder$/ })).toHaveCount(5);
+    await expect(page.locator(".label", { hasText: /^Placeholder$/ })).toHaveCount(0);
+    await expect(
+      page.locator('[data-section="norwood"] .label').getByText(siteCopy.illustrationTag, { exact: true }),
+    ).toHaveCount(1);
   });
 
   // A strip of small pairs read poorly at both widths: one large pair at a time, on the compare, with its line.
@@ -315,14 +317,16 @@ test.describe("home sections", () => {
     ]);
   });
 
-  test("the range: four cards", async ({ page }) => {
+  test("the range: the four side by side in a table, each row naming all four", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator('[data-section="range"] h3')).toHaveText([
-      "Mane Man Essential",
-      "Mane Man Active",
-      "Mane Man Natural",
-      "Mane Man Celebrity",
-    ]);
+    const table = page.getByRole("table", { name: siteCopy.range.title });
+    // The corner's own header is the table's name, and a phone hides it.
+    await expect(
+      table.getByRole("columnheader").filter({ hasText: /^(?:Essential|Active|Natural|Celebrity)$/ }),
+    ).toHaveText(["Essential", "Active", "Natural", "Celebrity"]);
+    await expect(table.getByRole("row")).toHaveCount(siteCopy.range.rows.length + 1);
+    const service = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Service visit" }) });
+    await expect(service.getByRole("cell")).toHaveText(["Monthly", "Monthly", "Monthly", "Twice a month"]);
   });
 
   // The site gives no prices (ADR 0103).

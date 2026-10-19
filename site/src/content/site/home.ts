@@ -219,32 +219,27 @@ export const howItWorks = {
   ],
 };
 
-/** The four hair systems, from the product guide. */
+/**
+ * The four hair systems side by side, as the product guide compares them (6 October 2026). It gives no price; how long
+ * each lasts is the guide's figure (ADR 0215).
+ */
 export const range = {
   title: "The range",
-  intro: "Four hair systems. Every one 100% real human hair.",
+  intro: "Four hair systems, every one 100% real human hair. Your technician helps you choose.",
   products: [
-    {
-      name: "Mane Man Essential",
-      tagline: "Built for everyday wear. The place to start.",
-      body: "Fine mono, the strongest base we fit, with a soft lace hairline.",
-    },
-    {
-      name: "Mane Man Active",
-      tagline: "Made for men who sweat.",
-      body: "A French lace top, the most breathable base there is, and a bleached lace hairline. For the gym, the field and an Indian summer.",
-    },
-    {
-      name: "Mane Man Natural",
-      tagline: "A hairline that passes a close look.",
-      body: "A fine skin base with a bleached lace front. No mesh to see, so the hair seems to grow from your scalp.",
-    },
-    {
-      name: "Mane Man Celebrity",
-      tagline: "Flawless, even at the parting.",
-      body: "A silk top over lace hides every knot, so a parting shows scalp, not mesh.",
-    },
+    { name: "Mane Man Essential", short: "Essential" },
+    { name: "Mane Man Active", short: "Active" },
+    { name: "Mane Man Natural", short: "Natural" },
+    { name: "Mane Man Celebrity", short: "Celebrity" },
   ],
+  rows: [
+    { label: "Made for", cells: ["Everyday wear", "The gym and sport", "A visible parting", "A close look"] },
+    { label: "Base", cells: ["Fine mono", "French lace", "Silk over lace", "Thin skin"] },
+    { label: "Hairline", cells: ["Good", "Very good", "Very good", "Best"] },
+    { label: "Breathes", cells: ["Moderate", "Highest", "Lowest", "Low"] },
+    { label: "Lasts", cells: ["8 months", "6 months", "6 months", "4 months"] },
+    { label: "Service visit", cells: ["Monthly", "Monthly", "Monthly", "Twice a month"] },
+  ] satisfies { label: string; cells: [string, string, string, string] }[],
 };
 
 export const guarantee = {
