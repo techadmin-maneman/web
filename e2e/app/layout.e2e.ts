@@ -1,10 +1,12 @@
 // What axe cannot see in the client app: a page that scrolls sideways when the screen is 320 px wide (WCAG
-// 1.4.10), and a control that takes the keyboard without drawing that it has (2.4.7).
+// 1.4.10), a control that takes the keyboard without drawing that it has (2.4.7), and a button whose words run onto
+// a second line.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
+import { wrappedButtons } from "../wrapped-buttons.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
 /** Each signed-in page. */
@@ -44,4 +46,18 @@ test("draws where the keyboard is on every control of Home, in the order they co
     expect(drawn, `"${name}" takes the keyboard without a ring`).toBe(true);
   }
   expect(seen).toBeGreaterThan(3);
+});
+
+// "Change or cancel" ran onto two lines on the next visit's card.
+test("keeps every button's words on one line, on each page and the next visit's", async ({ page }) => {
+  const fitted = fittedClient();
+  await logIn(page, fitted.mobile);
+  await expect(page.getByRole("link", { name: appCopy.titles.profile })).toBeVisible();
+  const wrapped: string[] = [];
+  for (const path of [...PAGES, `/visits/${fitted.next.id}`]) {
+    await page.goto(path);
+    await expect(page.locator("h1").first()).toBeVisible();
+    wrapped.push(...(await wrappedButtons(page)).map((button) => `${path}: ${button}`));
+  }
+  expect(wrapped).toEqual([]);
 });

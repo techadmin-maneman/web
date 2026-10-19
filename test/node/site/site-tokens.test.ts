@@ -58,4 +58,61 @@ describe("design tokens", () => {
       expect(tokens).toContain(`${name ?? ""}: ${value ?? ""};`);
     }
   });
+
+  // The code's boxes and the times drew at their words' height, since their height was the apps' alone.
+  it("defines every token the shared controls it uses read", () => {
+    // The shared base the site loads with its tokens (site/src/styles/global.css) sets the controls' sizes.
+    const base = new Set(
+      [...readFileSync("packages/ui/base.css", "utf8").matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? ""),
+    );
+    // The apps' column and card widths, which base.css gives the apps' drawers, columns and menus: the site draws none.
+    const appsLayout = new Set(["--app-column", "--skeleton-card"]);
+    const missing = [{ path: TOKENS, css: readFileSync(TOKENS, "utf8") }, ...sharedStyles()].flatMap(
+      ({ path, css }) => {
+        const local = new Set([...css.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1] ?? ""));
+        const allowed = path === "packages/ui/base.css" ? appsLayout : new Set<string>();
+        return [...css.matchAll(/var\((--[a-z0-9-]+)/g)]
+          .map((match) => match[1] ?? "")
+          .filter((name) => !defined.has(name) && !base.has(name) && !local.has(name) && !allowed.has(name))
+          .map((name) => `${path}: ${name}`);
+      },
+    );
+    expect([...new Set(missing)]).toEqual([]);
+  });
 });
+
+/** The stylesheets of the shared controls the site imports, and of what they import in turn. */
+function sharedStyles(): { path: string; css: string }[] {
+  const exported = (JSON.parse(readFileSync("packages/ui/package.json", "utf8")) as { exports: Record<string, string> })
+    .exports;
+  const entries = new Set(
+    styled
+      .concat(files(SOURCE).filter((path) => /\.(tsx?|css)$/.test(path)))
+      .flatMap((path) => [...readFileSync(path, "utf8").matchAll(/@maneman\/ui\/([\w.-]+)/g)])
+      .map((match) => exported[`./${match[1] ?? ""}`])
+      .filter((path): path is string => path !== undefined)
+      .map((path) => join("packages/ui", path).replace(/\\/g, "/")),
+  );
+  const seen = new Set<string>();
+  const queue = [...entries];
+  while (queue.length > 0) {
+    const path = queue.pop() ?? "";
+    if (seen.has(path)) continue;
+    seen.add(path);
+    if (path.endsWith(".css")) continue;
+    for (const match of readFileSync(path, "utf8").matchAll(/from "\.\/([\w.-]+)"|import "\.\/([\w.-]+)"/g)) {
+      const name = match[1] ?? match[2] ?? "";
+      const local = ["", ".tsx", ".ts"]
+        .map((end) => `packages/ui/${name}${end}`)
+        .find((file) => {
+          try {
+            return statSync(file).isFile();
+          } catch {
+            return false;
+          }
+        });
+      if (local !== undefined) queue.push(local);
+    }
+  }
+  return [...seen].filter((path) => path.endsWith(".css")).map((path) => ({ path, css: readFileSync(path, "utf8") }));
+}

@@ -44,6 +44,9 @@
   --paper-hint: #756d60;
   --text-soft: #3a352e;
   --text-muted: #5f5851;
+  --text-quiet: #4a453c; /* a window's hours beside its name, on white */
+  --paper-shade: #ded7c8; /* loading blocks; a full window; leave and replacement cells */
+  --brass-text: #7a5b24; /* brass for small text on paper: "Prepaid", the busiest day */
   --white: #ffffff;
 
   /* ---- Colour: errors ---------------------------------------------------- */
@@ -131,6 +134,8 @@
   --tap: 44px; /* the smallest touch target; also the small button's height */
   --btn-lg: 56px;
   --btn-md: var(--sp-48);
+  --tap-row: var(--sp-64); /* rows, tabs, the code's boxes, a visit's times */
+  --tracking-number: 0.04em; /* a mobile number, spaced for reading */
   --note-h: 80px; /* a short note's box, as a no-show's reason is drawn */
   --busy-opacity: 0.6; /* a button working on what was asked */
 
@@ -179,13 +184,13 @@
   --status-saved: var(--text);
   --status-done: var(--text); /* finished, and nothing to do: as calm as the words around it */
   --status-note: var(--text-muted);
+  --status-attention: var(--brass-text); /* something to look at, not yet to act on */
 }
 
 /*
  * The paper looks' roles: what the shared parts draw their paper looks in. They hold the paper's colours everywhere
  * but the ops console's dark theme (apps/ops/src/styles/theme.css), which turns them to the ink's. A ground leaves
- * them alone: a part on the ink takes its onInk look. Some point at tokens-apps.css, which the site does not load;
- * there the role is unset, as the token it names was.
+ * them alone: a part on the ink takes its onInk look.
  */
 :root {
   --ui-ground: var(--paper); /* a page */
@@ -219,4 +224,5 @@
   --status-saved: var(--paper);
   --status-done: var(--paper);
   --status-note: var(--ink-muted);
+  --status-attention: var(--gilt);
 }
