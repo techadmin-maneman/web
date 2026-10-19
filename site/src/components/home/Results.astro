@@ -8,12 +8,13 @@ import { resultPairs, results } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 import { designImage } from "../../lib/images.ts";
 
-/** The width the compare is drawn at, at most, twice over for a sharp screen. */
-const PICTURE_WIDTH = 1040;
+/** The widths the compare is drawn at, at most, once and twice over for a sharp screen. */
+const PICTURE_WIDTHS = [520, 1040];
+const PICTURE_SIZES = "(min-width: 600px) 540px, 100vw";
 
 const shown = async (file: string, alt: string) => {
-  const image = await getImage({ src: designImage(file), format: "webp", width: PICTURE_WIDTH });
-  return { src: image.src, alt };
+  const image = await getImage({ src: designImage(file), format: "webp", widths: PICTURE_WIDTHS });
+  return { src: image.src, srcset: image.srcSet.attribute, sizes: PICTURE_SIZES, alt };
 };
 const pairs: ShownPair[] = await Promise.all(
   resultPairs.pairs.map(async (pair) => ({

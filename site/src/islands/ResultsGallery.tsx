@@ -14,7 +14,23 @@ import styles from "./ResultsGallery.module.css";
 
 interface ShownPicture {
   readonly src: string;
+  readonly srcset: string;
+  readonly sizes: string;
   readonly alt: string;
+}
+
+/** A pair's picture, fetched only as the results come near, so the hero's film loads first. */
+function Shown({ picture }: { picture: ShownPicture }) {
+  return (
+    <img
+      src={picture.src}
+      srcset={picture.srcset}
+      sizes={picture.sizes}
+      alt={picture.alt}
+      loading="lazy"
+      decoding="async"
+    />
+  );
 }
 
 export interface ShownPair {
@@ -45,8 +61,8 @@ export default function ResultsGallery(props: { pairs: readonly ShownPair[] }) {
           sliderLabel={results.sliderLabel}
           sliderValue={tryOnTeaser.sliderValue}
           tag={pair.illustration ? illustrationTag : undefined}
-          before={<img src={pair.before.src} alt={pair.before.alt} />}
-          after={<img src={pair.after.src} alt={pair.after.alt} />}
+          before={<Shown picture={pair.before} />}
+          after={<Shown picture={pair.after} />}
         />
       </div>
       <div class={styles.words}>
