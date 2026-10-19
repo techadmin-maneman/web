@@ -39,13 +39,13 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(visits.nth(0)).toContainText("Service visit · 12–12:30 pm · Imran");
   // Dated as the payments list dates its entries: the year only where it is not this one.
   await expect(visits.nth(1)).toContainText(
-    `${listDate(client.service.date, yearInIndia(new Date()))}Service visit · Imran`,
+    `${listDate(client.service.date, yearInIndia(Date.now()))}Service visit · Imran`,
   );
   await expect(visits.nth(2)).toContainText(
-    `${listDate(client.firstFit.date, yearInIndia(new Date()))}First fit · Imran`,
+    `${listDate(client.firstFit.date, yearInIndia(Date.now()))}First fit · Imran`,
   );
   await expect(visits.nth(3)).toContainText(
-    `${listDate(client.consultation.date, yearInIndia(new Date()))}Consultation · Imran`,
+    `${listDate(client.consultation.date, yearInIndia(Date.now()))}Consultation · Imran`,
   );
 
   await visits.nth(1).click();
