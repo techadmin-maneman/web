@@ -12,6 +12,18 @@ export const whatsapp = {
 };
 
 /**
+ * The company's pages elsewhere, beside the number in the footer. Their addresses are still to come: until they are
+ * here and the block is published, they show outside production only, and lead nowhere.
+ */
+export const socialLinks = {
+  publish: false,
+  links: [
+    { icon: "linkedin", label: "Mane Man on LinkedIn", href: null },
+    { icon: "instagram", label: "Mane Man on Instagram", href: null },
+  ] satisfies { icon: "linkedin" | "instagram"; label: string; href: string | null }[],
+};
+
+/**
  * The bar that asks for consent to the ad and measurement tags (site/src/components/ConsentBar.astro). Counsel has
  * still to see its words, so the bar is switched off until they approve (CONSENT_BAR_SHOWN).
  */

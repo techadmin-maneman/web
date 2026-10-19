@@ -34,14 +34,14 @@ export const resultPairs = {
   publish: true,
   pairs: [
     {
+      before: { file: "result-2-before.jpg", alt: "A man bald on top, in a barber’s cape, before the fit" },
+      after: { file: "result-2-after.jpg", alt: "The same man after the fit, hair swept back" },
+      caption: "Life-changing.",
+    },
+    {
       before: { file: "result-1-before.jpg", alt: "A man with thinning hair on top, before the fit" },
       after: { file: "result-1-after.jpg", alt: "The same man smiling, with a full head of hair" },
       caption: "Ten years younger.",
-    },
-    {
-      before: { file: "result-2-before.jpg", alt: "The same man, bald on top, in a barber’s cape" },
-      after: { file: "result-2-after.jpg", alt: "The same man after the fit, hair swept back" },
-      caption: "Life-changing.",
     },
     {
       before: { file: "result-3-before.jpg", alt: "The back of the head before the fit, bald at the crown" },
@@ -98,10 +98,8 @@ export const founderNote = {
   publish: true,
   label: "A note from the founder",
   paragraphs: [
-    "I started losing my hair at twenty-four. By thirty, I’d had a transplant and spent years on medication, trying to hold on to what I was losing. Over time, I realised these came with trade-offs I didn’t like. I was fighting a losing battle.",
-    "Hair loss is hard enough. Navigating an industry that can make you feel worse about yourself shouldn’t be part of it.",
-    "Losing your hair is natural. It’s nobody’s fault, and it doesn’t define you. You can own it, do something about it, or simply move on. What matters is feeling good about the person you see in the mirror, and getting on with being the best version of yourself.",
-    "That’s why I started Mane Man. A more private, straightforward way to get your hair back, on your terms.",
+    "I started losing my hair at twenty-four. By thirty I’d had a transplant and years of medication, and I was still fighting a losing battle.",
+    "Losing your hair is nobody’s fault, and it doesn’t define you. Mane Man is the private, straightforward way to get it back, on your terms.",
   ],
   name: "Rishabh Gupta",
   signature: "Founder, Mane Man",

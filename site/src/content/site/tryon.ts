@@ -18,7 +18,7 @@ export const stageOptions: readonly {
   {
     id: "crown",
     title: "Thinning at the crown",
-    sub: "The parting has widened",
+    sub: "The parting has widened · around stage III",
     short: "Crown thinning",
     hair: "M13 28 C20 17 44 17 51 28",
     zone: "M32 33 C41 33 46 38 46 44 C46 50 40 55 32 55 C24 55 18 50 18 44 C18 38 23 33 32 33 Z",
@@ -26,7 +26,7 @@ export const stageOptions: readonly {
   {
     id: "receding",
     title: "Receding at the front",
-    sub: "The corners have gone back",
+    sub: "The corners have gone back · stages III to IV",
     short: "Receding front",
     hair: "M11 34 C16 22 24 18 32 18 C40 18 48 22 53 34",
     zone: "M13 30 C18 19 25 25 32 25 C39 25 46 19 51 30",
@@ -34,7 +34,7 @@ export const stageOptions: readonly {
   {
     id: "advanced",
     title: "Advanced, front and crown",
-    sub: "Little left on top",
+    sub: "Little left on top · stages V to VII",
     short: "Advanced",
     hair: "M10 40 C14 30 22 26 32 26 C42 26 50 30 54 40",
     zone: "M12 34 C18 16 46 16 52 34 C46 28 18 28 12 34 Z",
@@ -91,11 +91,11 @@ export const tryOn = {
   back: "Back",
   backToSite: "Back to the site",
   stepLabels: {
-    upload: "Step one of four",
+    upload: "Step 1 of 4",
     consent: "Before we begin",
-    stage: "Step two of four",
-    looks: "Step three of four",
-    gate: "Step four of four",
+    stage: "Step 2 of 4",
+    looks: "Step 3 of 4",
+    gate: "Step 4 of 4",
     sent: "Sent to WhatsApp",
     error: "Can’t use this photo",
   },
@@ -143,10 +143,8 @@ export const tryOn = {
   gate: {
     frame: "For your WhatsApp only",
     name: "Name",
-    namePlaceholder: "Your name",
     nameError: CLIENT_WORDS.nameError,
     mobile: "Mobile",
-    mobilePlaceholder: CLIENT_WORDS.mobilePlaceholder,
     mobileError: "Enter a valid 10-digit mobile number.",
     submit: "Send my look",
     // Once the WhatsApp code is on its way, the button confirms it and sends the look.
@@ -250,9 +248,9 @@ export const tryOn = {
       /** While WhatsApp cannot send a look, the try-on does not run. It has no Choose another. */
       unavailable: {
         step: "Not available right now",
-        frame: "Paused",
-        title: "The try-on is paused.",
-        body: "Book a free consultation and see the real thing.",
+        frame: "WhatsApp",
+        title: "We can’t send to WhatsApp just now.",
+        body: "Try again in a few minutes, or book a free consultation and see the real thing.",
       },
       /** While the simulation itself cannot run. It has no Choose another either. */
       paused: {

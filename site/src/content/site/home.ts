@@ -28,6 +28,9 @@ export const stickyBar = {
 };
 
 export const footer = {
+  /** Beneath the wordmark, then the way to book. */
+  tagline: "A full head of hair, matched to your own. Fitted at home.",
+  book: header.book,
   columns: {
     service: {
       title: "Service",
@@ -36,9 +39,10 @@ export const footer = {
         { label: "The range", href: "/#range" },
         { label: "Try-on", href: "/try" },
         { label: "Questions", href: "/#faq" },
-        { label: header.book, href: "/book" },
       ],
     },
+    /** The guides and the cities, once they are published (site/src/lib/more-pages.ts). */
+    more: { title: "Learn" },
     reach: { title: "Reach us" },
     legal: {
       title: "Legal",
@@ -56,6 +60,8 @@ export const footer = {
   ],
   area: `${serviceArea} · home service only`,
   entity: "Mane Man Private Limited",
+  /** Before the company's name, with the year the page was built. */
+  copyright: "©",
 };
 
 export const placeholderTag = "Placeholder";
@@ -129,7 +135,7 @@ const NORWOOD_VERTEX = {
 export const norwood = {
   title: "Where you are on the scale",
   intro: "Hair loss in men is graded in seven stages.",
-  label: "Stages three to seven · we can fit all of these",
+  label: "Stages III to VII · we fit all five",
   stages: [
     { numeral: "III", name: "A clear M", tag: "We fit", bald: NORWOOD_FRONT.iii },
     { numeral: "IV", name: "Front and crown", tag: "We fit", bald: NORWOOD_FRONT.iv + NORWOOD_VERTEX.sm },
@@ -171,7 +177,7 @@ export const comparison = {
     { label: "Reversible", cells: [false, true, true] },
     {
       label: "Upkeep",
-      cells: ["Loss carries on; repeats are common", "Daily, for life", "One service visit a month"],
+      cells: ["Loss carries on; repeats are common", "Daily, for life", "A service visit every 2 to 4 weeks"],
     },
   ] satisfies { label: string; cells: [ComparisonCell, ComparisonCell, ComparisonCell] }[],
 };
@@ -212,9 +218,9 @@ export const howItWorks = {
     },
     {
       number: "03",
-      title: "Service visit, every month",
-      body: "Lifted, cleaned, re-bonded and trimmed to your own growth, so it looks right every month.",
-      meta: `Every month · ${visitLength.service}`,
+      title: "Regular service visits",
+      body: "Every month, or every two weeks on Celebrity: lifted, cleaned, re-bonded and trimmed to your own growth.",
+      meta: `${capitalised(visitLength.service)} · at your home`,
     },
   ],
 };
@@ -257,7 +263,7 @@ export const faq = {
     },
     {
       q: "How long does a hair system last?",
-      a: "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every month keeps it at its best.",
+      a: "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every two to four weeks keeps it at its best.",
     },
     {
       q: "What happens at a service visit?",

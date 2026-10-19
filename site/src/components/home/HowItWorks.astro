@@ -100,11 +100,19 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
   }
   .meta {
     margin-top: var(--sp-16);
-    font-size: var(--fs-15);
+    font-size: var(--fs-17);
     color: var(--text-muted);
   }
+  /* Each photograph framed at 4:3, whole, as the step shows it. */
   .photo {
-    height: var(--how-photo-h);
+    aspect-ratio: 4 / 3;
+    max-width: 100%;
+  }
+  /* The frame's height comes from its shape alone, so the picture is laid over it rather than sized by it. */
+  .photo :global(picture),
+  .photo :global(img) {
+    position: absolute;
+    inset: 0;
   }
   .tag {
     position: absolute;

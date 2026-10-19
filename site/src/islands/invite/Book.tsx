@@ -43,7 +43,8 @@ function BookPage(props: Props) {
       <h1 ref={page.heading} tabIndex={-1} class={styles.title}>
         {bookingTitle(answer, plan)}
       </h1>
-      <div class={styles.offer}>
+      {/* Past the first step a phone goes straight to the form; the headline stays to say what it books. */}
+      <div class={kept === null ? styles.offer : `${styles.offer ?? ""} ${styles.offerPast ?? ""}`}>
         {answer?.served === false ? (
           <p>{booking.introWaitlist}</p>
         ) : (
@@ -54,7 +55,9 @@ function BookPage(props: Props) {
         <AboutYou turnstileSiteKey={props.turnstileSiteKey} kept={kept} onKept={page.keepPerson} />
       ) : (
         <>
-          <BookingFor person={kept} onChange={page.changePerson} />
+          <div class={styles.bookingFor}>
+            <BookingFor person={kept} onChange={page.changePerson} />
+          </div>
           {answer === null && <StepLine at={2} name={booking.steps.area} focus={false} />}
           <PincodeAndForm page={page} form={form} stage={step === "address" ? "address" : "visit"} />
         </>

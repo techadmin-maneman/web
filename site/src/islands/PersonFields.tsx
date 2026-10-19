@@ -11,10 +11,8 @@ import styles from "./PersonFields.module.css";
 /** A form's words for the two fields: the booking forms' (referral.form) or the gate's (tryOn.gate). */
 interface PersonWords {
   readonly name: string;
-  readonly namePlaceholder: string;
   readonly nameError: string;
   readonly mobile: string;
-  readonly mobilePlaceholder: string;
   readonly mobileError: string;
 }
 
@@ -55,7 +53,6 @@ export function NameField({ id, value, bad, words, onInk = false, onInput }: Fie
         onInk={onInk}
         id={id}
         value={value}
-        placeholder={words.namePlaceholder}
         autocomplete="name"
         maxLength={MOST_NAME_LENGTH}
         aria-required="true"
@@ -82,7 +79,6 @@ export function MobileField({ id, value, bad, words, onInk = false, onInput }: F
         prefix="+91"
         id={id}
         value={value}
-        placeholder={words.mobilePlaceholder}
         aria-required="true"
         aria-invalid={bad}
         aria-describedby={bad ? `${id}-error` : undefined}

@@ -58,4 +58,13 @@ import { iconButtonLook } from "@maneman/ui/IconButton";
   .book {
     flex: 1;
   }
+  /* A phone's bar: on a wider screen the header's own button books, and the bar would only cover the page. */
+  @media (min-width: 761px) {
+    .bar {
+      display: none;
+    }
+    :global(html) {
+      scroll-padding-bottom: 0;
+    }
+  }
 </style>

@@ -57,7 +57,7 @@ function usePhotoWidget(screen: Screen, siteKey: string) {
   const widget = useRef<TurnstileWidget | null>(null);
   useEffect(() => {
     if (screen === "upload" || widget.current !== null || box.current === null) return;
-    widget.current = turnstileWidget(box.current, siteKey);
+    widget.current = turnstileWidget(box.current, siteKey, "dark");
   }, [screen, siteKey]);
   useEffect(
     () => () => {
@@ -183,6 +183,9 @@ function TryOnFlow(props: Props) {
           </span>
         </div>
 
+        {/* Turnstile shows here only if Cloudflare needs the visitor to act: above the step, before its button. */}
+        <div ref={turnstileBox} class={styles.turnstile} />
+
         {screen === "upload" && <Upload photo={state.photo} heading={heading} onChoose={choosePhoto} />}
         {screen === "consent" && (
           <Consent
@@ -231,9 +234,6 @@ function TryOnFlow(props: Props) {
             }}
           />
         )}
-
-        {/* Turnstile shows here only if Cloudflare needs the visitor to act. */}
-        <div ref={turnstileBox} class={styles.turnstile} />
       </div>
     </div>
   );

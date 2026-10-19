@@ -96,6 +96,22 @@
     "reviewed": false
   },
   {
+    "key": "site:home/footer.tagline",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "A full head of hair, matched to your own. Fitted at home.",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/footer.book",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Book a free consultation",
+    "reviewed": false
+  },
+  {
     "key": "site:home/footer.columns.service.title",
     "surface": "site",
     "group": "Home",
@@ -136,11 +152,11 @@
     "reviewed": true
   },
   {
-    "key": "site:home/footer.columns.service.links.4.label",
+    "key": "site:home/footer.columns.more.title",
     "surface": "site",
     "group": "Home",
     "where": "footer",
-    "text": "Book a free consultation",
+    "text": "Learn",
     "reviewed": false
   },
   {
@@ -214,6 +230,14 @@
     "where": "footer",
     "text": "Mane Man Private Limited",
     "reviewed": true
+  },
+  {
+    "key": "site:home/footer.copyright",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "©",
+    "reviewed": false
   },
   {
     "key": "site:home/hero.sequence.0",
@@ -412,7 +436,7 @@
     "surface": "site",
     "group": "Home",
     "where": "norwood",
-    "text": "Stages three to seven · we can fit all of these",
+    "text": "Stages III to VII · we fit all five",
     "reviewed": false
   },
   {
@@ -756,8 +780,8 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "One service visit a month",
-    "reviewed": true
+    "text": "A service visit every 2 to 4 weeks",
+    "reviewed": false
   },
   {
     "key": "site:home/tryOnTeaser.eyebrow",
@@ -892,24 +916,24 @@
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "Service visit, every month",
-    "reviewed": true
+    "text": "Regular service visits",
+    "reviewed": false
   },
   {
     "key": "site:home/howItWorks.steps.2.body",
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "Lifted, cleaned, re-bonded and trimmed to your own growth, so it looks right every month.",
-    "reviewed": true
+    "text": "Every month, or every two weeks on Celebrity: lifted, cleaned, re-bonded and trimmed to your own growth.",
+    "reviewed": false
   },
   {
     "key": "site:home/howItWorks.steps.2.meta",
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "Every month · 90 minutes",
-    "reviewed": true
+    "text": "90 minutes · at your home",
+    "reviewed": false
   },
   {
     "key": "site:home/range.title",
@@ -1300,8 +1324,8 @@
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every month keeps it at its best.",
-    "reviewed": true
+    "text": "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every two to four weeks keeps it at its best.",
+    "reviewed": false
   },
   {
     "key": "site:home/faq.items.2.q",
@@ -1820,8 +1844,8 @@
     "surface": "site",
     "group": "Try-on",
     "where": "stageOptions",
-    "text": "The parting has widened",
-    "reviewed": true
+    "text": "The parting has widened · around stage III",
+    "reviewed": false
   },
   {
     "key": "site:tryon/stageOptions.0.short",
@@ -1860,8 +1884,8 @@
     "surface": "site",
     "group": "Try-on",
     "where": "stageOptions",
-    "text": "The corners have gone back",
-    "reviewed": true
+    "text": "The corners have gone back · stages III to IV",
+    "reviewed": false
   },
   {
     "key": "site:tryon/stageOptions.1.short",
@@ -1900,8 +1924,8 @@
     "surface": "site",
     "group": "Try-on",
     "where": "stageOptions",
-    "text": "Little left on top",
-    "reviewed": true
+    "text": "Little left on top · stages V to VII",
+    "reviewed": false
   },
   {
     "key": "site:tryon/stageOptions.2.short",
@@ -2060,8 +2084,8 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Step one of four",
-    "reviewed": true
+    "text": "Step 1 of 4",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.stepLabels.consent",
@@ -2076,24 +2100,24 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Step two of four",
-    "reviewed": true
+    "text": "Step 2 of 4",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.stepLabels.looks",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Step three of four",
-    "reviewed": true
+    "text": "Step 3 of 4",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.stepLabels.gate",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Step four of four",
-    "reviewed": true
+    "text": "Step 4 of 4",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.stepLabels.sent",
@@ -2341,14 +2365,6 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "Name",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.gate.namePlaceholder",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Your name",
     "reviewed": true
   },
   {
@@ -2876,24 +2892,24 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Paused",
-    "reviewed": true
+    "text": "WhatsApp",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.error.kinds.unavailable.title",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "The try-on is paused.",
-    "reviewed": true
+    "text": "We can’t send to WhatsApp just now.",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.error.kinds.unavailable.body",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Book a free consultation and see the real thing.",
-    "reviewed": true
+    "text": "Try again in a few minutes, or book a free consultation and see the real thing.",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.error.kinds.paused.step",
@@ -3005,6 +3021,22 @@
     "group": "Contact",
     "where": "whatsapp",
     "text": "WhatsApp · +91 90345 72990",
+    "reviewed": false
+  },
+  {
+    "key": "site:contact/socialLinks.links.0.label",
+    "surface": "site",
+    "group": "Contact",
+    "where": "socialLinks",
+    "text": "Mane Man on LinkedIn",
+    "reviewed": false
+  },
+  {
+    "key": "site:contact/socialLinks.links.1.label",
+    "surface": "site",
+    "group": "Contact",
+    "where": "socialLinks",
+    "text": "Mane Man on Instagram",
     "reviewed": false
   },
   {
@@ -3128,6 +3160,14 @@
     "reviewed": true
   },
   {
+    "key": "site:guides/guidesPage.contents",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "On this page",
+    "reviewed": false
+  },
+  {
     "key": "site:guides/guides.0.title",
     "surface": "site",
     "group": "Guides",
@@ -3248,6 +3288,14 @@
     "reviewed": true
   },
   {
+    "key": "site:guides/guides.1.picture.alt",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A hair system turned over: its fine base, lace at the front, the hair around it",
+    "reviewed": false
+  },
+  {
     "key": "site:guides/guides.1.title",
     "surface": "site",
     "group": "Guides",
@@ -3326,6 +3374,14 @@
     "where": "guides",
     "text": "A wig covers the whole head, is held by tension or clips and comes off at night. A hair system covers only the area you’ve lost, is bonded to the skin, is cut into your own hair and stays on for weeks at a time. You shower, swim and sleep in it.",
     "reviewed": true
+  },
+  {
+    "key": "site:guides/guides.2.picture.alt",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A mono base with a lace border, seen from the inside",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.2.title",
@@ -3624,6 +3680,14 @@
     "reviewed": false
   },
   {
+    "key": "site:guides/guides.3.picture.alt",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A fitted hair system from the side, blended into the client’s own hair",
+    "reviewed": false
+  },
+  {
     "key": "site:guides/guides.3.title",
     "surface": "site",
     "group": "Guides",
@@ -3693,6 +3757,14 @@
     "group": "Guides",
     "where": "guides",
     "text": "At home, at a time that suits you. All you need is a chair in good light and somewhere to wash hair.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.4.picture.alt",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A hair system brushed gently with a wide paddle brush",
     "reviewed": false
   },
   {
@@ -3773,6 +3845,14 @@
     "group": "Guides",
     "where": "guides",
     "text": "The base wears before the hair does. When it does, your technician tells you, and your new hair system is matched to the last, so no one notices the change.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.5.picture.alt",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "A thin skin base, the film that wears first",
     "reviewed": false
   },
   {
@@ -4316,8 +4396,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "A free consultation at home",
-    "reviewed": true
+    "text": "Consultation at home",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.howItWorks.steps.0.lead",
@@ -4340,7 +4420,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Your first fit, same day or later",
+    "text": "The first fit",
     "reviewed": false
   },
   {
@@ -4364,7 +4444,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Effortless monthly care",
+    "text": "Regular service visits",
     "reviewed": false
   },
   {
@@ -4380,7 +4460,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "A regular tune-up to keep you looking sharp.",
+    "text": "A tune-up every month, or every two weeks on Celebrity, to keep you looking sharp.",
     "reviewed": false
   },
   {
@@ -4981,14 +5061,6 @@
     "group": "Invite page",
     "where": "referral",
     "text": "Name",
-    "reviewed": true
-  },
-  {
-    "key": "site:referral/referral.form.namePlaceholder",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Your name",
     "reviewed": true
   },
   {

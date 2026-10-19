@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0216. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0217. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -227,6 +227,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0213](0213-the-sites-second-copy-round.md) The site's second copy round
 - [0214](0214-from-the-site-into-the-app.md) From the site into the app, and the look on the page
 - [0215](0215-the-range-as-a-table.md) The range as a table
+- [0216](0216-the-sites-polish-pass.md) The site's polish pass
 
 ### The ops console
 
@@ -466,3 +467,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted |  |
 | [0214](0214-from-the-site-into-the-app.md) | From the site into the app, and the look on the page | 2026-10-19 | accepted |  |
 | [0215](0215-the-range-as-a-table.md) | The range as a table | 2026-10-19 | accepted |  |
+| [0216](0216-the-sites-polish-pass.md) | The site's polish pass | 2026-10-19 | accepted |  |

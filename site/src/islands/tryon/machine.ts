@@ -7,6 +7,7 @@
 // (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md): the gate follows
 // the looks, and the sent screen the gate.
 
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { tryOn } from "../../content/site.ts";
 import { ERROR_KINDS, type ErrorKind } from "../../lib/tryon-errors.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
@@ -102,7 +103,7 @@ function preview(screen: Screen, kind: string | null): TryOnState {
   if (screen === "error") return { ...opened, errorKind: isOneOf(ERROR_KINDS, kind) ? kind : "photo" };
   if (screen !== "sent") return opened;
   const returning = kind === "returning";
-  return { ...opened, look: 0, returning, mobile: returning ? "" : tryOn.gate.mobilePlaceholder };
+  return { ...opened, look: 0, returning, mobile: returning ? "" : CLIENT_WORDS.mobilePlaceholder };
 }
 
 export function step(state: TryOnState, event: TryOnEvent): TryOnState {
