@@ -7,7 +7,7 @@
 import type { ConsentPurpose, ConsentSource } from "../policy/consents.ts";
 import { NAMING_LINE, oneLine, type OneLine } from "./notice-sections.ts";
 
-export { NOTICE_SECTIONS, type NoticeSection, type OneLine } from "./notice-sections.ts";
+export { NOTICE_SECTIONS, type NoticeSection } from "./notice-sections.ts";
 
 /** The agreements given on the public site, and the consents switched in the client app. */
 export type NoticePurpose = "contact" | "tryon_photo" | "result_delivery" | ConsentPurpose;
