@@ -120,11 +120,11 @@ test("a pincode we do not serve lists the number kept, with the launch alert off
   await expect(page.getByText("Step 3 · The list")).toBeVisible();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
 
-  await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
+  await page.getByText(referralCopy.referral.waitlist.contactConsent.says).click();
   // A message at launch is the visitor's own choice: the box starts unticked, and they tick it.
-  await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert)).not.toBeChecked();
-  await page.getByText(referralCopy.referral.waitlist.launchAlert).click();
-  await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert)).toBeChecked();
+  await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert.says)).not.toBeChecked();
+  await page.getByText(referralCopy.referral.waitlist.launchAlert.says).click();
+  await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert.says)).toBeChecked();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
@@ -151,7 +151,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000", "Flat 402", "Palm Grove Society"]);
 
   await openWaitlist(page);
-  await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
+  await page.getByText(referralCopy.referral.waitlist.contactConsent.says).click();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
@@ -215,7 +215,7 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
   await openWaitlist(page);
   await expect(page.getByText(referralCopy.referral.remembered.waitlist)).toBeVisible();
   await expect(page.getByRole("button", { name: referralCopy.referral.remembered.joinWithout })).toBeVisible();
-  await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
+  await page.getByText(referralCopy.referral.waitlist.contactConsent.says).click();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();

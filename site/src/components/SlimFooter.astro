@@ -30,7 +30,6 @@ const year = new Date().getFullYear();
           </a>
         ))}
       </nav>
-      <Social />
     </div>
     <div class="legal">
       <span>{`${footer.copyright} ${String(year)} ${footer.entity}`}</span>
@@ -39,6 +38,7 @@ const year = new Date().getFullYear();
           {link.label}
         </a>
       ))}
+      <Social />
     </div>
   </div>
 </footer>
@@ -90,5 +90,9 @@ const year = new Date().getFullYear();
     gap: var(--sp-8) var(--space-s);
     font-size: var(--fs-14);
     color: var(--ink-muted);
+  }
+  /* The company's pages elsewhere, at the legal line's end. */
+  .legal > :global(.social) {
+    margin-left: auto;
   }
 </style>

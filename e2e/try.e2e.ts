@@ -15,12 +15,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 const SCREENS = {
-  upload: { label: "Step 1 of 3", progress: 18 },
-  consent: { label: "Before we begin", progress: 36 },
-  looks: { label: "Step 2 of 3", progress: 62 },
+  upload: { label: "Step 1 of 3", progress: 24 },
+  looks: { label: "Step 2 of 3", progress: 58 },
   gate: { label: "Step 3 of 3", progress: 90 },
   sent: { label: "Sent to WhatsApp", progress: 100 },
-  error: { label: "Can’t use this photo", progress: 36 },
+  error: { label: "Can’t use this photo", progress: 24 },
 } as const;
 type Screen = keyof typeof SCREENS;
 
@@ -52,8 +51,7 @@ test.describe("chrome", () => {
   }
 
   const BACK: [Screen, Screen][] = [
-    ["consent", "upload"],
-    ["looks", "consent"],
+    ["looks", "upload"],
     ["gate", "looks"],
     ["error", "upload"],
   ];
@@ -156,7 +154,7 @@ test.describe("upload", () => {
     await expect(camera.locator("video")).toBeVisible();
     await camera.getByRole("button", { name: capture.shutter }).click();
     await camera.getByRole("button", { name: capture.use }).click();
-    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "consent");
+    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "looks");
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
@@ -208,7 +206,7 @@ test.describe("upload", () => {
     expect(box?.y ?? 0).toBeGreaterThanOrEqual((oval?.y ?? 0) + (oval?.height ?? 0));
   });
 
-  test("a chosen photo is looked at first, and goes on to the consent once used", async ({ page }) => {
+  test("a chosen photo is looked at first, and goes on to the looks once used", async ({ page }) => {
     await open(page, "upload");
     await page
       .locator('input[type="file"]')
@@ -218,7 +216,7 @@ test.describe("upload", () => {
     await expect(camera.getByRole("img", { name: capture.still })).toBeVisible();
     await expect(camera.getByRole("button", { name: capture.another })).toBeVisible();
     await camera.getByRole("button", { name: capture.use }).click();
-    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "consent");
+    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "looks");
     await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
     await expect(page.getByRole("img", { name: siteCopy.tryOn.upload.previewAlt })).toBeVisible();
   });
@@ -251,29 +249,26 @@ test.describe("upload", () => {
   });
 });
 
-test.describe("consent", () => {
-  test("five rows, and Continue does nothing until the box is ticked", async ({ page }) => {
-    await open(page, "consent");
-    await expect(page.locator("[data-screen] dl > div")).toHaveCount(5);
-    const next = page.getByRole("button", { name: siteCopy.tryOn.looks.continue });
-    await expect(next).toHaveAttribute("aria-disabled", "true");
-    await next.click({ force: true }); // it stays focusable and clickable, but does nothing
-    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "consent");
-    await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-    await expect(next).toHaveAttribute("aria-disabled", "false");
-    await next.click();
-    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "looks");
+// The try-on asked for its photo on a screen of its own, five rows and a box; now one line, which using it agrees to.
+test.describe("the photo's agreement", () => {
+  test("is one line on the photo, linking to the try-on notice in a new tab", async ({ page }) => {
+    await open(page, "upload");
+    await page
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles(await drawnHeadPhoto());
+    const camera = cameraIn(page);
+    await expect(camera.getByText("By using this photo, you agree to our try-on notice.")).toBeVisible();
+    const notice = camera.getByRole("link", { name: "try-on notice" });
+    await expect(notice).toHaveAttribute("href", "/notices#try-on");
+    await expect(notice).toHaveAttribute("target", "_blank");
+    await expect(page.getByRole("checkbox")).toHaveCount(0);
   });
 
-  // /try has no footer, so the line names none.
-  test("the words privacy notice link to /privacy, and nothing else is added", async ({ page }) => {
-    await open(page, "consent");
-    await expect(page.getByRole("link", { name: siteCopy.tryOn.consent.privacy.link })).toHaveAttribute(
-      "href",
-      "/privacy",
-    );
-    await expect(page.getByText("Read the full privacy notice.")).toBeVisible();
-    await expect(page.getByText("footer", { exact: false })).toHaveCount(0);
+  test("the gate's is one line beneath its button, linking to the same notice", async ({ page }) => {
+    await open(page, "gate");
+    await expect(page.getByText("By sending it, you agree to our try-on notice.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "try-on notice" })).toHaveAttribute("href", "/notices#try-on");
   });
 });
 
@@ -298,8 +293,8 @@ test.describe("gate", () => {
   // ADR 0104: the look is sent to the number, so the gate needs it, and says so.
   test("asks where to send the look before it is made, and needs both fields", async ({ page }) => {
     await open(page, "gate");
-    await expect(page.getByText("We make your simulation once we have your number", { exact: false })).toBeVisible();
-    await expect(page.getByText("shown here once it’s ready", { exact: false })).toBeVisible();
+    await expect(page.getByRole("heading", { name: siteCopy.tryOn.gate.title })).toBeVisible();
+    await expect(page.getByText(siteCopy.tryOn.gate.caption)).toBeAttached();
     await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveAttribute("aria-required", "true");
     await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAttribute("aria-required", "true");
     await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
@@ -331,10 +326,16 @@ test.describe("gate", () => {
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "sent");
   });
 
-  test("the image column sits below the form under 760 px, beside it above", async ({ page }) => {
+  // On a phone its caption trailed under the button's line, saying again what the title says.
+  test("the image column goes on a phone, sits below the form under 760 px, and beside it above", async ({ page }) => {
     await open(page, "gate");
+    const caption = page.getByText(siteCopy.tryOn.gate.caption);
+    if ((page.viewportSize()?.width ?? 0) <= 600) {
+      await expect(caption).toBeHidden();
+      return;
+    }
     const form = await page.locator("form").boundingBox();
-    const image = await page.getByText("Your simulation is sent to your WhatsApp", { exact: false }).boundingBox();
+    const image = await caption.boundingBox();
     if ((page.viewportSize()?.width ?? 0) <= 760) expect(image?.y).toBeGreaterThan(form?.y ?? 0);
     else expect(image?.x ?? 0).toBeLessThan(form?.x ?? 0);
   });

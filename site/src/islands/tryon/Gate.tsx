@@ -2,12 +2,13 @@ import { capsLook } from "@maneman/ui/Caps";
 import { messageLook } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
-import { gateCopy, numberCode as numberCodeWords, tryOn, type Notice } from "../../content/site.ts";
+import { NoticeLine } from "@maneman/ui/NoticeLine";
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
+import { numberCode as numberCodeWords, tryOn, type Notice } from "../../content/site.ts";
 import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
 import { MobileField, NameField } from "../PersonFields.tsx";
 import type { FormRef } from "../useInvalidFocus.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
-import shared from "./TryOn.module.css";
 import styles from "./gate.module.css";
 
 /** The WhatsApp code's field, on the gate's ink. */
@@ -65,7 +66,6 @@ export function Gate(props: {
 }) {
   const { nameBad, mobileBad, code } = props;
   const busy = props.sending || code?.checking === true;
-  const words = gateCopy(props.notice);
   return (
     <div class={styles.gate}>
       <div class={styles.gateImage}>
@@ -74,11 +74,10 @@ export function Gate(props: {
           <div class={styles.gateRight} />
           <span class={capsLook(styles.gateFrameLabel)}>{tryOn.gate.frame}</span>
         </div>
-        <p class={styles.gateCaption}>{words.caption}</p>
+        <p class={styles.gateCaption}>{tryOn.gate.caption}</p>
       </div>
       <form ref={props.form} onSubmit={props.onSubmit} noValidate>
-        <Title heading={props.heading}>{words.title}</Title>
-        <p class={shared.body}>{words.body}</p>
+        <Title heading={props.heading}>{tryOn.gate.title}</Title>
         <div class={styles.fields}>
           <NameField id="gate-name" value={props.name} bad={nameBad} words={tryOn.gate} onInk onInput={props.onName} />
           <MobileField
@@ -113,7 +112,16 @@ export function Gate(props: {
         >
           {submitLabel(code, props.sending)}
         </Button>
-        <div class={styles.reassurance}>{words.reassurance}</div>
+        {props.notice.line !== undefined && (
+          <p class={styles.reassurance}>
+            <NoticeLine
+              line={props.notice.line}
+              href={props.notice.line.href}
+              more={CLIENT_WORDS.noticeMore}
+              tone="ink"
+            />
+          </p>
+        )}
       </form>
     </div>
   );

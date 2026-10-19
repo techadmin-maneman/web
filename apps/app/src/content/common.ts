@@ -42,6 +42,13 @@ export const BOOKING_URL: Readonly<Record<EnvironmentName, string>> = {
   production: "https://maneman.in/book",
 };
 
+/** The public site's full notices, a section each, which each consent's one line links to (ADR 0219). */
+export const NOTICES_URL: Readonly<Record<EnvironmentName, string>> = {
+  local: "http://127.0.0.1:4321/notices",
+  staging: "https://staging.maneman.in/notices",
+  production: "https://maneman.in/notices",
+};
+
 /** The public site's try-on, for a client with no photographs yet: the look it makes comes back to Photos. */
 export const TRY_ON_URL: Readonly<Record<EnvironmentName, string>> = {
   local: "http://127.0.0.1:4321/try",

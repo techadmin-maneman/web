@@ -22,46 +22,31 @@ function walk(...events: TryOnEvent[]): TryOnState {
 
 const PHOTO: TryOnEvent = { type: "photoChosen", photo: "blob:photo" };
 
-/** Through to the gate with a photograph, the agreement and the first look. */
-const TO_GATE: TryOnEvent[] = [
-  PHOTO,
-  { type: "consentTicked", consent: true },
-  { type: "agreed" },
-  { type: "lookChosen", look: 0 },
-  { type: "lookDone" },
-];
+/** Through to the gate with a photograph, used, which agrees to its notice, and the first look. */
+const TO_GATE: TryOnEvent[] = [PHOTO, { type: "lookChosen", look: 0 }, { type: "lookDone" }];
 
 describe("the try-on’s machine", () => {
   it("starts on the upload screen with nothing chosen", () => {
-    expect(START).toMatchObject({ screen: "upload", demo: false, photo: null, consent: false, look: -1 });
+    expect(START).toMatchObject({ screen: "upload", demo: false, photo: null, look: -1 });
     expect(START.returning).toBe(false);
   });
 
   // ADR 0104: the number is asked for before the look is made, so there is no countdown between the looks and the gate.
   // Where the hair loss is is asked nowhere: the agreement goes straight on to the looks.
   it("walks from a photograph to the gate, straight from the agreement to the looks", () => {
-    expect(walk(PHOTO).screen).toBe("consent");
-    expect(walk(...TO_GATE.slice(0, 3)).screen).toBe("looks");
+    expect(walk(PHOTO).screen).toBe("looks");
     expect(walk(...TO_GATE)).toMatchObject({ screen: "gate", look: 0 });
   });
 
-  it("does not leave the consent screen until the agreement is ticked", () => {
-    const consent = walk(PHOTO);
-    expect(step(consent, { type: "agreed" }).screen).toBe("consent");
-    const ticked = step(consent, { type: "consentTicked", consent: true });
-    const unticked = step(ticked, { type: "consentTicked", consent: false });
-    expect(step(unticked, { type: "agreed" }).screen).toBe("consent");
-  });
-
   it("does not go on to the gate before a look is chosen", () => {
-    const looksScreen = walk(...TO_GATE.slice(0, 3));
+    const looksScreen = walk(PHOTO);
     expect(step(looksScreen, { type: "lookDone" })).toBe(looksScreen);
   });
 
-  // The agreement is to one photograph's use.
-  it("asks for the agreement afresh when another photograph is chosen", () => {
+  // The agreement is to one photograph's use: using another agrees to it afresh, and goes on to the looks again.
+  it("takes another photograph used as a new agreement, back at the looks", () => {
     const again = step(walk(...TO_GATE), { type: "photoChosen", photo: "blob:another" });
-    expect(again).toMatchObject({ screen: "consent", photo: "blob:another", consent: false });
+    expect(again).toMatchObject({ screen: "looks", photo: "blob:another" });
   });
 
   // Nothing is rendered before the gate, so the look may still change.
@@ -78,8 +63,7 @@ describe("the try-on’s machine", () => {
 
   it("goes back as v2 does: to the site from the upload, to the upload from an error; to the site once sent", () => {
     expect(backFrom("upload")).toBe("home");
-    expect(backFrom("consent")).toBe("upload");
-    expect(backFrom("looks")).toBe("consent");
+    expect(backFrom("looks")).toBe("upload");
     expect(backFrom("gate")).toBe("looks");
     expect(backFrom("sent")).toBe("home");
     expect(backFrom("error")).toBe("upload");
@@ -102,7 +86,7 @@ describe("the try-on’s machine", () => {
 
   it("tells a visitor back after their look that it was sent, from any screen, with the look while it is kept", () => {
     expect(step(START, { type: "alreadySent", look: null })).toMatchObject({ screen: "sent", returning: true });
-    expect(step(walk(...TO_GATE.slice(0, 3)), { type: "alreadySent", look: null }).screen).toBe("sent");
+    expect(step(walk(PHOTO), { type: "alreadySent", look: null }).screen).toBe("sent");
     const kept = step(START, { type: "alreadySent", look: "/api/result/signed" });
     expect(kept).toMatchObject({ screen: "sent", returning: true, returnedLook: "/api/result/signed" });
   });
@@ -132,7 +116,7 @@ describe("the try-on’s previews (?state=, never in production)", () => {
   });
 
   it("opens a screen with stand-ins", () => {
-    expect(preview("consent")).toMatchObject({ screen: "consent", demo: true, look: -1 });
+    expect(preview("looks")).toMatchObject({ screen: "looks", demo: true, look: -1 });
     expect(preview("gate")).toMatchObject({ screen: "gate", demo: true, look: 0 });
   });
 

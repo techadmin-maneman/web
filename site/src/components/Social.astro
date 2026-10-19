@@ -1,6 +1,7 @@
 ---
-// The company's pages elsewhere, as icons a thumb can tap, for both footers. Until their addresses are in, they show
-// outside production only, and lead nowhere (site/src/content/site/contact.ts).
+// The company's pages elsewhere, as icons a thumb can tap, at the end of both footers' last line, where global sites put
+// them. Until their addresses are in, they show outside production only, and lead nowhere
+// (site/src/content/site/contact.ts).
 import { socialLinks } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { textLinkLook } from "@maneman/ui/TextLink";
@@ -13,7 +14,7 @@ import Icon from "./Icon.astro";
       <li>
         {link.href === null ? (
           <span class="icon" title={link.label}>
-            <Icon name={link.icon} size="md" />
+            <Icon name={link.icon} size="lg" />
           </span>
         ) : (
           <a
@@ -22,7 +23,7 @@ import Icon from "./Icon.astro";
             aria-label={link.label}
             rel="noopener"
           >
-            <Icon name={link.icon} size="md" />
+            <Icon name={link.icon} size="lg" />
           </a>
         )}
       </li>
@@ -34,7 +35,8 @@ import Icon from "./Icon.astro";
   .social {
     display: flex;
     gap: var(--sp-8);
-    margin: var(--sp-8) 0 0 calc(-1 * var(--sp-12));
+    /* The last icon's edge, not its tap's, meets the line's end. */
+    margin: 0 calc(-1 * var(--sp-8)) 0 0;
     padding: 0;
     list-style: none;
   }

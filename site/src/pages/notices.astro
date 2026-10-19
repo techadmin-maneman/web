@@ -1,0 +1,44 @@
+---
+// The full notices each one-line consent links to, a section each, under the anchor its line names (ADR 0219).
+import { noticesPage, noticeSections, pageDescriptions, pageTitles } from "../content/site.ts";
+import TextPage from "../layouts/TextPage.astro";
+---
+
+<TextPage
+  pageTitle={pageTitles.notices}
+  description={pageDescriptions.notices}
+  title={noticesPage.title}
+  publish={false}
+>
+  {Object.entries(noticeSections).map(([id, section]) => (
+    <section id={id}>
+      <h2>{section.heading}</h2>
+      <dl>
+        {section.rows.map((row) => (
+          <div>
+            <dt>{row.label}</dt>
+            <dd>{row.says}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  ))}
+</TextPage>
+
+<style>
+  /* A notice's rows, in the page's reading size: what each covers, then what it says. */
+  dl {
+    margin: var(--sp-16) 0 0;
+    font-size: var(--fs-lead);
+    line-height: var(--lh-160);
+  }
+  dl > div + div {
+    margin-top: var(--sp-16);
+  }
+  dt {
+    font-weight: var(--weight-medium);
+  }
+  dd {
+    margin: var(--sp-4) 0 0;
+  }
+</style>

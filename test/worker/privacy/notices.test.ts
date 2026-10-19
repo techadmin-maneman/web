@@ -42,25 +42,25 @@ describe("consent notices", () => {
   it("shows the try-on's notices that send the look to WhatsApp, which keep a client's try-on", () => {
     const photo = findNotice(CURRENT_NOTICE.tryon_photo);
     const gate = findNotice(CURRENT_NOTICE.result_delivery);
-    expect([photo?.version, gate?.version]).toEqual(["photo-v6", "gate-v6"]);
-    expect(photo?.text.join(" ")).toContain("sent to your WhatsApp and shown here once it’s ready");
-    expect(gate?.text.join(" ")).toContain("shown here once it’s ready");
+    expect([photo?.version, gate?.version]).toEqual(["photo-v7", "gate-v7"]);
+    expect(photo?.text.join(" ")).toContain("we send to the WhatsApp number you give and show here once it’s ready");
+    expect(gate?.text.join(" ")).toContain("show here once it’s ready");
     expect(gate?.text.join(" ")).not.toContain("next screen");
     expect(KEEPING_NOTICES).toContain(CURRENT_NOTICE.tryon_photo);
     expect(Object.keys(PUBLISHED)).not.toContain(CURRENT_NOTICE.tryon_photo);
   });
 
   // V3 said the photograph reached nobody outside Mane Man and was kept thirty days; only YouCam's own copy is now.
+  // Since v7 the photo and the gate are one line each, linking to the try-on's section of /notices (ADR 0219).
   it("names who the try-on's photograph reaches, says it goes within the hour, and what stays for 14 days", () => {
     const photo = findNotice(CURRENT_NOTICE.tryon_photo)?.text ?? [];
     const gate = findNotice(CURRENT_NOTICE.result_delivery)?.text ?? [];
     expect(photo).toContain(
-      "Shared with: YouCam (Perfect Corp), which makes the look and keeps its copy of your photograph for thirty days, and WhatsApp, which delivers it.",
+      "Shared with: YouCam (Perfect Corp), which makes the look and keeps its copy of your photo for 30 days, and WhatsApp, which delivers it.",
     );
     expect(photo.find((line) => line.startsWith("Kept for: "))).toMatch(/^Kept for: An hour, then deleted/);
-    expect(gate.at(-1)).toContain(
-      "Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days.",
-    );
+    expect(gate.join(" ")).toContain("The small copy stays with your look for 14 days at most.");
+    expect(gate.slice(1)).toEqual(photo.slice(1));
     expect(photo.find((line) => line.startsWith("Kept for: "))).not.toMatch(/thirty days/);
     expect([...photo, ...gate].join(" ")).not.toMatch(/Nobody outside Mane Man/);
   });
@@ -69,12 +69,13 @@ describe("consent notices", () => {
     for (const notices of Object.values(BOOKING_NOTICES)) {
       for (const [purpose, version] of Object.entries(notices)) expect(findNotice(version)?.purpose).toBe(purpose);
     }
-    // A consent given on an earlier booking notice still names its referrer.
+    // A consent given on an earlier notice still names its referrer, and the one-line notice names them by its row.
     expect(NAMING_NOTICES).toEqual([
-      CURRENT_NOTICE.photos_referral_cards,
+      "photos-referral-cards-v2",
       "photos-referral-cards-booking-v1",
       BOOKING_NOTICES.alone.photos_referral_cards,
       BOOKING_NOTICES.both.photos_referral_cards,
+      CURRENT_NOTICE.photos_referral_cards,
     ]);
   });
 
@@ -86,11 +87,12 @@ describe("consent notices", () => {
   });
 
   it("records the booking sheet's reminder on its own line, and every other switch on the purpose's current notice", () => {
-    expect(findNotice(REMINDER_NOTICE)).toEqual({
+    expect(findNotice(REMINDER_NOTICE)).toMatchObject({
       version: "whatsapp-visits-booking-v2",
       purpose: "whatsapp_visits",
-      text: ["Send me visit updates on WhatsApp"],
+      line: { says: "Send me visit updates on WhatsApp", link: null, section: "whatsapp" },
     });
+    expect(findNotice(REMINDER_NOTICE)?.text[0]).toBe("Send me visit updates on WhatsApp");
     expect(switchNotice("whatsapp_visits", "app_booking")).toBe(REMINDER_NOTICE);
     expect(switchNotice("whatsapp_visits", "app_profile")).toBe(CURRENT_NOTICE.whatsapp_visits);
     expect(switchNotice("whatsapp_visits", null)).toBe(CURRENT_NOTICE.whatsapp_visits);
@@ -104,7 +106,7 @@ describe("consent notices", () => {
     expect(landing?.version).toBe("referral-consultation-v2");
     expect(site?.purpose).toBe(landing?.purpose);
     expect(site?.text).toEqual(landing?.text);
-    expect(site?.text).toEqual(["Send my booking confirmation and updates via WhatsApp."]);
+    expect(site?.line?.says).toBe("Send my booking confirmation and updates via WhatsApp.");
   });
 
   it("carries the design's booking wording", () => {

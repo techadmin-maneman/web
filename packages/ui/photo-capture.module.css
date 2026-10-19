@@ -125,6 +125,15 @@
     grid-template-columns: auto 1fr;
   }
 
+  /* What using the photograph agrees to, in one line above its answers. */
+  .agreement {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: var(--fs-14);
+    line-height: var(--lh-145);
+    color: var(--ink-soft);
+  }
+
   .close {
     justify-self: start;
     color: var(--paper);

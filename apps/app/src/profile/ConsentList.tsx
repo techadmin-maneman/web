@@ -8,6 +8,8 @@
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Switch } from "@maneman/ui/Switch";
+import { NoticeLine } from "@maneman/ui/NoticeLine";
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -15,6 +17,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type ConsentPurpose, type Profile } from "../api.ts";
 import { profile } from "../content.ts";
+import { noticeUrl } from "../lib/notices.ts";
 import shared from "./profile.module.css";
 import styles from "./consent-list.module.css";
 
@@ -28,10 +31,19 @@ const WHEN_OFF: Partial<Record<ConsentPurpose, string>> = {
 /** Every visit is photographed for the client's record: a line in the list, never a switch. */
 const NO_SWITCH: readonly ConsentPurpose[] = ["photos_own_record"];
 
+/** A line on photographs, with its link to the notice's section on them. */
+function PhotosLine({ says, className }: { says: string; className: string | undefined }) {
+  return (
+    <p className={className}>
+      <NoticeLine line={{ says, link: null }} href={noticeUrl("photos")} more={CLIENT_WORDS.noticeMore} />
+    </p>
+  );
+}
+
 function VisitPhotos() {
   return (
     <li className={shared.consent}>
-      <p className={shared.consentName}>{profile.visitPhotos}</p>
+      <PhotosLine says={profile.visitPhotos} className={shared.consentName} />
     </li>
   );
 }
@@ -108,11 +120,7 @@ export function ConsentList({
                 )}
                 {confirming === consent.purpose && (
                   <div className={shared.confirm}>
-                    <ul className={styles.lines}>
-                      {copy.referralCards.lines.map((line) => (
-                        <li key={line}>{line}</li>
-                      ))}
-                    </ul>
+                    <PhotosLine says={copy.referralCards.line} className={styles.line} />
                     <div className={shared.row}>
                       <Button
                         variant="primary"

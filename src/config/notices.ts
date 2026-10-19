@@ -5,6 +5,9 @@
 // changes.
 
 import type { ConsentPurpose, ConsentSource } from "../policy/consents.ts";
+import { NAMING_LINE, oneLine, type OneLine } from "./notice-sections.ts";
+
+export { NOTICE_SECTIONS, type NoticeSection, type OneLine } from "./notice-sections.ts";
 
 /** The agreements given on the public site, and the consents switched in the client app. */
 export type NoticePurpose = "contact" | "tryon_photo" | "result_delivery" | ConsentPurpose;
@@ -19,10 +22,12 @@ export interface NoticeLayout {
 interface Notice {
   readonly version: string;
   readonly purpose: NoticePurpose;
-  /** Every line of text shown with the agreement, in order. */
+  /** Every line of text shown with the agreement, in order: for a one-line notice, the line and its section's words. */
   readonly text: readonly string[];
   /** Its parts, for a screen that lays them out (the try-on's consent): `text` is them in order. */
   readonly layout?: NoticeLayout;
+  /** A one-line notice: the line shown, and the section of the site's /notices page it links to (ADR 0219). */
+  readonly line?: OneLine;
 }
 
 /** A notice in parts, and its text: the title, each row as "label: what it says", and the agreement. */
@@ -30,9 +35,6 @@ function laidOut<V extends string>(version: V, purpose: NoticePurpose, layout: N
   const rows = layout.rows.map((row) => `${row.label}: ${row.says}`);
   return { version, purpose, layout, text: [layout.title, ...rows, layout.agreement] };
 }
-
-/** The line a referrer reads before their invite names them (ADR 0025, item 24). */
-const NAMING_LINE = "Your first name appears on your invite.";
 
 /**
  * The pay step's lines, when booking a visit in the app also agrees to the photograph purposes the client has never
@@ -324,12 +326,14 @@ export const NOTICES = [
     version: "whatsapp-visits-booking-v2",
     purpose: "whatsapp_visits",
     text: ["Send me visit updates on WhatsApp"],
+    line: { says: "Send me visit updates on WhatsApp", link: null, section: "whatsapp" },
   },
   {
     // As the waitlist asks it (design/phase2/Referral and Waitlist).
     version: "whatsapp-launches-v1",
     purpose: "whatsapp_launches",
     text: ["Tell me when you launch in my area."],
+    line: { says: "Tell me when you launch in my area.", link: null, section: "whatsapp" },
   },
   // The referral landing's own lines (design/phase2/Referral and Waitlist, C2 and C3; ADR 0048).
   {
@@ -347,17 +351,37 @@ export const NOTICES = [
     version: "referral-consultation-v2",
     purpose: "whatsapp_visits",
     text: [CONFIRMATION_LINE],
+    line: { says: CONFIRMATION_LINE, link: null, section: "whatsapp" },
   },
   {
     version: "site-consultation-v2",
     purpose: "whatsapp_visits",
     text: [CONFIRMATION_LINE],
+    line: { says: CONFIRMATION_LINE, link: null, section: "whatsapp" },
   },
   {
     version: "waitlist-v1",
     purpose: "contact",
     text: ["You may contact me about this request."],
+    line: { says: "You may contact me about this request.", link: null, section: "whatsapp" },
   },
+  // One line each, in words of their own, linking to its section of the site's /notices page. The lines
+  // whose words stayed keep their versions above, with the link beside them. PLACEHOLDER: awaits counsel.
+  oneLine("photo-v7", "tryon_photo", {
+    says: "By using this photo, you agree to our try-on notice.",
+    link: "try-on notice",
+    section: "try-on",
+  }),
+  oneLine("gate-v7", "result_delivery", {
+    says: "By sending it, you agree to our try-on notice.",
+    link: "try-on notice",
+    section: "try-on",
+  }),
+  oneLine("photos-referral-cards-v3", "photos_referral_cards", {
+    says: "Your before and after goes on the card your friends see, with your first name.",
+    link: null,
+    section: "photos",
+  }),
 ] as const satisfies readonly Notice[];
 
 /** A notice's version: a misspelt one is a type error, never a consent recorded on words nobody was shown. */
@@ -389,10 +413,10 @@ export type ToldNotice = (typeof TOLD_NOTICES)[keyof typeof TOLD_NOTICES];
  */
 export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, NoticeVersion>> = {
   contact: "booking-v1",
-  tryon_photo: "photo-v6",
-  result_delivery: "gate-v6",
+  tryon_photo: "photo-v7",
+  result_delivery: "gate-v7",
   photos_own_record: "photos-own-record-v2",
-  photos_referral_cards: "photos-referral-cards-v2",
+  photos_referral_cards: "photos-referral-cards-v3",
   photos_marketing: "photos-marketing-v1",
   whatsapp_visits: "whatsapp-visits-v1",
   whatsapp_launches: "whatsapp-launches-v1",
@@ -422,9 +446,12 @@ export const BOOKING_NOTICES = {
   },
 } as const satisfies Readonly<Record<string, Readonly<Record<string, NoticeVersion>>>>;
 
+/** A line that is the naming line, or a /notices row that says it ("Your name: …"). */
+const names = (line: string): boolean => line === NAMING_LINE || line.endsWith(`: ${NAMING_LINE}`);
+
 /** Every notice for referral cards that carries the naming line: an invite names its referrer only on one of these. */
 export const NAMING_NOTICES: readonly string[] = NOTICES.filter(
-  (notice: Notice) => notice.purpose === "photos_referral_cards" && notice.text.includes(NAMING_LINE),
+  (notice: Notice) => notice.purpose === "photos_referral_cards" && notice.text.some(names),
 ).map((notice) => notice.version);
 
 export function findNotice(version: string): Notice | undefined {

@@ -3,7 +3,6 @@
 import { CLIENT_WORDS, codeMismatch } from "@maneman/web-kit/client-words";
 import { PRESETS, type PresetId } from "@rules/config/presets.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
-import type { Notice } from "./notices.ts";
 
 /**
  * Each look's picture for the look picker, by look id: a file in site/src/assets, the reference photograph's 512 px
@@ -32,18 +31,6 @@ export function lookPictures(list: readonly { readonly picture?: string | undefi
   return pictures.length === list.length ? pictures : null;
 }
 
-/** The consent screen's words: the photo notice's parts, its title, its rows and the agreement. */
-export function consentCopy(photo: Notice) {
-  if (photo.layout === undefined) throw new Error(`the ${photo.version} notice has no parts for the consent screen`);
-  return photo.layout;
-}
-
-/** The gate's words, from its notice. */
-export function gateCopy(gate: Notice) {
-  const [caption = "", title = "", body = "", reassurance = ""] = gate.lines;
-  return { caption, title, body, reassurance };
-}
-
 /**
  * The try-on's screens. The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so
  * the gate asks for the number before the look is made, and the sent and unavailable screens are ADR 0104's words.
@@ -53,7 +40,6 @@ export const tryOn = {
   backToSite: "Back to the site",
   stepLabels: {
     upload: "Step 1 of 3",
-    consent: "Before we begin",
     looks: "Step 2 of 3",
     gate: "Step 3 of 3",
     sent: "Sent to WhatsApp",
@@ -91,26 +77,17 @@ export const tryOn = {
     previewAlt: "The photo you chose",
     oval: "Fill the oval",
   },
-  /** With the photo notice's words (consentCopy). */
-  consent: {
-    continue: "Continue",
-    /** Said when Continue is pressed before the box is ticked. */
-    tickFirst: "Tick the box to agree first.",
-    privacy: {
-      before: "Read the full ",
-      link: "privacy notice",
-      after: ".",
-    },
-  },
   looks: {
     title: "Choose a look.",
     body: "You get one look, so pick the one you’d wear.",
     choose: "Choose one to continue",
     continue: "Continue",
   },
-  /** With the gate notice's words (gateCopy). Both fields are needed: the number is where the look goes. */
+  /** Both fields are needed: the number is where the look goes. Its agreement is the gate notice's one line. */
   gate: {
     frame: "For your WhatsApp only",
+    caption: "Your look goes to your WhatsApp, and shows here once it’s ready.",
+    title: "Where should we send it?",
     name: "Name",
     nameError: CLIENT_WORDS.nameError,
     mobile: "Mobile",

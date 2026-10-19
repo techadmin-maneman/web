@@ -43,17 +43,15 @@ test("lists the four consents off, and switches one on with its date and off aga
   await expect(visitsOff).toBeVisible();
 });
 
-test("shows the referral card’s lines, and the naming line, before that consent can be switched on", async ({
+// It showed five lines; one now says it, the naming among it, with the rest of the notice a tap away.
+test("shows the referral card’s line, which names the referrer, before that consent can be switched on", async ({
   page,
 }) => {
   await loggedIn(page);
   const cards = page.getByRole("switch", { name: appCopy.profile.purposes.photos_referral_cards });
   await cards.click();
-  await expect(page.getByText("Anyone you send this card to can see your photographs.")).toBeVisible();
-  await expect(
-    page.getByText("Cards already delivered stay in people’s chats. We cannot take those back."),
-  ).toBeVisible();
-  await expect(page.getByText("Your first name appears on your invite.")).toBeVisible();
+  await expect(page.getByText(appCopy.profile.referralCards.line)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Details" }).last()).toHaveAttribute("href", /\/notices#photos$/);
   await page.getByRole("button", { name: appCopy.profile.referralCards.cancel }).click();
   await expect(cards).toHaveAttribute("aria-checked", "false");
 

@@ -37,7 +37,7 @@ describe("POST /api/tryon/upload-url", () => {
     expect(await jobRow(body.job_id)).toMatchObject({
       state: "awaiting_upload",
       upload_key: `uploads/${body.job_id}`,
-      photo_consent_version: "photo-v6",
+      photo_consent_version: "photo-v7",
       photo_consent_at: NOW.toISOString(),
       session_id: null,
       person_id: null,

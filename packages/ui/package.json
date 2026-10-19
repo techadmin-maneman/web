@@ -41,6 +41,7 @@
     "./Mark": "./Mark.tsx",
     "./MobileInput": "./MobileInput.tsx",
     "./motion": "./motion.ts",
+    "./NoticeLine": "./NoticeLine.tsx",
     "./Note": "./Note.tsx",
     "./PageHeader": "./PageHeader.tsx",
     "./Panel": "./Panel.tsx",

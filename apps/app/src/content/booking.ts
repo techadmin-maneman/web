@@ -129,7 +129,7 @@ export const booking = {
      * decided on, one tap away beneath Pay. With the referral card's lines (profile.referralCards), they are the
      * notice each consent is recorded under, word for word (src/config/notices.ts; booking/consents.ts).
      */
-    photos: { open: "Photos at your visits", lines: [VISIT_PHOTOS] },
+    photos: { line: VISIT_PHOTOS },
     /**
      * A discount code (docs/decisions/0108-discount-codes.md). One that does not apply is told only that, whatever
      * the reason.

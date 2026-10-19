@@ -1,8 +1,9 @@
 // Paying, with what the hold costs, what changing it later costs, and what the booking agrees to.
 
 import { Checkbox } from "@maneman/ui/Field";
-import { Disclosure } from "@maneman/ui/Disclosure";
 import { Button } from "@maneman/ui/Button";
+import { NoticeLine } from "@maneman/ui/NoticeLine";
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -11,7 +12,8 @@ import { arrivalHours, booking, change, ONE_VISIT } from "../../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../../lib/money.ts";
 import { CodeBox } from "../CodeBox.tsx";
-import { photoLines } from "../consents.ts";
+import { noticeUrl } from "../../lib/notices.ts";
+import { photoLine } from "../consents.ts";
 import { atStake, insideNotice, type AtStake } from "../late-change.ts";
 import styles from "../booking.module.css";
 import { paysNothing } from "../pay.ts";
@@ -104,14 +106,23 @@ function ChangeTerms(props: { hold: Hold; moving: MoveTerms | undefined; stake: 
   );
 }
 
-/** What every visit's photographs are, one tap away beneath Pay. */
+/** The reminder box's words: a yes to WhatsApp about the visit, with its link to the notice. */
+function RemindLine() {
+  return (
+    <NoticeLine
+      line={{ says: booking.pay.remind, link: null }}
+      href={noticeUrl("whatsapp")}
+      more={CLIENT_WORDS.noticeMore}
+    />
+  );
+}
+
+/** What every visit's photographs are, in one line beneath Pay, with its link to the notice. */
 function VisitPhotos() {
   return (
-    <Disclosure className={styles.consents} summaryClassName={styles.consentsOpen} summary={booking.pay.photos.open}>
-      {photoLines().map((line) => (
-        <p key={line}>{line}</p>
-      ))}
-    </Disclosure>
+    <p className={styles.consents}>
+      <NoticeLine line={{ says: photoLine(), link: null }} href={noticeUrl("photos")} more={CLIENT_WORDS.noticeMore} />
+    </p>
   );
 }
 
@@ -178,7 +189,7 @@ export function PayStep(props: {
       {props.askToRemind && (
         <Checkbox
           className={styles.remind}
-          label={copy.remind}
+          label={<RemindLine />}
           checked={props.remind}
           onChange={(event) => {
             props.onRemind(event.target.checked);

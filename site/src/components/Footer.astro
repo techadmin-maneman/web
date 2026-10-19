@@ -1,7 +1,7 @@
 ---
-// The footer, on the home page only: the brand, its line and the way to book, with the number and the company's
-// pages elsewhere beneath them, beside the links in two columns; then the company, its notices and the area on one
-// line. The wordmark here is 132 px wide, so it is the display cut (design/brand/README.md).
+// The footer, on the home page only: the brand, its line and the way to book, with the number beneath them, beside
+// the links in two columns; then the company, its notices, the area and the company's pages elsewhere on one line, as
+// global sites put them. The wordmark here is 132 px wide, so it is the display cut (design/brand/README.md).
 import { WORDMARK } from "@maneman/brand/marks";
 import { buttonLook } from "@maneman/ui/Button";
 import { capsLook } from "@maneman/ui/Caps";
@@ -43,7 +43,6 @@ const year = new Date().getFullYear();
             >
               {whatsapp.label}
             </a>
-            <Social />
           </div>
         )}
       </div>
@@ -79,7 +78,10 @@ const year = new Date().getFullYear();
           ))}
         </nav>
       </div>
-      <span>{footer.area}</span>
+      <div class="end">
+        <span>{footer.area}</span>
+        <Social />
+      </div>
     </div>
   </div>
 </footer>
@@ -169,10 +171,18 @@ const year = new Date().getFullYear();
     align-items: center;
     gap: var(--sp-8) var(--space-s);
   }
+  /* The area, and the company's pages elsewhere at the line's end. */
+  .end {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-8) var(--space-m);
+  }
   .bottom {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
+    align-items: center;
     gap: var(--sp-12) var(--space-l);
     padding-top: var(--sp-24);
     font-size: var(--fs-14);

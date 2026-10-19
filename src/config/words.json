@@ -1288,14 +1288,6 @@
     "reviewed": true
   },
   {
-    "key": "site:home/faq.intro.link",
-    "surface": "site",
-    "group": "Home",
-    "where": "faq",
-    "text": "ask on WhatsApp",
-    "reviewed": true
-  },
-  {
     "key": "site:home/faq.items.0.q",
     "surface": "site",
     "group": "Home",
@@ -1768,6 +1760,14 @@
     "reviewed": true
   },
   {
+    "key": "site:pages/pageTitles.notices",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Notices — Mane Man",
+    "reviewed": false
+  },
+  {
     "key": "site:pages/pageTitles.notFound",
     "surface": "site",
     "group": "Page titles",
@@ -1822,6 +1822,14 @@
     "where": "pageDescriptions",
     "text": "The terms of Mane Man’s hair system service.",
     "reviewed": true
+  },
+  {
+    "key": "site:pages/pageDescriptions.notices",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageDescriptions",
+    "text": "What each agreement on Mane Man’s site and app covers: the try-on, your photos and WhatsApp.",
+    "reviewed": false
   },
   {
     "key": "site:tryon/looks.0.label",
@@ -1958,14 +1966,6 @@
     "where": "tryOn",
     "text": "Step 1 of 3",
     "reviewed": false
-  },
-  {
-    "key": "site:tryon/tryOn.stepLabels.consent",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Before we begin",
-    "reviewed": true
   },
   {
     "key": "site:tryon/tryOn.stepLabels.looks",
@@ -2208,38 +2208,6 @@
     "reviewed": true
   },
   {
-    "key": "site:tryon/tryOn.consent.continue",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Continue",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.consent.tickFirst",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Tick the box to agree first.",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.consent.privacy.before",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Read the full ",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.consent.privacy.link",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "privacy notice",
-    "reviewed": true
-  },
-  {
     "key": "site:tryon/tryOn.looks.title",
     "surface": "site",
     "group": "Try-on",
@@ -2278,6 +2246,22 @@
     "where": "tryOn",
     "text": "For your WhatsApp only",
     "reviewed": true
+  },
+  {
+    "key": "site:tryon/tryOn.gate.caption",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your look goes to your WhatsApp, and shows here once it’s ready.",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.gate.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Where should we send it?",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.gate.name",
@@ -4624,14 +4608,6 @@
     "reviewed": true
   },
   {
-    "key": "site:referral/referral.consultation.consent",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Send my booking confirmation and updates via WhatsApp.",
-    "reviewed": false
-  },
-  {
     "key": "site:referral/referral.consultation.submit",
     "surface": "site",
     "group": "Invite page",
@@ -4888,27 +4864,11 @@
     "reviewed": true
   },
   {
-    "key": "site:referral/referral.waitlist.contactConsent",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "You may contact me about this request.",
-    "reviewed": true
-  },
-  {
     "key": "site:referral/referral.waitlist.required",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
     "text": "Required",
-    "reviewed": true
-  },
-  {
-    "key": "site:referral/referral.waitlist.launchAlert",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Tell me when you launch in my area.",
     "reviewed": true
   },
   {

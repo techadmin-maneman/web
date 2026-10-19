@@ -12,16 +12,15 @@ import { tryOn } from "../../content/site.ts";
 import { ERROR_KINDS, type ErrorKind } from "../../lib/tryon-errors.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
 
-const SCREENS = ["upload", "consent", "looks", "gate", "sent", "error"] as const;
+const SCREENS = ["upload", "looks", "gate", "sent", "error"] as const;
 export type Screen = (typeof SCREENS)[number];
 
 export interface TryOnState {
   readonly screen: Screen;
   /** Opened with ?state=, outside production: stand-ins and no API calls. */
   readonly demo: boolean;
-  /** The chosen photograph, shown from memory. */
+  /** The chosen photograph, shown from memory. Using it agrees to the photo notice, so each new one asks afresh. */
   readonly photo: string | null;
-  readonly consent: boolean;
   /** An index into looks; no look is -1. */
   readonly look: number;
   /** The gate's fields, kept when the visitor goes back and returns. */
@@ -38,7 +37,6 @@ export const START: TryOnState = {
   screen: "upload",
   demo: false,
   photo: null,
-  consent: false,
   look: -1,
   name: "",
   mobile: "",
@@ -50,8 +48,6 @@ export const START: TryOnState = {
 export type TryOnEvent =
   | { readonly type: "preview"; readonly screen: Screen; readonly kind: string | null }
   | { readonly type: "photoChosen"; readonly photo: string }
-  | { readonly type: "consentTicked"; readonly consent: boolean }
-  | { readonly type: "agreed" }
   | { readonly type: "lookChosen"; readonly look: number }
   | { readonly type: "lookDone" }
   | { readonly type: "nameTyped"; readonly name: string }
@@ -72,10 +68,8 @@ export function backFrom(screen: Screen): Screen | "home" {
   switch (screen) {
     case "upload":
       return "home";
-    case "consent":
-      return "upload";
     case "looks":
-      return "consent";
+      return "upload";
     case "gate":
       return "looks";
     case "sent":
@@ -108,12 +102,7 @@ export function step(state: TryOnState, event: TryOnEvent): TryOnState {
     case "preview":
       return preview(event.screen, event.kind);
     case "photoChosen":
-      // The agreement is to this photograph's use, so each new one is asked for afresh.
-      return { ...state, screen: "consent", photo: event.photo, consent: false };
-    case "consentTicked":
-      return { ...state, consent: event.consent };
-    case "agreed":
-      return state.consent ? { ...state, screen: "looks" } : state;
+      return { ...state, screen: "looks", photo: event.photo };
     case "lookChosen":
       return { ...state, look: event.look };
     case "lookDone":

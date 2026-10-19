@@ -11,7 +11,6 @@ import * as referralCopy from "../site/src/content/referral.ts";
 const PAGES = [
   "/",
   "/try",
-  "/try?state=consent",
   "/try?state=looks",
   "/try?state=gate",
   "/try?state=sent",
@@ -26,6 +25,7 @@ const PAGES = [
   "/book?state=listed",
   "/book?state=expired",
   "/privacy",
+  "/notices",
   "/terms",
   // Opened from a reminder's own link; with no token in the address, it says the link has run out.
   "/stop",

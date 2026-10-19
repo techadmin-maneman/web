@@ -484,6 +484,7 @@ export function checkSiteConfig(config: JsonObject): string[] {
         "/book",
         "/guides/*",
         "/privacy",
+        "/notices",
         "/r",
         "/r/*",
         "/stop",
