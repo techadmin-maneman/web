@@ -150,17 +150,16 @@ export const TINY_JPEG = {
   ),
 };
 
-/** Walks the try-on from a chosen photograph to the gate, with the stage and look as v2 offers them. */
+/** Walks the try-on from a chosen photograph, looked at and used, to the gate, with a look as v2 offers them. */
 export async function throughToGate(page: Page): Promise<void> {
   const reach = (screen: string) => page.locator(`[data-screen="${screen}"]`).waitFor();
   await page
     .locator('input[type="file"]')
     .first()
     .setInputFiles(await drawnHeadPhoto());
+  await page.getByRole("button", { name: tryOn.upload.capture.use }).click();
   await reach("consent");
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-  await page.getByRole("button", { name: booking.next }).click();
-  await reach("stage");
   await page.getByRole("button", { name: booking.next }).click();
   await reach("looks");
   await page.getByRole("radio", { name: /Quiff/ }).first().check();

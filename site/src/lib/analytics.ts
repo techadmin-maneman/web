@@ -10,14 +10,13 @@
 // which reports the address as it stands, is not loaded there. No tag is given
 // an address's fragment, where /stop keeps its token, and none loads on /stop.
 //
-// What a booking says of the person, how far their hair loss has gone and the
-// area they live in, reaches no tag: each event goes without them.
+// What a booking says of the person, the area they live in, reaches no tag:
+// each event goes without it.
 //
 // Google's tags start with every kind of consent denied, so they set no cookie,
 // and the Meta Pixel loads only once the visitor has agreed (CONSENT_KEY).
 
 import { scriptAddress } from "@maneman/web-kit/trusted-scripts";
-import type { LossExtent } from "@rules/config/booking.ts";
 import type { BookingWindow } from "@rules/config/scheduling.ts";
 import { ANALYTICS_IDS } from "./analytics-ids.ts";
 import { ENVIRONMENT } from "./build.ts";
@@ -37,8 +36,6 @@ type AnalyticsEvent =
       readonly area: string | null;
       /** Null on the waitlist, which asks for no window. */
       readonly window: BookingWindow | null;
-      /** Null on an invite, which does not ask. */
-      readonly loss_extent: LossExtent | null;
     }
   | {
       readonly name: "booking_confirmed";
@@ -152,7 +149,7 @@ export function answerConsent(answer: "granted" | "denied"): void {
 const STOP_PATH = "/stop";
 
 /** What a booking event says of the person, which no tag is given. */
-const PERSONAL_PARAMETERS = new Set(["area", "loss_extent"]);
+const PERSONAL_PARAMETERS = new Set(["area"]);
 
 const withoutPersonal = (parameters: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(parameters).filter(([key]) => !PERSONAL_PARAMETERS.has(key)));

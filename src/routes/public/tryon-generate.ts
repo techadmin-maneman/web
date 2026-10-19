@@ -2,8 +2,7 @@
 //
 // A look is made only for a try-on the gate has claimed, since the number is
 // where it goes: to WhatsApp, and, once ready, to the page that proved the
-// number at the gate too, by a signed link the status gives (ADR 0214). It is made for
-// the stage the claim gave, the lead's extent of hair loss too. One look per
+// number at the gate too, by a signed link the status gives (ADR 0214). One look per
 // visitor (docs/decisions/0018-one-look-pro-only-lead-notices.md):
 // the first generate for an upload renders it; the same look asked for again
 // returns that job; any other look is refused. The mm_look cookie then keeps
@@ -39,7 +38,7 @@ const GenerateRequestSchema = z
     }),
   })
   .strict()
-  .openapi("GenerateRequest", { description: "The look, for the stage the gate's claim gave the try-on." });
+  .openapi("GenerateRequest", { description: "The look, for a try-on the gate has claimed." });
 
 const JobStatusSchema = z
   .object({
@@ -114,11 +113,11 @@ export function registerTryonGenerate(app: App): void {
     const preset = findPreset(request.preset);
     if (job === null) return refuse(c, "not_found");
     if (preset === undefined) return refuse(c, "invalid_request", ["preset"]);
-    // The claim gives the job its lead and its stage.
-    if (job.lead_id === null || job.stage === null) return refuse(c, "claim_required");
+    // The claim gives the job its lead.
+    if (job.lead_id === null) return refuse(c, "claim_required");
     if (!tryOnRuns(settings.messaging, await tryOnStopped(db))) return refuse(c, "whatsapp_unavailable");
 
-    const choice = { stage: job.stage, preset: preset.id };
+    const choice = { preset: preset.id };
     const outcome = job.state === "awaiting_upload" ? await startFirstLook(c, job, choice) : sameLookAgain(job, choice);
 
     if ("error" in outcome) return refuse(c, outcome.error);
@@ -133,7 +132,7 @@ export function registerTryonGenerate(app: App): void {
 }
 
 /** The look's signed link, for a ready try-on whose number the gate proved; nothing for any other. */
-async function lookOf(c: Context<AppEnv>, job: JobRow): Promise<{ look?: string }> {
+export async function lookOf(c: Context<AppEnv>, job: JobRow): Promise<{ look?: string }> {
   if (job.state !== "ready" || job.result_key === null || job.number_proved_at === null) return {};
   const { config, deps } = c.var;
   const expiresAt = new Date(deps.now().getTime() + RESULT_LINK_MESSAGE_TTL_MS);
@@ -159,13 +158,13 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
   const since = new Date(now.getTime() - (await opsInputs(c)).tryonLookDays * DAY_MS).toISOString();
   const queued = await db
     .prepare(
-      `UPDATE tryon_jobs SET stage = ?2, preset = ?3, state = 'queued'
+      `UPDATE tryon_jobs SET preset = ?2, state = 'queued'
        WHERE id = ?1 AND state = 'awaiting_upload' AND uploaded_at IS NOT NULL
          AND NOT EXISTS (SELECT 1 FROM tryon_jobs other WHERE other.person_id = tryon_jobs.person_id
-           AND other.id <> ?1 AND other.claimed_at >= ?4 AND other.state NOT IN ('awaiting_upload', 'failed'))
+           AND other.id <> ?1 AND other.claimed_at >= ?3 AND other.state NOT IN ('awaiting_upload', 'failed'))
        RETURNING id`,
     )
-    .bind(job.id, choice.stage, choice.preset, since)
+    .bind(job.id, choice.preset, since)
     .first();
   if (queued === null) {
     // A second request queued it first, or another of the number's jobs has its look.

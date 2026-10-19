@@ -1,5 +1,4 @@
 import { useState } from "preact/hooks";
-import type { LossExtent } from "@rules/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
@@ -10,7 +9,6 @@ import type { Listing } from "./outcomes.ts";
 import {
   AgreementBox,
   ConsentBox,
-  ExtentFieldset,
   ForPincode,
   PersonFieldset,
   RememberedInvite,
@@ -36,7 +34,6 @@ export function Waitlist(props: FormProps & { person: PersonFields | null; onLis
   );
   // Joining the list is asking to be told at launch, so the box starts ticked.
   const [alert, setAlert] = useState(false);
-  const [extent, setExtent] = useState<LossExtent | null>(null);
   // On /book, the invite this browser remembers: the form says who is told of the fit before it sends it.
   const [remembered, setRemembered] = useState(() => (props.invited ? null : rememberedInvite()));
 
@@ -54,7 +51,7 @@ export function Waitlist(props: FormProps & { person: PersonFields | null; onLis
       contact_consent: true as const,
       launch_alert: alert,
     };
-    const door = { invited: props.invited, credits: props.credits, extent, remembered };
+    const door = { invited: props.invited, credits: props.credits, remembered };
     const { onInvite, onBook } = byDoor(request, door);
     void form.submit(
       event,
@@ -83,8 +80,6 @@ export function Waitlist(props: FormProps & { person: PersonFields | null; onLis
         <h2 class={styles.waitlistTitle}>{person === null ? waitlist.leave : booking.waitlistTitle}</h2>
         <ForPincode text={forPincode} onChange={props.onChangePincode} />
       </div>
-
-      {!props.invited && <ExtentFieldset extent={extent} onChange={setExtent} />}
 
       {person === null ? (
         <PersonFieldset

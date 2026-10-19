@@ -13,7 +13,14 @@
 //   - the frame then goes to the app's own store until the upload is confirmed
 //     (apps/tech/src/store/outbox.ts), and never to the phone's gallery.
 
-import { SMALL_JPEG_LONG_EDGE, smallJpeg, still, thumbnailJpeg, type SmallJpeg } from "@maneman/web-kit/small-jpeg";
+import {
+  lightOf,
+  SMALL_JPEG_LONG_EDGE,
+  smallJpeg,
+  still,
+  thumbnailJpeg,
+  type SmallJpeg,
+} from "@maneman/web-kit/small-jpeg";
 
 /** The back camera, held open for the whole of one step's five angles. */
 export function openCamera(): Promise<MediaStream> {
@@ -45,23 +52,8 @@ export class BlankFrame extends Error {
 /** How little a photograph's light may vary, by its standard deviation from 0 to 255, before it is blank. */
 const LEAST_SPREAD = 6;
 
-/** The side of the square a frame is shrunk to before its light is read: enough to tell a picture from a blank. */
-const SAMPLE = 32;
-
 function isBlank(frame: HTMLCanvasElement): boolean {
-  const sample = still(frame, SAMPLE, SAMPLE);
-  const pixels = sample.getContext("2d")?.getImageData(0, 0, SAMPLE, SAMPLE).data;
-  if (pixels === undefined) return false;
-  let sum = 0;
-  let squares = 0;
-  for (let at = 0; at < pixels.length; at += 4) {
-    const light = 0.2126 * (pixels[at] ?? 0) + 0.7152 * (pixels[at + 1] ?? 0) + 0.0722 * (pixels[at + 2] ?? 0);
-    sum += light;
-    squares += light * light;
-  }
-  const count = pixels.length / 4;
-  const mean = sum / count;
-  return Math.sqrt(Math.max(0, squares / count - mean * mean)) < LEAST_SPREAD;
+  return lightOf(frame, frame.width, frame.height).spread < LEAST_SPREAD;
 }
 
 /** One tap's frame, held still so the photograph and its thumbnail are the same moment. */

@@ -15,7 +15,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
 
-    const response = await browser.claim(jobId, "98100 00001", {}, { stage: "advanced" });
+    const response = await browser.claim(jobId, "98100 00001");
     expect(response.status).toBe(201);
     const body = await response.json<{ lead_id: string }>();
     expect(Object.keys(body)).toEqual(["lead_id"]);
@@ -24,7 +24,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     const lead = await env.DB.prepare("SELECT source, city, first_choice_window, loss_extent FROM leads WHERE id = ?")
       .bind(body.lead_id)
       .first();
-    expect(lead).toEqual({ source: "tryon", city: null, first_choice_window: null, loss_extent: "advanced" });
+    expect(lead).toEqual({ source: "tryon", city: null, first_choice_window: null, loss_extent: null });
     const person = await env.DB.prepare("SELECT mobile_e164, contactable FROM people").first();
     expect(person).toEqual({ mobile_e164: "+919810000001", contactable: 0 }); // a try-on alone is not contact consent
     const consents = await env.DB.prepare(
@@ -34,10 +34,10 @@ describe("POST /api/tryon/claim, before the look is made", () => {
       { purpose: "result_delivery", notice_version: "gate-v6", created_at: NOW.toISOString(), source: "try_on" },
       { purpose: "tryon_photo", notice_version: "photo-v6", created_at: NOW.toISOString(), source: "try_on" },
     ]);
-    // The job keeps the claim's stage, which its render is made for.
+    // The try-on asks nothing of where the hair loss is, so neither the lead nor the job records it.
     expect(await jobRow(jobId)).toMatchObject({
       state: "awaiting_upload",
-      stage: "advanced",
+      stage: null,
       lead_id: body.lead_id,
       claimed_at: NOW.toISOString(),
       session_id: null,
@@ -121,15 +121,16 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     expect((await jobRow(jobId))?.claimed_at).toBeNull();
   });
 
-  it("asks for the stage the visitor chose", async () => {
+  // The site of the release before still sends the stage its visitor chose.
+  it("takes a stage from the earlier site and keeps none of it", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
-    const refused = await browser.post("/api/tryon/claim", {
-      job_id: jobId,
-      name: "Arjun Mehta",
-      mobile: "98100 00001",
-    });
-    expect(refused.status).toBe(400);
+    const response = await browser.claim(jobId, "98100 00001", {}, { stage: "advanced" });
+    expect(response.status).toBe(201);
+    const { lead_id: leadId } = await response.json<{ lead_id: string }>();
+    const lead = await env.DB.prepare("SELECT loss_extent FROM leads WHERE id = ?").bind(leadId).first();
+    expect(lead).toEqual({ loss_extent: null });
+    expect(await jobRow(jobId)).toMatchObject({ stage: null });
   });
 
   // ADR 0104: a try-on whose look could not be sent does not run, so nothing of the claim is written.
@@ -171,7 +172,6 @@ describe("POST /api/tryon/claim, before the look is made", () => {
         job_id: jobId,
         name: "Staging test",
         mobile,
-        stage: "crown",
         ...(await browser.proofOf(mobile)),
       });
     expect(await (await asStagingTest("98100 00001")).json()).toMatchObject({

@@ -9,7 +9,6 @@
 // A try-on lead does not make the person contactable: the gate's consent
 // permits sending this result and nothing else (docs/decisions/0012-zoho-sync.md).
 
-import type { LossExtent } from "../../config/booking.ts";
 import { recordConsent } from "../privacy/consents.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
 import { recordEvent, type JobRow } from "./tryon.ts";
@@ -50,8 +49,6 @@ interface NewClaim {
   readonly name: string;
   /** Whether a person this makes is a test record (testRecordAtCreation, src/policy/staging-test-records.ts). */
   readonly testRecord: boolean;
-  /** The stage the visitor chose: the lead's extent of hair loss, and the stage the render is made for. */
-  readonly stage: LossExtent;
   /** The gate's notice the page showed. */
   readonly gateNotice: string;
   readonly attribution: LeadAttribution;
@@ -71,15 +68,14 @@ function claimLead(
   const { attribution } = claim;
   return db
     .prepare(
-      `INSERT INTO leads (id, person_id, created_at, source, loss_extent, utm_source, utm_medium, utm_campaign,
-         utm_content, gclid, fbclid, referrer, landing_path, request_id)
-       VALUES (?, ${PERSON_BY_MOBILE}, ?, 'tryon', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO leads (id, person_id, created_at, source, utm_source, utm_medium, utm_campaign, utm_content,
+         gclid, fbclid, referrer, landing_path, request_id)
+       VALUES (?, ${PERSON_BY_MOBILE}, ?, 'tryon', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       leadId,
       claim.mobileE164,
       at,
-      claim.stage,
       attribution.utm_source ?? null,
       attribution.utm_medium ?? null,
       attribution.utm_campaign ?? null,
@@ -135,13 +131,12 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
         givenAt: job.photo_consent_at,
       }).statement,
       claimLead(db, { claim, leadId, at }),
-      // The render is made for the stage the lead records (src/routes/public/tryon-generate.ts). Every claim comes with
-      // its number proved by a code, so the try-on may show in its client's app.
+      // Every claim comes with its number proved by a code, so the try-on may show in its client's app.
       db
         .prepare(
-          `UPDATE tryon_jobs SET person_id = ${PERSON_BY_MOBILE}, lead_id = ?, stage = ?, number_proved_at = ? WHERE id = ?`,
+          `UPDATE tryon_jobs SET person_id = ${PERSON_BY_MOBILE}, lead_id = ?, number_proved_at = ? WHERE id = ?`,
         )
-        .bind(mobileE164, leadId, claim.stage, at, job.id),
+        .bind(mobileE164, leadId, at, job.id),
       db
         .prepare(
           `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state)

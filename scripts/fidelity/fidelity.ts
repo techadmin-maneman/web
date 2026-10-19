@@ -145,13 +145,14 @@ const click = (text: string) => async (page: Page) => {
 const TRY_ON_STEPS: Step[] = [
   { name: "try-1-upload", design: click("See yourself with hair"), site: "/try" },
   { name: "try-2-consent", design: click("Choose a photograph"), site: "/try?state=consent" },
+  // The try-on asks nothing of where the hair loss is: the build has no stage screen (ADR 0217).
   {
     name: "try-3-stage",
     design: async (page) => {
       await page.getByText("I understand, and I agree to my photograph being used this way.").click();
       await click("Continue")(page);
     },
-    site: "/try?state=stage",
+    site: null,
   },
   { name: "try-4-looks", design: click("Continue"), site: "/try?state=looks" },
   // The look goes to WhatsApp only (ADR 0104): the build has no countdown before the gate, and no result after it.

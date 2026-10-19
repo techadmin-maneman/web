@@ -19,17 +19,14 @@
   transition: width var(--duration-travel) var(--ease-house);
 }
 .progress-upload {
-  width: 14%;
+  width: 18%;
 }
 .progress-consent,
 .progress-error {
-  width: 28%;
-}
-.progress-stage {
-  width: 44%;
+  width: 36%;
 }
 .progress-looks {
-  width: 60%;
+  width: 62%;
 }
 .progress-gate {
   width: 90%;

@@ -5722,7 +5722,7 @@ Razorpay's webhook: payments and refunds
     "preset"
   ],
   "additionalProperties": false,
-  "description": "The look, for the stage the gate's claim gave the try-on."
+  "description": "The look, for a try-on the gate has claimed."
 }
 ```
 
@@ -5778,7 +5778,7 @@ Razorpay's webhook: payments and refunds
         "receding",
         "advanced"
       ],
-      "description": "The hair-loss stage the visitor picked: the lead's, and the one the look is made for."
+      "description": "Ignored: the try-on no longer asks where the hair loss is. Taken from the site of the release before."
     },
     "notice_version": {
       "type": "string",
@@ -5795,8 +5795,7 @@ Razorpay's webhook: payments and refunds
     "job_id",
     "name",
     "mobile",
-    "number_code_id",
-    "stage"
+    "number_code_id"
   ],
   "additionalProperties": false
 }
@@ -5895,6 +5894,10 @@ Razorpay's webhook: payments and refunds
         "busy"
       ],
       "description": "Only when state is failed."
+    },
+    "look": {
+      "type": "string",
+      "description": "Only when state is ready: the look, by a signed path on the site that expires within the hour."
     }
   },
   "required": [
@@ -5902,7 +5905,7 @@ Razorpay's webhook: payments and refunds
     "state"
   ],
   "additionalProperties": false,
-  "description": "The look this browser has had: its state alone. The look goes to WhatsApp only."
+  "description": "The look this browser has had: its state, and the look itself once ready."
 }
 ```
 

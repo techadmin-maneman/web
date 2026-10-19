@@ -1,5 +1,4 @@
 import { useState } from "preact/hooks";
-import type { LossExtent } from "@rules/config/booking.ts";
 import { ONE_VISIT_WINDOWS } from "@rules/policy/one-visit.ts";
 import { referral } from "../../content/referral.ts";
 import { booking, numberCode as numberCodeWords } from "../../content/site.ts";
@@ -28,15 +27,7 @@ import { useNumberCode } from "../useNumberCode.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
 import { DayStrip, DayWindows, DiscountCode, PlanChoice } from "./ConsultationFields.tsx";
 import type { Booking } from "./outcomes.ts";
-import {
-  ExtentFieldset,
-  ForPincode,
-  PersonFieldset,
-  RememberedInvite,
-  Send,
-  StepLine,
-  type FormProps,
-} from "./fields.tsx";
+import { ForPincode, PersonFieldset, RememberedInvite, Send, StepLine, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
 import { PERSON_START } from "./person.ts";
@@ -157,8 +148,6 @@ function AddressPart(
     address: AddressFields;
     addressBad: ReturnType<typeof partsToMark>;
     onAddress: (address: AddressFields) => void;
-    extent: LossExtent | null;
-    onExtent: (extent: LossExtent | null) => void;
     /** The site's own page takes a discount code for the one visit (ADR 0108); null where it takes none. */
     discount: { code: string; refused: boolean; onCode: (code: string) => void } | null;
     remembered: ReturnType<typeof rememberedInvite>;
@@ -180,8 +169,6 @@ function AddressPart(
         idPrefix="invite-consultation"
         onChange={props.onAddress}
       />
-
-      {!props.invited && <ExtentFieldset extent={props.extent} onChange={props.onExtent} />}
 
       {discount !== null && <DiscountCode code={discount.code} refused={discount.refused} onCode={discount.onCode} />}
 
@@ -234,7 +221,6 @@ export function Consultation(props: ConsultationProps) {
   const numberCode = useNumberCode();
   const [picked, setPicked] = useState<Slot>(() => ({ date: indiaTomorrow(), window: "morning", start: null }));
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
-  const [extent, setExtent] = useState<LossExtent | null>(null);
   const [code, setCode] = useState("");
   // On /book, the invite this browser remembers: the form says who is told of the fit before it sends it.
   const [remembered, setRemembered] = useState(() => (props.invited ? null : rememberedInvite()));
@@ -310,7 +296,7 @@ export function Consultation(props: ConsultationProps) {
       ...(numberCodeId === null ? {} : { number_code_id: numberCodeId }),
       consent: true as const,
     };
-    const door = { invited: props.invited, credits: props.credits, extent, remembered };
+    const door = { invited: props.invited, credits: props.credits, remembered };
     const { onInvite, onBook: onSite } = byDoor(request, door);
     const onBook = { ...onSite, ...(sentCode === null ? {} : { discount_code: sentCode }) };
     const send = (token: string, keyFor: (request: unknown) => string) =>
@@ -364,8 +350,6 @@ export function Consultation(props: ConsultationProps) {
           address={address}
           addressBad={addressBad}
           onAddress={setAddress}
-          extent={extent}
-          onExtent={setExtent}
           discount={takesCode ? { code, refused: codeRefused, onCode: setCode } : null}
           remembered={remembered}
           onWithout={bookWithoutInvite}

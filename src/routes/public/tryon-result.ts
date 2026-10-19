@@ -1,8 +1,7 @@
-// The look goes to WhatsApp only, never to the site
-// (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so no route hands
-// a browser the look or a link to it. What the page asks on arrival:
+// The look goes to WhatsApp, and to the browser that proved its number at the gate
+// (docs/decisions/0214-from-the-site-into-the-app.md). What the page asks on arrival:
 // GET /api/tryon/availability, whether the try-on can run at all, and
-// GET /api/tryon/look, whether this browser has had its one look. And
+// GET /api/tryon/look, whether this browser has had its one look, and the look itself while it is kept. And
 // GET /api/result/:token, the image behind the signed link a WhatsApp message
 // carries, which the WhatsApp bridge fetches to send it.
 
@@ -16,7 +15,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { lookCookieJob } from "../../http/look-cookie.ts";
 import { verifyToken } from "../../lib/signed-token.ts";
 import { tryOnRuns } from "../../policy/tryon-delivery.ts";
-import { statusOf } from "./tryon-generate.ts";
+import { lookOf, statusOf } from "./tryon-generate.ts";
 
 const AvailabilitySchema = z
   .object({
@@ -27,16 +26,19 @@ const AvailabilitySchema = z
   .strict()
   .openapi("TryOnAvailability");
 
-// Only whether the browser has had its look, and whether it failed: never the image, nor what was asked of it, which
-// outlives an erasure on an expired job's row (src/domain/privacy/erasure.ts).
+// Whether the browser has had its look, whether it failed, and the look while it is ready: never what was asked of
+// it, which outlives an erasure on an expired job's row (src/domain/privacy/erasure.ts).
 const LookSchema = z
   .object({
     job_id: z.uuid(),
     state: z.enum(JOB_STATES),
     failure_code: z.enum(FAILURE_CODES).optional().openapi({ description: "Only when state is failed." }),
+    look: z.string().optional().openapi({
+      description: "Only when state is ready: the look, by a signed path on the site that expires within the hour.",
+    }),
   })
   .strict()
-  .openapi("Look", { description: "The look this browser has had: its state alone. The look goes to WhatsApp only." });
+  .openapi("Look", { description: "The look this browser has had: its state, and the look itself once ready." });
 
 const availabilityRoute = createRoute({
   method: "get",
@@ -86,7 +88,7 @@ export function registerTryonResult(app: App): void {
     const job = jobId === null ? null : await loadJob(c.env.DB, jobId);
     if (job === null) return c.body(null, 204);
     // Once the look has expired, the browser has still had it: the upload link refuses it another.
-    return c.json(statusOf(job), 200);
+    return c.json({ ...statusOf(job), ...(await lookOf(c, job)) }, 200);
   });
 
   app.openapi(resultImageRoute, async (c) => {

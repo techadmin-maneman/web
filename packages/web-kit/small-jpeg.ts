@@ -99,3 +99,29 @@ export async function thumbnailJpeg(source: CanvasImageSource, width: number, he
   const scale = Math.min(1, THUMBNAIL_SHORT_EDGE / Math.min(width, height));
   return (await encodeUnder(draw(source, width, height, scale), THUMBNAIL_BYTES)).picture;
 }
+
+/** How light a picture is, from 0 to 255: on average, and how far it strays from that average. */
+export interface Light {
+  readonly mean: number;
+  readonly spread: number;
+}
+
+/** The side of the square a picture is shrunk to before its light is read: enough to tell a picture from a blank. */
+const LIGHT_SAMPLE = 32;
+
+/** The picture's light, read from a small copy of it. */
+export function lightOf(source: CanvasImageSource, width: number, height: number): Light {
+  const sample = draw(source, width, height, Math.min(LIGHT_SAMPLE / width, LIGHT_SAMPLE / height));
+  const pixels = sample.getContext("2d")?.getImageData(0, 0, sample.width, sample.height).data;
+  if (pixels === undefined) return { mean: 0, spread: 0 };
+  let sum = 0;
+  let squares = 0;
+  for (let at = 0; at < pixels.length; at += 4) {
+    const light = 0.2126 * (pixels[at] ?? 0) + 0.7152 * (pixels[at + 1] ?? 0) + 0.0722 * (pixels[at + 2] ?? 0);
+    sum += light;
+    squares += light * light;
+  }
+  const count = pixels.length / 4;
+  const mean = sum / count;
+  return { mean, spread: Math.sqrt(Math.max(0, squares / count - mean * mean)) };
+}

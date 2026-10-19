@@ -1,21 +1,18 @@
-// The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields, the
+// The parts both forms are made of: the pincode they are for, the person's fields, the
 // invite /book remembers, and the button that sends them; and /book's steps, with the name and number it kept first.
 
 import { capsLook } from "@maneman/ui/Caps";
 import { messageLook } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
-import { ChoiceCard } from "@maneman/ui/ChoiceCard";
-import { Checkbox, Fieldset } from "@maneman/ui/Field";
+import { Checkbox } from "@maneman/ui/Field";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { useEffect, useRef } from "preact/hooks";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { ICONS } from "@maneman/brand/icons";
-import type { LossExtent } from "@rules/config/booking.ts";
 import { referral } from "../../content/referral.ts";
-import { booking, stageOptions, whatsapp } from "../../content/site.ts";
+import { booking, whatsapp } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
 import { fill } from "../../lib/text.ts";
-import { StageDrawing } from "../Drawings.tsx";
 import { MobileField, NameField } from "../PersonFields.tsx";
 import shared from "./Invite.module.css";
 import styles from "./fields.module.css";
@@ -45,37 +42,6 @@ export function ForPincode(props: { text: string; onChange: () => void }) {
         {referral.pincode.change}
       </TextButton>
     </p>
-  );
-}
-
-/**
- * Where the hair loss is, as the design's booking board asks. Nothing is chosen until the
- * visitor chooses, and a visitor who skips it is recorded as not saying. An invited friend is never asked: their
- * invite carries no such question.
- */
-export function ExtentFieldset(props: { extent: LossExtent | null; onChange: (extent: LossExtent) => void }) {
-  return (
-    <Fieldset legend={booking.extent} legendLook="caps">
-      <div class={shared.extents}>
-        {stageOptions.map((option) => (
-          <ChoiceCard
-            key={option.id}
-            name="extent"
-            look="picture"
-            className={shared.extent}
-            checked={props.extent === option.id}
-            onChange={() => {
-              props.onChange(option.id);
-            }}
-          >
-            <>
-              <StageDrawing hair={option.hair} zone={option.zone} size="small" />
-              <span class={shared.extentText}>{option.short}</span>
-            </>
-          </ChoiceCard>
-        ))}
-      </div>
-    </Fieldset>
   );
 }
 

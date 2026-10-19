@@ -3447,7 +3447,7 @@ export interface components {
             /** @description Only when state is ready, for a try-on whose number the gate proved: the look, by a signed path on the site that expires within the hour. */
             look?: string;
         };
-        /** @description The look, for the stage the gate's claim gave the try-on. */
+        /** @description The look, for a try-on the gate has claimed. */
         GenerateRequest: {
             /** Format: uuid */
             job_id: string;
@@ -3478,10 +3478,10 @@ export interface components {
              */
             number_code_id: string;
             /**
-             * @description The hair-loss stage the visitor picked: the lead's, and the one the look is made for.
+             * @description Ignored: the try-on no longer asks where the hair loss is. Taken from the site of the release before.
              * @enum {string}
              */
-            stage: "crown" | "receding" | "advanced";
+            stage?: "crown" | "receding" | "advanced";
             /**
              * @description The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
              * @example gate-v6
@@ -3504,7 +3504,7 @@ export interface components {
             /** @description False while WhatsApp cannot send a look: the try-on does not run, and the page says so. */
             available: boolean;
         };
-        /** @description The look this browser has had: its state alone. The look goes to WhatsApp only. */
+        /** @description The look this browser has had: its state, and the look itself once ready. */
         Look: {
             /** Format: uuid */
             job_id: string;
@@ -3515,6 +3515,8 @@ export interface components {
              * @enum {string}
              */
             failure_code?: "photo_unreadable" | "photo_invalid_file" | "render_failed" | "busy";
+            /** @description Only when state is ready: the look, by a signed path on the site that expires within the hour. */
+            look?: string;
         };
         StoppedMessages: {
             /**

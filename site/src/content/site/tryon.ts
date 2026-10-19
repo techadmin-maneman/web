@@ -1,48 +1,9 @@
 // The try-on: the stages, the looks, the consent and the gate, and every screen of /try.
 
 import { CLIENT_WORDS, codeMismatch } from "@maneman/web-kit/client-words";
-import { LOSS_EXTENTS, type LossExtent } from "@rules/config/booking.ts";
 import { PRESETS, type PresetId } from "@rules/config/presets.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
 import type { Notice } from "./notices.ts";
-
-/** The illustrated stage options, shared by the try-on and the booking form. */
-export const stageOptions: readonly {
-  readonly id: LossExtent;
-  readonly title: string;
-  readonly sub: string;
-  readonly short: string;
-  readonly hair: string;
-  readonly zone: string;
-}[] = [
-  {
-    id: "crown",
-    title: "Thinning at the crown",
-    sub: "The parting has widened · around stage III",
-    short: "Crown thinning",
-    hair: "M13 28 C20 17 44 17 51 28",
-    zone: "M32 33 C41 33 46 38 46 44 C46 50 40 55 32 55 C24 55 18 50 18 44 C18 38 23 33 32 33 Z",
-  },
-  {
-    id: "receding",
-    title: "Receding at the front",
-    sub: "The corners have gone back · stages III to IV",
-    short: "Receding front",
-    hair: "M11 34 C16 22 24 18 32 18 C40 18 48 22 53 34",
-    zone: "M13 30 C18 19 25 25 32 25 C39 25 46 19 51 30",
-  },
-  {
-    id: "advanced",
-    title: "Advanced, front and crown",
-    sub: "Little left on top · stages V to VII",
-    short: "Advanced",
-    hair: "M10 40 C14 30 22 26 32 26 C42 26 50 30 54 40",
-    zone: "M12 34 C18 16 46 16 52 34 C46 28 18 28 12 34 Z",
-  },
-];
-if (stageOptions.map((stage) => stage.id).join() !== LOSS_EXTENTS.join()) {
-  throw new Error("stageOptions must list the backend’s LOSS_EXTENTS in order");
-}
 
 /**
  * Each look's picture for the look picker, by look id: a file in site/src/assets, the reference photograph's 512 px
@@ -91,11 +52,10 @@ export const tryOn = {
   back: "Back",
   backToSite: "Back to the site",
   stepLabels: {
-    upload: "Step 1 of 4",
+    upload: "Step 1 of 3",
     consent: "Before we begin",
-    stage: "Step 2 of 4",
-    looks: "Step 3 of 4",
-    gate: "Step 4 of 4",
+    looks: "Step 2 of 3",
+    gate: "Step 3 of 3",
     sent: "Sent to WhatsApp",
     error: "Can’t use this photo",
   },
@@ -107,12 +67,26 @@ export const tryOn = {
       { n: "2", title: "Straight on, no tilt", body: "Phone at eye level, arm out, chin level." },
       { n: "3", title: "Nothing on your head", body: "No cap, no hood, hair as it is today." },
     ],
+    camera: "Take a photo",
     choose: "Choose a photo",
-    camera: "Use the camera",
-    /** With the camera open in the page: the shutter, and the way back. */
-    snap: "Take the photo",
-    closeCamera: "Cancel",
-    cameraLabel: "The camera’s view of you",
+    /** The camera, the whole screen on a phone, then the photo taken or chosen, to use or take again. */
+    capture: {
+      title: "Your photo",
+      view: "The camera’s view of you",
+      hint: "Fit your face in the oval",
+      shutter: "Take the photo",
+      close: "Close",
+      still: "Your photo",
+      check: "Face clear and well lit?",
+      use: "Use photo",
+      retake: "Retake",
+      another: "Choose another",
+      /** Said over a photo too dark to make a good look from, or one the camera gave blank. */
+      dark: "A little dark. Face a window for a better look.",
+      blank: "We couldn’t see you. Try again.",
+    },
+    /** Where the browser will not open the camera here: Take a photo then opens the phone’s own. */
+    blocked: "The camera is blocked here. Allow it in your browser’s settings, or choose a photo.",
     previewCaption: "Your photo appears here",
     previewAlt: "The photo you chose",
     oval: "Fill the oval",
@@ -127,11 +101,6 @@ export const tryOn = {
       link: "privacy notice",
       after: ".",
     },
-  },
-  stage: {
-    title: "Where are you now?",
-    body: "Pick whichever is closest. Your technician measures properly at the visit.",
-    continue: "Continue",
   },
   looks: {
     title: "Choose a look.",

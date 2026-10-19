@@ -22,12 +22,11 @@ function walk(...events: TryOnEvent[]): TryOnState {
 
 const PHOTO: TryOnEvent = { type: "photoChosen", photo: "blob:photo" };
 
-/** Through to the gate with a photograph, the agreement, the first stage and the first look. */
+/** Through to the gate with a photograph, the agreement and the first look. */
 const TO_GATE: TryOnEvent[] = [
   PHOTO,
   { type: "consentTicked", consent: true },
   { type: "agreed" },
-  { type: "stageDone" },
   { type: "lookChosen", look: 0 },
   { type: "lookDone" },
 ];
@@ -39,10 +38,10 @@ describe("the try-on’s machine", () => {
   });
 
   // ADR 0104: the number is asked for before the look is made, so there is no countdown between the looks and the gate.
-  it("walks from a photograph to the gate, straight from the looks", () => {
+  // Where the hair loss is is asked nowhere: the agreement goes straight on to the looks.
+  it("walks from a photograph to the gate, straight from the agreement to the looks", () => {
     expect(walk(PHOTO).screen).toBe("consent");
-    expect(walk(...TO_GATE.slice(0, 3)).screen).toBe("stage");
-    expect(walk(...TO_GATE.slice(0, 4)).screen).toBe("looks");
+    expect(walk(...TO_GATE.slice(0, 3)).screen).toBe("looks");
     expect(walk(...TO_GATE)).toMatchObject({ screen: "gate", look: 0 });
   });
 
@@ -55,7 +54,7 @@ describe("the try-on’s machine", () => {
   });
 
   it("does not go on to the gate before a look is chosen", () => {
-    const looksScreen = walk(...TO_GATE.slice(0, 4));
+    const looksScreen = walk(...TO_GATE.slice(0, 3));
     expect(step(looksScreen, { type: "lookDone" })).toBe(looksScreen);
   });
 
@@ -80,8 +79,7 @@ describe("the try-on’s machine", () => {
   it("goes back as v2 does: to the site from the upload, to the upload from an error; to the site once sent", () => {
     expect(backFrom("upload")).toBe("home");
     expect(backFrom("consent")).toBe("upload");
-    expect(backFrom("stage")).toBe("consent");
-    expect(backFrom("looks")).toBe("stage");
+    expect(backFrom("looks")).toBe("consent");
     expect(backFrom("gate")).toBe("looks");
     expect(backFrom("sent")).toBe("home");
     expect(backFrom("error")).toBe("upload");
@@ -102,9 +100,11 @@ describe("the try-on’s machine", () => {
     expect(step(typed, { type: "sent" })).toMatchObject({ screen: "sent", returning: false, mobile: "98100 00000" });
   });
 
-  it("tells a visitor back after their look that it was sent, from any screen", () => {
-    expect(step(START, { type: "alreadySent" })).toMatchObject({ screen: "sent", returning: true });
-    expect(step(walk(...TO_GATE.slice(0, 3)), { type: "alreadySent" }).screen).toBe("sent");
+  it("tells a visitor back after their look that it was sent, from any screen, with the look while it is kept", () => {
+    expect(step(START, { type: "alreadySent", look: null })).toMatchObject({ screen: "sent", returning: true });
+    expect(step(walk(...TO_GATE.slice(0, 3)), { type: "alreadySent", look: null }).screen).toBe("sent");
+    const kept = step(START, { type: "alreadySent", look: "/api/result/signed" });
+    expect(kept).toMatchObject({ screen: "sent", returning: true, returnedLook: "/api/result/signed" });
   });
 
   it("keeps the gate’s name and number across screens", () => {

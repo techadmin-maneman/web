@@ -313,16 +313,6 @@ test("the address asks for the street once, and folds the floor, tower and landm
   });
 });
 
-// Everyone who skipped the question was recorded as crown thinning.
-test("chooses nothing for the visitor where the hair loss is", async ({ page }) => {
-  await mockApi(page);
-  await openForm(page);
-  await toAddress(page);
-  const extent = page.getByRole("group", { name: siteCopy.booking.extent });
-  await expect(extent.getByRole("radio")).toHaveCount(3);
-  for (const choice of await extent.getByRole("radio").all()) await expect(choice).not.toBeChecked();
-});
-
 // An empty check blamed the input, and "Change the pincode" was a 58 x 20 px target.
 test("an empty pincode is asked for, and Change is a full-size target", async ({ page }) => {
   await mockApi(page);

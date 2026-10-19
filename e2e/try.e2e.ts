@@ -5,6 +5,8 @@
 // before the look is made.
 
 import type { Page } from "@playwright/test";
+import sharp from "sharp";
+import { axeViolations } from "./a11y.ts";
 import { drawnHeadPhoto, expect, fakeTurnstile, test, TINY_JPEG } from "./support.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 
@@ -13,13 +15,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 const SCREENS = {
-  upload: { label: "Step 1 of 4", progress: 14 },
-  consent: { label: "Before we begin", progress: 28 },
-  stage: { label: "Step 2 of 4", progress: 44 },
-  looks: { label: "Step 3 of 4", progress: 60 },
-  gate: { label: "Step 4 of 4", progress: 90 },
+  upload: { label: "Step 1 of 3", progress: 18 },
+  consent: { label: "Before we begin", progress: 36 },
+  looks: { label: "Step 2 of 3", progress: 62 },
+  gate: { label: "Step 3 of 3", progress: 90 },
   sent: { label: "Sent to WhatsApp", progress: 100 },
-  error: { label: "Can’t use this photo", progress: 28 },
+  error: { label: "Can’t use this photo", progress: 36 },
 } as const;
 type Screen = keyof typeof SCREENS;
 
@@ -52,8 +53,7 @@ test.describe("chrome", () => {
 
   const BACK: [Screen, Screen][] = [
     ["consent", "upload"],
-    ["stage", "consent"],
-    ["looks", "stage"],
+    ["looks", "consent"],
     ["gate", "looks"],
     ["error", "upload"],
   ];
@@ -74,7 +74,9 @@ test.describe("chrome", () => {
   }
 });
 
-/** A front camera that films a plain frame, for a browser that has none: the test machine's. */
+const capture = siteCopy.tryOn.upload.capture;
+
+/** A front camera that films a drawn frame, light and not all one shade, for a browser that has none. */
 async function fakeCamera(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const canvas = document.createElement("canvas");
@@ -85,8 +87,12 @@ async function fakeCamera(page: Page): Promise<void> {
       getUserMedia: () => {
         const context = canvas.getContext("2d");
         if (context !== null) {
-          context.fillStyle = "rgb(200, 162, 122)";
+          context.fillStyle = "rgb(214, 204, 188)";
           context.fillRect(0, 0, canvas.width, canvas.height);
+          context.fillStyle = "rgb(200, 162, 122)";
+          context.beginPath();
+          context.ellipse(320, 380, 150, 200, 0, 0, Math.PI * 2);
+          context.fill();
         }
         return Promise.resolve(canvas.captureStream(30));
       },
@@ -94,6 +100,19 @@ async function fakeCamera(page: Page): Promise<void> {
     Object.defineProperty(navigator, "mediaDevices", { value: devices, configurable: true });
   });
 }
+
+/** A camera the browser will not open: refused, as when the visitor said no to it. */
+async function refusedCamera(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const devices = {
+      enumerateDevices: () => Promise.resolve([{ kind: "videoinput", deviceId: "front", groupId: "", label: "" }]),
+      getUserMedia: () => Promise.reject(new DOMException("refused", "NotAllowedError")),
+    };
+    Object.defineProperty(navigator, "mediaDevices", { value: devices, configurable: true });
+  });
+}
+
+const cameraIn = (page: Page) => page.getByRole("dialog", { name: capture.title });
 
 test.describe("upload", () => {
   test("three guidelines, two ways in, and no demo link to the error screen", async ({ page }) => {
@@ -106,15 +125,62 @@ test.describe("upload", () => {
     await expect(page.locator('input[type="file"][capture="user"]')).toHaveCount(1);
   });
 
-  // The camera's button opened the file picker at a desk, where a file input's capture means nothing.
-  test("Use the camera opens the camera in the page, and its photo goes on to the consent screen", async ({ page }) => {
+  // On a phone the shutter sat above the camera's view, below the fold, and the photo went on unseen.
+  test("Take a photo opens the camera over the page, and the photo is looked at before it is used", async ({
+    page,
+  }) => {
     await fakeCamera(page);
     await open(page, "upload");
     await page.getByRole("button", { name: siteCopy.tryOn.upload.camera }).click();
-    await expect(page.locator("video").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.choose })).toHaveCount(0);
-    await page.getByRole("button", { name: siteCopy.tryOn.upload.snap }).click();
+    const camera = cameraIn(page);
+    await expect(camera.locator("video")).toBeVisible();
+    await expect(camera.getByText(capture.hint)).toBeVisible();
+    const shutter = camera.getByRole("button", { name: capture.shutter });
+    await expect(shutter).toBeEnabled();
+    expect(await axeViolations(page)).toEqual([]);
+
+    // On a phone the camera is the whole screen, and the shutter sits at its foot, in the middle, under a thumb.
+    const screen = page.viewportSize() ?? { width: 0, height: 0 };
+    if (screen.width <= 760) {
+      const frame = await camera.boundingBox();
+      const button = await shutter.boundingBox();
+      expect([frame?.width, frame?.height]).toEqual([screen.width, screen.height]);
+      expect(button?.y ?? 0).toBeGreaterThan(screen.height * 0.75);
+      expect(Math.abs((button?.x ?? 0) + (button?.width ?? 0) / 2 - screen.width / 2)).toBeLessThan(2);
+    }
+
+    await shutter.click();
+    await expect(camera.getByRole("img", { name: capture.still })).toBeVisible();
+    await expect(camera.getByText(capture.check)).toBeVisible();
+    await camera.getByRole("button", { name: capture.retake }).click();
+    await expect(camera.locator("video")).toBeVisible();
+    await camera.getByRole("button", { name: capture.shutter }).click();
+    await camera.getByRole("button", { name: capture.use }).click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "consent");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("a phone’s Back closes the camera and stays on the photo step", async ({ page }) => {
+    await fakeCamera(page);
+    await open(page, "upload");
+    await page.getByRole("button", { name: siteCopy.tryOn.upload.camera }).click();
+    await expect(cameraIn(page).locator("video")).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "upload");
+    expect(new URL(page.url()).pathname).toBe("/try");
+  });
+
+  test("a camera the browser blocks says so, and Take a photo then asks for the phone’s own", async ({ page }) => {
+    await refusedCamera(page);
+    await open(page, "upload");
+    const take = page.getByRole("button", { name: siteCopy.tryOn.upload.camera });
+    await take.click();
+    await expect(page.getByText(siteCopy.tryOn.upload.blocked)).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const chooser = page.waitForEvent("filechooser");
+    await take.click();
+    expect(await (await chooser).element().getAttribute("capture")).toBe("user");
   });
 
   test("a device with no camera is offered only the photo it has", async ({ page }) => {
@@ -127,23 +193,45 @@ test.describe("upload", () => {
     await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.camera })).toHaveCount(0);
   });
 
-  // On a phone the caption sat across the oval's lower corner brackets.
-  test("the frame’s caption sits below the oval and its brackets", async ({ page }) => {
+  // On a phone the caption sat across the oval's lower corner brackets; there, the camera opens over the page.
+  test("the frame’s caption sits below the oval and its brackets, and a phone draws no empty frame", async ({
+    page,
+  }) => {
     await open(page, "upload");
+    const caption = page.getByText(siteCopy.tryOn.upload.previewCaption);
+    if ((page.viewportSize()?.width ?? 0) <= 760) {
+      await expect(caption).toBeHidden();
+      return;
+    }
     const oval = await page.locator("svg").filter({ hasText: siteCopy.tryOn.upload.oval }).boundingBox();
-    const caption = await page.getByText(siteCopy.tryOn.upload.previewCaption).boundingBox();
-    expect(caption?.y ?? 0).toBeGreaterThanOrEqual((oval?.y ?? 0) + (oval?.height ?? 0));
+    const box = await caption.boundingBox();
+    expect(box?.y ?? 0).toBeGreaterThanOrEqual((oval?.y ?? 0) + (oval?.height ?? 0));
   });
 
-  test("a chosen photograph shows in the frame and the consent screen follows", async ({ page }) => {
+  test("a chosen photo is looked at first, and goes on to the consent once used", async ({ page }) => {
     await open(page, "upload");
     await page
       .locator('input[type="file"]')
       .first()
       .setInputFiles(await drawnHeadPhoto());
+    const camera = cameraIn(page);
+    await expect(camera.getByRole("img", { name: capture.still })).toBeVisible();
+    await expect(camera.getByRole("button", { name: capture.another })).toBeVisible();
+    await camera.getByRole("button", { name: capture.use }).click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "consent");
     await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
     await expect(page.getByRole("img", { name: siteCopy.tryOn.upload.previewAlt })).toBeVisible();
+  });
+
+  test("a dark photo is said to be dark before it is used", async ({ page }) => {
+    await open(page, "upload");
+    const { buffer } = await drawnHeadPhoto();
+    const dark = await sharp(buffer).linear(0.2, 0).jpeg().toBuffer();
+    await page
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles({ name: "dark.jpg", mimeType: "image/jpeg", buffer: dark });
+    await expect(cameraIn(page).getByRole("status")).toHaveText(capture.dark);
   });
 
   test("a photograph too small for the API is refused before anything is sent", async ({ page }) => {
@@ -156,6 +244,7 @@ test.describe("upload", () => {
     });
     await open(page, "upload");
     await page.locator('input[type="file"]').first().setInputFiles(TINY_JPEG);
+    await cameraIn(page).getByRole("button", { name: capture.use }).click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "error");
     await expect(page.getByRole("heading", { name: siteCopy.tryOn.error.kinds.photo.title })).toBeVisible();
     expect(calls).toEqual([]);
@@ -173,7 +262,7 @@ test.describe("consent", () => {
     await page.getByText("I understand, and I agree to my photograph being used this way.").click();
     await expect(next).toHaveAttribute("aria-disabled", "false");
     await next.click();
-    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "stage");
+    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "looks");
   });
 
   // /try has no footer, so the line names none.
@@ -188,14 +277,7 @@ test.describe("consent", () => {
   });
 });
 
-test.describe("stage and looks", () => {
-  test("three stages, the first chosen", async ({ page }) => {
-    await open(page, "stage");
-    const stages = page.getByRole("radio");
-    await expect(stages).toHaveCount(3);
-    await expect(stages.first()).toBeChecked();
-  });
-
+test.describe("looks", () => {
   test("six looks; the button changes once one is picked, and goes on to the gate", async ({ page }) => {
     await open(page, "looks");
     await expect(page.getByRole("radio")).toHaveCount(6);

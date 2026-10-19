@@ -2,6 +2,7 @@
 // WhatsApp, which hands the page the look once ready, the object URLs the page shows the photograph from, and a
 // history entry for each screen.
 
+import { afterSheets } from "@maneman/ui/sheetHistory";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { useLatest } from "../useLatest.ts";
 import { jobStatus } from "../../lib/api.ts";
@@ -106,8 +107,11 @@ export function useScreenHistory(screen: Screen, send: (event: TryOnEvent) => vo
       returning.current = false;
       return;
     }
-    depth.current += 1;
-    history.pushState({ tryOn: depth.current }, "");
+    // Once the camera's own entry has gone: the step off it is not a Back, and cannot undo this entry.
+    afterSheets(() => {
+      depth.current += 1;
+      history.pushState({ tryOn: depth.current }, "");
+    });
   }, [screen, on]);
 
   return () => depth.current > 0;

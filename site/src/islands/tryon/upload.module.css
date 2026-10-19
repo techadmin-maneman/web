@@ -44,6 +44,9 @@
     flex: 1 1 100%;
   }
 }
+.blocked {
+  margin-top: var(--sp-16);
+}
 .preview {
   width: 100%;
   min-height: var(--preview-h);
@@ -89,15 +92,9 @@
   object-fit: cover;
 }
 
-/* The camera's view, as a mirror shows you, under the oval to fill. */
-.cameraView {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1);
-}
-.cameraView ~ .oval {
-  position: relative;
+/* On a phone the frame waiting for a photo goes: there, the camera opens over the page. After .preview, to win. */
+@media (max-width: 760px) {
+  .waiting {
+    display: none;
+  }
 }
