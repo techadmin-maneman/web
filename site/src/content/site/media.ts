@@ -102,5 +102,6 @@ export const founderNote = {
     "Losing your hair is natural. It’s nobody’s fault, and it doesn’t define you. You can own it, do something about it, or simply move on. What matters is feeling good about the person you see in the mirror, and getting on with being the best version of yourself.",
     "That’s why I started Mane Man. A more private, straightforward way to get your hair back, on your terms.",
   ],
+  name: "Rishabh Gupta",
   signature: "Founder, Mane Man",
 };
