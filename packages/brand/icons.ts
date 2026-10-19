@@ -31,6 +31,14 @@ export const ICONS = {
   sending: "M12 3.5 A8.5 8.5 0 0 1 20.5 12",
 } as const;
 
+/** The company's pages elsewhere, in the site's footer, drawn in the set's own line. */
+export const SOCIAL_ICONS = {
+  linkedin:
+    "M7 3.5 H17 A3.5 3.5 0 0 1 20.5 7 V17 A3.5 3.5 0 0 1 17 20.5 H7 A3.5 3.5 0 0 1 3.5 17 V7 A3.5 3.5 0 0 1 7 3.5 Z M8 10.5 V16.5 M8 7.7 V7.8 M11.5 16.5 V10.5 M11.5 13.2 C11.5 11.4 12.6 10.4 14 10.4 C15.4 10.4 16.5 11.4 16.5 13.2 V16.5",
+  instagram:
+    "M7 3.5 H17 A3.5 3.5 0 0 1 20.5 7 V17 A3.5 3.5 0 0 1 17 20.5 H7 A3.5 3.5 0 0 1 3.5 17 V7 A3.5 3.5 0 0 1 7 3.5 Z M12 8 A4 4 0 0 1 12 16 A4 4 0 0 1 12 8 M17 6.9 V7",
+} as const;
+
 /** The nine glyphs the apps add (design/phase2/Client App.dc.html, the icons board). */
 export const APP_ICONS = {
   visitCredit: "M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M8 12 L11 15 L16.5 9",

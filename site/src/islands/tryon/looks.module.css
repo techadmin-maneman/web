@@ -16,6 +16,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* The square picture in a 4:3 frame, from near its top: the whole hairstyle, which is the point, to the chin. */
+  object-position: 50% 20%;
 }
 .lookText {
   display: block;

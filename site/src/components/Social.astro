@@ -1,0 +1,52 @@
+---
+// The company's pages elsewhere, as icons a thumb can tap, for both footers. Until their addresses are in, they show
+// outside production only, and lead nowhere (site/src/content/site/contact.ts).
+import { socialLinks } from "../content/site.ts";
+import { isShown } from "../lib/build.ts";
+import { textLinkLook } from "@maneman/ui/TextLink";
+import Icon from "./Icon.astro";
+---
+
+{isShown(socialLinks) && (
+  <ul class="social">
+    {socialLinks.links.map((link) => (
+      <li>
+        {link.href === null ? (
+          <span class="icon" title={link.label}>
+            <Icon name={link.icon} size="md" />
+          </span>
+        ) : (
+          <a
+            class={textLinkLook({ tone: "ink", quiet: true, className: "icon" })}
+            href={link.href}
+            aria-label={link.label}
+            rel="noopener"
+          >
+            <Icon name={link.icon} size="md" />
+          </a>
+        )}
+      </li>
+    ))}
+  </ul>
+)}
+
+<style>
+  .social {
+    display: flex;
+    gap: var(--sp-8);
+    margin: var(--sp-8) 0 0 calc(-1 * var(--sp-12));
+    padding: 0;
+    list-style: none;
+  }
+  .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tap);
+    height: var(--tap);
+    color: var(--ink-muted);
+  }
+  a.icon:hover {
+    color: var(--paper);
+  }
+</style>

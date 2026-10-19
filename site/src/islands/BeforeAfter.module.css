@@ -2,7 +2,7 @@
    first paint, and the labels in its corners. */
 .teaser {
   --at: 46%;
-  --compare-handle: var(--teaser-handle);
+  --at-n: 46;
 
   width: 100%;
   height: var(--teaser-frame-h);
@@ -31,9 +31,12 @@
 }
 .teaser .left {
   left: var(--sp-20);
+  /* Gone before its picture narrows to less than the label. */
+  opacity: clamp(0, calc((var(--at-n) - 14) / 10), 1);
 }
 .teaser .right {
   right: var(--sp-20);
+  opacity: clamp(0, calc((86 - var(--at-n)) / 10), 1);
 }
 .teaser .tag {
   position: absolute;

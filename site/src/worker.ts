@@ -262,7 +262,9 @@ class AreasListed {
       if (this.of(section).length > 0) element.removeAttribute("hidden");
       return;
     }
-    const areas = this.of(element.getAttribute("data-areas-of"));
+    // A post office named for the city itself says nothing the page has not.
+    const city = element.getAttribute("data-areas-of");
+    const areas = this.of(city).filter((area) => area !== city);
     if (areas.length > 0) {
       element.setInnerContent(areas.map((area) => `<li>${escaped(area)}</li>`).join(""), { html: true });
     }

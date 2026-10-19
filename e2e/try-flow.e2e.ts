@@ -364,7 +364,7 @@ for (const [name, answers, heading] of [
   [
     "WhatsApp switched off since the page opened",
     { uploadUrl: refusal(503, "whatsapp_unavailable") },
-    "The try-on is paused.",
+    "We can’t send to WhatsApp just now.",
   ],
 ] as const) {
   test(`the upload: ${name} shows "${heading}"`, async ({ page }) => {
@@ -383,7 +383,11 @@ for (const [name, answers, heading] of [
 for (const [name, answers, heading] of [
   ["the hourly render limit", { generate: refusal(429, "rate_limited") }, "The try-on is busy just now."],
   ["today’s render ceiling", { generate: refusal(503, "busy") }, "The try-on is busy just now."],
-  ["WhatsApp switched off at the gate", { claim: refusal(503, "whatsapp_unavailable") }, "The try-on is paused."],
+  [
+    "WhatsApp switched off at the gate",
+    { claim: refusal(503, "whatsapp_unavailable") },
+    "We can’t send to WhatsApp just now.",
+  ],
 ] as const) {
   test(`the gate: ${name} shows "${heading}"`, async ({ page }) => {
     await mockApi(page, answers);

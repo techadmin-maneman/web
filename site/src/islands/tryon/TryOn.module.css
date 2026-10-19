@@ -106,6 +106,12 @@
   max-width: var(--flow-button-max);
   margin-top: var(--sp-28);
 }
+/* On a phone the button spans the screen, as the gate's does. */
+@media (max-width: 760px) {
+  .next {
+    max-width: none;
+  }
+}
 .nextSpaced {
   margin-top: var(--sp-32);
 }

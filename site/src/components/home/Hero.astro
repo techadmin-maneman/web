@@ -248,6 +248,12 @@ const showFootage = isShown(heroFootage);
     max-width: var(--measure-hero-body);
     text-wrap: pretty;
   }
+  /* On a phone the two stack at one width; on a wider screen they sit side by side at their own. */
+  @media (max-width: 760px) {
+    .actions > :global(*) {
+      flex: 1 1 100%;
+    }
+  }
   .actions {
     display: flex;
     flex-wrap: wrap;

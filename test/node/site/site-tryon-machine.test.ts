@@ -4,6 +4,7 @@
 // the gate.
 
 import { describe, expect, it } from "vitest";
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { tryOn } from "../../../site/src/content/site.ts";
 import {
   backFrom,
@@ -136,7 +137,7 @@ describe("the try-on’s previews (?state=, never in production)", () => {
   });
 
   it("opens the sent screen with the gate’s number, or a returning visitor’s without one", () => {
-    expect(preview("sent")).toMatchObject({ screen: "sent", returning: false, mobile: tryOn.gate.mobilePlaceholder });
+    expect(preview("sent")).toMatchObject({ screen: "sent", returning: false, mobile: CLIENT_WORDS.mobilePlaceholder });
     expect(preview("sent", "returning")).toMatchObject({ screen: "sent", returning: true, mobile: "" });
   });
 
