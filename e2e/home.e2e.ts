@@ -198,9 +198,7 @@ test.describe("home sections", () => {
   test("the hero’s opening line is read whole, once, and turns one phrase at a time until paused", async ({ page }) => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
-    await expect(line).toHaveText(
-      "Natural up close. 100% real human hair. Fitted at home. Get your confident self back. Be the Main Man again.",
-    );
+    await expect(line).toHaveText(siteCopy.hero.sequence.join(" "));
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.hero.title);
     const phrases = line.locator(".phrase");
     await expect(phrases.nth(0)).toHaveClass(/\bon\b/);

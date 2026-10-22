@@ -41,7 +41,7 @@ export const footer = {
         { label: "Questions", href: "/#faq" },
       ],
     },
-    /** The guides and the cities, once they are published (site/src/lib/more-pages.ts). */
+    /** The guides, once they are published (site/src/lib/more-pages.ts). */
     more: { title: "Learn" },
     reach: { title: "Reach us" },
     legal: {
@@ -79,7 +79,7 @@ export const hero = {
     "Natural up close.",
     "100% real human hair.",
     "Fitted at home.",
-    "Get your confident self back.",
+    "Confidence restored.",
     "Be the Main Man again.",
   ],
   title: "A full head of hair, matched to your own.",
@@ -242,7 +242,7 @@ export const range = {
     { label: "Made for", cells: ["Everyday wear", "The gym and sport", "A visible parting", "A close look"] },
     { label: "Base", cells: ["Fine mono", "French lace", "Silk over lace", "Thin skin"] },
     { label: "Hairline", cells: ["Good", "Very good", "Very good", "Best"] },
-    { label: "Breathes", cells: ["Moderate", "Highest", "Lowest", "Low"] },
+    { label: "Breathes", cells: ["Moderate", "Highest", "Moderate", "Low"] },
     { label: "Lasts", cells: ["8 months", "6 months", "6 months", "4 months"] },
     { label: "Service visit", cells: ["Monthly", "Monthly", "Monthly", "Twice a month"] },
   ] satisfies { label: string; cells: [string, string, string, string] }[],

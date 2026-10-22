@@ -90,7 +90,10 @@ export const stepPhotos = {
   images: [
     { file: "step-consultation.jpg", alt: "A technician measuring a client’s head with a tape" },
     { file: "step-first-fit.jpg", alt: "A client smiling after the first fit" },
-    { file: "step-service.jpg", alt: "A hair system laid out with its tape, ready to bond" },
+    {
+      file: "step-service.jpg",
+      alt: "A technician’s tool roll laid open: scissors, comb, adhesive remover, cotton pads, brush and tweezers",
+    },
   ] satisfies Picture[],
 };
 
