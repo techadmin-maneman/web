@@ -11,6 +11,9 @@
      display sizes of the band's statement and how it works' numerals. The brand's fixed sizes (--fs-13 to --fs-30)
      are for what does not grow. */
   --fs-hero: clamp(42px, 7.4vw, 96px);
+  /* The hero's turning line: on a narrow phone it shrinks so its longest phrase, about 8.7 times the type's size,
+     keeps to one line. */
+  --fs-hero-line: min(var(--fs-hero), calc((100vw - 2 * var(--gutter)) / 8.9));
   --fs-band: clamp(34px, 6.4vw, 84px);
   --fs-step-number: clamp(40px, 5vw, 72px);
   --fs-h1: clamp(32px, 4.6vw, 62px);

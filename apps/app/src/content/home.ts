@@ -123,7 +123,7 @@ export const home = {
   expect: {
     label: "What to expect",
     steps: [
-      "A template of your scalp, in cling film and tape.",
+      "Your scalp mapped and measured.",
       "Your colour matched against 40 samples.",
       "Nothing fitted, nothing ordered on the day.",
     ],

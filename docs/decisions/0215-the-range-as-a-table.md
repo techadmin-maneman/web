@@ -22,6 +22,7 @@ first fittings are to settle.
 2. **How long each lasts is the guide's figure**: 8, 6, 6 and 4 months, on the owner's word. Nowhere else on the site
    gives a life in months.
 3. **No price**, as before (ADR 0204).
+   Natural breathes "Moderate", on the owner's word of 22 October 2026, where the guide says "Lowest".
 4. The materials guide says Indian remy hair on Celebrity, as the guide does.
 
 ## Consequences
