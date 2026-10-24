@@ -19,5 +19,5 @@ const NONE: AnalyticsIds = { ga4: null, googleAds: null, metaPixel: null };
 export const ANALYTICS_IDS: Readonly<Record<SiteEnvironment, AnalyticsIds>> = {
   local: NONE,
   staging: NONE,
-  production: NONE,
+  production: { ga4: "G-SYKFYCBTQE", googleAds: null, metaPixel: null },
 };
