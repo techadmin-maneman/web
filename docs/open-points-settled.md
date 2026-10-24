@@ -6,6 +6,13 @@ The points of `docs/open-points.md` that are settled, each with its answer, its 
 
 Each keeps its number. Where something follows from a ruling and is still owed, it is an open point of its own, named here.
 
+- **44. The legal pages against Phase 2.** Settled 25 October 2026: counsel approved the privacy and terms pages as they stand (`site/src/content/site/legal.ts`). Counsel's full documents follow as item 188.
+- **51. DPDP contacts and times.** Settled 25 October 2026: the Grievance Officer is Adwate Kumar, Co-founder and COO, at grievance@maneman.in, named on the privacy and terms pages and in `docs/runbook/data-breach.md`; counsel confirms grievances are resolved within 30 days, and asks for an acknowledgement within 48 hours (item 188).
+- **69. Photographs and the consent to them.** Settled 25 October 2026: counsel approved the app's line on visit photographs and the basis they are taken on (`apps/app/src/content/booking.ts`, `apps/app/src/content/profile.ts`).
+- **146. The try-on's notices.** Settled 25 October 2026: counsel approved `photo-v7`, `gate-v7` and `referral-consultation-v2`, which are in `APPROVED_NOTICES` (`site/src/content/site/notices.ts`), and the privacy page's try-on and cookie sentences.
+- **149. The address, on the privacy page.** Settled 25 October 2026: counsel approved the privacy page's address lines as they stand.
+- **156. The invite, on the privacy page.** Settled 25 October 2026: counsel approved the privacy page's invite sentence as it stands.
+
 - **14. The invoice of a visit a credit paid for.** Settled 18 October 2026: the CA advised that a visit given free needs no tax invoice, and the owner chose a zero-priced one for the record. The invoice pass raises it at Rs. 0 as "Complimentary service visit" and sends it (`src/domain/books/books-invoices.ts`).
 - **28. The job-sheet template.** Settled 15 October 2026: the owner approved the checklists and partial reasons in `src/config/job-sheet.ts` as the launch lists; ops change them in Settings · Job sheet.
 - **7. Late fees, the refund route, a late-cancelled credit.** Settled 5 October 2026: the owner keeps C8, reached from C7's "Cancel the visit instead", as built; no designer's screen is owed.
