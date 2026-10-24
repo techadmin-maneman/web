@@ -7,6 +7,10 @@ import type { AppEnv } from "./context.ts";
 import { opsInputs } from "./ops-inputs.ts";
 import { queueMessage } from "./queue-message.ts";
 
+/** The secret a provider's hook sends as "Authorization: Bearer <token>", kept out of every URL a proxy logs. */
+export const bearerToken = (c: Context<AppEnv>): string =>
+  c.req.header("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+
 export function inboundContext(c: Context<AppEnv>): InboundContext {
   return {
     db: c.env.DB,

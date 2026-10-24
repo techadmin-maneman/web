@@ -6,7 +6,7 @@ export interface Msg91Settings {
   readonly authKey: string;
   /** The WhatsApp Business number MSG91 sends from, digits only with the country code: "919810000000". */
   readonly integratedNumber: string;
-  /** The secret in the address MSG91's webhook posts to (src/routes/hooks/msg91.ts); null leaves the hook off. */
+  /** The secret MSG91's webhook sends as its Authorization header (src/routes/hooks/msg91.ts); null, it is off. */
   readonly webhookToken: string | null;
 }
 

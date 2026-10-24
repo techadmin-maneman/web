@@ -50,7 +50,7 @@ function receipt(status: string, overrides: object = {}) {
       instanceId: "a1b2c3",
       ...overrides,
     },
-    destination: `https://staging.maneman.in/api/hooks/evolution/${TOKEN}`,
+    destination: "https://staging.maneman.in/api/hooks/evolution",
     date_time: "2026-09-22T09:30:05.000Z",
     sender: "919999900000@s.whatsapp.net",
     server_url: "https://bridge.example",
@@ -59,9 +59,9 @@ function receipt(status: string, overrides: object = {}) {
 }
 
 function post(body: unknown, token = TOKEN, target = app()) {
-  return request(target, `/api/hooks/evolution/${token}`, {
+  return request(target, "/api/hooks/evolution", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
   });
 }
@@ -73,7 +73,7 @@ async function message() {
   }>();
 }
 
-describe("POST /api/hooks/evolution/:token", () => {
+describe("POST /api/hooks/evolution", () => {
   it("marks a message delivered", async () => {
     const res = await post(receipt("DELIVERY_ACK"));
 
@@ -130,17 +130,21 @@ describe("POST /api/hooks/evolution/:token", () => {
   });
 
   // A token in the path sits in every proxy log on the way.
-  it("takes the token as an Authorization header at the path without one", async () => {
-    const send = (token: string) =>
-      request(app(), "/api/hooks/evolution", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(receipt("DELIVERY_ACK")),
-      });
-    expect((await send("not-the-token")).status).toBe(401);
+  it("takes the token only as an Authorization header, never in the path", async () => {
+    const inPath = await request(app(), `/api/hooks/evolution/${TOKEN}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(receipt("DELIVERY_ACK")),
+    });
+    expect(inPath.status).toBe(404);
+    const unsigned = await request(app(), "/api/hooks/evolution", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(receipt("DELIVERY_ACK")),
+    });
+    expect(unsigned.status).toBe(401);
     expect(await message()).toEqual({ delivered_at: null, read_at: null });
-    expect((await send(TOKEN)).status).toBe(204);
-    expect(await message()).toEqual({ delivered_at: "2026-09-21T06:30:00.000Z", read_at: null });
+    expect(JSON.stringify(logs.lines())).not.toContain(TOKEN);
   });
 
   it("refuses a wrong token, and changes nothing", async () => {
@@ -163,7 +167,7 @@ describe("POST /api/hooks/evolution/:token", () => {
 
     const logged = JSON.stringify(logs.lines());
     expect(logged).toContain("evolution_receipts");
-    expect(logged).toContain("/api/hooks/evolution/:token");
+    expect(logged).toContain("/api/hooks/evolution");
     for (const secret of ["9810000001", "9999900000", "evolution-instance-key", TOKEN]) {
       expect(logged).not.toContain(secret);
     }
@@ -177,9 +181,13 @@ describe("POST /api/hooks/evolution/:token", () => {
         { messaging: { ...LOCAL_SETTINGS.messaging, evolution: EVOLUTION } },
         surface,
       );
-      const res = await request(target, `/api/hooks/evolution/${TOKEN}`, {
+      const res = await request(target, "/api/hooks/evolution", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "https://maneman.test",
+          Authorization: `Bearer ${TOKEN}`,
+        },
         body: JSON.stringify(receipt("READ")),
       });
       expect(res.status, surface).toBe(404);
@@ -222,8 +230,12 @@ describe("a STOP reply (messages.upsert)", () => {
   function postWithQueue(body: unknown) {
     return request(
       app(),
-      `/api/hooks/evolution/${TOKEN}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+      "/api/hooks/evolution",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}` },
+        body: JSON.stringify(body),
+      },
       { MESSAGE_QUEUE: queue },
     );
   }

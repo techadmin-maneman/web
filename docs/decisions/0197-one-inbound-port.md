@@ -12,7 +12,7 @@ Every sign-in and message went through Evolution, an unofficial bridge driving a
 ## Decision
 
 1. **One inbound port** (`src/domain/messages/inbound.ts`): a receipt for a message we sent, or a message someone sent our number, in one shape. The port records the receipt, files the message in the Care inbox, answers out of hours, and acts on a STOP, whichever provider reported it.
-2. **Each provider's hook reads its own payloads into it.** Evolution's (`/api/hooks/evolution/:token`) as before; MSG91's (`/api/hooks/msg91/:token`, `MSG91_WEBHOOK_TOKEN`) built to its documented webhook: an outbound report delivered or read is a receipt for the message its `requestId` names, as our send answered; an inbound message's words come from `text`, or the stringified JSON of `content`, `button` (a quick reply, so a STOP button stops) or `messages`.
+2. **Each provider's hook reads its own payloads into it.** Evolution's (`/api/hooks/evolution`) as before; MSG91's (`/api/hooks/msg91`, `MSG91_WEBHOOK_TOKEN`) built to its documented webhook. Each takes its token only as `Authorization: Bearer <token>`, never in the path, which a proxy or Cloudflare's own request line would log (this replaces the path token of ADR 0041). MSG91's webhook: an outbound report delivered or read is a receipt for the message its `requestId` names, as our send answered; an inbound message's words come from `text`, or the stringified JSON of `content`, `button` (a quick reply, so a STOP button stops) or `messages`.
 3. **SMS as the login codes' fallback** is built (ADR 0030): a code WhatsApp could not send goes by SMS once `SMS_PROVIDER` is `msg91`, which waits on DLT registration (provisioning, step 12b).
 
 ## Consequences

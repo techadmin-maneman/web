@@ -36,10 +36,10 @@ const written = (text: string, date: string, time: string, settings: Partial<Set
     appFor("local", fakeDependencies({ messaging: messaging(), now: () => indiaInstant(date, time) }), {
       messaging: { ...LOCAL_SETTINGS.messaging, evolution: EVOLUTION, ...settings },
     }),
-    `/api/hooks/evolution/${TOKEN}`,
+    "/api/hooks/evolution",
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}` },
       body: JSON.stringify({
         event: "messages.upsert",
         instance: "maneman",

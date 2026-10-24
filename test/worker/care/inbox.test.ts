@@ -36,8 +36,12 @@ function written(text: string, from = "919810000001", id = crypto.randomUUID()) 
 const post = (body: unknown) =>
   request(
     appFor("local", fakeDependencies(), { messaging: { ...LOCAL_SETTINGS.messaging, evolution: EVOLUTION } }),
-    `/api/hooks/evolution/${TOKEN}`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+    "/api/hooks/evolution",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify(body),
+    },
     { MESSAGE_QUEUE: fakeQueue() },
   );
 

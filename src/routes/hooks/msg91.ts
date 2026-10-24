@@ -1,4 +1,4 @@
-// POST /api/hooks/msg91/:token: what MSG91's WhatsApp webhook reports on the number we send from
+// POST /api/hooks/msg91: what MSG91's WhatsApp webhook reports on the number we send from
 // (docs/decisions/0114-whatsapp-business-platform-through-msg91.md, 0197-one-inbound-port.md), read as its webhook
 // documents it ("How to receive WhatsApp delivery reports via webhook (new)", msg91.com/help): an outbound report
 // (`direction` "1") whose `eventName` is delivered or read is a receipt for the message its `requestId` names, as our
@@ -6,13 +6,14 @@
 // stringified JSON of `content`, `button` (a quick reply, STOP among them) or `messages`. Both go to the inbound port
 // every provider feeds (src/domain/messages/inbound.ts).
 //
-// MSG91 posts one event a request, or a list. The token in the path is our secret, MSG91_WEBHOOK_TOKEN; the body
-// names the chat, so the logger never writes it.
+// MSG91 posts one event a request, or a list. Our secret, MSG91_WEBHOOK_TOKEN, comes as the header
+// "Authorization: Bearer <token>" (the webhook's headers in MSG91), out of every URL a proxy logs; the body names the
+// chat, so the logger never writes it.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
-import { inboundContext } from "../../http/inbound-context.ts";
+import { bearerToken, inboundContext } from "../../http/inbound-context.ts";
 import { secretsMatch } from "../../lib/hash.ts";
 import { takeInbound, type Inbound } from "../../domain/messages/inbound.ts";
 
@@ -84,11 +85,10 @@ function inboundOf(event: Msg91Event): Inbound[] {
 
 const msg91HookRoute = createRoute({
   method: "post",
-  path: "/api/hooks/msg91/{token}",
+  path: "/api/hooks/msg91",
   summary:
     "MSG91's WhatsApp webhook: delivery reports for the messages we sent, and the messages on our number, where a " +
-    "STOP stops our messages",
-  request: { params: z.object({ token: z.string() }) },
+    'STOP stops our messages; the token as "Authorization: Bearer <token>"',
   responses: {
     204: { description: "Taken, or ignored. Either way MSG91 need not send it again" },
     401: errorResponse("unauthorized: the token is wrong"),
@@ -101,7 +101,7 @@ export function registerMsg91Hook(app: App): void {
     const { log } = c.var;
     const expected = c.var.config.settings.messaging.msg91?.webhookToken ?? null;
     if (expected === null) return refuse(c, "not_found");
-    if (!(await secretsMatch(c.req.valid("param").token, expected))) {
+    if (!(await secretsMatch(bearerToken(c), expected))) {
       log.warn("msg91_hook_unauthorized");
       return refuse(c, "unauthorized");
     }
