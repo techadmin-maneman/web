@@ -122,7 +122,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **Before it:**
 
 - [ ] The payment run of section 2 passed (item 8).
-- [ ] **The console's permissions in production** (ADRs 0109 and 0189): production's first release creates the list off. Once that release is live, switch Access control on at Admin › Staff; `STAFF_BOOTSTRAP_ADMINS` keep you in while the list is empty. Then add each person's grants.
+- [x] **The console's permissions in production** (ADRs 0109 and 0189): Access control switched on 25 October 2026, before the console had any staff or calls; `STAFF_BOOTSTRAP_ADMINS` keep you in while the list is empty. Add each person's grants at Admin › Staff as they join.
 - [ ] Razorpay live: KYC, live keys, and the live webhook to `https://maneman.in/api/hooks/razorpay` with the nine events of "The dashboards" below (items 5, 6 and 154; provisioning, step 11c).
 - [ ] The Razorpay and Zoho tables of "The dashboards" below walked on staging and production, each result recorded.
 - [ ] The CA's answers, and GST on in Books with the real GSTIN, Books synced again (items 2, 3, 9, 14, 16, 17 and 26).
