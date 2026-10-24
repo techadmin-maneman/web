@@ -78,7 +78,7 @@
     "@hono/zod-openapi": "1.6.3",
     "hono": "4.13.13",
     "postgres": "3.4.9",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
@@ -119,6 +119,9 @@
     "yaml": "2.9.1"
   },
   "overrides": {
+    "@cloudflare/vitest-plugin": {
+      "zod": "$zod"
+    },
     "sharp": "0.35.5",
     "miniflare": {
       "undici": "7.29.1"
