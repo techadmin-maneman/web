@@ -5,6 +5,6 @@ export interface EvolutionSettings {
   readonly baseUrl: string;
   readonly apiKey: string;
   readonly instance: string;
-  /** The secret in the delivery-receipt webhook's path. Unset, the webhook answers 404. */
+  /** The secret the delivery-receipt webhook sends as its Authorization header. Unset, the webhook answers 404. */
   readonly webhookToken: string | null;
 }

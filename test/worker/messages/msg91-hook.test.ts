@@ -1,7 +1,7 @@
 // MSG91's WhatsApp webhook (src/routes/hooks/msg91.ts; docs/decisions/0197-one-inbound-port.md), with payloads shaped
 // as MSG91's webhook guide documents them: an outbound report marks our message delivered and read, an inbound
 // message is filed in the Care inbox, a STOP, typed or pressed as a quick reply, withdraws the sender's WhatsApp
-// consents, and a wrong token is refused. Every value here is made up.
+// consents, and a wrong token, or one in the path, is refused. Every value here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -34,8 +34,12 @@ beforeEach(async () => {
 function post(body: unknown, token = TOKEN, msg91: Settings["messaging"]["msg91"] = MSG91) {
   return request(
     appFor("local", fakeDependencies(), { messaging: { ...LOCAL_SETTINGS.messaging, msg91 } }),
-    `/api/hooks/msg91/${token}`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+    "/api/hooks/msg91",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    },
     { MESSAGE_QUEUE: queue },
   );
 }
@@ -74,7 +78,7 @@ const delivery = () =>
     read_at: string | null;
   }>();
 
-describe("POST /api/hooks/msg91/:token", () => {
+describe("POST /api/hooks/msg91", () => {
   it("marks our message delivered, then read, from MSG91's reports, by the request it was sent under", async () => {
     expect((await post(report("delivered"))).status).toBe(204);
     expect(await delivery()).toMatchObject({ delivered_at: expect.any(String) as string, read_at: null });
@@ -117,6 +121,21 @@ describe("POST /api/hooks/msg91/:token", () => {
     expect((await post(report("delivered"), TOKEN, { ...MSG91, webhookToken: null })).status).toBe(404);
     expect((await post(report("delivered"), TOKEN, null)).status).toBe(404);
     expect((await delivery())?.delivered_at).toBeNull();
+  });
+
+  // A token in the path sits in every proxy log on the way.
+  it("takes the token only as an Authorization header, never in the path", async () => {
+    const app = appFor("local", fakeDependencies(), { messaging: { ...LOCAL_SETTINGS.messaging, msg91: MSG91 } });
+    const send = (path: string) =>
+      request(app, path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(report("delivered")),
+      });
+    expect((await send(`/api/hooks/msg91/${TOKEN}`)).status).toBe(404);
+    expect((await send("/api/hooks/msg91")).status).toBe(401);
+    expect((await delivery())?.delivered_at).toBeNull();
+    expect(JSON.stringify(logs.lines())).not.toContain(TOKEN);
   });
 
   it("logs no number, no words and no token", async () => {

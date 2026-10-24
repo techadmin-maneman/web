@@ -36,10 +36,10 @@ const LEAD = "lead@maneman.test";
 const written = (from: string) =>
   request(
     appFor("local", fakeDependencies(), { messaging: { ...LOCAL_SETTINGS.messaging, evolution: EVOLUTION } }),
-    `/api/hooks/evolution/${TOKEN}`,
+    "/api/hooks/evolution",
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${TOKEN}` },
       body: JSON.stringify({
         event: "messages.upsert",
         instance: "maneman",

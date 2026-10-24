@@ -2838,7 +2838,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/hooks/evolution/{token}": {
+    "/api/hooks/msg91": {
         parameters: {
             query?: never;
             header?: never;
@@ -2847,86 +2847,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages; the token in the path, until the bridge sends it as a header */
+        /** MSG91's WhatsApp webhook: delivery reports for the messages we sent, and the messages on our number, where a STOP stops our messages; the token as "Authorization: Bearer <token>" */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
-                path: {
-                    token: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Taken, or ignored. Either way Evolution need not send it again */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description unauthorized: the token is wrong */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "unauthorized";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description not_found: receipts are not switched on (no EVOLUTION_WEBHOOK_TOKEN) */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "not_found";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/hooks/msg91/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** MSG91's WhatsApp webhook: delivery reports for the messages we sent, and the messages on our number, where a STOP stops our messages */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    token: string;
-                };
+                path?: never;
                 cookie?: never;
             };
             requestBody?: never;

@@ -13,6 +13,8 @@
   "workers_dev": false,
   "preview_urls": false,
   "upload_source_maps": true,
+  // Cloudflare's own line for each request keeps its full path, signed links among them, so it stays off here and in
+  // each environment, debugging included; `npm run check:config` refuses it on. Our logger writes its own line.
   "observability": { "enabled": true, "logs": { "invocation_logs": false } },
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
   // Every minute, each run only the cron jobs due in it (EVERY_MINUTE, src/scheduled/cron.ts).

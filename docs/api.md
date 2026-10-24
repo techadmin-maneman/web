@@ -3802,87 +3802,9 @@ Evolution's delivery receipts (messages.update) for the WhatsApp messages we sen
 }
 ```
 
-### POST /api/hooks/evolution/{token}
+### POST /api/hooks/msg91
 
-Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages; the token in the path, until the bridge sends it as a header
-
-**204**: Taken, or ignored. Either way Evolution need not send it again
-
-**401**: unauthorized: the token is wrong
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "unauthorized"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
-**404**: not_found: receipts are not switched on (no EVOLUTION_WEBHOOK_TOKEN)
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "not_found"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
-### POST /api/hooks/msg91/{token}
-
-MSG91's WhatsApp webhook: delivery reports for the messages we sent, and the messages on our number, where a STOP stops our messages
+MSG91's WhatsApp webhook: delivery reports for the messages we sent, and the messages on our number, where a STOP stops our messages; the token as "Authorization: Bearer <token>"
 
 **204**: Taken, or ignored. Either way MSG91 need not send it again
 

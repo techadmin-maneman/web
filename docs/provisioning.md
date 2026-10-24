@@ -506,11 +506,11 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
 
 ## 12. WhatsApp delivery receipts and STOP replies (Evolution)
 
-Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md), and passes on the messages people send us, where a STOP reply withdraws the sender's WhatsApp consents and is answered once. The no-show evidence depends on the receipts. Until this is set up, the route answers 404: no receipts are recorded and a STOP reply stops nothing (the link at the foot of a reminder still works).
+Evolution reports each message as delivered and read to `POST /api/hooks/evolution` (docs/decisions/0041-outbound-messages-for-phase-2.md), and passes on the messages people send us, where a STOP reply withdraws the sender's WhatsApp consents and is answered once. The no-show evidence depends on the receipts. Until this is set up, the route answers 404: no receipts are recorded and a STOP reply stops nothing (the link at the foot of a reminder still works).
 
 1. **The token.** Make a random value of at least 32 characters, e.g. `openssl rand -hex 24`, and set it on the Worker with `W secret put EVOLUTION_WEBHOOK_TOKEN --env <env>`. Use a different value in each environment.
 2. **Evolution's webhook**, on the instance the Worker sends from:
-   - URL: `https://<host>/api/hooks/evolution`, with the header `Authorization: Bearer <token>` (the webhook's `headers` in Evolution's settings), so the token is in no URL a proxy logs. A bridge that cannot send headers uses `https://<host>/api/hooks/evolution/<token>`, which mm-api still takes;
+   - URL: `https://<host>/api/hooks/evolution`, with the header `Authorization: Bearer <token>` (the webhook's `headers` in Evolution's settings), so the token is in no URL a proxy logs. A token in the path is not taken;
    - events: **`MESSAGES_UPDATE` and `MESSAGES_UPSERT` only**;
    - "webhook by events": off.
 
@@ -530,7 +530,7 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
    ```
 
    `delivered_at` and `read_at` should be filled within seconds. If they stay empty, look in Workers Logs:
-   - `evolution_hook_unauthorized`: the token in Evolution's URL is wrong;
+   - `evolution_hook_unauthorized`: the token in Evolution's Authorization header is wrong, or missing;
    - no `evolution_receipts` line at all: Access or Bot Fight Mode is stopping the webhook.
 
    Then reply STOP from that handset, if its person has agreed to WhatsApp about visits or launches. The handset gets one answer, the client's page in the console shows the consents withdrawn by "STOP reply", and Workers Logs has an `evolution_replies` line with `stopped: 1`. Switch the consents back on in the app afterwards.
@@ -546,7 +546,7 @@ The WhatsApp Business Platform, which sends from the business's own number with 
 2. **The templates.** `node --env-file=.env.msg91 scripts/ops/whatsapp-templates.ts --submit --origin https://maneman.in` (or `https://staging.maneman.in` for a staging number) sends each one MSG91 does not hold yet for approval, with sample values for WhatsApp's reviewers; `.env.msg91` holds `MSG91_AUTH_KEY` and `MSG91_INTEGRATED_NUMBER`. `--status` lists where each stands. Without either it prints them, to submit by hand in MSG91 (WhatsApp → Templates). A button's address is the origin followed by `{{1}}`. Wait until every one is approved; a text missing approval is refused, and its message fails.
 3. **The secrets,** for the environment: `W secret put MSG91_AUTH_KEY --env <env>` with MSG91's API key, and `W secret put MSG91_INTEGRATED_NUMBER --env <env>` with the number and its country code, as `919810000000`.
 4. **The switch.** A pull request sets `MESSAGING_PROVIDER` to `"msg91"` in that environment's vars. Once deployed, sign in with a code, and check one booking's confirmation arrives. A refused key alerts as the bridge being down; a refused template fails its message with MSG91's reason in `outbound_messages.last_error`.
-5. **Receipts, replies and STOP.** A token of at least 32 characters, `W secret put MSG91_WEBHOOK_TOKEN --env <env>`; then in MSG91 (Webhooks (New) → WhatsApp), a webhook to `https://<host>/api/hooks/msg91/<token>` on the public host, for the inbound messages and the outbound reports. A delivered or read report fills in the message's receipt; a message to the number is filed in the Care inbox, and a STOP, typed or pressed, stops our messages (ADR 0197). Workers Logs shows `msg91_inbound` with what each post held. Keep Evolution's webhook (step 12) on the old number for any replies still sent there.
+5. **Receipts, replies and STOP.** A token of at least 32 characters, `W secret put MSG91_WEBHOOK_TOKEN --env <env>`; then in MSG91 (Webhooks (New) → WhatsApp), a webhook to `https://<host>/api/hooks/msg91` on the public host, for the inbound messages and the outbound reports, with the header `Authorization: Bearer <token>` (the webhook's Headers), so the token is in no URL a proxy logs. A token in the path is not taken. A delivered or read report fills in the message's receipt; a message to the number is filed in the Care inbox, and a STOP, typed or pressed, stops our messages (ADR 0197). Workers Logs shows `msg91_inbound` with what each post held. Keep Evolution's webhook (step 12) on the old number for any replies still sent there.
 
 ## 12b. Login codes by SMS (MSG91)
 
@@ -672,7 +672,7 @@ The free plan gives the zone one rate-limiting rule. It keeps one address from s
    (starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/api/hooks/"))
    ```
 
-   The webhooks (`/api/hooks/razorpay`, `/api/hooks/evolution/…`) stay out, so a burst of payments is never refused. If the editor will not take the expression, build it instead: **URI Path** _starts with_ `/api/`, **And** **URI Path** _does not start with_ `/api/hooks/`.
+   The webhooks (`/api/hooks/razorpay`, `/api/hooks/evolution`, `/api/hooks/msg91`) stay out, so a burst of payments is never refused. If the editor will not take the expression, build it instead: **URI Path** _starts with_ `/api/`, **And** **URI Path** _does not start with_ `/api/hooks/`.
 
 4. **With the same characteristics:** IP, the only one the free plan offers.
 5. **When rate exceeds:** **Requests** `50`, **Period** 10 seconds.

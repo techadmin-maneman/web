@@ -1,8 +1,6 @@
 // POST /api/hooks/evolution: what Evolution reports on the number we send from
 // (docs/decisions/0041-outbound-messages-for-phase-2.md), its token in the
-// Authorization header, out of every URL a proxy logs; and the same at
-// /api/hooks/evolution/:token, the token in the path, until the bridge sends the
-// header (provisioning, step 12). MESSAGES_UPDATE
+// Authorization header, out of every URL a proxy logs. MESSAGES_UPDATE
 // carries the delivery receipts for the messages we sent, which fill in
 // outbound_messages.delivered_at and read_at for the no-show evidence.
 // MESSAGES_UPSERT carries every message on the number; a STOP reply among them
@@ -11,15 +9,13 @@
 //
 // Evolution is set to send those two events only (provisioning, step 12); any other
 // event is ignored. The body names the chat and carries the instance's API key,
-// so our logger never writes it, nor the token: its request line records the route's
-// pattern, not its path, and Cloudflare's own line, which would, is off
-// (observability.logs.invocation_logs, wrangler.jsonc).
+// so our logger never writes it, nor the token.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
-import { inboundContext } from "../../http/inbound-context.ts";
+import { bearerToken, inboundContext } from "../../http/inbound-context.ts";
 import { secretsMatch } from "../../lib/hash.ts";
 import { takeInbound, type Inbound } from "../../domain/messages/inbound.ts";
 
@@ -57,42 +53,29 @@ const MessageSchema = z.object({
 const MessagesSchema = z.object({ data: z.union([MessageSchema, z.array(MessageSchema)]).optional() });
 type Message = z.infer<typeof MessageSchema>;
 
-const SUMMARY =
-  "Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our " +
-  "number (messages.upsert), where a STOP reply stops our messages";
-
-const RESPONSES = {
-  204: { description: "Taken, or ignored. Either way Evolution need not send it again" },
-  401: errorResponse("unauthorized: the token is wrong"),
-  404: errorResponse("not_found: receipts are not switched on (no EVOLUTION_WEBHOOK_TOKEN)"),
-};
-
 const evolutionHookRoute = createRoute({
   method: "post",
   path: "/api/hooks/evolution",
-  summary: `${SUMMARY}; the token as "Authorization: Bearer <token>"`,
-  responses: RESPONSES,
-});
-
-const tokenInPathRoute = createRoute({
-  method: "post",
-  path: "/api/hooks/evolution/{token}",
-  summary: `${SUMMARY}; the token in the path, until the bridge sends it as a header`,
-  request: { params: z.object({ token: z.string() }) },
-  responses: RESPONSES,
+  summary:
+    "Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our " +
+    'number (messages.upsert), where a STOP reply stops our messages; the token as "Authorization: Bearer <token>"',
+  responses: {
+    204: { description: "Taken, or ignored. Either way Evolution need not send it again" },
+    401: errorResponse("unauthorized: the token is wrong"),
+    404: errorResponse("not_found: receipts are not switched on (no EVOLUTION_WEBHOOK_TOKEN)"),
+  },
 });
 
 export function registerEvolutionHook(app: App): void {
-  app.openapi(evolutionHookRoute, (c) => takeHook(c, c.req.header("Authorization")?.replace(/^Bearer\s+/i, "") ?? ""));
-  app.openapi(tokenInPathRoute, (c) => takeHook(c, c.req.valid("param").token));
+  app.openapi(evolutionHookRoute, takeHook);
 }
 
 /** What Evolution reported, once its token is ours. */
-async function takeHook(c: Context<AppEnv>, token: string): Promise<Response> {
+async function takeHook(c: Context<AppEnv>): Promise<Response> {
   const { log } = c.var;
   const expected = c.var.config.settings.messaging.evolution?.webhookToken ?? null;
   if (expected === null) return refuse(c, "not_found");
-  if (!(await secretsMatch(token, expected))) {
+  if (!(await secretsMatch(bearerToken(c), expected))) {
     log.warn("evolution_hook_unauthorized");
     return refuse(c, "unauthorized");
   }
