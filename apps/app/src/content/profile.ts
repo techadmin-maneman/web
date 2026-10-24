@@ -3,7 +3,7 @@
 import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { timeOfDay, UNBROKEN } from "@rules/lib/time-range.ts";
 
-/** What every visit's photographs are. PLACEHOLDER: awaits counsel (docs/open-points.md, item 69). */
+/** What every visit's photographs are. */
 export const VISIT_PHOTOS =
   "Photos at every visit: five angles, for your record. Only you and your technician see them.";
 

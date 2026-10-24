@@ -99,10 +99,10 @@ describe("content", () => {
   });
 
   // The look goes to WhatsApp, and is shown on the page that proved the number once ready (ADR 0214), so every build
-  // shows the notices that say so, which await counsel and still keep a client's try-on (ADR 0084).
+  // shows the notices that say so, which counsel approved and which still keep a client's try-on (ADR 0084).
   it("says on every page of the try-on that the look goes to WhatsApp and is shown here once ready", () => {
     expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v7", "gate-v7"]);
-    expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([false, false]);
+    expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([true, true]);
     expect(site.tryOnSendsCopy).toBe(true);
     const privacy = textOf(site.legalPages.privacy);
     expect(privacy).toContain("we send the simulation to that number on WhatsApp, and show it on this site");
@@ -338,17 +338,10 @@ describe("the legal pages", () => {
 });
 
 describe("the publish gate", () => {
-  // ADR 0104: production can no longer show the approved v1 pair, which promised the look on screen, so its build
-  // waits for counsel to approve the try-on's new notices (docs/open-points.md, item 146), and the legal pages'
-  // wording for the apps, and for nothing else.
-  it("stops production on what awaits counsel alone: every published block is real", () => {
-    expect(publishProblems()).toEqual([
-      "the photo notice (photo-v7) is not approved",
-      "the gate notice (gate-v7) is not approved",
-      "the consultation notice (referral-consultation-v2) is not approved",
-      "the privacy page’s wording is not approved",
-      "the terms page’s wording is not approved",
-    ]);
+  // ADR 0104: production can no longer show the approved v1 pair, which promised the look on screen; counsel has
+  // approved the try-on's new notices and the legal pages, so nothing holds production's build.
+  it("lets production build: every published block is real, and every notice and legal page approved", () => {
+    expect(publishProblems()).toEqual([]);
     expect(publishProblems(undefined, APPROVED, undefined, LEGAL_APPROVED)).toEqual([]);
   });
 

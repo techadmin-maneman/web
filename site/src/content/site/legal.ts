@@ -1,6 +1,5 @@
 // The privacy and terms pages.
 
-// PLACEHOLDER: the try-on's sentences await counsel with the notices.
 /**
  * The privacy page's sentences on the try-on: its look goes to WhatsApp only, and a client's try-on is kept
  * (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md, 0084-a-clients-try-on-is-kept.md).
@@ -22,11 +21,11 @@ export interface LegalPage {
   readonly sections: readonly LegalSection[];
 }
 
-/** The two long-form pages, a heading per topic. Their wording for the apps is a draft for counsel. */
+/** The two long-form pages, a heading per topic, as counsel approved them. */
 export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPage } = {
   privacy: {
     publish: true,
-    approved: false,
+    approved: true,
     title: "Privacy",
     sections: [
       {
@@ -39,7 +38,6 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "Who holds it",
         paragraphs: [
-          // PLACEHOLDER: counsel sees this wording, which no longer names Zoho FSM, before production.
           "Your details are held in our own database, hosted by Cloudflare, where your visits are arranged, and in the customer system our team works from, Zoho CRM. Your hair profile stays in our own database. Payments are made through Razorpay. Our invoices are kept in Zoho Books, made out to your name, number and address.",
           "We use your details to arrange and look after your visits, and for anything else only with your agreement, which you can withdraw in the app or by messaging us at {whatsapp}. To stop our WhatsApp messages, reply STOP to any of them. We never sell your details.",
         ],
@@ -48,14 +46,12 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         heading: "The try-on",
         paragraphs: [
           TRY_ON_PRIVACY,
-          // PLACEHOLDER: the try-on's cookie sentence awaits counsel with its notices.
           "The site sets one cookie of its own, for the try-on: it remembers for 30 days that this browser has had its one look.",
         ],
       },
       {
         heading: "Invites and analytics",
         paragraphs: [
-          // PLACEHOLDER: the invite's sentence awaits counsel.
           "When you open a friend’s invite, this browser keeps the invite’s code for 30 days, so that a consultation you book here later still comes with it; it is removed once a booking has used it, or on your first visit after the 30 days.",
           "We measure our visits and advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse.",
         ],
@@ -63,7 +59,6 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "How long we keep it",
         paragraphs: [
-          // PLACEHOLDER: the periods, for counsel to confirm.
           "Once you are a client, we keep your details, your address and your visit photographs until you ask us to erase them. If you never book a visit or pay us, we erase your details a year after you last used the site or the app. A waitlist place goes a year after we launch in your area. Where a technician checked in at your door is kept only until a missed-visit charge can no longer be disputed. Invoices are kept for 8 years, as the law requires.",
         ],
       },
@@ -72,13 +67,14 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         paragraphs: [
           "Under India’s Digital Personal Data Protection Act, 2023, you can ask what we hold about you, have it corrected, or have it erased. In the app you can download your data, correct your details and ask us to delete your account; anyone can message us on WhatsApp at {whatsapp}.",
           "We decide a request to erase within 30 days. Erasing deletes your photographs and clears your name, number and address from our records; your visits, payments and invoices stay as records. If a visit is still booked, or we hold a payment of yours, we settle that first.",
+          "Our Grievance Officer is Adwate Kumar, Co-founder and COO, at grievance@maneman.in.",
         ],
       },
     ],
   },
   terms: {
     publish: true,
-    approved: false,
+    approved: true,
     title: "Terms",
     sections: [
       {
@@ -127,7 +123,10 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       },
       {
         heading: "Questions and complaints",
-        paragraphs: ["Message us on WhatsApp at {whatsapp}. Clients can also raise a concern in the app."],
+        paragraphs: [
+          "Message us on WhatsApp at {whatsapp}. Clients can also raise a concern in the app.",
+          "Our Grievance Officer is Adwate Kumar, Co-founder and COO, at grievance@maneman.in.",
+        ],
       },
     ],
   },
