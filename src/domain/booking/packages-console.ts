@@ -19,6 +19,7 @@ import { auditStatement, auditStatementWhen, opsEntry, type Written } from "../p
 import { allPackages, packageCoded, type Package } from "./packages.ts";
 import { productNamedSql } from "../clients/hair-profiles.ts";
 import { SPEC_COLUMNS, specOf, type HairSystemSpec, type SpecRow } from "../inventory/hair-systems.ts";
+import { renamedHairSystems } from "../inventory/hair-system-names.ts";
 
 /** Why a change to a package was refused: the box it names, where there is one. */
 export type PackageRefusal =
@@ -142,8 +143,11 @@ function changeStatements(db: D1Database, code: string, changes: PackageChanges,
       .bind(kind, code, value, written.actor.id, at);
   const statements: D1PreparedStatement[] = [];
   const name = changes.name?.trim();
-  if (name !== undefined)
+  if (name !== undefined) {
+    // Its hair systems first: they read the first fit's name before it changes.
+    statements.push(renamedHairSystems(db, code, serviceNameOf(name, "first_fit"), written.now));
     statements.push(...PACKAGE_KINDS.map((kind) => service(kind, "name", serviceNameOf(name, kind))));
+  }
   if (changes.description !== undefined) {
     const line = changes.description.trim();
     statements.push(service("first_fit", "description", line === "" ? null : line));

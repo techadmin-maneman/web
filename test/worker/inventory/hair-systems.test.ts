@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, working, type Working } from "../job-fixtures.ts";
 import { type Stock } from "./stock-fixtures.ts";
+import { aPackage } from "../fixtures/packages.ts";
 
 let job: Working;
 
@@ -72,6 +73,20 @@ describe("a hair system's stock code", () => {
     expect((await errorOf(twice)).fields).toEqual(["hair_system"]);
     const noSuchProduct = await job.opsPost("/api/hair-systems", { ...SPEC, product: "platinum", unit_cost: 1 });
     expect((await errorOf(noSuchProduct)).fields).toEqual(["product"]);
+  });
+
+  it("takes its package's new name when that is renamed, the rest of its name kept", async () => {
+    const { hairSystem } = await aPackage({ code: "gold", name: "Mane Man Gold", firstFit: 1_000_000 });
+    const renamed = await request(job.ops, "/api/packages/gold", {
+      method: "PATCH",
+      headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Mane Man Platinum" }),
+    });
+    expect(renamed.status).toBe(200);
+    const named = await env.DB.prepare("SELECT name FROM consumables WHERE code = ?1")
+      .bind(hairSystem)
+      .first<string>("name");
+    expect(named).toBe(`Mane Man Platinum · ${hairSystem}`);
   });
 
   it("is never offered to the consumables step, nor set as a service's expected use", async () => {
