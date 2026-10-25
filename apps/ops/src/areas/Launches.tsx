@@ -41,9 +41,7 @@ function LaunchRow({ launch, onCancel }: { launch: PincodeLaunch; onCancel: (() 
   return (
     <li className={shared.launchItem}>
       <p className={shared.launchLine}>
-        <Badge tone={STATE_TONE[launch.state]}>
-          {copy.states[launch.state]}
-        </Badge>{" "}
+        <Badge tone={STATE_TONE[launch.state]}>{copy.states[launch.state]}</Badge>{" "}
         {copy.line(launch.city, day, launch.pincodes.length)}
         {launch.alerted !== null && ` · ${copy.told(launch.alerted)}`}
       </p>

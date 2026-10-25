@@ -191,11 +191,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   };
 
   return (
-    <Panel
-      titleId="area"
-      title={copy.title}
-      actions={<DownloadCsv pincodes={pincodes} />}
-    >
+    <Panel titleId="area" title={copy.title} actions={<DownloadCsv pincodes={pincodes} />}>
       <CityTabs
         pincodes={pincodes}
         city={city}

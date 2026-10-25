@@ -105,7 +105,9 @@ describe("the launches", () => {
     });
     await answered();
     expect(page.textContent).toContain(areas.launches.line("Mumbai", shortDate(LAUNCH.go_live_on), 1));
-    await press(page.querySelector(`button[aria-label="${areas.launches.cancelLabel("Mumbai", shortDate(LAUNCH.go_live_on))}"]`));
+    await press(
+      page.querySelector(`button[aria-label="${areas.launches.cancelLabel("Mumbai", shortDate(LAUNCH.go_live_on))}"]`),
+    );
     expect(page.textContent).toContain(areas.launches.cancelCheck("Mumbai", shortDate(LAUNCH.go_live_on)));
     await press(button(review.send));
     expect(sent.map((each) => each.path)).toEqual([`/api/pincode-launches/${LAUNCH.id}/cancel`]);
