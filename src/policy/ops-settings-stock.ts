@@ -121,7 +121,7 @@ export const STOCK_SETTINGS = [
   {
     // Purchase orders (docs/decisions/0166-purchase-orders.md).
     name: "po_second_approval_above_rupees",
-    title: "Second approver above",
+    title: "Second approver for orders above",
     note: "A purchase order worth more than this in rupees needs a second Operations manager to approve it; one in another currency is judged at its rate below. Nought means every order needs two.",
     unit: "rupees",
     min: 0,
@@ -131,8 +131,8 @@ export const STOCK_SETTINGS = [
   },
   {
     name: "po_rupees_to_one",
-    title: "Rupees to one, for approvals",
-    note: "By currency code, as USD: what one unit is worth in rupees when an order in it is judged against Second approver above. Nought: such an order always needs two approvers.",
+    title: "Exchange rates, for approvals",
+    note: "By currency code, as USD: what one unit is worth in rupees when an order in it is judged against Second approver for orders above. Nought: such an order always needs two approvers.",
     unit: "rupees",
     min: 0,
     max: 10_000,
@@ -142,7 +142,7 @@ export const STOCK_SETTINGS = [
   {
     // Custom orders (docs/decisions/0176-custom-order-refunds.md).
     name: "custom_order_grace_days",
-    title: "Custom order grace",
+    title: "A custom order is late, past its promised date, after",
     note: "Days past the date a supplier promised a custom piece before it counts as late, and its client may have their money back in full.",
     unit: "days",
     min: 0,
@@ -163,7 +163,7 @@ export const STOCK_SETTINGS = [
   },
   {
     name: "planning_horizon_periods",
-    title: "Forecast horizon",
+    title: "Forecast ahead by",
     note: "How many planning periods ahead the forecast looks. Keep it longer than the longest supplier lead time and one period, or the plan cannot see past what is already on order.",
     unit: "periods",
     min: 1,

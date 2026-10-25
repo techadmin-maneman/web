@@ -217,7 +217,7 @@ test.describe("the rules", () => {
       await box.fill(typed);
       await radius.getByRole("button", { name: EDITING.save }).click();
       await expect(box).toHaveAttribute("aria-invalid", "true");
-      await expect(box).toHaveAccessibleDescription("Enter 50–1000 metres.");
+      await expect(box).toHaveAccessibleDescription("Enter 50–1,000 metres.");
     }
     expect(sent).toBe(0);
   });

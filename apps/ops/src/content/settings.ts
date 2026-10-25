@@ -1,10 +1,27 @@
 // Settings: the rules, the services and their prices, discount codes, the consumables, the job sheet and staff.
 
-import { amountOf } from "@maneman/web-kit/figures";
+import { amountOf, quantity } from "@maneman/web-kit/figures";
+import { rupees } from "@maneman/web-kit/money";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 import { grantPhrasing } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
 import { tasks } from "./tasks.ts";
+
+/** A unit's noun for one of it: "1 visit", not "1 visits". */
+const ONE_OF = /\b(visits|days|hours|minutes|periods|cases|fits|systems|write-offs|metres|codes)\b/;
+
+/**
+ * A rule's figure as a row reads it: rupees as the house writes an amount, a share with its sign, hours that make
+ * whole days past a day as days, large counts grouped as India groups them, and one of a thing in the singular.
+ */
+function figureWords(value: number, unit: string): string {
+  if (unit === "rupees") return rupees(value * 100);
+  if (unit === "per cent") return `${quantity(value)}%`;
+  if (unit.startsWith("% ")) return `${quantity(value)}${unit}`;
+  if (unit === "hours" && value > 24 && value % 24 === 0) return `${quantity(value / 24)} days`;
+  const noun = value === 1 ? unit.replace(ONE_OF, (word) => word.slice(0, -1)) : unit;
+  return `${quantity(value)} ${noun}`;
+}
 
 /**
  * Settings: the business inputs ops set for themselves. The design draws this
@@ -190,7 +207,7 @@ export const settings = {
         step: "Starts every",
         arrival: "Arrives within",
         wrap_up: "Wrap-up after each visit",
-        lead: "Today’s first start, from now",
+        lead: "Lead time for today",
         break: "Break",
         break_from: "Break taken from",
         break_to: "Break taken by",
@@ -199,7 +216,7 @@ export const settings = {
       },
       working_hours: { opens: "Day starts", closes: "Day ends" },
       drive_estimate: {
-        road_factor: "Road against the straight line",
+        road_factor: "Road distance",
         peak_kmh: "Speed in the rush",
         offpeak_kmh: "Speed otherwise",
         parking: "To park and reach the door",
@@ -270,27 +287,31 @@ export const settings = {
       check_in_days: { first: "First check-in", second: "Second check-in" },
       stock_watch: {
         expiry_warning_days: "Expiry flagged within",
-        demand_days: "Demand read ahead",
+        demand_days: "Look ahead for demand",
         transfer_overdue_days: "Transfer overdue after",
       },
       stock_usage: {
-        days: "Usage read over",
-        over_percent: "Technician flagged above",
-        min_visits: "Across at least",
-        write_offs: "Kit flagged at",
+        days: "Usage compared over",
+        over_percent: "Flag a technician over expected by",
+        min_visits: "Once they have done",
+        write_offs: "Flag a kit at",
       },
-      stock_quality: { failure_days: "Failure rates over", pace_days: "Pace read over" },
+      stock_quality: { failure_days: "Failure rates over the last", pace_days: "Usage pace over the last" },
       cycle_counts: {
         weekly: "Weekly items, every",
         monthly: "Monthly items, every",
         quarterly: "Quarterly items, every",
         recount_above_percent: "Recount a difference above",
       },
-      kit_check: { from_hour: "Check from", one_visit_range: "One-visit range", top_up_weekday: "Week’s top-up on" },
+      kit_check: {
+        from_hour: "Evening kit check from",
+        one_visit_range: "Hair systems for a one-visit fit",
+        top_up_weekday: "Week’s top-up on",
+      },
       forecast_assumptions: {
-        baseline_periods: "Baseline averages",
-        learning_days: "Rates learned over",
-        enough_to_learn: "Learned from",
+        baseline_periods: "Baseline averaged over",
+        learning_days: "Rates learned over the last",
+        enough_to_learn: "Learned once there are",
         due_booking_percent: "Due clients who book",
         consultation_fit_percent: "Consultations that fit",
         consultation_to_fit_days: "Consultation to fit",
@@ -312,8 +333,8 @@ export const settings = {
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /** The check before a rule is sent: each figure that moves, the old beside the new. */
     confirm: {
-      /** A figure as a row reads it: "200 metres". */
-      figure: (value: number, unit: string) => `${String(value)} ${unit}`,
+      /** A figure as a row reads it: "200 metres", "Rs. 5,00,000", "20%", "30 days", "1 visit". */
+      figure: figureWords,
     },
     /** A section's Save sends its rules one by one, so a refusal speaks for its own rule only. */
     outside: (field: string, range: string) => `${field}: ${range}`,

@@ -81,7 +81,7 @@ export const CLIENT_SETTINGS = [
   },
   {
     name: "referral_monthly_cap",
-    title: "Referral review above",
+    title: "Hold referral rewards above",
     note: "Fits a referrer may have rewarded in a month before the next is held for your review.",
     unit: "fits a month",
     min: 1,
@@ -92,7 +92,7 @@ export const CLIENT_SETTINGS = [
   {
     // docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md.
     name: "tryon_look_days",
-    title: "Try-on looks",
+    title: "One try-on look per number every",
     note: "Days before the same WhatsApp number can have another try-on look.",
     unit: "days",
     min: 1,

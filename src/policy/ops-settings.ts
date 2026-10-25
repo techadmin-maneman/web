@@ -321,7 +321,7 @@ export const OPS_SETTINGS = [
   {
     // The retention figures (docs/decisions/0151-retention-figures.md).
     name: "lost_after_days",
-    title: "Lost after",
+    title: "Count a client lost after",
     note: "Days a client may stay lapsed, past their next service and its grace with nothing done, before the figures count them lost.",
     unit: "days",
     min: 30,

@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { profile } from "../../../../apps/app/src/content.ts";
+import { settings } from "../../../../apps/ops/src/content/settings.ts";
 import * as ops from "../../../../apps/ops/src/content.ts";
 import { areas, BOOKING_URL, deletions, dispatch, grievances } from "../../../../apps/ops/src/content.ts";
 import { DELETION_ALERT_AFTER_MS } from "../../../../src/domain/privacy/deletion.ts";
@@ -111,5 +112,20 @@ describe("the console’s label maps", () => {
       /as\s+Readonly<\s*Record<string,\s*string>\s*>/.test(readFileSync(path, "utf8")),
     );
     expect(widened).toEqual([]);
+  });
+});
+
+// A rule's figure reads as the house writes it: "500000 rupees", "720 hours" and "1 service visits" did not.
+describe("a rule's figure", () => {
+  it.each([
+    [500000, "rupees", "Rs. 5,00,000"],
+    [720, "hours", "30 days"],
+    [36, "hours", "36 hours"],
+    [20, "per cent", "20%"],
+    [140, "% of the straight line", "140% of the straight line"],
+    [1, "service visits", "1 service visit"],
+    [1000, "a day", "1,000 a day"],
+  ])("writes %i %s as %s", (value, unit, written) => {
+    expect(settings.rules.confirm.figure(value, unit)).toBe(written);
   });
 });
