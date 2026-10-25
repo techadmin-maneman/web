@@ -36,7 +36,7 @@ const change = (record: ReturnType<Page["getByRole"]>, label: string) =>
 test.describe("the list", () => {
   test("gives each its cost, the levels it is low at, and whether it is offered", async ({ page }) => {
     await open(page);
-    await expect(page).toHaveTitle("Items · Mane Man operations");
+    await expect(page).toHaveTitle("Items · Mane Man Ops");
 
     const tape = row(page, "Tape strips");
     await expect(tape).toContainText("strip");

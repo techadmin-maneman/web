@@ -148,16 +148,16 @@ test("moves the keyboard to a new page’s heading, and offers a way past the na
   await expect(heading(page, opsCopy.shell.sections.waitlist)).toBeFocused();
 });
 
-// Every page was titled "Mane Man operations" (WCAG 2.4.2).
+// Every page was titled "Mane Man Ops" (WCAG 2.4.2).
 test("titles each page by what it is, and says where it sits", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Today · Mane Man operations");
+  await expect(page).toHaveTitle("Today · Mane Man Ops");
   await page.goto("/counts");
-  await expect(page).toHaveTitle("Counts · Mane Man operations");
+  await expect(page).toHaveTitle("Counts · Mane Man Ops");
   const crumbs = page.getByRole("banner").getByRole("navigation", { name: opsCopy.shell.crumbs });
   await expect(crumbs.getByRole("listitem")).toHaveText([opsCopy.shell.nav.inventory, opsCopy.shell.sections.counts]);
   await page.goto("/settings/prices");
-  await expect(page).toHaveTitle("Consultation and fees · Settings · Mane Man operations");
+  await expect(page).toHaveTitle("Consultation and fees · Settings · Mane Man Ops");
 });
 
 test("says who is signed in, in the account's panel", async ({ page }) => {

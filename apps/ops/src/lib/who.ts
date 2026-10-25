@@ -1,5 +1,5 @@
 // Who did something, as the console shows them: a member of staff by their
-// e-mail, and a service token as one, never by its 40-character ID.
+// e-mail, and anything automatic as System, never by a token's ID or label.
 
 import { shell } from "../content.ts";
 
@@ -9,5 +9,5 @@ export const whoWords = (who: string): string => (who.includes("@") ? who : shel
 export const nameParts = (email: string): string[] =>
   (email.split("@")[0] ?? email).split(/[._-]+/).filter((part) => part !== "");
 
-/** One who recorded something: a service token the Staff list has no label for as one, never by its ID. */
-export const recordedBy = (who: string): string => (who.endsWith(".access") ? shell.serviceToken : who);
+/** One who recorded something: a person by their e-mail, and a token, however the Staff list labels it, as System. */
+export const recordedBy = (who: string): string => (who.includes("@") && !who.endsWith(".access") ? who : shell.serviceToken);

@@ -143,7 +143,7 @@ test("opens a technician’s own page from their name, a tab at a time, each at 
   await open(page);
   const main = await pageOf(page, "Imran Qureshi");
   await expect(page).toHaveURL(new RegExp(`/technicians/${IMRAN}$`));
-  await expect(page).toHaveTitle("This week · Technicians · Mane Man operations");
+  await expect(page).toHaveTitle("This week · Technicians · Mane Man Ops");
 
   const tabs = main.getByRole("navigation", { name: "Imran Qureshi: week, hours, leave, phones and kit" });
   await expect(tabs.getByRole("link")).toHaveText([

@@ -65,7 +65,7 @@ async function recordOf(page: Page, email: string) {
 
 test("lists each person with their access and whether they are let in", async ({ page }) => {
   await open(page);
-  await expect(page).toHaveTitle("Staff · Settings · Mane Man operations");
+  await expect(page).toHaveTitle("Staff · Settings · Mane Man Ops");
 
   const owner = row(page, "owner@maneman.in");
   await expect(owner).toContainText("Admin · Manage · National");

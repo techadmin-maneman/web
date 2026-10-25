@@ -33,7 +33,7 @@ const SERVICE = [
 
 test("shows a kind’s checklist in its order, who set it, and what was taken off", async ({ page }) => {
   await open(page);
-  await expect(page).toHaveTitle("Job sheet · Settings · Mane Man operations");
+  await expect(page).toHaveTitle("Job sheet · Settings · Mane Man Ops");
 
   const list = checklist(page);
   const first = list.getByRole("button", { name: `${EDITING.change} ${copy.item(1)}` });
