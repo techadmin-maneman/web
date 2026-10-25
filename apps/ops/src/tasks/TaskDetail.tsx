@@ -10,7 +10,9 @@ import { createPortal } from "react-dom";
 import type { Task, TaskGroup } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { CLOSE, tasks } from "../content.ts";
+import { useMayCall } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
+import { mayFollow } from "../route.ts";
 import { decidedAt } from "../lib/task-links.ts";
 import { nameParts } from "../lib/who.ts";
 import { CallAboutMove } from "./CallAboutMove.tsx";
@@ -46,9 +48,11 @@ export interface Acting {
 
 /** The way to where the task is decided, a card's one action, which the drawer repeats. */
 export function DecideLink({ group, task, subject }: { group: Group; task: Task; subject: string }) {
+  const mayCall = useMayCall();
   const where = decidedAt(group, task);
   const action = tasks.decide[group];
-  if (where === null || action === undefined) return null;
+  // Where the person may not open the section it is decided in, there is no way to it to offer.
+  if (where === null || action === undefined || !mayFollow(mayCall, where)) return null;
   return (
     <OpsLink className={shared.decide} to={where}>
       {action}

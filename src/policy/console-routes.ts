@@ -150,6 +150,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // a disputed one ask MANAGE inside their routes (WAIVING_A_NO_SHOW, REFUNDING_A_DISPUTE). The price book lists every
   // service with its prices, so reading it is Finance's; changing a service stays Admin's.
   "GET /api/payments": inOwnPlaces("finance", "view"),
+  "GET /api/payments/ledger": inOwnPlaces("finance", "view"),
   "POST /api/payments/{id}/refund": need("finance", "manage"),
   "GET /api/no-shows": inOwnPlaces("finance", "view"),
   "POST /api/no-shows/{id}/decision": inOwnPlaces("finance", "act"),

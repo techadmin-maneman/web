@@ -76,6 +76,7 @@ const SupplyPlanScreen = lazyScreen(() =>
 );
 const SpendScreen = lazyScreen(() => import("./spend/SpendScreen.tsx").then((module) => module.SpendScreen));
 const FunnelScreen = lazyScreen(() => import("./funnel/FunnelScreen.tsx").then((module) => module.FunnelScreen));
+const LedgerScreen = lazyScreen(() => import("./ledger/LedgerScreen.tsx").then((module) => module.LedgerScreen));
 const CareNumbersScreen = lazyScreen(() =>
   import("./care/CareNumbersScreen.tsx").then((module) => module.CareNumbersScreen),
 );
@@ -100,6 +101,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   grievances: GrievancesScreen,
   "number-changes": NumberChangesScreen,
   "deletion-requests": DeletionsScreen,
+  ledger: LedgerScreen,
   payments: NoShowsScreen,
   "technician-pay": TechnicianPayScreen,
   "partner-commission": PartnerCommissionScreen,

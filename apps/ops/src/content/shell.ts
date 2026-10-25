@@ -37,6 +37,7 @@ export const shell = {
     grievances: "Concerns",
     "number-changes": "Number changes",
     "deletion-requests": "Deletion requests",
+    ledger: "Payments",
     payments: "Charges",
     "technician-pay": "Technician pay",
     "partner-commission": "Partner commission",

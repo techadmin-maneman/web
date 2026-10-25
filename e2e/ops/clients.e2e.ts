@@ -288,18 +288,12 @@ test("opens on the overview, first, with Book a visit on every tab and the invit
   page,
 }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
-  await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText([
-    opsCopy.clients.history.title,
-    opsCopy.clients.history.rows.visits,
-    opsCopy.clients.pieces.title,
-    "Payments",
-    opsCopy.referrals.title,
-    opsCopy.clients.consents.title,
-    "Photos",
-  ]);
+  const tabs = opsCopy.clients.tabs.map((each) => each.label);
+  await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText(tabs);
+  expect(tabs[0]).toBe(opsCopy.clients.history.title);
   await expect(clientTab(page, opsCopy.clients.history.title)).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("button", { name: opsCopy.clients.visits.book.open })).toBeVisible();
-  await clientTab(page, "Payments").click();
+  await clientTab(page, opsCopy.clients.tabs.find((each) => each.tab === "payments")?.label ?? "").click();
   await expect(page.getByRole("button", { name: opsCopy.clients.visits.book.open })).toBeVisible();
 });
 

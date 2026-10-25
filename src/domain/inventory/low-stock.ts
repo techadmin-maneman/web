@@ -125,12 +125,16 @@ export async function closeStaleLowStock(
 /**
  * How many places hold something at or below its level, or below zero, by the rule the Stock screen marks them with
  * (src/domain/inventory/stock-view.ts): the console's Stock badge. A place is counted while it is active or holds
- * anything.
+ * anything, and only within the person's reach (`within`, null for everywhere), so a city head counts their own.
  */
-export async function lowStockPlaces(db: D1Database, today: string): Promise<number> {
-  const row = await db
+export async function lowStockPlaces(
+  db: D1Database,
+  today: string,
+  within: ReadonlySet<string> | null,
+): Promise<number> {
+  const { results } = await db
     .prepare(
-      `SELECT COUNT(*) AS places FROM stock_places p
+      `SELECT p.id FROM stock_places p
        WHERE (p.active = 1 OR EXISTS (SELECT 1 FROM stock_balances b WHERE b.place = p.id AND b.quantity <> 0))
          AND EXISTS (SELECT 1 FROM consumables c
            LEFT JOIN stock_balances b ON b.consumable_code = c.code AND b.place = p.id
@@ -140,6 +144,6 @@ export async function lowStockPlaces(db: D1Database, today: string): Promise<num
                  ELSE c.reorder_store END))`,
     )
     .bind(today)
-    .first<{ places: number }>();
-  return row?.places ?? 0;
+    .all<{ id: string }>();
+  return results.filter((row) => within === null || within.has(row.id)).length;
 }

@@ -1,0 +1,7 @@
+/* What ./LedgerScreen.tsx alone draws: its amounts set right under their heads, in figures of one width. */
+
+.figure {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}

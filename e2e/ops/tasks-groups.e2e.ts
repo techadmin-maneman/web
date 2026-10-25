@@ -527,3 +527,24 @@ test("counts in the header the tasks given to me that I have not seen, and lists
   await page.keyboard.press("Escape");
   await expect(page.getByRole("banner").getByRole("button", { name: opsCopy.shell.mine.label(0) })).toBeVisible();
 });
+
+// Client names on Tasks led Operations to "You don't have access", and the ways to other sections did too.
+test("names a client as plain text, and offers no way to a section, where the person may not open it", async ({
+  page,
+}) => {
+  await open(page, TASKS, NO_ALERTS, {
+    "GET /api/whoami": json({
+      signed_in_as: "dispatch@maneman.in",
+      sign_out: "/cdn-cgi/access/logout",
+      staff: {
+        enforced: true,
+        listed: true,
+        grants: [],
+        may_call: ["GET /api/health", "GET /api/whoami", "GET /api/tasks", "GET /api/alerts", "GET /api/dispatch"],
+      },
+    }),
+  });
+  await expect(row(page, "Kunal Mehta")).toBeVisible();
+  await expect(row(page, "Kunal Mehta").getByRole("link", { name: "Kunal Mehta", exact: true })).toHaveCount(0);
+  await expect(row(page, "Vikram Sethi").getByRole("link", { name: /^Decide in Number changes/ })).toHaveCount(0);
+});

@@ -95,6 +95,32 @@ test("adds a person with their first grant", async ({ page }) => {
   await expect(page.getByRole("status").filter({ hasText: copy.saved })).toBeVisible();
 });
 
+// The common jobs need two departments, granted one by one.
+test("adds a person by their job, every grant it needs over the one place", async ({ page }) => {
+  await open(page, { "POST /api/staff": json(BOOK) });
+  await page.getByRole("button", { name: copy.add }).click();
+  const form = page.getByRole("group", { name: copy.form.addTitle });
+  await form.getByLabel(copy.form.email).fill("dispatch.delhi@maneman.in");
+  await form.getByLabel(copy.form.role).selectOption({ label: copy.form.roles.dispatcher });
+  await expect(form.getByRole("list", { name: copy.form.roles.dispatcher }).getByRole("listitem")).toHaveText([
+    copy.form.roleGrant(copy.departments.operations, copy.levels.act),
+    copy.form.roleGrant(copy.departments.customer_care, copy.levels.view),
+  ]);
+  await expect(form.getByLabel(copy.form.department)).toHaveCount(0);
+  await form.getByLabel(copy.form.place).selectOption("city:Delhi");
+
+  const request = posted(page, "/api/staff");
+  await form.getByRole("button", { name: copy.form.add, exact: true }).click();
+  expect((await request).postDataJSON()).toEqual({
+    email: "dispatch.delhi@maneman.in",
+    active: true,
+    grants: [
+      { department: "operations", level: "act", geography: "city", place: "Delhi" },
+      { department: "customer_care", level: "view", geography: "city", place: "Delhi" },
+    ],
+  });
+});
+
 test("sends someone already listed to their record, rather than replacing their access unseen", async ({ page }) => {
   let sent = false;
   await open(page, {

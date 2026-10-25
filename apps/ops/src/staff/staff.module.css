@@ -7,3 +7,14 @@
 .addGrant {
   margin-top: var(--sp-12);
 }
+
+/* What a role gives, in the add form (./StaffForm.tsx): its grants a line each, above where they apply. */
+.roleGrants {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+}

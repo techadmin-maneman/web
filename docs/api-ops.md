@@ -15283,6 +15283,91 @@ Send again the message, lead or CRM erasure an alert gave up on, and close the a
 }
 ```
 
+### GET /api/payments/ledger
+
+Every payment over a period in the caller's cities, and the payment links still unpaid
+
+**200**: The ledger
+
+```json
+{
+  "$ref": "#/components/schemas/PaymentLedger"
+}
+```
+
+**400**: invalid_request: from is after to
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/payments
 
 A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on
@@ -41980,7 +42065,7 @@ Request body:
     },
     "low_stock_places": {
       "type": "integer",
-      "description": "How many places, the central store and each kit, hold something at or below its level: Stock's badge."
+      "description": "How many places within the caller's reach, the central store and each kit, hold something at or below its level: Stock's badge."
     },
     "lapsed": {
       "type": "integer",
@@ -43060,6 +43145,274 @@ Request body:
     "told_at",
     "last_seen_at",
     "send_again"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PaymentLedger
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date",
+      "description": "The last day counted."
+    },
+    "payments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/LedgerPayment"
+      },
+      "description": "Newest first."
+    },
+    "more": {
+      "type": "boolean",
+      "description": "More than 1000 match: these are the first 1000."
+    },
+    "unpaid_links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/UnpaidLink"
+      },
+      "description": "Payment links not yet paid, the oldest first."
+    },
+    "more_links": {
+      "type": "boolean",
+      "description": "More than 200 match: these are the first 200."
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "payments",
+    "more",
+    "unpaid_links",
+    "more_links"
+  ],
+  "additionalProperties": false,
+  "description": "Read from the payments themselves; nothing is totalled or kept."
+}
+```
+
+### LedgerPayment
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The receipt's number; null before one."
+    },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for one with no client of ours, or whose client was erased."
+    },
+    "kind": {
+      "type": "string",
+      "description": "What it paid for: a visit, or a late fee."
+    },
+    "method": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "As Razorpay names it, or upi for one at the visit."
+    },
+    "status": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise. What was paid."
+    },
+    "refunded_amount": {
+      "type": "integer",
+      "description": "In paise. What has gone back of it."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "captured_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "books": {
+      "type": "string",
+      "enum": [
+        "applied",
+        "waiting",
+        "none"
+      ],
+      "description": "Applied in Books; captured and still to reach it; or nothing for Books."
+    }
+  },
+  "required": [
+    "id",
+    "reference",
+    "person",
+    "kind",
+    "method",
+    "status",
+    "amount",
+    "refunded_amount",
+    "created_at",
+    "captured_at",
+    "books"
+  ],
+  "additionalProperties": false
+}
+```
+
+### UnpaidLink
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for one with no client of ours, or whose client was erased."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise. What the link asks for."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sent_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refused_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When Razorpay refused to make it."
+    },
+    "closes_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Past it, the link is closed unpaid."
+    }
+  },
+  "required": [
+    "id",
+    "reference",
+    "person",
+    "amount",
+    "created_at",
+    "sent_at",
+    "refused_at",
+    "closes_at"
   ],
   "additionalProperties": false
 }

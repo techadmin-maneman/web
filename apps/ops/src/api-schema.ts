@@ -11702,6 +11702,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every payment over a period in the caller's cities, and the payment links still unpaid */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description India's first day; thirty days back when left out. */
+                    from?: string;
+                    /** @description India's last day, counted; today when left out. */
+                    to?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The ledger */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaymentLedger"];
+                    };
+                };
+                /** @description invalid_request: from is after to */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments": {
         parameters: {
             query?: never;
@@ -24957,7 +25034,7 @@ export interface components {
             truncated: boolean;
             /** @description The members of staff a task may be given to: those who have used the console in the last 90 days, by e-mail. */
             staff: string[];
-            /** @description How many places, the central store and each kit, hold something at or below its level: Stock's badge. */
+            /** @description How many places within the caller's reach, the central store and each kit, hold something at or below its level: Stock's badge. */
             low_stock_places: number;
             /** @description How many tasks the board leaves out for having waited past the days ops set; none when asked for. */
             lapsed: number;
@@ -25219,6 +25296,73 @@ export interface components {
             last_seen_at: string;
             /** @description Its work can be sent again from here: a message, a lead to the CRM, or an erasure there. */
             send_again: boolean;
+        };
+        /** @description Read from the payments themselves; nothing is totalled or kept. */
+        PaymentLedger: {
+            /** Format: date */
+            from: string;
+            /**
+             * Format: date
+             * @description The last day counted.
+             */
+            to: string;
+            /** @description Newest first. */
+            payments: components["schemas"]["LedgerPayment"][];
+            /** @description More than 1000 match: these are the first 1000. */
+            more: boolean;
+            /** @description Payment links not yet paid, the oldest first. */
+            unpaid_links: components["schemas"]["UnpaidLink"][];
+            /** @description More than 200 match: these are the first 200. */
+            more_links: boolean;
+        };
+        LedgerPayment: {
+            /** Format: uuid */
+            id: string;
+            /** @description The receipt's number; null before one. */
+            reference: string | null;
+            /** @description Null for one with no client of ours, or whose client was erased. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /** @description What it paid for: a visit, or a late fee. */
+            kind: string;
+            /** @description As Razorpay names it, or upi for one at the visit. */
+            method: string | null;
+            status: string;
+            /** @description In paise. What was paid. */
+            amount: number;
+            /** @description In paise. What has gone back of it. */
+            refunded_amount: number;
+            /** Format: date-time */
+            created_at: string;
+            captured_at: string | null;
+            /**
+             * @description Applied in Books; captured and still to reach it; or nothing for Books.
+             * @enum {string}
+             */
+            books: "applied" | "waiting" | "none";
+        };
+        UnpaidLink: {
+            /** Format: uuid */
+            id: string;
+            reference: string | null;
+            /** @description Null for one with no client of ours, or whose client was erased. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /** @description In paise. What the link asks for. */
+            amount: number;
+            /** Format: date-time */
+            created_at: string;
+            sent_at: string | null;
+            /** @description When Razorpay refused to make it. */
+            refused_at: string | null;
+            /** @description Past it, the link is closed unpaid. */
+            closes_at: string | null;
         };
         /** @description Derived at read time from the payments themselves; no total is kept. */
         OpsDayMoney: {

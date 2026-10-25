@@ -150,7 +150,7 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/money/`): `payments`, `payment-links`, `payment-links-paid`, `client-payments`,
   `client-billing`, `refunds`, `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
   `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `discount-code-figures`, `requested-codes`,
-  `day-money`, `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `hair-system-prices` (what each hair system sells for), `city-prices`,
+  `day-money`, `payment-ledger` (Finance's ledger of payments and unpaid links), `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `hair-system-prices` (what each hair system sells for), `city-prices`,
   `razorpay-catch-up`, `razorpay-events` (Razorpay's events, applied from their queue), `custom-order-links`,
   `custom-order-refunds`, `payment-refunds`, `upi-payments` (a visit paid by UPI at the visit, recorded by ops)
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,

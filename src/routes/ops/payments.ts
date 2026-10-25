@@ -1,4 +1,5 @@
-// A day's money, behind Access (src/domain/money/day-money.ts).
+// A day's money, and Finance's ledger of every payment over a period, behind Access (src/domain/money/day-money.ts,
+// src/domain/money/payment-ledger.ts).
 //
 // Nothing here takes or gives back money. The figures are read from the rows
 // Razorpay's webhook already wrote, so this route cannot make the books say
@@ -13,11 +14,12 @@ import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { dayMoney } from "../../domain/money/day-money.ts";
-import { errorResponse } from "../../http/errors.ts";
+import { ledgerPayments, unpaidLinks } from "../../domain/money/payment-ledger.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { capped, More } from "../../http/paging.ts";
 import { routeReach } from "../../http/staff-access.ts";
-import { indiaDate } from "../../lib/india-time.ts";
+import { addDays, indiaDate } from "../../lib/india-time.ts";
 
 /** As many lines as the board can usefully hold; past this the day is not one to read on a card. */
 const LIMIT = 200;
@@ -80,7 +82,98 @@ const dayRoute = opsRoute({
   },
 });
 
+/** As many payments as a ledger's period lists; a longer period is narrowed. */
+const LEDGER_LIMIT = 1000;
+
+/** The days a ledger reads when none are asked for: the last thirty, today among them. */
+const LEDGER_DAYS = 30;
+
+const PersonSchema = z
+  .union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()])
+  .openapi({ description: "Null for one with no client of ours, or whose client was erased." });
+
+const LedgerPaymentSchema = z
+  .object({
+    id: z.uuid(),
+    reference: z.union([z.string(), z.null()]).openapi({ description: "The receipt's number; null before one." }),
+    person: PersonSchema,
+    kind: z.string().openapi({ description: "What it paid for: a visit, or a late fee." }),
+    method: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "As Razorpay names it, or upi for one at the visit." }),
+    status: z.string(),
+    amount: paise("What was paid."),
+    refunded_amount: paise("What has gone back of it."),
+    created_at: z.iso.datetime(),
+    captured_at: z.union([z.iso.datetime(), z.null()]),
+    books: z
+      .enum(["applied", "waiting", "none"])
+      .openapi({ description: "Applied in Books; captured and still to reach it; or nothing for Books." }),
+  })
+  .strict()
+  .openapi("LedgerPayment");
+
+const UnpaidLinkSchema = z
+  .object({
+    id: z.uuid(),
+    reference: z.union([z.string(), z.null()]),
+    person: PersonSchema,
+    amount: paise("What the link asks for."),
+    created_at: z.iso.datetime(),
+    sent_at: z.union([z.iso.datetime(), z.null()]),
+    refused_at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When Razorpay refused to make it." }),
+    closes_at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "Past it, the link is closed unpaid." }),
+  })
+  .strict()
+  .openapi("UnpaidLink");
+
+const LedgerSchema = z
+  .object({
+    from: z.iso.date(),
+    to: z.iso.date().openapi({ description: "The last day counted." }),
+    payments: z.array(LedgerPaymentSchema).openapi({ description: "Newest first." }),
+    more: More(LEDGER_LIMIT),
+    unpaid_links: z.array(UnpaidLinkSchema).openapi({ description: "Payment links not yet paid, the oldest first." }),
+    more_links: More(LIMIT),
+  })
+  .strict()
+  .openapi("PaymentLedger", { description: "Read from the payments themselves; nothing is totalled or kept." });
+
+const ledgerRoute = opsRoute({
+  method: "get",
+  path: "/api/payments/ledger",
+  summary: "Every payment over a period in the caller's cities, and the payment links still unpaid",
+  request: {
+    query: z.object({
+      from: z.iso.date().optional().openapi({ description: "India's first day; thirty days back when left out." }),
+      to: z.iso.date().optional().openapi({ description: "India's last day, counted; today when left out." }),
+    }),
+  },
+  responses: {
+    200: { description: "The ledger", ...json(LedgerSchema) },
+    400: errorResponse("invalid_request: from is after to"),
+  },
+});
+
 export function registerOpsPayments(app: App): void {
+  app.openapi(ledgerRoute, async (c) => {
+    const asked = c.req.valid("query");
+    const to = asked.to ?? indiaDate(c.var.deps.now());
+    const from = asked.from ?? addDays(to, 1 - LEDGER_DAYS);
+    if (from > to) return refuse(c, "invalid_request", ["from"]);
+    const reached = await routeReach(c);
+    const [payments, links] = await Promise.all([
+      ledgerPayments(c.env.DB, { from, to }, reached, LEDGER_LIMIT + 1),
+      unpaidLinks(c.env.DB, reached, LIMIT + 1),
+    ]);
+    const listed = capped(payments, LEDGER_LIMIT);
+    const linked = capped(links, LIMIT);
+    return c.json(
+      { from, to, payments: listed.rows, more: listed.more, unpaid_links: linked.rows, more_links: linked.more },
+      200,
+    );
+  });
+
   app.openapi(dayRoute, async (c) => {
     const { date } = c.req.valid("query");
     const money = await dayMoney(c.env.DB, date ?? indiaDate(c.var.deps.now()), LIMIT + 1, await routeReach(c));

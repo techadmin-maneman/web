@@ -40,7 +40,8 @@ import {
   TASK_SLA_HOURS,
   type TaskGroup,
 } from "../../policy/tasks.ts";
-import { callerAccess, permits } from "../../http/staff-access.ts";
+import { callerAccess, permits, reachOf } from "../../http/staff-access.ts";
+import { placesWithin } from "../../domain/inventory/stock-places.ts";
 import { placesReached, type Level } from "../../policy/access.ts";
 import { callerMeetsNeed, TASK_DEPARTMENTS, taskNeed } from "../../policy/console-routes.ts";
 import { TaskFactsSchema } from "./tasks.schemas.ts";
@@ -120,10 +121,14 @@ const TasksSchema = z
         "The members of staff a task may be given to: those who have used the console in the last " +
         `${String(STAFF_SEEN_WITHIN_DAYS)} days, by e-mail.`,
     }),
-    low_stock_places: z.number().int().openapi({
-      description:
-        "How many places, the central store and each kit, hold something at or below its level: Stock's badge.",
-    }),
+    low_stock_places: z
+      .number()
+      .int()
+      .openapi({
+        description:
+          "How many places within the caller's reach, the central store and each kit, hold something at or below its " +
+          "level: Stock's badge.",
+      }),
     lapsed: z.number().int().openapi({
       description: "How many tasks the board leaves out for having waited past the days ops set; none when asked for.",
     }),
@@ -307,6 +312,10 @@ function splitLapsed(
   return { tasks: seen.filter((task) => !lapsedOf(task)), lapsed: seen.filter(lapsedOf) };
 }
 
+/** Stock's badge: the low places within the caller's reach, as Stock itself, an Operations page, reaches them. */
+const lowStockInReach = async (c: Context<AppEnv>, today: string): Promise<number> =>
+  lowStockPlaces(c.env.DB, today, await placesWithin(c.env.DB, await reachOf(c, "operations", "view")));
+
 export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
@@ -315,7 +324,7 @@ export function registerOpsTasks(app: App): void {
       readTheBoard(c, "view", person),
       staffNow(c),
       groupsSeenBy(c),
-      lowStockPlaces(c.env.DB, indiaDate(now)),
+      lowStockInReach(c, indiaDate(now)),
       opsInputs(c),
     ]);
     const { tasks, lapsed } = splitLapsed(board.tasks, { seen, asked, now, lapseDays: inputs.taskLapseDays });
