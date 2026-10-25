@@ -64,7 +64,9 @@ const press = async (label: string) => {
 /** The words in the sheet the card's button opens; the sheet is a dialog drawn into the body. */
 const pressInSheet = async (label: string) => {
   await act(async () => {
-    [...document.querySelectorAll<HTMLButtonElement>("dialog button")].find((each) => each.textContent.trim() === label)?.click();
+    [...document.querySelectorAll<HTMLButtonElement>("dialog button")]
+      .find((each) => each.textContent.trim() === label)
+      ?.click();
     await answered();
   });
 };
