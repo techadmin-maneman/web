@@ -838,8 +838,8 @@ export const kit = {
     useFirst: (date: string) => `Use first · expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
     pieces: (count: number) => `${String(count)} labelled`,
-    /** At or below the level ops keep a kit at: ops send more, and the technician may ask. */
-    low: "Running low. Ask ops for more.",
+    /** At or below the level ops keep a kit at: ops are alerted on their own, and send more. */
+    low: (coming: boolean) => (coming ? "Running low. More is on its way." : "Running low. Ops have been told."),
   },
   returned: {
     title: "To hand back",
