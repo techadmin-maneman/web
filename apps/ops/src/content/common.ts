@@ -87,6 +87,8 @@ export const deleting = {
   confirm: "Delete",
   sending: "Deleting…",
   cancel: "Cancel",
+  /** A switch that reaches everyone asks for a word typed before it goes. */
+  typeToConfirm: (word: string) => `Type ${word} to confirm`,
 } as const;
 
 /**

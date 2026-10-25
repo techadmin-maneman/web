@@ -788,6 +788,8 @@ export const settings = {
         sending: "Saving…",
         cancel: "Cancel",
       },
+      /** Typed before access control goes off for everyone. */
+      typed: "OFF",
       errors: {
         not_permitted: "Only national Admin · Manage can change this.",
         offline: OFFLINE,

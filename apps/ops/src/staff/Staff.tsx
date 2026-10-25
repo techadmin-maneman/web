@@ -51,6 +51,7 @@ function Enforcement({ staff, onChanged }: PanelProps) {
             name={copy.title}
             tone={on ? "danger" : "primary"}
             words={on ? words.stopping : words.starting}
+            typed={on ? words.typed : undefined}
             send={() => staffApi.setEnforcement(!on)}
             refusal={(code) => errorText(words.errors, { code })}
             onDeleted={onChanged}

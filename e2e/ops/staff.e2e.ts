@@ -7,7 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
-import { EDITING } from "../../apps/ops/src/content/common.ts";
+import { deleting, EDITING } from "../../apps/ops/src/content/common.ts";
 
 const AT = "2026-09-24T07:03:54.415Z";
 
@@ -174,6 +174,13 @@ test("starts enforcing only once asked, for someone who may switch it", async ({
   await page.getByRole("button", { name: copy.enforcement.starting.confirm, exact: true }).click();
   expect((await request).postDataJSON()).toEqual({ on: true });
   await expect(page.getByRole("button", { name: copy.enforcement.stopping.label() })).toBeVisible();
+
+  // Turning it off reaches everyone: it looks dangerous, and waits for the word.
+  await page.getByRole("button", { name: copy.enforcement.stopping.label() }).click();
+  const off = page.getByRole("button", { name: copy.enforcement.stopping.confirm, exact: true });
+  await expect(off).toBeDisabled();
+  await page.getByRole("textbox", { name: deleting.typeToConfirm(copy.enforcement.typed) }).fill("off");
+  await expect(off).toBeEnabled();
 });
 
 test("offers the switch and the service tokens to nobody without Admin · Manage nationally", async ({ page }) => {
