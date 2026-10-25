@@ -764,7 +764,7 @@ export const settings = {
     grantLabel: (department: string, place: string) => `${department} · ${place}`,
     form: {
       /** The console admits one Google group: a person added here signs in once they are in it too. */
-      group: "Add them to the console’s Google group too, or they can’t sign in.",
+      group: "Add them to the ops@maneman.in Google group too, or they can’t sign in.",
       addTitle: "Add a person",
       email: "Sign-in email",
       access: "Access",
