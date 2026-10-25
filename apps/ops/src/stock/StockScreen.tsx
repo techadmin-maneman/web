@@ -48,21 +48,51 @@ function anyExpiring(stock: Stock): boolean {
   );
 }
 
-/** How the table adds up the places: each its own, or by zone or city. */
-function Grouping({ by, onBy }: { by: string; onBy: (by: "place" | "zone" | "city") => void }) {
+/** Past this many places, a column each grows too wide to read: the table shows the warehouse and one place. */
+const PLACES_SIDE_BY_SIDE = 6;
+
+/** What the table shows: each place, or past a handful the warehouse and one, or totals by zone or city. */
+type Showing = { readonly by: "place"; readonly beside: string | null } | { readonly by: "zone" | "city" };
+
+/** The places that may stand beside the warehouse, each marked where anything is low there or below nought. */
+function besideOptions(stock: Stock): { readonly id: string; readonly label: string }[] {
+  const held = (id: string) => stock.holdings.filter((holding) => holding.place_id === id);
+  /** Below zero says more than low: a movement went unrecorded there. */
+  const markOf = (id: string) => {
+    if (held(id).some((holding) => holding.quantity < 0)) return copy.placeBelow;
+    return held(id).some((holding) => holding.low) ? copy.placeLow : "";
+  };
+  return stock.places.flatMap((each) =>
+    each.kind === "warehouse" ? [] : [{ id: each.id, label: `${placeName(stock, each.id)}${markOf(each.id)}` }],
+  );
+}
+
+/** The one control over the table: how it adds up its places, and which one stands beside the warehouse. */
+function Grouping({ stock, showing, onShow }: { stock: Stock; showing: Showing; onShow: (showing: Showing) => void }) {
+  const many = stock.places.length > PLACES_SIDE_BY_SIDE;
+  const value = showing.by === "place" ? `place:${showing.beside ?? ""}` : showing.by;
   return (
     <Field label={copy.totalsBy} labelHidden>
       {(control) => (
         <Select
           {...control}
           width="choice"
-          value={by}
+          value={many || showing.by !== "place" ? value : "place:"}
           onChange={(event) => {
             const picked = event.target.value;
-            onBy(picked === "zone" || picked === "city" ? picked : "place");
+            if (picked === "zone" || picked === "city") onShow({ by: picked });
+            else onShow({ by: "place", beside: picked.slice("place:".length) || null });
           }}
         >
-          <option value="place">{copy.byPlace}</option>
+          {many ? (
+            besideOptions(stock).map((each) => (
+              <option key={each.id} value={`place:${each.id}`}>
+                {each.label}
+              </option>
+            ))
+          ) : (
+            <option value="place:">{copy.byPlace}</option>
+          )}
           <option value="zone">{copy.byZone}</option>
           <option value="city">{copy.byCity}</option>
         </Select>
@@ -114,45 +144,7 @@ function ToItems() {
   );
 }
 
-/** Past this many places, a column each grows too wide to read: the table shows the warehouse and one place. */
-const PLACES_SIDE_BY_SIDE = 6;
-
-/** The place the table shows beside the warehouse, past a handful: each named, and marked where any is low. */
-function PlacePicker({ stock, place, onPlace }: { stock: Stock; place: string; onPlace: (place: string) => void }) {
-  const held = (id: string) => stock.holdings.filter((holding) => holding.place_id === id);
-  /** Below zero says more than low: a movement went unrecorded there. */
-  const markOf = (id: string) => {
-    if (held(id).some((holding) => holding.quantity < 0)) return copy.placeBelow;
-    return held(id).some((holding) => holding.low) ? copy.placeLow : "";
-  };
-  return (
-    <Field label={copy.place} className={styles.kitPicker}>
-      {(control) => (
-        <Select
-          {...control}
-          value={place}
-          onChange={(event) => {
-            onPlace(event.target.value);
-          }}
-        >
-          {stock.places.flatMap((each) =>
-            each.kind === "warehouse"
-              ? []
-              : [
-                  <option key={each.id} value={each.id}>
-                    {placeName(stock, each.id)}
-                    {markOf(each.id)}
-                  </option>,
-                ],
-          )}
-        </Select>
-      )}
-    </Field>
-  );
-}
-
-function OnHand({ stock }: { stock: Stock }) {
-  const [picked, setPicked] = useState<string | null>(null);
+function OnHand({ stock, picked }: { stock: Stock; picked: string | null }) {
   const many = stock.places.length > PLACES_SIDE_BY_SIDE;
   const beside = picked ?? stock.places.find((place) => place.kind !== "warehouse")?.id ?? "";
   const places = many
@@ -167,7 +159,6 @@ function OnHand({ stock }: { stock: Stock }) {
   }
   return (
     <TableScroll labelledBy="stock-on-hand">
-      {many && <PlacePicker stock={stock} place={beside} onPlace={setPicked} />}
       <Table controls>
         <thead>
           <tr>
@@ -259,7 +250,7 @@ function Movements({ stock }: { stock: Stock }) {
 
 export function StockScreen() {
   const { loaded, retry, current, setStock } = useStock();
-  const [by, setBy] = useState<"place" | "zone" | "city">("place");
+  const [showing, setShowing] = useState<Showing>({ by: "place", beside: null });
   /** A hair system's delivery opens its labels at the warehouse, afresh each time. */
   const [labelsFor, setLabelsFor] = useState<{ readonly at: LabelsFor; readonly time: number } | null>(null);
   const access = useAccess();
@@ -271,12 +262,16 @@ export function StockScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={styles.screen}>
-          <Panel titleId="stock-on-hand" title={copy.onHand} actions={<Grouping by={by} onBy={setBy} />}>
-            {by === "place" ? (
-              <OnHand stock={current} />
+          <Panel
+            titleId="stock-on-hand"
+            title={copy.onHand}
+            actions={<Grouping stock={current} showing={showing} onShow={setShowing} />}
+          >
+            {showing.by === "place" ? (
+              <OnHand stock={current} picked={showing.beside} />
             ) : (
               <Suspense fallback={<Loading />}>
-                <Totals stock={current} by={by} />
+                <Totals stock={current} by={showing.by} />
               </Suspense>
             )}
           </Panel>
