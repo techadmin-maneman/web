@@ -121,9 +121,17 @@
   }
 }
 
-/* A table wider than its panel, scrolled inside it (TableScroll). */
+/* A table wider than its panel, scrolled inside it (TableScroll): a shade at each edge with more beyond it, which the
+   panel's own ground covers once that edge is reached. */
 .scroll {
   overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--ui-raised), transparent) left / var(--sp-24) 100% no-repeat local,
+    linear-gradient(to left, var(--ui-raised), transparent) right / var(--sp-24) 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, var(--ui-line-control), transparent) left / var(--sp-12) 100% no-repeat
+      scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--ui-line-control), transparent) right / var(--sp-12) 100% no-repeat
+      scroll;
 }
 
 /*

@@ -1,9 +1,6 @@
 // A long list's own tools above it: a search through what each row says, how many match, and its pages. A list short
-// enough to read whole has neither. The rows it hands back are the page's, as the search left them.
-//
-//   <ListTools rows={lots} textOf={(lot) => `${lot.place} ${lot.name}`} label={copy.find}>
-//     {(shown) => <Table>...{shown.map(...)}</Table>}
-//   </ListTools>
+// enough to read whole has neither. The rows it hands to its children are the page's, as the search left them:
+//   <ListTools rows={lots} textOf={(lot) => lot.name} label={copy.find}>{(shown) => <Table>…</Table>}</ListTools>
 
 import { Note } from "@maneman/ui/Note";
 import { Pager, usePages } from "@maneman/ui/Pager";

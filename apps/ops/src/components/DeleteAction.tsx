@@ -1,8 +1,7 @@
-// A Delete button for something added by mistake: pressed, it asks once, and only the second press deletes. A refusal
-// is said in the caller's words, as why it stays and what to do instead (an in_use is the usual one). In the danger
-// tone, the same asks before something that can be put back, as retiring a package is; in the primary tone, before a
-// page's main switch, as turning on access control is. Anything but the primary tone looks dangerous before it is
-// pressed, and a switch that reaches everyone can ask for a word typed before it goes.
+// A Delete button for something added by mistake: pressed, it asks once, and only the second press deletes, a refusal
+// said in the caller's words. In the danger tone it asks before what can be put back, as retiring a package; in the
+// primary tone, before a page's main switch. Anything but the primary tone looks dangerous before it is pressed, and a
+// switch that reaches everyone can ask for a word typed first.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
