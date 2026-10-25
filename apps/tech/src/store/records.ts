@@ -61,7 +61,8 @@ export type DeviceRecord =
   | {
       readonly key: "profile_draft";
       readonly job_id: string;
-      readonly page: "fit" | "history";
+      /** "fit" from a build that drew the fit spec as one page, which opens on its first. */
+      readonly page: "measure" | "match" | "history" | "fit";
       readonly fit: FitForm;
       readonly history: HistoryForm;
     }

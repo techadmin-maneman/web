@@ -672,8 +672,7 @@ export const oneVisit = {
   /** A product the card no longer names, for linkFor. */
   chosenProduct: "the hair system they chose",
   /** Closing as done on a phone that does not know the client's choice, from a card kept by an earlier build. */
-  closeNote:
-    "Closing sends the payment link, or ends a declined visit as a free consultation.",
+  closeNote: "Closing sends the payment link, or ends a declined visit as a free consultation.",
   payment: "Payment",
   linkSent: "Link texted to the client",
   linkPaid: "Paid",
@@ -710,22 +709,22 @@ type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, st
 export const profile = {
   sections: {
     stage: "Norwood stage",
-    head: "The head, in centimetres",
-    base: "Base size, in inches",
+    head: "Head (cm)",
+    base: "Base (in)",
     colour: "Colour",
-    grey: "Grey, in per cent",
+    grey: "Grey (%)",
     density: "Density",
     wave: "Wave",
     hairline: "Hairline",
     product: "Product",
-    attachment: "Tape or glue",
+    attachment: "Fixing",
   },
   /** Not drawn: the base typed in inches, in centimetres beneath it. */
   baseInCentimetres: (width: string, length: string) => `${width} × ${length} cm`,
   measurements: {
     head_circumference_cm: "Circumference",
     front_to_nape_cm: "Front to nape",
-    ear_to_ear_cm: "Ear to ear, over the top",
+    ear_to_ear_cm: "Ear to ear",
     temple_to_temple_cm: "Temple to temple",
     base_width_in: "Width",
     base_length_in: "Length",
@@ -759,14 +758,16 @@ export const profile = {
     other_systems: "Other hair systems",
     other: "Other",
   } satisfies Record<History["remedies"][number], string>,
-  range: (min: number, max: number) => `${String(min)}–${String(max)}, to one decimal.`,
-  greyRange: (min: number, max: number) => `${String(min)}–${String(max)}.`,
-  yearRange: (first: number, last: number) => `A year from ${String(first)} to ${String(last)}.`,
+  range: (min: number, max: number) => `${String(min)}–${String(max)}`,
+  greyRange: (min: number, max: number) => `${String(min)}–${String(max)}%`,
+  yearRange: (first: number, last: number) => `${String(first)}–${String(last)}`,
   checkFigures: "Check the figures to continue",
   /** Next, held back until the Norwood stage is chosen. */
   chooseStage: "Choose the Norwood stage to continue",
   /** Next, held back by a figure outside its range: which one. */
-  checkFigure: (figure: string) => `${figure.split(",")[0] ?? figure} is out of range`,
+  checkFigure: (figure: string) => `${figure.replace(/ \(.*\)$/, "")} is out of range`,
+  // The fit spec's second page: what the hair system is matched to.
+  match: { title: "Colour and style" },
   history: {
     title: "History",
     remedies: "Remedies tried",

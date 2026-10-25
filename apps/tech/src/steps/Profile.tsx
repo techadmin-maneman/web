@@ -2,8 +2,9 @@
 // step, and a consultation and fit in one visit's once the product is chosen and fitted, just before the after
 // photographs.
 //
-// Two pages under the one step: the fit spec, then the history, the remedies the client has tried and their skin
-// conditions and allergies, which need no consent of their own. Each page starts from the client's
+// Three pages under the one step, by what the technician does: measure (the Norwood stage, the head and the base),
+// match (the colour and style the hair system is made to), then the history, the remedies the client has tried and
+// their skin conditions and allergies, which need no consent of their own. Each page starts from the client's
 // profile as it stands, or from what the API refused, and the step sends the profile whole: each version is the
 // profile as it was then.
 //
@@ -46,7 +47,7 @@ import { useStep } from "./useStep.ts";
 import shared from "./steps.module.css";
 import styles from "./profile.module.css";
 
-type Page = "fit" | "history";
+type Page = "measure" | "match" | "history";
 
 type Draft = DraftOf<"profile_draft">;
 
@@ -58,20 +59,23 @@ const HEAD: readonly Measurement[] = [
 ];
 const BASE: readonly Measurement[] = ["base_width_in", "base_length_in"];
 
-/** The name of the first figure typed outside its range: the head's, then the base's, then the grey's; null if none. */
-function firstOutOfRange(form: FitForm): string | null {
+/** The name of the first of these figures typed outside its range; null if none is. */
+function outOfRange(form: FitForm, keys: readonly (Measurement | "grey_percent")[]): string | null {
   const typed = typedFigures(form.figures);
-  const measured = [...HEAD, ...BASE].find((key) => typed[key] === "invalid");
-  if (measured !== undefined) return copy.measurements[measured];
-  return typed.grey_percent === "invalid" ? copy.sections.grey : null;
+  const key = keys.find((each) => typed[each] === "invalid");
+  if (key === undefined) return null;
+  return key === "grey_percent" ? copy.sections.grey : copy.measurements[key];
 }
 
-/** What holds Next back on the fit page: a figure out of its range, then the Norwood stage, which every profile needs. */
-function fitUnfinished(form: FitForm): string {
-  const outOfRange = firstOutOfRange(form);
-  if (outOfRange !== null) return copy.checkFigure(outOfRange);
-  return form.choices.norwood_stage === null ? copy.chooseStage : copy.checkFigures;
+/** What holds Next back on the measure page: a figure out of its range, then the Norwood stage, which every profile needs. */
+function measureUnfinished(form: FitForm): string | null {
+  const figure = outOfRange(form, [...HEAD, ...BASE]);
+  if (figure !== null) return copy.checkFigure(figure);
+  return form.choices.norwood_stage === null ? copy.chooseStage : null;
 }
+
+/** A draft kept by a build that drew the fit spec as one page opens on its first. */
+const pageOf = (kept: Draft | null): Page => (kept === null || kept.page === "fit" ? "measure" : kept.page);
 
 /** A list's choices in the order its words are written, each code with its words. */
 function optionsOf<K extends string>(labels: Readonly<Record<K, string>>): Option<K>[] {
@@ -103,27 +107,27 @@ function startingPoint(
   return { fit: latest?.fit ?? null, history: latest?.history ?? null, basedOn: latest?.id ?? null };
 }
 
-function FitFields({
-  form,
-  products,
-  onChange,
-}: {
-  form: FitForm;
-  products: readonly Option<string>[];
-  onChange: (form: FitForm) => void;
-}) {
+/** A list's choice on the fit spec: what choosing one does, and whether one is the one chosen. */
+function choosing(form: FitForm, onChange: (form: FitForm) => void) {
+  return {
+    choose:
+      <K extends keyof Choices>(key: K) =>
+      (id: NonNullable<Choices[K]>) => {
+        onChange({ ...form, choices: { ...form.choices, [key]: id } });
+      },
+    chosen:
+      <K extends keyof Choices>(key: K) =>
+      (id: NonNullable<Choices[K]>) =>
+        form.choices[key] === id,
+  };
+}
+
+/** The first page: the Norwood stage, then the head's and the base's figures, typed off the tape. */
+function MeasureFields({ form, onChange }: { form: FitForm; onChange: (form: FitForm) => void }) {
   const typed = typedFigures(form.figures);
   const headId = useId();
   const baseId = useId();
-  const choose =
-    <K extends keyof Choices>(key: K) =>
-    (id: NonNullable<Choices[K]>) => {
-      onChange({ ...form, choices: { ...form.choices, [key]: id } });
-    };
-  const chosen =
-    <K extends keyof Choices>(key: K) =>
-    (id: NonNullable<Choices[K]>) =>
-      form.choices[key] === id;
+  const { choose, chosen } = choosing(form, onChange);
   const figure = (key: Measurement) => (
     <Figure
       key={key}
@@ -158,6 +162,24 @@ function FitFields({
         <div className={styles.figures}>{BASE.map(figure)}</div>
         <BaseInCentimetres width={typed.base_width_in} length={typed.base_length_in} />
       </section>
+    </>
+  );
+}
+
+/** The second page: the colour and style the hair system is matched to, and how it is fixed. */
+function MatchFields({
+  form,
+  products,
+  onChange,
+}: {
+  form: FitForm;
+  products: readonly Option<string>[];
+  onChange: (form: FitForm) => void;
+}) {
+  const typed = typedFigures(form.figures);
+  const { choose, chosen } = choosing(form, onChange);
+  return (
+    <>
       <Chips
         title={copy.sections.colour}
         options={COLOUR_OPTIONS}
@@ -281,7 +303,7 @@ function ProfileForm({
   const start = startingPoint(job, refused);
   const kept = refused === null ? draft : null;
   const thisYear = Number(todayInIndia().slice(0, 4));
-  const [page, setPage] = useState<Page>(kept?.page ?? "fit");
+  const [page, setPage] = useState<Page>(() => pageOf(kept));
   const [fit, setFit] = useState<FitForm>(() => kept?.fit ?? fitFormOf(start.fit));
   const [history, setHistory] = useState<HistoryForm>(() => kept?.history ?? historyFormOf(start.history));
 
@@ -295,21 +317,44 @@ function ProfileForm({
   const staged = fit.choices.norwood_stage !== null;
   const notice = refused === null ? null : stepsCopy.corrected.other;
 
-  if (page === "fit") {
+  if (page === "measure") {
+    const holding = measureUnfinished(fit);
     return (
       <StepFrame
-        key="fit"
+        key="measure"
         title={stepsCopy.titles.profile}
         action={stepsCopy.next}
-        ready={spec !== null && staged}
-        unfinished={fitUnfinished(fit)}
+        ready={holding === null}
+        unfinished={holding ?? copy.checkFigures}
         notice={notice}
         onBack={onBack}
+        onAction={() => {
+          setPage("match");
+        }}
+      >
+        <MeasureFields form={fit} onChange={setFit} />
+      </StepFrame>
+    );
+  }
+
+  if (page === "match") {
+    const grey = outOfRange(fit, ["grey_percent"]);
+    return (
+      <StepFrame
+        key="match"
+        title={copy.match.title}
+        action={stepsCopy.next}
+        ready={spec !== null && staged}
+        unfinished={grey === null ? copy.checkFigures : copy.checkFigure(grey)}
+        notice={notice}
+        onBack={() => {
+          setPage("measure");
+        }}
         onAction={() => {
           setPage("history");
         }}
       >
-        <FitFields form={fit} products={productOptions(job, job.profile)} onChange={setFit} />
+        <MatchFields form={fit} products={productOptions(job, job.profile)} onChange={setFit} />
       </StepFrame>
     );
   }
@@ -322,7 +367,7 @@ function ProfileForm({
       ready={spec !== null && said !== null}
       unfinished={copy.checkFigures}
       onBack={() => {
-        setPage("fit");
+        setPage("match");
       }}
       onAction={() => {
         if (spec === null || said === null) return;
