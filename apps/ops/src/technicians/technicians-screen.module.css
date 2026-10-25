@@ -1,8 +1,11 @@
 /* What ./TechniciansScreen.tsx alone draws; what it shares is in ./technicians.module.css. */
 
-/* The third column is Jobs: a count, so it and its head read from the right, as the board sets them. */
+/* The third column is Jobs and the fifth On time: figures, so they and their heads read from the right, as the board
+   sets them. */
 .table th:nth-child(3),
-.table td:nth-child(3) {
+.table td:nth-child(3),
+.table th:nth-child(5),
+.table td:nth-child(5) {
   padding-right: var(--sp-4);
   text-align: right;
 }

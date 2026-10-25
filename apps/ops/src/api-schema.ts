@@ -25080,6 +25080,8 @@ export interface components {
             average_minutes: number | null;
             /** @description What the same jobs were planned to take, so the two can be read against each other. */
             average_planned_minutes: number | null;
+            /** @description Of the jobs, those checked in by the end of the client's arrival window (booking_rules.arrival), as the warehouse counts a visit on time. */
+            on_time_jobs: number;
             /** @description Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to begin with); false when the phone timed none of the jobs. */
             runs_over: boolean;
         };

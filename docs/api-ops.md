@@ -43138,6 +43138,10 @@ Request body:
       ],
       "description": "What the same jobs were planned to take, so the two can be read against each other."
     },
+    "on_time_jobs": {
+      "type": "integer",
+      "description": "Of the jobs, those checked in by the end of the client's arrival window (booking_rules.arrival), as the warehouse counts a visit on time."
+    },
     "runs_over": {
       "type": "boolean",
       "description": "Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to begin with); false when the phone timed none of the jobs."
@@ -43149,6 +43153,7 @@ Request body:
     "timed_jobs",
     "average_minutes",
     "average_planned_minutes",
+    "on_time_jobs",
     "runs_over"
   ],
   "additionalProperties": false

@@ -43,15 +43,12 @@ export async function keepUpVisits(): Promise<void> {
   await env.DB.batch(visitUpkeep(env.DB, { people: results.map((row) => row.id) }));
 }
 
-export async function aNoShow(
-  visit: { readonly id: string; readonly technicianId: string },
-  row: RowOf<"no_show_cases"> = {},
-) {
-  const checkin = crypto.randomUUID();
-  await writeRow(
+/** A check-in at the visit's door that passed, unless the test says otherwise. */
+export function aCheckin(visit: { readonly id: string; readonly technicianId: string }, row: RowOf<"checkins"> = {}) {
+  return writeRow(
     "checkins",
     {
-      id: checkin,
+      id: crypto.randomUUID(),
       appointment_id: visit.id,
       technician_id: visit.technicianId,
       at: AT,
@@ -61,8 +58,15 @@ export async function aNoShow(
       passed: 1,
       created_at: AT,
     },
-    {},
+    row,
   );
+}
+
+export async function aNoShow(
+  visit: { readonly id: string; readonly technicianId: string },
+  row: RowOf<"no_show_cases"> = {},
+) {
+  const checkin = (await aCheckin(visit)).id;
   return writeRow(
     "no_show_cases",
     {

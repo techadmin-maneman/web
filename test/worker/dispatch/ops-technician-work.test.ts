@@ -9,6 +9,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
+import { aCheckin } from "../fixtures/visits.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 const IMRAN = "88888888-8888-4888-8888-888888888881";
@@ -21,6 +22,7 @@ interface Row {
   technician_id: string;
   jobs: number;
   timed_jobs: number;
+  on_time_jobs: number;
   average_minutes: number | null;
   average_planned_minutes: number | null;
   runs_over: boolean;
@@ -115,6 +117,22 @@ describe("GET /api/technicians/work", () => {
     const body = await work();
     expect(of(body, IMRAN)).toMatchObject({ jobs: 2, timed_jobs: 2 });
     expect(of(body, SANDEEP)).toMatchObject({ jobs: 0, timed_jobs: 0, average_minutes: null });
+  });
+
+  // A technician's page had no way to tell who keeps their clients waiting.
+  it("counts the jobs checked in by the end of the arrival window, thirty minutes after the start", async () => {
+    const onTime = "aaaaaaaa-0000-4000-8000-000000000001";
+    const late = "aaaaaaaa-0000-4000-8000-000000000002";
+    const failed = "aaaaaaaa-0000-4000-8000-000000000003";
+    // Each starts at 09:00 in India: on time is a check-in that passed by 09:30.
+    await timedJob(onTime, IMRAN, "service", "2026-09-16", 90);
+    await timedJob(late, IMRAN, "service", "2026-09-17", 90);
+    await timedJob(failed, IMRAN, "service", "2026-09-18", 90);
+    await aCheckin({ id: onTime, technicianId: IMRAN }, { at: "2026-09-16T04:00:00.000Z" });
+    await aCheckin({ id: late, technicianId: IMRAN }, { at: "2026-09-17T04:01:00.000Z" });
+    await aCheckin({ id: failed, technicianId: IMRAN }, { at: "2026-09-18T03:40:00.000Z", passed: 0 });
+    expect(of(await work(), IMRAN)).toMatchObject({ jobs: 3, on_time_jobs: 1 });
+    expect(of(await work(), SANDEEP)).toMatchObject({ jobs: 0, on_time_jobs: 0 });
   });
 
   it("averages the time from Start to the outcome, against what the visits were planned for", async () => {
