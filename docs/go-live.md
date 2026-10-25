@@ -93,7 +93,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 **Before it:**
 
 - [ ] The home page's material in `site/src/assets`, each block `publish: true` (items 73 to 81), and the production build looked at (`docs/site.md`, "Going live in production").
-- [x] Counsel's wording of the privacy page and the terms, and the try-on's notices (settled items 44, 146, 149 and 188): approved, and the pages are counsel's documents. The aftercare policy and the offer terms wait (item 189).
+- [x] Counsel's wording of the privacy page and the terms, and the try-on's notices (settled items 44, 146, 149 and 188): approved, and the pages are counsel's documents, with the aftercare policy and the offer terms (settled item 189).
 - [x] The Grievance Officer on the privacy page and the terms (settled item 51): Adwate Kumar, grievance@maneman.in.
 - [ ] The analytics IDs, and the consent banner they need (item 84).
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).

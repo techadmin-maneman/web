@@ -1,11 +1,10 @@
-// The aftercare policy the terms' guarantee and wear clauses point to: a draft, which holds production's build until
-// it is approved (docs/open-points.md, item 189).
+// The aftercare policy the terms' guarantee and wear clauses point to (docs/open-points-settled.md, item 189).
 
 import type { LegalPage } from "./legal.ts";
 
 export const aftercarePolicy: LegalPage = {
   publish: true,
-  approved: false,
+  approved: true,
   title: "Aftercare Policy",
   version: { number: "1.00", date: "25 October 2026" },
   intro: [

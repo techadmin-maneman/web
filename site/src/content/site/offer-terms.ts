@@ -1,11 +1,11 @@
-// The terms of discount codes, referral rewards and free service visits, which yield to the Terms: a draft, which holds
-// production's build until it is approved (docs/open-points.md, item 189).
+// The terms of discount codes, referral rewards and free service visits, which yield to the Terms (docs/open-points-settled.md,
+// item 189).
 
 import type { LegalPage } from "./legal.ts";
 
 export const offerTerms: LegalPage = {
   publish: true,
-  approved: false,
+  approved: true,
   title: "Offer Terms",
   version: { number: "1.00", date: "25 October 2026" },
   intro: [

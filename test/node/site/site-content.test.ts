@@ -372,14 +372,11 @@ describe("the legal pages", () => {
 });
 
 describe("the publish gate", () => {
-  // ADR 0104: production can no longer show the approved v1 pair, which promised the look on screen; counsel has
-  // approved the try-on's new notices and the privacy policy and terms, so only the two drafts the terms point to
-  // hold production's build until they are approved (docs/open-points.md, item 189).
-  it("holds production for the aftercare policy and the offer terms alone: every published block is real", () => {
-    expect(publishProblems()).toEqual([
-      "the aftercare page’s wording is not approved",
-      "the offers page’s wording is not approved",
-    ]);
+  // ADR 0104: production can no longer show the approved v1 pair, which promised the look on screen; the try-on's new
+  // notices, the privacy policy, the terms, the aftercare policy and the offer terms are approved, so nothing holds
+  // production's build.
+  it("lets production build: every published block is real, and every notice and legal page approved", () => {
+    expect(publishProblems()).toEqual([]);
     expect(publishProblems(undefined, APPROVED, undefined, LEGAL_APPROVED)).toEqual([]);
   });
 
