@@ -136,9 +136,10 @@
 
 /*
  * A scrolled table whose last column holds its rows' buttons keeps that column in view at the panel's edge, the
- * figures scrolling beneath it, so no row's action is past the edge on a narrow screen.
+ * figures scrolling beneath it, so no row's action is past the edge on a narrow screen. The console's tables alone: a
+ * drawing scrolled the same way, as the Day view's hours, keeps its last column where it falls.
  */
-.scroll table:has(td:last-child :is(button, a)) :is(th, td):last-child {
+.scroll .table:has(td:last-child :is(button, a)) :is(th, td):last-child {
   position: sticky;
   right: 0;
   box-shadow: calc(-1 * var(--hairline)) 0 0 var(--ui-line);
