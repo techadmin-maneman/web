@@ -15,7 +15,7 @@ export const CLIENT_SETTINGS = [
     // A paid visit booked from the console, and a one visit's link once the client is fitted (ADR 0105).
     name: "payment_links",
     title: "Payment links",
-    note: "How long a console booking's link holds its slot, how close to the visit it closes, and how long a one visit's link takes payment.",
+    note: "How long a console booking's link holds its time, how close to the visit it closes, and how long a one visit's link takes payment.",
     unit: "hours",
     min: 0,
     max: 72,
@@ -66,7 +66,7 @@ export const CLIENT_SETTINGS = [
   {
     // What follows a fit or a replacement on WhatsApp (src/domain/visits/follow-ups.ts).
     name: "check_in_days",
-    title: "Check-ins after a fit",
+    title: "Follow-ups after a fit",
     note: "Days after a fit or a replacement that the client is asked how it is, first and second.",
     unit: "days",
     min: 1,

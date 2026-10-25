@@ -10,7 +10,7 @@ import type { BoardRow, Room } from "../api.ts";
 import { dispatch } from "../content.ts";
 import shared from "./dispatch.module.css";
 import styles from "./move-bar.module.css";
-import { nameOf, type Job, type Target } from "./job.ts";
+import { minutesOf, nameOf, type Job, type Target } from "./job.ts";
 
 /** A job in hand, and the starts each technician's day would take it at; null while the board is asking. */
 export interface InHand {
@@ -20,13 +20,13 @@ export interface InHand {
   readonly kmAt: (technicianId: string, date: string) => number | null;
 }
 
-/** "a first fit, 2 slots": the job's kind and the slots it takes. */
+/** "a first fit, 3 h": the job's kind and the time it holds. */
 function sizeOf(inHand: InHand): string {
   const { job } = inHand;
   const type = job.kind === "block" ? job.block.type : job.job.type;
   const slots = job.kind === "block" ? job.block.slots : job.job.slots;
   const name = type === null ? dispatch.unnamed : dispatch.typeNames[type].toLowerCase();
-  return dispatch.landing.size(name, slots);
+  return dispatch.landing.size(name, minutesOf(slots));
 }
 
 interface Destination {

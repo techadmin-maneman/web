@@ -6,7 +6,7 @@
 import type { VisitType } from "../config/visit-types.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
-/** Moving or cancelling is free until this long before the window starts. */
+/** Moving or cancelling is free until this long before the visit starts. */
 export const FREE_CHANGE_NOTICE_HOURS = 24;
 
 export type Notice = "free" | "late";

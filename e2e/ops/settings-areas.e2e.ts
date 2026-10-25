@@ -234,14 +234,14 @@ test.describe("the blackout days", () => {
     await expect(diwali).toContainText("Closed by ops@maneman.in on 20 Sep 2027");
     await expect(diwali).toContainText("3 visits are still booked. Move them on the dispatch board.");
     // The way to those visits opens the board on the run's first day.
-    await expect(diwali.getByRole("link", { name: "Show on board: Fri 29 Oct to Sat 30 Oct" })).toHaveAttribute(
+    await expect(diwali.getByRole("link", { name: "See Fri 29 Oct to Sat 30 Oct on the board" })).toHaveAttribute(
       "href",
       "/dispatch?from=2027-10-29",
     );
     const training = page.getByRole("listitem").filter({ hasText: "Mon 15 Nov · Every city · Staff training" });
     await expect(training).toContainText(settingsCopy.blackouts.unrecorded);
     await expect(training).not.toContainText("still booked");
-    await expect(training.getByRole("link", { name: /Show on board/ })).toHaveCount(0);
+    await expect(training.getByRole("link", { name: /on the board/ })).toHaveCount(0);
   });
 
   test("blacks out the days from the first to the last, with the reason, and shows the list the API answers", async ({

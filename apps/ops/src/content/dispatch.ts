@@ -1,7 +1,7 @@
 // The dispatch board's words: the week, a move and its reason, a block's drawer.
 
 import { distance } from "@maneman/web-kit/figures";
-import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, hoursAndMinutes, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const dispatch = {
   title: "Dispatch",
@@ -83,14 +83,14 @@ export const dispatch = {
      * written: "Asked · Sat, morning" would pair the offered day with the asked
      * window (ADR 0063).
      */
-    asked: (window: string) => `Asked · ${window}`,
-    offered: (when: string) => `Offered · ${when}`,
+    asked: (window: string) => `Asked for the ${window}`,
+    offered: (when: string) => `Offered ${when}`,
     /** No Request behind the visit recorded a window, so there is nothing to compare. */
-    notAsked: "Asked · not recorded",
+    notAsked: "No time asked for",
     /** The brief's "referral source": who invited the client, where someone did. */
     referred: (name: string) => `Referred by ${name}`,
     // A job still on a technician who was switched off, which no board draws.
-    was: (name: string) => `Was ${name}’s · switched off`,
+    was: (name: string) => `Was ${name}’s, now switched off`,
     // The board draws four waiting and no empty tray.
     empty: "Nothing unassigned.",
   },
@@ -133,8 +133,8 @@ export const dispatch = {
       // The board draws no note; the technician reads it on the client's card.
       note: "Client’s note",
     },
-    /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
-    type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
+    /** "Service visit · 1 h 30 min": the time it holds on the board. */
+    type: (name: string, minutes: number) => `${name} · ${hoursAndMinutes(minutes)}`,
     /** "Sector 65 · 122018": the area the visit's pincode is in, and the pincode. */
     area: (area: string, pincode: string | null) => (pincode === null ? area : `${area} · ${pincode}`),
     // The board draws a scheduled visit only, and names no state.
@@ -175,7 +175,7 @@ export const dispatch = {
     assign: "Assign to a technician",
     /** A visit ops cancel for the client, or close by hand once its technician's phone was lost. */
     cancel: "Cancel visit",
-    closeByHand: "Close by hand",
+    closeByHand: "Close the visit",
   },
   /** The reason a move must carry, asked for before anything is written. */
   move: {
@@ -255,8 +255,8 @@ export const dispatch = {
   landing: {
     /** The bar above the board while a job is in hand, with the slot-size hint the brief asks for. */
     moving: (job: string, size: string) => `Moving ${job}, ${size}.`,
-    /** "a first fit, 2 slots". */
-    size: (type: string, slots: number) => `${type}, ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
+    /** "a first fit, 3 h". */
+    size: (type: string, minutes: number) => `${type}, ${hoursAndMinutes(minutes)}`,
     /** While the board asks where the job would fit. */
     checking: "Finding space…",
     /** Where it can go: a technician's day with room. */

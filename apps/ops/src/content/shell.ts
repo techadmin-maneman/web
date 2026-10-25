@@ -10,10 +10,9 @@ export const DEPARTMENT_NAMES = {
 } as const;
 
 export const shell = {
-  /** Who did something, where it was a service token rather than a person. */
   /** Whatever the console did by itself, or a token for the console did: never its ID or its label. */
   serviceToken: "System",
-  /** The sidebar's own title: the console's name, as the owner named it. */
+  /** The sidebar's own title: the console's name. */
   title: "Mane Man Ops",
   /** The header's way to the navigation, in a window too narrow to keep it beside the page. */
   menu: "Menu",

@@ -102,8 +102,8 @@ export const clients = {
     title: "Open tasks",
     none: "Nothing open.",
     failed: "Couldn’t load open tasks.",
-    /** A task done on a tab of the client's page: "Go to Payments". */
-    toTab: (tab: string) => `Go to ${tab}`,
+    /** A task done on a tab of the client's page: "Open Payments". */
+    toTab: (tab: string) => `Open ${tab}`,
   },
   failed: "Couldn’t load this client.",
   /*
@@ -115,7 +115,7 @@ export const clients = {
   visits: {
     /** The client's note to the technician, under the visit it is on. */
     clientNote: (text: string) => `Their note: “${text}”`,
-    address: "Visits go to",
+    address: "Visit address",
     noAddress: "No address yet.",
     access: "Access",
     // The address a client gave ops on the phone, which no board draws.
@@ -174,9 +174,9 @@ export const clients = {
     upcoming: "To come",
     past: "Done",
     columns: ["Date", "Time", "Visit", "Technician", "Status", "Discount code"],
-    onBoard: "Show on board",
+    onBoard: "See on the board",
     /** The link's whole name, since every row's says the same. */
-    onBoardLabel: (visit: string) => `Show on board: the visit of ${visit}`,
+    onBoardLabel: (visit: string) => `See the visit of ${visit} on the board`,
     /**
      * A discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
      * Entered or taken off only while the visit is not paid for or invoiced.
@@ -286,11 +286,11 @@ export const clients = {
         awaiting_payment: (amount: string, until: string) => `Payment link sent for ${amount}. Held until ${until}.`,
       },
       link: "Payment link",
-      loading: "Finding free windows…",
-      unreadable: "Couldn’t load free windows.",
+      loading: "Finding free times…",
+      unreadable: "Couldn’t load free times.",
       retry: "Try again",
       errors: {
-        taken: "That window was just taken. Choose another.",
+        taken: "That time was just taken. Choose another.",
         already_booked: "Already booked, or a payment link is open for one.",
         not_bookable: "That day or service can’t be booked.",
         no_product: "No hair system on sale that day.",
@@ -363,7 +363,7 @@ export const clients = {
      * it. No board draws it.
      */
     handClose: {
-      open: "Close by hand",
+      open: "Close the visit",
       openLabel: (visit: string) => `Close the visit of ${visit} by hand`,
       title: (name: string) => `Close ${name}’s visit by hand`,
       outcome: "Outcome",
@@ -495,7 +495,7 @@ export const clients = {
   credits: {
     title: "Free service visits",
     adjust: "Change",
-    balance: "They hold",
+    balance: "Free visits left",
     none: "None",
     visits: (count: number) => `${String(count)} ${Math.abs(count) === 1 ? "visit" : "visits"}`,
     /** After the count, as the head writes it: "2 visits · use by 3 Jan 2028". */
@@ -509,7 +509,7 @@ export const clients = {
     save: "Save free visits",
     /** The change refused, with what they hold: no more can be taken away. */
     tooMany: (most: number, held: number) =>
-      `Enter -${String(most)} to ${String(most)}. They hold ${String(held)}, so remove at most ${String(held)}.`,
+      `Enter -${String(most)} to ${String(most)}. They have ${String(held)} left, so remove at most ${String(held)}.`,
     saving: "Saving…",
     saved: (count: number) => `Done. They now have ${String(count)} ${count === 1 ? "visit" : "visits"}.`,
     errors: {
@@ -568,7 +568,7 @@ export const clients = {
   /** The package a client is on (docs/decisions/0211-packages.md). */
   package: {
     title: "Package",
-    label: "On",
+    label: "Current package",
     none: "None yet",
     recommended: (name: string) => `${name}, as recommended`,
     errors: {

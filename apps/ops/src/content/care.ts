@@ -239,7 +239,7 @@ export const care = {
     title: "Care team",
     columns: {
       member: "Member",
-      name: "Known to clients as",
+      name: "Name clients see",
       clients: "Clients",
       daysOff: "Days off",
       leave: "Leave",

@@ -164,8 +164,8 @@ export const technicians = {
         `${String(count)} ${count === 1 ? "visit is" : "visits are"} still booked on these days. Move ${count === 1 ? "it" : "them"} on the dispatch board.`,
       job: (when: string, client: string) => `${when} · ${client}`,
       noClient: "No client",
-      show: "Show on board",
-      showLabel: (when: string, client: string) => `Show on board: ${when} · ${client}`,
+      show: "See on the board",
+      showLabel: (when: string, client: string) => `See ${client}’s visit, ${when}, on the board`,
     },
     errors: {
       not_permitted: NOT_PERMITTED,

@@ -75,7 +75,7 @@ export const settings = {
     oneTyped: (code: string) => `Code ${code}`,
     manyGenerated: (count: number) => `${String(count)} single-use codes`,
     oneGenerated: "One generated code",
-    made: (codes: readonly string[]) => `Made: ${codes.join(", ")}`,
+    made: (codes: readonly string[]) => `Created ${codes.join(", ")}.`,
     close: "Close",
     /** Every code's figures together, above the table. */
     figures: {
@@ -165,7 +165,7 @@ export const settings = {
       console: "The console",
       other: "Other policies",
     },
-    lateFees: "Late fees are set in Services",
+    lateFees: "Late fees are set in Services and fees",
     allowed: (min: number, max: number, unit: string) => `${String(min)}–${String(max)} ${unit}`,
     /** A figure read in words, its range as the words say it: "5 pm to 10 pm, on a 24-hour clock". */
     allowedWords: (min: string, max: string, how: string) => `${min} to ${max}, ${how}`,
@@ -281,12 +281,12 @@ export const settings = {
       },
       // The rest of the rules (docs/decisions/0193-the-rest-of-the-rules-in-the-console.md).
       payment_links: {
-        holds_hours: "Holds the slot for",
+        holds_hours: "Holds the time for",
         closes_before_hours: "Closes before the visit",
         pay_within_days: "Link after a visit open for",
       },
       credit_reminder_days: { first: "First reminder", last: "Last reminder" },
-      check_in_days: { first: "First check-in", second: "Second check-in" },
+      check_in_days: { first: "First follow-up", second: "Second follow-up" },
       stock_watch: {
         expiry_warning_days: "Expiry flagged within",
         demand_days: "Look ahead for demand",
@@ -356,7 +356,7 @@ export const settings = {
    * them. A change applies from a day nothing is booked or bookable on, and none is ever taken back.
    */
   windowTimes: {
-    title: "Window times",
+    title: "Day times",
     inForce: "In force",
     window: { morning: "Morning", afternoon: "Afternoon", evening: "Evening" },
     /** "From Mon 2 Nov", or the times the console started with. */
@@ -435,9 +435,9 @@ export const settings = {
       `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} still booked. Move ${
         visits === 1 ? "it" : "them"
       } on the dispatch board.`,
-    show: "Show on board",
+    show: "See on the board",
     /** The link's whole name, since the list holds many and each link says the same. */
-    showLabel: (period: string) => `Show on board: ${period}`,
+    showLabel: (period: string) => `See ${period} on the board`,
     reopening: {
       open: "Reopen",
       /** The button's whole name, since the list holds many and each button says the same. */

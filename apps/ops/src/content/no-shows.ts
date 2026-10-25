@@ -194,8 +194,8 @@ export const noShows = {
   /** The board draws no list of the day's rulings. Each case ruled on today, the latest first. */
   decided: {
     title: "Decided today",
-    charged: (kept: string) => `Charged · kept ${kept}`,
-    chargedCredit: "Charged · kept a free service visit",
+    charged: (kept: string) => `Charged ${kept}`,
+    chargedCredit: "Charged a free service visit",
     chargedNothing: "Closed as a no-show",
     // A charge ruled before charges recorded what they kept.
     chargedUnrecorded: "Charged",

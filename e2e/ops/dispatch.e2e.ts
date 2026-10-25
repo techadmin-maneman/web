@@ -81,7 +81,7 @@ test("says how much of a day the job takes, and lists only the technicians' days
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
 
-  await expect(page.getByText("Moving Rohit M., service visit, 1 slot.")).toBeVisible();
+  await expect(page.getByText("Moving Rohit M., service visit, 1 h 30 min.")).toBeVisible();
   const days = await listed(page).allInnerTexts();
   expect(days).toContain("Arjun Negi · Sun 21 Sep · from 9 am");
   expect(days).toContain("Faizan Ali · Tue 23 Sep · from 9 am");
@@ -118,14 +118,14 @@ test("lists the tray’s jobs with their client, the window asked beside the one
   await expect(first).toContainText("Vikram Sethi");
   await expect(first).toContainText(opsCopy.dispatch.typeNames.first_fit);
   // The client asked for a morning, on no recorded day, and is being offered a Saturday evening.
-  await expect(first).toContainText("Asked · morning");
-  await expect(first).not.toContainText("Asked · Sat");
-  await expect(first).toContainText("Offered · Sat, evening");
+  await expect(first).toContainText("Asked for the morning");
+  await expect(first).not.toContainText("Asked for Sat");
+  await expect(first).toContainText("Offered Sat, evening");
   await expect(first).toContainText("Referred by Rohit Malhotra");
   // A visit with no Request behind it says so, rather than repeating the offered window.
   const last = tray.getByRole("listitem").last();
   await expect(last).toContainText(opsCopy.dispatch.tray.notAsked);
-  await expect(last).toContainText("Offered · Sun, afternoon");
+  await expect(last).toContainText("Offered Sun, afternoon");
 });
 
 // A tray click picked the job up at once, so it could not be read before it was assigned.
@@ -135,8 +135,8 @@ test("opens a tray job’s drawer, with the client, Assign and Open client", asy
   await job.click();
 
   const drawer = page.getByRole("dialog", { name: "Vikram Sethi" });
-  await expect(drawer).toContainText("Asked · morning · Offered · Sat, evening");
-  await expect(drawer).toContainText("First fit · 2 slots");
+  await expect(drawer).toContainText("Asked for the morning · Offered Sat, evening");
+  await expect(drawer).toContainText("First fit · 3 h");
   await expect(drawer).toContainText("Sec 43 · 122018");
   await expect(drawer).toContainText("Rohit Malhotra");
   await expect(drawer.getByRole("button", { name: opsCopy.dispatch.drawer.assign })).toBeVisible();
@@ -164,7 +164,7 @@ test("opens a block’s drawer with the client, the badge, and both ways to reac
   const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });
   await expect(drawer).toContainText("Fri 19 Sep · 9 am · Imran Qureshi");
   await expect(drawer).toContainText(opsCopy.dispatch.drawer.badges.prepaid);
-  await expect(drawer).toContainText("Service visit · 1 slot");
+  await expect(drawer).toContainText("Service visit · 1 h 30 min");
   await expect(drawer).toContainText("Sec 65 · 122018");
   await expect(drawer).toContainText(opsCopy.dispatch.drawer.states.scheduled);
   await expect(drawer.getByRole("link", { name: "WhatsApp Rohit" })).toHaveAttribute(

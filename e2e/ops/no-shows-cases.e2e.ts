@@ -227,7 +227,7 @@ test("lists the cases ruled on today with their ruling, and reads them and the d
   await expect(page.getByRole("region", { name: MONEY, exact: true })).toBeVisible();
   const decided = page.getByRole("region", { name: DECIDED_TODAY });
   await expect(decided.getByRole("listitem").filter({ hasText: "Karan Bose" })).toContainText(
-    "Charged · kept Rs. 2,360 · 10:30 am",
+    "Charged Rs. 2,360 · 10:30 am",
   );
   await expect(decided.getByRole("listitem").filter({ hasText: "Arjun Mehra" })).toContainText("Waived · 9:05 am");
 

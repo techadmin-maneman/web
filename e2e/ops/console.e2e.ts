@@ -80,7 +80,7 @@ test("lists in Settings only the pages a person may open, a group with none left
   await page.goto("/settings");
   await expect(page).toHaveURL(/\/settings\/care-team$/);
   const menu = page.getByRole("navigation", { name: opsCopy.shell.settings });
-  await expectNames(menu.getByRole("link"), ["Team"]);
+  await expectNames(menu.getByRole("link"), ["Care team"]);
   await expect(menu).not.toContainText(opsCopy.settingsGroupNames.business);
 });
 
@@ -157,7 +157,7 @@ test("titles each page by what it is, and says where it sits", async ({ page }) 
   const crumbs = page.getByRole("banner").getByRole("navigation", { name: opsCopy.shell.crumbs });
   await expect(crumbs.getByRole("listitem")).toHaveText([opsCopy.shell.nav.inventory, opsCopy.shell.sections.counts]);
   await page.goto("/settings/prices");
-  await expect(page).toHaveTitle("Consultation and fees · Settings · Mane Man Ops");
+  await expect(page).toHaveTitle("Services and fees · Settings · Mane Man Ops");
 });
 
 test("says who is signed in, in the account's panel", async ({ page }) => {

@@ -229,7 +229,7 @@ test("lists what waits on Tasks for the client under the head, each with a way t
   await expect(rows.nth(0)).toContainText("Replacement order3 days overdue");
   await expect(rows.nth(1)).toContainText("Number change1 day left");
   await expect(
-    openForClient(page).getByRole("link", { name: "Go to Hair systems · Replacement order" }),
+    openForClient(page).getByRole("link", { name: "Open Hair systems · Replacement order" }),
   ).toHaveAttribute("href", `/clients/${CLIENT.id}/pieces`);
   await expect(
     openForClient(page).getByRole("link", { name: "Decide in Number changes · Number change" }),

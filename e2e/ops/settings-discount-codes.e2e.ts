@@ -126,7 +126,7 @@ test.describe("the discount codes", () => {
       covers: ["service"],
       once_per_client: true,
     });
-    await expect(page.getByRole("status").filter({ hasText: "Made: DIWALI" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Created DIWALI." })).toBeVisible();
   });
 
   test("generates a batch of single-use codes, an amount off each", async ({ page }) => {
@@ -152,7 +152,7 @@ test.describe("the discount codes", () => {
       max_uses: 1,
       once_per_client: true,
     });
-    await expect(page.getByRole("status")).toHaveText("Made: A2B3C4D5, E6F7G8H9");
+    await expect(page.getByRole("status")).toHaveText("Created A2B3C4D5, E6F7G8H9.");
   });
 
   test("says why the API refused a code, of the box it refused", async ({ page }) => {
