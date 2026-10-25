@@ -35,6 +35,13 @@
   --settings-menu-width: var(--ops-settings-menu);
 }
 
+/* On a phone, Today's tiles two to a row. */
+@media (max-width: 600px) {
+  :root {
+    --columns-tile: var(--ops-tile-phone);
+  }
+}
+
 body {
   background: var(--ui-ground);
   color: var(--ui-text);

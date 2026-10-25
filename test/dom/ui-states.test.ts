@@ -55,9 +55,9 @@ describe("a screen that failed to draw", () => {
 });
 
 describe("the console’s table", () => {
-  it("is a table with the console’s rows, and whatever the caller adds", () => {
+  it("is a table with the console’s rows, and whatever the caller adds, its rows cards on a phone", () => {
     const markup = renderToStaticMarkup(createElement(Table, { className: "mine", children: createElement("tbody") }));
-    expect(markup).toMatch(/^<table class="[^"]+ mine">/);
+    expect(markup).toMatch(/^<table data-cards="" class="[^"]+ mine">/);
   });
 });
 

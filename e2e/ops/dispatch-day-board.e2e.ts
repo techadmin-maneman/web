@@ -33,3 +33,27 @@ test("opens on the day, a row of hours a technician, and places a job in hand at
   await views.getByRole("button", { name: copy.views.week }).click();
   await expect(page.getByRole("table", { name: copy.day.label("Fri 19 Sep") })).toHaveCount(0);
 });
+
+// A visit late in the day was pinned to the board's right edge, over the afternoon, as a table keeps its buttons in view.
+test("keeps the day's last hours where they fall when the hours scroll", async ({ page }) => {
+  const [imran, ...others] = BOARD.technicians;
+  const [friday, ...week] = imran?.days ?? [];
+  const visit = friday?.blocks[0];
+  if (imran === undefined || friday === undefined || visit === undefined) throw new Error("the board has no visit");
+  const late = {
+    ...visit,
+    appointment_id: "77000000-0000-4000-8000-000000000999",
+    starts_at: `${friday.date}T14:00:00.000Z`,
+  };
+  const board = {
+    ...BOARD,
+    technicians: [{ ...imran, days: [{ ...friday, blocks: [...friday.blocks, late] }, ...week] }, ...others],
+  };
+  await page.setViewportSize({ width: 900, height: 800 });
+  await answer(page, { [READ_BOARD]: json(board), [READ_ROOM]: json(ROOM) });
+  await page.goto("/dispatch");
+  const day = page.getByRole("table", { name: copy.day.label("Fri 19 Sep") });
+  await expect(day.getByRole("rowheader")).toHaveCount(BOARD.technicians.length);
+  const last = day.getByRole("columnheader").last();
+  expect(await last.evaluate((head) => getComputedStyle(head).position)).not.toBe("sticky");
+});

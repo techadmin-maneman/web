@@ -149,6 +149,19 @@
   }
 }
 
+/* On a phone a task reads down: what it is, then whose it is and when it is due on a line beneath. */
+@media (max-width: 600px) {
+  .task,
+  .marked {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .task .what,
+  .marked .what {
+    grid-column: 1 / -1;
+  }
+}
+
 /* The client's name, which reaches their page: the board draws it as plain text. */
 .subject {
   font-size: var(--fs-15);
