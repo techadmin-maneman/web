@@ -37,7 +37,6 @@ export const counts = {
   /** A task whose place has since run out of what it counts. */
   nothingHere: "Nothing of this is held here now.",
   closeEmpty: "Close as counted",
-  close: "Close",
   saveRecount: "Save recount",
   countSaid: (waiting: number) => (waiting === 0 ? "Counted." : `Counted. ${String(waiting)} to count again.`),
   recountSaid: (waiting: number) =>

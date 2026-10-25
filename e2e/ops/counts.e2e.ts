@@ -5,6 +5,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
+import { CLOSE } from "../../apps/ops/src/content/common.ts";
 import { counts as copy } from "../../apps/ops/src/content/counts.ts";
 import { stockLabels } from "../../apps/ops/src/content/stock-labels.ts";
 import { spend } from "../../apps/ops/src/content/spend.ts";
@@ -51,7 +52,7 @@ test("opens a task and counts it blind", async ({ page }) => {
     "POST /api/count-tasks/{id}/counts": json(done),
   });
   await page.getByRole("button", { name: opener("Imran Qureshi") }).click();
-  const panel = page.getByRole("region", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
+  const panel = page.getByRole("dialog", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
   await expect(panel).toContainText(copy.countNote);
   await panel.getByLabel(copy.counted(PIECE.name)).fill("2");
   const request = posted(page, "/api/count-tasks/ct-1/counts");
@@ -70,12 +71,12 @@ test("closes as counted a task whose place holds nothing of it now, and closes t
     "POST /api/count-tasks/{id}/counts": json(done),
   });
   await page.getByRole("button", { name: opener("Imran Qureshi") }).click();
-  const panel = page.getByRole("region", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
+  const panel = page.getByRole("dialog", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
   await expect(panel).toContainText(copy.nothingHere);
   const request = posted(page, "/api/count-tasks/ct-1/counts");
   await panel.getByRole("button", { name: copy.closeEmpty }).click();
   expect((await request).postDataJSON()).toEqual({ lines: [] });
-  await panel.getByRole("button", { name: copy.close, exact: true }).click();
+  await panel.getByRole("button", { name: CLOSE }).click();
   await expect(panel).toBeHidden();
 });
 
@@ -102,7 +103,7 @@ test("signs off a difference with why", async ({ page }) => {
     "POST /api/count-tasks/{id}/sign-off": json(done),
   });
   await page.getByRole("button", { name: opener("Delhi stockroom") }).click();
-  const panel = page.getByRole("region", { name: copy.heading("Delhi stockroom", copy.classes.weekly) });
+  const panel = page.getByRole("dialog", { name: copy.heading("Delhi stockroom", copy.classes.weekly) });
   await expect(panel.getByRole("row").filter({ hasText: PIECE.name })).toContainText("2");
   await expect(panel).toContainText(copy.notScanned(["MM-ESS-0000041-R"]));
   await panel.getByLabel(copy.why).fill("One piece not found");
@@ -126,7 +127,7 @@ test("counts a hair system held under labels by scanning them, and flags one not
     "POST /api/count-tasks/{id}/counts": json(counted),
   });
   await page.getByRole("button", { name: opener("Imran Qureshi") }).click();
-  const panel = page.getByRole("region", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
+  const panel = page.getByRole("dialog", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
   await expect(panel).toContainText(copy.scanEach(PIECE.name));
   for (const label of ["MM-ESS-0000041-R", flagged[0] ?? ""]) {
     await panel.getByLabel(stockLabels.scan.label, { exact: true }).fill(label);
@@ -165,7 +166,7 @@ test("starts a count of one item at one place, and opens it", async ({ page }) =
   const request = posted(page, "/api/count-tasks");
   await form.getByRole("button", { name: copy.start }).click();
   expect((await request).postDataJSON()).toEqual({ place_id: "room-1", consumable_code: "solvent" });
-  await expect(page.getByRole("region", { name: copy.heading("Delhi stockroom", "Solvent") })).toContainText(
+  await expect(page.getByRole("dialog", { name: copy.heading("Delhi stockroom", "Solvent") })).toContainText(
     copy.counted("Solvent"),
   );
 });
