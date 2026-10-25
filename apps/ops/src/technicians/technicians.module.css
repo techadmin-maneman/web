@@ -27,6 +27,14 @@
 }
 
 .name,
+.city,
+.jobs,
+.service,
+.leaveCell {
+  padding-block: 0; /* the board's row height, its words centred in it */
+}
+
+.name,
 .city {
   font-weight: var(--weight-regular);
   text-align: left;

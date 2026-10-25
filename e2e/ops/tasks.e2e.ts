@@ -4,7 +4,7 @@ import { open, list, row, groupNames } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // The groups were one 484 px column on a 1440 px screen, money between a call about a move and a job on a day off.
-test("stands each group under its department, in the navigation’s order, side by side", async ({ page }) => {
+test("stands each group under its department, in the navigation’s order, one beneath another", async ({ page }) => {
   await open(page);
   await expect(list(page).getByRole("heading", { level: 3 })).toHaveText([
     opsCopy.tasks.departments.operations,
@@ -21,12 +21,12 @@ test("stands each group under its department, in the navigation’s order, side 
   ]);
   await expect(list(page).getByRole("listitem")).toHaveCount(8);
 
-  // Customer Care's two groups share a row of the desk's screen.
-  const left = await groupNames(page).nth(1).boundingBox();
-  const right = await groupNames(page).nth(2).boundingBox();
-  if (left === null || right === null) throw new Error("the two groups are not drawn");
-  expect(right.y).toBeCloseTo(left.y, 0);
-  expect(right.x).toBeGreaterThan(left.x);
+  // Customer Care's two groups read down one list, each across the page.
+  const above = await groupNames(page).nth(1).boundingBox();
+  const below = await groupNames(page).nth(2).boundingBox();
+  if (above === null || below === null) throw new Error("the two groups are not drawn");
+  expect(below.x).toBeCloseTo(above.x, 0);
+  expect(below.y).toBeGreaterThan(above.y);
 });
 
 test("heads the list with how many have run over, and takes the keyboard to the first", async ({ page }) => {
