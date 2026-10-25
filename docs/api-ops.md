@@ -9921,6 +9921,91 @@ Request body:
 }
 ```
 
+### GET /api/visits/{id}/story
+
+What happened on a visit: each step the technician's phone landed, in order, and how it ended
+
+**200**: The steps, the first taken first; none before the technician arrives
+
+```json
+{
+  "$ref": "#/components/schemas/VisitStory"
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no visit by this id in the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/clients/{id}/remedies
 
 Give a client free service visits, with why: at once within the limit ops set, else for a manager
@@ -37525,6 +37610,74 @@ Request body:
   },
   "required": [
     "lost_reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitStory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "check_in",
+              "start",
+              "before_photos",
+              "checklist",
+              "consumables",
+              "piece",
+              "after_photos",
+              "outcome"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The phone's clock when the step was taken."
+          },
+          "technician": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How the visit ended, on its outcome step: \"done\", \"partial\", \"no_show\"; else null."
+          }
+        },
+        "required": [
+          "kind",
+          "at",
+          "technician",
+          "outcome"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "steps"
   ],
   "additionalProperties": false
 }

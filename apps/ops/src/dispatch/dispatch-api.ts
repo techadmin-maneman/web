@@ -5,6 +5,8 @@
 import { client, type Landing, type Shown, type BoardQuery, moveBody, setOnly } from "../api.ts";
 
 export const dispatchApi = {
+  /** What happened on a visit, step by step. */
+  story: (id: string) => client.get("/api/visits/{id}/story", { path: { id } }),
   /** Seven days from `from`, or from today, in one city or every one. No name or number is in the query. */
   board: (asked: BoardQuery) =>
     client.get("/api/dispatch", { query: setOnly({ from: asked.from, city: asked.city, visit: asked.visit ?? null }) }),

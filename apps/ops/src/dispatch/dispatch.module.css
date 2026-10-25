@@ -66,3 +66,42 @@
 }
 
 /* ---- A narrow window, or 200% zoom: the tray goes beneath the grid --- */
+
+/* What happened on the visit, under its facts in the drawer. */
+.story {
+  margin-top: var(--sp-16);
+}
+
+.storyTitle {
+  margin: 0 0 var(--sp-8);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-medium);
+}
+
+.storySteps {
+  margin: 0 0 var(--sp-8);
+  padding: 0;
+  list-style: none;
+}
+
+.storyStep {
+  display: flex;
+  gap: var(--sp-12);
+  padding: var(--sp-4) 0;
+  font-size: var(--fs-14);
+}
+
+.storyTime {
+  min-width: var(--sp-64);
+  color: var(--ui-text-muted);
+}
+
+.storyBy,
+.storyNone {
+  color: var(--ui-text-muted);
+}
+
+.storyNone {
+  margin: 0;
+  font-size: var(--fs-14);
+}

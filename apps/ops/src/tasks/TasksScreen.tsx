@@ -187,16 +187,16 @@ function OverdueCount({ count, onJump }: { count: number; onJump: (() => void) |
 /** A task by its group and its row's id, as the API names it. */
 const keyOf = (group: Group, id: string) => `${group}/${id}`;
 
-/**
- * The board as it was read, less the tasks closed here since, with their groups' counts and the overdue count: the
- * list follows what ops close on it without being read again.
- */
 /** What the board is narrowed to, and who is asking, for Mine. */
 interface Filter {
   readonly by: TaskFilter;
   readonly me: string | null;
 }
 
+/**
+ * The board as it was read, less the tasks closed here since, with their groups' counts and the overdue count, narrowed
+ * as asked: the list follows what ops close on it without being read again.
+ */
 function sinceRead(board: Tasks, closed: readonly string[], now: Date, filter: Filter): Tasks & { open: number } {
   const groups = board.groups
     .map((each) => {

@@ -24,6 +24,7 @@ import {
   windowWord,
 } from "./job.ts";
 import { firstNameOf } from "@rules/lib/names.ts";
+import { VisitStory } from "./VisitStory.tsx";
 
 /** Each action is null when the person's access does not let them take it. */
 interface Props {
@@ -59,6 +60,21 @@ function warningOf(job: BlockJob): string | null {
 /** When the visit starts: "10:30 am". */
 const timeOf = ({ block }: BlockJob) => indiaClock(block.starts_at);
 
+/** The visit's facts, a line each: its kind and length, its service, where, how it stands, who referred, the note. */
+function rowsOf(block: BlockJob["block"]) {
+  const copy = dispatch.drawer;
+  const referredBy = block.person === null ? null : block.person.referred_by;
+  const typeName = block.type === null ? dispatch.unknown : dispatch.typeNames[block.type];
+  return [
+    { key: copy.rows.type, value: copy.type(typeName, minutesOf(block.slots)) },
+    ...(block.service === null ? [] : [{ key: copy.rows.service, value: block.service }]),
+    { key: copy.rows.area, value: block.sector === null ? dispatch.unknown : copy.area(block.sector, block.pincode) },
+    { key: copy.rows.state, value: stateOf(block) },
+    ...(referredBy === null ? [] : [{ key: copy.rows.referred, value: referredBy }]),
+    ...(block.client_note === null ? [] : [{ key: copy.rows.note, value: block.client_note }]),
+  ];
+}
+
 export function BlockDrawer(props: Props) {
   const { job, onMove, onMoveAnyway, onTold, onWithdraw, change, onChange, onLetIn, onClose } = props;
   const copy = dispatch.drawer;
@@ -67,16 +83,7 @@ export function BlockDrawer(props: Props) {
 
   // A move the client has not heard of still stands, so the block is where it put the visit.
   const movedTo = `${shortDate(job.date)}, ${indiaClock(block.starts_at)}`;
-  const referredBy = person === null ? null : person.referred_by;
-  const typeName = block.type === null ? dispatch.unknown : dispatch.typeNames[block.type];
-  const rows = [
-    { key: copy.rows.type, value: copy.type(typeName, minutesOf(block.slots)) },
-    ...(block.service === null ? [] : [{ key: copy.rows.service, value: block.service }]),
-    { key: copy.rows.area, value: block.sector === null ? dispatch.unknown : copy.area(block.sector, block.pincode) },
-    { key: copy.rows.state, value: stateOf(block) },
-    ...(referredBy === null ? [] : [{ key: copy.rows.referred, value: referredBy }]),
-    ...(block.client_note === null ? [] : [{ key: copy.rows.note, value: block.client_note }]),
-  ];
+  const rows = rowsOf(block);
   const warning = warningOf(job);
 
   return (
@@ -96,6 +103,7 @@ export function BlockDrawer(props: Props) {
           </div>
         ))}
       </dl>
+      <VisitStory visitId={block.appointment_id} clientId={person?.id ?? null} />
       {block.untold !== null && person !== null && (
         <div className={styles.untold}>
           <p className={styles.untoldLine}>{copy.untold[block.untold.reason](movedTo, phoneWords(person.mobile))}</p>

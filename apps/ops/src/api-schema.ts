@@ -7521,6 +7521,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/{id}/story": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What happened on a visit: each step the technician's phone landed, in order, and how it ended */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The steps, the first taken first; none before the technician arrives */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VisitStory"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no visit by this id in the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/remedies": {
         parameters: {
             query?: never;
@@ -23691,6 +23765,20 @@ export interface components {
         LostReasonChange: {
             /** @description One of the job sheet's lost_reasons, by its code; null where they are going ahead. */
             lost_reason: string | null;
+        };
+        VisitStory: {
+            steps: {
+                /** @enum {string} */
+                kind: "check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome";
+                /**
+                 * Format: date-time
+                 * @description The phone's clock when the step was taken.
+                 */
+                at: string;
+                technician: string | null;
+                /** @description How the visit ended, on its outcome step: "done", "partial", "no_show"; else null. */
+                outcome: string | null;
+            }[];
         };
         RemedyNew: {
             visits: number;

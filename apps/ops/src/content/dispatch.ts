@@ -113,6 +113,28 @@ export const dispatch = {
   },
   /** The drawer a block opens. */
   drawer: {
+    /** What happened on the visit, a step a line, under its facts. */
+    story: {
+      title: "What happened",
+      none: "Nothing yet. The technician hasn’t arrived.",
+      failed: "Couldn’t load what happened.",
+      steps: {
+        check_in: "Arrived",
+        start: "Started",
+        before_photos: "Before photos taken",
+        piece: "Hair system recorded",
+        checklist: "Checklist ticked",
+        consumables: "What was used recorded",
+        after_photos: "After photos taken",
+        outcome: "Closed",
+      } as Readonly<Record<string, string | undefined>>,
+      outcomes: { done: "done", partial: "partly done", no_show: "as a no-show" } as Readonly<
+        Record<string, string | undefined>
+      >,
+      /** "Closed, done", "Arrived": a step, and on the last how the visit ended. */
+      step: (step: string, outcome: string | undefined) => (outcome === undefined ? step : `${step}, ${outcome}`),
+      photos: "See the photographs",
+    },
     /** The way past the geofence, for a visit today they have not checked in to. */
     letIn: "Allow check-in",
     /** A move to another day the client is asked to confirm: the visit is still here until they do. */

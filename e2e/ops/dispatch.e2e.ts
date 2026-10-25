@@ -226,3 +226,29 @@ test("keeps the keyboard off the board behind an open panel", async ({ page }) =
     expect(behind, `Tab ${String(step + 1)} reached the board behind the drawer`).toBe(false);
   }
 });
+
+// The drawer said "Consultation · 1 slot" and nothing of what happened.
+test("tells what happened on a visit in its drawer, step by step, and opens its photographs", async ({ page }) => {
+  await open(page, {
+    "GET /api/visits/{id}/story": json({
+      steps: [
+        { kind: "check_in", at: "2025-09-19T03:32:00.000Z", technician: "Imran Qureshi", outcome: null },
+        { kind: "before_photos", at: "2025-09-19T03:40:00.000Z", technician: "Imran Qureshi", outcome: null },
+        { kind: "outcome", at: "2025-09-19T05:00:00.000Z", technician: "Imran Qureshi", outcome: "done" },
+      ],
+    }),
+  });
+  await press(page, ROHIT_BLOCK);
+  const story = page
+    .getByRole("dialog", { name: "Rohit Malhotra" })
+    .getByRole("region", { name: opsCopy.dispatch.drawer.story.title });
+  await expect(story.getByRole("listitem")).toHaveText([
+    "9:02 am" + (opsCopy.dispatch.drawer.story.steps.check_in ?? "") + " · Imran Qureshi",
+    "9:10 am" + (opsCopy.dispatch.drawer.story.steps.before_photos ?? "") + " · Imran Qureshi",
+    "10:30 am" + opsCopy.dispatch.drawer.story.step("Closed", "done") + " · Imran Qureshi",
+  ]);
+  await expect(story.getByRole("link", { name: opsCopy.dispatch.drawer.story.photos })).toHaveAttribute(
+    "href",
+    `/clients/${ROHIT.id}/photos`,
+  );
+});

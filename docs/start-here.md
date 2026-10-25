@@ -59,9 +59,9 @@ this map, or when the map names something that no longer exists.
   `visit-begun`, `client-visits`, `client-photo-keys`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
   `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `open-proposals`, `visit-upkeep` (what a write to a
   visit keeps up beside it),
-  `no-show-notes`
+  `no-show-notes`, `visit-story` (a visit's steps, for its drawer)
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `follow-ups`, `one-visit`
-- **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`, `ops/visit-lost-reason`
+- **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`, `ops/visit-lost-reason`, `ops/visit-story`
 - **Screens:** `apps/app/src/visits/`, `apps/ops/src/clients/`
 - **Tests:** `test/worker/booking/visit-*`, `test/worker/booking/next-visit.test.ts`, `e2e/app/changes.e2e.ts`,
   `e2e/app/next-visit.e2e.ts`
