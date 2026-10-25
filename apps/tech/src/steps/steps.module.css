@@ -297,3 +297,8 @@
 .choice[aria-pressed="true"] .note {
   color: inherit;
 }
+
+/* The checklist's one tap for a visit where everything was done. */
+.tickAll {
+  margin: var(--sp-16) var(--sp-20) 0;
+}

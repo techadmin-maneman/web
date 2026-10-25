@@ -110,6 +110,20 @@ test("a consultation’s outcome sends the client’s yes", async ({ page }) => 
 
 // ADR 0025, item 59: "gold marks only the one primary action". The boards also gild a ticked
 // box, a step's count and a chosen outcome or reason.
+test("ticks the whole checklist with one tap when everything was done, and shows how far through the job", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos");
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+  await expect(page.getByRole("img", { name: /^Step 2 of d+$/ })).toBeVisible();
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await expect
+    .poll(() => writesTo(fake, "checklist").at(-1)?.body)
+    .toEqual({ done: ["piece_removed", "scalp_cleaned", "piece_cleaned"] });
+});
+
 test("draws nothing in gold but the one primary action", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");

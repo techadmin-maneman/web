@@ -8,6 +8,7 @@
 // one, or the consultation's alone once the client decided against the fit at
 // the piece step before it.
 
+import { Button } from "@maneman/ui/Button";
 import { CheckRow } from "@maneman/ui/CheckRow";
 import { useEffect, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
@@ -75,6 +76,18 @@ function Ticking({
         onFinish({ done: [...done] });
       }}
     >
+      {!all && items.length > 1 && (
+        <Button
+          variant="outlineOnInk"
+          size="control"
+          className={styles.tickAll}
+          onClick={() => {
+            setDone(listed);
+          }}
+        >
+          {copy.checklist.all}
+        </Button>
+      )}
       <ul className={styles.list}>
         {items.map((item) => {
           const ticked = done.includes(item.id);

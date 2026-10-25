@@ -12,6 +12,28 @@
   color: var(--paper);
 }
 
+/* How far through the job: a thin rail of the job's steps beneath the head. */
+.rail {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-4);
+  padding: var(--sp-8) var(--sp-20) 0;
+}
+
+.railDone,
+.railTodo {
+  flex: 1;
+  height: var(--sp-4);
+}
+
+.railDone {
+  background: var(--paper);
+}
+
+.railTodo {
+  background: var(--ink-line);
+}
+
 .body {
   display: flex;
   flex: 1;

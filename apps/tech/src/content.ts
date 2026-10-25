@@ -480,6 +480,7 @@ export const capture = {
 export const steps = {
   back: "Back",
   of: (done: number, total: number) => `${String(done)} of ${String(total)}`,
+  place: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
   titles: {
     before_photos: "Before photos",
     checklist: "Service checklist",
@@ -507,6 +508,7 @@ export const steps = {
   checklist: {
     // The board's dim bar while the list is unfinished.
     unfinished: "Finish the list to continue",
+    all: "Tick all: everything was done",
   },
   consumables: {
     less: (name: string) => `One fewer ${name.toLowerCase()}`,
