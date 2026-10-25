@@ -39,6 +39,8 @@ const QUERIES: Readonly<Record<string, string>> = {
   "GET /api/technicians/work": "?from=2026-09-01&to=2026-09-30",
   "GET /api/technician-pay": "?month=2026-09",
   "GET /api/technician-pay/statement": `?technician_id=${TECHNICIAN}&month=2026-09`,
+  "GET /api/pincode-directory/districts": "?state=HARYANA",
+  "GET /api/pincode-directory/pincodes": "?state=HARYANA&district=GURGAON",
 };
 
 /** A route's path with the Gurgaon record its placeholders name. */
