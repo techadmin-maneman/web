@@ -132,6 +132,7 @@ export const clients = {
       goingAhead: "Going ahead",
       notSaid: "Not said",
       kept: (reason: string) => `Not going ahead: ${reason}`,
+      change: "Change why",
       errors: {
         invalid_request: changed("That reason is no longer listed."),
         not_found: changed("Not found."),
@@ -188,6 +189,7 @@ export const clients = {
       /** A one visit's code the client typed when booking on the site, which "Enter a code" starts from. */
       requested: (code: string) => `Client entered ${code} when booking`,
       enter: "Enter a code",
+      drawerTitle: (visit: string) => `Discount code · visit of ${visit}`,
       /** The button's whole name, since every row's says the same. */
       enterLabel: (visit: string) => `Enter a discount code on the visit of ${visit}`,
       label: "Discount code",
