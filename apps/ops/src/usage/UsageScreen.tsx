@@ -8,6 +8,7 @@ import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { quantity } from "@maneman/web-kit/figures";
+import { BarChart } from "@maneman/ui/BarChart";
 import { roundRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
@@ -54,6 +55,20 @@ function Items({ technician }: { technician: Technician }) {
   );
 }
 
+/** Each technician's use over what their visits expected, the furthest over first. */
+function OverChart({ usage }: { usage: Usage }) {
+  const bars = usage.technicians
+    .filter((technician) => technician.over_percent !== null)
+    .sort((one, other) => (other.over_percent ?? 0) - (one.over_percent ?? 0))
+    .map((technician) => ({
+      key: technician.technician_id,
+      label: technician.name,
+      value: technician.over_percent ?? 0,
+      shown: copy.over(technician.over_percent),
+    }));
+  return bars.length === 0 ? null : <BarChart label={copy.chart} bars={bars} />;
+}
+
 function Technicians({ usage }: { usage: Usage }) {
   const [open, setOpen] = useState<string | null>(null);
   const opened = usage.technicians.find((technician) => technician.technician_id === open);
@@ -62,35 +77,38 @@ function Technicians({ usage }: { usage: Usage }) {
       {usage.technicians.length === 0 ? (
         <Note>{copy.noTechnicians}</Note>
       ) : (
-        <Table controls>
-          <Head columns={copy.technicianColumns} />
-          <tbody>
-            {usage.technicians.map((technician) => (
-              <tr key={technician.technician_id}>
-                <RowHead>
-                  {technician.name}
-                  {technician.flagged && <Note>{copy.flagged}</Note>}
-                </RowHead>
-                <td className={form.figure}>{technician.visits}</td>
-                <td className={form.figure}>{roundRupees(technician.expected_value)}</td>
-                <td className={form.figure}>{roundRupees(technician.used_value)}</td>
-                <td className={form.figure}>{copy.over(technician.over_percent)}</td>
-                <td>
-                  <Button
-                    variant="outline"
-                    size="small"
-                    aria-label={copy.items(technician.name)}
-                    onClick={() => {
-                      setOpen(technician.technician_id);
-                    }}
-                  >
-                    {copy.itemsShort}
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+        <>
+          <OverChart usage={usage} />
+          <Table controls>
+            <Head columns={copy.technicianColumns} />
+            <tbody>
+              {usage.technicians.map((technician) => (
+                <tr key={technician.technician_id}>
+                  <RowHead>
+                    {technician.name}
+                    {technician.flagged && <Note>{copy.flagged}</Note>}
+                  </RowHead>
+                  <td className={form.figure}>{technician.visits}</td>
+                  <td className={form.figure}>{roundRupees(technician.expected_value)}</td>
+                  <td className={form.figure}>{roundRupees(technician.used_value)}</td>
+                  <td className={form.figure}>{copy.over(technician.over_percent)}</td>
+                  <td>
+                    <Button
+                      variant="outline"
+                      size="small"
+                      aria-label={copy.items(technician.name)}
+                      onClick={() => {
+                        setOpen(technician.technician_id);
+                      }}
+                    >
+                      {copy.itemsShort}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </>
       )}
       {opened !== undefined && (
         <div className={form.group}>

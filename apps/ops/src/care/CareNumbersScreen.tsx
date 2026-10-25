@@ -5,6 +5,7 @@
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
+import { BarChart } from "@maneman/ui/BarChart";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -61,16 +62,30 @@ function Counted({ titleId, title, lines }: { titleId: string; title: string; li
   );
 }
 
-function Lists({ numbers }: { numbers: CareNumbers }) {
-  const reasons = numbers.reasons.map((row) =>
-    copy.counted(care.reasons[row.reason as keyof typeof care.reasons], row.chats),
+/** What chats were about, the most asked first, each a bar beside its count. */
+function Reasons({ numbers }: { numbers: CareNumbers }) {
+  const bars = [...numbers.reasons]
+    .sort((one, other) => other.chats - one.chats)
+    .map((row) => ({
+      key: row.reason,
+      label: care.reasons[row.reason as keyof typeof care.reasons],
+      value: row.chats,
+      shown: String(row.chats),
+    }));
+  return (
+    <Panel titleId="care-reasons" title={copy.reasons} padded>
+      {bars.length === 0 ? <Note>{copy.nothing}</Note> : <BarChart label={copy.reasons} bars={bars} />}
+    </Panel>
   );
+}
+
+function Lists({ numbers }: { numbers: CareNumbers }) {
   const remedies = numbers.remedies.map((row) =>
     copy.remedied(care.remedy.reasons[row.reason as keyof typeof care.remedy.reasons], row.remedies, row.visits),
   );
   return (
     <>
-      <Counted titleId="care-reasons" title={copy.reasons} lines={reasons} />
+      <Reasons numbers={numbers} />
       <Counted titleId="care-remedies" title={copy.remedies} lines={remedies} />
     </>
   );

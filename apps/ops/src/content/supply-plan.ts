@@ -56,6 +56,8 @@ export const supplyPlan = {
     title: "Accuracy",
     none: "Measured once a forecast’s first period has passed.",
     periodColumns: ["Period from", "Expected", "Used", "Off by", "Bias", "Within high case"],
+    /** Above the table: how far off each period was, a bar each. */
+    chart: "How far off each period was",
     itemColumns: ["Item", "Expected", "Used", "Off by", "Bias"],
     /** "18%", or a dash where nothing was used */
     percent: (value: number | null) => (value === null ? "—" : `${String(value)}%`),

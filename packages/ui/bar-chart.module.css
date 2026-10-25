@@ -1,0 +1,44 @@
+/* Figures to compare at a glance (./BarChart.tsx): a name, a bar and the figure on each line. */
+
+@layer base, ui;
+
+@layer ui {
+  .chart {
+    margin: 0;
+  }
+
+  .bars {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto;
+    gap: var(--sp-12);
+    align-items: center;
+    padding: var(--sp-4) 0;
+    font-size: var(--fs-14);
+  }
+
+  .label {
+    overflow-wrap: anywhere;
+  }
+
+  .bar {
+    width: 100%;
+    height: var(--sp-8);
+    background: var(--ui-shade);
+  }
+
+  .bar rect {
+    fill: var(--ui-accent);
+  }
+
+  .value {
+    min-width: var(--sp-40);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+}
