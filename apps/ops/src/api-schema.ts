@@ -3380,6 +3380,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pincode-demand/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The pincodes not served, most waiting first, then most looked up in the last ninety days */
+        get: {
+            parameters: {
+                query?: {
+                    most?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pincodes, in order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NextToOpen"];
+                    };
+                };
+                /** @description invalid_request: most outside 1 to 100 */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pincode-launches/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The pincodes served from a day in the last thirty, with who was told and what has been booked there */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The launches, newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RecentLaunches"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/stock-match": {
         parameters: {
             query?: never;
@@ -24694,6 +24822,30 @@ export interface components {
                 reached: boolean | null;
                 /** @description The technicians whose reach takes it in. */
                 reached_by: string[];
+            }[];
+        };
+        NextToOpen: {
+            pincodes: {
+                pincode: string;
+                city: string | null;
+                area: string | null;
+                district: string | null;
+                state: string | null;
+                waiting: number;
+                /** @description Lookups on the site in the last ninety days. */
+                looked: number;
+            }[];
+        };
+        RecentLaunches: {
+            launches: {
+                pincode: string;
+                area: string;
+                city: string;
+                /** Format: date */
+                launched_on: string;
+                told: number;
+                /** @description Visits booked there since, cancelled ones left out. */
+                booked: number;
             }[];
         };
         ClientStockMatch: {

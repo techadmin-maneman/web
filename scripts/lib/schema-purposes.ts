@@ -152,6 +152,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   photos: "One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).",
   pieces:
     "Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).",
+  pincode_demand:
+    "How often each pincode we do not serve is looked up on the site, a count a day, with nobody's data; Areas ranks the next to open by it (ADR 0224).",
   pincode_directory:
     "India Post's pincodes across India, one row each: its district, state, post offices and a point, refreshed each quarter from data.gov.in; ops open a city from it, and it holds nobody's data (ADR 0220).",
   pincode_launch_pincodes: "The pincodes each launch serves, one row each (ADR 0221).",

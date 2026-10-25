@@ -63,6 +63,9 @@ const IF_ERASED = `CASE WHEN i % 10 = 0 THEN '${AGO}' END`;
  * statements name has no row here.
  */
 const HISTORY = [
+  // A year of lookups, which housekeeping keeps once a day and the Tasks board never reads.
+  `INSERT INTO pincode_demand (pincode, day, checks)
+   SELECT printf('%06d', 400000 + i), '${AGO.slice(0, 10)}', 1 FROM n`,
   // Launches gone live long ago, each of the one pincode, which the launches job must not read again.
   `INSERT OR IGNORE INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122002', 'DLF Phase 1', 'Gurgaon', 1)`,
   `INSERT INTO pincode_launches (id, city, go_live_on, state, created_by, created_at, live_at, alerted)

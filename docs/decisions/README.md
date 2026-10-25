@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0224. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0225. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -256,6 +256,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0212](0212-editing-in-place.md) Editing in place
 - [0220](0220-opening-a-city-from-india-posts-pincodes.md) Opening a city from India Post's pincodes
 - [0221](0221-launches-scheduled-paused-and-checked.md) Launches scheduled, paused and checked first
+- [0224](0224-demand-and-the-next-to-open.md) Demand, and the next pincodes to open
 
 ## Every decision, oldest first
 
@@ -479,6 +480,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0218](0218-refer-opens-at-the-first-consultation.md) | Refer opens at the first consultation | 2026-10-19 | accepted |  |
 | [0219](0219-one-line-consents.md) | One-line consents, with the full notice a link away | 2026-10-19 | accepted |  |
 | [0220](0220-opening-a-city-from-india-posts-pincodes.md) | Opening a city from India Post's pincodes | 2026-10-25 | accepted | [0221](0221-launches-scheduled-paused-and-checked.md) |
-| [0221](0221-launches-scheduled-paused-and-checked.md) | Launches scheduled, paused and checked first | 2026-10-25 | accepted |  |
+| [0221](0221-launches-scheduled-paused-and-checked.md) | Launches scheduled, paused and checked first | 2026-10-25 | accepted | [0224](0224-demand-and-the-next-to-open.md) |
 | [0222](0222-consumables-short-of-expected.md) | Consumables short of what a visit expects are said why, and checked | 2026-10-25 | accepted |  |
 | [0223](0223-reach-from-home.md) | Reach from home, drawn on the city's map and checked at the address | 2026-10-26 | accepted |  |
+| [0224](0224-demand-and-the-next-to-open.md) | Demand, and the next pincodes to open | 2026-10-26 | accepted |  |

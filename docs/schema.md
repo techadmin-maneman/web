@@ -40,6 +40,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Cycle counts | `count_tasks`, `count_lines` | A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning | Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought |
 | The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
+| Demand looked up | `pincode_demand` | Lookups since are not counted, so a pincode looked up since ranks a little lower to open next | Nothing: the counts rank, they decide nothing |
 | Launches scheduled | `pincode_launches`, `pincode_launch_pincodes` | A launch scheduled or cancelled since is gone or back, and one the cron served since is scheduled again, though its pincodes stay served and those waiting told | Scheduling or cancelling it again in Areas; one served since, marking it live is the cron's next run |
 | India Post's pincodes | `pincode_directory` | A quarter's refresh since is undone, so the console offers India Post's pincodes as they were | Loading the file again: `node scripts/ops/load-pincode-directory.ts <environment>` |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
@@ -126,6 +127,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [piece_returns](#piece_returns): Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
 - [pieces](#pieces): Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
+- [pincode_demand](#pincode_demand): How often each pincode we do not serve is looked up on the site, a count a day, with nobody's data; Areas ranks the next to open by it (ADR 0224).
 - [pincode_directory](#pincode_directory): India Post's pincodes across India, one row each: its district, state, post offices and a point, refreshed each quarter from data.gov.in; ops open a city from it, and it holds nobody's data (ADR 0220).
 - [pincode_launch_pincodes](#pincode_launch_pincodes): The pincodes each launch serves, one row each (ADR 0221).
 - [pincode_launches](#pincode_launches): A launch ops schedule: pincodes of one city served from a later day, which the cron serves on the day; scheduled, then live or cancelled, never deleted (ADR 0221).
@@ -2073,6 +2075,22 @@ Indexes:
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
 Triggers: `pieces_replacement_booked_added`, `pieces_replacement_booked_changed`.
+
+## pincode_demand
+
+How often each pincode we do not serve is looked up on the site, a count a day, with nobody's data; Areas ranks the next to open by it (ADR 0224).
+
+Made by `0200_pincode_demand.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `pincode` | TEXT | no |  | primary key |  |
+| `day` | TEXT | no |  | primary key | India's date. |
+| `checks` | INTEGER | no |  |  |  |
+
+Indexes:
+
+- `pincode_demand_by_day`: on (`day`)
 
 ## pincode_directory
 

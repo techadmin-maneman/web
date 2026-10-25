@@ -4502,6 +4502,140 @@ A city's pincodes and its technicians' reach as one picture
 }
 ```
 
+### GET /api/pincode-demand/next
+
+The pincodes not served, most waiting first, then most looked up in the last ninety days
+
+**200**: The pincodes, in order
+
+```json
+{
+  "$ref": "#/components/schemas/NextToOpen"
+}
+```
+
+**400**: invalid_request: most outside 1 to 100
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/pincode-launches/recent
+
+The pincodes served from a day in the last thirty, with who was told and what has been booked there
+
+**200**: The launches, newest first
+
+```json
+{
+  "$ref": "#/components/schemas/RecentLaunches"
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/clients/{id}/stock-match
 
 The stock code the client's hair profile matches exactly, and where its pieces are
@@ -36602,6 +36736,139 @@ Request body:
   "required": [
     "technicians",
     "pincodes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NextToOpen
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "waiting": {
+            "type": "integer"
+          },
+          "looked": {
+            "type": "integer",
+            "description": "Lookups on the site in the last ninety days."
+          }
+        },
+        "required": [
+          "pincode",
+          "city",
+          "area",
+          "district",
+          "state",
+          "waiting",
+          "looked"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "pincodes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### RecentLaunches
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "launches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "launched_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "told": {
+            "type": "integer"
+          },
+          "booked": {
+            "type": "integer",
+            "description": "Visits booked there since, cancelled ones left out."
+          }
+        },
+        "required": [
+          "pincode",
+          "area",
+          "city",
+          "launched_on",
+          "told",
+          "booked"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "launches"
   ],
   "additionalProperties": false
 }
