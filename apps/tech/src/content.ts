@@ -422,6 +422,7 @@ export const notHome = {
     notDelivered: (who: string) => `WhatsApp to ${who}: sent, not delivered.`,
     onItsWay: (who: string) => `Telling ${who} you’re here.`,
     noneSent: (who: string) => `No WhatsApp went to ${who}.`,
+    callFirst: (who: string) => `Call ${who} before you close`,
     theClient: "the client",
   },
   // The board draws no confirmation. Closing as a no-show can bring the client a charge.

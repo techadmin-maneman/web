@@ -205,6 +205,11 @@ test("keeps Close as no-show dim and outlined beside the gold Start job until th
   const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
   await expect(close).toBeDisabled();
   await expect(foot(page)).toHaveText(techCopy.job.start);
+  // No WhatsApp reached them, so the wait asks for a call before the close.
+  await expect(page.getByRole("link", { name: techCopy.notHome.waiting.callFirst("Rohit") })).toHaveAttribute(
+    "href",
+    /^tel:/,
+  );
   // One gold action per screen: Close as no-show is never the same button as Start job.
   const gold = await close.evaluate((button) => getComputedStyle(button).backgroundColor);
   expect(gold).not.toBe("rgb(201, 163, 99)");
@@ -223,6 +228,7 @@ test("asks before closing as a no-show, since ops may charge the client", async 
 
   const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
   await expect(close).toBeEnabled({ timeout: 10_000 });
+  await expect(page.getByRole("link", { name: techCopy.notHome.waiting.callFirst("Rohit") })).toHaveCount(0);
   await close.click();
 
   const sheet = page.getByRole("dialog", { name: techCopy.notHome.confirm.title });
