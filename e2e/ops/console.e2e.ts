@@ -244,7 +244,7 @@ test("leaves a click that asks for a new tab to the browser", async ({ page, con
   }).toPass();
   // The tab opens on about:blank before it loads the link. Its address is what the browser was asked for; waiting for
   // its whole page to load as well timed out on a busy runner with the address already right.
-  await tab?.waitForURL(/\/referrals$/, { waitUntil: "commit" });
+  await tab?.waitForURL(/\/funnel$/, { waitUntil: "commit" });
   await expect(heading(page, opsCopy.shell.sections.today)).toBeVisible();
   await expect(page).toHaveURL(/\/today$/);
 });
@@ -286,8 +286,8 @@ test("moves between pages without a reload, keeping its frame, and back", async 
     nav.dataset.drawn = "once";
   });
   await navigation(page).getByRole("link", { name: opsCopy.shell.nav.growth }).click();
-  await expect(heading(page, opsCopy.shell.sections.referrals)).toBeVisible();
-  expect(new URL(page.url()).pathname).toBe("/referrals");
+  await expect(heading(page, opsCopy.shell.sections.funnel)).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/funnel");
   await expect(navigation(page)).toHaveAttribute("data-drawn", "once");
   await page.goBack();
   await expect(heading(page, opsCopy.shell.sections.today)).toBeVisible();

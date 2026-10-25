@@ -246,7 +246,7 @@ this map, or when the map names something that no longer exists.
 
 ### Reports
 
-- **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `rows`
+- **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `funnel` (the Funnel page), `rows`
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
   `care-cases` (grievances and tasks, opened and closed), `leads`, `spend` (offline spend, partner payments and
   invites' free visits), `client-months` (where each client stood each month), `stock` (the stock ledger, and each week's position),
@@ -256,7 +256,7 @@ this map, or when the map names something that no longer exists.
   (what each hair system costs us)
 - **Rules** (`src/policy/`): `channels` (how a lead found us, and a campaign's city), `client-standing` (active,
   lapsed or lost)
-- **Routes** (`src/routes/`): `ops/spend`
+- **Routes** (`src/routes/`): `ops/spend`, `ops/funnel`
 - **Screens:** `apps/ops/src/spend/`
 - **Vendor** (`src/providers/`): `warehouse/` (Supabase's Postgres, or the stub)
 - **Jobs:** `src/scheduled/analytics.ts`

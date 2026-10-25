@@ -40,6 +40,7 @@ export const shell = {
     payments: "Charges",
     "technician-pay": "Technician pay",
     "partner-commission": "Partner commission",
+    funnel: "Funnel",
     referrals: "Referrals",
     waitlist: "Waitlist",
     spend: "Spend",
