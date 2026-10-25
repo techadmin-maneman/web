@@ -46,6 +46,10 @@ const GROUNDS = ["--ui-ground", "--ui-raised", "--ui-box"];
 const PAIRS = [
   ...WORDS.flatMap((words) => GROUNDS.map((ground) => [words, ground] as const)),
   ["--ui-hint", "--ui-box"] as const,
+  // A badge's words on its own ground, the page's (packages/ui/badge.module.css).
+  ...["--on-surface-muted", "--status-done", "--status-attention", "--status-warning", "--status-error"].map(
+    (words) => [words, "--ui-ground"] as const,
+  ),
   ["--ui-on-strong", "--ui-strong"] as const,
   ["--nav-text", "--nav-ground"] as const,
   ["--nav-label", "--nav-ground"] as const,

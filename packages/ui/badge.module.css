@@ -1,4 +1,5 @@
-/* A state, in its tone, edged in its own colour (./Badge.tsx). */
+/* A state, in its tone, on the page's own ground (./Badge.tsx): a pill, never edged like a button. Every status colour
+   reads at 4.5:1 on --ui-ground in both of the console's themes (test/node/apps/ops/ops-theme-contrast.test.ts). */
 
 @layer base, ui;
 
@@ -8,20 +9,18 @@
     align-items: center;
     min-height: var(--sp-20);
     padding: 0 var(--sp-8);
-    border: var(--hairline) solid currentcolor;
     font-size: var(--fs-13);
     font-weight: var(--weight-medium);
     line-height: var(--lh-130);
     white-space: nowrap;
+    background: var(--ui-ground);
   }
 
   .neutral {
-    border-color: var(--border-subtle);
     color: var(--on-surface-muted);
   }
 
   .done {
-    border-color: var(--border-subtle);
     color: var(--status-done);
   }
 
