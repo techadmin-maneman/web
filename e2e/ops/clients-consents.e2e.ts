@@ -41,7 +41,8 @@ test("lists every consent with its state, date and where it was given, and says 
   await openClient(page, `/clients/${CLIENT.id}/consents`);
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
   await expect(page.getByRole("columnheader", { name: opsCopy.clients.consents.columns.source })).toBeVisible();
-  await expect(row("Photos for the visit record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
+  // A visit's own photographs need no consent, so they have no row.
+  await expect(row("Photos for the visit record")).toHaveCount(0);
   await expect(row("Photos on referral cards")).toContainText(opsCopy.clients.consents.sources.app_share_sheet);
   await expect(row("Photos in marketing")).toHaveText(/Not given\s*—\s*—$/);
   await expect(row("WhatsApp about visits")).toContainText(opsCopy.clients.consents.sources.site_booking);
@@ -55,16 +56,24 @@ test("lists every consent with its state, date and where it was given, and says 
 // a consent recorded where must not be given a place (docs/decisions/0094-where-a-consent-was-given.md).
 test("names a consent given by booking, and says where a place was not recorded", async ({ page }) => {
   const placeOf: Readonly<Record<string, ConsentSource>> = {
-    photos_own_record: "app_booking",
+    photos_marketing: "app_booking",
     photos_referral_cards: null,
     whatsapp_visits: "referral_landing",
   };
+  // Each given, so each has a place to name.
   const consents = CONSENTS.consents.map((consent) =>
-    consent.purpose in placeOf ? { ...consent, source: placeOf[consent.purpose] ?? null } : consent,
+    consent.purpose in placeOf
+      ? {
+          ...consent,
+          state: "given" as const,
+          at: consent.at ?? "2026-11-14T08:00:00.000Z",
+          source: placeOf[consent.purpose] ?? null,
+        }
+      : consent,
   );
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [READ_CONSENTS]: json({ ...CONSENTS, consents }) });
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
-  await expect(row("Photos for the visit record")).toContainText(opsCopy.clients.consents.sources.app_booking);
+  await expect(row("Photos in marketing")).toContainText(opsCopy.clients.consents.sources.app_booking);
   await expect(row("Photos on referral cards")).toContainText(opsCopy.clients.profile.notRecorded);
   await expect(row("WhatsApp about visits")).toContainText(opsCopy.clients.invite.title);
   expect(await axeViolations(page)).toEqual([]);
