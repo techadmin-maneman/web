@@ -18,7 +18,7 @@ import type { Block, Board, BoardRow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import label from "../components/label.module.css";
 import styles from "./grid.module.css";
-import { begunWord, isMovable, nameOf, type Job } from "./job.ts";
+import { begunWord, isMovable, nameOf, windowWord, type Job } from "./job.ts";
 
 /** "Fri 19", as a column is headed. */
 const dayHead = (date: string) => shortDate(date).split(" ").slice(0, 2).join(" ");
@@ -55,9 +55,21 @@ const dayKey = (technicianId: string, date: string) => `${technicianId} ${date}`
 
 const NO_BLOCKS: readonly Block[] = [];
 
+/** A visit where a proposed move would take it, on that technician's day, until the client answers. */
+interface Ghost {
+  readonly block: Block;
+  /** Whose the visit is now, and its day: the drawer the ghost opens is the visit's own. */
+  readonly technician: BoardRow;
+  readonly date: string;
+}
+
+const NO_GHOSTS: readonly Ghost[] = [];
+
 /** Each technician's blocks by day, and the days they are away, read once from each answer of the board. */
 interface Days {
   readonly blocks: ReadonlyMap<string, readonly Block[]>;
+  /** The visits proposed onto each day, by the technician and day they would go to. */
+  readonly ghosts: ReadonlyMap<string, readonly Ghost[]>;
   readonly away: ReadonlySet<string>;
   /** The hours of leave over part of a day, "2–5 pm". */
   readonly awayHours: ReadonlyMap<string, string>;
@@ -65,10 +77,18 @@ interface Days {
 
 function daysOf(board: Board): Days {
   const blocks = new Map<string, readonly Block[]>();
+  const ghosts = new Map<string, Ghost[]>();
   const away = new Set<string>();
   const awayHours = new Map<string, string>();
   for (const row of board.technicians) {
-    for (const day of row.days) blocks.set(dayKey(row.technician_id, day.date), day.blocks);
+    for (const day of row.days) {
+      blocks.set(dayKey(row.technician_id, day.date), day.blocks);
+      for (const block of day.blocks) {
+        if (block.proposal === null) continue;
+        const key = dayKey(block.proposal.technician_id, block.proposal.date);
+        ghosts.set(key, [...(ghosts.get(key) ?? []), { block, technician: row, date: day.date }]);
+      }
+    }
     for (const date of board.dates) {
       const leave = leaveOn(board.leave, row.technician_id, date);
       const key = dayKey(row.technician_id, date);
@@ -77,7 +97,7 @@ function daysOf(board: Board): Days {
       else awayHours.set(key, timeRange(leave.from_time, leave.to_time, UNBROKEN));
     }
   }
-  return { blocks, away, awayHours };
+  return { blocks, ghosts, away, awayHours };
 }
 
 /** Whether a block is one the search found; null when the search names no block. */
@@ -136,10 +156,38 @@ const BlockButton = memo(function BlockButton({ block, technician, date, matched
   );
 });
 
+/** A proposed move's new place: the visit drawn faint, at the start proposed, opening the visit's own drawer. */
+const GhostButton = memo(function GhostButton({ ghost, onOpen }: { ghost: Ghost; onOpen: BlockButtonProps["onOpen"] }) {
+  const { block } = ghost;
+  if (block.proposal === null) return null;
+  const { proposal } = block;
+  const job = { kind: "block", block, technician: ghost.technician, date: ghost.date } as const;
+  const at = proposal.starts_at === null ? windowWord(proposal.window) : indiaClock(proposal.starts_at);
+  return (
+    <Tile
+      className={classes(styles.block, styles.ghost, sizeOf(block))}
+      data-ghost={block.appointment_id}
+      aria-label={dispatch.board.ghost(nameOf(job), shortDate(proposal.date), at)}
+      onClick={(event) => {
+        onOpen(job, event.currentTarget);
+      }}
+    >
+      <span className={styles.who}>
+        <span className={styles.name}>{block.client ?? dispatch.unknown}</span>
+        <span className={styles.at}>{at}</span>
+      </span>
+      <span className={styles.what}>{whatOf(block)}</span>
+      <Badge tone="attention">{dispatch.chips.proposed}</Badge>
+    </Tile>
+  );
+});
+
 interface CellProps {
   readonly technician: BoardRow;
   readonly date: string;
   readonly blocks: readonly Block[];
+  /** The visits a proposed move would bring to this day. */
+  readonly ghosts: readonly Ghost[];
   /** Ops recorded leave for this technician on this day, so it takes no job. */
   readonly away: boolean;
   /** Leave over part of the day, "2–5 pm": the day still takes jobs outside it. */
@@ -179,7 +227,7 @@ function AwayHoursMark({ technician, date, hours }: { technician: BoardRow; date
  * One technician's day: the blocks on it. A day marked away still draws whatever it holds — leave recorded after a job
  * was assigned must not hide that job.
  */
-const Cell = memo(function Cell({ technician, date, blocks, away, awayHours, found, onOpen }: CellProps) {
+const Cell = memo(function Cell({ technician, date, blocks, ghosts, away, awayHours, found, onOpen }: CellProps) {
   return (
     <td className={away ? `${styles.cell ?? ""} ${styles.away ?? ""}` : styles.cell}>
       {away && <AwayMark technician={technician} date={date} blocks={blocks} />}
@@ -194,11 +242,14 @@ const Cell = memo(function Cell({ technician, date, blocks, away, awayHours, fou
           onOpen={onOpen}
         />
       ))}
+      {ghosts.map((ghost) => (
+        <GhostButton key={ghost.block.appointment_id} ghost={ghost} onOpen={onOpen} />
+      ))}
     </td>
   );
 });
 
-interface RowProps extends Omit<CellProps, "date" | "blocks" | "away" | "awayHours"> {
+interface RowProps extends Omit<CellProps, "date" | "blocks" | "ghosts" | "away" | "awayHours"> {
   readonly dates: readonly string[];
   readonly days: Days;
 }
@@ -216,6 +267,7 @@ const TechnicianRow = memo(function TechnicianRow({ technician, dates, days, ...
           away={days.away.has(dayKey(technician.technician_id, date))}
           awayHours={days.awayHours.get(dayKey(technician.technician_id, date)) ?? null}
           blocks={days.blocks.get(dayKey(technician.technician_id, date)) ?? NO_BLOCKS}
+          ghosts={days.ghosts.get(dayKey(technician.technician_id, date)) ?? NO_GHOSTS}
           date={date}
           key={date}
           technician={technician}
@@ -260,6 +312,7 @@ function Legend() {
       <span className={classes(styles.key, styles.svc)}>{words.service}</span>
       <span className={classes(styles.key, styles.repl)}>{words.replacement}</span>
       <span className={classes(styles.key, styles.fit)}>{words.fit}</span>
+      <span className={classes(styles.key, styles.ghost)}>{words.ghost}</span>
       <Badge tone="done">{dispatch.chips.completed}</Badge>
       <Badge tone="warning">{dispatch.chips.terminated}</Badge>
       <Badge tone="attention">{dispatch.chips.proposal}</Badge>

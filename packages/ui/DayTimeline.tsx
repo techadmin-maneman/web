@@ -13,7 +13,7 @@ import styles from "./day-timeline.module.css";
  * How a stretch of the day reads: nothing in it, a visit, one done, one under way, one running late, a start free, or
  * the start chosen.
  */
-export type TimelineLook = "idle" | "busy" | "done" | "underway" | "late" | "free" | "chosen";
+export type TimelineLook = "idle" | "busy" | "done" | "underway" | "late" | "proposed" | "free" | "chosen";
 
 export interface TimelineCell {
   readonly key: string;
