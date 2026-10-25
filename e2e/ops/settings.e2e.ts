@@ -284,6 +284,7 @@ test.describe("the rules", () => {
     await open(page, "/settings/booking");
     const menu = page.getByRole("navigation", { name: shell.settings, exact: true });
     const radius = SETTINGS.settings[0];
+    if (radius === undefined) throw new Error("the fixture has a rule");
     await menu.getByRole("searchbox", { name: settingsCopy.find }).fill(radius.note.split(" ").slice(0, 3).join(" "));
     await expect(menu.getByRole("link", { name: radius.title })).toHaveAttribute(
       "href",
