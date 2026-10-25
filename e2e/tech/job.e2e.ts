@@ -414,7 +414,7 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   // Step 6: the outcome, with nothing chosen for them.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.choose })).toBeDisabled();
-  await page.getByRole("button", { name: techCopy.steps.outcome.partial }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true }).click();
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.pickReason })).toBeDisabled();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
   await page.getByRole("button", { name: techCopy.steps.next }).click();

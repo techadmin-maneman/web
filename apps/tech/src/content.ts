@@ -99,7 +99,7 @@ export const leaving = {
     if (actions > 0) held.push(counted(actions, "action", "actions"));
     return `${held.join(" and ")} not sent yet`;
   },
-  body: "Signing out deletes them from this phone, and they never reach us.",
+  body: "Sign out now and they’re lost.",
   // Nothing is waiting to be sent: signing out still takes the jobs off the phone.
   confirm: "Sign out of this phone?",
   confirmBody: "Your jobs leave this phone until you sign in again.",
@@ -146,7 +146,7 @@ export const atRisk = {
 
 export const queue = {
   waiting: (count: number) => `${String(count)} photo ${count === 1 ? "set" : "sets"} waiting`,
-  never: "Never saved to this phone’s gallery.",
+  never: "Kept out of the gallery.",
   retry: "Retry",
   states: {
     uploading: "Uploading…",
@@ -393,7 +393,7 @@ export const notHome = {
     // The board draws no screen for a phone that will not give its position.
     noPosition: "This phone won’t give its position. Check its permissions, then tap again.",
     // An address saved without a building picked from the map has no pin: the check-in records the time alone.
-    noPin: "This address has no map pin, so the check-in records the time but can’t confirm you’re at the door.",
+    noPin: "No map pin: the check-in records the time only.",
   },
   failed: {
     title: "Check-in failed",
@@ -412,9 +412,9 @@ export const notHome = {
     over: "The wait is over.",
     // The board draws the check running, not one waiting for signal. The API counts the wait from when
     // the check-in reaches it as well as from the tap (ADR 0065), so a no-show cannot close before it has.
-    fromTap: "No signal. The wait counts from your tap, but closing as a no-show needs signal.",
+    fromTap: "No signal. The wait counts from your tap; closing needs signal.",
     // The board draws no no-show refused.
-    early: "Our clock says the wait hasn’t run out yet. Try again in a minute.",
+    early: "The wait isn’t over yet. Try again in a minute.",
     close: "Close as no-show",
     // The board's "Rohit messaged on WhatsApp" reads as if the client wrote, so the receipt names them
     // as who it went to. The board draws only the delivered one.
@@ -527,7 +527,7 @@ export const steps = {
       return over ? `${kit}. Ops will send more.` : kit;
     },
     // The board draws four steppers and no way to record a fifth consumable.
-    add: "Add another",
+    add: "Add a consumable",
     addOne: (name: string) => `Add ${name}`,
     none: "None used",
     // The console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).
@@ -591,7 +591,7 @@ export const steps = {
     choose: "Choose Done or Partly done",
     pickReason: "Pick a reason to continue",
     done: "Done",
-    partial: "Partly done · pick a reason",
+    partial: "Partly done",
     // After a consultation: whether the client is going ahead with a fit, and why not (docs/decisions/0149-lost-reasons.md).
     goingAhead: "Going ahead with a fit?",
     yes: "Yes",
@@ -668,12 +668,12 @@ export const oneVisit = {
   /** Closing as done, once the client decided against the fit. */
   endsAsConsultation: "Ends as a free consultation. Nothing to pay.",
   /** Closing as done, once the client chose a hair system: by its name in the console. */
-  linkFor: (product: string) => `Closing texts the client a payment link for ${product}.`,
+  linkFor: (product: string) => `Closing sends the client a payment link for ${product}.`,
   /** A product the card no longer names, for linkFor. */
   chosenProduct: "the hair system they chose",
   /** Closing as done on a phone that does not know the client's choice, from a card kept by an earlier build. */
   closeNote:
-    "Closing texts the client a payment link for their hair system, or ends a declined visit as a free consultation.",
+    "Closing sends the payment link, or ends a declined visit as a free consultation.",
   payment: "Payment",
   linkSent: "Link texted to the client",
   linkPaid: "Paid",

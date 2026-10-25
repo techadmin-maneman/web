@@ -160,7 +160,7 @@ test("draws nothing in gold but the one primary action", async ({ page }) => {
 
   startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
-  await page.getByRole("button", { name: techCopy.steps.outcome.partial }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true }).click();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
   expect(await gilded(page)).toEqual(["Next"]);
   expect(await axeViolations(page)).toEqual([]);
@@ -420,7 +420,7 @@ test("a refused outcome opens as it was chosen", async ({ page }) => {
   await page.getByRole("button", { name: techCopy.queue.correct }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
-  await expect(page.getByRole("button", { name: techCopy.steps.outcome.partial })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
