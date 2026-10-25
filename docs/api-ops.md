@@ -3244,6 +3244,128 @@ Take a note off the client's page; it is kept, with who took it off and when, au
 }
 ```
 
+### POST /api/leave-requests/{id}/decision
+
+Approve or decline a technician's ask for leave; an approval records the leave
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/LeaveDecision"
+}
+```
+
+**204**: Decided
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such ask in the caller's places
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: superseded: another member of staff decided it first
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/clients/{id}/stock-match
 
 The stock code the client's hair profile matches exactly, and where its pieces are
@@ -34518,6 +34640,27 @@ Request body:
 }
 ```
 
+### LeaveDecision
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "declined"
+      ]
+    }
+  },
+  "required": [
+    "decision"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientStockMatch
 
 ```json
@@ -39433,6 +39576,7 @@ Request body:
         "no_show.dispute_rule",
         "technician.leave",
         "technician.leave_cancelled",
+        "technician.leave_declined",
         "technician.add",
         "technician.change",
         "technician.deactivate",
@@ -42257,6 +42401,7 @@ Request body:
               "city_matter",
               "remedy_approval",
               "leave_conflict",
+              "leave_request",
               "address_to_confirm",
               "consultation_request",
               "first_fit_to_book",
@@ -42881,6 +43026,46 @@ Request body:
         "group",
         "starts_at",
         "technician"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "leave_request"
+          ]
+        },
+        "technician": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string",
+          "format": "date"
+        },
+        "to": {
+          "type": "string",
+          "format": "date"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "group",
+        "technician",
+        "from",
+        "to",
+        "note"
       ],
       "additionalProperties": false
     },

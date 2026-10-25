@@ -30,7 +30,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, and a fit's stock risk is found or cleared again within the hour | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -99,6 +99,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 - [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
 - [leads](#leads): Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
+- [leave_requests](#leave_requests): A technician's ask for leave from their phone, which Operations approve or decline on Tasks; an approval records the leave and names it.
 - [lost_reasons](#lost_reasons): Why a client is not going ahead with a fit after their consultation, as ops set them, one they took off kept as retired; none means the committed list (ADR 0149).
 - [maintenance](#maintenance): One row while D1 is being restored: the cron and the queue consumers stand still until it is deleted (runbook, "Restoring D1").
 - [move_proposals](#move_proposals): A move to another day ops asked a client to confirm: where the visit would go, until when, and whether it was accepted, taken back or made moot (ADR 0115).
@@ -1435,6 +1436,30 @@ Indexes:
 - `leads_by_person`: on (`person_id`)
 - `leads_by_sync_state`: on (`sync_state`, `created_at`)
 - `leads_fsm_unqueued`: on (`created_at`), where `fsm_queued_at IS NULL AND fsm_request_id IS NULL AND source = 'form' AND first_choice_window IS NOT NULL`
+
+## leave_requests
+
+A technician's ask for leave from their phone, which Operations approve or decline on Tasks; an approval records the leave and names it.
+
+Made by `0195_leave_requests.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `from_date` | TEXT | no |  |  | Inclusive, both of them, as technician_leave's. |
+| `to_date` | TEXT | no |  |  |  |
+| `note` | TEXT | yes |  |  | Why, in the technician's words; never a medical detail asked for. |
+| `requested_at` | TEXT | no |  |  |  |
+| `decision` | TEXT | yes |  |  |  |
+| `decided_by` | TEXT | yes |  |  | The Access identity of whoever decided, and when. |
+| `decided_at` | TEXT | yes |  |  |  |
+| `leave_id` | TEXT | yes |  | → `technician_leave.id` | The leave an approval recorded. |
+
+Indexes:
+
+- `leave_requests_by_technician`: on (`technician_id`, `requested_at`)
+- `leave_requests_open`: on (`requested_at`), where `decision IS NULL`
 
 ## lost_reasons
 

@@ -69,11 +69,12 @@ this map, or when the map names something that no longer exists.
 ### Dispatch
 
 - **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
-  `technician-work`, `technician-days` (a technician's own week and home), `leave`, `blackouts`, `day-route`, `nearest`
+  `technician-work`, `technician-days` (a technician's own week and home), `leave`, `leave-requests` (a technician's
+  ask for leave, decided on Tasks), `blackouts`, `day-route`, `nearest`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`, `start-times`, `drive-estimate`
 - **Vendor** (`src/providers/`): `routes/`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/dispatch-day`, `ops/blackouts`, `ops/technicians`,
-  `ops/technician-leave`, `ops/technician-phones`
+  `ops/technician-leave`, `ops/leave-requests`, `ops/technician-phones`
 - **Screens:** `apps/ops/src/dispatch/`, `apps/ops/src/technicians/`
 - **Tests:** `test/worker/dispatch/dispatch.test.ts`, `test/worker/field/field-dispatch.test.ts`,
   `e2e/ops/dispatch.e2e.ts`, `e2e/ops/technicians.e2e.ts`

@@ -1,4 +1,4 @@
-/* The technician's week and month (./WeekScreen.tsx, ./MonthScreen.tsx), on the ink as the kit is. */
+/* The technician's week, month and leave (./WeekScreen.tsx, ./MonthScreen.tsx, ./LeaveScreen.tsx), on the ink as the kit is. */
 
 .screen {
   display: flex;
@@ -71,4 +71,19 @@
 .figure dd {
   margin: 0;
   font-variant-numeric: tabular-nums;
+}
+
+.form {
+  display: grid;
+  gap: var(--sp-16);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--error-on-ink);
+}
+
+.state {
+  color: var(--ink-muted);
 }

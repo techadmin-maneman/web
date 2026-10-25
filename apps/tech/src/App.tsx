@@ -8,6 +8,7 @@ import { Stopped, StorageFull } from "./components/Banners.tsx";
 import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { KitScreen } from "./kit/KitScreen.tsx";
+import { LeaveScreen } from "./mine/LeaveScreen.tsx";
 import { MonthScreen } from "./mine/MonthScreen.tsx";
 import { WeekScreen } from "./mine/WeekScreen.tsx";
 import { OutboxContext, useOutboxSubscription } from "./lib/useOutbox.ts";
@@ -40,6 +41,8 @@ function pageFor(route: Route) {
       return <WeekScreen />;
     case "month":
       return <MonthScreen />;
+    case "leave":
+      return <LeaveScreen />;
     case "job":
       return <JobScreen id={route.id} />;
     case "done":

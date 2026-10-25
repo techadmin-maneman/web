@@ -45,6 +45,7 @@ export type JobState = Schema["TechnicianJobState"];
 export type CheckIn = Schema["CheckIn"];
 export type PieceLookup = Schema["PieceLookup"];
 export type Kit = Schema["TechnicianKit"];
+export type LeaveRequests = Schema["TechnicianLeaveRequests"];
 type PhotoTaken = Schema["TechnicianPhotoTaken"];
 /** The client's hair profile, which the profile step sends and the piece card reads (ADR 0106). */
 export type HairProfile = Schema["HairProfile"];
@@ -188,6 +189,11 @@ export const api = {
   kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),
   /** This month's visits closed, by kind and city, at the technician's own rates. */
   month: () => client.get("/api/tech/month", { patience: PATIENCE_MS.read }),
+  /** The technician's asks for leave not yet past, and where each stands. */
+  leave: () => client.get("/api/tech/leave", { patience: PATIENCE_MS.read }),
+  /** An ask for leave, which ops decide on Tasks. Asked straight, with signal. */
+  askLeave: (ask: { from: string; to: string; note?: string }) =>
+    client.post("/api/tech/leave", { body: ask, patience: PATIENCE_MS.write }),
   /**
    * A top-up received in hand: all of it, or of a hair system the pieces scanned, the rest still to come or missing.
    * Asked straight, with signal.

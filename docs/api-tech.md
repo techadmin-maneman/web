@@ -3926,6 +3926,150 @@ The technician's visits in a month, and what they earned at their rates
 }
 ```
 
+### GET /api/tech/leave
+
+The technician's asks for leave not yet past, and where each stands
+
+**200**: The asks
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianLeaveRequests"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/leave
+
+Ask for leave, from today on; Operations decide it on Tasks
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianLeaveAsk"
+}
+```
+
+**201**: Asked, and every ask as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianLeaveRequests"
+}
+```
+
+**400**: invalid_request: from before today, to before from, or further ahead than leave is kept
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -7722,5 +7866,101 @@ The technician's visits in a month, and what they earned at their rates
   ],
   "additionalProperties": false,
   "description": "The visits closed in the month, by kind and city, at the rate in force."
+}
+```
+
+### TechnicianLeaveRequests
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "description": "Counted, as the first day is."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "asked",
+              "approved",
+              "declined"
+            ]
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to",
+          "note",
+          "state",
+          "requested_at"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "requests"
+  ],
+  "additionalProperties": false,
+  "description": "The asks not yet past, the latest first."
+}
+```
+
+### TechnicianLeaveAsk
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date"
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why, in a line; never a medical detail."
+    }
+  },
+  "required": [
+    "from",
+    "to"
+  ],
+  "additionalProperties": false
 }
 ```

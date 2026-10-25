@@ -65,6 +65,11 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   visit_left_open: (facts) =>
     copy.visit_left_open(shortDate(indiaDate(facts.starts_at)), facts.status === "in_progress"),
   leave_conflict: (facts) => copy.leave_conflict(dayAndTime(facts.starts_at), facts.technician),
+  leave_request: (facts) =>
+    copy.leave_request(
+      facts.from === facts.to ? shortDate(facts.from) : tasks.leave.days(shortDate(facts.from), shortDate(facts.to)),
+      facts.note,
+    ),
   address_to_confirm: (facts) => copy.address_to_confirm(dayAndTime(facts.starts_at)),
   // The technician's reason in the job sheet's words, and the day they closed the visit.
   partial_visit: (facts, task) => {

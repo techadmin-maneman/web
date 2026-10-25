@@ -4815,6 +4815,22 @@
         ],
         "additionalProperties": false
       },
+      "LeaveDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "declined"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false
+      },
       "ClientStockMatch": {
         "type": "object",
         "properties": {
@@ -9322,6 +9338,7 @@
               "no_show.dispute_rule",
               "technician.leave",
               "technician.leave_cancelled",
+              "technician.leave_declined",
               "technician.add",
               "technician.change",
               "technician.deactivate",
@@ -12001,6 +12018,7 @@
                     "city_matter",
                     "remedy_approval",
                     "leave_conflict",
+                    "leave_request",
                     "address_to_confirm",
                     "consultation_request",
                     "first_fit_to_book",
@@ -12615,6 +12633,46 @@
               "group",
               "starts_at",
               "technician"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string",
+                "enum": [
+                  "leave_request"
+                ]
+              },
+              "technician": {
+                "type": "string"
+              },
+              "from": {
+                "type": "string",
+                "format": "date"
+              },
+              "to": {
+                "type": "string",
+                "format": "date"
+              },
+              "note": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "group",
+              "technician",
+              "from",
+              "to",
+              "note"
             ],
             "additionalProperties": false
           },
@@ -24374,6 +24432,151 @@
         }
       }
     },
+    "/api/leave-requests/{id}/decision": {
+      "post": {
+        "summary": "Approve or decline a technician's ask for leave; an approval records the leave",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Decided"
+          },
+          "403": {
+            "description": "access_required: no Access token, or a service token, which names no member of staff",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "access_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such ask in the caller's places",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "superseded: another member of staff decided it first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "superseded"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients/{id}/stock-match": {
       "get": {
         "summary": "The stock code the client's hair profile matches exactly, and where its pieces are",
@@ -34444,6 +34647,7 @@
                 "no_show.dispute_rule",
                 "technician.leave",
                 "technician.leave_cancelled",
+                "technician.leave_declined",
                 "technician.add",
                 "technician.change",
                 "technician.deactivate",
@@ -38436,6 +38640,7 @@
                 "city_matter",
                 "remedy_approval",
                 "leave_conflict",
+                "leave_request",
                 "address_to_confirm",
                 "consultation_request",
                 "first_fit_to_book",

@@ -79,6 +79,8 @@ describe("tasks", () => {
       payment_to_refund: 24,
       // A UPI payment at the visit: recorded the same day it is made (ADR 0209).
       upi_due: 12,
+      // A technician's ask for leave: answered within the day, so they can plan theirs.
+      leave_request: 24,
     };
     for (const group of TASK_GROUPS) expect(TASK_SLA_HOURS[group], group).toBe(promised[group] ?? 48);
     expect(Object.keys(TASK_SLA_HOURS).sort()).toEqual([...TASK_GROUPS].sort());

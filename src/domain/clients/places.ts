@@ -107,6 +107,10 @@ const RECORD_PLACES = {
   consultation_request: { table: "consultation_requests", city: (row) => pincodeCity(`${row}.pincode`) },
   waitlist_entry: { table: "waitlist_entries", city: (row) => pincodeCity(`${row}.pincode`) },
   technician: { table: "technicians", city: (row) => `${row}.city` },
+  leave_request: {
+    table: "leave_requests",
+    city: (row) => `(SELECT place_technician.city FROM technicians place_technician WHERE place_technician.id = ${row}.technician_id)`,
+  },
   visit_change: { table: "visit_changes", city: (row) => cityOfVisit(`${row}.appointment_id`) },
   // A chat's is its client's; a number we don't know is in no city.
   conversation: { table: "conversations", city: (row) => clientCity(`${row}.person_id`) },

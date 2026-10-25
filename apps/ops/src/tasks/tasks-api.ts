@@ -16,6 +16,9 @@ export const tasksApi = {
   /** A UPI payment taken at the visit, recorded under its UTR once it is in the account; the client is sent a receipt. */
   recordUpiPayment: (visitId: string, utr: string) =>
     client.post("/api/visits/{id}/upi-payment", { path: { id: visitId }, body: { utr } }),
+  /** A technician's ask for leave approved, which records the leave, or declined. */
+  decideLeave: (id: string, decision: "approved" | "declined") =>
+    client.post("/api/leave-requests/{id}/decision", { path: { id }, body: { decision } }),
   /** The open alerts ops have been told of, of the caller's own departments. */
   alerts: () => client.get("/api/alerts"),
   /** An alert marked done, under the caller's name. */

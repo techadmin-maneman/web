@@ -113,6 +113,8 @@ export interface Fake {
   kitAfter: Omit<TechReply<"/api/tech/kit">, "today"> | null;
   /** The technician's month, as GET /api/tech/month answers. */
   month: TechReply<"/api/tech/month">;
+  /** The technician's asks for leave, as GET /api/tech/leave answers; an ask adds one, with ops. */
+  leave: TechReply<"/api/tech/leave">;
   /** The client's hair profile on the card, or none recorded. */
   profile: HairProfile | null;
   /** The checklist on the card: three items unless a test gives a longer one. */
@@ -223,6 +225,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         { kind: "first_fit", city: "Gurgaon", visits: 2, rate: null, amount: null },
       ],
     },
+    leave: { requests: [] },
     photos: [],
     doorPhotos: [],
     thumbnails: [],
@@ -301,6 +304,20 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
           upload_url: "/api/tech/door-photos/door",
           expires_at: new Date(Date.now() + 900000).toISOString(),
         });
+      }
+      if (path === "/api/tech/leave") {
+        const ask = route.request().postDataJSON() as { from: string; to: string; note?: string };
+        fake.writes.push({ path, eventId, startsAt, body: ask });
+        const asked = {
+          id: randomUUID(),
+          from: ask.from,
+          to: ask.to,
+          note: ask.note ?? null,
+          state: "asked" as const,
+          requested_at: new Date().toISOString(),
+        };
+        fake.leave = { requests: [asked, ...fake.leave.requests] };
+        return reply(route, 201, fake.leave);
       }
       // The kit's writes are asked straight, never queued (docs/decisions/0164-the-kit-screen.md).
       if (path.startsWith("/api/tech/kit/")) {
@@ -399,6 +416,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     }
     if (path === "/api/tech/kit") return reply(route, 200, { ...fake.kit, today });
     if (path === "/api/tech/month") return reply(route, 200, fake.month);
+    if (method === "GET" && path === "/api/tech/leave") return reply(route, 200, fake.leave);
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";
       // Outside the contract on purpose: what a broken release might send, which the app must survive.

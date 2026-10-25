@@ -6,6 +6,7 @@
 //   /kit                     the technician's kit (docs/decisions/0164-the-kit-screen.md)
 //   /week                    their next six days, a day at a time
 //   /month                   their visits this month, and what they earned
+//   /leave                   their asks for leave, and a new one
 //   /jobs/:id                one job's card, and the evidence chain
 //   /jobs/:id/before-photos  step 1, the five before angles
 //   /jobs/:id/checklist      step 2
@@ -44,6 +45,7 @@ export type Route =
   | { readonly page: "kit" }
   | { readonly page: "week" }
   | { readonly page: "month" }
+  | { readonly page: "leave" }
   | { readonly page: "job"; readonly id: string }
   | { readonly page: "step"; readonly id: string; readonly step: InJobStep }
   | { readonly page: "done"; readonly id: string };
@@ -58,6 +60,7 @@ export function routeOf(path: string): Route {
     if (first === "waiting") return { page: "waiting" };
     if (first === "week") return { page: "week" };
     if (first === "month") return { page: "month" };
+    if (first === "leave") return { page: "leave" };
     return first === "kit" ? { page: "kit" } : TODAY;
   }
   if (first !== "jobs" || !UUID.test(second)) return TODAY;

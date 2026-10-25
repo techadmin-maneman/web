@@ -23,6 +23,7 @@ import {
   atRisk as atRiskCopy,
   job as jobCopy,
   kit as kitCopy,
+  leave as leaveCopy,
   leaving as leavingCopy,
   month as monthCopy,
   queue as queueCopy,
@@ -272,7 +273,7 @@ function OnThePhone(props: { readonly sending: number; readonly unsentSets: numb
   );
 }
 
-/** The technician's other pages, beneath the day: their week, their month and their kit. */
+/** The technician's other pages, beneath the day: their week, their month, their leave and their kit. */
 function Elsewhere() {
   return (
     <>
@@ -283,6 +284,10 @@ function Elsewhere() {
       <Link className={styles.waiting} to="/month">
         <Icon d={GLYPHS.bars} size="md" className={styles.waitingIcon} weight="heavy" />
         <span className={styles.waitingLine}>{monthCopy.link}</span>
+      </Link>
+      <Link className={styles.waiting} to="/leave">
+        <Icon d={GLYPHS.clock} size="md" className={styles.waitingIcon} weight="heavy" />
+        <span className={styles.waitingLine}>{leaveCopy.link}</span>
       </Link>
       <Link className={styles.waiting} to="/kit">
         <Icon d={GLYPHS.tag} size="md" className={styles.waitingIcon} weight="heavy" />

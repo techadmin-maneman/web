@@ -40,6 +40,13 @@ export type TaskFacts =
   | { readonly group: "unassigned_visit"; readonly kind: VisitType; readonly starts_at: Instant }
   | { readonly group: "visit_left_open"; readonly status: string; readonly starts_at: Instant }
   | { readonly group: "leave_conflict"; readonly starts_at: Instant; readonly technician: string }
+  | {
+      readonly group: "leave_request";
+      readonly technician: string;
+      readonly from: Day;
+      readonly to: Day;
+      readonly note: string | null;
+    }
   | { readonly group: "address_to_confirm"; readonly starts_at: Instant }
   | {
       readonly group: "partial_visit";

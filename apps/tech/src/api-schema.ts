@@ -2930,6 +2930,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The technician's asks for leave not yet past, and where each stands */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The asks */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianLeaveRequests"];
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Ask for leave, from today on; Operations decide it on Tasks */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianLeaveAsk"];
+                };
+            };
+            responses: {
+                /** @description Asked, and every ask as it now stands */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianLeaveRequests"];
+                    };
+                };
+                /** @description invalid_request: from before today, to before from, or further ahead than leave is kept */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3727,6 +3841,33 @@ export interface components {
                 /** @description Paise in all; null where none was. */
                 amount: number | null;
             }[];
+        };
+        /** @description The asks not yet past, the latest first. */
+        TechnicianLeaveRequests: {
+            requests: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date */
+                from: string;
+                /**
+                 * Format: date
+                 * @description Counted, as the first day is.
+                 */
+                to: string;
+                note: string | null;
+                /** @enum {string} */
+                state: "asked" | "approved" | "declined";
+                /** Format: date-time */
+                requested_at: string;
+            }[];
+        };
+        TechnicianLeaveAsk: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            /** @description Why, in a line; never a medical detail. */
+            note?: string;
         };
     };
     responses: never;
