@@ -29,6 +29,8 @@ const LIGHT = new Map([
   ...aliases("packages/brand/tokens.css", ":root"),
   ...aliases("packages/brand/tokens-apps.css", ":root"),
   ...aliases("packages/ui/base.css", ":root"),
+  // The console's own, last: its panels on white.
+  ...aliases("apps/ops/src/styles/tokens.css", ":root"),
 ]);
 const DARK = new Map([...LIGHT, ...aliases("apps/ops/src/styles/theme.css", ':root[data-theme="dark"]')]);
 

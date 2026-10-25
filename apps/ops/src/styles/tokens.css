@@ -39,4 +39,6 @@
   --box-area: var(--ops-area);
   --box-text-max: var(--measure-form);
   --box-note-max: var(--measure-column);
+  /* A panel on white over the paper page, so a panel reads as raised (the dark theme sets its own). */
+  --ui-raised: var(--white);
 }
