@@ -66,6 +66,13 @@
     border-left-color: var(--status-warning);
   }
 
+  /* Where a proposed move would take a visit, until the client answers: dashed and unfilled. */
+  .proposed {
+    padding: var(--sp-4) var(--sp-8);
+    outline: var(--hairline) dashed var(--ui-line-control);
+    outline-offset: calc(var(--hairline) * -1);
+  }
+
   .free,
   .chosen {
     text-align: center;

@@ -191,7 +191,7 @@ describe("the board, with a proposal open", () => {
     });
   };
 
-  it("shows the proposal on the visit, where it still is", async () => {
+  it("shows the proposal on the visit, where it still is, naming the technician's row it would go to", async () => {
     expect((await blockOfA())?.proposal).toBeNull();
     await propose(toSameerWednesdayMorning(A));
 
@@ -199,6 +199,7 @@ describe("the board, with a proposal open", () => {
       date: WEDNESDAY,
       window: "morning",
       technician: { name: "Sameer Bhatt", initials: "SB" },
+      technician_id: SAMEER,
     });
   });
 

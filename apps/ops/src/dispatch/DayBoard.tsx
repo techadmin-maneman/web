@@ -24,6 +24,8 @@ interface Visit {
   readonly from: number;
   readonly to: number;
   readonly block: Block;
+  /** For a visit drawn where a proposed move would take it: whose it is now, and its day, which its drawer opens on. */
+  readonly ghostOf?: { readonly technician: BoardRow; readonly date: string };
 }
 
 /** How a visit reads on the day: done, under way, past its start with nobody there yet, or booked. */
@@ -82,13 +84,19 @@ function rowCells(props: Props, row: BoardRow, steps: readonly number[], visits:
         ),
       };
     }
-    const { block } = cell.busy;
-    const job = { kind: "block", block, technician: row, date: props.date } as const;
+    const { block, ghostOf } = cell.busy;
+    const job = {
+      kind: "block",
+      block,
+      technician: ghostOf?.technician ?? row,
+      date: ghostOf?.date ?? props.date,
+    } as const;
     const kind = block.type === null ? dispatch.unknown : dispatch.typeNames[block.type];
+    const at = indiaClock(ghostOf === undefined ? block.starts_at : (block.proposal?.starts_at ?? block.starts_at));
     return {
       key,
       span: cell.span,
-      look: lookOf(block, props.now),
+      look: ghostOf === undefined ? lookOf(block, props.now) : "proposed",
       children: (
         <span className={styles.dayVisit}>
           <TextButton
@@ -98,8 +106,11 @@ function rowCells(props: Props, row: BoardRow, steps: readonly number[], visits:
             }}
           >
             {block.client ?? dispatch.unknown}
+            {ghostOf !== undefined && <VisuallyHidden>{`, ${dispatch.chips.proposed}`}</VisuallyHidden>}
           </TextButton>
-          <span className={styles.dayVisitWhat}>{`${indiaClock(block.starts_at)} · ${kind}`}</span>
+          <span className={styles.dayVisitWhat}>
+            {ghostOf === undefined ? `${at} · ${kind}` : `${at} · ${dispatch.chips.proposed}`}
+          </span>
         </span>
       ),
     };
@@ -108,11 +119,30 @@ function rowCells(props: Props, row: BoardRow, steps: readonly number[], visits:
 
 export function DayBoard(props: Props) {
   const blocksOf = (row: BoardRow) => row.days.find((day) => day.date === props.date)?.blocks ?? [];
-  const visitsOf = (row: BoardRow): Visit[] =>
-    blocksOf(row).map((block) => {
+  // The visits a proposed move would bring to this day, on the technician it would go to, until the client answers.
+  const ghosts = props.board.technicians.flatMap((technician) =>
+    technician.days.flatMap((day) =>
+      day.blocks.flatMap((block) => {
+        const proposal = block.proposal;
+        if (proposal?.date !== props.date || proposal.starts_at === null) return [];
+        const from = minuteOfDay(proposal.starts_at);
+        const visit: Visit = {
+          from,
+          to: from + minutesOf(block.slots),
+          block,
+          ghostOf: { technician, date: day.date },
+        };
+        return [{ on: proposal.technician_id, visit }];
+      }),
+    ),
+  );
+  const visitsOf = (row: BoardRow): Visit[] => [
+    ...blocksOf(row).map((block) => {
       const from = minuteOfDay(block.starts_at);
       return { from, to: from + minutesOf(block.slots), block };
-    });
+    }),
+    ...ghosts.filter((ghost) => ghost.on === row.technician_id).map((ghost) => ghost.visit),
+  ];
   const steps = stepsOf(props.rows.flatMap(visitsOf));
   const rows = props.rows.map((row) => {
     const at = lastAt(blocksOf(row));
