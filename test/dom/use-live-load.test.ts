@@ -129,4 +129,27 @@ describe("useLoad", () => {
     expect(page.textContent).toBe("three chats");
     expect(reads).toBe(3);
   });
+
+  it("waits for an open sheet to close before it reads again, so what is being done there is not redrawn", async () => {
+    answers = [
+      { ok: true, body: "one chat" },
+      { ok: true, body: "two chats" },
+    ];
+    act(() => {
+      root.render(createElement(Page));
+    });
+    await settle();
+    const sheet = document.createElement("dialog");
+    sheet.setAttribute("open", "");
+    document.body.append(sheet);
+    act(() => {
+      dataChanged();
+    });
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(page.textContent).toBe("one chat");
+    sheet.remove();
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    await settle();
+    expect(page.textContent).toBe("two chats");
+  });
 });

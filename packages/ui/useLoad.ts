@@ -28,16 +28,23 @@ let settling: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * A write the API took (the apps' clients call this on each, packages/web-kit/api.ts's onWrite): whatever page shows
- * data reads it again, keeping what it shows until the answer comes, and nothing kept from before is shown again.
+ * data reads it again, keeping what it shows until the answer comes, and nothing kept from before is shown again. While
+ * a sheet or a drawer is open the read waits for it to close, so what someone is in the middle of is never redrawn
+ * from under them, as a cancelled visit's card would take its own sheet with it.
  */
 export function dataChanged(): void {
   forgetKept();
-  if (settling !== null) return;
-  settling = setTimeout(() => {
-    settling = null;
-    changes += 1;
-    for (const hear of [...showing]) hear();
-  }, SETTLE_MS);
+  settling ??= setTimeout(tellOnceSettled, SETTLE_MS);
+}
+
+function tellOnceSettled(): void {
+  if (typeof document !== "undefined" && document.querySelector("dialog[open]") !== null) {
+    settling = setTimeout(tellOnceSettled, SETTLE_MS);
+    return;
+  }
+  settling = null;
+  changes += 1;
+  for (const hear of [...showing]) hear();
 }
 
 /** Forgets every read's last answer, as a session ends, so whoever signs in next on the device is shown none of it. */

@@ -40350,7 +40350,7 @@ Request body:
     "proposal": {
       "anyOf": [
         {
-          "$ref": "#/components/schemas/ProposedMove"
+          "$ref": "#/components/schemas/BoardProposedMove"
         },
         {
           "type": "null"
@@ -40439,6 +40439,78 @@ Request body:
     "mobile",
     "whatsapp_visits",
     "referred_by"
+  ],
+  "additionalProperties": false
+}
+```
+
+### BoardProposedMove
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date the visit would move to."
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
+    "technician": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Technician"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The last moment it may be accepted."
+    },
+    "technician_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "starts_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The start proposed; null for one proposed as a window, before booking took starts."
+    }
+  },
+  "required": [
+    "id",
+    "date",
+    "window",
+    "hours",
+    "technician",
+    "expires_at",
+    "technician_id",
+    "starts_at"
   ],
   "additionalProperties": false
 }
