@@ -1,7 +1,7 @@
 // The service-area CSV, read and written in the browser (data/pincodes/README.md,
-// docs/decisions/0061-ops-editable-inputs.md). Only pincode, served and launch_on are read, and all three must be
-// there: a file without served would switch every pincode off. The splitter is scripts/lib/pincodes.ts's, copied
-// because the console cannot import a node script.
+// docs/decisions/0061-ops-editable-inputs.md). Pincode, served and launch_on must be there: a file without served
+// would switch every pincode off. A row's city and area add a pincode we do not hold (ADR 0220). The splitter is
+// scripts/lib/pincodes.ts's, copied because the console cannot import a node script.
 
 import { csvCell } from "../lib/csv.ts";
 
@@ -25,9 +25,13 @@ export interface CsvRow {
   readonly pincode: string;
   readonly served: boolean;
   readonly launch_on: string | null;
+  /** Blank where the file has no such column. */
+  readonly city: string;
+  readonly area: string;
 }
 
 const COLUMNS = ["pincode", "served", "launch_on"] as const;
+type Column = (typeof COLUMNS)[number] | "city" | "area";
 
 /** Only the ISO form. Excel likes to save 01-10-2026, and guessing the month is how a launch date goes wrong. */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -55,8 +59,7 @@ export function readServiceAreaCsv(text: string): CsvRead {
   const [header = "", ...lines] = text.trim().split(/\r?\n/);
   const columns = fields(header).map((name) => name.trim().toLowerCase());
   if (!COLUMNS.every((column) => columns.includes(column))) return { ok: false, reason: "header" };
-  const at = (row: readonly string[], name: (typeof COLUMNS)[number]): string =>
-    (row[columns.indexOf(name)] ?? "").trim();
+  const at = (row: readonly string[], name: Column): string => (row[columns.indexOf(name)] ?? "").trim();
 
   const rows: CsvRow[] = [];
   for (const line of lines) {
@@ -68,7 +71,13 @@ export function readServiceAreaCsv(text: string): CsvRead {
     if (served === undefined) return { ok: false, reason: "served", pincode };
     const launch = at(row, "launch_on");
     if (launch !== "" && !ISO_DATE.test(launch)) return { ok: false, reason: "date", pincode };
-    rows.push({ pincode, served, launch_on: launch === "" ? null : launch });
+    rows.push({
+      pincode,
+      served,
+      launch_on: launch === "" ? null : launch,
+      city: at(row, "city"),
+      area: at(row, "area"),
+    });
   }
   return { ok: true, rows };
 }

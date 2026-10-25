@@ -13,28 +13,8 @@ import { json } from "../../http/openapi.ts";
 import { queuePacedMessages } from "../../http/queue-message.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { reachesCity } from "../../policy/access.ts";
-
-/**
- * An area's name, as a launch message and the waitlist show it: a letter or a
- * digit first, so a spreadsheet opening the exported list never reads it as a
- * formula, then letters, digits, spaces and . , ' ( ) & -.
- */
-const AREA_NAME = /^[\p{L}\p{N}][\p{L}\p{N} .,'()&-]{1,39}$/u;
-
-const AreaSchema = z
-  .object({
-    pincode: z.string(),
-    area: z.string(),
-    city: z.string(),
-    served: z.boolean(),
-    launch_on: z.union([z.iso.date(), z.null()]),
-    waiting: z.number().int().openapi({ description: "How many are on its waitlist." }),
-    to_alert: z.number().int().openapi({
-      description: "How many of them serving it would tell now: those who asked, and have not been told yet.",
-    }),
-  })
-  .strict()
-  .openapi("ServedPincode");
+import { AREA_NAME } from "../../policy/area-names.ts";
+import { AreaSchema } from "../schemas/service-area.ts";
 
 const serviceAreaRoute = opsRoute({
   method: "get",

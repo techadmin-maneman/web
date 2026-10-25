@@ -117,6 +117,9 @@ export type Kind = OpsService["kind"];
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
 export type NewPincode = Sent<paths["/api/pincodes"]["post"]>;
+export type PincodesFromDirectory = Sent<paths["/api/pincodes/from-directory"]["post"]>;
+export type DirectoryPincode = Body<paths["/api/pincode-directory/pincodes"]["get"]>["pincodes"][number];
+export type DirectoryDistrict = Body<paths["/api/pincode-directory/districts"]["get"]>["districts"][number];
 
 /** The consumables, each service's expected use, the job sheet, and the stock (docs/decisions/0087-consumables-and-stock.md). */
 export type Consumables = Body<paths["/api/consumables"]["get"]>;

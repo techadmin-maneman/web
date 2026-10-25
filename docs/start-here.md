@@ -173,11 +173,13 @@ this map, or when the map names something that no longer exists.
 ### Clients
 
 - **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `client-notes`, `staff-notes` (staff's notes on a client),
-  `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`
-- **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `staff-notes`, `home-prompt`
+  `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`,
+  `pincode-directory` (India Post's pincodes, which ops open a city from)
+- **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `staff-notes`, `home-prompt`,
+  `area-names` (what an area may be called, and the name a post office gives it)
 - **Vendor** (`src/providers/`): `geocode/`
 - **Routes** (`src/routes/`): `client/me`, `client/profile`, `client/notes`, `ops/clients`, `ops/client-record`,
-  `ops/client-photos`, `ops/client-consents`, `ops/client-address`, `ops/service-area`, `ops/hair-profile`, `ops/staff-notes`, `ops/profile`,
+  `ops/client-photos`, `ops/client-consents`, `ops/client-address`, `ops/service-area`, `ops/pincode-directory`, `ops/hair-profile`, `ops/staff-notes`, `ops/profile`,
   `public/number-codes`
 - **Screens:** `apps/app/src/home/`, `apps/app/src/profile/`, `apps/ops/src/clients/`,
   `apps/ops/src/number-changes/`, `apps/ops/src/areas/`

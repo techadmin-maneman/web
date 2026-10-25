@@ -270,6 +270,12 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Putting back that table",
   },
   {
+    what: "India Post's pincodes",
+    tables: ["pincode_directory"],
+    leftAtT: "A quarter's refresh since is undone, so the console offers India Post's pincodes as they were",
+    putBackBy: "Loading the file again: `node scripts/ops/load-pincode-directory.ts <environment>`",
+  },
+  {
     what: "The storage meter",
     tables: ["stored_objects", "storage_meter"],
     leftAtT: "Objects stored or deleted since are counted wrongly, as R2 is not restored",

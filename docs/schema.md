@@ -40,6 +40,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Cycle counts | `count_tasks`, `count_lines` | A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning | Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought |
 | The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
+| India Post's pincodes | `pincode_directory` | A quarter's refresh since is undone, so the console offers India Post's pincodes as they were | Loading the file again: `node scripts/ops/load-pincode-directory.ts <environment>` |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
 | Housekeeping | `alerts`, `vendor_breakers`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `zoho_access_tokens` | Nothing that lasts | Nothing |
 | The database's identity, and the restore's own switch | `deployment_identity`, `maintenance` | The identity is the same at every minute. Going back undoes the switch, so the steps turn it on again | Nothing |
@@ -123,6 +124,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [piece_returns](#piece_returns): Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
 - [pieces](#pieces): Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
+- [pincode_directory](#pincode_directory): India Post's pincodes across India, one row each: its district, state, post offices and a point, refreshed each quarter from data.gov.in; ops open a city from it, and it holds nobody's data (ADR 0220).
 - [plan_lines](#plan_lines): Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).
 - [po_letterhead](#po_letterhead): One row, once ops set it: the legal name, GSTIN and delivery address a printed purchase order carries (ADR 0166).
 - [po_lines](#po_lines): Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
@@ -2048,6 +2050,26 @@ Indexes:
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
 Triggers: `pieces_replacement_booked_added`, `pieces_replacement_booked_changed`.
+
+## pincode_directory
+
+India Post's pincodes across India, one row each: its district, state, post offices and a point, refreshed each quarter from data.gov.in; ops open a city from it, and it holds nobody's data (ADR 0220).
+
+Made by `0196_pincode_directory.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `pincode` | TEXT | no |  | primary key |  |
+| `district` | TEXT | no |  |  |  |
+| `state` | TEXT | no |  |  |  |
+| `office_names` | TEXT | no |  |  | The post offices in the pincode, separated by semicolons, as the directory names them ("Saket SO;Pushp Vihar SO"). |
+| `latitude` | REAL | yes |  |  | The delivering office's point: rough, for a map and for opening a city, never for a drive. |
+| `longitude` | REAL | yes |  |  |  |
+| `refreshed_on` | TEXT | no |  |  | The directory's own date, from the file it was loaded from. |
+
+Indexes:
+
+- `pincode_directory_by_district`: on (`state`, `district`)
 
 ## plan_lines
 

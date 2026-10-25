@@ -3366,6 +3366,358 @@ Request body:
 }
 ```
 
+### GET /api/pincode-directory/states
+
+The states India Post's directory lists
+
+**200**: The states
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "states"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/pincode-directory/districts
+
+A state's districts, each with its pincodes and how many the service area holds
+
+**200**: The districts, in order
+
+```json
+{
+  "$ref": "#/components/schemas/DirectoryDistricts"
+}
+```
+
+**400**: invalid_request: no state named
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/pincode-directory/pincodes
+
+The pincodes of up to ten of a state's districts, with what each area would be called
+
+**200**: The pincodes, in order
+
+```json
+{
+  "$ref": "#/components/schemas/DirectoryPincodes"
+}
+```
+
+**400**: invalid_request: no state, or no district or more than ten
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/pincodes/from-directory
+
+Add pincodes the directory lists, unserved, in one of our cities
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PincodesFromDirectory"
+}
+```
+
+**201**: Those added, as the service area lists them
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "added": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ServedPincode"
+      }
+    },
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Pincodes the service area held already, left as they were."
+    },
+    "unlisted": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Pincodes the directory does not list, not added."
+    }
+  },
+  "required": [
+    "added",
+    "held",
+    "unlisted"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: city for a city that is not one of ours
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required, or not_permitted: the city is outside the caller's Growth MANAGE
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/clients/{id}/stock-match
 
 The stock code the client's hair profile matches exactly, and where its pieces are
@@ -34661,6 +35013,237 @@ Request body:
 }
 ```
 
+### DirectoryDistricts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "districts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "pincodes": {
+            "type": "integer"
+          },
+          "held": {
+            "type": "integer",
+            "description": "Of them, those the service area holds."
+          }
+        },
+        "required": [
+          "state",
+          "district",
+          "pincodes",
+          "held"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "districts"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DirectoryPincodes
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string",
+            "description": "The shortest of its post offices, until ops name it."
+          },
+          "offices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "held": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  },
+                  "area": {
+                    "type": "string"
+                  },
+                  "served": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "city",
+                  "area",
+                  "served"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "pincode",
+          "district",
+          "area",
+          "offices",
+          "latitude",
+          "longitude",
+          "held"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "pincodes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServedPincode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincode": {
+      "type": "string"
+    },
+    "area": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "served": {
+      "type": "boolean"
+    },
+    "launch_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "waiting": {
+      "type": "integer",
+      "description": "How many are on its waitlist."
+    },
+    "to_alert": {
+      "type": "integer",
+      "description": "How many of them serving it would tell now: those who asked, and have not been told yet."
+    }
+  },
+  "required": [
+    "pincode",
+    "area",
+    "city",
+    "served",
+    "launch_on",
+    "waiting",
+    "to_alert"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PincodesFromDirectory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "pincodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{5}$"
+          },
+          "area": {
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&-]{1,39}$/u",
+            "description": "What messages call the area. Left out, the directory's suggestion, until ops name it."
+          }
+        },
+        "required": [
+          "pincode"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 300
+    }
+  },
+  "required": [
+    "city",
+    "pincodes"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientStockMatch
 
 ```json
@@ -45406,57 +45989,6 @@ Request body:
     "item",
     "tier",
     "valid_from"
-  ],
-  "additionalProperties": false
-}
-```
-
-### ServedPincode
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "pincode": {
-      "type": "string"
-    },
-    "area": {
-      "type": "string"
-    },
-    "city": {
-      "type": "string"
-    },
-    "served": {
-      "type": "boolean"
-    },
-    "launch_on": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "date"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "waiting": {
-      "type": "integer",
-      "description": "How many are on its waitlist."
-    },
-    "to_alert": {
-      "type": "integer",
-      "description": "How many of them serving it would tell now: those who asked, and have not been told yet."
-    }
-  },
-  "required": [
-    "pincode",
-    "area",
-    "city",
-    "served",
-    "launch_on",
-    "waiting",
-    "to_alert"
   ],
   "additionalProperties": false
 }

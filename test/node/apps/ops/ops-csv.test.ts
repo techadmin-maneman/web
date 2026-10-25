@@ -38,6 +38,13 @@ describe("reading the file ops upload", () => {
     ]);
   });
 
+  it("reads a row's city and area where the file has them, for a pincode it would add", () => {
+    const read = readServiceAreaCsv("pincode,city,area,served,launch_on\n400050,Mumbai,Bandra West,no,");
+    expect(read.ok && read.rows).toEqual([
+      { pincode: "400050", served: false, launch_on: null, city: "Mumbai", area: "Bandra West" },
+    ]);
+  });
+
   it("names the pincode whose served it cannot read, rather than guess", () => {
     expect(readServiceAreaCsv("pincode,served,launch_on\n110001,maybe,")).toEqual({
       ok: false,
@@ -49,8 +56,8 @@ describe("reading the file ops upload", () => {
   it("takes a launch date only as 2026-10-01, and a blank as none", () => {
     const read = readServiceAreaCsv("launch_on,pincode,served\n2026-10-01,110001,yes\n,110002,no");
     expect(read.ok && read.rows).toEqual([
-      { pincode: "110001", served: true, launch_on: "2026-10-01" },
-      { pincode: "110002", served: false, launch_on: null },
+      { pincode: "110001", served: true, launch_on: "2026-10-01", city: "", area: "" },
+      { pincode: "110002", served: false, launch_on: null, city: "", area: "" },
     ]);
     expect(readServiceAreaCsv("pincode,served,launch_on\n110001,yes,01-10-2026")).toEqual({
       ok: false,
@@ -63,7 +70,9 @@ describe("reading the file ops upload", () => {
     const read = readServiceAreaCsv(
       'pincode,city,office_names,served,launch_on\r\n110017,Delhi,"Saket SO, Malviya Nagar SO",yes,2026-09-01',
     );
-    expect(read.ok && read.rows).toEqual([{ pincode: "110017", served: true, launch_on: "2026-09-01" }]);
+    expect(read.ok && read.rows).toEqual([
+      { pincode: "110017", served: true, launch_on: "2026-09-01", city: "Delhi", area: "" },
+    ]);
   });
 });
 
@@ -75,8 +84,8 @@ describe("the list ops download", () => {
   it("reads back as it went out", () => {
     const read = readServiceAreaCsv(serviceAreaCsv(PINCODES));
     expect(read.ok && read.rows).toEqual([
-      { pincode: "110017", served: true, launch_on: "2026-09-01" },
-      { pincode: "122018", served: false, launch_on: null },
+      { pincode: "110017", served: true, launch_on: "2026-09-01", city: "Delhi", area: "Saket, South" },
+      { pincode: "122018", served: false, launch_on: null, city: "Gurgaon", area: "Sector 65" },
     ]);
   });
 

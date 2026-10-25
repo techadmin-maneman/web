@@ -21,18 +21,20 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
+import { addFromFile, OpenCity } from "./OpenCity.tsx";
 import { readServiceAreaCsv, serviceAreaCsv } from "./csv.ts";
 import { AREA_NAME } from "./rules.ts";
 import {
   changesIn,
   chosenServed,
-  fileChanges,
   fileDraft,
+  readUpload,
   servesLater,
   uploadRefusal,
   type Row,
+  type Upload,
 } from "./served-draft.ts";
-import { CityTabs, PincodeRow, SaveNotes, UploadFile, type Upload } from "./ServedParts.tsx";
+import { CityTabs, PincodeRow, SaveNotes, UploadFile } from "./ServedParts.tsx";
 import { AskingCheck, ChosenBar } from "./Chosen.tsx";
 import { useAreaSaves } from "./useAreaSaves.ts";
 import { areasApi } from "./areas-api.ts";
@@ -111,15 +113,18 @@ function PincodeTable(props: {
 }
 
 /** A pincode the file does not hold, added beneath the table, and what was added last. */
-function AddBeneath(props: {
-  cities: readonly string[];
-  added: ServedPincode | null;
-  onAdded: (held: ServedPincode) => void;
-}) {
-  const { added } = props;
+function AddBeneath(props: { cities: readonly string[]; onAdded: (rows: readonly ServedPincode[]) => void }) {
+  const [added, setAdded] = useState<ServedPincode | null>(null);
   return (
     <Fieldset className={form.group} legend={areas.add.title} legendLook="title">
-      <AddPincode pincode={null} cities={props.cities} onAdded={props.onAdded} />
+      <AddPincode
+        pincode={null}
+        cities={props.cities}
+        onAdded={(held) => {
+          props.onAdded([held]);
+          setAdded(held);
+        }}
+      />
       {added !== null && <Toast>{areas.add.added(added.pincode, added.city)}</Toast>}
     </Fieldset>
   );
@@ -130,10 +135,10 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   const [city, setCity] = useState(pincodes[0]?.city ?? "");
   const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
   const [upload, setUpload] = useState<Upload | null>(null);
-  const [added, setAdded] = useState<ServedPincode | null>(null);
   const access = useAccess();
   const mayChange = access.mayCall("POST /api/service-area");
   const mayAdd = access.mayCall("POST /api/pincodes");
+  const mayOpen = access.mayCall("POST /api/pincodes/from-directory");
   const saves = useAreaSaves(pincodes, setPincodes, () => {
     setChosen(new Set());
     setUpload(null);
@@ -156,9 +161,15 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     saves.commit(changesIn(pincodes, chosenServed(pincodes, chosen, served)), question(chosen.size, city));
   };
 
+  /** Pincodes just added, shown in their city's tab. */
+  const addRows = (rows: readonly ServedPincode[]) => {
+    setPincodes((all) => [...all, ...rows]);
+    setCity(rows[0]?.city ?? city);
+  };
+
   const readFile = async (file: File) => {
     const read = readServiceAreaCsv(await file.text());
-    if (read.ok) setUpload({ step: "read", rows: fileChanges(pincodes, read.rows) });
+    if (read.ok) setUpload(readUpload(pincodes, read.rows));
     else setUpload({ step: "failed", says: uploadRefusal(read) });
   };
 
@@ -210,6 +221,11 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         <UploadFile
           upload={upload}
           onFile={(file) => void readFile(file)}
+          onAdd={async (lines, adds) => {
+            const done = await addFromFile(pincodes, lines, adds);
+            addRows(done.added);
+            setUpload(done.upload);
+          }}
           onApply={(rows) => {
             saves.commit(changesIn(pincodes, fileDraft(rows)));
           }}
@@ -218,17 +234,8 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           }}
         />
       )}
-      {mayAdd && (
-        <AddBeneath
-          cities={cities}
-          added={added}
-          onAdded={(held) => {
-            setPincodes((all) => [...all, held]);
-            setCity(held.city);
-            setAdded(held);
-          }}
-        />
-      )}
+      {mayOpen && <OpenCity cities={cities} onAdded={addRows} />}
+      {mayAdd && <AddBeneath cities={cities} onAdded={addRows} />}
     </Panel>
   );
 }

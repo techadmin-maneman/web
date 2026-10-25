@@ -10,6 +10,7 @@ import {
   fileChanges,
   fileDraft,
   launchesIn,
+  readUpload,
   rowOf,
   servesLater,
 } from "../../../../../apps/ops/src/areas/served-draft.ts";
@@ -71,12 +72,24 @@ describe("the Served tab", () => {
   it("shows a file’s changes only for pincodes we hold that it would change, and saves them as they read", () => {
     const held = [BANDRA, KHAR];
     const rows = fileChanges(held, [
-      { pincode: "400050", served: true, launch_on: null },
-      { pincode: "400052", served: true, launch_on: "2027-01-01" },
-      { pincode: "110001", served: true, launch_on: null },
+      { pincode: "400050", served: true, launch_on: null, city: "", area: "" },
+      { pincode: "400052", served: true, launch_on: "2027-01-01", city: "", area: "" },
+      { pincode: "110001", served: true, launch_on: null, city: "", area: "" },
     ]);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ pincode: BANDRA, now: { served: false }, file: { served: true } });
     expect(changesIn(held, fileDraft(rows))).toEqual([{ pincode: "400050", served: true, launch_on: null }]);
+  });
+
+  it("adds first a file's pincodes we do not hold that name a city, and leaves out one that names none", () => {
+    const lines = [
+      { pincode: "400050", served: true, launch_on: null, city: "Mumbai", area: "" },
+      { pincode: "411001", served: true, launch_on: null, city: "Pune", area: "Camp" },
+      { pincode: "110001", served: true, launch_on: null, city: "", area: "" },
+    ];
+    const read = readUpload([BANDRA], lines);
+    expect(read.adds.map((each) => each.pincode)).toEqual(["411001"]);
+    expect(read.rows.map((each) => each.pincode.pincode)).toEqual(["400050"]);
+    expect(read).toMatchObject({ step: "read", lines, said: null });
   });
 });

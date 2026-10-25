@@ -12,6 +12,7 @@ describe("the pincode list", () => {
     expect(areaOf("D Block South City II Gurgaon;Gurgaon South City II SO", "Gurgaon")).toBe("Gurgaon South City II");
     expect(areaOf("Noida HO;Sec 16 Noida SO", "Noida")).toBe("Noida");
     expect(areaOf("CAT EXTENSION COUNTER", "Delhi")).toBe("Delhi");
+    expect(areaOf("Bhusari Colony S.O;Kothrud S.O;Kothrud B.O", "Pune")).toBe("Kothrud");
   });
 
   it("reads every row of the list, each a six-digit pincode with a city and an area", () => {

@@ -9,7 +9,7 @@
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { BLACKOUTS, fails, json } from "./fixtures.ts";
+import { BLACKOUTS, fails, json, SERVICE_AREA } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
@@ -221,6 +221,83 @@ test.describe("the service area", () => {
     expect(adds).toBe(1);
     await expect(page.getByRole("button", { name: "Mumbai · 0 of 1" })).toHaveAttribute("aria-current", "true");
     await expect(row(page, "400050")).toContainText("Bandra West");
+  });
+
+  // Opening a city meant typing each of its pincodes, and a name for each, one at a time.
+  test("adds a district's pincodes from India Post's list, leaving out those held", async ({ page }) => {
+    const directory = opsCopy.areas.directory;
+    const bandra = {
+      pincode: "400050",
+      district: "MUMBAI",
+      area: "Bandra West",
+      offices: ["Bandra West SO"],
+      latitude: null,
+      longitude: null,
+      held: null,
+    };
+    const fort = { ...bandra, pincode: "400001", area: "Fort", held: { city: "Mumbai", area: "Fort", served: true } };
+    await open(page, "/settings/areas", {
+      "GET /api/pincode-directory/states": json({ states: ["MAHARASHTRA"] }),
+      "GET /api/pincode-directory/districts": json({
+        districts: [{ state: "MAHARASHTRA", district: "MUMBAI", pincodes: 2, held: 1 }],
+      }),
+      "GET /api/pincode-directory/pincodes": json({ pincodes: [bandra, fort] }),
+      "POST /api/pincodes/from-directory": json(
+        {
+          added: [{ ...SERVICE_AREA.pincodes[2], pincode: "400050", area: "Bandra West", city: "Mumbai" }],
+          held: [],
+          unlisted: [],
+        },
+        201,
+      ),
+    });
+    const form = page.getByRole("group", { name: directory.title });
+    await form.getByLabel(directory.state).selectOption("MAHARASHTRA");
+    await form.getByLabel(directory.district("Mumbai", 2, 1)).check();
+    await form.getByRole("button", { name: directory.show }).click();
+    await expect(form.getByLabel(directory.tick("400001", "Fort"))).toBeDisabled();
+    await expect(form.getByLabel(directory.tick("400050", "Bandra West"))).toBeChecked();
+
+    await form.getByLabel(directory.city).selectOption("Mumbai");
+    const sent = posted(page, "/api/pincodes/from-directory");
+    await form.getByRole("button", { name: directory.add(1) }).click();
+    expect((await sent).postDataJSON()).toEqual({
+      city: "Mumbai",
+      pincodes: [{ pincode: "400050", area: "Bandra West" }],
+    });
+    await expect(page.getByRole("status").filter({ hasText: directory.added(1, "Mumbai", 0) })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mumbai · 0 of 1" })).toHaveAttribute("aria-current", "true");
+    await expect(row(page, "400050")).toContainText("Bandra West");
+  });
+
+  test("adds a file's new pincodes first, naming any India Post does not list, then shows its changes", async ({
+    page,
+  }) => {
+    const words = opsCopy.areas.served.upload;
+    await open(page, "/settings/areas", {
+      "POST /api/pincodes/from-directory": json(
+        {
+          added: [{ ...SERVICE_AREA.pincodes[2], pincode: "400050", area: "Bandra West", city: "Mumbai" }],
+          held: [],
+          unlisted: ["400099"],
+        },
+        201,
+      ),
+    });
+    await upload(
+      page,
+      "pincode,city,area,served,launch_on\n400050,Mumbai,Bandra West,no,2026-09-01\n400099,Mumbai,,no,\n",
+    );
+    await expect(page.getByText(words.adds(2))).toBeVisible();
+    const sent = posted(page, "/api/pincodes/from-directory");
+    await page.getByRole("button", { name: words.add(2) }).click();
+    expect((await sent).postDataJSON()).toEqual({
+      city: "Mumbai",
+      pincodes: [{ pincode: "400050", area: "Bandra West" }, { pincode: "400099" }],
+    });
+    await expect(page.getByRole("status").filter({ hasText: words.added(1, ["400099"]) })).toBeVisible();
+    await expect(page.getByRole("row").filter({ hasText: "Not served, launch 2026-09-01" })).toBeVisible();
+    await expect(page.getByRole("button", { name: words.apply })).toBeVisible();
   });
 
   test("refuses a pincode the API could not hold before it is sent", async ({ page }) => {
