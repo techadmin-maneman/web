@@ -496,3 +496,28 @@ test("narrows the board to my own tasks, one kind, or a client found by name", a
   await expect(row(page, "Karan Bose")).toBeVisible();
   await expect(row(page, "Rohan Bhalla")).toHaveCount(0);
 });
+
+// Giving someone a task told them nothing, and nothing counted what was theirs.
+test("counts in the header the tasks given to me that I have not seen, and lists them", async ({ page }) => {
+  const grants = ["operations", "customer_care", "finance", "growth", "admin"].map((department) => ({
+    department: department as "operations",
+    level: "manage" as const,
+    geography: "national" as const,
+    place: null,
+  }));
+  await open(page, TASKS, NO_ALERTS, {
+    "GET /api/whoami": json({
+      signed_in_as: "priya@maneman.in",
+      sign_out: "/cdn-cgi/access/logout",
+      staff: { enforced: false, listed: true, grants, may_call: ["GET /api/tasks", "GET /api/alerts"] },
+    }),
+  });
+  const mine = page.getByRole("banner").getByRole("button", { name: opsCopy.shell.mine.label(3) });
+  await expect(mine).toContainText("3");
+  await mine.click();
+  await expect(
+    page.getByRole("button", { name: opsCopy.shell.mine.item(opsCopy.tasks.groups.replacement_order, "Kunal Mehta") }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("banner").getByRole("button", { name: opsCopy.shell.mine.label(0) })).toBeVisible();
+});

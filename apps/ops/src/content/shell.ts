@@ -90,6 +90,13 @@ export const shell = {
   /** The browser tab's title: "Blackout days · Settings · Mane Man Ops". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man Ops"].join(" · "),
   /** Who is signed in, the theme, and the way out: Access's own session, which is the only one the console has. */
+  /** The header's list of the tasks given to the person signed in, with how many are new to them. */
+  mine: {
+    button: "Mine",
+    label: (unseen: number) => (unseen === 0 ? "My tasks" : `My tasks, ${String(unseen)} new`),
+    none: "Nothing is yours.",
+    item: (kind: string, subject: string) => `${kind} · ${subject}`,
+  },
   account: {
     label: "Account",
     signOut: "Sign out",
