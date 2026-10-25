@@ -36,6 +36,17 @@ describe("a word from the job card", () => {
     expect(messageQueue.sent).toHaveLength(1);
   });
 
+  it("is kept unsent when the same word went to the client a moment before, from another tap", async () => {
+    expect(await (await say({ preset: "on_the_way", minutes: 20 }, eventAt(3, "6"))).json()).toEqual({ sent: true });
+    expect(await (await say({ preset: "on_the_way", minutes: 20 }, eventAt(2, "7"))).json()).toEqual({ sent: false });
+    expect(await (await say({ preset: "running_late", minutes: 20 }, eventAt(1, "8"))).json()).toEqual({ sent: true });
+    expect(await messages()).toEqual([
+      { kind: "technician_update", subject_kind: "technician_update", state: "queued" },
+      { kind: "technician_update", subject_kind: "technician_update", state: "skipped" },
+      { kind: "technician_update", subject_kind: "technician_update", state: "queued" },
+    ]);
+  });
+
   it("is kept unsent when it reaches us too late to help", async () => {
     expect(await (await say({ preset: "at_gate", minutes: null }, eventAt(15, "2"))).json()).toEqual({ sent: false });
     expect(await messages()).toEqual([

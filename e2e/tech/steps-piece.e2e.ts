@@ -348,7 +348,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   test("names the product the payment link is for, once the client chose it", async ({ page }) => {
     await atTheOutcome(page, { product: "natural" });
     await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
-    await expect(page.getByText("Closing texts the client a payment link for Mane Man Natural.")).toBeVisible();
+    await expect(page.getByText("Closing sends the client a payment link for Mane Man Natural.")).toBeVisible();
     await expect(page.getByLabel(techCopy.oneVisit.code.label)).toBeVisible();
   });
 

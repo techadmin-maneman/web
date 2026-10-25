@@ -91,6 +91,8 @@ test("a consultation’s outcome asks whether the client is going ahead, and why
   await expect
     .poll(() => writesTo(fake, "outcome").at(-1)?.body)
     .toEqual({ outcome: "done", lost_reason: "price", going_ahead: false });
+  // The close-out repeats what was decided.
+  await expect(page.getByText(techCopy.closeOut.notNow("The price"))).toBeVisible();
 });
 
 // A yes was sent as nothing at all, so the console could not tell it from a question never asked.
@@ -101,6 +103,8 @@ test("a consultation’s outcome sends the client’s yes", async ({ page }) => 
   await page.goto(`/jobs/${JOB_ID}/outcome`);
 
   await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+  // Unanswered, the question holds Next back: it is never recorded as a yes by default.
+  await expect(page.getByRole("button", { name: techCopy.steps.outcome.answerFirst })).toBeDisabled();
   await page.getByRole("button", { name: techCopy.steps.outcome.yes }).click();
   await page.getByRole("button", { name: techCopy.steps.next }).click();
   await expect.poll(() => writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: true });
@@ -108,6 +112,41 @@ test("a consultation’s outcome sends the client’s yes", async ({ page }) => 
 
 // ADR 0025, item 59: "gold marks only the one primary action". The boards also gild a ticked
 // box, a step's count and a chosen outcome or reason.
+test("ticks the whole checklist with one tap when everything was done, and shows how far through the job", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos");
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+  await expect(page.getByRole("img", { name: /^Step 2 of \d+$/ })).toBeVisible();
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await expect
+    .poll(() => writesTo(fake, "checklist").at(-1)?.body)
+    .toEqual({ done: ["piece_removed", "scalp_cleaned", "piece_cleaned"] });
+});
+
+test("steps a measure by five and takes a typed count, landing back on the fives", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos", "checklist");
+  await page.goto(`/jobs/${JOB_ID}/consumables`);
+  await page.getByRole("button", { name: "5 ml more solvent" }).click();
+  await expect(page.getByRole("button", { name: "Type the solvent used" })).toHaveText("15");
+  await page.getByRole("button", { name: "Type the solvent used" }).click();
+  await page.getByRole("spinbutton", { name: "Type the solvent used" }).fill("32");
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "5 ml less solvent" }).click();
+  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await expect
+    .poll(() => writesTo(fake, "consumables").at(-1)?.body)
+    .toEqual({
+      items: [
+        { code: "tape_strips", quantity: 4 },
+        { code: "solvent", quantity: 30 },
+      ],
+    });
+});
+
 test("draws nothing in gold but the one primary action", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
@@ -121,7 +160,7 @@ test("draws nothing in gold but the one primary action", async ({ page }) => {
 
   startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
-  await page.getByRole("button", { name: techCopy.steps.outcome.partial }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true }).click();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
   expect(await gilded(page)).toEqual(["Next"]);
   expect(await axeViolations(page)).toEqual([]);
@@ -182,6 +221,8 @@ test.describe("the consumables step", () => {
     await expect(page.getByRole("status").filter({ hasText: "Solvent: 10" })).toBeAttached();
     await expect(page.getByText("4 strips expected")).toBeVisible();
     await expect(page.getByRole("button", { name: "One more bonding glue" })).toHaveCount(0);
+    // Untouched, the step goes on in one tap that says so.
+    await expect(page.getByRole("button", { name: techCopy.steps.consumables.asExpected })).toBeVisible();
 
     const another = page.getByRole("button", { name: techCopy.steps.consumables.add });
     await expect(another).toHaveAttribute("aria-expanded", "false");
@@ -192,6 +233,7 @@ test.describe("the consumables step", () => {
     await page.getByRole("button", { name: "Add Bonding glue" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Bonding glue: 1" })).toBeAttached();
     await expect(page.getByRole("button", { name: "Add Bonding glue" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeVisible();
   });
 
   test("sends each consumable by its code, and one taken down to nought not at all", async ({ page }) => {
@@ -200,7 +242,7 @@ test.describe("the consumables step", () => {
     await page.goto(`/jobs/${JOB_ID}/consumables`);
 
     await page.getByRole("button", { name: "One more tape strips" }).click();
-    for (let count = 0; count < 10; count += 1) await page.getByRole("button", { name: "One fewer solvent" }).click();
+    for (let count = 0; count < 2; count += 1) await page.getByRole("button", { name: "5 ml less solvent" }).click();
     await page.getByRole("button", { name: techCopy.steps.consumables.add }).click();
     await page.getByRole("button", { name: "Add Shampoo sachet" }).click();
     await page.getByRole("button", { name: techCopy.steps.next }).click();
@@ -381,7 +423,7 @@ test("a refused outcome opens as it was chosen", async ({ page }) => {
   await page.getByRole("button", { name: techCopy.queue.correct }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
-  await expect(page.getByRole("button", { name: techCopy.steps.outcome.partial })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -400,7 +442,7 @@ test("the consumables step says what the kit holds, and when more is counted tha
   startedThrough(fake, "before_photos", "checklist");
   await page.goto(`/jobs/${JOB_ID}/consumables`);
   await expect(page.getByText(techCopy.steps.consumables.inKit(5, "strip", false))).toBeVisible();
-  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips") }).click();
-  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips") }).click();
+  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips", 1, "strip") }).click();
+  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips", 1, "strip") }).click();
   await expect(page.getByText(techCopy.steps.consumables.inKit(5, "strip", true))).toBeVisible();
 });

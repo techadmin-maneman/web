@@ -20,6 +20,7 @@ import { session, signIn as copy } from "../content.ts";
 import { installed } from "../lib/installed.ts";
 import type { Out } from "../session.ts";
 import { deviceId, enrolled } from "../store/device.ts";
+import { ReachOps } from "../components/ReachOps.tsx";
 import frame from "../components/frame.module.css";
 import styles from "./login.module.css";
 
@@ -29,6 +30,23 @@ function noteFor(why: Out): string | null {
   if (why === "switched-off") return session.switchedOff;
   if (why === "work-kept") return session.workKept;
   return why === "fresh" && installed() ? copy.installed : null;
+}
+
+/**
+ * The lines beneath the field: why the screen is showing, only before a code is asked for and only in the app that
+ * caused it, and the error or the hint for a number that is not one.
+ */
+function linesFor(at: {
+  why: Out;
+  asked: boolean;
+  error: string | null;
+  left: boolean;
+  mobile: string;
+  digits: string | null;
+}): { note: string | null; shown: string | null } {
+  const hint = at.left && !at.asked && at.mobile !== "" && at.digits === null ? copy.mobileError : null;
+  const quiet = !at.asked && at.error === null && hint === null;
+  return { note: quiet ? noteFor(at.why) : null, shown: at.error ?? hint };
 }
 
 /** The API's error code in the app's words, or the line that fits when the code is one we do not know. */
@@ -74,11 +92,20 @@ function Again(props: { resendIn: number; busy: boolean; onChangeNumber: () => v
   );
 }
 
-/** The code's six boxes, open once a code is out; the sixth digit sends it. */
+/** For a number we do not know: the way to ops, beneath the field. */
+function NewNumber() {
+  return (
+    <div className={styles.help}>
+      <p className={styles.note}>{copy.notRegistered}</p>
+      <ReachOps className={styles.helpReach} />
+    </div>
+  );
+}
+
+/** The code's six boxes, shown once a code is out; the sixth digit sends it. */
 function CodeStep(props: {
   boxes: Ref<HTMLInputElement>;
   code: string;
-  open: boolean;
   onCode: (code: string) => void;
   onComplete: (code: string) => void;
 }) {
@@ -90,7 +117,6 @@ function CodeStep(props: {
         className={styles.code}
         value={props.code}
         label={copy.codeLabel}
-        disabled={!props.open}
         onChange={props.onCode}
         onComplete={props.onComplete}
       />
@@ -166,12 +192,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   const verify = (typed: string = code) => once(() => verifyOnce(typed));
 
   const ready = !through && (challenge === null ? digits !== null : code.length === ONE_TIME_CODE.digits);
-  // Only worth saying before the code has been asked for, and only in the app
-  // that caused it: a first sign-in in a browser needs no explanation.
-  const quiet = challenge === null && error === null;
-  const note = noteFor(why);
-  const hint = left && challenge === null && mobile !== "" && digits === null ? copy.mobileError : null;
-  const shown = error ?? hint;
+  const { note, shown } = linesFor({ why, asked: challenge !== null, error, left, mobile, digits });
 
   return (
     <form
@@ -208,15 +229,16 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
         )}
       </Field>
 
-      <CodeStep
-        boxes={codeBoxes}
-        code={code}
-        open={challenge !== null}
-        onCode={setCode}
-        onComplete={(typed) => {
-          if (!working && !through) void verify(typed);
-        }}
-      />
+      {challenge !== null && (
+        <CodeStep
+          boxes={codeBoxes}
+          code={code}
+          onCode={setCode}
+          onComplete={(typed) => {
+            if (!working && !through) void verify(typed);
+          }}
+        />
+      )}
 
       {challenge !== null && (
         <Again
@@ -235,12 +257,14 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       )}
 
       {challenge !== null && error === null && <p className={styles.note}>{copy.codeSent}</p>}
-      {quiet && hint === null && note !== null && <p className={styles.note}>{note}</p>}
+      {note !== null && <p className={styles.note}>{note}</p>}
       {shown !== null && (
         <InlineMessage tone="error" ground="ink" className={styles.error}>
           {shown}
         </InlineMessage>
       )}
+
+      {challenge === null && <NewNumber />}
 
       <div className={styles.foot}>
         <Button

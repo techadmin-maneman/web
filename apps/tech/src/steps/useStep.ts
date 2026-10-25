@@ -4,7 +4,8 @@
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useState } from "react";
-import type { EventBody, Job } from "../api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
+import type { EventBody, Job, OutcomeRequest } from "../api.ts";
 import { closed, done, stepsOf } from "../lib/progress.ts";
 import type { KeptLoad } from "../lib/useDay.ts";
 import { useJob } from "../lib/useDay.ts";
@@ -54,7 +55,7 @@ export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
       if (refused === null) await queue(step, id, body, job.starts_at);
       else await correct(refused.seq, body);
       // The duration the close-out shows runs from Start job to the outcome, and nothing gives it back.
-      if (step === "outcome") await keepClosed(id);
+      if (step === "outcome") await keepClosed(id, apiNow(), body as OutcomeRequest);
       void replay();
 
       const sent = done(job, waiting.events);
@@ -70,7 +71,7 @@ export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
       if (job === null) return;
       setFinishing(true);
       await queue("outcome", id, outcome, job.starts_at);
-      await keepClosed(id);
+      await keepClosed(id, apiNow(), outcome);
       void replay();
       redirect(`/jobs/${id}/done`);
     });

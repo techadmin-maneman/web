@@ -22,6 +22,12 @@ const isInJob = (step: Step): step is InJobStep => IN_JOB.has(step);
 /** The steps this visit runs, in order: the API leaves the piece out where it does not apply. */
 export const stepsOf = (job: Job): InJobStep[] => job.steps.filter(isInJob);
 
+/** Where a step sits among the job's steps: the third of six. */
+export function placeOf(job: Job, step: InJobStep): { readonly at: number; readonly of: number } {
+  const steps = stepsOf(job);
+  return { at: steps.indexOf(step) + 1, of: steps.length };
+}
+
 /** Everything this job has sent, whether it reached us or is still on the phone. */
 export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   const sent = new Set<string>(job.progress.steps_done);

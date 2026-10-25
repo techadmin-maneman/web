@@ -1,0 +1,9 @@
+/* A job that did not load: the message beneath the head, at the screen's padding (./JobFailed.tsx). */
+
+.body {
+  padding: var(--sp-24) var(--sp-20);
+}
+
+.reach {
+  margin-top: var(--sp-28);
+}

@@ -1,5 +1,6 @@
 // Step 3: what was used, with quantities. Steppers rather than number
-// fields, so a gloved hand never opens a keyboard.
+// fields, so a gloved hand never opens a keyboard; a measure steps by five, and
+// a tap on the figure types it, for the count no stepper reaches quickly.
 //
 // The consumables are ops', set in the console and read with the job, which the
 // phone keeps for a basement (docs/decisions/0087-consumables-and-stock.md). A
@@ -13,11 +14,13 @@
 import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { Field, NumberInput } from "@maneman/ui/Field";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
-import { job as jobCopy, steps as copy } from "../content.ts";
-import { Failed, Loading } from "../states/States.tsx";
+import { steps as copy } from "../content.ts";
+import { JobFailed } from "../states/JobFailed.tsx";
+import { Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -29,6 +32,67 @@ type Offered = Job["consumables"][number];
 
 /** The stepper stops here, as the API does. */
 const MOST = 999;
+
+/** What one tap moves a measure by: solvent is used in fives of millilitres, tape strips one at a time. */
+const STEP_BY_UNIT: Readonly<Record<string, number>> = { ml: 5, g: 5 };
+
+/** One step on from a count, landing on the step's own figures: 12 ml goes up to 15 and down to 10. */
+function stepped(count: number, step: number, by: 1 | -1): number {
+  const next = by > 0 ? Math.floor(count / step) * step + step : Math.ceil(count / step) * step - step;
+  return Math.min(MOST, Math.max(0, next));
+}
+
+/** The count, which a tap turns into a box to type it in; what is typed counts once the box is left. */
+function Figure({ name, count, onChange }: { name: string; count: number; onChange: (count: number) => void }) {
+  const [typing, setTyping] = useState<string | null>(null);
+  const done = () => {
+    const typed = Number.parseInt(typing ?? "", 10);
+    if (Number.isFinite(typed)) onChange(Math.min(MOST, Math.max(0, typed)));
+    setTyping(null);
+  };
+  if (typing === null) {
+    return (
+      <Button
+        variant="outlineOnInk"
+        size="control"
+        className={shared.number}
+        aria-label={copy.consumables.type(name)}
+        onClick={() => {
+          setTyping(String(count));
+        }}
+      >
+        {count}
+      </Button>
+    );
+  }
+  return (
+    <Field label={copy.consumables.type(name)} labelHidden onInk>
+      {(control) => (
+        <NumberInput
+          {...control}
+          onInk
+          autoFocus
+          className={shared.number}
+          inputMode="numeric"
+          min={0}
+          max={MOST}
+          value={typing}
+          onChange={(event) => {
+            setTyping(event.target.value);
+          }}
+          onBlur={done}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") done();
+          }}
+        />
+      )}
+    </Field>
+  );
+}
+
+/** Whether every count still stands at what the service expects: the routine visit's one tap on. */
+const asExpected = (offered: readonly Offered[], counts: ReadonlyMap<string, number>): boolean =>
+  offered.some((each) => each.expected > 0) && offered.every((each) => (counts.get(each.code) ?? 0) === each.expected);
 
 /** What a refused step sent, by code, so the technician corrects it rather than counting again. */
 function sentBefore(refused: Queued | null): Map<string, number> | null {
@@ -52,9 +116,10 @@ function Stepper({
   onChange: (count: number) => void;
 }) {
   const said = useId();
-  const { name } = consumable;
-  const change = (by: number) => {
-    onChange(Math.min(MOST, Math.max(0, count + by)));
+  const { name, unit } = consumable;
+  const step = STEP_BY_UNIT[unit] ?? 1;
+  const change = (by: 1 | -1) => {
+    onChange(stepped(count, step, by));
   };
   return (
     <li className={shared.count}>
@@ -72,22 +137,20 @@ function Stepper({
           d={ICONS.minus}
           size="md"
           weight="heavy"
-          label={copy.consumables.less(name)}
+          label={copy.consumables.less(name, step, unit)}
           aria-describedby={said}
           onClick={() => {
             change(-1);
           }}
         />
-        <span className={shared.number} aria-hidden="true">
-          {count}
-        </span>
+        <Figure name={name} count={count} onChange={onChange} />
         <IconButton
           edged
           className={styles.step}
           d={ICONS.plus}
           size="md"
           weight="heavy"
-          label={copy.consumables.more(name)}
+          label={copy.consumables.more(name, step, unit)}
           aria-describedby={said}
           onClick={() => {
             change(1);
@@ -161,7 +224,7 @@ function Counting({
   return (
     <StepFrame
       title={copy.titles.consumables}
-      action={copy.next}
+      action={asExpected(offered, counts) ? copy.consumables.asExpected : copy.next}
       ready
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
@@ -221,7 +284,7 @@ export function Consumables({ id }: { id: string }) {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+    return <JobFailed failed={loaded} onRetry={retry} />;
   }
   // A consultation and fit the client said no to: nothing was fitted, so nothing is expected of the kit.
   const job = declinedTheFit(loaded.value, queued)
