@@ -1,5 +1,5 @@
-// Every page links the privacy notice and the terms, and each form that takes a name and number says, beneath its
-// agreement, that they apply, each a link.
+// Every page links the privacy notice and the terms, and each form that books asks the visitor to agree to them, each
+// a link.
 
 import { expect, test } from "./support.ts";
 import { referral } from "../site/src/content/referral.ts";
@@ -22,9 +22,12 @@ for (const path of [
   });
 }
 
-test("the booking form says the terms and privacy notice apply, beneath its agreement", async ({ page }) => {
+test("the booking form asks the visitor to agree to the terms and the privacy policy, each a link", async ({
+  page,
+}) => {
   await page.goto("/book");
   const form = page.locator("form").first();
-  await expect(form.getByRole("link", { name: referral.form.legal.terms })).toHaveAttribute("href", "/terms");
-  await expect(form.getByRole("link", { name: referral.form.legal.privacy })).toHaveAttribute("href", "/privacy");
+  await expect(form.getByRole("checkbox", { name: Object.values(referral.form.agree).join("") })).not.toBeChecked();
+  await expect(form.getByRole("link", { name: referral.form.agree.terms })).toHaveAttribute("href", "/terms");
+  await expect(form.getByRole("link", { name: referral.form.agree.privacy })).toHaveAttribute("href", "/privacy");
 });

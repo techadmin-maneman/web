@@ -483,27 +483,21 @@ test.describe("other pages", () => {
     await expect(page.locator("header")).toBeVisible();
   });
 
-  // A heading per topic, and the number to ask for erasure is a link a phone can tap.
-  test("privacy and terms carry their text under a heading per topic, with the number as a WhatsApp link", async ({
+  // Counsel's documents: a numbered heading per section, the Grievance Officer reached by a tap, and the terms' table.
+  test("privacy and terms are counsel's documents, numbered, with the Grievance Officer a tap away", async ({
     page,
   }) => {
+    const { privacy, terms } = siteCopy.legalPages;
     await page.goto("/privacy");
-    await expect(page.locator("article h2")).toHaveCount(6);
-    await expect(page.getByRole("heading", { name: "Your rights" })).toBeVisible();
-    // Twice: to withdraw an agreement, and to ask for erasure.
-    const privacyLinks = page.locator("article a", { hasText: siteCopy.whatsapp.display });
-    await expect(privacyLinks).toHaveCount(2);
-    for (const link of await privacyLinks.all()) {
-      await expect(link).toHaveAttribute("href", "https://wa.me/919034572990");
-    }
+    await expect(page.locator("article h2")).toHaveCount(privacy.sections.length);
+    await expect(page.getByRole("heading", { name: /grievance redressal officer/i })).toBeVisible();
+    await expect(page.locator('article a[href="mailto:grievance@maneman.in"]').first()).toBeVisible();
     await expect(page.locator(".label", { hasText: siteCopy.placeholderTag })).toHaveCount(0);
     await page.goto("/terms");
-    await expect(page.locator("article h2")).toHaveCount(8);
-    await expect(page.getByText("the courts at New Delhi have jurisdiction", { exact: false })).toBeVisible();
-    await expect(page.locator("article a", { hasText: siteCopy.whatsapp.display })).toHaveAttribute(
-      "href",
-      "https://wa.me/919034572990",
-    );
+    await expect(page.locator("article h2")).toHaveCount(terms.sections.length + 1);
+    await expect(page.getByText("the courts of competent jurisdiction in New Delhi", { exact: false })).toBeVisible();
+    await expect(page.locator('article a[href="tel:+919007973247"]')).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Up to 100%" })).toHaveCount(2);
     await expect(page.locator(".label", { hasText: siteCopy.placeholderTag })).toHaveCount(0);
   });
 
