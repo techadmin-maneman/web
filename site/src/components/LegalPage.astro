@@ -1,10 +1,10 @@
 ---
-// The privacy notice or the terms: a heading per topic, the business number written in as a link to a WhatsApp chat.
-import { textLinkLook } from "@maneman/ui/TextLink";
-import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import { whatsapp, type LegalPage } from "../content/site.ts";
+// The privacy policy or the terms, as counsel's documents lay them out: the version, the opening paragraphs, the
+// numbered sections and their clauses, and a table after them where there is one.
+import type { LegalPage } from "../content/site.ts";
 import TextPage from "../layouts/TextPage.astro";
-import { aroundWhatsapp } from "../lib/text.ts";
+import LegalBlocks from "./LegalBlocks.astro";
+import LinkedText from "./LinkedText.astro";
 
 interface Props {
   pageTitle: string;
@@ -13,32 +13,86 @@ interface Props {
 }
 
 const { pageTitle, description, page } = Astro.props;
-const chat = whatsappChat(whatsapp.number);
 ---
 
 <TextPage pageTitle={pageTitle} description={description} title={page.title} publish={page.publish}>
-  {page.sections.map((section) => (
+  <table class="version">
+    <tbody>
+      <tr>
+        <th scope="row">Version Number</th>
+        <td>{page.version.number}</td>
+      </tr>
+      <tr>
+        <th scope="row">Publication / Update Date</th>
+        <td>{page.version.date}</td>
+      </tr>
+    </tbody>
+  </table>
+  {page.intro.map((paragraph) => (
+    <p>
+      <LinkedText text={paragraph} />
+    </p>
+  ))}
+  {page.sections.map((section, index) => (
     <section>
-      <h2>{section.heading}</h2>
-      {section.paragraphs.map((paragraph) => (
-        <p>
-          {aroundWhatsapp(paragraph).map((text, index) => [
-            index > 0 && (
-              <a class={textLinkLook({ inline: true, className: "chat" })} href={chat}>
-                {whatsapp.display}
-              </a>
-            ),
-            text,
-          ])}
-        </p>
-      ))}
+      <h2>
+        <span class="number">{index + 1}.</span>
+        {section.heading}
+      </h2>
+      <LegalBlocks blocks={section.blocks} depth={1} section={index + 1} />
     </section>
   ))}
+  {page.annex !== undefined && (
+    <section>
+      <h2>{page.annex.heading}</h2>
+      <table class="annex">
+        <thead>
+          <tr>
+            {page.annex.head.map((cell) => (
+              <th scope="col">{cell}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {page.annex.rows.map((row) => (
+            <tr>
+              {row.map((cell) => (
+                <td>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p>{page.annex.note}</p>
+    </section>
+  )}
 </TextPage>
 
 <style>
-  /* In the sentence's own colour, so underlined to be seen as a link. */
-  .chat {
-    white-space: nowrap;
+  table {
+    width: 100%;
+    margin: var(--sp-24) 0 0;
+    border-collapse: collapse;
+    font-size: var(--fs-16);
+    line-height: var(--lh-145);
+  }
+  th,
+  td {
+    padding: var(--sp-8) var(--sp-12) var(--sp-8) 0;
+    border-bottom: var(--hairline) solid var(--paper-line);
+    text-align: start;
+    vertical-align: top;
+  }
+  th {
+    font-weight: var(--weight-medium);
+  }
+  .version {
+    width: auto;
+    color: var(--text-muted);
+  }
+  .number {
+    display: inline-block;
+    min-width: var(--sp-48);
+    font-variant-numeric: tabular-nums;
   }
 </style>

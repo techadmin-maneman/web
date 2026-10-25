@@ -1,0 +1,78 @@
+---
+// A legal page's clauses at one depth, numbered as counsel's documents number them: "1.2." beneath a section, then
+// "(b)", then "(ii)"; a paragraph or lines, such as a name and an address, take no number. Each clause's items are
+// drawn by this component again, one depth down.
+import type { LegalBlock } from "../content/site.ts";
+import LinkedText from "./LinkedText.astro";
+
+interface Props {
+  blocks: readonly LegalBlock[];
+  /** 1 for a section's clauses, 2 for their items, 3 for theirs. */
+  depth: number;
+  /** The section's number, which a clause's own number starts with. */
+  section: number;
+}
+
+const { blocks, depth, section } = Astro.props;
+
+const ROMAN = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv", "xvi"];
+
+function numberOf(place: number): string {
+  if (depth === 1) return `${String(section)}.${String(place)}.`;
+  if (depth === 2) return `(${String.fromCharCode(97 + place - 1)})`;
+  return `(${ROMAN[place - 1] ?? String(place)})`;
+}
+
+let place = 0;
+const drawn = blocks.map((block) => {
+  if ("paragraph" in block || "lines" in block) return { block, number: null };
+  place += 1;
+  return { block, number: numberOf(place) };
+});
+---
+
+{drawn.map(({ block, number }) =>
+  "paragraph" in block ? (
+    <p>
+      <LinkedText text={block.paragraph} />
+    </p>
+  ) : "lines" in block ? (
+    <p class="lines">{block.lines.map((line, index) => [index > 0 && <br />, <LinkedText text={line} />])}</p>
+  ) : (
+    <div class:list={["clause", `depth-${String(depth)}`]}>
+      <p>
+        <span class="number">{number}</span>
+        {block.lead !== undefined && <strong class="lead-in">{block.lead}</strong>}
+        {block.lead !== undefined && block.text !== "" && " "}
+        <LinkedText text={block.text} />
+      </p>
+      {block.items !== undefined && <Astro.self blocks={block.items} depth={depth + 1} section={section} />}
+    </div>
+  ),
+)}
+
+<style>
+  .clause {
+    display: block;
+  }
+  .depth-2,
+  .depth-3 {
+    padding-inline-start: var(--sp-24);
+  }
+  .number {
+    display: inline-block;
+    min-width: var(--sp-48);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+  .depth-2 .number,
+  .depth-3 .number {
+    min-width: var(--sp-36);
+  }
+  .lead-in {
+    font-weight: var(--weight-medium);
+  }
+  .lines {
+    padding-inline-start: var(--sp-48);
+  }
+</style>

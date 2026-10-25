@@ -1,0 +1,21 @@
+---
+// A sentence of a legal page, each address at maneman.in, email there and phone number it names drawn as a link.
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { withLinks } from "../lib/text.ts";
+
+interface Props {
+  text: string;
+}
+
+const { text } = Astro.props;
+---
+
+{withLinks(text).map((part) =>
+  "href" in part ? (
+    <a class={textLinkLook({ inline: true })} href={part.href}>
+      {part.text}
+    </a>
+  ) : (
+    part.text
+  ),
+)}

@@ -18,6 +18,8 @@ import { PRESETS } from "../../../src/config/presets.ts";
 import { COPY_LONG_EDGE_PX, MAX_COPY_BYTES } from "../../../src/config/tryon.ts";
 import { VISIT_BLOCKS } from "../../../src/config/scheduling.ts";
 import { DELETION_DECIDED_WITHIN_DAYS } from "../../../src/policy/account-deletion.ts";
+import { FREE_CHANGE_NOTICE_HOURS } from "../../../src/policy/moving-a-visit.ts";
+import { NO_SHOW_WAIT_MIN } from "../../../src/policy/no-show.ts";
 
 const BLOCKS: Record<PlaceholderBlockName, { publish: boolean }> = {
   whatsapp: site.whatsapp,
@@ -34,14 +36,21 @@ const APPROVED = Object.fromEntries(
 );
 const LEGAL_APPROVED = { privacy: { approved: true }, terms: { approved: true } };
 
-/** Every paragraph of a legal page, as one text. */
+/** Every word of a legal page, as one text: its opening, each clause with its run-in heading, and its table. */
 function textOf(page: site.LegalPage): string {
-  return page.sections.flatMap((section) => section.paragraphs).join(" ");
+  const words = (block: site.LegalBlock): string[] =>
+    "paragraph" in block
+      ? [block.paragraph]
+      : "lines" in block
+        ? [...block.lines]
+        : [block.lead ?? "", block.text, ...(block.items ?? []).flatMap(words)];
+  const annex = page.annex === undefined ? [] : [page.annex.heading, ...page.annex.rows.flat(), page.annex.note];
+  return [...page.intro, ...page.sections.flatMap((section) => section.blocks.flatMap(words)), ...annex].join(" ");
 }
 
 /** A legal page whose text is real, as counsel would hand it over. */
 function realPage(page: site.LegalPage): site.LegalPage {
-  return { ...page, publish: true, sections: [{ heading: "Real", paragraphs: ["Real text."] }] };
+  return { ...page, publish: true, sections: [{ heading: "Real", blocks: [{ paragraph: "Real text." }] }] };
 }
 
 /** Every file name mentioned anywhere in the content. */
@@ -104,12 +113,13 @@ describe("content", () => {
     expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v7", "gate-v7"]);
     expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([true, true]);
     expect(site.tryOnSendsCopy).toBe(true);
-    const privacy = textOf(site.legalPages.privacy);
-    expect(privacy).toContain("we send the simulation to that number on WhatsApp, and show it on this site");
-    expect(privacy).toContain("we keep a small copy of your photograph in your Mane Man account as your before photo");
-    expect(privacy).not.toMatch(/show it to you again|optional/);
+    const terms = textOf(site.legalPages.terms);
+    expect(terms).toContain("We will send the simulation to that WhatsApp number, and show it on the Platform");
+    expect(terms).toContain(
+      "we keep a small copy of your photograph in your Mane Man Account as your “before” photograph",
+    );
+    expect(terms).not.toMatch(/show it to you again|optional|AILabTools/);
     expect(site.tryOnTeaser.body).toContain("sent privately to your WhatsApp");
-    expect(textOf(site.legalPages.terms)).toContain("shown on this site once it is ready");
     const words = JSON.stringify({ tryOn: site.tryOn, notices: [site.notices.photo, site.notices.gate] });
     expect(words).not.toMatch(/next screen|Download|Drag the handle|hair patch/i);
   });
@@ -205,9 +215,9 @@ describe("content", () => {
     expect(referral.preview.description).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
   });
 
-  // Production keeps a result fourteen days (ADR 0039), as the privacy notice says.
-  it("keeps the try-on’s result for as long as the privacy notice says", () => {
-    expect(textOf(site.legalPages.privacy)).toContain("the simulation itself is kept for 14 days");
+  // Production keeps a result fourteen days (ADR 0039), as the terms say.
+  it("keeps the try-on’s result for as long as the terms say", () => {
+    expect(textOf(site.legalPages.terms)).toContain("The simulation itself will be kept for 14 (fourteen) days.");
     expect(site.tryOn.sent.privacy).toBe("We delete it after 14 days.");
   });
 
@@ -302,38 +312,62 @@ describe("the second copy round", () => {
 describe("the legal pages", () => {
   const pages = [site.legalPages.privacy, site.legalPages.terms];
 
-  // Both pages were unbroken paragraphs, and a phone could not tap the number to ask for erasure.
-  it("give each topic its own heading, and the WhatsApp number only as a link", () => {
+  // Counsel's documents, each blank filled: the company is Mane Man Private Limited, and the try-on is YouCam's.
+  it("name the company and its services, with no blank or bracket of the draft left", () => {
     for (const page of pages) {
-      expect(page.sections.length, page.title).toBeGreaterThan(3);
+      const text = textOf(page);
+      expect(page.sections.length, page.title).toBeGreaterThan(10);
       for (const section of page.sections) expect(section.heading, page.title).not.toBe("");
-      expect(textOf(page), page.title).toContain("{whatsapp}");
-      expect(textOf(page), page.title).not.toContain("90345 72990");
+      expect(text, page.title).toContain("Mane Man Private Limited");
+      expect(text, page.title).not.toMatch(/Grooming Services|AlLabTools|AILabTools|\[●\]|\[|\]/);
+      expect(page.version, page.title).toEqual({ number: "1.00", date: expect.any(String) as string });
     }
-    expect(site.whatsapp.label).toBe(`WhatsApp · ${site.whatsapp.display}`);
+    expect(textOf(site.legalPages.privacy)).toContain("YouCam (Perfect Corp), for the virtual try-on");
   });
 
-  // Withdrawing was possible only in the app, which a waitlister or a try-on visitor cannot sign in to.
-  it("say how to withdraw an agreement without the app", () => {
-    const privacy = textOf(site.legalPages.privacy);
-    expect(privacy).toContain("withdraw in the app or by messaging us at {whatsapp}");
-    expect(privacy).toContain("To stop our WhatsApp messages, reply STOP to any of them.");
-  });
-
-  // The notice of 22 September 2026 erased "the same day", let any visit move free by message, took payment
-  // on the day of the fit, and offered a call.
-  it("say what the apps do: erasure decided within 30 days, visits paid at booking, changes in the app", () => {
-    const privacy = textOf(site.legalPages.privacy);
+  it("name the Grievance Officer, how to reach them, and how soon a complaint is answered", () => {
+    for (const page of pages) {
+      expect(textOf(page), page.title).toContain("Name: Adwate Kumar");
+      expect(textOf(page), page.title).toContain("Designation: Co-founder and COO");
+      expect(textOf(page), page.title).toContain("grievance@maneman.in");
+    }
     const terms = textOf(site.legalPages.terms);
-    expect(privacy).not.toContain("the same day");
-    expect(DELETION_DECIDED_WITHIN_DAYS).toBe(30);
-    expect(privacy).toContain("We decide a request to erase within 30 days.");
-    expect(privacy).toContain("Invoices are kept for 8 years, as the law requires.");
-    expect(terms).not.toMatch(/on the day of the fit|by messaging us, at no charge|\bcall\b|\bwith him\b|\bpiece\b/);
-    expect(terms).toContain("A visit you book in the app is paid when you book it");
-    expect(terms).toContain("You can move or cancel a visit in the app.");
-    expect(terms).toContain("5 to 7 working days");
+    expect(terms).toContain("Mobile: +91 90079 73247");
+    expect(terms).toContain("acknowledge your complaint within 48 (forty-eight) hours");
+    expect(terms).toContain("resolve it within 30 (thirty) days");
+    expect(textOf(site.legalPages.privacy)).toContain(
+      "Address: D-13 Ground Floor, CC Colony, Malka Ganj, Delhi 110007",
+    );
+  });
+
+  // What the terms promise is what the app does: the free-change notice and the no-show wait are its own defaults.
+  it("say what the app does: UPI at the visit, free changes until the notice, a 15-minute wait, refunds in 5 to 7 days", () => {
+    const terms = textOf(site.legalPages.terms);
+    expect(terms).toContain("by UPI to Mane Man at the time of the visit");
+    expect(terms).toContain("the Technician should never be paid any amount");
+    expect(terms).toContain(`Until ${String(FREE_CHANGE_NOTICE_HOURS)} (twenty-four) hours before the time slot`);
+    expect(Object.values(NO_SHOW_WAIT_MIN)).toEqual([15, 15, 15, 15]);
+    expect(terms).toContain("within 15 minutes of the booking time");
+    expect(site.legalPages.terms.annex?.rows).toEqual([
+      ["More than 24 hours", "0%"],
+      ["24 hours or less", "Up to 100%"],
+      [expect.stringContaining("15 minutes") as string, "Up to 100%"],
+    ]);
+    expect(terms).toContain("The Free Visit can be availed only once per individual.");
+    expect(terms).toContain("confirmation of the booking via WhatsApp or SMS");
+    expect(terms).toContain("5 (five) to 7 (seven) working days");
     expect(appChange.cancel.refund("Rs. 1", "UPI")).toContain("5 to 7 working days");
+    expect(DELETION_DECIDED_WITHIN_DAYS).toBe(30);
+    expect(textOf(site.legalPages.privacy)).toContain(
+      "Mane Man may take up to 30 (thirty) working days to process your request",
+    );
+  });
+
+  it("point the guarantee and the wear clause to the aftercare policy, and promotions to their own terms", () => {
+    const terms = textOf(site.legalPages.terms);
+    expect(terms.match(/https:\/\/maneman\.in\/aftercare/g)).toHaveLength(2);
+    expect(terms).toContain("these Terms prevail over the terms of any promotional offer");
+    expect(terms).toContain("https://maneman.in/offer-terms");
   });
 });
 
