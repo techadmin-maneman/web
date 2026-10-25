@@ -115,7 +115,9 @@ test("gives a person who may only look at the discount codes no column of action
   await table.getByRole("button", { name: settingsCopy.discountCodes.open(first?.code ?? "") }).click();
   const record = page.getByRole("dialog", { name: first?.code ?? "" });
   await expect(record).toBeVisible();
-  await expect(record.getByRole("button")).toHaveCount(0);
+  // Nothing to press in it but the way out.
+  await expect(record.getByRole("button")).toHaveCount(1);
+  await expect(record.getByRole("button", { name: opsCopy.CLOSE })).toBeVisible();
 });
 
 test("opens each page that moved at its new address", async ({ page }) => {

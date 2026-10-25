@@ -25,8 +25,8 @@ export const firstShown = (count: number) => `Showing the first ${String(count)}
 /** A refusal with no words of its own. */
 export const FAILED = "That didn’t work. Try again.";
 
-/** What a drawer's cross is read as. */
-export const CLOSE = "Close";
+/** What a drawer's cross is read as: never "Close" alone, which some forms use for closing days or a stockroom. */
+export const CLOSE = "Close panel";
 
 /** Razorpay not answering, wherever a payment, refund or link waits on it. */
 export const RAZORPAY_DOWN = "Razorpay isn’t responding. Try again in a minute.";
