@@ -151,6 +151,24 @@ test("gives a consultation’s card the hair profile and no piece", async ({ pag
   await expect(page.getByText(techCopy.job.piece.none)).toHaveCount(0);
 });
 
+test("opens a consultation’s Options: each package and what it costs, and the client’s looks", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "consultation";
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("link", { name: techCopy.options.link }).click();
+
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.options.title })).toBeVisible();
+  const essential = page.getByRole("region", { name: "Mane Man Essential" });
+  await expect(essential.getByRole("term")).toHaveText([
+    techCopy.options.firstFit,
+    techCopy.options.service(30),
+    techCopy.options.replacement(6),
+  ]);
+  await expect(essential.getByRole("definition")).toHaveText(["Rs. 37,760", "Rs. 2,360", techCopy.options.noPrice]);
+  await expect(page.getByRole("img", { name: techCopy.options.look("20 Sep") })).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+});
+
 test("checks in at the door, and records the time and the distance (board B5)", async ({ page }) => {
   const fake = await fakeTech(page);
   // Booked to start ten minutes ago, so the wait runs from the check-in, whatever time of day the test runs.

@@ -7,6 +7,7 @@ import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { Stopped, StorageFull } from "./components/Banners.tsx";
 import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
+import { OptionsScreen } from "./job/OptionsScreen.tsx";
 import { KitScreen } from "./kit/KitScreen.tsx";
 import { LeaveScreen } from "./mine/LeaveScreen.tsx";
 import { MonthScreen } from "./mine/MonthScreen.tsx";
@@ -45,6 +46,8 @@ function pageFor(route: Route) {
       return <LeaveScreen />;
     case "job":
       return <JobScreen id={route.id} />;
+    case "options":
+      return <OptionsScreen id={route.id} />;
     case "done":
       return <CloseOut id={route.id} />;
     case "step":

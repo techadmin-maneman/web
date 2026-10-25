@@ -4070,6 +4070,172 @@ Request body:
 }
 ```
 
+### GET /api/tech/jobs/{id}/options
+
+A consultation's packages and prices, and the client's try-on looks, under the card's own unlock
+
+**200**: The options
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianOptions"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such consultation of this technician's, or not unlocked yet
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/tech/jobs/{id}/looks/{look}
+
+One of the client's try-on looks, under the card's own unlock, never cached
+
+**200**: The image
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such consultation of this technician's, not unlocked yet, or no such look held
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -7962,5 +8128,139 @@ Request body:
     "to"
   ],
   "additionalProperties": false
+}
+```
+
+### TechnicianOptions
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_fit": {
+            "$ref": "#/components/schemas/Price"
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "service_every_days": {
+            "type": "integer"
+          },
+          "replacement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The replacement and its service visit, as the visit is sold."
+          },
+          "replace_after_months": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "description",
+          "first_fit",
+          "service",
+          "service_every_days",
+          "replacement",
+          "replace_after_months"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "looks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "made_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "type": "string",
+            "description": "The look's image, through the job."
+          }
+        },
+        "required": [
+          "id",
+          "made_on",
+          "url"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "packages",
+    "looks"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Price
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included: what the client pays."
+    },
+    "gst_percent": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "amount_ex_gst",
+    "amount",
+    "gst_percent"
+  ],
+  "additionalProperties": false,
+  "description": "The hair system made to the client's profile and the service visit; from the cheapest before."
 }
 ```

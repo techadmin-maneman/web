@@ -860,6 +860,25 @@ export const month = {
   total: "So far",
 };
 
+/** A consultation's Options: each package and what it costs the client, and the looks they made with the try-on. */
+export const options = {
+  title: "Options",
+  link: "Options and prices",
+  back: "Back to the job",
+  failed: "Options didn’t load.",
+  retry: "Try again",
+  none: "Nothing on sale yet.",
+  firstFit: "First fit",
+  /** "Service visit · every 30 days" */
+  service: (days: number) => `Service visit · every ${String(days)} days`,
+  /** "Replacement · every 6 months" */
+  replacement: (months: number) => `Replacement · every ${String(months)} months`,
+  noPrice: "No price set yet",
+  looksTitle: "Their looks",
+  /** A look's description for a screen reader: "Look made 20 Sep". */
+  look: (date: string) => `Look made ${date}`,
+};
+
 /** The technician's asks for leave: a new one, and where each stands once ops decide it. */
 export const leave = {
   title: "Your leave",

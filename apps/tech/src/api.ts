@@ -46,6 +46,7 @@ export type CheckIn = Schema["CheckIn"];
 export type PieceLookup = Schema["PieceLookup"];
 export type Kit = Schema["TechnicianKit"];
 export type LeaveRequests = Schema["TechnicianLeaveRequests"];
+export type Options = Schema["TechnicianOptions"];
 type PhotoTaken = Schema["TechnicianPhotoTaken"];
 /** The client's hair profile, which the profile step sends and the piece card reads (ADR 0106). */
 export type HairProfile = Schema["HairProfile"];
@@ -189,6 +190,8 @@ export const api = {
   kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),
   /** This month's visits closed, by kind and city, at the technician's own rates. */
   month: () => client.get("/api/tech/month", { patience: PATIENCE_MS.read }),
+  /** A consultation's packages and what each costs the client, and the looks they made with the try-on. */
+  options: (id: string) => client.get("/api/tech/jobs/{id}/options", { path: { id }, patience: PATIENCE_MS.read }),
   /** The technician's asks for leave not yet past, and where each stands. */
   leave: () => client.get("/api/tech/leave", { patience: PATIENCE_MS.read }),
   /** An ask for leave, which ops decide on Tasks. Asked straight, with signal. */

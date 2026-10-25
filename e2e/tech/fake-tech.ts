@@ -113,6 +113,8 @@ export interface Fake {
   kitAfter: Omit<TechReply<"/api/tech/kit">, "today"> | null;
   /** The technician's month, as GET /api/tech/month answers. */
   month: TechReply<"/api/tech/month">;
+  /** A consultation's options: its packages and prices, and the client's try-on looks. */
+  options: TechReply<"/api/tech/jobs/{id}/options">;
   /** The technician's asks for leave, as GET /api/tech/leave answers; an ask adds one, with ops. */
   leave: TechReply<"/api/tech/leave">;
   /** The client's hair profile on the card, or none recorded. */
@@ -170,6 +172,9 @@ const LAST_VISIT_PHOTO = Buffer.from(
   "base64",
 );
 
+/** The client's one try-on look, which the same grey square stands for. */
+const LOOK_ID = "c0000000-0000-4000-8000-000000000001";
+
 /**
  * Answers the technician API for one page. Anything not named here is a 404, so
  * a screen calling a route nobody agreed to fails the test rather than passing
@@ -226,6 +231,21 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       ],
     },
     leave: { requests: [] },
+    options: {
+      packages: [
+        {
+          code: "essential",
+          name: "Mane Man Essential",
+          description: "A natural hairline, worn every day.",
+          first_fit: { amount_ex_gst: 3_200_000, amount: 3_776_000, gst_percent: 18 },
+          service: { amount_ex_gst: 200_000, amount: 236_000, gst_percent: 18 },
+          service_every_days: 30,
+          replacement: null,
+          replace_after_months: 6,
+        },
+      ],
+      looks: [{ id: LOOK_ID, made_on: "2026-09-20", url: `/api/tech/jobs/${JOB_ID}/looks/${LOOK_ID}` }],
+    },
     photos: [],
     doorPhotos: [],
     thumbnails: [],
@@ -436,6 +456,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         belongs_to_this_job: code === ROHITS_PIECE.piece_code,
         in_kit: false,
       });
+    }
+    if (path === `/api/tech/jobs/${JOB_ID}/options`) return reply(route, 200, fake.options);
+    if (path === `/api/tech/jobs/${JOB_ID}/looks/${LOOK_ID}`) {
+      assertInContract("tech", method, path, 200);
+      return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
     if (path === `/api/tech/jobs/${JOB_ID}/last-visit-photo`) {
       if (fake.moved || !fake.lastVisit) return refuse(route, 404, "not_found");

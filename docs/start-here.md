@@ -90,7 +90,8 @@ this map, or when the map names something that no longer exists.
 ### The technician's work in the field
 
 - **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`,
-  `job-record`, `job-use`, `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`
+  `job-record`, `job-use`, `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `job-options` (a
+  consultation's packages, prices and the client's try-on looks)
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`
 - **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/job-sheet`
