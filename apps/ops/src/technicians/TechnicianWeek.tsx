@@ -8,7 +8,6 @@ import { useCallback } from "react";
 import type { TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { dispatch, hoursAndMinutes, technicians } from "../content.ts";
-import { dispatchApi } from "../dispatch/dispatch-api.ts";
 import { dispatchPath } from "../route.ts";
 import styles from "./technicians.module.css";
 import { techniciansApi } from "./technicians-api.ts";
@@ -36,7 +35,7 @@ function WorkStrip({ technicianId }: { technicianId: string }) {
 
 /** Their visits these seven days, from today, a line each under its day. */
 function Visits({ technician }: { technician: TechnicianSummary }) {
-  const read = useCallback(() => dispatchApi.board({ from: todayInIndia(Date.now()), city: null }), []);
+  const read = useCallback(() => techniciansApi.board(todayInIndia(Date.now())), []);
   const [loaded] = useLoad(read);
   if (loaded.state === "loading") return null;
   if (loaded.state === "failed") return <p className={styles.none}>{copy.failed}</p>;

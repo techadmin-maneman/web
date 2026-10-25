@@ -19,6 +19,8 @@ export const techniciansApi = {
   /** What each of them has finished, from an India date to today, or over ops's own period; the roster carries none. */
   technicianWork: (from: string | null) =>
     client.get("/api/technicians/work", { query: from === null ? {} : { from } }),
+  /** The board's seven days from a date, which a technician's week is read from. */
+  board: (from: string) => client.get("/api/dispatch", { query: { from } }),
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
   revokeDevice: (id: string, deviceId: string) =>
     client.post("/api/technicians/{id}/devices/{device}/revoke", { path: { id, device: deviceId } }),
