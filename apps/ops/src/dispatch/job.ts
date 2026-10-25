@@ -120,7 +120,10 @@ export function asksTheClientOf(job: Job, to: Target, reason: MoveReason | null)
 
 /** A visit done stays where it was worked, and one the technician has begun where they are working it. */
 export const isMovable = (block: Block): boolean =>
-  block.status !== "completed" && block.status !== "in_progress" && block.begun === null;
+  block.status !== "completed" &&
+  block.status !== "terminated" &&
+  block.status !== "in_progress" &&
+  block.begun === null;
 
 /** A visit the technician has checked in at and gone no further: it moves once ops choose to clear the check-in. */
 export const movesIfCheckInCleared = (block: Block): boolean =>

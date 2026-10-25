@@ -6,6 +6,7 @@
 import { TextButton } from "@maneman/ui/TextLink";
 import { Table } from "@maneman/ui/Table";
 import { Tile } from "@maneman/ui/Tile";
+import { Badge } from "@maneman/ui/Badge";
 import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -91,6 +92,15 @@ interface BlockButtonProps {
   readonly onOpen: (job: Job, from: HTMLElement) => void;
 }
 
+/** A block's state where it is no longer simply booked: done, not done, or a move the client is asked about. */
+function StateChip({ block }: { block: Block }) {
+  const chips = dispatch.chips;
+  if (block.status === "completed") return <Badge tone="done">{chips.completed}</Badge>;
+  if (block.status === "terminated") return <Badge tone="warning">{chips.terminated}</Badge>;
+  if (block.proposal !== null) return <Badge tone="attention">{chips.proposal}</Badge>;
+  return null;
+}
+
 /** The block as a screen reader names it: the visit, its day and start, and done or how far it has got. */
 function blockLabel(job: Job & { readonly kind: "block" }): string {
   const { block } = job;
@@ -121,6 +131,7 @@ const BlockButton = memo(function BlockButton({ block, technician, date, matched
       </span>
       <span className={styles.what}>{whatOf(block)}</span>
       {begun !== null && <span className={styles.what}>{begun}</span>}
+      <StateChip block={block} />
     </Tile>
   );
 });
@@ -197,7 +208,7 @@ const TechnicianRow = memo(function TechnicianRow({ technician, dates, days, ...
     <tr>
       <th className={styles.tech} scope="row">
         <span>{technician.name}</span>
-        <span className={styles.zone}>{technician.zone ?? dispatch.unknown}</span>
+        {technician.zone !== null && <span className={styles.zone}>{technician.zone}</span>}
       </th>
       {dates.map((date) => (
         <Cell
@@ -241,10 +252,26 @@ interface GridProps {
   readonly onRoutes: ((date: string) => void) | null;
 }
 
+/** Beneath the board: what each block's edge and each state on a block says. */
+function Legend() {
+  const words = dispatch.legend;
+  return (
+    <caption className={styles.legend}>
+      <span className={classes(styles.key, styles.svc)}>{words.service}</span>
+      <span className={classes(styles.key, styles.repl)}>{words.replacement}</span>
+      <span className={classes(styles.key, styles.fit)}>{words.fit}</span>
+      <Badge tone="done">{dispatch.chips.completed}</Badge>
+      <Badge tone="warning">{dispatch.chips.terminated}</Badge>
+      <Badge tone="attention">{dispatch.chips.proposal}</Badge>
+    </caption>
+  );
+}
+
 export const Grid = memo(function Grid({ board, rows, found, onOpen, onRoutes }: GridProps) {
   const days = useMemo(() => daysOf(board), [board]);
   return (
     <Table plain className={styles.grid}>
+      <Legend />
       <thead>
         <tr>
           <td className={styles.corner} />

@@ -20,13 +20,13 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
 
   const grid = page.getByRole("table");
   await expect(grid.getByRole("columnheader")).toHaveText([
-    "Fri 1964%Routes",
-    "Sat 2092%, peak dayRoutes",
-    "Sun 2188%, peak dayRoutes",
-    "Mon 2258%Routes",
-    "Tue 2364%Routes",
-    "Wed 2461%Routes",
-    "Thu 2567%Routes",
+    "Fri 1964% bookedRoutes",
+    "Sat 2092% booked, peak dayRoutes",
+    "Sun 2188% booked, peak dayRoutes",
+    "Mon 2258% bookedRoutes",
+    "Tue 2364% bookedRoutes",
+    "Wed 2461% bookedRoutes",
+    "Thu 2567% bookedRoutes",
   ]);
   await expect(grid.getByRole("rowheader")).toHaveText([
     "Imran QureshiSec 40–65",
@@ -251,4 +251,24 @@ test("tells what happened on a visit in its drawer, step by step, and opens its 
     "href",
     `/clients/${ROHIT.id}/photos`,
   );
+});
+
+// Arjun's closed consultation showed no state, Kabir's no-show vanished, and a proposed move left no mark.
+test("marks each block done, not done, or with a move proposed, and keys the board beneath", async ({ page }) => {
+  const [imran, ...others] = BOARD.technicians;
+  const [day, ...days] = imran?.days ?? [];
+  const [rohit, ...blocks] = day?.blocks ?? [];
+  if (imran === undefined || day === undefined || rohit === undefined) throw new Error("the board has Rohit's visit");
+  const marked = (status: "completed" | "terminated") => ({
+    ...BOARD,
+    technicians: [{ ...imran, days: [{ ...day, blocks: [{ ...rohit, status }, ...blocks] }, ...days] }, ...others],
+  });
+  await open(page, { [READ_BOARD]: json(marked("completed")) });
+  const rohitDone = page.getByRole("button", { name: `${ROHIT_BLOCK}, done`, exact: true });
+  await expect(rohitDone).toContainText(opsCopy.dispatch.chips.completed);
+  await expect(page.getByRole("table").locator("caption")).toContainText(opsCopy.dispatch.legend.replacement);
+
+  await open(page, { [READ_BOARD]: json(marked("terminated")) });
+  const rohitNotDone = page.getByRole("button", { name: ROHIT_BLOCK, exact: true });
+  await expect(rohitNotDone).toContainText(opsCopy.dispatch.chips.terminated);
 });
