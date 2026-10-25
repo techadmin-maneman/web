@@ -238,6 +238,10 @@ export const AUDIT_ACTIONS = [
   // Ops correcting a client's hair profile, which keeps every version (docs/decisions/0106-a-clients-hair-profile.md).
   // The entry names the client and the version, never a word of the profile.
   "hair_profile.correct",
+  // Staff's notes on a client: one written, in the place of another or not, and one taken off. The entry names the
+  // client and the note, never a word of it.
+  "staff_note.write",
+  "staff_note.take_off",
   // Discount codes (docs/decisions/0108-discount-codes.md): ops making codes, switching one off, and entering one on
   // a client's visit or taking it off.
   "discount_code.make",
@@ -346,6 +350,7 @@ export function auditStatementIfWritten(
       | "task_closures"
       | "no_show_disputes"
       | "hair_profiles"
+      | "staff_notes"
       | "discount_code_uses"
       | "partner_payouts"
       | "slot_times"

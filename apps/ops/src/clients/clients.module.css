@@ -97,6 +97,64 @@
   color: var(--ui-text-muted);
 }
 
+/* Staff's notes on the client (./StaffNotes.tsx), as the open tasks above them sit, ruled in the page's own line. */
+.notesStrip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-8);
+  padding: var(--sp-12) var(--sp-20);
+  border: var(--hairline) solid var(--ui-line);
+  border-left: var(--rule-strong) solid var(--ui-strong);
+  background: var(--ui-raised);
+}
+
+.notesStrip .sectionTitle {
+  margin: 0;
+}
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-4) var(--sp-16);
+}
+
+.noteBody {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--fs-15);
+  white-space: pre-line;
+}
+
+.noteBy {
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+}
+
+.noteForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  width: 100%;
+  max-width: var(--skeleton-card);
+}
+
+.noteActions {
+  display: flex;
+  gap: var(--sp-8);
+}
+
 .panel {
   padding-top: var(--sp-20);
 }

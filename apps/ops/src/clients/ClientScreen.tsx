@@ -30,6 +30,7 @@ import { Erased, ErasedRecord, NoClient } from "./Erase.tsx";
 import { History, replacementDueOf } from "./History.tsx";
 import { Invite, type InviteNews } from "./Invite.tsx";
 import { OpenTasks } from "./OpenTasks.tsx";
+import { StaffNotes } from "./StaffNotes.tsx";
 import { Payments } from "./Payments.tsx";
 import { Photos, usePhotos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
@@ -229,6 +230,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
               />
               <BookOne clientId={clientId} record={record} onBooked={retry} />
               <OpenTasks clientId={clientId} />
+              <StaffNotes clientId={clientId} />
               <Tabs label={record.name}>
                 {clients.tabs.map((each) => (
                   <OpsLink

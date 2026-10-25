@@ -87,6 +87,13 @@ export const clientsApi = {
   /** A correction: the whole profile as it now stands, a new version under the caller's name, audited. */
   correctHairProfile: (id: string, correction: HairCorrection) =>
     client.post("/api/clients/{id}/hair-profile", { path: { id }, body: correction }),
+  /** Staff's notes on the client still on, newest first. */
+  staffNotes: (id: string) => client.get("/api/clients/{id}/notes", { path: { id } }),
+  /** A note, new or in the place of `replaces`, refused as superseded once that note is no longer on. */
+  writeStaffNote: (id: string, body: string, replaces: string | null) =>
+    client.post("/api/clients/{id}/notes", { path: { id }, body: { body, replaces } }),
+  takeOffStaffNote: (id: string, note: string) =>
+    client.post("/api/clients/{id}/notes/{note_id}/take-off", { path: { id, note_id: note } }),
   /** What waits on ops for one client alone, for the head of their page. */
   clientTasks: (person: string) => client.get("/api/tasks", { query: { person } }),
   /**

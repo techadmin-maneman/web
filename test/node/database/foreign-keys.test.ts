@@ -16,6 +16,8 @@ import { describe, expect, it } from "vitest";
 const RENAMED = "src/domain/cities/cities.ts moves it to the city's new name before the old row goes";
 
 const HANDLED: Readonly<Record<string, string>> = {
+  // An erasure deletes a client's notes in one statement (src/domain/privacy/erasure-statements.ts).
+  "staff_notes.replaces -> staff_notes": "deleted together, in the one statement",
   // The retention job's deletes of old rows (src/domain/privacy/retention.ts): a message held as a no-show's or a
   // move's evidence stays; a stranger's chat goes with its messages, and not while a city matter names it.
   "no_show_cases.message_id -> outbound_messages": "kept: not deleted while one names it",

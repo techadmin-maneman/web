@@ -179,6 +179,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "visit.checkin_waive": "Check-in allowed",
   "visit.lost_reason": "Reason not going ahead set",
   "hair_profile.correct": "Hair profile corrected",
+  "staff_note.write": "Note written",
+  "staff_note.take_off": "Note taken off",
   "discount_code.make": "Discount codes made",
   "discount_code.switch_off": "Discount code switched off",
   "discount_code.delete": "Discount code deleted",
