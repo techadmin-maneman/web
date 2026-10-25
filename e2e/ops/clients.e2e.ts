@@ -189,8 +189,14 @@ test("heads the page with the client’s standing and the number to reach them o
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
   // The replacement is the month the board's head writes, never the day the pieces table carries.
+  // The head named no city, package, next visit, start or spend.
   await expect(meta(page)).toHaveText([
     opsCopy.clients.pieces.columns.fitted,
+    "Gurgaon",
+    "Mane Man Essential",
+    "25 Sep 2027, 9 am",
+    "1 Nov 2026",
+    "Rs. 2,360",
     "2 · use by 3 Jan 2028",
     "Mar 2028",
     MOBILE,
@@ -257,10 +263,23 @@ test("says in words that a client wearing no piece falls due on no date", async 
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: json(NEW_RECORD) });
   await expect(meta(page)).toHaveText([
     opsCopy.clients.states.lead,
+    opsCopy.clients.list.noCity,
+    opsCopy.clients.noneYet,
+    opsCopy.clients.list.noVisit,
+    "1 Nov 2026",
+    "Rs. 0",
     "2 · use by 3 Jan 2028",
     opsCopy.clients.noPiece,
     MOBILE,
   ]);
+});
+
+// "Status Fitted" sat beside "Replacement due: No hair system fitted".
+test("says a fitted client's hair system was not recorded, rather than that none was fitted", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}`, {
+    [READ_RECORD]: json({ ...RECORD, history: { ...RECORD.history, replacement_due: null } }),
+  });
+  await expect(meta(page)).toContainText([opsCopy.clients.pieces.columns.fitted, opsCopy.clients.pieceNotRecorded]);
 });
 
 // The page opened on an empty Pieces tab, a click away from the visit; then Overview sat last, and Book a visit lived

@@ -63,6 +63,11 @@ export const clients = {
    */
   meta: {
     state: "Status",
+    city: "City",
+    package: "Package",
+    nextVisit: "Next visit",
+    since: "Client since",
+    spent: "Paid to date",
     credits: "Free service visits",
     replacement: "Replacement due",
     mobile: "Mobile",
@@ -86,6 +91,10 @@ export const clients = {
    * the gap a missing figure would draw.
    */
   noPiece: "No hair system fitted",
+  /** A client fitted whose hair system was not recorded, so no replacement can be dated. */
+  pieceNotRecorded: "Hair system not recorded",
+  /** A figure the head has nothing for yet. */
+  noneYet: "None yet",
   /** The tabs of the design's eight that the ops routes answer, the Overview first, which it draws none of. */
   tabs: [
     { tab: "history", label: "Overview" },
