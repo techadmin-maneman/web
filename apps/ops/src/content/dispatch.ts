@@ -10,9 +10,9 @@ export const dispatch = {
   /** A cell, a zone or a sector the board has nothing for. */
   unknown: "—",
   /** A block's state, where it is no longer simply booked: drawn on the block itself. */
-  chips: { completed: "Done", terminated: "Not done", proposal: "Move proposed", proposed: "Proposed" },
+  chips: { completed: "Done", terminated: "Not done", proposal: "Move proposed" },
   /** The key beneath the board: a block's edge by its kind of visit. */
-  legend: { service: "Consultation or service", replacement: "Replacement", fit: "First fit", ghost: "Proposed move" },
+  legend: { service: "Consultation or service", replacement: "Replacement", fit: "First fit" },
   /** A job with neither a client nor a kind on it, which a title still has to name. */
   unnamed: "this visit",
   /** A day's head: how much of its working technicians' time is booked. */
@@ -83,8 +83,6 @@ export const dispatch = {
     begun: { arrived: "Arrived", started: "Started", closed: "Closed" },
     begunBlock: (job: string, date: string, time: string, begun: string) =>
       `${job}, ${date}, ${time}, ${begun.toLowerCase()}`,
-    /** Where a proposed move would take a visit, until the client answers. */
-    ghost: (job: string, date: string, time: string) => `${job}, proposed for ${date}, ${time}`,
     /** The board draws no board without technicians. */
     empty: "No technicians on this board.",
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */

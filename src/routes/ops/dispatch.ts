@@ -25,16 +25,6 @@ import { PAYMENT_BADGES } from "../../policy/job-visibility.ts";
 import { ProposedMoveSchema } from "../schemas/visits.ts";
 import { WindowHoursSchema } from "../schemas/booking.ts";
 
-/** An open proposal as the board places it: the client's own view of it, with its technician and its start. */
-const BoardProposedMoveSchema = ProposedMoveSchema.extend({
-  technician_id: z.uuid(),
-  starts_at: z.union([z.iso.datetime(), z.null()]).openapi({
-    description: "The start proposed; null for one proposed as a window, before booking took starts.",
-  }),
-})
-  .strict()
-  .openapi("BoardProposedMove");
-
 const ClientSchema = z
   .object({
     id: z.uuid(),
@@ -95,7 +85,7 @@ const BlockSchema = z
         description:
           "The latest move of this visit its client has not heard of, and why. no_consent: they have not agreed to WhatsApp about their visits; not_sent: the WhatsApp was skipped or failed. Ops call them, then POST /api/dispatch/moves/{id}/told.",
       }),
-    proposal: z.union([BoardProposedMoveSchema, z.null()]).openapi({
+    proposal: z.union([ProposedMoveSchema, z.null()]).openapi({
       description:
         "A move to another day the client has been asked to confirm (POST /api/dispatch/propose), still open: the " +
         "visit stays where it is until they accept it. Ops may withdraw it. Null for none.",

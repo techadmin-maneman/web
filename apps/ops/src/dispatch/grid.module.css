@@ -196,16 +196,6 @@
   color: var(--ink-soft);
 }
 
-/* Where a proposed move would take a visit, until the client answers: the same block, dashed and unfilled. */
-.ghost {
-  border: var(--hairline) dashed var(--ui-line-control);
-  color: var(--ui-text);
-}
-
-.ghost .what {
-  color: var(--ui-text-muted);
-}
-
 /* A block the search found. */
 .block[data-match] {
   outline: var(--rule-strong) solid var(--focus-colour);

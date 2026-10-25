@@ -24741,7 +24741,7 @@ export interface components {
                 reason: "no_consent" | "not_sent";
             } | null;
             /** @description A move to another day the client has been asked to confirm (POST /api/dispatch/propose), still open: the visit stays where it is until they accept it. Ops may withdraw it. Null for none. */
-            proposal: components["schemas"]["BoardProposedMove"] | null;
+            proposal: components["schemas"]["ProposedMove"] | null;
             /** @description How far the technician has got, from the steps their phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before they arrive. A visit they have begun, or one in progress, is not moved. */
             begun: ("arrived" | "started" | "closed") | null;
         };
@@ -24756,28 +24756,6 @@ export interface components {
             whatsapp_visits: boolean;
             /** @description Who invited them, by name; null when they came on their own. */
             referred_by: string | null;
-        };
-        BoardProposedMove: {
-            /** Format: uuid */
-            id: string;
-            /**
-             * Format: date
-             * @description India's date the visit would move to.
-             */
-            date: string;
-            /** @enum {string} */
-            window: "morning" | "afternoon" | "evening";
-            hours: components["schemas"]["WindowHours"];
-            technician: components["schemas"]["Technician"] | null;
-            /**
-             * Format: date-time
-             * @description The last moment it may be accepted.
-             */
-            expires_at: string;
-            /** Format: uuid */
-            technician_id: string;
-            /** @description The start proposed; null for one proposed as a window, before booking took starts. */
-            starts_at: string | null;
         };
         DispatchBoardVersion: {
             /** @description Goes up whenever a visit, a move, leave, a technician or the day's slot times change. The board reads itself again when GET /api/dispatch/version answers another. */

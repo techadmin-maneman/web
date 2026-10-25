@@ -23,7 +23,7 @@ import { creditSpentOn } from "../visits/visit-facts.ts";
 import type { AppointmentStatus } from "../visits/visit-status.ts";
 import { boardCities } from "../cities/cities.ts";
 import { leaveBetween } from "./leave.ts";
-import { boardProposalOf, openProposalJson, type BoardProposedMove } from "../visits/open-proposals.ts";
+import { openProposalJson, openProposalOf, type ProposedMove } from "../visits/open-proposals.ts";
 import { tierOf } from "../../config/visit-types.ts";
 import { statusIn, VISIT_LIVE, VISIT_ON_THE_BOARD } from "../../config/statuses.ts";
 
@@ -75,7 +75,7 @@ interface Block extends Visit {
   /** How far the technician has got, from their phone's steps; null before they arrive. A visit begun is not moved. */
   readonly begun: Begun | null;
   /** A move to another day the client has been asked to confirm, still open; the visit stays put until they do. */
-  readonly proposal: BoardProposedMove | null;
+  readonly proposal: ProposedMove | null;
 }
 
 interface BoardDay {
@@ -270,7 +270,7 @@ export async function dispatchBoard(
       blocks: scheduled.results
         .filter((job) => job.technician_id === technician.id && indiaDate(new Date(job.window_start)) === date)
         .map((job) => {
-          const about = { untold: untoldOf(job.id), proposal: boardProposalOf(job.proposal, now, schedule) };
+          const about = { untold: untoldOf(job.id), proposal: openProposalOf(job.proposal, now, schedule) };
           return blockOf(job, about, options.noticeHours ?? FREE_CHANGE_NOTICE_HOURS, schedule);
         }),
     }));

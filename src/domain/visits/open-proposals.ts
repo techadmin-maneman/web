@@ -26,8 +26,7 @@ export interface ProposedMove {
  * One the visit has moved since is not open: it names the start it was made against.
  */
 export const openProposalJson = (visit: string): string => `(SELECT json_object('id', p.id, 'date', p.date,
-    'window', p.window_label, 'technician_id', p.technician_id, 'technician_name', t.name,
-    'technician_initials', t.initials, 'starts_at', p.starts_at, 'expires_at', p.expires_at)
+    'window', p.window_label, 'technician_name', t.name, 'technician_initials', t.initials, 'expires_at', p.expires_at)
   FROM move_proposals p LEFT JOIN technicians t ON t.id = p.technician_id
   WHERE p.appointment_id = ${visit}.id AND p.answered_at IS NULL AND p.expected_start = ${visit}.window_start)`;
 
@@ -36,10 +35,8 @@ const PROPOSAL = z.object({
   id: z.string(),
   date: z.string(),
   window: z.enum(BOOKING_WINDOWS),
-  technician_id: z.string(),
   technician_name: z.string().nullable(),
   technician_initials: z.string().nullable(),
-  starts_at: z.string().nullable(),
   expires_at: z.string(),
 });
 
@@ -59,19 +56,4 @@ export function openProposalOf(json: string | null, now: Date, schedule: SlotSch
         : { name: read.technician_name, initials: read.technician_initials },
     expires_at: read.expires_at,
   };
-}
-
-/** An open proposal as the dispatch board places it: on its technician's row, at its start where it names one. */
-export interface BoardProposedMove extends ProposedMove {
-  readonly technician_id: string;
-  /** The start proposed; null for one proposed as a window, before booking took starts. */
-  readonly starts_at: string | null;
-}
-
-/** The open proposal openProposalJson read, as the dispatch board places it; null for none. */
-export function boardProposalOf(json: string | null, now: Date, schedule: SlotSchedule): BoardProposedMove | null {
-  const proposal = openProposalOf(json, now, schedule);
-  if (json === null || proposal === null) return null;
-  const read = storedJson(PROPOSAL, json, "openProposalJson");
-  return { ...proposal, technician_id: read.technician_id, starts_at: read.starts_at };
 }
