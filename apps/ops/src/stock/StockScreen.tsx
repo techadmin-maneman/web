@@ -1,7 +1,7 @@
-// Stock (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md): what each place holds of each
-// item, which is low, the latest movements, and, for national managers, the places. A place holds the sum of its
-// movements; a job's use comes out of its technician's kit. Low raises one alert (src/domain/inventory/stock.ts), so
-// Tasks has no group for it.
+// Stock (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md), a view at a time: what each
+// place holds of each item and which is low, what expires, the latest movements, the labels and, for national managers,
+// the places. A place holds the sum of its movements; a job's use comes out of its technician's kit. Low raises one
+// alert (src/domain/inventory/stock.ts), so Tasks has no group for it.
 
 import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
@@ -10,6 +10,7 @@ import { Note } from "@maneman/ui/Note";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
+import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { type Stock } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { shell } from "../content/shell.ts";
@@ -250,84 +251,122 @@ function Movements({ stock }: { stock: Stock }) {
   );
 }
 
+/** The page's views, a tab each: what is held, what expires, what moved, the labels and the places. */
+type View = keyof typeof copy.views.names;
+
+/** The views a person may open: Expiring while a lot within reach expires soon, Labels and Places by access. */
+function viewsOf(stock: Stock, access: ReturnType<typeof useAccess>): readonly View[] {
+  return [
+    "onHand",
+    ...(anyExpiring(stock) ? (["expiring"] as const) : []),
+    "movements",
+    ...(access.mayCall("GET /api/stock/units") ? (["labels"] as const) : []),
+    ...(access.mayCall("POST /api/stock/places") ? (["places"] as const) : []),
+  ];
+}
+
+/** What each place holds, by place or in totals, and what is wanted and on its way. */
+function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stock) => void }) {
+  const [showing, setShowing] = useState<Showing>({ by: "place", beside: null });
+  return (
+    <>
+      <Panel
+        titleId="stock-on-hand"
+        title={copy.onHand}
+        actions={<Grouping stock={stock} showing={showing} onShow={setShowing} />}
+      >
+        {showing.by === "place" ? (
+          <OnHand stock={stock} picked={showing.beside} />
+        ) : (
+          <Suspense fallback={<Loading />}>
+            <Totals stock={stock} by={showing.by} />
+          </Suspense>
+        )}
+      </Panel>
+      <Suspense fallback={<Loading />}>
+        <Demand stock={stock} />
+      </Suspense>
+      {stock.in_transit.length > 0 && (
+        <Suspense fallback={<Loading />}>
+          <InTransit stock={stock} onChanged={onChanged} />
+        </Suspense>
+      )}
+    </>
+  );
+}
+
+/** Recording a movement, from the page's head: a hair system's delivery answers where its labels are. */
+function RecordMovement(props: { stock: Stock; onRecorded: (after: Stock, labels: LabelsFor | null) => void }) {
+  const access = useAccess();
+  const [firstKind, ...otherKinds] = KINDS.filter((kind) => access.mayCall(RECORDING[kind]));
+  if (firstKind === undefined || props.stock.consumables.length === 0) return null;
+  return (
+    <PageActions>
+      <DrawerButton primary label={copy.record.title}>
+        {(close) => (
+          <StockForm
+            stock={props.stock}
+            kinds={[firstKind, ...otherKinds]}
+            onRecorded={(after, recorded) => {
+              const hairSystem = after.consumables.some((each) => each.code === recorded.code && each.hair_system);
+              const labels =
+                recorded.kind === "delivery" && hairSystem ? { code: recorded.code, place: "central" } : null;
+              props.onRecorded(after, labels);
+              if (labels !== null) close();
+            }}
+          />
+        )}
+      </DrawerButton>
+    </PageActions>
+  );
+}
+
 export function StockScreen() {
   const { loaded, retry, current, setStock } = useStock();
-  const [showing, setShowing] = useState<Showing>({ by: "place", beside: null });
+  const [view, setView] = useState<View>("onHand");
   /** A hair system's delivery opens its labels at the warehouse, afresh each time. */
   const [labelsFor, setLabelsFor] = useState<{ readonly at: LabelsFor; readonly time: number } | null>(null);
   const access = useAccess();
-  const [firstKind, ...otherKinds] = KINDS.filter((kind) => access.mayCall(RECORDING[kind]));
-
+  if (current === null) {
+    return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <Loading />;
+  }
+  const views = viewsOf(current, access);
+  const shown = views.includes(view) ? view : "onHand";
   return (
     <>
-      {loaded.state === "loading" && <Loading />}
-      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
-      {current !== null && (
-        <div className={styles.screen}>
-          <Panel
-            titleId="stock-on-hand"
-            title={copy.onHand}
-            actions={<Grouping stock={current} showing={showing} onShow={setShowing} />}
+      <RecordMovement
+        stock={current}
+        onRecorded={(after, labels) => {
+          setStock(after);
+          if (labels === null) return;
+          setLabelsFor({ at: labels, time: (labelsFor?.time ?? 0) + 1 });
+          setView("labels");
+        }}
+      />
+      <Tabs className={styles.views} label={copy.views.label}>
+        {views.map((each) => (
+          <TabButton
+            key={each}
+            current={each === shown}
+            onClick={() => {
+              setView(each);
+            }}
           >
-            {showing.by === "place" ? (
-              <OnHand stock={current} picked={showing.beside} />
-            ) : (
-              <Suspense fallback={<Loading />}>
-                <Totals stock={current} by={showing.by} />
-              </Suspense>
-            )}
-          </Panel>
-          {anyExpiring(current) && (
-            <Suspense fallback={<Loading />}>
-              <Expiring stock={current} />
-            </Suspense>
+            {copy.views.names[each]}
+          </TabButton>
+        ))}
+      </Tabs>
+      <div className={styles.screen}>
+        {shown === "onHand" && <OnHandView stock={current} onChanged={setStock} />}
+        {shown === "movements" && <Movements stock={current} />}
+        <Suspense fallback={<Loading />}>
+          {shown === "expiring" && <Expiring stock={current} />}
+          {shown === "labels" && (
+            <Labels key={String(labelsFor?.time ?? 0)} stock={current} focus={labelsFor?.at ?? null} />
           )}
-          {firstKind !== undefined && current.consumables.length > 0 && (
-            <PageActions>
-              <DrawerButton primary label={copy.record.title}>
-                {(close) => (
-                  <StockForm
-                    stock={current}
-                    kinds={[firstKind, ...otherKinds]}
-                    onRecorded={(after, recorded) => {
-                      setStock(after);
-                      const hairSystem = after.consumables.some(
-                        (each) => each.code === recorded.code && each.hair_system,
-                      );
-                      if (recorded.kind === "delivery" && hairSystem) {
-                        setLabelsFor({
-                          at: { code: recorded.code, place: "central" },
-                          time: (labelsFor?.time ?? 0) + 1,
-                        });
-                        close();
-                      }
-                    }}
-                  />
-                )}
-              </DrawerButton>
-            </PageActions>
-          )}
-          <Suspense fallback={<Loading />}>
-            <Demand stock={current} />
-          </Suspense>
-          {current.in_transit.length > 0 && (
-            <Suspense fallback={<Loading />}>
-              <InTransit stock={current} onChanged={setStock} />
-            </Suspense>
-          )}
-          {access.mayCall("GET /api/stock/units") && (
-            <Suspense fallback={<Loading />}>
-              <Labels key={String(labelsFor?.time ?? 0)} stock={current} focus={labelsFor?.at ?? null} />
-            </Suspense>
-          )}
-          <Movements stock={current} />
-          {access.mayCall("POST /api/stock/places") && (
-            <Suspense fallback={<Loading />}>
-              <PlacesPanel stock={current} onChanged={setStock} />
-            </Suspense>
-          )}
-        </div>
-      )}
+          {shown === "places" && <PlacesPanel stock={current} onChanged={setStock} />}
+        </Suspense>
+      </div>
     </>
   );
 }

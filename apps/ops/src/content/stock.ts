@@ -10,6 +10,11 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 export const stock = {
   title: "Stock",
   onHand: "On hand",
+  /** The page's views, a tab each, so no one scrolls past six panels to the one they came for. */
+  views: {
+    label: "Stock views",
+    names: { onHand: "On hand", expiring: "Expiring", movements: "Movements", labels: "Labels", places: "Places" },
+  },
   /** A technician who has left, whose kit still holds stock. */
   left: (name: string) => `${name} (left)`,
   /** A hub or a stockroom closed while it still holds stock. */

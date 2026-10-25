@@ -47,3 +47,8 @@
   font-weight: var(--weight-regular);
   color: var(--ui-text-muted);
 }
+
+/* The views' tabs, above the view shown. */
+.views {
+  margin-bottom: var(--sp-20);
+}
