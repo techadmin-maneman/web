@@ -6,7 +6,7 @@
 import { statusNotIn, statusIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
 import { channelOf, CHANNELS, type Channel } from "../../policy/channels.ts";
 
-export interface FunnelSteps {
+interface FunnelSteps {
   readonly leads: number;
   readonly booked: number;
   readonly consulted: number;
