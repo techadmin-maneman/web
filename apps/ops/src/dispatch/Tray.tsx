@@ -1,10 +1,10 @@
 // The board's unassigned tray: the jobs nobody holds, each with the client, the kind of visit, the window asked for
 // beside the one offered, in oxblood where they differ (ADR 0063), and who invited the client. A job on a technician
-// switched off waits here too, saying whose it was. An empty tray folds to a rail, so the week gets the width.
+// switched off waits here too, saying whose it was. It stands beneath the board, across its width, and only while it
+// holds a job: an empty tray is not drawn.
 
 import { Tile } from "@maneman/ui/Tile";
 import { capsLook } from "@maneman/ui/Caps";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { BookingWindow, Unassigned } from "../api.ts";
 import { dispatch } from "../content.ts";
@@ -70,29 +70,22 @@ interface Props {
 }
 
 export function Tray({ unassigned, onOpen }: Props) {
-  const empty = unassigned.length === 0;
+  if (unassigned.length === 0) return null;
   return (
-    <aside
-      className={empty ? `${styles.tray ?? ""} ${styles.trayRail ?? ""}` : styles.tray}
-      aria-labelledby="unassigned"
-    >
+    <aside className={styles.tray} aria-labelledby="unassigned">
       <div className={styles.trayHead}>
         <h2 className={capsLook(styles.trayTitle)} id="unassigned">
           {dispatch.tray.title}
         </h2>
         <span className={styles.count}>{unassigned.length}</span>
       </div>
-      {empty ? (
-        <VisuallyHidden as="p">{dispatch.tray.empty}</VisuallyHidden>
-      ) : (
-        <ul className={styles.trayList}>
-          {unassigned.map((each) => (
-            <li key={each.appointment_id}>
-              <TrayJob each={each} onOpen={onOpen} />
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className={styles.trayList}>
+        {unassigned.map((each) => (
+          <li key={each.appointment_id}>
+            <TrayJob each={each} onOpen={onOpen} />
+          </li>
+        ))}
+      </ul>
     </aside>
   );
 }
