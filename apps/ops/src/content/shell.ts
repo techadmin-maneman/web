@@ -89,7 +89,6 @@ export const shell = {
   closed: "You don’t have access to this page. An admin can grant it on Staff.",
   /** The browser tab's title: "Blackout days · Settings · Mane Man Ops". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man Ops"].join(" · "),
-  /** Who is signed in, the theme, and the way out: Access's own session, which is the only one the console has. */
   /** The header's list of the tasks given to the person signed in, with how many are new to them. */
   mine: {
     button: "Mine",
@@ -97,6 +96,7 @@ export const shell = {
     none: "Nothing is yours.",
     item: (kind: string, subject: string) => `${kind} · ${subject}`,
   },
+  /** Who is signed in, the theme, and the way out: Access's own session, which is the only one the console has. */
   account: {
     label: "Account",
     signOut: "Sign out",
