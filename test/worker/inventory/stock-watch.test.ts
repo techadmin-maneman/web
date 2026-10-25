@@ -55,7 +55,7 @@ describe("stock that expires soon", () => {
     await look(morning());
     expect([...job.deps.alerts].sort()).toEqual([
       expect.stringContaining(
-        "what expires in National warehouse within 30 days: Solvent lot SV-OLD, 200 ml, expires 2026-10-10",
+        "what expires in National warehouse within 30 days: Solvent lot SV-OLD, 200 ml, expires 10 Oct 2026",
       ),
       expect.stringContaining(`what expires in technician ${IMRAN}'s kit within 30 days: Solvent lot SV-OLD, 100 ml`),
     ]);

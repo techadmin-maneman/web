@@ -42283,7 +42283,18 @@ Request body:
     },
     "message": {
       "type": "string",
-      "description": "What happened and what to do, as the chat was told, with IDs only; a low kit names its technician."
+      "description": "What happened and what to do, as the chat was told, with IDs only; a kit names its technician."
+    },
+    "about": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Whose visit it is about and on what day, where it names one: \"Rohit Malhotra's visit on Tue 20 Oct 2026\"."
     },
     "link": {
       "anyOf": [
@@ -42318,6 +42329,7 @@ Request body:
     "id",
     "kind",
     "message",
+    "about",
     "link",
     "count",
     "told_at",

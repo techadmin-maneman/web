@@ -4,6 +4,7 @@
 // ops' overdue days after it was sent. An alert closes once what it was about is gone: the lots used, moved or written
 // off, the transfer received or sent back.
 
+import { fullDate } from "@maneman/web-kit/dates";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
@@ -53,7 +54,7 @@ export async function tellOfExpiring(
     const lots = rows.map(
       (row) =>
         `${row.item} lot ${row.lot_code}, ${String(row.quantity)} ${row.unit}, ` +
-        `${row.expires_on < today ? "expired" : "expires"} ${row.expires_on}`,
+        `${row.expires_on < today ? "expired" : "expires"} ${fullDate(row.expires_on)}`,
     );
     await deps.alertOnce({
       key: `${EXPIRING_KEY}${place}`,

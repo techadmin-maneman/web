@@ -24758,8 +24758,10 @@ export interface components {
             id: string;
             /** @description What went wrong: the alert's key up to its first colon, "crm_lead". */
             kind: string;
-            /** @description What happened and what to do, as the chat was told, with IDs only; a low kit names its technician. */
+            /** @description What happened and what to do, as the chat was told, with IDs only; a kit names its technician. */
             message: string;
+            /** @description Whose visit it is about and on what day, where it names one: "Rohit Malhotra's visit on Tue 20 Oct 2026". */
+            about: string | null;
             /** @description Where in the console to act on it, as a path: "/clients/<personId>". */
             link: string | null;
             /** @description How many times it has happened. */

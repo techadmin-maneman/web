@@ -1,6 +1,6 @@
-// Tasks' "Needs a hand": the alerts ops were told of in the alert space, each until somebody puts right what it was
-// about (src/routes/ops/alerts.ts). Each says what happened and links to where to act; ops mark one done, or send
-// again the message, lead or CRM erasure it gave up on. Each person sees their own departments' kinds.
+// Tasks' Alerts: what ops were told of in the alert space, each until somebody puts right what it was about
+// (src/routes/ops/alerts.ts), a kind's together. Each says what happened, whose visit, and links to where to act; ops
+// mark one done, or send again the message, lead or CRM erasure it gave up on. Each person sees their departments' kinds.
 
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -59,6 +59,7 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
       <div className={shared.what}>
         <span className={shared.subject}>{title}</span>
         <span className={shared.sub}>{headlineOf(alert.message)}</span>
+        {alert.about !== null && <span className={shared.sub}>{alert.about}</span>}
         {headlineOf(alert.message) !== alert.message && (
           <Disclosure summary={copy.details}>
             <span className={shared.sub}>{alert.message}</span>
@@ -118,21 +119,27 @@ function AlertList({ access, onCount }: { access: Access; onCount: (count: numbe
     // The row is gone, so the keyboard goes to the list's heading rather than to the top of the page.
     heading.current?.focus();
   };
+  const groups = Map.groupBy(alerts, (alert) => titleOf(alert.kind));
   return (
     <Panel titleId="needs-a-hand" title={copy.title} count={count} headingRef={heading}>
-      <ul className={shared.tasks}>
-        {alerts.map((alert) => (
-          <AlertRow
-            key={alert.id}
-            alert={alert}
-            maySend={access.reaches(alertNeed(alert.kind, "act"))}
-            mayMarkDone={access.reaches(markDoneNeed(alert.kind))}
-            onClosed={() => {
-              onClosed(alert.id);
-            }}
-          />
-        ))}
-      </ul>
+      {[...groups].map(([title, kind]) => (
+        <section key={title} className={styles.group} aria-label={title}>
+          <h3 className={styles.groupTitle}>{copy.group(title, kind.length)}</h3>
+          <ul className={shared.tasks}>
+            {kind.map((alert) => (
+              <AlertRow
+                key={alert.id}
+                alert={alert}
+                maySend={access.reaches(alertNeed(alert.kind, "act"))}
+                mayMarkDone={access.reaches(markDoneNeed(alert.kind))}
+                onClosed={() => {
+                  onClosed(alert.id);
+                }}
+              />
+            ))}
+          </ul>
+        </section>
+      ))}
       {count > alerts.length && <p className={shared.shown}>{copy.shown(alerts.length, count)}</p>}
     </Panel>
   );

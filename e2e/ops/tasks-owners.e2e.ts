@@ -241,8 +241,11 @@ test("says so when the list cannot be loaded, and loads it on Try again", async 
   await expect(page.getByRole("link", { name: "Kunal Mehta", exact: true })).toBeVisible();
 });
 
-// ADR 0067, "Alerts on Tasks": what ops were told of in the alert space waits here until it is put right.
-test("heads the board with the alerts that need a hand, and sends a failed message again", async ({ page }) => {
+// ADR 0067, "Alerts on Tasks": what ops were told of in the alert space waits here until it is put right. Its 23 cards
+// once stood above the 8 tasks; they are a tab of their own, a kind's together, each saying whose visit.
+test("keeps the alerts in a tab of their own, a kind's together, and sends a failed message again", async ({
+  page,
+}) => {
   const alerts: OpsReply<"/api/alerts"> = {
     count: 2,
     alerts: [
@@ -251,6 +254,7 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
         kind: "message_failed",
         message: "Message 98000000-0000-4000-8000-000000000001 (visit_confirmed) failed after 4 attempts: HTTP 503",
         link: "/clients/22000000-0000-4000-8000-000000000007",
+        about: "Rohit Malhotra's visit on 20 Sep 2027",
         count: 1,
         told_at: "2027-09-20T06:00:00.000Z",
         last_seen_at: "2027-09-20T06:00:00.000Z",
@@ -261,6 +265,7 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
         kind: "low_stock",
         message: "Stock is low in the central store: 2 of base tape.",
         link: "/stock",
+        about: null,
         count: 3,
         told_at: "2027-09-21T06:00:00.000Z",
         last_seen_at: "2027-09-21T09:00:00.000Z",
@@ -278,9 +283,14 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
   });
 
   const needsAHand = page.getByRole("region", { name: opsCopy.needsAHand.title });
-  await expect(needsAHand.getByRole("listitem")).toHaveCount(2);
-  // The head counts them beside the tasks, which it once left out.
   const listed = TASKS.groups.reduce((sum, group) => sum + group.count, 0);
+  await expect(needsAHand).toBeHidden();
+  await page.getByRole("button", { name: opsCopy.needsAHand.views.alerts(2) }).click();
+  await expect(page.getByRole("button", { name: opsCopy.needsAHand.views.tasks(listed) })).toBeVisible();
+  await expect(needsAHand.getByRole("listitem")).toHaveCount(2);
+  await expect(needsAHand.getByRole("heading", { level: 3 })).toHaveText(["WhatsApp message failed", "Stock low"]);
+  await expect(needsAHand.getByRole("listitem").first()).toContainText("Rohit Malhotra's visit on 20 Sep 2027");
+  // The head counts them beside the tasks, which it once left out.
   await expect(page.getByText(opsCopy.tasks.openWithAlerts(listed, 2), { exact: true })).toBeVisible();
   await expect(needsAHand.getByRole("listitem").first()).toContainText("WhatsApp message failed");
   await expect(needsAHand.getByRole("listitem").nth(1)).toContainText("3 times since Tue 21 Sep");

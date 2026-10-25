@@ -4,16 +4,17 @@
 // TaskActions.tsx).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { PageActions, useHeaderSub } from "../components/PageHead.tsx";
-import { tasks } from "../content.ts";
+import { needsAHand, tasks } from "../content.ts";
 import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { Left } from "../lib/Left.tsx";
@@ -189,7 +190,7 @@ const keyOf = (group: Group, id: string) => `${group}/${id}`;
  * The board as it was read, less the tasks closed here since, with their groups' counts and the overdue count: the
  * list follows what ops close on it without being read again.
  */
-function sinceRead(board: Tasks, closed: readonly string[], now: Date): Tasks {
+function sinceRead(board: Tasks, closed: readonly string[], now: Date): Tasks & { readonly open: number } {
   const groups = board.groups
     .map((each) => {
       const left = each.tasks.filter((task) => !closed.includes(keyOf(each.group, task.id)));
@@ -199,7 +200,8 @@ function sinceRead(board: Tasks, closed: readonly string[], now: Date): Tasks {
   const closedOverdue = board.groups.flatMap((each) =>
     each.tasks.filter((task) => closed.includes(keyOf(each.group, task.id)) && daysUntil(task.due, now) < 0),
   );
-  return { ...board, overdue: board.overdue - closedOverdue.length, groups };
+  const open = groups.reduce((sum, group) => sum + group.count, 0);
+  return { ...board, overdue: board.overdue - closedOverdue.length, groups, open };
 }
 
 function toggled(groups: ReadonlySet<Group>, group: Group): ReadonlySet<Group> {
@@ -237,7 +239,7 @@ function BoardNotes(props: { truncated: boolean; lapsed: number; shown: boolean;
   );
 }
 
-function TaskQueue({ alerts }: { alerts: number }) {
+function TaskQueue({ alerts, onOpen }: { alerts: number; onOpen: (count: number) => void }) {
   const { loaded, retry, lapsed } = useBoard();
   const [signedIn] = useLoad(whoami);
   const access = useAccess();
@@ -252,7 +254,7 @@ function TaskQueue({ alerts }: { alerts: number }) {
 
   const now = new Date();
   const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as : null;
-  const { overdue, truncated, staff, groups } = sinceRead(loaded.value, closed, now);
+  const { overdue, truncated, staff, groups, open } = sinceRead(loaded.value, closed, now);
   const sections = sectionsOf(groups);
   const first = firstOverdue(sections, now);
 
@@ -309,10 +311,10 @@ function TaskQueue({ alerts }: { alerts: number }) {
     />
   );
 
-  const open = groups.reduce((sum, group) => sum + group.count, 0);
+  const head = { open, alerts, overdue, onOpen, onJump: first === null ? null : goToFirstOverdue };
   return (
     <section className={shared.queue} aria-labelledby="tasks" ref={heading} tabIndex={-1}>
-      <QueueHead open={open} alerts={alerts} overdue={overdue} onJump={first === null ? null : goToFirstOverdue} />
+      <QueueHead {...head} />
       <VisuallyHidden as="h2" id="tasks">
         {tasks.openCount(open)}
       </VisuallyHidden>
@@ -336,14 +338,20 @@ function QueueHead({
   alerts,
   overdue,
   onJump,
+  onOpen,
 }: {
   open: number;
-  /** The alerts Needs a hand holds above the tasks, counted beside them. */
+  /** The alerts in their own tab, counted beside the tasks. */
   alerts: number;
   overdue: number;
   onJump: (() => void) | null;
+  /** Tells the page how many are open, for its Tasks tab. */
+  onOpen: (count: number) => void;
 }) {
   useHeaderSub(tasks.openWithAlerts(open, alerts));
+  useEffect(() => {
+    onOpen(open);
+  }, [open, onOpen]);
   if (overdue === 0) return null;
   return (
     <PageActions>
@@ -352,12 +360,40 @@ function QueueHead({
   );
 }
 
+/** Tasks and alerts apart: the work people do first, what the system needs a hand with a tab away. */
 export function TasksScreen() {
   const [alerts, setAlerts] = useState(0);
+  const [open, setOpen] = useState(0);
+  const [view, setView] = useState<"tasks" | "alerts">("tasks");
+  const views = needsAHand.views;
   return (
     <div className={shared.board}>
-      <NeedsAHand onCount={setAlerts} />
-      <TaskQueue alerts={alerts} />
+      {alerts > 0 && (
+        <Tabs label={views.label}>
+          <TabButton
+            current={view === "tasks"}
+            onClick={() => {
+              setView("tasks");
+            }}
+          >
+            {views.tasks(open)}
+          </TabButton>
+          <TabButton
+            current={view === "alerts"}
+            onClick={() => {
+              setView("alerts");
+            }}
+          >
+            {views.alerts(alerts)}
+          </TabButton>
+        </Tabs>
+      )}
+      <div hidden={view !== "alerts" || alerts === 0}>
+        <NeedsAHand onCount={setAlerts} />
+      </div>
+      <div hidden={view === "alerts" && alerts > 0}>
+        <TaskQueue alerts={alerts} onOpen={setOpen} />
+      </div>
     </div>
   );
 }
