@@ -1,6 +1,6 @@
-// Settings · Packages (docs/decisions/0211-packages.md): every package as a row, what its first fit costs from, its
-// service visit and its replacement; a row opens its record beneath the list, where each value changes in place
-// (docs/decisions/0212-editing-in-place.md). Every write answers every package as it stands, so the page follows it.
+// Settings · Packages (docs/decisions/0211-packages.md): every package as a row, each part's price a column of its own,
+// what a first fit comes to and what it leaves us; a row opens its record beneath the list, where each value changes in
+// place (docs/decisions/0212-editing-in-place.md). Every write answers every package as it stands, so the page follows.
 
 import { Button } from "@maneman/ui/Button";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -25,6 +25,8 @@ import form from "../components/forms.module.css";
 import { PackageRecord } from "./PackageRecord.tsx";
 import { packagesApi, type Package, type Packages, type ProductCost } from "./packages-api.ts";
 import { pricesApi } from "../prices/index.ts";
+import { rupees } from "@maneman/web-kit/money";
+import { cheapestHairSystem, firstFitCost, firstFitMargin } from "./package-figures.ts";
 import styles from "./packages.module.css";
 
 const loadPackages = () => packagesApi.packages();
@@ -44,7 +46,33 @@ function statusOf(each: Package, today: string) {
   );
 }
 
-function PackageList(props: { readonly packages: Packages; readonly opener: RowOpener }) {
+/** A price in its column, or a gap where it has none yet. */
+const priceOrGap = (price: Parameters<typeof priceText>[0] | null | undefined) =>
+  price === null || price === undefined ? copy.gap : priceText(price);
+
+/** One package's figures, a column each. */
+function PackageFigures({ each, costs }: { readonly each: Package; readonly costs: readonly ProductCost[] }) {
+  const cost = firstFitCost(each, costs);
+  const margin = firstFitMargin(each, cost);
+  return (
+    <>
+      <td className={form.figure}>{priceOrGap(cheapestHairSystem(each)?.price)}</td>
+      <td className={form.figure}>{priceOrGap(each.service.price)}</td>
+      <td className={form.figure}>{copy.days(each.service.every_days)}</td>
+      <td className={form.figure}>{priceOrGap(each.first_fit.from)}</td>
+      <td className={form.figure}>{priceOrGap(each.replacement.price)}</td>
+      <td className={form.figure}>{copy.months(each.replacement.after_months)}</td>
+      <td className={form.figure}>{cost === null ? copy.gap : rupees(cost)}</td>
+      <td className={form.figure}>{margin === null ? copy.gap : rupees(margin)}</td>
+    </>
+  );
+}
+
+function PackageList(props: {
+  readonly packages: Packages;
+  readonly costs: readonly ProductCost[];
+  readonly opener: RowOpener;
+}) {
   const { packages, today } = props.packages;
   if (packages.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
@@ -67,17 +95,7 @@ function PackageList(props: { readonly packages: Packages; readonly opener: RowO
                   {each.name}
                 </TextButton>
               </RowHead>
-              <td>{each.first_fit.from === null ? copy.unpriced : copy.from(priceText(each.first_fit.from))}</td>
-              <td>
-                {each.service.price === null
-                  ? copy.unpriced
-                  : copy.every(priceText(each.service.price), each.service.every_days)}
-              </td>
-              <td>
-                {each.replacement.total === null
-                  ? copy.unpriced
-                  : copy.after(priceText(each.replacement.total), each.replacement.after_months)}
-              </td>
+              <PackageFigures each={each} costs={props.costs} />
               <td>{statusOf(each, today)}</td>
             </tr>
           ))}
@@ -190,7 +208,7 @@ export function PackagesScreen() {
             }}
           />
         )}
-        <PackageList packages={current} opener={opener} />
+        <PackageList packages={current} costs={costsShown} opener={opener} />
       </Panel>
       {opened !== undefined && (
         <PackageRecord

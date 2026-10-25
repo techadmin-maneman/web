@@ -13,6 +13,7 @@ import { EDITING } from "../content/common.ts";
 import { packagesCopy as copy } from "../content/packages.ts";
 import { useAccess } from "../lib/access.ts";
 import { HairSystems } from "./HairSystems.tsx";
+import { cheapestHairSystem } from "./package-figures.ts";
 import { PackageFoot } from "./PackageFoot.tsx";
 import { packagesApi, type Package, type PackageChange, type Packages, type ProductCost } from "./packages-api.ts";
 import { pricesApi } from "../prices/index.ts";
@@ -163,6 +164,7 @@ interface Parts {
 
 function FirstFit({ chosen, changing, costOf, onCosts }: Parts) {
   const from = chosen.first_fit.from;
+  const hairSystem = cheapestHairSystem(chosen)?.price ?? null;
   return (
     <Section title={copy.sections.firstFit}>
       <FigureRow
@@ -174,9 +176,10 @@ function FirstFit({ chosen, changing, costOf, onCosts }: Parts) {
         field="first_fit_minutes"
       />
       <SettingValue
-        label={copy.rows.firstFitPrice}
-        value={from === null ? copy.unpriced : copy.rows.firstFitFrom(priceText(from))}
+        label={copy.rows.hairSystemFrom}
+        value={hairSystem === null ? copy.unpriced : priceText(hairSystem)}
       />
+      <SettingValue label={copy.rows.firstFitTotal} value={from === null ? copy.unpriced : priceText(from)} />
       <CostRow cost={costOf("first_fit")} onCosts={onCosts} />
     </Section>
   );

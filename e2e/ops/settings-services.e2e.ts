@@ -89,15 +89,24 @@ test.describe("the packages", () => {
     return panel(page, name);
   };
 
-  test("lists each package with what its first fit costs from, its service visit and its replacement", async ({
+  // Prices were text ("From Rs. 32,000, with its service visit") that hid their parts, and nothing showed a margin.
+  test("lists each part of a package in a column of its own, what a first fit comes to, its cost and margin", async ({
     page,
   }) => {
     await open(page, "/settings/packages");
     const list = panel(page, packagesCopy.title);
     const essential = list.getByRole("row").filter({ hasText: "Mane Man Essential" });
-    await expect(essential).toContainText("From Rs. 32,000");
-    await expect(essential).toContainText("Rs. 2,200 · every 30 days");
-    await expect(essential).toContainText("Rs. 15,000 · after 6 months");
+    await expect(essential.getByRole("cell")).toHaveText([
+      "Rs. 29,800",
+      "Rs. 2,200",
+      "30 days",
+      "Rs. 32,000",
+      "Rs. 12,800",
+      "6 months",
+      "Rs. 8,000",
+      "Rs. 24,000",
+      packagesCopy.status.sold,
+    ]);
     await expect(essential).toContainText(packagesCopy.status.sold);
     await expect(list.getByRole("row").filter({ hasText: "Mane Man Natural" })).toContainText(
       packagesCopy.status.unpriced,
@@ -108,7 +117,8 @@ test.describe("the packages", () => {
   test("opens a package's record beneath the list, each part's figures changed in place", async ({ page }) => {
     await open(page, "/settings/packages", { "PATCH /api/packages/essential": json(PACKAGES) });
     const record = await opened(page, "Mane Man Essential");
-    await expect(record).toContainText(packagesCopy.rows.firstFitFrom("Rs. 32,000"));
+    await expect(record).toContainText(`${packagesCopy.rows.hairSystemFrom}Rs. 29,800`);
+    await expect(record).toContainText(`${packagesCopy.rows.firstFitTotal}Rs. 32,000`);
     await expect(record).toContainText("Rs. 2,500 from Fri 1 Oct");
 
     const every = record.getByRole("button", { name: `${EDITING.change} ${packagesCopy.rows.every}` });
