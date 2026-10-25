@@ -28,8 +28,14 @@
 .standard {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--sp-8);
   padding: var(--sp-8) var(--sp-20) var(--sp-12);
+}
+
+.wasReset {
+  font-size: var(--fs-14);
+  color: var(--ui-text-muted);
 }
 
 /* An open-keyed rule's new key and its figure, on one line beneath its rows. */

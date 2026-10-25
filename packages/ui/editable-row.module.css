@@ -71,16 +71,16 @@
     border-color: var(--ui-line-control);
   }
 
+  /* The pencil shows at rest, quiet, so a value that changes reads as one before the pointer finds it, and on touch. */
   .cue {
     flex: none;
     color: var(--ui-text-quiet);
-    opacity: 0;
-    transition: opacity var(--duration-quick) var(--ease-house);
+    transition: color var(--duration-quick) var(--ease-house);
   }
 
   button.value:hover .cue,
   button.value:focus-visible .cue {
-    opacity: 1;
+    color: var(--ui-text);
   }
 
   .saved {

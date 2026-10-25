@@ -168,6 +168,8 @@ export const settings = {
     saved: "Saved.",
     reset: "Reset to default",
     resetLabel: (rule: string) => `Reset ${rule} to default`,
+    wasReset: "Back to the default.",
+    undo: "Undo",
     /** Beside the title of a page of policies the person may read and not change. */
     viewOnly: "View only",
     /** The open-keyed rule's extra row: a currency, and its rate. */

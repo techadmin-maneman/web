@@ -18,13 +18,22 @@ import styles from "./rules.module.css";
 
 const copy = settings.rules;
 
+/** Whether a value is the rule's standard, figure for figure: saved, it puts the standard back, not a copy of it. */
+function isStandard(rule: OpsSetting, value: SettingValue): boolean {
+  const standard: unknown = rule.default;
+  if (typeof value !== "object" || typeof standard !== "object" || standard === null) return value === standard;
+  const keys = Object.keys(value);
+  const held = standard as Readonly<Record<string, unknown>>;
+  return keys.length === Object.keys(held).length && keys.every((key) => value[key] === held[key]);
+}
+
 /** Sends a rule's whole value, or null to put its standard back: null once kept, else the words of why not. */
 export async function saveRule(
   rule: OpsSetting,
   value: SettingValue | null,
   onSaved: (saved: OpsSetting) => void,
 ): Promise<string | null> {
-  const answer = await settingsApi.setSetting(rule.name, value);
+  const answer = await settingsApi.setSetting(rule.name, value !== null && isStandard(rule, value) ? null : value);
   if (!answer.ok) return ruleRefusal(rule, answer.code, answer.fields) ?? copy.errors.unknown;
   onSaved(answer.body);
   return null;

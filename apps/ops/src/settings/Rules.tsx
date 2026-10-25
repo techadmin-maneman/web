@@ -35,26 +35,43 @@ interface Allowed {
   readonly mayOpenPrices: boolean;
 }
 
-/** A rule set by hand, put back to its standard figures in one press. */
+/**
+ * A rule set by hand, put back to its standard figures in one press; and once put back, the figures it held, to put
+ * back again in one more.
+ */
 function Standard({ rule, onSaved }: { readonly rule: OpsSetting; readonly onSaved: (saved: OpsSetting) => void }) {
   const [busy, once] = useOneAtATime();
   const [refused, setRefused] = useState<string | null>(null);
+  const [undo, setUndo] = useState<OpsSetting["value"] | null>(null);
+  const send = (value: OpsSetting["value"] | null) =>
+    once(async () => {
+      const held = rule.value;
+      const said = await saveRule(rule, value, onSaved);
+      setRefused(said);
+      if (said === null) setUndo(value === null ? held : null);
+    });
+  if (rule.set_by === null && undo === null) return null;
   return (
     <div className={styles.standard}>
-      <Button
-        variant="quiet"
-        size="small"
-        narrow
-        busy={busy}
-        aria-label={copy.resetLabel(rule.title)}
-        onClick={() =>
-          void once(async () => {
-            setRefused(await saveRule(rule, null, onSaved));
-          })
-        }
-      >
-        {copy.reset}
-      </Button>
+      {rule.set_by === null ? (
+        <>
+          <span className={styles.wasReset}>{copy.wasReset}</span>
+          <Button variant="quiet" size="small" narrow busy={busy} onClick={() => void send(undo)}>
+            {copy.undo}
+          </Button>
+        </>
+      ) : (
+        <Button
+          variant="quiet"
+          size="small"
+          narrow
+          busy={busy}
+          aria-label={copy.resetLabel(rule.title)}
+          onClick={() => void send(null)}
+        >
+          {copy.reset}
+        </Button>
+      )}
       {refused !== null && <Refusal className={styles.refusal} said={refused} />}
     </div>
   );
@@ -86,7 +103,7 @@ function Rule({
         </Note>
       )}
       <RuleRows rule={rule} mayChange={allowed.mayChange} onSaved={onSaved} />
-      {allowed.mayChange && rule.set_by !== null && <Standard rule={rule} onSaved={onSaved} />}
+      {allowed.mayChange && <Standard rule={rule} onSaved={onSaved} />}
     </div>
   );
 }
