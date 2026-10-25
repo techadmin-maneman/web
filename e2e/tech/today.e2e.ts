@@ -13,7 +13,7 @@ test("lists the day’s jobs in order, with no amount anywhere (board A1)", asyn
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1, name: "3 jobs today" })).toBeVisible();
-  await expect(page.getByText("First at 9:30 am · Sector 65")).toBeVisible();
+  await expect(page.getByText("Next at 9:30 am · Sector 65")).toBeVisible();
 
   const rows = page.getByRole("listitem");
   // The day's list names the client of a job that has unlocked.
@@ -24,7 +24,7 @@ test("lists the day’s jobs in order, with no amount anywhere (board A1)", asyn
   await expect(rows.nth(1)).toContainText(techCopy.badges.credit);
   // The clock the heading uses, never "2:00", and how long each visit is, never "2 slots".
   await expect(rows.first().getByText("9:30 am", { exact: true })).toBeVisible();
-  await expect(rows.first().getByText("1 h 30 m", { exact: true })).toBeVisible();
+  await expect(rows.first().getByText("1 h 30 min", { exact: true })).toBeVisible();
   await expect(rows.nth(2).getByText("2 pm", { exact: true })).toBeVisible();
   await expect(rows.nth(2).getByText("3 h", { exact: true })).toBeVisible();
 
@@ -95,7 +95,7 @@ test("puts Navigate and the drive on beneath a job, and says when one under way 
 test("says nothing is booked when the day is empty (board A2)", async ({ page }) => {
   await fakeTech(page, true);
   await page.goto("/");
-  await expect(page.getByText(techCopy.today.empty.title)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.today.empty.title })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
 

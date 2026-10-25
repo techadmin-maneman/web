@@ -51,14 +51,23 @@
   stroke-width: var(--local-guide-corners);
 }
 
+/* The angle's words on the capture's own ground, so they read over whatever the camera sees. */
 .guide {
   position: absolute;
   bottom: var(--sp-20);
-  margin: 0;
-  padding: 0 var(--sp-20);
+  margin: 0 var(--sp-20);
+  padding: var(--sp-8) var(--sp-16);
   font-size: var(--fs-17);
   text-align: center;
-  color: var(--ink-soft);
+  color: var(--paper);
+  background: var(--ink-frame);
+}
+
+/* The torch, over the camera's top right corner, clear of the guide's corners. */
+.torch {
+  position: absolute;
+  top: var(--sp-12);
+  right: var(--sp-12);
 }
 
 .unavailable {

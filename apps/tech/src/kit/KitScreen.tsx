@@ -14,6 +14,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, type Kit } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
+import { ReachOps } from "../components/ReachOps.tsx";
 import { kit as copy, reference, steps } from "../content.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
@@ -134,6 +135,7 @@ function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onK
 
 /** What the kit holds, each lot's expiry beside it, an expired one marked. */
 function Held({ kit }: { kit: Kit }) {
+  const coming = new Set(kit.coming.map((topUp) => topUp.code));
   return (
     <section className={styles.section} aria-labelledby="kit-held">
       <h2 className={styles.sectionTitle} id="kit-held">
@@ -148,7 +150,7 @@ function Held({ kit }: { kit: Kit }) {
               <p className={styles.line}>
                 {item.name} · {heldOf(item.quantity, item.unit)}
               </p>
-              {item.low && <p className={styles.note}>{copy.held.low}</p>}
+              {item.low && <p className={styles.note}>{copy.held.low(coming.has(item.code))}</p>}
               {item.hair_system && <p className={styles.note}>{copy.held.pieces(item.units.length)}</p>}
               {item.lots
                 .filter((lot) => lot.expires_on !== null)
@@ -288,6 +290,7 @@ export function KitScreen() {
           <HandBack kit={kit} offline={offline} onKit={setAfter} />
         </>
       )}
+      <ReachOps className={styles.reach} />
     </main>
   );
 }

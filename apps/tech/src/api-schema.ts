@@ -2773,7 +2773,7 @@ export interface components {
             one_visit: boolean;
             /** @description The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses. */
             service: components["schemas"]["TechnicianService"] | null;
-            /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
+            /** @description The area, never the street: the address's locality, as the dispatch board names it; else the area the visit's pincode is in, or the city. */
             sector: string | null;
             /**
              * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
@@ -2854,7 +2854,7 @@ export interface components {
             one_visit: boolean;
             /** @description The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses. */
             service: components["schemas"]["TechnicianService"] | null;
-            /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
+            /** @description The area, never the street: the address's locality, as the dispatch board names it; else the area the visit's pincode is in, or the city. */
             sector: string | null;
             /**
              * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
@@ -2899,7 +2899,7 @@ export interface components {
             one_visit: boolean;
             /** @description The service the visit was sold as, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a one visit until the client chooses. */
             service: components["schemas"]["TechnicianService"] | null;
-            /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
+            /** @description The area, never the street: the address's locality, as the dispatch board names it; else the area the visit's pincode is in, or the city. */
             sector: string | null;
             /**
              * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart

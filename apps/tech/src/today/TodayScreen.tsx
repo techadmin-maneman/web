@@ -14,9 +14,11 @@ import { Icon } from "@maneman/ui/Icon";
 import { Mark } from "@maneman/ui/Mark";
 import { Link } from "@maneman/ui/router";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
+import { shortDate } from "@maneman/web-kit/dates";
 import { useEffect, useState, type Ref } from "react";
 import type { JobSummary } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
+import { ReachOps } from "../components/ReachOps.tsx";
 import {
   atRisk as atRiskCopy,
   job as jobCopy,
@@ -27,6 +29,7 @@ import {
   today as copy,
 } from "../content.ts";
 import { rowState, type RowState } from "../lib/progress.ts";
+import { useRefreshTick } from "../lib/useRefreshTick.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
@@ -89,15 +92,22 @@ function useKeptCards(...days: readonly ReturnType<typeof useDay>[0][]): Readonl
   return names;
 }
 
-/** The mark and the way to sign out; then, with jobs today, how many and where the first is. */
+/** The day's next job still to do: not closed, by the row's own reading of it. */
+const nextOpen = (jobs: readonly JobSummary[], closed: (job: JobSummary) => boolean): JobSummary | undefined =>
+  jobs.find((job) => !closed(job));
+
+/** The mark and the way to sign out; then the date, how many jobs, and where the next one is. */
 function Head(props: {
   readonly initials: string;
   readonly leaving: boolean;
   readonly onSignOut: () => void;
+  readonly date: string;
+  readonly loaded: boolean;
   readonly jobs: readonly JobSummary[];
+  readonly next: JobSummary | undefined;
   readonly heading: Ref<HTMLHeadingElement>;
 }) {
-  const [first] = props.jobs;
+  const { next } = props;
   return (
     <header className={styles.head}>
       <div className={styles.top}>
@@ -113,13 +123,14 @@ function Head(props: {
           <span className={styles.signOut}>{copy.signOut}</span>
         </Button>
       </div>
-      {first !== undefined && (
-        <>
-          <h1 className={styles.count} ref={props.heading} tabIndex={-1}>
-            {copy.jobs(props.jobs.length)}
-          </h1>
-          <p className={styles.first}>{copy.first(clock(first.starts_at), where(first.sector))}</p>
-        </>
+      <p className={styles.date}>{shortDate(props.date)}</p>
+      <h1 className={styles.count} ref={props.heading} tabIndex={-1}>
+        {props.loaded && props.jobs.length === 0 ? copy.empty.title : copy.jobs(props.jobs.length)}
+      </h1>
+      {props.jobs.length > 0 && (
+        <p className={styles.first}>
+          {next === undefined ? copy.allDone : copy.next(clock(next.starts_at), where(next.sector))}
+        </p>
       )}
     </header>
   );
@@ -158,7 +169,6 @@ function EmptyDay({ tomorrowJobs }: { readonly tomorrowJobs: readonly JobSummary
   return (
     <div className={styles.empty}>
       <p className={capsLook(styles.emptyLabel)}>{copy.empty.label}</p>
-      <p className={styles.emptyTitle}>{copy.empty.title}</p>
       <p className={styles.emptyBody}>
         {next === undefined ? copy.empty.none : copy.empty.tomorrow(tomorrowJobs.length, clock(next.starts_at))}
       </p>
@@ -183,8 +193,15 @@ function Jobs(props: {
           .find((later) => later.status !== "completed" && later.status !== "terminated");
         return (
           <li key={job.id}>
-            <JobRow job={job} client={clientOf(job, props.names)} state={state === null ? null : ROW_STATES[state]} />
-            <JobFoot job={job} next={next} over={state === "in_progress" && runsOver(job, now)} />
+            <JobRow
+              job={job}
+              client={clientOf(job, props.names)}
+              state={state === null ? null : ROW_STATES[state]}
+              closed={state === "closed"}
+            />
+            {state !== "closed" && (
+              <JobFoot job={job} next={next} over={state === "in_progress" && runsOver(job, now)} />
+            )}
           </li>
         );
       })}
@@ -256,8 +273,9 @@ function OnThePhone(props: { readonly sending: number; readonly unsentSets: numb
 export function TodayScreen() {
   const { me, offline, atRisk, signOut } = useSession();
   const date = todayInIndia();
-  const [day, retry] = useDay(date);
-  const [tomorrow] = useDay(dayAfter(date));
+  const tick = useRefreshTick();
+  const [day, retry] = useDay(date, tick);
+  const [tomorrow] = useDay(dayAfter(date), tick);
   const waiting = useOutbox();
   const [leaving, setLeaving] = useState<Leaving>(null);
 
@@ -268,6 +286,11 @@ export function TodayScreen() {
   const heard = useHeard(waiting);
   const heading = useScreen(titles.today);
 
+  // Signal back: the sign-out that waited for it can be tried again, so the line saying it could not goes.
+  useEffect(() => {
+    if (!offline) setLeaving((was) => (was === "stayed" ? null : was));
+  }, [offline]);
+
   async function leave(): Promise<void> {
     setLeaving("going");
     if ((await signOut()) === "still-signed-in") setLeaving("stayed");
@@ -276,6 +299,7 @@ export function TodayScreen() {
   const jobs = day.state === "loaded" ? day.value : [];
   const tomorrowJobs = tomorrow.state === "loaded" ? tomorrow.value : [];
   const names = useKeptCards(day, tomorrow);
+  const next = nextOpen(jobs, (job) => rowState(job, waiting.events, heard.get(job.id)) === "closed");
 
   return (
     <main className={styles.screen}>
@@ -285,7 +309,10 @@ export function TodayScreen() {
         onSignOut={() => {
           setLeaving("asking");
         }}
-        jobs={day.state === "loaded" ? jobs : []}
+        date={date}
+        loaded={day.state === "loaded"}
+        jobs={jobs}
+        next={next}
         heading={heading}
       />
 
@@ -331,6 +358,7 @@ export function TodayScreen() {
         <Icon d={GLYPHS.tag} size="md" className={styles.waitingIcon} weight="heavy" />
         <span className={styles.waitingLine}>{kitCopy.link}</span>
       </Link>
+      <ReachOps className={styles.ops} />
     </main>
   );
 }

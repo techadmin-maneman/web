@@ -10,7 +10,11 @@
 import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
-import { useEffect, useState, type ReactNode } from "react";
+import { useAsync, valueOr } from "@maneman/ui/useAsync";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { placeOf } from "../lib/progress.ts";
+import { routeOf, usePath } from "../route.ts";
+import { keptJob } from "../store/jobs.ts";
 import { steps as copy, today } from "../content.ts";
 import { Offline } from "../components/Banners.tsx";
 import { useSession } from "../session.ts";
@@ -39,6 +43,27 @@ export function useSettled(): boolean {
     };
   }, []);
   return settled;
+}
+
+/**
+ * The job's steps as segments, the ones done and this one lit: how far through the whole job the technician is. Read
+ * from the step's address and the card the phone keeps, so no step needs to say where it is.
+ */
+function Rail() {
+  const route = routeOf(usePath());
+  const id = route.page === "step" ? route.id : "";
+  const readKept = useCallback(() => keptJob(id).catch(() => null), [id]);
+  const job = valueOr(useAsync(readKept)[0], null);
+  if (route.page !== "step" || job === null) return null;
+  const { at, of } = placeOf(job, route.step);
+  if (at === 0) return null;
+  return (
+    <div className={styles.rail} role="img" aria-label={copy.place(at, of)}>
+      {Array.from({ length: of }, (_, index) => (
+        <span key={index} className={index < at ? styles.railDone : styles.railTodo} />
+      ))}
+    </div>
+  );
 }
 
 export function StepFrame({
@@ -99,6 +124,7 @@ export function StepFrame({
           </span>
         )}
       </header>
+      <Rail />
 
       <div className={styles.body}>
         {notice !== undefined && notice !== null && (

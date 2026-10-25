@@ -1,0 +1,7 @@
+/* Call ops and WhatsApp ops, side by side (./ReachOps.tsx). */
+
+.reach {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-12);
+}

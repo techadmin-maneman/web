@@ -33,6 +33,19 @@ test("sends Navigate to a route any phone opens, by the pin when the address has
   await expect(navigate).toHaveAttribute("target", "_blank");
 });
 
+test("says a job that is no longer theirs is off their list, with the way back to Today at the top", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.moved = true;
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  await expect(page.getByText(techCopy.job.gone)).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.job.retry })).toHaveCount(0);
+  await page.getByRole("button", { name: techCopy.job.backToToday }).first().click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
 test("sends Navigate to the typed address when it was saved without a pin", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.pin = false;
@@ -173,9 +186,7 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
   await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
   await expect(page.getByText(techCopy.notHome.failed.title)).toBeVisible();
   await expect(page.getByText("You are 1.4 km from the address.")).toBeVisible();
-  await expect(
-    page.getByText(/^Go to the door and tap again\. Still refused\? Ask ops to let you check in\./),
-  ).toBeVisible();
+  await expect(page.getByText(/^Go to the door and tap again\. Still refused\? Call ops\./)).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toHaveCount(0);
   // The evidence chain draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
   await expect(page.getByRole("button", { name: techCopy.notHome.failed.action })).toBeVisible();
@@ -194,6 +205,11 @@ test("keeps Close as no-show dim and outlined beside the gold Start job until th
   const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
   await expect(close).toBeDisabled();
   await expect(foot(page)).toHaveText(techCopy.job.start);
+  // No WhatsApp reached them, so the wait asks for a call before the close.
+  await expect(page.getByRole("link", { name: techCopy.notHome.waiting.callFirst("Rohit") })).toHaveAttribute(
+    "href",
+    /^tel:/,
+  );
   // One gold action per screen: Close as no-show is never the same button as Start job.
   const gold = await close.evaluate((button) => getComputedStyle(button).backgroundColor);
   expect(gold).not.toBe("rgb(201, 163, 99)");
@@ -212,6 +228,7 @@ test("asks before closing as a no-show, since ops may charge the client", async 
 
   const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
   await expect(close).toBeEnabled({ timeout: 10_000 });
+  await expect(page.getByRole("link", { name: techCopy.notHome.waiting.callFirst("Rohit") })).toHaveCount(0);
   await close.click();
 
   const sheet = page.getByRole("dialog", { name: techCopy.notHome.confirm.title });
@@ -347,7 +364,7 @@ test("tomorrow’s job shows its day, and cannot be checked in to today", async 
   await atTheDoor(page);
   await page.goto(`/jobs/${TOMORROW_JOB_ID}`);
 
-  await expect(page.getByText(/^Tomorrow · 10–10:30 am · service visit · 1 h 30 m$/)).toBeVisible();
+  await expect(page.getByText(/^Tomorrow · 10–10:30 am · service visit · 1 h 30 min$/)).toBeVisible();
   await expect(page.getByText(techCopy.job.notToday.tomorrow)).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
@@ -397,7 +414,7 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   // Step 6: the outcome, with nothing chosen for them.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.choose })).toBeDisabled();
-  await page.getByRole("button", { name: techCopy.steps.outcome.partial }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true }).click();
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.pickReason })).toBeDisabled();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
   await page.getByRole("button", { name: techCopy.steps.next }).click();

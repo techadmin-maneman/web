@@ -19,6 +19,8 @@ interface Failed {
   readonly state: "failed";
   /** The API's ID for the call that failed, for the technician to quote; null when nothing answered. */
   readonly requestId: string | null;
+  /** The API says the job is not this technician's, or no longer exists: trying again cannot help. */
+  readonly gone: boolean;
 }
 
 export type KeptLoad<T> =
@@ -27,7 +29,7 @@ export type KeptLoad<T> =
   /** `fromPhone` is true when this is what the phone kept, not what the API just said. */
   | { readonly state: "loaded"; readonly value: T; readonly fromPhone: boolean };
 
-const failed = (requestId: string | null): Failed => ({ state: "failed", requestId });
+const failed = (requestId: string | null, gone = false): Failed => ({ state: "failed", requestId, gone });
 
 /** Lets go of whatever the phone no longer needs, now that a fresh day says what that is. */
 async function forgetStale(): Promise<void> {
@@ -75,7 +77,7 @@ export async function loadJob(id: string): Promise<KeptLoad<Job>> {
     await keepJob(answer.body).catch(() => undefined);
     return { state: "loaded", value: answer.body, fromPhone: false };
   }
-  if (!unreachable(answer)) return failed(answer.requestId);
+  if (!unreachable(answer)) return failed(answer.requestId, answer.code === "not_found");
   const kept = await keptJob(id).catch(() => null);
   return kept === null ? failed(answer.requestId) : { state: "loaded", value: kept, fromPhone: true };
 }
@@ -106,10 +108,11 @@ function useKeptFirst<T>(
   return [shown, retry];
 }
 
-export function useDay(date: string): readonly [KeptLoad<readonly JobSummary[]>, () => void] {
+/** A day's jobs; `watch` reads them again when it changes, the last answer standing while it does. */
+export function useDay(date: string, watch: unknown = null): readonly [KeptLoad<readonly JobSummary[]>, () => void] {
   const load = useCallback(() => loadDay(date), [date]);
   const readKept = useCallback(() => keptDay(date).catch(() => null), [date]);
-  return useKeptFirst(readKept, load, null);
+  return useKeptFirst(readKept, load, watch);
 }
 
 /**

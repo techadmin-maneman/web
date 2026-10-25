@@ -40,11 +40,14 @@ export const signIn = {
   // installed iPhone app has its own cookie jar, so the first sign-in inside it
   // is a second one and looks like the account has gone (ADR 0053's update).
   installed: "Sign in here once, then use the home-screen app. Anything waiting in the browser still sends.",
+  notRegistered: "New, or your number changed? Ask ops to add it.",
 } as const;
 
 export const today = {
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
-  first: (time: string, sector: string) => `First at ${time} · ${sector}`,
+  /** The next job still to do, by its start and area. */
+  next: (time: string, sector: string) => `Next at ${time} · ${sector}`,
+  allDone: "All done for today.",
   tomorrow: (count: number) => `Tomorrow · ${String(count)} ${count === 1 ? "job" : "jobs"}`,
   /** The drive to the day's next job, by our estimate. */
   drive: (minutes: number) => `${String(minutes)} min to the next job`,
@@ -62,14 +65,20 @@ export const today = {
     none: "Nothing tomorrow either.",
   },
   offline: {
-    title: "No signal · working offline",
+    title: "No signal",
     body: "Today’s jobs and cards are on the phone.",
     /** On a job's step: what the technician does is kept, and goes once the signal is back. */
-    step: "This job’s steps and photographs are kept on the phone and send when the signal is back.",
+    step: "Saved on the phone. Sends when you’re back online.",
   },
   // The board draws no failure for the day's list.
   failed: "The day’s jobs didn’t load.",
   retry: "Try again",
+} as const;
+
+/** The way to ops from anywhere the app says to ask them (./components/ReachOps.tsx). */
+export const ops = {
+  call: "Call ops",
+  whatsApp: "WhatsApp ops",
 } as const;
 
 /** "1 photo set", "3 actions": a count and the word for it. */
@@ -90,7 +99,7 @@ export const leaving = {
     if (actions > 0) held.push(counted(actions, "action", "actions"));
     return `${held.join(" and ")} not sent yet`;
   },
-  body: "Signing out deletes them from this phone, and they never reach us.",
+  body: "Sign out now and they’re lost.",
   // Nothing is waiting to be sent: signing out still takes the jobs off the phone.
   confirm: "Sign out of this phone?",
   confirmBody: "Your jobs leave this phone until you sign in again.",
@@ -137,7 +146,7 @@ export const atRisk = {
 
 export const queue = {
   waiting: (count: number) => `${String(count)} photo ${count === 1 ? "set" : "sets"} waiting`,
-  never: "Never saved to this phone’s gallery.",
+  never: "Kept out of the gallery.",
   retry: "Retry",
   states: {
     uploading: "Uploading…",
@@ -283,17 +292,17 @@ function opensAt(unlocksAt: string, now: Date = apiDate()): string {
   return `Open since ${timeAndDay(unlocksAt, now)}. Go back and open the job again.`;
 }
 
-/** A length as the board writes it, the visit's booked length and the time a job took alike: "45 m", "3 h", "1 h 30 m". */
+/** A length as the board writes it, the visit's booked length and the time a job took alike: "45 min", "3 h", "1 h 30 min". */
 function lengthOf(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  if (hours === 0) return minutes === 0 ? "Under 1 m" : `${String(minutes)} m`;
-  return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} m`;
+  if (hours === 0) return minutes === 0 ? "Under 1 min" : `${String(minutes)} min`;
+  return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} min`;
 }
 
 export const job = {
   back: "Back",
-  /** "9:30 am · service · 1 h 30 m", and "Tomorrow · …" for a job on another day. */
+  /** "9:30 am · service · 1 h 30 min", and "Tomorrow · …" for a job on another day. */
   when: (parts: readonly string[]) => parts.join(" · "),
   tomorrow: "Tomorrow",
   // The board writes "1 slot"; the visit's length says more.
@@ -307,14 +316,17 @@ export const job = {
   call: (who: string) => `Call ${who}`,
   /** A word to the client from our number (docs/decisions/0145-technician-presets.md). */
   tell: {
-    title: (who: string) => `Tell ${who}`,
+    open: (who: string) => `Send ${who} an update`,
+    title: (who: string) => `Update ${who}`,
+    close: "Close",
     minutes: "Minutes",
     minute: (minutes: number) => `${String(minutes)} min`,
-    onTheWay: (minutes: number) => `On the way, ${String(minutes)} min`,
+    onTheWay: (minutes: number) => `On my way · ${String(minutes)} min`,
     late: (minutes: number) => `Running ${String(minutes)} min late`,
-    atGate: "At the gate",
-    sent: (who: string) => `Sent to ${who} from our number.`,
-    noWhatsApp: (who: string) => `${who} takes no WhatsApp messages about visits. Call instead.`,
+    fromUs: "Sent on WhatsApp from Mane Man’s number.",
+    sentAt: (time: string) => `Sent at ${time}`,
+    sent: (who: string, time: string) => `${who} updated at ${time}.`,
+    noWhatsApp: (who: string) => `${who} doesn’t take WhatsApp updates. Call instead.`,
   },
   whatsApp: (who: string) => `WhatsApp ${who}`,
   start: "Start job",
@@ -362,6 +374,8 @@ export const job = {
   // The board draws no failure for a job's card.
   failed: "This job’s card didn’t load.",
   retry: "Try again",
+  gone: "This job isn’t on your list.",
+  backToToday: "Back to today",
 } as const;
 
 /** The evidence chain when the client is not home. */
@@ -379,14 +393,14 @@ export const notHome = {
     // The board draws no screen for a phone that will not give its position.
     noPosition: "This phone won’t give its position. Check its permissions, then tap again.",
     // An address saved without a building picked from the map has no pin: the check-in records the time alone.
-    noPin: "This address has no map pin, so the check-in records the time but can’t confirm you’re at the door.",
+    noPin: "No map pin: the check-in records the time only.",
   },
   failed: {
     title: "Check-in failed",
     away: (km: string) => `You are ${km} from the address.`,
     // The board draws a distance; an address with no coordinates has none (ADR 0036).
     unmeasured: "We couldn’t measure how far you are from the address.",
-    body: "Go to the door and tap again. Still refused? Ask ops to let you check in.",
+    body: "Go to the door and tap again. Still refused? Call ops.",
     action: "Try again",
   },
   waiting: {
@@ -398,9 +412,9 @@ export const notHome = {
     over: "The wait is over.",
     // The board draws the check running, not one waiting for signal. The API counts the wait from when
     // the check-in reaches it as well as from the tap (ADR 0065), so a no-show cannot close before it has.
-    fromTap: "No signal. The wait counts from your tap, but closing as a no-show needs signal.",
+    fromTap: "No signal. The wait counts from your tap; closing needs signal.",
     // The board draws no no-show refused.
-    early: "Our clock says the wait hasn’t run out yet. Try again in a minute.",
+    early: "The wait isn’t over yet. Try again in a minute.",
     close: "Close as no-show",
     // The board's "Rohit messaged on WhatsApp" reads as if the client wrote, so the receipt names them
     // as who it went to. The board draws only the delivered one.
@@ -408,6 +422,7 @@ export const notHome = {
     notDelivered: (who: string) => `WhatsApp to ${who}: sent, not delivered.`,
     onItsWay: (who: string) => `Telling ${who} you’re here.`,
     noneSent: (who: string) => `No WhatsApp went to ${who}.`,
+    callFirst: (who: string) => `Call ${who} before you close`,
     theClient: "the client",
   },
   // The board draws no confirmation. Closing as a no-show can bring the client a charge.
@@ -435,6 +450,7 @@ export const capture = {
   /** Not drawn: what a screen reader calls a tile, a tap on which takes that angle again. */
   retakeAngle: (angle: string) => `Take ${angle} again`,
   take: "Capture",
+  torch: "Torch",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   // The board writes Top's guide alone; the other four are ours.
   guides: {
@@ -466,6 +482,7 @@ export const capture = {
 export const steps = {
   back: "Back",
   of: (done: number, total: number) => `${String(done)} of ${String(total)}`,
+  place: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
   titles: {
     before_photos: "Before photos",
     checklist: "Service checklist",
@@ -493,10 +510,14 @@ export const steps = {
   checklist: {
     // The board's dim bar while the list is unfinished.
     unfinished: "Finish the list to continue",
+    all: "Tick all: everything was done",
   },
   consumables: {
-    less: (name: string) => `One fewer ${name.toLowerCase()}`,
-    more: (name: string) => `One more ${name.toLowerCase()}`,
+    less: (name: string, step: number, unit: string) =>
+      step === 1 ? `One fewer ${name.toLowerCase()}` : `${amountOf(step, unit)} less ${name.toLowerCase()}`,
+    more: (name: string, step: number, unit: string) =>
+      step === 1 ? `One more ${name.toLowerCase()}` : `${amountOf(step, unit)} more ${name.toLowerCase()}`,
+    type: (name: string) => `Type the ${name.toLowerCase()} used`,
     count: (name: string, count: number) => `${name}: ${String(count)}`,
     // The board draws the name alone; what one is counted in, and what the visit's service expects.
     unit: (unit: string, expected: number) => (expected === 0 ? unit : `${amountOf(expected, unit)} expected`),
@@ -506,7 +527,8 @@ export const steps = {
       return over ? `${kit}. Ops will send more.` : kit;
     },
     // The board draws four steppers and no way to record a fifth consumable.
-    add: "Add another",
+    add: "Add a consumable",
+    asExpected: "Used as expected",
     addOne: (name: string) => `Add ${name}`,
     none: "None used",
     // The console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).
@@ -570,13 +592,14 @@ export const steps = {
     choose: "Choose Done or Partly done",
     pickReason: "Pick a reason to continue",
     done: "Done",
-    partial: "Partly done · pick a reason",
+    partial: "Partly done",
     // After a consultation: whether the client is going ahead with a fit, and why not (docs/decisions/0149-lost-reasons.md).
     goingAhead: "Going ahead with a fit?",
     yes: "Yes",
     notNow: "Not now",
     why: "Why not?",
     pickWhy: "Pick why to continue",
+    answerFirst: "Say if they’re going ahead",
   },
 } as const;
 
@@ -589,6 +612,10 @@ export const closeOut = {
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
   duration: "Duration",
+  why: "Why",
+  fit: "Fit",
+  goingAhead: "Going ahead",
+  notNow: (why: string | null) => (why === null ? "Not now" : `Not now · ${why}`),
   // The board writes "1 h 22 m"; the phone times it from Start job (open point 60).
   length: (hours: number, minutes: number) => lengthOf(hours * 60 + minutes),
   photos: "Photos",
@@ -642,12 +669,11 @@ export const oneVisit = {
   /** Closing as done, once the client decided against the fit. */
   endsAsConsultation: "Ends as a free consultation. Nothing to pay.",
   /** Closing as done, once the client chose a hair system: by its name in the console. */
-  linkFor: (product: string) => `Closing texts the client a payment link for ${product}.`,
+  linkFor: (product: string) => `Closing sends the client a payment link for ${product}.`,
   /** A product the card no longer names, for linkFor. */
   chosenProduct: "the hair system they chose",
   /** Closing as done on a phone that does not know the client's choice, from a card kept by an earlier build. */
-  closeNote:
-    "Closing texts the client a payment link for their hair system, or ends a declined visit as a free consultation.",
+  closeNote: "Closing sends the payment link, or ends a declined visit as a free consultation.",
   payment: "Payment",
   linkSent: "Link texted to the client",
   linkPaid: "Paid",
@@ -684,22 +710,22 @@ type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, st
 export const profile = {
   sections: {
     stage: "Norwood stage",
-    head: "The head, in centimetres",
-    base: "Base size, in inches",
+    head: "Head (cm)",
+    base: "Base (in)",
     colour: "Colour",
-    grey: "Grey, in per cent",
+    grey: "Grey (%)",
     density: "Density",
     wave: "Wave",
     hairline: "Hairline",
     product: "Product",
-    attachment: "Tape or glue",
+    attachment: "Fixing",
   },
   /** Not drawn: the base typed in inches, in centimetres beneath it. */
   baseInCentimetres: (width: string, length: string) => `${width} × ${length} cm`,
   measurements: {
     head_circumference_cm: "Circumference",
     front_to_nape_cm: "Front to nape",
-    ear_to_ear_cm: "Ear to ear, over the top",
+    ear_to_ear_cm: "Ear to ear",
     temple_to_temple_cm: "Temple to temple",
     base_width_in: "Width",
     base_length_in: "Length",
@@ -733,14 +759,16 @@ export const profile = {
     other_systems: "Other hair systems",
     other: "Other",
   } satisfies Record<History["remedies"][number], string>,
-  range: (min: number, max: number) => `${String(min)}–${String(max)}, to one decimal.`,
-  greyRange: (min: number, max: number) => `${String(min)}–${String(max)}.`,
-  yearRange: (first: number, last: number) => `A year from ${String(first)} to ${String(last)}.`,
+  range: (min: number, max: number) => `${String(min)}–${String(max)}`,
+  greyRange: (min: number, max: number) => `${String(min)}–${String(max)}%`,
+  yearRange: (first: number, last: number) => `${String(first)}–${String(last)}`,
   checkFigures: "Check the figures to continue",
   /** Next, held back until the Norwood stage is chosen. */
   chooseStage: "Choose the Norwood stage to continue",
   /** Next, held back by a figure outside its range: which one. */
-  checkFigure: (figure: string) => `${figure.split(",")[0] ?? figure} is out of range`,
+  checkFigure: (figure: string) => `${figure.replace(/ \(.*\)$/, "")} is out of range`,
+  // The fit spec's second page: what the hair system is matched to.
+  match: { title: "Colour and style" },
   history: {
     title: "History",
     remedies: "Remedies tried",
@@ -818,8 +846,8 @@ export const kit = {
     useFirst: (date: string) => `Use first · expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
     pieces: (count: number) => `${String(count)} labelled`,
-    /** At or below the level ops keep a kit at: ops send more, and the technician may ask. */
-    low: "Running low. Ask ops for more.",
+    /** At or below the level ops keep a kit at: ops are alerted on their own, and send more. */
+    low: (coming: boolean) => (coming ? "Running low. More is on its way." : "Running low. Ops have been told."),
   },
   returned: {
     title: "To hand back",

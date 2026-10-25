@@ -307,9 +307,9 @@ export function listingOf({
     type: row.type,
     one_visit: row.one_visit !== null,
     service: soldServiceOf(row),
-    // "only time, type and sector": the area, never the street, whether the job is unlocked or not. The visit's
-    // pincode names it first, as the dispatch board does (ADR 0069).
-    sector: row.pincode_area ?? row.locality ?? row.service_city,
+    // "only time, type and sector": the area, never the street, whether the job is unlocked or not. The client's own
+    // locality names it first, as the dispatch board does; a pincode's area can be a neighbour of the client's.
+    sector: row.locality ?? row.pincode_area ?? row.service_city,
     status: row.status,
     badge: badgeOf(row),
     slots: slotsFor(unitsFor(bookedMinutes(row))),

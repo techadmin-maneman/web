@@ -4150,7 +4150,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city."
+      "description": "The area, never the street: the address's locality, as the dispatch board names it; else the area the visit's pincode is in, or the city."
     },
     "status": {
       "type": "string",
@@ -4543,7 +4543,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city."
+      "description": "The area, never the street: the address's locality, as the dispatch board names it; else the area the visit's pincode is in, or the city."
     },
     "status": {
       "type": "string",
@@ -4727,7 +4727,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city."
+      "description": "The area, never the street: the address's locality, as the dispatch board names it; else the area the visit's pincode is in, or the city."
     },
     "status": {
       "type": "string",

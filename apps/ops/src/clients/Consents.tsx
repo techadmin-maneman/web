@@ -22,6 +22,9 @@ const copy = clients.consents;
 /** The table's columns, in the board's order. */
 const COLUMNS = ["purpose", "state", "date", "source"] as const;
 
+/** A visit's own photographs are part of the service and need no consent, so their row would only mislead. */
+const UNASKED: ReadonlySet<Consent["purpose"]> = new Set(["photos_own_record"]);
+
 /** Where the consent was given; the board's dash for one never given, and "Not recorded" where nothing says. */
 function sourceOf(consent: Consent): string {
   if (consent.state === "not_given") return clients.unknown;
@@ -80,9 +83,11 @@ export function Consents({ clientId, name, onErased }: { clientId: string; name:
           </tr>
         </thead>
         <tbody>
-          {consents.map((consent) => (
-            <ConsentRow key={consent.purpose} consent={consent} />
-          ))}
+          {consents
+            .filter((consent) => !UNASKED.has(consent.purpose))
+            .map((consent) => (
+              <ConsentRow key={consent.purpose} consent={consent} />
+            ))}
         </tbody>
       </Table>
       {deletion !== null && (

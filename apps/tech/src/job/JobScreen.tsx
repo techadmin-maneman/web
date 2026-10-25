@@ -22,7 +22,8 @@ import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { apiDate, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
-import { Failed, Loading } from "../states/States.tsx";
+import { JobFailed } from "../states/JobFailed.tsx";
+import { Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
 import { JobCard } from "./JobCard.tsx";
@@ -104,11 +105,7 @@ export function JobScreen({ id }: { id: string }) {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
-    return (
-      <main className={frame.screen}>
-        <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={loaded.requestId} />
-      </main>
-    );
+    return <JobFailed failed={loaded} onRetry={retry} />;
   }
 
   const job = loaded.value;

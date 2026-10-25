@@ -51,13 +51,14 @@
 .account:focus-visible,
 .tomorrow:focus-visible,
 .waiting:focus-visible,
-.row:focus-visible {
+.row:focus-visible,
+.closedRow:focus-visible {
   outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: calc(-1 * var(--focus-offset));
 }
 
 .count {
-  margin: var(--sp-20) 0 0;
+  margin: var(--sp-4) 0 0;
   font-family: var(--font-serif);
   font-size: var(--fs-app-title-long);
   font-weight: var(--weight-regular);
@@ -67,6 +68,12 @@
 
 .count:focus {
   outline: none;
+}
+
+.date {
+  margin: var(--sp-20) 0 0;
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
 }
 
 .first {
@@ -160,8 +167,9 @@
   list-style: none;
 }
 
-/* A job row: 88 px, the time down the left, everything else beside it. */
-.row {
+/* A job row: 88 px, the time down the left, everything else beside it. A closed one is quieter. */
+.row,
+.closedRow {
   display: flex;
   gap: var(--sp-16);
   align-items: center;
@@ -169,6 +177,13 @@
   padding: var(--sp-16) var(--sp-20);
   border-bottom: var(--hairline) solid var(--ink-rule);
   text-decoration: none;
+}
+
+.closedRow .time,
+.closedRow .who,
+.closedRow .type,
+.closedRow .state {
+  color: var(--ink-muted);
 }
 
 .when {
@@ -211,7 +226,7 @@
 }
 
 /* The job in hand stands out in paper, where the board has it gold (ADR 0025, item 59). */
-.list > li:first-child .type {
+.list > li:first-child .row .type {
   color: var(--paper);
 }
 
@@ -287,19 +302,16 @@
   color: var(--ink-muted);
 }
 
-.emptyTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-26);
-  line-height: var(--lh-115);
-  color: var(--paper);
-}
-
 .emptyBody {
   margin: 0;
   font-size: var(--fs-16);
   line-height: var(--lh-160);
   color: var(--ink-soft);
+}
+
+/* Call ops and WhatsApp ops, at the foot of the day. */
+.ops {
+  padding: var(--sp-16) var(--sp-20) var(--sp-24);
 }
 
 /* Beneath a row: Navigate and the drive to the next job, then a job running over, in the row's own gutter. */

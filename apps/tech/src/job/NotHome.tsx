@@ -3,8 +3,9 @@
 // client a charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 
 import { capsLook } from "@maneman/ui/Caps";
-import { Button } from "@maneman/ui/Button";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
+import { callLink } from "../lib/navigate.ts";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
@@ -17,6 +18,7 @@ import { go, stepPath } from "../route.ts";
 import { keepClosed, keptArrival } from "../store/jobs.ts";
 import { checkInRefusedAsEarly, events, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
+import { ReachOps } from "../components/ReachOps.tsx";
 import { receiptLine, type ReceiptLine } from "./receipt.ts";
 import frame from "../components/frame.module.css";
 import styles from "./job.module.css";
@@ -66,9 +68,17 @@ function useBefore(at: number): boolean {
   return before;
 }
 
-function evidenceOf(job: Job): ReceiptLine {
+/** The receipt, and the client to call before closing where no WhatsApp is known to have reached them. */
+interface Evidence extends ReceiptLine {
+  readonly who: string;
+  readonly call: string | null;
+}
+
+function evidenceOf(job: Job): Evidence {
   const who = job.client === null ? copy.waiting.theClient : firstNameOf(job.client.name);
-  return receiptLine(job.reminder, who);
+  const reminder = job.reminder;
+  const reached = reminder !== null && (reminder.state === "on_its_way" || reminder.delivered_at !== null);
+  return { ...receiptLine(reminder, who), who, call: reached || job.client === null ? null : job.client.mobile };
 }
 
 export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queued[]; card: ReactNode }) {
@@ -243,6 +253,7 @@ function CheckInFailed(props: { distance: number | null; noPosition: boolean; bu
       >
         {copy.failed.action}
       </Button>
+      <ReachOps className={styles.second} />
     </section>
   );
 }
@@ -251,7 +262,7 @@ function CheckInFailed(props: { distance: number | null; noPosition: boolean; bu
 function Waiting(props: {
   left: number | null;
   line: string;
-  receipt: ReceiptLine;
+  receipt: Evidence;
   early: boolean;
   mayClose: boolean;
   onClose: () => void;
@@ -267,6 +278,16 @@ function Waiting(props: {
         <Icon className={styles.evidenceIcon} d={props.receipt.icon} size="md" weight="heavy" />
         <span>{props.receipt.text}</span>
       </p>
+      {props.receipt.call !== null && (
+        <ButtonLink
+          variant="outlineOnInk"
+          size="control"
+          className={styles.outline}
+          href={callLink(props.receipt.call)}
+        >
+          {copy.waiting.callFirst(props.receipt.who)}
+        </ButtonLink>
+      )}
       {props.early && (
         <p className={styles.stageWarn} role="alert">
           {copy.waiting.early}

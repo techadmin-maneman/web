@@ -19,14 +19,17 @@ export function JobRow({
   job,
   client,
   state,
+  closed = false,
 }: {
   job: JobSummary;
   client: string | undefined;
   /** "In progress" or "Closed out", or null for a job not begun. */
   state: string | null;
+  /** A job done with: drawn quieter, so the eye goes to what is left. */
+  closed?: boolean;
 }) {
   return (
-    <Link className={styles.row} to={`/jobs/${job.id}`}>
+    <Link className={closed ? styles.closedRow : styles.row} to={`/jobs/${job.id}`}>
       <span className={styles.when}>
         <span className={styles.time}>{clock(job.starts_at)}</span>
         {job.minutes !== null && <span className={styles.length}>{copy.minutes(job.minutes)}</span>}
@@ -34,12 +37,10 @@ export function JobRow({
       <span className={styles.what}>
         <span className={styles.kind}>
           <span className={capsLook(styles.type)}>{kindName(job)}</span>
-          {/* The one visit's badge is too long to share a line: it takes its own, with no dot to start it. */}
-          {job.badge === "at_visit" ? (
-            <span className={badgeLook("muted", styles.badgeLine)}>{badges.at_visit}</span>
-          ) : (
-            <span className={badgeLook("muted")}>· {badges[job.badge]}</span>
-          )}
+          {/* The badge sits beside the kind, or on a line of its own where the row is narrow: no dot to strand. */}
+          <span className={badgeLook("muted", job.badge === "at_visit" ? styles.badgeLine : undefined)}>
+            {badges[job.badge]}
+          </span>
         </span>
         {client !== undefined && <span className={styles.who}>{client}</span>}
         <span className={styles.where}>{where(job.sector)}</span>

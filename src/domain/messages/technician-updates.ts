@@ -21,6 +21,33 @@ const STILL_HELPS_MINUTES: Readonly<Record<Preset, number>> = { on_the_way: 30, 
 const tooLate = (preset: Preset, writtenAt: Date, now: Date): boolean =>
   now.getTime() - writtenAt.getTime() > STILL_HELPS_MINUTES[preset] * MINUTE_MS;
 
+/** A second tap of the same word for the same visit within this long tells the client nothing new. */
+const REPEAT_MINUTES = 10;
+
+/** Whether the same word for the same visit already went to the client a moment ago, from another tap. */
+async function saidJustNow(
+  db: D1Database,
+  update: {
+    readonly eventId: string;
+    readonly appointmentId: string;
+    readonly preset: Preset;
+    readonly writtenAt: Date;
+  },
+): Promise<boolean> {
+  const since = new Date(update.writtenAt.getTime() - REPEAT_MINUTES * MINUTE_MS).toISOString();
+  const earlier = await db
+    .prepare(
+      `SELECT 1 FROM technician_updates u
+       JOIN outbound_messages m ON m.subject_kind = 'technician_update' AND m.subject_id = u.id
+       WHERE u.appointment_id = ?1 AND u.preset = ?2 AND u.id <> ?3 AND u.written_at >= ?4
+         AND m.state NOT IN ('skipped', 'failed')
+       LIMIT 1`,
+    )
+    .bind(update.appointmentId, update.preset, update.eventId, since)
+    .first();
+  return earlier !== null;
+}
+
 /**
  * Records the word and its message, once however often the phone sends it. The message's ID to queue; null when it was
  * recorded before, or reached us too late to tell the client.
@@ -39,6 +66,9 @@ export async function recordTechnicianUpdate(
   },
 ): Promise<string | null> {
   const late = tooLate(update.preset, update.writtenAt, update.now);
+  const repeated = !late && (await saidJustNow(db, update));
+  const skipped = late || repeated;
+  const why = late ? "the word reached us too late to tell the client" : "the same word went to the client just now";
   const messageId = crypto.randomUUID();
   const at = update.now.toISOString();
   const [recorded] = await db.batch([
@@ -69,12 +99,12 @@ export async function recordTechnicianUpdate(
         at,
         update.personId,
         update.eventId,
-        late ? "skipped" : "queued",
-        late ? null : at,
-        late ? "the word reached us too late to tell the client" : null,
+        skipped ? "skipped" : "queued",
+        skipped ? null : at,
+        skipped ? why : null,
       ),
   ]);
-  return (recorded?.meta.changes ?? 0) === 1 && !late ? messageId : null;
+  return (recorded?.meta.changes ?? 0) === 1 && !skipped ? messageId : null;
 }
 
 /** The message a word sends, as the visit stands now; why not, once it no longer helps or the visit has closed. */
