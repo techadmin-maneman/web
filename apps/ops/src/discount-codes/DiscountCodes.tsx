@@ -233,7 +233,6 @@ export function DiscountCodes() {
     <Panel
       titleId="discount-codes"
       title={copy.title}
-      padded
       actions={<MakeCodes codes={codes} onMade={() => void refresh()} />}
     >
       <Figures totals={codes.totals} />

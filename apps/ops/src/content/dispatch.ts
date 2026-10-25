@@ -111,8 +111,6 @@ export const dispatch = {
     referred: (name: string) => `Referred by ${name}`,
     // A job still on a technician who was switched off, which no board draws.
     was: (name: string) => `Was ${name}’s, now switched off`,
-    // The board draws four waiting and no empty tray.
-    empty: "Nothing unassigned.",
   },
   /** Our words, all of them: letting a technician check in past the geofence, which no board draws. */
   letIn: {

@@ -166,7 +166,6 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     <Panel
       titleId="area"
       title={copy.title}
-      padded
       actions={
         <Button
           variant="outline"

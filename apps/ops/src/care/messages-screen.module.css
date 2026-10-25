@@ -60,7 +60,7 @@
   flex-direction: column;
   gap: var(--sp-4);
   width: 100%;
-  padding: var(--sp-12) var(--sp-16);
+  padding: var(--sp-12) var(--sp-16) var(--sp-12) calc(var(--sp-20) - var(--rule-strong));
   border-top: var(--hairline) solid var(--ui-line);
   border-left: var(--rule-strong) solid transparent;
   text-align: start;
@@ -108,9 +108,17 @@
   text-overflow: ellipsis;
 }
 
+/* The chat open, a box of its own set in from the panel's edge; beside the list, from its right edge alone. */
 .pane {
   min-width: 0;
+  margin-inline: var(--note-inset);
   padding: var(--sp-16) var(--sp-20);
   border: var(--hairline) solid var(--ui-line);
   background: var(--ui-raised);
+}
+
+@media (min-width: 1024px) {
+  .pane {
+    margin-left: 0;
+  }
 }

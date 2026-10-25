@@ -49,7 +49,7 @@ export function JobSheet() {
   const checklist = current.checklists.find((each) => each.visit_type === kind);
 
   return (
-    <Panel titleId="job-sheet" title={copy.title} padded>
+    <Panel titleId="job-sheet" title={copy.title}>
       <div className={form.group}>
         <Field label={copy.kind} className={form.field}>
           {(control) => (

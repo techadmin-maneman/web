@@ -274,7 +274,7 @@ export function Blackouts() {
   const periods = periodsOf(changed ?? loaded.value.blackouts);
 
   return (
-    <Panel titleId="blackouts" title={copy.title} padded>
+    <Panel titleId="blackouts" title={copy.title}>
       {mayAdd && (
         <PageActions>
           <DrawerButton primary label={copy.formTitle}>

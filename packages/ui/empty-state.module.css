@@ -1,5 +1,5 @@
 /* Nothing to show yet (./EmptyState.tsx): on a page, a line in the serif and one beneath it, as the client app's
-   design draws them; in a console panel, one muted line set in from the panel's edges. */
+   design draws them; in the console, one muted line, set in from a panel's edges as a note is (./note.module.css). */
 
 @layer base, ui;
 
@@ -37,7 +37,7 @@
 
   .panel {
     margin: 0;
-    padding: var(--sp-16) var(--sp-20);
+    padding: var(--sp-16) var(--note-inset);
     font-size: var(--fs-15);
     line-height: var(--lh-160);
     color: var(--on-surface-muted);

@@ -260,7 +260,7 @@ function Spend() {
 export function SpendScreen() {
   return (
     <div className={form.screen}>
-      <Panel titleId="spend" title={copy.title} padded>
+      <Panel titleId="spend" title={copy.title}>
         <Spend />
       </Panel>
     </div>

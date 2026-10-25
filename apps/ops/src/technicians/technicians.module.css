@@ -20,7 +20,6 @@
 }
 
 .head {
-  padding: var(--sp-8) var(--sp-8) var(--sp-8) 0;
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
   color: var(--ui-text-muted);
@@ -28,8 +27,15 @@
 }
 
 .name,
+.city,
+.jobs,
+.service,
+.leaveCell {
+  padding-block: 0; /* the board's row height, its words centred in it */
+}
+
+.name,
 .city {
-  padding: 0 var(--sp-8) 0 0;
   font-weight: var(--weight-regular);
   text-align: left;
 }
@@ -56,19 +62,16 @@
 
 .jobs {
   width: var(--sp-64);
-  padding: 0 var(--sp-4);
   font-variant-numeric: lining-nums tabular-nums;
 }
 
 .service {
   width: var(--ops-cell);
-  padding: 0 var(--sp-8);
   font-variant-numeric: lining-nums tabular-nums;
 }
 
 .leaveCell {
   width: var(--ops-figure);
-  padding: 0 var(--sp-4);
   white-space: nowrap;
 }
 

@@ -113,7 +113,7 @@ export function PayStatement({ today }: { today: string }) {
   const load = useCallback(() => technicianPayApi.payStatement(month), [month]);
   const [loaded, retry] = useLoad(load);
   return (
-    <Panel titleId="pay-statement" title={copy.title} padded>
+    <Panel titleId="pay-statement" title={copy.title}>
       <div className={shared.tools}>
         <Field label={copy.month} className={form.field}>
           {(control) => (

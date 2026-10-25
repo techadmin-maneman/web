@@ -176,7 +176,7 @@ function LetterheadRows({ letter, onSaved }: { letter: Letter; onSaved: (next: O
 export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next: Orders, said: string) => void }) {
   const letter = orders.letterhead;
   return (
-    <Panel titleId="letterhead" title={copy.title} padded>
+    <Panel titleId="letterhead" title={copy.title}>
       {letter === null ? (
         <>
           <Note>{copy.missing}</Note>

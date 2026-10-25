@@ -43,7 +43,7 @@ test("gives the area the room the figures leave, and each figure its own width",
   await open(page);
   const width = async (name: string) =>
     (await page.getByRole("columnheader", { name, exact: true }).boundingBox())?.width ?? 0;
-  const figures = { Pincode: 76, Waiting: 54, Oldest: 76, Referred: 60, "Opted in": 62 };
+  const figures = { Pincode: 76, Waiting: 72, Oldest: 76, Referred: 72, "Opted in": 62 };
   for (const [name, wide] of Object.entries(figures)) expect(Math.round(await width(name)), name).toBe(wide);
   const table = (await page.getByRole("table").boundingBox())?.width ?? 0;
   const taken = Object.values(figures).reduce((sum, wide) => sum + wide, 0);

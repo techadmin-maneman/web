@@ -254,7 +254,7 @@ function VisitTable({
           <thead>
             <tr>
               {copy.columns.map((column) => (
-                <th key={column} scope="col" className={styles.cell}>
+                <th key={column} scope="col">
                   {column}
                 </th>
               ))}
@@ -263,17 +263,17 @@ function VisitTable({
           <tbody>
             {visits.map((visit) => (
               <tr key={visit.id}>
-                <td className={styles.cell}>
+                <td>
                   {fullDate(visit.date)}
                   {onBoard && <ShowOnBoard visit={visit} />}
                 </td>
-                <td className={styles.cell}>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
-                <td className={styles.cell}>
+                <td>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
+                <td>
                   {whatOf(visit)}
                   {visit.client_note !== null && <p className={styles.note}>{copy.clientNote(visit.client_note)}</p>}
                 </td>
                 <td className={styles.quietCell}>{visit.technician?.name ?? clients.unknown}</td>
-                <td className={styles.cell}>
+                <td>
                   {stateOf(visit)}
                   <ClosedWithoutFollowUp visit={visit} />
                   <LostReason
@@ -285,7 +285,7 @@ function VisitTable({
                     <ChangeVisit visit={visit} name={changing.name} onChanged={changing.onChanged} />
                   )}
                 </td>
-                <td className={styles.cell}>
+                <td>
                   <VisitCode visit={visit} />
                 </td>
               </tr>

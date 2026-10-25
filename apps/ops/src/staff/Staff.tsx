@@ -42,7 +42,7 @@ function Enforcement({ staff, onChanged }: PanelProps) {
   const on = staff.enforced.on;
   const { set_by: setBy, set_at: setAt } = staff.enforced;
   return (
-    <Panel titleId="staff-enforcement" title={words.title} padded>
+    <Panel titleId="staff-enforcement" title={words.title}>
       <Note>{on ? words.on : words.off}</Note>
       {setBy !== null && setAt !== null && <Note>{words.setBy(whoWords(setBy), longDate(setAt))}</Note>}
       {staff.may_run_access && (
@@ -139,7 +139,7 @@ function People({ staff, onChanged }: PanelProps) {
           </DrawerButton>
         )}
       </PageActions>
-      <Panel titleId="staff-people" title={copy.title} padded>
+      <Panel titleId="staff-people" title={copy.title}>
         <PeopleTable
           staff={staff}
           onOpen={(email) => {
@@ -254,7 +254,6 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
     <Panel
       titleId="staff-tokens"
       title={words.title}
-      padded
       actions={
         staff.may_run_access && (
           <DrawerButton label={words.addTitle}>

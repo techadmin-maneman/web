@@ -48,11 +48,11 @@ function Figures({ numbers }: { numbers: CareNumbers }) {
 /** One of the counts by reason, a line each, or a dash with none. */
 function Counted({ titleId, title, lines }: { titleId: string; title: string; lines: readonly string[] }) {
   return (
-    <Panel titleId={titleId} title={title} padded>
+    <Panel titleId={titleId} title={title}>
       {lines.length === 0 ? (
         <Note>{copy.nothing}</Note>
       ) : (
-        <ul className={shared.leave}>
+        <ul className={`${shared.leave} ${shared.reasons}`}>
           {lines.map((line) => (
             <li key={line}>{line}</li>
           ))}
@@ -73,7 +73,7 @@ function Reasons({ numbers }: { numbers: CareNumbers }) {
       shown: String(row.chats),
     }));
   return (
-    <Panel titleId="care-reasons" title={copy.reasons} padded>
+    <Panel titleId="care-reasons" title={copy.reasons}>
       {bars.length === 0 ? <Note>{copy.nothing}</Note> : <BarChart label={copy.reasons} bars={bars} />}
     </Panel>
   );

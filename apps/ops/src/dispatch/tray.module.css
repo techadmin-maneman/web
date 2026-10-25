@@ -1,26 +1,14 @@
 /* What ./Tray.tsx alone draws; what it shares is in ./dispatch.module.css. */
 
+/* Beneath the board, across its width; past its share of the screen it scrolls, and the board keeps the rest. */
 .tray {
-  display: flex;
-  flex-direction: column;
+  --local-tray-max: 40dvh; /* the most of the screen the tray takes */
+
   flex-shrink: 0;
-  width: var(--ops-tray);
+  max-height: var(--local-tray-max);
   overflow-y: auto;
-  border-left: var(--hairline) solid var(--ui-text);
+  border-top: var(--hairline) solid var(--ui-text);
   background: var(--ui-raised);
-}
-
-/* Nothing waiting: a rail, its title running down it. */
-.trayRail {
-  width: var(--sp-40);
-}
-
-.trayRail .trayHead {
-  flex-direction: column;
-  align-items: center;
-  padding: var(--sp-12) 0;
-  border-bottom: 0;
-  writing-mode: vertical-rl;
 }
 
 .trayHead {
@@ -45,7 +33,8 @@
 }
 
 .trayList {
-  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--ops-tray), 1fr));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -57,6 +46,7 @@
   width: 100%;
   padding: var(--sp-12) var(--sp-16);
   border: 0;
+  border-right: var(--hairline) solid var(--ui-line);
   border-bottom: var(--hairline) solid var(--ui-line);
   background: transparent;
   font: inherit;
@@ -107,20 +97,4 @@
 .trayJob:focus-visible {
   outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: var(--focus-inset);
-}
-
-@media (max-width: 1023px) {
-  .tray,
-  .trayRail {
-    width: auto;
-    overflow-y: visible;
-    border-top: var(--hairline) solid var(--ui-text);
-    border-left: 0;
-  }
-
-  .trayRail .trayHead {
-    flex-direction: row;
-    padding: var(--sp-12) var(--sp-16);
-    writing-mode: horizontal-tb;
-  }
 }

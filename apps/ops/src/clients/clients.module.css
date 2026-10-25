@@ -250,12 +250,6 @@
   table-layout: auto;
 }
 
-.cell,
-.quietCell,
-.figureCell {
-  padding-inline: 0 var(--sp-8);
-}
-
 .quietCell {
   color: var(--ui-text-muted);
 }
@@ -468,6 +462,18 @@
 /* Fixed, so each column keeps the width the board draws it at and the purpose wraps as it does (packages/ui/Table.tsx). */
 .table {
   table-layout: fixed;
+}
+
+/* The client's tables stand on the page's column, or in a box that sets them in already: their first and last
+   columns meet that edge, and between them is the table's own room. */
+.table th:first-child,
+.table td:first-child {
+  padding-left: 0;
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: 0;
 }
 
 .note {

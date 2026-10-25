@@ -116,13 +116,20 @@ test("finds a visit by its area or its client, and outlines the blocks it found"
   await expect(found).toHaveCount(0);
 });
 
-// An empty tray kept its 236 px, so a 1024 px laptop showed five of the week's seven days.
-test("folds an empty tray to a rail, so the week has the width", async ({ page }) => {
+// An empty tray stood down the right as a rail labelled Unassigned, and a full one took the week's width.
+test("draws no tray with nothing unassigned, and a full one beneath the board, across its width", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await open(page, { [READ_BOARD]: json({ ...BOARD, unassigned: [] }) });
-  const tray = page.getByRole("complementary", { name: opsCopy.dispatch.tray.title });
-  expect((await tray.boundingBox())?.width ?? 0).toBeLessThanOrEqual(41);
-  await expect(tray).toContainText(opsCopy.dispatch.tray.empty);
+  await expect(page.getByRole("complementary", { name: opsCopy.dispatch.tray.title })).toHaveCount(0);
+
+  await open(page);
+  const tray = await page.getByRole("complementary", { name: opsCopy.dispatch.tray.title }).boundingBox();
+  const board = await page.getByRole("table").first().boundingBox();
+  const main = await page.getByRole("main").boundingBox();
+  if (tray === null || board === null || main === null) throw new Error("the tray or the board is not drawn");
+  expect(tray.y).toBeGreaterThan(board.y);
+  expect(tray.x).toBeLessThan(board.x + board.width / 2);
+  expect(tray.width).toBeGreaterThan(main.width * 0.9);
 });
 
 // At 1280 wide and 200% zoom the days shrank to 15 px and the navigation ran off the page.

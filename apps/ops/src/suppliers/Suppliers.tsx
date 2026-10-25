@@ -95,7 +95,7 @@ export function Suppliers() {
           </DrawerButton>
         )}
       </PageActions>
-      <Panel titleId="suppliers" title={copy.title} padded>
+      <Panel titleId="suppliers" title={copy.title}>
         <SupplierTable
           suppliers={current}
           onOpen={(id) => {

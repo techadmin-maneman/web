@@ -1,7 +1,7 @@
 /*
  * The Tasks board: a head with the count of what has run over in oxblood, then
- * a section for each department, its groups side by side where the page is wide
- * enough. Each group is the design's panel: its name on a shaded band with its
+ * a section for each department, its groups one beneath another across the
+ * page's width. Each group is the design's panel: its name on a shaded band with its
  * count, then the tasks under it, each in the board's three columns: what it is,
  * whose it is, and when it is due. The actions on a task, which the board does
  * not draw, sit under its lines as the way to where it is decided does
@@ -52,11 +52,10 @@
   font-size: var(--fs-18);
 }
 
-/* As many of the board's panels side by side as the page holds at their own width: two on a desk's screen. */
+/* The department's groups one beneath another, each as wide as the page, so its tasks read down a single list. */
 .groups {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--ops-panel)), 1fr));
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-16);
 }
 
@@ -137,6 +136,17 @@
   flex-direction: column;
   gap: var(--sp-4);
   min-width: 0;
+}
+
+/* On a desk's width a task reads on one line: who, what it is, then its actions, before whose it is and when it is due. */
+@media (min-width: 1024px) {
+  .task .what,
+  .marked .what {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+    align-items: baseline;
+    column-gap: var(--sp-16);
+  }
 }
 
 /* The client's name, which reaches their page: the board draws it as plain text. */

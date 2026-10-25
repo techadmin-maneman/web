@@ -246,8 +246,8 @@ export function DispatchScreen() {
               onRoutes={access.mayCall("GET /api/dispatch/day") ? set.routesOn : null}
             />
           )}
+          {board !== null && <Tray unassigned={board.unassigned} onOpen={open} />}
         </div>
-        {board !== null && <Tray unassigned={board.unassigned} onOpen={open} />}
       </div>
 
       <BoardOverlays

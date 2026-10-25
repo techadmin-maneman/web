@@ -18,6 +18,8 @@
   }
 
   .menu {
+    --local-fold: 14px; /* the fold's chevron, the icon set's xs (./Icon.tsx) */
+
     position: sticky;
     top: 0;
     display: flex;
@@ -66,9 +68,11 @@
     list-style: none;
   }
 
+  /* A page's name sits under its group's name, past the fold, its rule at the menu's edge. */
   .item {
     display: block;
-    padding: var(--sp-4) var(--sp-12);
+    padding: var(--sp-4) var(--sp-12) var(--sp-4)
+      calc(var(--sp-12) + var(--local-fold) + var(--sp-8) - var(--rule-strong));
     border-left: var(--rule-strong) solid transparent;
     font-size: var(--fs-14);
     color: var(--ui-text);
@@ -150,6 +154,7 @@
     }
 
     .item {
+      padding-inline: var(--sp-12);
       border-bottom: var(--rule-strong) solid transparent;
       border-left: 0;
     }
