@@ -104,5 +104,5 @@ test("finds a chat by the client's name as it is typed, with no Find to press", 
   );
   await page.getByRole("searchbox", { name: copy.search }).fill("Arjun");
   await asked;
-  await expect(page.getByRole("button", { name: "Find", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: copy.find, exact: true })).toHaveCount(0);
 });
