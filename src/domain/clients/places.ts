@@ -109,7 +109,8 @@ const RECORD_PLACES = {
   technician: { table: "technicians", city: (row) => `${row}.city` },
   leave_request: {
     table: "leave_requests",
-    city: (row) => `(SELECT place_technician.city FROM technicians place_technician WHERE place_technician.id = ${row}.technician_id)`,
+    city: (row) =>
+      `(SELECT place_technician.city FROM technicians place_technician WHERE place_technician.id = ${row}.technician_id)`,
   },
   visit_change: { table: "visit_changes", city: (row) => cityOfVisit(`${row}.appointment_id`) },
   // A chat's is its client's; a number we don't know is in no city.
