@@ -108,7 +108,9 @@ test("asks the client to confirm a move to another day, sending it as a proposal
   expect(moved).toEqual([]);
 });
 
-test("shows a proposal waiting on the client in the visit’s drawer, and takes it back", async ({ page }) => {
+test("shows a proposal waiting on the client where it would go and in the visit’s drawer, and takes it back", async ({
+  page,
+}) => {
   const waiting = structuredClone(BOARD);
   const block = waiting.technicians[0]?.days[0]?.blocks[0];
   if (block !== undefined) {
@@ -118,11 +120,21 @@ test("shows a proposal waiting on the client in the visit’s drawer, and takes 
       window: "morning",
       hours: { start: "09:00", end: "12:00" },
       technician: { name: "Sandeep Yadav", initials: "SY" },
+      technician_id: "66000000-0000-4000-8000-000000000002",
+      starts_at: "2025-09-20T03:30:00.000Z",
       expires_at: "2025-09-20T03:30:00.000Z",
     };
   }
   const withdrawn = sentTo(page, WITHDRAW);
   await open(page, { [READ_BOARD]: json(waiting), [WITHDRAW_IT]: empty() });
+
+  // A proposed move left no mark where it would go: a ghost stands on Sandeep's Saturday, and opens the visit.
+  const sandeep = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: /Sandeep Yadav/ }) });
+  const ghost = sandeep.getByRole("button", { name: opsCopy.dispatch.board.ghost("Rohit M.", "Sat 20 Sep", "9 am") });
+  await expect(ghost).toBeVisible();
+  await ghost.click();
+  await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
+  await page.keyboard.press("Escape");
 
   await press(page, ROHIT_BLOCK);
   const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });

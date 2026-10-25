@@ -57,3 +57,36 @@ test("keeps the day's last hours where they fall when the hours scroll", async (
   const last = day.getByRole("columnheader").last();
   expect(await last.evaluate((head) => getComputedStyle(head).position)).not.toBe("sticky");
 });
+
+// A proposed move left no mark on the day it would take the visit to.
+test("draws a proposed move on the day it would go to, dashed, opening the visit", async ({ page }) => {
+  const [imran, ...others] = BOARD.technicians;
+  const [friday, ...week] = imran?.days ?? [];
+  const [rohit, ...rest] = friday?.blocks ?? [];
+  if (imran === undefined || friday === undefined || rohit === undefined) throw new Error("the board has no visit");
+  const proposal = {
+    id: "79000000-0000-4000-8000-000000000001",
+    date: friday.date,
+    window: "evening" as const,
+    hours: { start: "15:00", end: "18:00" },
+    technician: { name: "Sandeep Yadav", initials: "SY" },
+    technician_id: "66000000-0000-4000-8000-000000000002",
+    starts_at: `${friday.date}T10:30:00.000Z`,
+    expires_at: `${friday.date}T10:30:00.000Z`,
+  };
+  const board = {
+    ...BOARD,
+    technicians: [{ ...imran, days: [{ ...friday, blocks: [{ ...rohit, proposal }, ...rest] }, ...week] }, ...others],
+  };
+  await answer(page, { [READ_BOARD]: json(board), [READ_ROOM]: json(ROOM) });
+  await page.goto("/dispatch");
+  const day = page.getByRole("table", { name: copy.day.label("Fri 19 Sep") });
+  const ghost = day.getByRole("button", { name: new RegExp(`^Rohit M\\. ?, ${copy.chips.proposed}$`) });
+  await expect(ghost).toBeVisible();
+  const row = ghost.locator("xpath=ancestor::tr");
+  await expect(row).toContainText("Sandeep Yadav");
+  await expect(row).toContainText(`4 pm · ${copy.chips.proposed}`);
+  expect(await axeViolations(page)).toEqual([]);
+  await ghost.click();
+  await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
+});
