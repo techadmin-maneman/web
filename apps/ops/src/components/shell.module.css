@@ -110,7 +110,7 @@
 
 /* The dispatch board runs to the frame's edges beneath its head, and holds its own tray against the right. */
 .flushHead {
-  padding: var(--sp-20) var(--sp-24) var(--sp-12);
+  padding: var(--sp-24) var(--sp-32) var(--sp-12);
 }
 
 .actions {
