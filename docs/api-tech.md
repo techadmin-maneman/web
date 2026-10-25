@@ -4319,6 +4319,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "launch_in_future",
             "no_technician",
             "pincode_held",
+            "already_served",
+            "already_scheduled",
             "service_exists",
             "last_of_kind",
             "service_retired",

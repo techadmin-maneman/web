@@ -91,6 +91,83 @@ export const areas = {
       unknown: FAILED,
     },
   },
+  /** Launches scheduled for a later day, served by the cron on the day (docs/decisions/0221-launches-scheduled-paused-and-checked.md). */
+  launches: {
+    title: "Launches",
+    none: "No launches yet.",
+    /** "Pune · 5 Nov · 12 pincodes" */
+    line: (city: string, day: string, count: number) =>
+      `${city} · ${day} · ${count === 1 ? "1 pincode" : `${String(count)} pincodes`}`,
+    states: { scheduled: "Scheduled", live: "Live", cancelled: "Cancelled" },
+    told: (alerted: number) => (alerted === 1 ? "1 told" : `${String(alerted)} told`),
+    held: "Not live: no active technician in the city.",
+    cancel: "Cancel",
+    cancelLabel: (city: string, day: string) => `Cancel the ${city} launch on ${day}`,
+    cancelCheck: (city: string, day: string) => `Cancel the ${city} launch on ${day}?`,
+    keep: "Keep it",
+    cancelled: "Launch cancelled.",
+    schedule: "Schedule",
+    scheduleTitle: (count: number, city: string) =>
+      count === 1 ? `Schedule 1 pincode in ${city}` : `Schedule ${String(count)} pincodes in ${city}`,
+    day: "Goes live on",
+    scheduling: "Scheduling…",
+    scheduled: (count: number, day: string) =>
+      count === 1 ? `1 pincode goes live on ${day}.` : `${String(count)} pincodes go live on ${day}.`,
+    back: "Back",
+    errors: {
+      invalid_request: "Pick a day after today, for unserved pincodes in this city.",
+      already_served: "Some of these are served already.",
+      already_scheduled: "Some of these are in another launch.",
+      not_found: "That launch has gone live or been cancelled.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
+  },
+  /** What a city needs before its pincodes are served: each check, as it stands, and where it is put right. */
+  readiness: {
+    title: "Before it goes live",
+    loading: "Checking…",
+    checks: {
+      technicians: (ready: boolean, count: number) =>
+        ready ? `${String(count)} active ${count === 1 ? "technician" : "technicians"}` : "No active technician",
+      fitters: (ready: boolean, count: number) =>
+        ready ? `${String(count)} trained to fit` : "No technician trained to fit",
+      hours: (ready: boolean, count: number) =>
+        ready ? "Working hours set" : `${String(count)} without working hours`,
+      homes: (ready: boolean, count: number) => (ready ? "Home pins set" : `${String(count)} without a home pin`),
+      stockroom: (ready: boolean) => (ready ? "Stockroom set up" : "No stockroom"),
+      gst: (ready: boolean) => (ready ? "GST registered for the state" : "No GST registration for the state"),
+      centres: (ready: boolean, count: number) =>
+        ready ? "Every pincode on the map" : `${String(count)} not on the map yet: placed within the hour`,
+    },
+    fix: "Fix",
+    /** Only the first stops a launch; the rest are for ops to weigh. */
+    blocks: "Nothing can be booked without an active technician.",
+  },
+  /** A served pincode taking no new clients for a while; clients we already come to book as before. */
+  pause: {
+    pause: "Pause",
+    resume: "Resume",
+    title: (count: number) => (count === 1 ? "Pause 1 pincode" : `Pause ${String(count)} pincodes`),
+    until: "New clients again from",
+    hint: "No new consultations till then. Booked visits and existing clients carry on.",
+    pausing: "Pausing…",
+    paused: (count: number, day: string) =>
+      count === 1 ? `1 pincode paused till ${day}.` : `${String(count)} pincodes paused till ${day}.`,
+    resumed: (count: number) => (count === 1 ? "1 pincode resumed." : `${String(count)} pincodes resumed.`),
+    /** The table's served cell for a pincode paused. */
+    chip: (day: string) => `Paused till ${day}`,
+    back: "Back",
+    errors: {
+      invalid_request: "Pick a day after today, for served pincodes only.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
+  },
   /** Our words, all of them: adding a pincode the service area does not hold, on Waiting and on Served. */
   add: {
     /** The panel's head on Waiting. */
@@ -155,6 +232,11 @@ export const areas = {
         count === 1 ? `Serve 1 pincode in ${city}?` : `Serve ${String(count)} pincodes in ${city}?`,
       stopCheck: (count: number, city: string) =>
         count === 1 ? `Stop serving 1 pincode in ${city}?` : `Stop serving ${String(count)} pincodes in ${city}?`,
+      /** Beneath the stop question: what stopping leaves in place. */
+      stopLeaves: (visits: number, clients: number) =>
+        visits === 0
+          ? " Nothing is booked there."
+          : ` ${String(visits)} booked ${visits === 1 ? "visit" : "visits"} for ${String(clients)} ${clients === 1 ? "client" : "clients"} stay booked.`,
     },
     upload: {
       title: "Upload",

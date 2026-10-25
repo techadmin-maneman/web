@@ -120,6 +120,8 @@ export type NewPincode = Sent<paths["/api/pincodes"]["post"]>;
 export type PincodesFromDirectory = Sent<paths["/api/pincodes/from-directory"]["post"]>;
 export type DirectoryPincode = Body<paths["/api/pincode-directory/pincodes"]["get"]>["pincodes"][number];
 export type DirectoryDistrict = Body<paths["/api/pincode-directory/districts"]["get"]>["districts"][number];
+export type PincodeLaunch = Body<paths["/api/pincode-launches"]["get"]>["launches"][number];
+export type LaunchReadiness = Body<paths["/api/pincode-launches/readiness"]["get"]>["checks"][number];
 
 /** The consumables, each service's expected use, the job sheet, and the stock (docs/decisions/0087-consumables-and-stock.md). */
 export type Consumables = Body<paths["/api/consumables"]["get"]>;

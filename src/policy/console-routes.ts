@@ -243,6 +243,12 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/pincodes/{pin}/launch": inOwnPlaces("growth", "manage"),
   "GET /api/service-area": need("growth", "view"),
   "POST /api/service-area": need("growth", "manage"),
+  "POST /api/service-area/pause": need("growth", "manage"),
+  "GET /api/service-area/stop-impact": need("growth", "view"),
+  "GET /api/pincode-launches": need("growth", "view"),
+  "POST /api/pincode-launches": inOwnPlaces("growth", "manage"),
+  "POST /api/pincode-launches/{id}/cancel": inOwnPlaces("growth", "manage"),
+  "GET /api/pincode-launches/readiness": readFromAnyPlace("growth"),
 
   // Admin: the settings, and staff and access.
   "GET /api/settings": need("admin", "view"),

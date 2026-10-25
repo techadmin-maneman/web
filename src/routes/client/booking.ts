@@ -9,7 +9,7 @@ import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { holdSlot } from "../../domain/booking/hold-slot.ts";
 import { clientHold, holdAtCheckout, releaseHold, takeBackAtCheckout } from "../../domain/booking/holds.ts";
 import { currentAddress } from "../../domain/clients/profile.ts";
-import { isServed } from "../../domain/clients/service-area.ts";
+import { isServed, takesNewClients } from "../../domain/clients/service-area.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
 import { codeToCarry } from "../../domain/money/discount-code-uses.ts";
 import { enterOnHold } from "../../domain/money/discount-code-holds.ts";
@@ -189,6 +189,16 @@ async function resumeAtCheckout(
   return clientHold(db, holdId, asked.personId, asked.now);
 }
 
+/** Whether a visit of this kind is booked at the address's pincode: a paused one takes no new consultation (ADR 0221). */
+async function servedFor(
+  db: D1Database,
+  address: Awaited<ReturnType<typeof currentAddress>>,
+  type: VisitType,
+  now: Date,
+): Promise<boolean> {
+  if (!isFullAddress(address)) return false;
+  return type === "consultation" ? takesNewClients(db, address.pincode, now) : isServed(db, address.pincode);
+}
 export function registerClientBooking(app: App): void {
   app.openapi(holdRoute, async (c) => {
     const personId = clientOf(c).subjectId;
@@ -214,7 +224,7 @@ export function registerClientBooking(app: App): void {
       move === null ? offered : movedService(c, move.terms.visit),
       soldAs(c, { type, date, move: move?.terms ?? null, kind: moveKind, personId }, inputs),
       creditPays(c.env.DB, { personId, type, moveKind }, now),
-      isFullAddress(address) ? isServed(c.env.DB, address.pincode) : false,
+      servedFor(c.env.DB, address, type, now),
       // A client back from Checkout without paying who picks the same window again gets their hold back, whose order a
       // payment may still land on, with its countdown started again, rather than a second technician's time.
       move === null && offered !== null

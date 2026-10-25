@@ -19,7 +19,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/app/src/profile/NumberChangeCard.tsx": { fn: 86 },
   "apps/app/src/refer/share-flow.ts": { fn: 98 },
   "apps/ops/src/areas/AddPincode.tsx": { fn: 97 },
-  "apps/ops/src/areas/Served.tsx": { fn: 102 },
+  "apps/ops/src/areas/Served.tsx": { fn: 98 },
   "apps/ops/src/areas/Waiting.tsx": { fn: 97 },
   "apps/ops/src/clients/BookVisit.tsx": { fn: 108 },
   "apps/ops/src/clients/GivenAddress.tsx": { fn: 93 },

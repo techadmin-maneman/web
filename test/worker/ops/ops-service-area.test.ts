@@ -202,6 +202,7 @@ describe("adding a pincode", () => {
       launch_on: null,
       waiting: 0,
       to_alert: 0,
+      paused_until: null,
     });
     const row = await env.DB.prepare(
       "SELECT area, city, served, launched_at, area_named_by FROM serviceable_pincodes WHERE pincode = '400050'",

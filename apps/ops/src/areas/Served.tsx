@@ -22,6 +22,7 @@ import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
 import { addFromFile, OpenCity } from "./OpenCity.tsx";
+import { LaunchList } from "./Launches.tsx";
 import { readServiceAreaCsv, serviceAreaCsv } from "./csv.ts";
 import { AREA_NAME } from "./rules.ts";
 import {
@@ -130,6 +131,22 @@ function AddBeneath(props: { cities: readonly string[]; onAdded: (rows: readonly
   );
 }
 
+/** The list as it stands, as the file ops edit and upload back. */
+function DownloadCsv({ pincodes }: { pincodes: readonly ServedPincode[] }) {
+  return (
+    <Button
+      variant="outline"
+      size="small"
+      narrow
+      onClick={() => {
+        saveFile(copy.downloadName, serviceAreaCsv(pincodes), "text/csv");
+      }}
+    >
+      {copy.download}
+    </Button>
+  );
+}
+
 function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedPincode[]; cities: readonly string[] }) {
   const [pincodes, setPincodes] = useState<readonly ServedPincode[]>(loadedPincodes);
   const [city, setCity] = useState(pincodes[0]?.city ?? "");
@@ -156,9 +173,9 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     return null;
   };
 
-  const serveChosen = (served: boolean) => {
+  const serveChosen = (served: boolean, note = "") => {
     const question = served ? copy.chosen.serveCheck : copy.chosen.stopCheck;
-    saves.commit(changesIn(pincodes, chosenServed(pincodes, chosen, served)), question(chosen.size, city));
+    saves.commit(changesIn(pincodes, chosenServed(pincodes, chosen, served)), question(chosen.size, city) + note);
   };
 
   /** Pincodes just added, shown in their city's tab. */
@@ -177,18 +194,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     <Panel
       titleId="area"
       title={copy.title}
-      actions={
-        <Button
-          variant="outline"
-          size="small"
-          narrow
-          onClick={() => {
-            saveFile(copy.downloadName, serviceAreaCsv(pincodes), "text/csv");
-          }}
-        >
-          {copy.download}
-        </Button>
-      }
+      actions={<DownloadCsv pincodes={pincodes} />}
     >
       <CityTabs
         pincodes={pincodes}
@@ -200,8 +206,14 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
       />
       {chosen.size > 0 && saves.asking === null && (
         <ChosenBar
-          count={chosen.size}
+          city={city}
+          chosen={inCity.filter((each) => chosen.has(each.pincode))}
           onServe={serveChosen}
+          onPaused={(paused, until) => {
+            setPincodes((all) =>
+              all.map((each) => (paused.includes(each.pincode) ? { ...each, paused_until: until } : each)),
+            );
+          }}
           onClear={() => {
             setChosen(new Set());
           }}
@@ -234,6 +246,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           }}
         />
       )}
+      <LaunchList />
       {mayOpen && <OpenCity cities={cities} onAdded={addRows} />}
       {mayAdd && <AddBeneath cities={cities} onAdded={addRows} />}
     </Panel>

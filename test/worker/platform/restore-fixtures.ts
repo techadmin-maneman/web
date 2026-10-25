@@ -133,6 +133,9 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, created_at)
      VALUES ('vc1', 'ap2', 'p2', 'moved', 'free', '2026-10-04T03:30:00.000Z', '${AT}')`,
   `INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122002', 'DLF Phase 1', 'Gurgaon', 1)`,
+  `INSERT INTO pincode_launches (id, city, go_live_on, state, created_by, created_at)
+     VALUES ('pl1', 'Gurgaon', '2026-10-01', 'scheduled', 'ops@example.com', '${AT}')`,
+  `INSERT INTO pincode_launch_pincodes (launch_id, pincode) VALUES ('pl1', '122002')`,
   `INSERT INTO pincode_directory (pincode, district, state, office_names, refreshed_on)
      VALUES ('122002', 'GURGAON', 'HARYANA', 'DLF Phase 1 S.O', '2025-10-03')`,
   `INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES ('ARJUN1', 'p1', '${AT}', '${AT}')`,

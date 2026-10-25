@@ -27,6 +27,7 @@ export const CITY_COLUMNS: readonly (readonly [table: string, column: string])[]
   ["forecast_accuracy", "city"],
   ["forecast_lines", "city"],
   ["leads", "city"],
+  ["pincode_launches", "city"],
   ["plan_lines", "city"],
   ["serviceable_pincodes", "city"],
   ["spend_entries", "city"],

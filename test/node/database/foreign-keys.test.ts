@@ -37,6 +37,7 @@ const HANDLED: Readonly<Record<string, string>> = {
   "stock_places.city -> cities": RENAMED,
   "city_prices.city -> cities": RENAMED,
   "city_settings.city -> cities": RENAMED,
+  "pincode_launches.city -> cities": RENAMED,
   // A pay grade goes only once nothing uses it (docs/decisions/0122-technician-pay-per-visit.md).
   "technicians.pay_grade_id -> pay_grades":
     "src/domain/field/technician-pay.ts deletes a grade only while no technician holds it",

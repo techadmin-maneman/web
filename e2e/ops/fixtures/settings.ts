@@ -410,7 +410,16 @@ export const PRICE_ROWS: PriceRow[] = [
 /** Three of NCR's own six-digit numbers: one served, one with a waitlist, one neither. */
 export const SERVICE_AREA = {
   pincodes: [
-    { pincode: "110017", area: "Saket", city: "Delhi", served: true, launch_on: "2026-09-01", waiting: 0, to_alert: 0 },
+    {
+      pincode: "110017",
+      area: "Saket",
+      city: "Delhi",
+      served: true,
+      launch_on: "2026-09-01",
+      waiting: 0,
+      to_alert: 0,
+      paused_until: null,
+    },
     {
       pincode: "110024",
       area: "Lajpat Nagar",
@@ -419,8 +428,18 @@ export const SERVICE_AREA = {
       launch_on: null,
       waiting: 5,
       to_alert: 3,
+      paused_until: null,
     },
-    { pincode: "122018", area: "Sec65", city: "Gurgaon", served: false, launch_on: null, waiting: 0, to_alert: 0 },
+    {
+      pincode: "122018",
+      area: "Sec65",
+      city: "Gurgaon",
+      served: false,
+      launch_on: null,
+      waiting: 0,
+      to_alert: 0,
+      paused_until: null,
+    },
   ],
   cities: ["Gurgaon", "Delhi", "Mumbai"],
 } satisfies OpsReply<"/api/service-area">;

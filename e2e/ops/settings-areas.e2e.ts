@@ -14,6 +14,7 @@ import { open, posted } from "./settings-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 import { pressTwice } from "./twice.ts";
+import { shortDate } from "../../packages/web-kit/dates.ts";
 
 test.describe("the service area", () => {
   const served = opsCopy.areas.served;
@@ -113,6 +114,60 @@ test.describe("the service area", () => {
     await expect(page.getByRole("checkbox", { name: served.chosen.one("110017") })).not.toBeChecked();
   });
 
+  // A launch could only be today: ops served a city's pincodes on the morning they meant to open it.
+  test("schedules unserved pincodes for a later day, saying what the city still needs first", async ({ page }) => {
+    const words = opsCopy.areas;
+    await open(page, "/settings/areas", {
+      "GET /api/pincode-launches/readiness": json({
+        checks: [
+          { check: "technicians", ready: true, count: 2 },
+          { check: "stockroom", ready: false, count: 0 },
+        ],
+      }),
+      "POST /api/pincode-launches": json(
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          city: "Delhi",
+          go_live_on: "2026-11-05",
+          state: "scheduled",
+          pincodes: [{ pincode: "110024", area: "Lajpat Nagar" }],
+          created_by: "ops@localhost",
+          created_at: "2026-10-25T10:00:00.000Z",
+          live_at: null,
+          alerted: null,
+          cancelled_at: null,
+          held_because: null,
+        },
+        201,
+      ),
+    });
+    await page.getByRole("checkbox", { name: served.chosen.one("110024") }).check();
+    await page.getByRole("button", { name: words.launches.schedule }).click();
+    const form = page.getByRole("group", { name: words.launches.scheduleTitle(1, "Delhi") });
+    await expect(form.getByText(words.readiness.checks.stockroom(false))).toBeVisible();
+    await form.getByLabel(words.launches.day).fill("2026-11-05");
+    const sent = posted(page, "/api/pincode-launches");
+    await form.getByRole("button", { name: words.launches.schedule }).click();
+    expect((await sent).postDataJSON()).toEqual({ city: "Delhi", pincodes: ["110024"], go_live_on: "2026-11-05" });
+    await expect(
+      page.getByRole("status").filter({ hasText: words.launches.scheduled(1, shortDate("2026-11-05")) }),
+    ).toBeVisible();
+  });
+
+  // Stopping was the only way to take no new clients, which stopped everyone already booked too.
+  test("pauses a served pincode till a day, and shows it paused", async ({ page }) => {
+    const words = opsCopy.areas.pause;
+    await open(page, "/settings/areas", { "POST /api/service-area/pause": json({ changed: 1 }) });
+    await page.getByRole("checkbox", { name: served.chosen.one("110017") }).check();
+    await page.getByRole("button", { name: words.pause }).click();
+    const form = page.getByRole("group", { name: words.title(1) });
+    await form.getByLabel(words.until).fill("2026-11-05");
+    const sent = posted(page, "/api/service-area/pause");
+    await form.getByRole("button", { name: words.pause }).click();
+    expect((await sent).postDataJSON()).toEqual({ pincodes: ["110017"], until: "2026-11-05" });
+    await expect(row(page, "110017")).toContainText(words.chip(shortDate("2026-11-05")));
+  });
+
   test("chooses every pincode shown at once, and asks before serving any that would message people", async ({
     page,
   }) => {
@@ -200,6 +255,7 @@ test.describe("the service area", () => {
       launch_on: null,
       waiting: 0,
       to_alert: 0,
+      paused_until: null,
     };
     await open(page, "/settings/areas", { "POST /api/pincodes": json(added, 201) });
     const form = page.getByRole("group", { name: opsCopy.areas.add.title });

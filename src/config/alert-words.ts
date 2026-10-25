@@ -28,6 +28,9 @@ export const ALERT_WORDS = {
   city_uncovered: (a: { readonly city: string; readonly pincodes: number }) =>
     `Add a technician in ${a.city}, or stop serving its ${String(a.pincodes)} pincodes in Areas: no active technician ` +
     "works there, so the site shows every day full.",
+  launch_held: (a: { readonly city: string; readonly day: string }) =>
+    `Add a technician in ${a.city}, or cancel the launch in Areas: its pincodes were due to be served on ${a.day}, ` +
+    "and with no active technician there they were not.",
   fully_booked: (a: { readonly city: string; readonly days: number }) =>
     `Add a technician or open more hours in ${a.city}: the site has no window open in the next ${String(a.days)} ` +
     "days there, and sends clients to WhatsApp.",

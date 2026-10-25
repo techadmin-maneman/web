@@ -36,6 +36,7 @@ import { registerOpsHairProfile } from "./hair-profile.ts";
 import { registerOpsStaffNotes } from "./staff-notes.ts";
 import { registerOpsLeaveRequests } from "./leave-requests.ts";
 import { registerPincodeDirectory } from "./pincode-directory.ts";
+import { registerPincodeLaunches } from "./pincode-launches.ts";
 import { registerOpsHairSystems } from "./hair-systems.ts";
 import { registerOpsJobSheet } from "./job-sheet.ts";
 import { registerOpsNoShowRulings } from "./no-show-rulings.ts";
@@ -117,6 +118,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsStaffNotes,
   registerOpsLeaveRequests,
   registerPincodeDirectory,
+  registerPincodeLaunches,
   // The stock code a client's profile matches, and where its pieces are (docs/decisions/0173-matching-a-client-to-stock.md).
   registerOpsStockMatch,
   // Custom orders, paid in full before they are ordered (docs/decisions/0174-custom-orders.md).

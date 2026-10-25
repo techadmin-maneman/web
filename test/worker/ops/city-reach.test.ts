@@ -40,6 +40,7 @@ const QUERIES: Readonly<Record<string, string>> = {
   "GET /api/technician-pay": "?month=2026-09",
   "GET /api/technician-pay/statement": `?technician_id=${TECHNICIAN}&month=2026-09`,
   "GET /api/pincode-directory/districts": "?state=HARYANA",
+  "GET /api/pincode-launches/readiness": "?city=Gurgaon",
   "GET /api/pincode-directory/pincodes": "?state=HARYANA&district=GURGAON",
 };
 

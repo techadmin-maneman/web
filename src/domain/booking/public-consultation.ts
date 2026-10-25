@@ -12,7 +12,7 @@ import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { type NotBookedFromSite, notBookedFromSite, typedAddress } from "../../policy/site-booking.ts";
 import { type Address, currentAddress, firstAddressStatement } from "../clients/profile.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
-import { pincodeOf, type Pincode } from "../clients/service-area.ts";
+import { pincodeOf, takesNewClientsOn, type Pincode } from "../clients/service-area.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { type OneVisitCode, useOnNewHold, codeOnHold } from "../money/discount-code-holds.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
@@ -177,7 +177,9 @@ async function checkRequest(
     pincodeOf(db, request.pincode),
     oneVisit ? offeredProducts(db, request.date) : [],
   ]);
-  if (pincode?.served !== 1 || request.date < first || request.date > addDays(first, BOOKING_DAYS - 1)) {
+  const today = indiaDate(now);
+  const outside = request.date < first || request.date > addDays(first, BOOKING_DAYS - 1);
+  if (pincode === null || !takesNewClientsOn(pincode, today) || outside) {
     return { ok: false, code: "not_bookable" };
   }
   // The first fit's three hours do not fit in the evening (src/policy/one-visit.ts), which the form does not offer.

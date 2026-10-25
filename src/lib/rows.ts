@@ -963,6 +963,23 @@ export interface Rows {
     readonly longitude: number | null;
     readonly refreshed_on: string;
   };
+  readonly pincode_launch_pincodes: {
+    readonly launch_id: string;
+    readonly pincode: string;
+  };
+  readonly pincode_launches: {
+    readonly id: string;
+    readonly city: string;
+    readonly go_live_on: string;
+    readonly state: string;
+    readonly created_by: string;
+    readonly created_at: string;
+    readonly live_at: string | null;
+    readonly alerted: number | null;
+    readonly cancelled_by: string | null;
+    readonly cancelled_at: string | null;
+    readonly held_because: string | null;
+  };
   readonly plan_lines: {
     readonly id: string;
     readonly run_id: string;
@@ -1171,6 +1188,7 @@ export interface Rows {
     readonly centre_lat: number | null;
     readonly centre_lng: number | null;
     readonly centre_asked_at: string | null;
+    readonly paused_until: string | null;
   };
   readonly services: {
     readonly kind: string;

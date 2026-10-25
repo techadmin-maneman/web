@@ -125,6 +125,10 @@ export const ERROR_CODES = [
   // Serving a pincode in a city no active technician works in, where nothing could be booked.
   "no_technician",
   "pincode_held",
+  // A launch scheduled for pincodes we serve already, or that another scheduled launch holds
+  // (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
+  "already_served",
+  "already_scheduled",
   // The services clients book (docs/decisions/0085-services-ops-can-edit.md): another service has the name, or its
   // kind the code; retiring it would leave its kind with nothing to book; a price for a service retired by its day.
   "service_exists",
@@ -303,6 +307,8 @@ export const ERROR_STATUS = {
   launch_in_future: 400,
   no_technician: 409,
   pincode_held: 409,
+  already_served: 409,
+  already_scheduled: 409,
   service_exists: 409,
   last_of_kind: 409,
   service_retired: 400,
