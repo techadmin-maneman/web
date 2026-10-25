@@ -113,6 +113,17 @@
   padding: var(--sp-24) var(--sp-32) var(--sp-12);
 }
 
+/* A phone keeps its width for the page: the frame's room at the sides is a finger's, not a desk's. */
+@media (max-width: 600px) {
+  .page {
+    padding: var(--sp-16) var(--sp-16) var(--sp-32);
+  }
+
+  .flushHead {
+    padding: var(--sp-16) var(--sp-16) var(--sp-12);
+  }
+}
+
 .actions {
   display: contents;
 }

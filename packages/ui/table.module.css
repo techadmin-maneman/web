@@ -144,3 +144,82 @@
   box-shadow: calc(-1 * var(--hairline)) 0 0 var(--ui-line);
   background: var(--ui-raised);
 }
+
+/*
+ * On a phone a row is a card: its first cell its title, every other value on a line of its own beside its column's
+ * name (Table's data-label), and the heads a line of their own above, which still sort. Outside the layer and named
+ * closely, so a screen's column widths, room and unbroken lines give way to the card's.
+ */
+@media (max-width: 600px) {
+  .table[data-cards],
+  .table[data-cards] thead,
+  .table[data-cards] tbody,
+  .table[data-cards] tr {
+    display: block;
+  }
+
+  .table[data-cards] thead tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-4) var(--sp-16);
+    padding: var(--sp-8) var(--sp-16);
+    border-bottom: var(--hairline) solid var(--ui-line-control);
+  }
+
+  .table[data-cards] thead th {
+    position: static;
+    height: auto;
+    padding: 0;
+    border: 0;
+  }
+
+  .table[data-cards] tbody tr {
+    padding: var(--sp-12) var(--sp-16);
+    border-bottom: var(--hairline) solid var(--ui-line);
+  }
+
+  .table[data-cards] tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .table[data-cards] tbody :is(th, td) {
+    position: static;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-12);
+    width: auto;
+    max-width: none;
+    height: auto;
+    padding: var(--sp-4) 0;
+    border: 0;
+    box-shadow: none;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    text-align: right;
+  }
+
+  .table[data-cards] tbody :is(th, td)::before {
+    flex: none;
+    content: attr(data-label);
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+    text-align: left;
+  }
+
+  .table[data-cards] tbody :is(th, td):first-child {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .table[data-cards] tbody :is(th, td):first-child::before {
+    content: none;
+  }
+}
+
+/* Nothing scrolls sideways once the rows are cards, so the scrolled table's edge shades go. */
+@media (max-width: 600px) {
+  .scroll:has(> .table[data-cards]) {
+    background: none;
+  }
+}
