@@ -37,9 +37,9 @@ import styles from "./shell.module.css";
 
 /**
  * A link within the console: the shared one, which leaves a click asking for a new tab to the browser, in the shared
- * link's look unless the caller gives its own.
+ * link's look unless the caller gives its own. One to a page the person may not open is its words alone, never a way
+ * to "You don't have access".
  */
-/** A link within the console; one to a page the person may not open is its words alone, never a way to "no access". */
 export function OpsLink(props: ComponentProps<typeof Link>) {
   const mayCall = useMayCall();
   if (!mayFollow(mayCall, props.to)) return <span className={props.className}>{props.children}</span>;
