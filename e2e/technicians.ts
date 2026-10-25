@@ -5,9 +5,9 @@
 // because the booking tests all reach for the same first free day and need
 // room for each other (e2e/app/picking.ts).
 
-/** One per seed, the same every run. The booking one keeps the ID it has had since the booking tests began. */
+/** One per seed, the same every run, each ID a UUID, as the API answers a technician's. */
 export const E2E_TECHNICIANS = {
-  booking: { id: "e2e-booking-technician", fsmId: "e2e-resource-booking" },
+  booking: { id: "e2e00000-0000-4000-8000-0000000b0013", fsmId: "e2e-resource-booking-uuid" },
   fitted: { id: "e2e00000-0000-4000-8000-00000000f177", fsmId: "e2e-resource-fitted" },
   changing: { id: "e2e00000-0000-4000-8000-0000000c4a96", fsmId: "e2e-resource-changing" },
 } as const;
