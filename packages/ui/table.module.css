@@ -45,7 +45,7 @@
   .table thead th {
     position: sticky;
     top: 0;
-    z-index: var(--z-raised);
+    z-index: var(--z-sticky);
     border-bottom-color: var(--ui-line-control);
     background: var(--ui-raised);
     font-size: var(--fs-13);
@@ -61,6 +61,23 @@
     .table tbody tr:hover > * {
       background: var(--ui-ground);
     }
+  }
+
+  /* A row opens where its name does: the name's link or button in the row's head reaches over the whole row, and
+     the row's other controls sit above that reach. */
+  .table tbody tr {
+    position: relative;
+  }
+
+  .table tbody th[scope="row"] :is(a, button):first-of-type::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  .table tbody td :is(a, button, input, select, textarea, label, summary) {
+    position: relative;
+    z-index: var(--z-raised);
   }
 
   .table .figure {
