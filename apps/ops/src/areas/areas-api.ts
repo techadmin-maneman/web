@@ -40,6 +40,11 @@ export const areasApi = {
   /** Served pincodes paused until a later day, or the pause taken off with null. */
   pause: (pincodes: readonly string[], until: string | null) =>
     client.post("/api/service-area/pause", { body: { pincodes: [...pincodes], until } }),
+  /** A city's technicians and their reach from home, and its pincodes with whoever reaches each (ADR 0223). */
+  reach: (city: string) => client.get("/api/service-area/reach", { query: { city } }),
+  /** The same as one picture. */
+  areaMap: (city: string) =>
+    client.request<Blob>("GET", `/api/service-area/map?${new URLSearchParams({ city }).toString()}`, { file: true }),
   /** The visits booked ahead at these pincodes, which stopping them leaves in place. */
   stopImpact: (pincodes: readonly string[]) =>
     client.get("/api/service-area/stop-impact", { query: { pincode: [...pincodes] } }),

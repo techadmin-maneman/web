@@ -11,6 +11,7 @@ import { addDays, indiaDate, indiaInstant, indiaTime } from "../../lib/india-tim
 import type { Pin } from "../../lib/geo.ts";
 import { minuteOf, placements, timeOf, type PlanRules } from "../../policy/day-plan.ts";
 import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician-rotation.ts";
+import { withinReach } from "../../policy/reach.ts";
 import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
 import { tieRange } from "./technician-choice.ts";
 import { loadDayPlans, type DayPlans, type Leaving } from "./day-plans.ts";
@@ -103,6 +104,31 @@ function loadOf(plans: DayPlans, technicianId: string, date: string): { day: num
   return { day: minutes(date), week };
 }
 
+/**
+ * The technicians whose reach from home takes in the visit's pin (docs/decisions/0223-reach-from-home.md); all of them
+ * where the pin is not known, or for a move, which stays with its technician.
+ */
+async function inReach(
+  db: D1Database,
+  technicians: readonly Technician[],
+  at: { readonly pin: Pin | null; readonly moving: boolean; readonly inputs: OpsInputs },
+): Promise<Technician[]> {
+  if (at.pin === null || at.moving || technicians.length === 0) return [...technicians];
+  const { results } = await db
+    .prepare(`SELECT id, home_lat, home_lng, reach_min FROM technicians WHERE id IN (SELECT value FROM json_each(?1))`)
+    .bind(JSON.stringify(technicians.map((technician) => technician.id)))
+    .all<{ id: string; home_lat: number | null; home_lng: number | null; reach_min: number | null }>();
+  const rows = new Map(results.map((row) => [row.id, row]));
+  return technicians.filter((technician) => {
+    const row = rows.get(technician.id);
+    const lat = row?.home_lat ?? null;
+    const lng = row?.home_lng ?? null;
+    const home = lat === null || lng === null ? null : { lat, lng };
+    const reach = row?.reach_min ?? at.inputs.technicianReachMin;
+    return withinReach({ home, to: at.pin, reach, estimate: at.inputs.driveEstimate });
+  });
+}
+
 /** Each day from `from`, for `days` days, with the starts some technician can take and who, best first. */
 export async function startOffers(input: {
   readonly db: D1Database;
@@ -119,7 +145,7 @@ export async function startOffers(input: {
   const place = { pincode: placing.pincode ?? null, personId: placing.personId };
   const reading = input.inputs === undefined ? readOpsInputs(db, now) : Promise.resolve(input.inputs);
   // Every technician's days are read beside who may take the visit, so the plans wait on no trip of their own.
-  const [technicians, closed, clientVisits, pin, plans, inputs] = await Promise.all([
+  const [everyone, closed, clientVisits, pin, plans, inputs] = await Promise.all([
     techniciansFor(db, placing.moving ?? null, place, visit.fitting ?? null),
     loadBlackouts(db, from, to, place),
     visitsOfClient(db, placing.personId, placing.moving?.visitId ?? placing.replacing ?? null),
@@ -135,6 +161,7 @@ export async function startOffers(input: {
     }),
     reading,
   ]);
+  const technicians = await inReach(db, everyone, { pin, moving: (placing.moving ?? null) !== null, inputs });
   const rules = planRulesOf(inputs);
   const toPlan = { minutes: visit.minutes, pin, fit: visit.fitting !== null && visit.fitting !== undefined };
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;

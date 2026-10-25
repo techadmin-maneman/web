@@ -39,6 +39,7 @@ function google(
       );
     },
     map: () => Promise.resolve({ ok: false, detail: "no map here" }),
+    areaMap: () => Promise.resolve({ ok: false, detail: "not drawn here" }),
   };
   const check: DriveCheck = {
     routes,

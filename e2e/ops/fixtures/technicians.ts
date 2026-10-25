@@ -30,6 +30,7 @@ const technician = (
   leave,
   hours: [],
   home: null,
+  reach_min: null,
 });
 
 export const TECHNICIANS = {

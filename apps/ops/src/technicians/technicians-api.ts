@@ -51,4 +51,7 @@ export const techniciansApi = {
     client.post("/api/technicians/{id}/home/suggestions", { path: { id }, body: { q, session } }),
   setHome: (id: string, placeId: string, session: string) =>
     client.post("/api/technicians/{id}/home", { path: { id }, body: { place_id: placeId, session_token: session } }),
+  /** Their own reach from home, in minutes, or the business's with null. */
+  setReach: (id: string, reachMin: number | null) =>
+    client.post("/api/technicians/{id}/reach", { path: { id }, body: { reach_min: reachMin } }),
 };

@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0223. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0224. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -71,6 +71,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0119](0119-blackouts-by-city-and-trained-fitters.md) Blackouts by city, and trained fitters
 - [0210](0210-booking-by-start-time.md) Booking by start time
 - [0211](0211-packages.md) Packages
+- [0223](0223-reach-from-home.md) Reach from home, drawn on the city's map and checked at the address
 
 ### Field work
 
@@ -374,7 +375,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0114](0114-whatsapp-business-platform-through-msg91.md) | The WhatsApp Business Platform through MSG91 | 2026-10-11 | accepted | [0197](0197-one-inbound-port.md) |
 | [0115](0115-a-move-to-another-day-waits-for-the-client.md) | A move to another day waits for the client | 2026-10-11 | accepted |  |
 | [0116](0116-book-asks-for-the-name-and-number-first.md) | /book asks for the name and number first | 2026-10-11 | accepted | [0214](0214-from-the-site-into-the-app.md) |
-| [0117](0117-a-technician-takes-visits-in-their-own-city.md) | A technician takes visits in their own city | 2026-10-11 | accepted | [0118](0118-booking-never-dead-ends.md) |
+| [0117](0117-a-technician-takes-visits-in-their-own-city.md) | A technician takes visits in their own city | 2026-10-11 | accepted | [0118](0118-booking-never-dead-ends.md), [0223](0223-reach-from-home.md) |
 | [0118](0118-booking-never-dead-ends.md) | Booking never dead-ends | 2026-10-11 | accepted |  |
 | [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted |  |
 | [0120](0120-the-board-sees-the-road.md) | The board sees the road | 2026-10-11 | accepted |  |
@@ -467,7 +468,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
 | [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted |  |
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted |  |
-| [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted |  |
+| [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
 | [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |
 | [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted |  |
@@ -480,3 +481,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0220](0220-opening-a-city-from-india-posts-pincodes.md) | Opening a city from India Post's pincodes | 2026-10-25 | accepted | [0221](0221-launches-scheduled-paused-and-checked.md) |
 | [0221](0221-launches-scheduled-paused-and-checked.md) | Launches scheduled, paused and checked first | 2026-10-25 | accepted |  |
 | [0222](0222-consumables-short-of-expected.md) | Consumables short of what a visit expects are said why, and checked | 2026-10-25 | accepted |  |
+| [0223](0223-reach-from-home.md) | Reach from home, drawn on the city's map and checked at the address | 2026-10-26 | accepted |  |
