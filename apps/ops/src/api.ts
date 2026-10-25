@@ -3,6 +3,7 @@
 // section's own calls are its folder's <section>-api.ts. Every call is same-origin, so Access's cookie goes with it
 // and the Origin matches, as a write on the ops surface requires (docs/decisions/0026-hosts-and-surfaces.md).
 
+import { dataChanged, forgetKept } from "@maneman/ui/useLoad";
 import { createClient, type Answer as Answered, type Sent, type Success } from "@maneman/web-kit/api";
 import type { components, paths } from "./api-schema.ts";
 import { markLapsed } from "./lib/session.ts";
@@ -214,7 +215,11 @@ export const client = createClient<paths, ErrorCode | "signed_out">({
   missingCode: (status) => (status === 0 ? "signed_out" : "unknown"),
   // A write whose answer was lost is sent again under its key, and answered as it was (src/http/idempotency.ts).
   keyWrites: true,
+  // Every page showing data reads it again once a write lands, so none shows what the write changed.
+  onWrite: dataChanged,
 });
+// A session that ends forgets what its screens showed, so the next person on the device sees none of it.
+client.onSessionEnded(forgetKept);
 
 /** Where a job is being put: the technician, the India date and the window. */
 export interface Landing {

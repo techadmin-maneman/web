@@ -12,10 +12,14 @@ export type Settled<T> =
  * runs again on `watch`, the last one's answer stands; `retry` starts again from pending.
  *
  * `read` must keep its identity from one render to the next (a module's function, or one held in useCallback), or
- * it would run on every render.
+ * it would run on every render. `shown` is what the screen draws while its first read runs, where it has one.
  */
-export function useAsync<T>(read: () => Promise<T>, watch: unknown = null): readonly [Settled<T>, () => void] {
-  const [settled, setSettled] = useState<Settled<T>>({ state: "pending" });
+export function useAsync<T>(
+  read: () => Promise<T>,
+  watch: unknown = null,
+  shown: Settled<T> = { state: "pending" },
+): readonly [Settled<T>, () => void] {
+  const [settled, setSettled] = useState<Settled<T>>(shown);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {

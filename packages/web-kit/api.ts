@@ -161,6 +161,8 @@ export interface ClientOptions {
    * `unconfirmed`, not offline: it may have been done.
    */
   readonly keyWrites?: boolean;
+  /** A write the API took, once answered: the apps tell whatever shows data, which reads it again (useLoad). */
+  readonly onWrite?: () => void;
 }
 
 /** The header the apps' service workers set on an answer from their copy. */
@@ -338,6 +340,45 @@ async function refusalAnswer(response: Response, missingCode: (status: number) =
   };
 }
 
+/** A typed call: the document's path filled in, its query added and its body sent as JSON. */
+const typedCall =
+  <A>(request: (method: string, url: string, init?: Asking) => Promise<A>) =>
+  (method: Method) =>
+  (path: string, ...[given]: [({ path?: object; query?: object; body?: unknown } & Sending)?]) =>
+    request(method.toUpperCase(), urlOf(path, given?.path, given?.query), {
+      ...(given?.body === undefined ? {} : { json: given.body }),
+      ...(given?.headers === undefined ? {} : { headers: given.headers }),
+      ...(given?.patience === undefined ? {} : { patience: given.patience }),
+    });
+
+/** Calls that record a look or an error and change nothing a screen shows: not heard as writes. */
+const RECORDS_ONLY = /\/(?:client-errors|photos\/view)(?:\?|$)/;
+
+/**
+ * A client's sending, with a read a second screen asks for while it is out sharing the first's answer, and each write
+ * the API took told to `onWrite`, but for one that only records.
+ */
+function sharedReads<A extends { readonly ok: boolean }>(
+  send: (method: string, url: string, init?: Asking) => Promise<A>,
+  onWrite: (() => void) | undefined,
+) {
+  const reading = new Map<string, Promise<A>>();
+  return async (method: string, url: string, init: Asking = {}): Promise<A> => {
+    if (method === "GET" && init.file !== true && init.headers === undefined) {
+      const sharing = reading.get(url);
+      if (sharing !== undefined) return sharing;
+      const asked = send(method, url, init).finally(() => {
+        reading.delete(url);
+      });
+      reading.set(url, asked);
+      return asked;
+    }
+    const answer = await send(method, url, init);
+    if (method !== "GET" && answer.ok && !RECORDS_ONLY.test(url)) onWrite?.();
+    return answer;
+  };
+}
+
 export function createClient<Paths, Code extends string = string>(options: ClientOptions = {}): Client<Paths, Code> {
   const sessionEnded = options.sessionEnded ?? isSessionEnded;
   const redirect = options.redirect ?? (options.onAccessLapsed === undefined ? undefined : "manual");
@@ -376,7 +417,7 @@ export function createClient<Paths, Code extends string = string>(options: Clien
     return { ...answer, code: answer.code as Code | LocalCode };
   }
 
-  async function request<T>(method: string, url: string, init: Asking = {}): Promise<Answer<T, Code>> {
+  async function send<T>(method: string, url: string, init: Asking = {}): Promise<Answer<T, Code>> {
     const headers = headersOf(init);
     const body = init.json === undefined ? init.body : JSON.stringify(init.json);
     const sent = options.keyWrites === true && method !== "GET" ? `${method} ${url} ${textOf(body)}` : null;
@@ -405,16 +446,8 @@ export function createClient<Paths, Code extends string = string>(options: Clien
     return read<T>(reached.response, init.file === true).finally(reached.finished);
   }
 
-  /** A typed call: the document's path filled in, its query added and its body sent as JSON. */
-  const call =
-    (method: Method) =>
-    (path: string, ...[given]: [({ path?: object; query?: object; body?: unknown } & Sending)?]) =>
-      request(method.toUpperCase(), urlOf(path, given?.path, given?.query), {
-        ...(given?.body === undefined ? {} : { json: given.body }),
-        ...(given?.headers === undefined ? {} : { headers: given.headers }),
-        ...(given?.patience === undefined ? {} : { patience: given.patience }),
-      });
-
+  const request = sharedReads(send, options.onWrite);
+  const call = typedCall(request);
   return {
     get: call("get"),
     post: call("post"),

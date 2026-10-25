@@ -6,6 +6,7 @@
 // Every call is same-origin, so the session cookie goes with it and the Origin matches.
 
 import { signInAgain } from "@maneman/web-kit/access";
+import { dataChanged, forgetKept } from "@maneman/ui/useLoad";
 import { createClient, type Answer as Answered } from "@maneman/web-kit/api";
 import type { components, paths } from "./api-schema.ts";
 import { heardFromApi } from "@maneman/web-kit/clock";
@@ -108,7 +109,11 @@ const client = createClient<paths, ErrorCode>({
   onFreshAnswer: (response) => {
     if (response.ok) heardFromApi(response.headers.get("Date"));
   },
+  // Every screen showing data reads it again once a write lands, so none shows what the write changed.
+  onWrite: dataChanged,
 });
+// A session that ends forgets what its screens showed, so the next person on the device sees none of it.
+client.onSessionEnded(forgetKept);
 
 /**
  * A 401 from any call means the session has ended: it ran out, or the client logged out on another phone. App forgets
