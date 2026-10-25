@@ -168,7 +168,7 @@ describe("the forecast and the events calendar", () => {
       path: "/api/demand-events",
       body: { name: "Diwali", city: null, starts_on: "2026-11-08", ends_on: "2026-11-12", uplift_percent: -10 },
     });
-    expect(page.textContent).toContain(copy.events.added);
+    expect(document.body.textContent).toContain(copy.events.added);
     expect(page.textContent).toContain(copy.events.change(-10));
 
     next = { ...CALENDAR, events: [diwali] };
@@ -178,6 +178,6 @@ describe("the forecast and the events calendar", () => {
     });
     expect(posted[2]?.path).toBe("/api/demand-events/ev-1/remove");
     expect(page.textContent).not.toContain("Wedding season");
-    expect(page.textContent).toContain(copy.events.removed);
+    expect(document.body.textContent).toContain(copy.events.removed);
   });
 });

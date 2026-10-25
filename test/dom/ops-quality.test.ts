@@ -137,7 +137,7 @@ describe("the Quality page", () => {
     answers = [{ ...DETAIL, closed_at: "2026-09-22T06:30:00.000Z" }];
     await press(button(copy.close));
     expect(posted).toEqual([{ path: "/api/recalls/rc-1/close", body: null }]);
-    expect(page.textContent).toContain(copy.closedSaid);
+    expect(document.body.textContent).toContain(copy.closedSaid);
     expect(button(copy.close)).toBeUndefined();
   });
 
@@ -149,7 +149,7 @@ describe("the Quality page", () => {
     expect(posted).toEqual([
       { path: "/api/recalls", body: { lot_id: "lot-2", reason: "Supplier warned of shedding" } },
     ]);
-    expect(page.textContent).toContain(copy.raisedSaid);
+    expect(document.body.textContent).toContain(copy.raisedSaid);
     expect(page.textContent).toContain(copy.lotLabel("Essential 8x10", "OK-1"));
   });
 
