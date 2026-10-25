@@ -51,6 +51,33 @@ test.describe("the list", () => {
     const shampoo = await recordOf(page, "Shampoo sachet");
     await expect(shampoo.getByRole("button", { name: copy.restoreLabel("Shampoo sachet") })).toBeVisible();
   });
+
+  // Hair systems sat among the consumables, one priced Rs. 0.
+  test("lists hair systems apart, a cost of nothing as not set", async ({ page }) => {
+    const essential = {
+      ...CONSUMABLES.consumables[0],
+      code: "HS-ESS-0001",
+      name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density",
+      unit: "piece",
+      unit_cost: 0,
+      hair_system: {
+        product: "essential",
+        base_width_in: 8,
+        base_length_in: 10,
+        colour: "1B",
+        grey_percent: 20,
+        density_percent: 100,
+      },
+    };
+    await open(page, {
+      "GET /api/consumables": json({ ...CONSUMABLES, consumables: [...CONSUMABLES.consumables, essential] }),
+    });
+    const consumables = page.getByRole("region", { name: copy.title });
+    const hairSystems = page.getByRole("region", { name: copy.hairSystems });
+    await expect(consumables).not.toContainText(essential.name);
+    await expect(hairSystems.getByRole("row").filter({ hasText: essential.name })).toContainText(copy.noCost);
+    await expect(hairSystems).not.toContainText("Tape strips");
+  });
 });
 
 test.describe("a consumable added", () => {

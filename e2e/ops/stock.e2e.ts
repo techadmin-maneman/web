@@ -65,6 +65,19 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
   await expect(solvent.getByRole("cell").nth(0)).toHaveText(`-20 ml${stock.belowZero}`);
 });
 
+// A kit with none left read Low.
+test("says a place with none left of something it keeps is out, not low", async ({ page }) => {
+  const empty = STOCK.holdings.map((each) =>
+    each.consumable_code === "tape_strips" && each.place_id === IMRAN ? { ...each, quantity: 0 } : each,
+  );
+  await open(page, { "GET /api/stock": json({ ...STOCK, holdings: empty }) });
+  const tape = onHand(page)
+    .getByRole("row")
+    .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
+  await expect(tape.getByRole("cell").nth(1)).toContainText(stock.out);
+  await expect(tape.getByRole("cell").nth(1)).not.toContainText(stock.low);
+});
+
 // A column a kit was unreadable past eight or ten.
 test("past six places, shows the warehouse and one place, picked, marking each place low on anything", async ({
   page,

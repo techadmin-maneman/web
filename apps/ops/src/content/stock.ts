@@ -27,6 +27,8 @@ export const stock = {
   /** "12 strips", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => amountOf(quantity, unit),
   low: "Low",
+  /** None left where a level is set: past Low. */
+  out: "Out",
   belowZero: "Below zero · count it",
   none: "No consumables yet. Add them in",
   retired: "retired",

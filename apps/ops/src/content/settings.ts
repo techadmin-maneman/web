@@ -603,6 +603,11 @@ export const settings = {
   consumables: {
     find: "Find an item",
     title: "Consumables",
+    /** The hair systems in stock, each a stock code of its own, apart from what a visit uses up. */
+    hairSystems: "Hair systems",
+    noHairSystems: "No hair systems in stock yet.",
+    /** A cost of nothing, which no stock costs us: not entered yet. */
+    noCost: "Not set",
     add: "Add a consumable",
     columns: ["Consumable", "Cost each", "Low at", "Status"],
     none: "No consumables yet.",

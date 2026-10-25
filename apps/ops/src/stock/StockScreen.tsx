@@ -112,7 +112,7 @@ const RECORDING: Readonly<Record<Kind, OpsCall>> = {
   write_off: "POST /api/stock/write-offs",
 };
 
-/** One place's figure: what it holds, marked Low at or below its level, and when it was last counted. */
+/** One place's figure: what it holds, marked Low at or below its level and Out at none, and when it was last counted. */
 function Held({ stock, code, place }: { stock: Stock; code: string; place: string }) {
   const holding = holdingOf(stock, code, place);
   const unit = unitOf(stock, code);
@@ -123,7 +123,9 @@ function Held({ stock, code, place }: { stock: Stock; code: string; place: strin
     <td className={styles.held}>
       <span className={quantity < 0 ? styles.below : undefined}>{copy.held(quantity, unit)}</span>
       {quantity < 0 && <span className={styles.low}>{copy.belowZero}</span>}
-      {holding?.low === true && quantity >= 0 && <span className={styles.low}>{copy.low}</span>}
+      {holding?.low === true && quantity >= 0 && (
+        <span className={styles.low}>{quantity === 0 ? copy.out : copy.low}</span>
+      )}
       {holding?.counted_at !== null && holding?.counted_at !== undefined && (
         <span className={styles.counted}>{copy.counted(shortDate(indiaDate(holding.counted_at)))}</span>
       )}
