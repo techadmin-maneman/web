@@ -41980,7 +41980,7 @@ Request body:
     },
     "low_stock_places": {
       "type": "integer",
-      "description": "How many places, the central store and each kit, hold something at or below its level: Stock's badge."
+      "description": "How many places within the caller's reach, the central store and each kit, hold something at or below its level: Stock's badge."
     },
     "lapsed": {
       "type": "integer",

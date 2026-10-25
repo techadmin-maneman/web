@@ -24957,7 +24957,7 @@ export interface components {
             truncated: boolean;
             /** @description The members of staff a task may be given to: those who have used the console in the last 90 days, by e-mail. */
             staff: string[];
-            /** @description How many places, the central store and each kit, hold something at or below its level: Stock's badge. */
+            /** @description How many places within the caller's reach, the central store and each kit, hold something at or below its level: Stock's badge. */
             low_stock_places: number;
             /** @description How many tasks the board leaves out for having waited past the days ops set; none when asked for. */
             lapsed: number;

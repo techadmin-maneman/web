@@ -16,6 +16,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, request } from "../helpers.ts";
 import { IMRAN, JOB, SAMEER, working, type Working } from "../job-fixtures.ts";
 import { type Stock } from "./stock-fixtures.ts";
+import { enforce, listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
 
 let job: Working;
 
@@ -345,6 +346,27 @@ describe("low stock", () => {
       "SELECT key FROM alerts WHERE key >= 'low_stock:' AND key < 'low_stock;' AND resolved_at IS NULL",
     ).all();
     expect(open.results).toEqual([]);
+  });
+
+  // A city head was shown every low place in the country on Stock's badge.
+  it("counts only the low places within the person's reach", async () => {
+    await env.DB.prepare("UPDATE technicians SET city = CASE id WHEN ?1 THEN 'Gurgaon' ELSE 'Delhi' END")
+      .bind(IMRAN)
+      .run();
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 10 });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "tape_strips",
+      quantity: 2,
+      from: "central",
+      to: IMRAN,
+    });
+    expect(await lowPlaces()).toBe(3);
+
+    await listStaff("head@maneman.in", ["operations:view:city:Gurgaon"]);
+    await enforce();
+    const asHead = await request(opsAs(person("head@maneman.in")), "/api/tasks");
+    // Imran's kit alone: Sameer's is in Delhi, and the warehouse is in no city.
+    expect((await asHead.json<{ low_stock_places: number }>()).low_stock_places).toBe(1);
   });
 
   // The Gurgaon stockroom at -288 strips was marked neither low nor counted by the badge.
