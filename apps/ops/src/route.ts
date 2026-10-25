@@ -352,6 +352,10 @@ export function mayOpenRoute(mayCall: MayCall, route: Route): boolean {
   return mayOpen(mayCall, route.page);
 }
 
+/** Whether a link leads to a page the person may open, its query and anchor aside. */
+export const mayFollow = (mayCall: MayCall, to: string): boolean =>
+  mayOpenRoute(mayCall, routeOf(to.split(/[?#]/)[0] ?? to));
+
 /** Where the console opens: the first page in the navigation the person may open, Today for most. */
 export function landingPath(mayCall: MayCall): SectionPath | null {
   const first = SECTIONS.find((section) => mayOpen(mayCall, section.page));

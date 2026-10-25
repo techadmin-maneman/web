@@ -27,6 +27,8 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   unanswered_chat: "Answer in Messages",
   remedy_approval: "Decide in Messages",
   leave_conflict: "Move in Dispatch",
+  unassigned_visit: "Assign in Dispatch",
+  visit_left_open: "Close in Dispatch",
   referral_review: "Decide in Referrals",
   no_show_decision: "Decide in Charges",
   no_show_dispute: "Decide in Charges",

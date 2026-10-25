@@ -14,9 +14,10 @@ import { textLinkLook } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from "react";
 import { shell } from "../content.ts";
-import { whoami } from "../lib/access.ts";
+import { useMayCall, whoami } from "../lib/access.ts";
 import { useLapsed } from "../lib/session.ts";
 import {
+  mayFollow,
   NAV_NAMES,
   navOf,
   SECTION_NAMES,
@@ -38,7 +39,10 @@ import styles from "./shell.module.css";
  * A link within the console: the shared one, which leaves a click asking for a new tab to the browser, in the shared
  * link's look unless the caller gives its own.
  */
+/** A link within the console; one to a page the person may not open is its words alone, never a way to "no access". */
 export function OpsLink(props: ComponentProps<typeof Link>) {
+  const mayCall = useMayCall();
+  if (!mayFollow(mayCall, props.to)) return <span className={props.className}>{props.children}</span>;
   return <Link {...props} className={props.className ?? textLinkLook()} />;
 }
 
