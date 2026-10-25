@@ -157,6 +157,8 @@ export const noShows = {
      * dispute, on its own card above the queue. A case is charged or waived.
      */
     charge: "Charge",
+    /** A charge that would keep nothing, as a free consultation's: the case is closed, not charged. */
+    closeNoShow: "Close as no-show",
     waive: "Waive",
     /**
      * A charge is asked about once more, with what it keeps of what was paid and what it refunds, since it
@@ -168,7 +170,7 @@ export const noShows = {
         `Keep ${kept} of the ${paid} paid, and refund ${refund}?`,
       keepsNone: (paid: string) => `Keep nothing, and refund the ${paid} paid?`,
       keepsCredit: "Keep the free service visit it was booked with?",
-      nothingPaid: "Nothing was paid. Record the charge?",
+      nothingPaid: "Nothing was paid, so there’s nothing to keep. Close it as a no-show?",
       creditToo: "The free service visit is kept too.",
       who: (name: string, day: string) => `Charging ${name} for the visit of ${day} can’t be undone.`,
       working: "Calculating…",
@@ -194,7 +196,7 @@ export const noShows = {
     title: "Decided today",
     charged: (kept: string) => `Charged · kept ${kept}`,
     chargedCredit: "Charged · kept a free service visit",
-    chargedNothing: "Charged · kept nothing",
+    chargedNothing: "Closed as a no-show",
     // A charge ruled before charges recorded what they kept.
     chargedUnrecorded: "Charged",
     waived: "Waived",
