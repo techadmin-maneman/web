@@ -29,4 +29,18 @@ export const areasApi = {
     client.get("/api/pincode-directory/pincodes", { query: { state, district: [...districts] } }),
   /** The pincodes ticked, added unserved in one of our cities; any held already are named back. */
   addFromDirectory: (add: PincodesFromDirectory) => client.post("/api/pincodes/from-directory", { body: add }),
+  /** Every launch, those scheduled first; one scheduled for a later day; one cancelled (ADR 0221). */
+  launches: () => client.get("/api/pincode-launches"),
+  schedule: (city: string, pincodes: readonly string[], goLiveOn: string) =>
+    client.post("/api/pincode-launches", { body: { city, pincodes: [...pincodes], go_live_on: goLiveOn } }),
+  cancelLaunch: (id: string) => client.post("/api/pincode-launches/{id}/cancel", { path: { id } }),
+  /** What a city needs before these pincodes are served there. */
+  readiness: (city: string, pincodes: readonly string[]) =>
+    client.get("/api/pincode-launches/readiness", { query: { city, pincode: [...pincodes] } }),
+  /** Served pincodes paused until a later day, or the pause taken off with null. */
+  pause: (pincodes: readonly string[], until: string | null) =>
+    client.post("/api/service-area/pause", { body: { pincodes: [...pincodes], until } }),
+  /** The visits booked ahead at these pincodes, which stopping them leaves in place. */
+  stopImpact: (pincodes: readonly string[]) =>
+    client.get("/api/service-area/stop-impact", { query: { pincode: [...pincodes] } }),
 };

@@ -63,6 +63,11 @@ const IF_ERASED = `CASE WHEN i % 10 = 0 THEN '${AGO}' END`;
  * statements name has no row here.
  */
 const HISTORY = [
+  // Launches gone live long ago, each of the one pincode, which the launches job must not read again.
+  `INSERT OR IGNORE INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122002', 'DLF Phase 1', 'Gurgaon', 1)`,
+  `INSERT INTO pincode_launches (id, city, go_live_on, state, created_by, created_at, live_at, alerted)
+   SELECT 'pl-' || i, 'Gurgaon', '2026-01-01', 'live', 'ops@example.com', '${AGO}', '${AGO}', 0 FROM n`,
+  `INSERT INTO pincode_launch_pincodes (launch_id, pincode) SELECT 'pl-' || i, '122002' FROM n`,
   `INSERT INTO people (id, created_at, mobile_e164, name, contactable, fsm_contact_id, erased_at, crm_erased_at,
      fsm_erased_at, files_erased_at)
    SELECT 'p-' || i, '${AGO}', '+9170' || printf('%08d', i), 'Client ' || i, 1, 'c-' || i, ${IF_ERASED},

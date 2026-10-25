@@ -41,7 +41,7 @@ import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { WindowHoursSchema } from "../schemas/booking.ts";
 import { TermsSchema } from "../schemas/terms.ts";
 import { openDays, tellIfFullyBooked } from "../../domain/booking/open-windows.ts";
-import { isServed } from "../../domain/clients/service-area.ts";
+import { takesNewClients } from "../../domain/clients/service-area.ts";
 import { DISCOUNT_KINDS } from "../../policy/discount-codes.ts";
 import { PLANS, type Plan } from "../../policy/one-visit.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
@@ -354,7 +354,7 @@ function rememberedInvite(
 export function registerConsultations(app: App): void {
   app.openapi(openWindowsRoute, async (c) => {
     const { pincode, plan } = c.req.valid("query");
-    if (!(await isServed(c.env.DB, pincode))) return refuse(c, "not_bookable");
+    if (!(await takesNewClients(c.env.DB, pincode, c.var.deps.now()))) return refuse(c, "not_bookable");
     const { settings } = c.var.config;
     const days = await openDays(c.env.DB, { plan, pincode }, settings.selfServeConsultations, c.var.deps.now());
     await tellIfFullyBooked(c.env.DB, c.var.deps.alertOnce, { plan, pincode, days }, c.var.deps.now());

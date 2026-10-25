@@ -22,7 +22,7 @@ import { TOLD_NOTICES, type ToldNotice } from "../../config/notices.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { WindowHoursSchema } from "../schemas/booking.ts";
 import { countInviteMiss, countInviteOpen, inviteMissesSpent } from "../../domain/referrals/invite-lookups.ts";
-import { pincodeOf } from "../../domain/clients/service-area.ts";
+import { pincodeOf, takesNewClientsOn } from "../../domain/clients/service-area.ts";
 import { liveCard } from "../../domain/referrals/referral-cards.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
 import { anyInviteOf, isPartnerInvite, partnerInviteOf, type AnyInvite } from "../../domain/referrals/channels.ts";
@@ -362,7 +362,9 @@ export function registerReferralLanding(app: App): void {
   app.openapi(pincodeRoute, async (c) => {
     const pin = c.req.valid("param").pin;
     const row = await pincodeOf(c.env.DB, pin);
-    return c.json({ pincode: pin, served: row?.served === 1, area: row?.area ?? null, city: row?.city ?? null }, 200);
+    // A paused pincode takes no new client, so the site offers its waitlist (ADR 0221).
+    const served = takesNewClientsOn(row, indiaDate(c.var.deps.now()));
+    return c.json({ pincode: pin, served, area: row?.area ?? null, city: row?.city ?? null }, 200);
   });
 
   registerReferralForms(app);

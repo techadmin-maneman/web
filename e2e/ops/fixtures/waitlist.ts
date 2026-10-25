@@ -64,6 +64,7 @@ export const ADDED = {
   launch_on: null,
   waiting: 3,
   to_alert: 2,
+  paused_until: null,
 } satisfies OpsReply<"/api/pincodes", "post", 201>;
 
 export const PREVIEW = { pincode: "400050", waiting: 117, alerts: 84, launched: false } satisfies OpsReply<

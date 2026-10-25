@@ -270,6 +270,13 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Putting back that table",
   },
   {
+    what: "Launches scheduled",
+    tables: ["pincode_launches", "pincode_launch_pincodes"],
+    leftAtT:
+      "A launch scheduled or cancelled since is gone or back, and one the cron served since is scheduled again, though its pincodes stay served and those waiting told",
+    putBackBy: "Scheduling or cancelling it again in Areas; one served since, marking it live is the cron's next run",
+  },
+  {
     what: "India Post's pincodes",
     tables: ["pincode_directory"],
     leftAtT: "A quarter's refresh since is undone, so the console offers India Post's pincodes as they were",

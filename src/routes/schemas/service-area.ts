@@ -14,6 +14,9 @@ export const AreaSchema = z
     to_alert: z.number().int().openapi({
       description: "How many of them serving it would tell now: those who asked, and have not been told yet.",
     }),
+    paused_until: z.union([z.iso.date(), z.null()]).openapi({
+      description: "The day a paused pincode takes new clients again; null when it is not paused.",
+    }),
   })
   .strict()
   .openapi("ServedPincode");

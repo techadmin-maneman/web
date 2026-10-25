@@ -152,6 +152,9 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).",
   pincode_directory:
     "India Post's pincodes across India, one row each: its district, state, post offices and a point, refreshed each quarter from data.gov.in; ops open a city from it, and it holds nobody's data (ADR 0220).",
+  pincode_launch_pincodes: "The pincodes each launch serves, one row each (ADR 0221).",
+  pincode_launches:
+    "A launch ops schedule: pincodes of one city served from a later day, which the cron serves on the day; scheduled, then live or cancelled, never deleted (ADR 0221).",
   po_letterhead:
     "One row, once ops set it: the legal name, GSTIN and delivery address a printed purchase order carries (ADR 0166).",
   price_book:

@@ -26,6 +26,7 @@ function pincode(code: string, rest: Partial<ServedPincode> = {}): ServedPincode
     launch_on: null,
     waiting: 0,
     to_alert: 0,
+    paused_until: null,
     ...rest,
   };
 }

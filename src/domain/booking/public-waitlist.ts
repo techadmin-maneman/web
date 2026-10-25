@@ -5,7 +5,8 @@ import type { LossExtent } from "../../config/booking.ts";
 import { type ToldNotice, LANDING_NOTICES, CURRENT_NOTICE } from "../../config/notices.ts";
 import type { ConsentSource } from "../../policy/consents.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
-import { pincodeOf } from "../clients/service-area.ts";
+import { indiaDate } from "../../lib/india-time.ts";
+import { pincodeOf, takesNewClientsOn } from "../clients/service-area.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
 import { type ConsentRule, recordConsent } from "../privacy/consents.ts";
 import { type InviteState, hasAskedForAVisit } from "../referrals/referrals.ts";
@@ -81,7 +82,8 @@ export async function joinTheWaitlist(
 ): Promise<Listed | Refusal<FormRefusalCode | "not_bookable">> {
   const { db, now } = form;
   const pincode = await pincodeOf(db, request.pincode);
-  if (pincode?.served === 1) return { ok: false, code: "not_bookable" };
+  // A paused pincode takes no new client, so its visitors wait as they do where we do not come yet.
+  if (takesNewClientsOn(pincode, indiaDate(now))) return { ok: false, code: "not_bookable" };
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
 

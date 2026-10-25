@@ -99,6 +99,7 @@ describe("adding from the directory", () => {
           launch_on: null,
           waiting: 0,
           to_alert: 0,
+          paused_until: null,
         },
         {
           pincode: "400051",
@@ -108,6 +109,7 @@ describe("adding from the directory", () => {
           launch_on: null,
           waiting: 0,
           to_alert: 0,
+          paused_until: null,
         },
       ],
       held: ["110001"],

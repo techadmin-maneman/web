@@ -220,3 +220,60 @@
 .addForm .field:first-child {
   margin-top: var(--sp-12);
 }
+
+/* ---- Launches scheduled, and what a city needs first ---------------------- */
+
+.launchList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.launchItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-8);
+  padding-block: var(--sp-12);
+  border-top: var(--hairline) solid var(--ui-line);
+}
+
+.launchItem:first-child {
+  border-top: 0;
+}
+
+.launchLine {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.readiness {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.readinessTitle {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-muted);
+}
+
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ready {
+  color: var(--ui-text);
+}
+
+.missing {
+  color: var(--ui-error);
+}

@@ -43,17 +43,31 @@ export interface Pincode {
   readonly served: number;
   /** When a technician started or starts coming; null where nobody has said. */
   readonly launched_at: string | null;
+  /** India's date a paused pincode takes new clients again; null when it is not paused. */
+  readonly paused_until: string | null;
 }
 
 /** The pincode as we hold it; null for one we do not. */
 export function pincodeOf(db: D1Database, pin: string): Promise<Pincode | null> {
   return db
     .prepare(
-      `SELECT pincode, ${namedArea("p")} AS area, city, served, launched_at FROM serviceable_pincodes p
+      `SELECT pincode, ${namedArea("p")} AS area, city, served, launched_at, paused_until FROM serviceable_pincodes p
        WHERE pincode = ?1`,
     )
     .bind(pin)
     .first<Pincode>();
+}
+
+/**
+ * Whether a pincode takes a new client on this India date: served, and not paused. A client we already come to books
+ * there regardless; a pause holds back only new consultations (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
+ */
+export const takesNewClientsOn = (pincode: Pincode | null, today: string): boolean =>
+  pincode?.served === 1 && (pincode.paused_until === null || pincode.paused_until <= today);
+
+/** Whether a pincode takes a new client today. */
+export async function takesNewClients(db: D1Database, pin: string, now: Date): Promise<boolean> {
+  return takesNewClientsOn(await pincodeOf(db, pin), indiaDate(now));
 }
 
 /** Whether a technician comes to this pincode. */
@@ -82,6 +96,8 @@ export interface AreaPincode {
   /** How many are on its waitlist, and how many serving it would tell now. */
   readonly waiting: number;
   readonly to_alert: number;
+  /** India's date a paused pincode takes new clients again; null when it is not paused. */
+  readonly paused_until: string | null;
 }
 
 /** One pincode's two columns, as ops send them, and a new name for its area if they gave one. */
@@ -92,12 +108,21 @@ interface AreaChange {
   readonly area?: string | undefined;
 }
 
-type Row = { pincode: string; area: string; city: string; served: number; launched_at: string | null };
+type Row = {
+  pincode: string;
+  area: string;
+  city: string;
+  served: number;
+  launched_at: string | null;
+  paused_until: string | null;
+};
 
 /** Every pincode we hold, by city and then by pincode, as the console lists them. */
 export async function serviceArea(db: D1Database): Promise<AreaPincode[]> {
   const { results } = await db
-    .prepare("SELECT pincode, area, city, served, launched_at FROM serviceable_pincodes ORDER BY city, pincode")
+    .prepare(
+      "SELECT pincode, area, city, served, launched_at, paused_until FROM serviceable_pincodes ORDER BY city, pincode",
+    )
     .all<Row>();
   const waiting = await waitingByPincode(db);
   return results.map((row) => ({
@@ -108,6 +133,7 @@ export async function serviceArea(db: D1Database): Promise<AreaPincode[]> {
     launch_on: launchDateOf(row.launched_at),
     waiting: waiting.get(row.pincode)?.waiting ?? 0,
     to_alert: waiting.get(row.pincode)?.toAlert ?? 0,
+    paused_until: row.paused_until,
   }));
 }
 
@@ -343,7 +369,14 @@ export async function addPincode(
     ),
   ]);
   const waiting = await launchPreview(db, pincode.pincode);
-  return { ...pincode, served: false, launch_on: null, waiting: waiting.waiting, to_alert: waiting.alerts };
+  return {
+    ...pincode,
+    served: false,
+    launch_on: null,
+    waiting: waiting.waiting,
+    to_alert: waiting.alerts,
+    paused_until: null,
+  };
 }
 
 const UNCOVERED = "city_uncovered:";

@@ -95,6 +95,8 @@
                   "launch_in_future",
                   "no_technician",
                   "pincode_held",
+                  "already_served",
+                  "already_scheduled",
                   "service_exists",
                   "last_of_kind",
                   "service_retired",
@@ -3738,6 +3740,8 @@
                   "launch_in_future",
                   "no_technician",
                   "pincode_held",
+                  "already_served",
+                  "already_scheduled",
                   "service_exists",
                   "last_of_kind",
                   "service_retired",
@@ -4991,6 +4995,18 @@
           "to_alert": {
             "type": "integer",
             "description": "How many of them serving it would tell now: those who asked, and have not been told yet."
+          },
+          "paused_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The day a paused pincode takes new clients again; null when it is not paused."
           }
         },
         "required": [
@@ -5000,7 +5016,8 @@
           "served",
           "launch_on",
           "waiting",
-          "to_alert"
+          "to_alert",
+          "paused_until"
         ],
         "additionalProperties": false
       },
@@ -5039,6 +5056,225 @@
         "required": [
           "city",
           "pincodes"
+        ],
+        "additionalProperties": false
+      },
+      "ScheduledLaunch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "go_live_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "live",
+              "cancelled"
+            ]
+          },
+          "pincodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pincode": {
+                  "type": "string"
+                },
+                "area": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pincode",
+                "area"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "live_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alerted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "held_because": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the cron has not served it on its day; null when nothing holds it."
+          }
+        },
+        "required": [
+          "id",
+          "city",
+          "go_live_on",
+          "state",
+          "pincodes",
+          "created_by",
+          "created_at",
+          "live_at",
+          "alerted",
+          "cancelled_at",
+          "held_because"
+        ],
+        "additionalProperties": false
+      },
+      "LaunchSchedule": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "pincodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[1-9]\\d{5}$"
+            },
+            "minItems": 1,
+            "maxItems": 300
+          },
+          "go_live_on": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "city",
+          "pincodes",
+          "go_live_on"
+        ],
+        "additionalProperties": false
+      },
+      "LaunchReadiness": {
+        "type": "object",
+        "properties": {
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "check": {
+                  "type": "string",
+                  "enum": [
+                    "technicians",
+                    "fitters",
+                    "hours",
+                    "homes",
+                    "stockroom",
+                    "gst",
+                    "centres"
+                  ]
+                },
+                "ready": {
+                  "type": "boolean"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "check",
+                "ready",
+                "count"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "checks"
+        ],
+        "additionalProperties": false
+      },
+      "PincodesPause": {
+        "type": "object",
+        "properties": {
+          "pincodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[1-9]\\d{5}$"
+            },
+            "minItems": 1,
+            "maxItems": 300
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "pincodes",
+          "until"
+        ],
+        "additionalProperties": false
+      },
+      "StopImpact": {
+        "type": "object",
+        "properties": {
+          "visits": {
+            "type": "integer"
+          },
+          "clients": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "visits",
+          "clients"
         ],
         "additionalProperties": false
       },
@@ -9573,6 +9809,10 @@
               "pincode.set",
               "pincode.rename",
               "pincode.add",
+              "pincode.pause",
+              "pincode.resume",
+              "launch.schedule",
+              "launch.cancel",
               "city.add",
               "city.change",
               "city.rename",
@@ -25247,6 +25487,684 @@
         }
       }
     },
+    "/api/pincode-launches": {
+      "get": {
+        "summary": "Every launch: those scheduled, soonest first, then the rest, newest first",
+        "responses": {
+          "200": {
+            "description": "The launches",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "launches": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ScheduledLaunch"
+                      }
+                    }
+                  },
+                  "required": [
+                    "launches"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "access_required",
+                                "not_permitted"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Schedule pincodes of one city, held and not served, to be served from a later day",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaunchSchedule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The launch, scheduled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledLaunch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: go_live_on for a day not after today, or the pincodes we do not hold or hold in another city",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: the city is outside the caller's Growth MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "access_required",
+                                "not_permitted"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "already_served or already_scheduled: the pincodes named in fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "already_served",
+                                "already_scheduled"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pincode-launches/{id}/cancel": {
+      "post": {
+        "summary": "Cancel a launch still scheduled; its pincodes stay unserved",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The launch, cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledLaunch"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: the city is outside the caller's Growth MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "access_required",
+                                "not_permitted"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no launch scheduled with that ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pincode-launches/readiness": {
+      "get": {
+        "summary": "What a city needs before its pincodes are served, each check with what it counts",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "required": true,
+            "name": "city",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[1-9]\\d{5}$"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d{5}$"
+                  },
+                  "minItems": 1,
+                  "maxItems": 300
+                }
+              ],
+              "description": "Named once for each pincode."
+            },
+            "required": false,
+            "description": "Named once for each pincode.",
+            "name": "pincode",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The checks, in order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchReadiness"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: no city named",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "access_required",
+                                "not_permitted"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/service-area/pause": {
+      "post": {
+        "summary": "Pause served pincodes until a later day, taking no new clients, or take the pause off with null",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PincodesPause"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "How many pincodes changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "changed": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "changed"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: until for a day not after today, or the pincodes we do not serve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "access_required",
+                                "not_permitted"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/service-area/stop-impact": {
+      "get": {
+        "summary": "What stopping these pincodes leaves behind: the visits booked there still to come, and their clients",
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[1-9]\\d{5}$"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d{5}$"
+                  },
+                  "minItems": 1,
+                  "maxItems": 300
+                }
+              ],
+              "description": "Named once for each pincode."
+            },
+            "required": true,
+            "description": "Named once for each pincode.",
+            "name": "pincode",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The visits and clients",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StopImpact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: no pincode named",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "access_required",
+                                "not_permitted"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients/{id}/stock-match": {
       "get": {
         "summary": "The stock code the client's hair profile matches exactly, and where its pieces are",
@@ -35341,6 +36259,10 @@
                 "pincode.set",
                 "pincode.rename",
                 "pincode.add",
+                "pincode.pause",
+                "pincode.resume",
+                "launch.schedule",
+                "launch.cancel",
                 "city.add",
                 "city.change",
                 "city.rename",

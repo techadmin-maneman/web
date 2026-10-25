@@ -4101,6 +4101,8 @@ Razorpay's webhook: payments and refunds
             "launch_in_future",
             "no_technician",
             "pincode_held",
+            "already_served",
+            "already_scheduled",
             "service_exists",
             "last_of_kind",
             "service_retired",

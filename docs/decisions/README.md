@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0221. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0222. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -253,6 +253,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0208](0208-the-console-redesigned.md) The console redesigned: work first, Settings in one place, and two themes
 - [0212](0212-editing-in-place.md) Editing in place
 - [0220](0220-opening-a-city-from-india-posts-pincodes.md) Opening a city from India Post's pincodes
+- [0221](0221-launches-scheduled-paused-and-checked.md) Launches scheduled, paused and checked first
 
 ## Every decision, oldest first
 
@@ -328,7 +329,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0068](0068-a-paid-hold-is-kept.md) | A paid hold is kept | 2026-09-25 | accepted | [0095](0095-a-booking-fsm-refuses-is-held.md) |
 | [0069](0069-dispatch-under-concurrency.md) | Dispatch under concurrency | 2026-09-25 | accepted |  |
 | [0070](0070-vendor-correctness.md) | What we write to Zoho is right, written once, and asked for sparingly | 2026-09-25 | accepted | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
-| [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | superseded in part by 0212 on 18 October 2026: a setting or a record now changes where it reads | [0086](0086-the-next-visit-is-offered.md), [0212](0212-editing-in-place.md) |
+| [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | superseded in part by 0212 on 18 October 2026: a setting or a record now changes where it reads | [0086](0086-the-next-visit-is-offered.md), [0212](0212-editing-in-place.md), [0221](0221-launches-scheduled-paused-and-checked.md) |
 | [0072](0072-ops-clients-and-queues.md) | The ops console's clients and queues | 2026-09-26 | accepted | [0092](0092-task-owners.md) |
 | [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md), [0103](0103-the-home-pages-first-copy-round.md), [0204](0204-the-sites-price-pipeline-removed.md) |
 | [0074](0074-hand-offs-and-messages.md) | What each person learns when something changes for them | 2026-09-26 | accepted | [0092](0092-task-owners.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0099](0099-the-clients-note-in-fsm.md) |
@@ -475,4 +476,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0217](0217-the-try-ons-photo-taken-and-looked-at.md) | The try-on's photo, taken and looked at; no question of where the hair loss is | 2026-10-19 | accepted | [0219](0219-one-line-consents.md) |
 | [0218](0218-refer-opens-at-the-first-consultation.md) | Refer opens at the first consultation | 2026-10-19 | accepted |  |
 | [0219](0219-one-line-consents.md) | One-line consents, with the full notice a link away | 2026-10-19 | accepted |  |
-| [0220](0220-opening-a-city-from-india-posts-pincodes.md) | Opening a city from India Post's pincodes | 2026-10-25 | accepted |  |
+| [0220](0220-opening-a-city-from-india-posts-pincodes.md) | Opening a city from India Post's pincodes | 2026-10-25 | accepted | [0221](0221-launches-scheduled-paused-and-checked.md) |
+| [0221](0221-launches-scheduled-paused-and-checked.md) | Launches scheduled, paused and checked first | 2026-10-25 | accepted |  |

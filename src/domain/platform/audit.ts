@@ -119,6 +119,12 @@ export const AUDIT_ACTIONS = [
   "pincode.rename",
   // A pincode ops add to the service area, unserved, in one of our cities.
   "pincode.add",
+  // A served pincode paused, taking no new clients for a while, and the pause taken off; a launch scheduled for a later
+  // day, and one cancelled (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
+  "pincode.pause",
+  "pincode.resume",
+  "launch.schedule",
+  "launch.cancel",
   // Our cities, their GST registrations, and the rules and prices a city sets apart from the national ones
   // (docs/decisions/0198-cities-as-data.md).
   "city.add",

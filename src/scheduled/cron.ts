@@ -73,6 +73,7 @@ import { startOrFollow } from "../workflows/steps.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 import { tellOfUncoveredCities } from "../domain/clients/service-area.ts";
+import { runDueLaunches } from "../domain/clients/launch-runs.ts";
 import { placePincodeCentres } from "../domain/cities/pincode-centres.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
@@ -143,6 +144,24 @@ async function missedJobsJob({ env, deps, config }: CronContext): Promise<void> 
 }
 const unassignedToday = ({ env, deps }: CronContext) => tellOfUnassignedToday(env.DB, deps);
 const uncoveredCities = ({ env, deps }: CronContext) => tellOfUncoveredCities(env.DB, deps);
+
+/** Launches due by today, served as the console serves them; one that cannot be is raised to ops once (ADR 0221). */
+async function launchesJob({ env, deps, log }: CronContext): Promise<void> {
+  const { alerts, held } = await runDueLaunches(env.DB, deps.now());
+  const requests = alerts.map((alert) => ({
+    body: { message_id: alert.id, request_id: "launches" } satisfies MessagingMessage,
+    delaySeconds: alert.delaySeconds,
+  }));
+  if (requests.length > 0) await enqueueBatch(env.MESSAGE_QUEUE, requests, { log, ifLost: "sweeper" });
+  for (const launch of held) {
+    log.warn("launch_held", { launch_id: launch.id, why: launch.held_because });
+    await deps.alertOnce({
+      key: `launch_held:${launch.id}`,
+      message: ALERT_WORDS.launch_held({ city: launch.city, day: launch.go_live_on }),
+      link: "/settings/areas",
+    });
+  }
+}
 const pincodeCentresJob = ({ env, deps, config, log, budget }: CronContext) =>
   placePincodeCentres({
     db: env.DB,
@@ -436,6 +455,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "unassigned_today", needs: "nothing", every: 60, at: 46, run: unassignedToday },
   // A city served with nobody to send, each morning; a switch-off asks at once (src/domain/clients/service-area.ts).
   { name: "uncovered_cities", needs: "nothing", every: 60, at: 52, slot: { hour: 9 }, run: uncoveredCities },
+  // Launches go live in the morning, so those waiting are told at an hour they would want to hear it.
+  { name: "launches", needs: "nothing", every: 60, at: 6, slot: { hour: 10 }, run: launchesJob },
   // Each pincode's centre, which a drive is estimated from before a client's address has a pin (ADR 0210).
   { name: "pincode_centres", needs: "nothing", every: 60, at: 57, run: pincodeCentresJob },
   { name: "low_stock", needs: "nothing", every: 60, at: 50, run: lowStockJob },

@@ -40,6 +40,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Cycle counts | `count_tasks`, `count_lines` | A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning | Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought |
 | The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
+| Launches scheduled | `pincode_launches`, `pincode_launch_pincodes` | A launch scheduled or cancelled since is gone or back, and one the cron served since is scheduled again, though its pincodes stay served and those waiting told | Scheduling or cancelling it again in Areas; one served since, marking it live is the cron's next run |
 | India Post's pincodes | `pincode_directory` | A quarter's refresh since is undone, so the console offers India Post's pincodes as they were | Loading the file again: `node scripts/ops/load-pincode-directory.ts <environment>` |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
 | Housekeeping | `alerts`, `vendor_breakers`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `zoho_access_tokens` | Nothing that lasts | Nothing |
@@ -125,6 +126,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [piece_returns](#piece_returns): Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
 - [pieces](#pieces): Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
 - [pincode_directory](#pincode_directory): India Post's pincodes across India, one row each: its district, state, post offices and a point, refreshed each quarter from data.gov.in; ops open a city from it, and it holds nobody's data (ADR 0220).
+- [pincode_launch_pincodes](#pincode_launch_pincodes): The pincodes each launch serves, one row each (ADR 0221).
+- [pincode_launches](#pincode_launches): A launch ops schedule: pincodes of one city served from a later day, which the cron serves on the day; scheduled, then live or cancelled, never deleted (ADR 0221).
 - [plan_lines](#plan_lines): Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).
 - [po_letterhead](#po_letterhead): One row, once ops set it: the legal name, GSTIN and delivery address a printed purchase order carries (ADR 0166).
 - [po_lines](#po_lines): Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
@@ -2071,6 +2074,45 @@ Indexes:
 
 - `pincode_directory_by_district`: on (`state`, `district`)
 
+## pincode_launch_pincodes
+
+The pincodes each launch serves, one row each (ADR 0221).
+
+Made by `0197_pincode_launches.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `launch_id` | TEXT | no |  | primary key; → `pincode_launches.id` |  |
+| `pincode` | TEXT | no |  | primary key; → `serviceable_pincodes.pincode` |  |
+
+Indexes:
+
+- `pincode_launch_pincodes_by_pincode`: on (`pincode`)
+
+## pincode_launches
+
+A launch ops schedule: pincodes of one city served from a later day, which the cron serves on the day; scheduled, then live or cancelled, never deleted (ADR 0221).
+
+Made by `0197_pincode_launches.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `city` | TEXT | no |  | → `cities.name` |  |
+| `go_live_on` | TEXT | no |  |  | India's date the pincodes are served from. |
+| `state` | TEXT | no |  |  |  |
+| `created_by` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `live_at` | TEXT | yes |  |  | When the cron served them, and how many it told. |
+| `alerted` | INTEGER | yes |  |  |  |
+| `cancelled_by` | TEXT | yes |  |  |  |
+| `cancelled_at` | TEXT | yes |  |  |  |
+| `held_because` | TEXT | yes |  |  | Why the cron could not serve them on the day, kept while the launch waits for ops. |
+
+Indexes:
+
+- `pincode_launches_due`: on (`go_live_on`), where `state = 'scheduled'`
+
 ## plan_lines
 
 Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).
@@ -2455,7 +2497,7 @@ Indexes:
 
 Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
 
-Made by `0021_referrals.sql`; changed by `0043_area_names.sql`, `0167_cities_as_data.sql`, `0187_technician_days.sql`.
+Made by `0021_referrals.sql`; changed by `0043_area_names.sql`, `0167_cities_as_data.sql`, `0187_technician_days.sql`, `0197_pincode_launches.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2468,6 +2510,7 @@ Made by `0021_referrals.sql`; changed by `0043_area_names.sql`, `0167_cities_as_
 | `centre_lat` | REAL | yes |  |  | A pincode's centre, as Google places the pincode, and when it was last asked for, so one Google cannot place is not asked for every hour. |
 | `centre_lng` | REAL | yes |  |  |  |
 | `centre_asked_at` | TEXT | yes |  |  |  |
+| `paused_until` | TEXT | yes |  |  | A pincode served but taking no new clients until this India date: the site and the app offer no consultation there, and clients we already come to book as before. Null when it is not paused. |
 
 Indexes:
 
