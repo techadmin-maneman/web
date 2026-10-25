@@ -40,7 +40,7 @@ export const settings = {
   /** No board draws discount codes (docs/decisions/0108-discount-codes.md). */
   discountCodes: {
     title: "Discount codes",
-    make: "Make codes",
+    make: "Create codes",
     how: "Method",
     typed: "Type one",
     generated: "Generate",
@@ -96,7 +96,10 @@ export const settings = {
       paid: "Revenue",
       lastUsed: "Last used",
       offOn: "Switched off",
+      state: "State",
     },
+    states: { live: "Live", ended: "Ended", off: "Off" },
+    offSince: (day: string) => `Off since ${day}`,
     coverShort: {
       first_fit: "First fit",
       service: "Service",
@@ -107,7 +110,6 @@ export const settings = {
     ended: (day: string) => `Ended ${day}`,
     never: "—",
     narrow: "Filter codes",
-    switchedOffTitle: (count: number) => `Switched off (${String(count)})`,
     switchedOff: "Switched off.",
     inUse: "A booking has used it. Switch it off instead.",
     deleted: "Deleted.",

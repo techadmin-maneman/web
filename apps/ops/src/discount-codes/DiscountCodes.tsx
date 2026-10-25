@@ -2,8 +2,8 @@
 // with their uses and takings. A code is made, and found by how it begins; a row opens its record beside the list,
 // where it is switched off or, while no booking has taken it, deleted. Codes switched off fold away beneath.
 
+import { Badge } from "@maneman/ui/Badge";
 import { Toast } from "@maneman/ui/Toast";
-import { Disclosure } from "@maneman/ui/Disclosure";
 import { Panel } from "@maneman/ui/Panel";
 import { Note } from "@maneman/ui/Note";
 import { Table, TableScroll } from "@maneman/ui/Table";
@@ -64,6 +64,14 @@ const endsOf = (code: DiscountCode, today: string): string =>
     ? copy.noEnd
     : (code.expires_on < today ? copy.ended : copy.ends)(shortDate(code.expires_on));
 
+/** Where a code stands: live, past its end, or switched off; one filter, and a pill in its row. */
+const stateOf = (code: DiscountCode, today: string): "live" | "ended" | "off" => {
+  if (code.switched_off !== null) return "off";
+  return code.expires_on !== null && code.expires_on < today ? "ended" : "live";
+};
+
+const STATE_TONES = { live: "done", ended: "neutral", off: "neutral" } as const;
+
 /** A code by its name, the way its record opens. */
 function CodeHead({ code, onOpen }: { code: DiscountCode; onOpen: (id: string) => void }) {
   return (
@@ -81,7 +89,7 @@ function CodeHead({ code, onOpen }: { code: DiscountCode; onOpen: (id: string) =
   );
 }
 
-/** A code still on: its terms and its figures. */
+/** A code: its terms, where it stands, and its figures. */
 function CodeRow({ code, today, onOpen }: { code: DiscountCode; today: string; onOpen: (id: string) => void }) {
   return (
     <tr>
@@ -89,6 +97,11 @@ function CodeRow({ code, today, onOpen }: { code: DiscountCode; today: string; o
       <td>{discountOf(code)}</td>
       <td>{coversOf(code)}</td>
       <td>{endsOf(code, today)}</td>
+      <td>
+        <Badge tone={STATE_TONES[stateOf(code, today)]}>
+          {code.switched_off === null ? copy.states[stateOf(code, today)] : copy.offSince(dayOf(code.switched_off.at))}
+        </Badge>
+      </td>
       <td className={styles.figure}>{usesOf(code)}</td>
       <td className={styles.figure}>{code.clients}</td>
       <td className={styles.figure}>{rupees(code.given)}</td>
@@ -98,7 +111,7 @@ function CodeRow({ code, today, onOpen }: { code: DiscountCode; today: string; o
   );
 }
 
-/** The codes still on: sorted by any column, narrowed by what they apply to. */
+/** Every code: sorted by any column, narrowed by what they apply to and where they stand. */
 function CodesTable({
   codes,
   today,
@@ -115,6 +128,7 @@ function CodesTable({
     { label: columns.discount },
     { label: columns.covers, choice: coversOf },
     { label: columns.ends, sort: (code) => code.expires_on ?? "9999-12-31" },
+    { label: columns.state, choice: (code) => copy.states[stateOf(code, today)] },
     { label: columns.uses, sort: (code) => code.uses, figure: true },
     { label: columns.clients, sort: (code) => code.clients, figure: true },
     { label: columns.given, sort: (code) => code.given, figure: true },
@@ -144,59 +158,6 @@ function CodesTable({
       </TableScroll>
       <TableEnd view={view} />
     </>
-  );
-}
-
-/** A code switched off: its figures stay. */
-function OffRow({ code, onOpen }: { code: DiscountCode; onOpen: (id: string) => void }) {
-  return (
-    <tr>
-      <CodeHead code={code} onOpen={onOpen} />
-      <td>{discountOf(code)}</td>
-      <td className={styles.figure}>{usesOf(code)}</td>
-      <td className={styles.figure}>{rupees(code.given)}</td>
-      <td className={styles.figure}>{rupees(code.paid)}</td>
-      <td>{dayOf(code.switched_off?.at ?? null)}</td>
-    </tr>
-  );
-}
-
-/** The codes switched off, folded beneath the table. */
-function SwitchedOff({ codes, onOpen }: { codes: readonly DiscountCode[]; onOpen: (id: string) => void }) {
-  if (codes.length === 0) return null;
-  const heads: readonly (readonly [string, boolean])[] = [
-    [columns.code, false],
-    [columns.discount, false],
-    [columns.uses, true],
-    [columns.given, true],
-    [columns.paid, true],
-    [columns.offOn, false],
-  ];
-  return (
-    <Disclosure
-      className={styles.off}
-      summaryClassName={styles.offSummary}
-      summary={copy.switchedOffTitle(codes.length)}
-    >
-      <TableScroll labelledBy="discount-codes">
-        <Table className={styles.table}>
-          <thead>
-            <tr>
-              {heads.map(([label, figure]) => (
-                <th key={label} scope="col" className={figure ? styles.figure : undefined}>
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {codes.map((code) => (
-              <OffRow key={code.id} code={code} onOpen={onOpen} />
-            ))}
-          </tbody>
-        </Table>
-      </TableScroll>
-    </Disclosure>
   );
 }
 
@@ -257,7 +218,6 @@ export function DiscountCodes() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const codes = refreshed ?? loaded.value;
-  const on = codes.codes.filter((code) => code.switched_off === null);
   const findForm = (
     <FindForm
       finding={finding}
@@ -267,7 +227,6 @@ export function DiscountCodes() {
       }}
     />
   );
-  const off = codes.codes.filter((code) => code.switched_off !== null);
   const opened = codes.codes.find((code) => code.id === open);
 
   return (
@@ -286,8 +245,7 @@ export function DiscountCodes() {
         </>
       ) : (
         <>
-          <CodesTable codes={on} today={codes.today} find={findForm} onOpen={opening} />
-          <SwitchedOff codes={off} onOpen={opening} />
+          <CodesTable codes={codes.codes} today={codes.today} find={findForm} onOpen={opening} />
         </>
       )}
       {opened !== undefined && (

@@ -43,6 +43,7 @@ test.describe("the discount codes", () => {
       "25% (max Rs. 5,000)",
       "First fit, Service",
       "Fri 31 Dec",
+      settingsCopy.discountCodes.states.live,
       "3 of 50",
       "3",
       "Rs. 12,000",
@@ -59,10 +60,9 @@ test.describe("the discount codes", () => {
     await expect(wedding.getByRole("button", { name: deleting.label("WEDDNG25") })).toHaveCount(0);
   });
 
-  test("folds the codes switched off beneath the table, their figures kept", async ({ page }) => {
+  test("lists the codes switched off with the rest, marked Off, their figures kept", async ({ page }) => {
     await open(page, "/settings/discount-codes");
-    await expect(row(page, "RPLC2K")).toBeHidden();
-    await page.getByText("Switched off (1)").click();
+    await expect(row(page, "RPLC2K")).toContainText(settingsCopy.discountCodes.states.off);
     await expect(row(page, "RPLC2K")).toContainText("Rs. 13,000");
     await expect(row(page, "RPLC2K")).toContainText("Fri 10 Sep");
     const off = await recordOf(page, "RPLC2K");

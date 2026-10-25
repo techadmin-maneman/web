@@ -109,7 +109,7 @@ test("gives a person who may only look at the discount codes no column of action
   });
   await page.goto("/settings/discount-codes");
   const table = page.getByRole("main").getByRole("table").first();
-  await expect(table.getByRole("row").first().getByRole("columnheader")).toHaveCount(9);
+  await expect(table.getByRole("row").first().getByRole("columnheader")).toHaveCount(10);
   // A row's one button is its name, which opens its record.
   const [first] = DISCOUNT_CODES.codes;
   await table.getByRole("button", { name: settingsCopy.discountCodes.open(first?.code ?? "") }).click();
