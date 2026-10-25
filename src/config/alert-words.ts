@@ -22,7 +22,7 @@ export type DraftHeld = "price_differs" | "price_unknown" | "credit_missing";
 export const ALERT_WORDS = {
   // Bookings and visits.
   booked_unassigned: (a: { readonly day: string; readonly visit: string }) =>
-    `Give the visit on ${a.day} a technician on the board: its own was switched off. Visit ${a.visit}.`,
+    `Give the visit on ${fullDate(a.day)} a technician on the board: its own was switched off. Visit ${a.visit}.`,
   unassigned_visit: (a: { readonly visit: string }) =>
     `Send a technician to visit ${a.visit} from the Dispatch board: it is today, and has none.`,
   city_uncovered: (a: { readonly city: string; readonly pincodes: number }) =>
@@ -193,7 +193,7 @@ export const ALERT_WORDS = {
       ? ""
       : ` ${a.source ?? "Its stockroom"} can't cover ${a.nowhere.join(", ")}: order or move one.`),
   photos_unavailable: (a: { readonly phase: "before" | "after"; readonly day: string; readonly reached: number }) =>
-    `Check the ${a.phase} photographs of the visit on ${a.day}: the technician's camera would not open, and ` +
+    `Check the ${a.phase} photographs of the visit on ${fullDate(a.day)}: the technician's camera would not open, and ` +
     `${String(a.reached)} of 5 reached us.`,
   fit_without_piece: (a: {
     readonly day: string;
