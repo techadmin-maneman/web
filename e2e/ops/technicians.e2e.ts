@@ -63,11 +63,21 @@ test("lets the roster take the page’s width", async ({ page }) => {
 
 test("counts the jobs each has finished, and how long those took", async ({ page }) => {
   await open(page);
-  // Faizan is the board's own line: 1 h 48 m against the 90 minutes a service visit is planned for.
+  // Faizan is the board's own line: 1 h 48 min against the 90 minutes a service visit is planned for.
   const faizan = page.getByRole("row").filter({ hasText: "Faizan Ali" });
   await expect(faizan).toContainText("29");
-  await expect(faizan).toContainText("1 h 48 m");
-  await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText("1 h 24 m");
+  await expect(faizan).toContainText("1 h 48 min");
+  await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText("1 h 24 min");
+});
+
+// The figures counted a fixed 90 days, and nothing on the page could change that.
+test("counts over the period chosen, ops’s own until then", async ({ page }) => {
+  await open(page);
+  const period = page.getByLabel(opsCopy.technicians.work.over);
+  await expect(period).toHaveValue("91");
+  const asked = page.waitForRequest((request) => request.url().includes("/api/technicians/work?from="));
+  await period.selectOption({ label: opsCopy.technicians.work.days(30) });
+  expect(new URL((await asked).url()).searchParams.get("from")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 });
 
 // The average is of the jobs the phone timed from Start to the outcome, which
@@ -75,18 +85,18 @@ test("counts the jobs each has finished, and how long those took", async ({ page
 test("says what the average is of when the phone timed fewer jobs than were finished", async ({ page }) => {
   await open(page);
   const sandeep = page.getByRole("row").filter({ hasText: "Sandeep Yadav" });
-  await expect(sandeep).toContainText("1 h 31 m");
+  await expect(sandeep).toContainText("1 h 31 min");
   await expect(sandeep).toContainText(opsCopy.technicians.work.base(30, 34));
 });
 
-// The board letters 1 h 48 m in oxblood, #8A3A2E, and leaves 1 h 31 m quiet, so a
+// The board letters 1 h 48 min in oxblood, #8A3A2E, and leaves 1 h 31 min quiet, so a
 // minute over the planned length is not a technician running over: the API says
 // which run over, by the minutes ops set (technician_work.over_by).
 test("letters an average that runs over in oxblood, and leaves one a minute over quiet", async ({ page }) => {
   await open(page);
   const oxblood = "rgb(138, 58, 46)"; // --error-on-paper
-  const over = page.getByRole("row").filter({ hasText: "Faizan Ali" }).getByText("1 h 48 m");
-  const near = page.getByRole("row").filter({ hasText: "Sandeep Yadav" }).getByText("1 h 31 m");
+  const over = page.getByRole("row").filter({ hasText: "Faizan Ali" }).getByText("1 h 48 min");
+  const near = page.getByRole("row").filter({ hasText: "Sandeep Yadav" }).getByText("1 h 31 min");
   await expect(over).toHaveCSS("color", oxblood);
   await expect(near).not.toHaveCSS("color", oxblood);
 });
@@ -109,7 +119,7 @@ test("reads as a gap, never as a nought, when the phone timed none of the jobs",
   const imran = page.getByRole("row").filter({ hasText: "Imran Qureshi" });
   await expect(imran).toContainText("48");
   await expect(imran).toContainText("—");
-  await expect(imran).not.toContainText("0 m");
+  await expect(imran).not.toContainText("0 min");
 });
 
 // Nothing records what a technician is trained for, so the board's fifth column
@@ -293,7 +303,7 @@ test("says so when the figures cannot be loaded, and loads them on Try again", a
 
   await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: json(TECHNICIAN_WORK) });
   await page.getByRole("button", { name: opsCopy.clients.visits.book.retry }).click();
-  await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText("1 h 48 m");
+  await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText("1 h 48 min");
 });
 
 test("says so when no technician is active", async ({ page }) => {

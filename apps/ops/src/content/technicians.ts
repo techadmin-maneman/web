@@ -24,12 +24,15 @@ export const technicians = {
   empty: "No active technicians.",
   /** The two columns counted from the jobs themselves (src/domain/dispatch/technician-work.ts). */
   work: {
-    /** The average itself, as the board writes it: "1 h 24 m", and "48 m" under the hour. */
+    /** The average itself: "1 h 24 min", and "48 min" under the hour. */
     average: (hours: number, minutes: number) => {
-      if (hours === 0) return `${String(minutes)} m`;
+      if (hours === 0) return `${String(minutes)} min`;
       if (minutes === 0) return `${String(hours)} h`;
-      return `${String(hours)} h ${String(minutes)} m`;
+      return `${String(hours)} h ${String(minutes)} min`;
     },
+    /** Over how many days back the two columns count; ops's own period is the first choice. */
+    over: "Over",
+    days: (days: number) => (days === 365 ? "The last 12 months" : `The last ${String(days)} days`),
     /** When the phone timed fewer jobs than were finished, the average says what it is of: "13 of 14 timed". */
     base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)} timed`,
     /** Beneath the table, where the board writes its own note: what the two columns count. */

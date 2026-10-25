@@ -7,6 +7,7 @@ import { SearchInput } from "@maneman/ui/SearchInput";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { SortButton } from "@maneman/ui/Table";
 import { classes } from "@maneman/ui/classes";
+import type { ReactNode } from "react";
 import { tables as copy } from "../content.ts";
 import type { TableView } from "./useTableView.ts";
 import styles from "./table-tools.module.css";
@@ -43,10 +44,13 @@ export function Narrowing<Row>({
   view,
   label,
   className,
+  children,
 }: {
   view: TableView<Row>;
   label: string;
   className?: string;
+  /** A choice of the page's own after the table's, as the period its figures count over. */
+  children?: ReactNode;
 }) {
   return (
     <Toolbar
@@ -88,6 +92,7 @@ export function Narrowing<Row>({
             </Field>
           ),
       )}
+      {children}
     </Toolbar>
   );
 }
