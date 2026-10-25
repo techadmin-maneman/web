@@ -38,11 +38,10 @@ export type DayCell<Busy, Free> =
  * The row's cells over the steps: a visit from the step it starts in for as many steps as it holds, a start in its
  * step where no visit is, and the rest run together. A visit over another's time is drawn from where the first ends.
  */
-export function cellsOf<Busy extends { readonly from: number; readonly to: number }, Free extends { readonly at: number }>(
-  steps: readonly number[],
-  busy: readonly Busy[],
-  free: readonly Free[],
-): DayCell<Busy, Free>[] {
+export function cellsOf<
+  Busy extends { readonly from: number; readonly to: number },
+  Free extends { readonly at: number },
+>(steps: readonly number[], busy: readonly Busy[], free: readonly Free[]): DayCell<Busy, Free>[] {
   const cells: DayCell<Busy, Free>[] = [];
   const byStart = [...busy].sort((a, b) => a.from - b.from);
   let at = 0;
