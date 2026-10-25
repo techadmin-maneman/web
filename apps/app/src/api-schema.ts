@@ -5446,6 +5446,11 @@ export interface components {
             hold_id: string;
             /** @description The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on, recorded once the booking is paid for, or at once for a free visit (ADR 0080); left out, none. */
             consents?: ("photos_own_record" | "photos_referral_cards")[];
+            /**
+             * @description "I agree to the Terms and Conditions and the Privacy Policy." Required, and recorded with their versions.
+             * @enum {boolean}
+             */
+            terms: true;
         };
         DiscountCodeEntry: {
             /** @description As the client typed it, any case. */

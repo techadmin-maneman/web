@@ -89,6 +89,17 @@ export function PersonFieldset(props: {
         onChange={(consent) => {
           props.onChange({ ...fields, consent });
         }}
+        terms={
+          fields.terms === null
+            ? undefined
+            : {
+                checked: fields.terms,
+                bad: props.bad.includes("terms"),
+                onChange: (terms) => {
+                  props.onChange({ ...fields, terms });
+                },
+              }
+        }
       />
     </>
   );
@@ -124,7 +135,17 @@ export function AgreementBox(props: {
   );
 }
 
-/** The agreement a form needs, required, with its error once the form is checked. */
+/** The box a form that books asks the visitor to tick: their agreement to the terms and the privacy policy. */
+interface TermsTick {
+  readonly checked: boolean;
+  readonly bad: boolean;
+  readonly onChange: (checked: boolean) => void;
+}
+
+/**
+ * The agreement a form needs, required, with its error once the form is checked; then, on a form that books, the box
+ * that agrees to the terms and the privacy policy, else the line that says they apply.
+ */
 export function ConsentBox(props: {
   checked: boolean;
   bad: boolean;
@@ -132,6 +153,7 @@ export function ConsentBox(props: {
   label: NoticeWords;
   note: string;
   onChange: (checked: boolean) => void;
+  terms?: TermsTick | undefined;
 }) {
   const { bad, idPrefix } = props;
   return (
@@ -150,7 +172,47 @@ export function ConsentBox(props: {
           </div>
         )}
       </div>
-      <LegalLinks />
+      {props.terms === undefined ? <LegalLinks /> : <TermsBox idPrefix={idPrefix} tick={props.terms} />}
+    </>
+  );
+}
+
+/** "I agree to the Terms and Conditions and the Privacy Policy.", required, each a link in a new tab. */
+function TermsBox({ idPrefix, tick }: { idPrefix: string; tick: TermsTick }) {
+  const words = referral.form.agree;
+  const errorId = `${idPrefix}-terms-error`;
+  return (
+    <>
+      <Checkbox
+        className={shared.consent}
+        checked={tick.checked}
+        aria-required="true"
+        aria-invalid={tick.bad}
+        aria-describedby={tick.bad ? errorId : undefined}
+        onChange={(event) => {
+          tick.onChange(event.currentTarget.checked);
+        }}
+        label={
+          <span class={shared.consentText}>
+            {words.before}
+            <TextLink inline newTab href="/terms">
+              {words.terms}
+            </TextLink>
+            {words.between}
+            <TextLink inline newTab href="/privacy">
+              {words.privacy}
+            </TextLink>
+            {words.after}
+          </span>
+        }
+      />
+      <div aria-live="polite">
+        {tick.bad && (
+          <div id={errorId} class={messageLook({ tone: "error", className: shared.error })}>
+            {referral.form.agreeError}
+          </div>
+        )}
+      </div>
     </>
   );
 }

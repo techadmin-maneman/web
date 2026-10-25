@@ -8,7 +8,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { checkoutOnTop, confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
-import { FREE_UNTIL, toPayment, profileAs, type Hold, holdAs, scanOf } from "./booking-fixtures.ts";
+import { FREE_UNTIL, toPayment, profileAs, type Hold, holdAs, scanOf, AGREE_TERMS } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 import { PRICE } from "../prices.ts";
 import { PAY_SERVICE } from "./booking-fixtures.ts";
@@ -56,6 +56,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   // Booking agrees to no photograph consent, whatever the client decided.
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
 
+  await pay.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await pay.getByRole("button", { name: PAY_SERVICE }).click();
   const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label });
   await expect(confirmed.getByRole("status").getByText(REMINDED)).toBeVisible();
@@ -69,6 +70,7 @@ test("lets Checkout’s own window through, in front of the sheet", async ({ pag
   await checkoutOnTop(page);
   await confirmedByRazorpay(page);
   await toPayment(page);
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __checkoutOnTop: boolean | null }).__checkoutOnTop)).toBe(
@@ -82,6 +84,7 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
   await expect(pay.getByText(appCopy.booking.pay.credit.used)).toBeVisible();
+  await pay.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await pay.getByRole("button", { name: appCopy.booking.pay.confirm }).click();
 
   const confirmed = page.getByRole("dialog").getByRole("status");
@@ -111,10 +114,9 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
     route.request().method() === "GET" ? route.fulfill({ json: { ...hold(), credit: null } }) : route.fallback(),
   );
   await toPayment(page);
-  await page
-    .getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true })
-    .getByRole("button", { name: appCopy.booking.pay.confirm })
-    .click();
+  const free = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
+  await free.getByRole("checkbox", { name: AGREE_TERMS }).check();
+  await free.getByRole("button", { name: appCopy.booking.pay.confirm }).click();
 
   // Now there is a price to pay, the step is named for paying it.
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
@@ -173,6 +175,7 @@ test("asks whether to remind the client on WhatsApp, and records it when they sa
   const remind = pay.getByRole("checkbox", { name: REMIND });
   await expect(remind).not.toBeChecked();
   await remind.check();
+  await pay.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await pay.getByRole("button", { name: PAY_SERVICE }).click();
 
   await expect(page.getByRole("dialog").getByRole("status").getByText(REMINDED)).toBeVisible();
@@ -185,6 +188,7 @@ test("promises no reminder the client has not agreed to", async ({ page }) => {
   await confirmedByRazorpay(page);
   await profileAs(page, { reminders: false });
   await toPayment(page);
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
   const confirmed = page.getByRole("dialog").getByRole("status");
   await expect(confirmed.getByText(appCopy.booking.confirmed.label)).toBeVisible();

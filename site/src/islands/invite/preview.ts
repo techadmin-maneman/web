@@ -19,7 +19,7 @@ const SAMPLE = {
 } satisfies Record<string, PincodeAnswer | string>;
 
 /** On /book, the name and number its first step would have kept, ahead of a pincode's answer. */
-export const PREVIEW_PERSON: PersonFields = { name: "Karan Bhatia", mobile: SAMPLE.mobile, consent: true };
+export const PREVIEW_PERSON: PersonFields = { name: "Karan Bhatia", mobile: SAMPLE.mobile, consent: true, terms: true };
 
 /** A state's name from the address, if it is one. */
 function previewNamed(name: string | null): PreviewState | undefined {

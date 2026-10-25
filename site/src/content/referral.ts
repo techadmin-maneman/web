@@ -346,8 +346,17 @@ export const referral = {
     mobile: "Mobile",
     mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",
-    /** Beneath the agreement on every form that takes a name and number: what binds the visitor, and to read it. */
+    /** Beneath the waitlist's agreement: what binds the visitor, and to read it. */
     legal: { before: "Our ", terms: "Terms", between: " and ", privacy: "Privacy Notice", after: " apply." },
+    /** The box every form that books asks the visitor to tick, the terms and the privacy policy each a link. */
+    agree: {
+      before: "I agree to the ",
+      terms: "Terms and Conditions",
+      between: " and the ",
+      privacy: "Privacy Policy",
+      after: ".",
+    },
+    agreeError: "Agree to the Terms and the Privacy Policy to book.",
     // By the button once three or more fields are marked.
     marked: "Check the {count} fields marked above.",
   },

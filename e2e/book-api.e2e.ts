@@ -5,6 +5,7 @@
 
 import type { Page } from "@playwright/test";
 import { expect, fakeTurnstile, randomMobile, test, visit } from "./support.ts";
+import { AGREE_TERMS } from "./book-fixtures.ts";
 import { SERVED, UNSERVED } from "./booking-area.ts";
 import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
@@ -26,6 +27,7 @@ async function leaveDetails(page: Page, consent: string): Promise<void> {
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill(randomMobile());
   await expect(page.getByRole("checkbox", { name: consent })).toBeChecked();
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   const kept = page.waitForResponse("**/api/lead");
   await page.getByRole("button", { name: siteCopy.booking.start }).click();
   expect((await kept).status()).toBe(201);

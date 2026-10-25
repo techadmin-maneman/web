@@ -122,6 +122,14 @@ export const booking = {
      * visits, the reminder, moves and changes among them, on a notice of this line alone.
      */
     remind: "Send me visit updates on WhatsApp",
+    /** Ticked before a new booking can be paid for or confirmed; the booking records it with each version. */
+    agree: {
+      before: "I agree to the ",
+      terms: "Terms and Conditions",
+      between: " and the ",
+      privacy: "Privacy Policy",
+      after: ".",
+    },
     // Every visit is photographed for the client's record, which booking says and agrees to nothing more: referral
     // cards are their choice when they first share an invite.
     /**

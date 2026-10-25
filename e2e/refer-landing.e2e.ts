@@ -10,6 +10,7 @@ import { axeViolations } from "./a11y.ts";
 import { HOUSE_CARD } from "../src/config/house-card.ts";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./address-form.ts";
+import { AGREE_TERMS, CONSULTATION_CONSENT as CONSENT } from "./book-fixtures.ts";
 import {
   analyticsCommands,
   analyticsEvents,
@@ -95,6 +96,12 @@ async function fillForm(page: Page): Promise<void> {
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
 }
 
+/** The consultation's agreements: WhatsApp, ticked to begin with, and the terms, ticked here. */
+async function agree(page: Page): Promise<void> {
+  await expect(page.getByRole("checkbox", { name: CONSENT })).toBeChecked();
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
+}
+
 async function fillPerson(page: Page): Promise<void> {
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Friend");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
@@ -118,7 +125,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
   // The radio lies unseen over its card, where a person's tap lands.
   await page.getByRole("radio", { name: /Afternoon/ }).check();
   await expect(page.getByRole("radio", { name: /Afternoon/ })).toBeChecked();
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
@@ -140,7 +147,7 @@ test("a booking through the invite is counted, with nothing personal and no code
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
   await page.getByRole("radio", { name: /Afternoon/ }).check();
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
 
@@ -171,7 +178,7 @@ test("a valid invite is remembered in this browser, and forgotten once its own b
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   // The landing books with its own invite, and sends no other.
@@ -204,7 +211,7 @@ test("says what ops set each side gets, and promises the friend nothing ops do n
   await expect(page.getByText("Get fitted and your friend gets 3 service visits free.")).toBeVisible();
   await expect(page.getByText("Rohit is told when you are fitted.", { exact: true })).toBeVisible();
   await fillForm(page);
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText(/land when you are fitted/)).toHaveCount(0);
@@ -291,7 +298,7 @@ test("a code we do not know still books, without the invite’s visits", async (
   await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 
   await fillForm(page);
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
@@ -375,7 +382,7 @@ test("a consultation nobody can book outright is confirmed as a request", async 
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.requested.label)).toBeVisible();
@@ -410,7 +417,7 @@ test("a window found full says so, and the form stays", async ({ page }) => {
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.errors.taken)).toBeVisible();
@@ -477,7 +484,8 @@ test("the fields the form needs are marked as required", async ({ page }) => {
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveAttribute("aria-required", "true");
   await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAttribute("aria-required", "true");
-  await expect(page.getByRole("checkbox")).toHaveAttribute("aria-required", "true");
+  await expect(page.getByRole("checkbox", { name: CONSENT })).toHaveAttribute("aria-required", "true");
+  await expect(page.getByRole("checkbox", { name: AGREE_TERMS })).toHaveAttribute("aria-required", "true");
   for (const part of ["Flat or house number", "Building, society or street", "Sector or area", "City"]) {
     await expect(page.getByLabel(part)).toHaveAttribute("aria-required", "true");
   }
@@ -527,7 +535,7 @@ test("a keyboard user sees which day, window and agreement has focus", async ({ 
   await page.keyboard.press("Tab"); // name
   await page.keyboard.press("Tab"); // mobile
   await page.keyboard.press("Tab"); // the agreement
-  await expect(page.getByRole("checkbox")).toBeFocused();
+  await expect(page.getByRole("checkbox", { name: CONSENT })).toBeFocused();
   expect(await outlineOf(page, "box")).toBe("solid 2px");
 });
 
@@ -556,7 +564,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.errors.network)).toBeVisible();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
@@ -594,7 +602,7 @@ test("gives up on a request that never answers, says so, and sends it again unde
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect.poll(() => keys.length).toBe(1);
 
@@ -626,7 +634,7 @@ async function bookThrough(page: Page): Promise<void> {
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 }
 
@@ -715,7 +723,7 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   expect(await axeViolations(page)).toEqual([]);
 
   await fillForm(page);
-  await expect(page.getByRole("checkbox", { name: referralCopy.referral.consultation.consent.says })).toBeChecked();
+  await agree(page);
   await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
   // Asked for only once the WhatsApp code sent to the number is entered.
   await enterNumberCode(page, "Confirm and book");

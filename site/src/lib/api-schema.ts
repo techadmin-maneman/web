@@ -626,6 +626,11 @@ export interface paths {
                          * @enum {boolean}
                          */
                         consent: true;
+                        /**
+                         * @description "I agree to the Terms and Conditions and the Privacy Policy." Required, and recorded with their versions.
+                         * @enum {boolean}
+                         */
+                        terms: true;
                     };
                 };
             };
@@ -1047,6 +1052,11 @@ export interface paths {
                          * @enum {boolean}
                          */
                         consent: true;
+                        /**
+                         * @description "I agree to the Terms and Conditions and the Privacy Policy." Required, and recorded with their versions.
+                         * @enum {boolean}
+                         */
+                        terms: true;
                         turnstile_token: string;
                         attribution?: {
                             utm_source?: string;
@@ -1402,6 +1412,11 @@ export interface paths {
                          * @enum {boolean}
                          */
                         consent: true;
+                        /**
+                         * @description "I agree to the Terms and Conditions and the Privacy Policy." Required, and recorded with their versions.
+                         * @enum {boolean}
+                         */
+                        terms: true;
                     };
                 };
             };

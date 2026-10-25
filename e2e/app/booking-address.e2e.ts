@@ -9,7 +9,16 @@ import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
-import { toPayment, toWindows, openSheet, profileAs, profileOf, PHOTOS, scanOf } from "./booking-fixtures.ts";
+import {
+  toPayment,
+  toWindows,
+  openSheet,
+  profileAs,
+  profileOf,
+  PHOTOS,
+  scanOf,
+  AGREE_TERMS,
+} from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 import { CLIENT_WORDS } from "../../packages/web-kit/client-words.ts";
 import { PAY_SERVICE } from "./booking-fixtures.ts";
@@ -59,6 +68,7 @@ test("asks a client with no address for it first, then books", async ({ page }) 
   await dates.getByRole("button", { name: appCopy.booking.date.continue }).click();
   await expect(page.getByRole("dialog", { name: appCopy.booking.window.title }).getByText("Step 3 of 4")).toBeVisible();
   await continueToPayment(page);
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
 });
@@ -121,6 +131,7 @@ test("puts Pay above what every visit’s photographs are, one tap away, and sen
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
   await scanOf(page);
 
+  await pay.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await payButton.click();
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
   expect(sent).toHaveLength(1);

@@ -167,10 +167,13 @@ export const api = {
   enterCode: (holdId: string, code: string) =>
     client.post("/api/holds/{id}/discount-code", { path: { id: holdId }, body: { code } }),
   removeCode: (holdId: string) => client.delete("/api/holds/{id}/discount-code", { path: { id: holdId } }),
-  /** Booking agrees to no photograph consent; an earlier build sent those whose lines it showed (ADR 0080). */
+  /**
+   * Booking agrees to no photograph consent; an earlier build sent those whose lines it showed (ADR 0080). It agrees to
+   * the terms, which the pay step asks the client to tick before it books.
+   */
   book: (holdId: string) =>
     client.post("/api/bookings", {
-      body: { hold_id: holdId },
+      body: { hold_id: holdId, terms: true },
     }),
   moveTerms: (visitId: string) => client.get("/api/appointments/{id}/reschedule", { path: { id: visitId } }),
   startMove: (visitId: string, holdId: string) =>

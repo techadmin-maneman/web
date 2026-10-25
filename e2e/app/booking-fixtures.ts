@@ -20,6 +20,8 @@ export const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18
 
 /** The pay step's button for a service visit. */
 export const PAY_SERVICE = booking.pay.pay(PRICE.service);
+/** The box a new booking asks the client to tick, by its whole line. */
+export const AGREE_TERMS = Object.values(booking.pay.agree).join("");
 
 const LATE_FEE_FIGURES = priceFigures(LATE_FEE);
 

@@ -1560,6 +1560,15 @@ export interface Rows {
     readonly home_lat: number | null;
     readonly home_lng: number | null;
   };
+  readonly terms_acceptances: {
+    readonly id: string;
+    readonly person_id: string;
+    readonly terms_version: string;
+    readonly privacy_version: string;
+    readonly source: string;
+    readonly ip_hash: string | null;
+    readonly created_at: string;
+  };
   readonly tryon_jobs: {
     readonly id: string;
     readonly created_at: string;

@@ -13,7 +13,10 @@ import { mobileToSend, useTurnstileForm, type PersonFields } from "./useTurnstil
 
 /** Whether the fields hold the name and number kept already, so there is nothing new to keep. */
 const sameAs = (kept: PersonFields, fields: PersonFields): boolean =>
-  kept.name.trim() === fields.name.trim() && mobileToSend(kept) === mobileToSend(fields) && fields.consent;
+  kept.name.trim() === fields.name.trim() &&
+  mobileToSend(kept) === mobileToSend(fields) &&
+  fields.consent &&
+  fields.terms === true;
 
 export function AboutYou(props: {
   turnstileSiteKey: string;
@@ -35,6 +38,7 @@ export function AboutYou(props: {
       name: fields.name.trim(),
       mobile: mobileToSend(fields),
       consent: true as const,
+      terms: true as const,
       ...(attribution === undefined ? {} : { attribution }),
     };
     void form.submit(
