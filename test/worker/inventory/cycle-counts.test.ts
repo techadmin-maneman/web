@@ -14,7 +14,7 @@ import { IMRAN, working, type Working } from "../job-fixtures.ts";
 import { classDaysOf, CYCLE_COUNTS } from "../../../src/policy/cycle-counts.ts";
 
 interface Tasks {
-  tasks: { id: string; count_class: string; state: string }[];
+  tasks: { id: string; count_class: string; due_on: string; state: string }[];
   classes: { consumable_code: string; count_class: string; set: boolean }[];
 }
 interface Task {
@@ -70,6 +70,16 @@ describe("cycle counts", () => {
         expect.objectContaining({ consumable_code: code, count_class: "weekly", set: false }),
       ]),
     );
+  });
+
+  it("are due again once a whole period passes uncounted, not overdue since the first missed", async () => {
+    await raiseCountTasks(env.DB, "2026-09-21", NOW, classDaysOf(CYCLE_COUNTS));
+    // Six days on, the weekly count is late; a week on, it is due again, and still only one is open.
+    await raiseCountTasks(env.DB, "2026-09-27", NOW, classDaysOf(CYCLE_COUNTS));
+    expect((await tasks()).tasks.find((task) => task.count_class === "weekly")?.due_on).toBe("2026-09-21");
+    expect(await raiseCountTasks(env.DB, "2026-09-28", NOW, classDaysOf(CYCLE_COUNTS))).toBe(0);
+    const weekly = (await tasks()).tasks.filter((task) => task.count_class === "weekly");
+    expect(weekly.map((task) => task.due_on)).toEqual(["2026-09-28"]);
   });
 
   it("count blind, take what agrees, count again what differs, and leave what stands to a manager", async () => {
