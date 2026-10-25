@@ -6,7 +6,7 @@
   --ops-row: 34px; /* a table row: dense but not cramped */
   --ops-figure: 76px; /* a column of figures, right aligned */
   --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
-  --ops-list: 1200px; /* a list page on a desktop: the main width, short of rows too wide to scan */
+  --ops-list: none; /* a page's width: the frame's own, so a wide screen holds more, not more margin */
   --ops-area: 200px; /* an area's name, and a tier's, as ops type them */
   --ops-date: var(--skeleton-card); /* a date box that shows the whole year beside the picker's button */
   --ops-scroll-max-h: 70dvh; /* the dispatch grid on a narrow screen, with the tray beneath it */
