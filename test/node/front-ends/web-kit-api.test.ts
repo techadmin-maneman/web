@@ -417,3 +417,33 @@ describe("the types each call is given and answers with", () => {
     expectTypeOf<Refused>().toEqualTypeOf<Code | "offline" | "unconfirmed" | "unknown">();
   });
 });
+
+describe("what the screens read", () => {
+  it("shares one answer between two screens asking the same while it is out, and asks again after", async () => {
+    const sent = answering(() => json(200, { id: "v1" }));
+    const api = createClient<Paths, Code>();
+    const [first, second] = await Promise.all([
+      api.get("/api/visits/{id}", { path: { id: "v1" } }),
+      api.get("/api/visits/{id}", { path: { id: "v1" } }),
+    ]);
+    expect(sent).toHaveLength(1);
+    expect(second).toEqual(first);
+    await api.get("/api/visits/{id}", { path: { id: "v1" } });
+    expect(sent).toHaveLength(2);
+  });
+
+  it("tells the app of each write the API took, and of no read or refusal", async () => {
+    let writes = 0;
+    const answers = [json(202, { challenge_id: "c" }), refusal(400, "invalid_request"), json(200, { id: "v1" })];
+    answering(() => answers.shift() ?? json(200, {}));
+    const api = createClient<Paths, Code>({
+      onWrite: () => {
+        writes += 1;
+      },
+    });
+    await api.post("/api/auth/otp", { body: { mobile: "9810000001" } });
+    await api.post("/api/auth/otp", { body: { mobile: "9810000001" } });
+    await api.get("/api/visits/{id}", { path: { id: "v1" } });
+    expect(writes).toBe(1);
+  });
+});

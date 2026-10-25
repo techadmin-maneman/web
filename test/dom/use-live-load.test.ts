@@ -1,7 +1,8 @@
 // A page's data that keeps itself current (packages/ui/useLoad.ts, useLiveLoad): read again in view without the
-// loading state, a failed read again keeping what is shown, and "Try again" starting from loading.
+// loading state, a failed read again keeping what is shown, and "Try again" starting from loading. And useLoad's: a
+// page opened again shows its last answer while it reads, and reads again once a write lands.
 
-import { useLiveLoad } from "@maneman/ui/useLoad";
+import { dataChanged, forgetKept, useLiveLoad, useLoad } from "@maneman/ui/useLoad";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -30,6 +31,7 @@ function Probe() {
 const settle = () => act(() => Promise.resolve());
 
 beforeEach(() => {
+  forgetKept();
   vi.useFakeTimers();
   reads = 0;
   page = document.createElement("div");
@@ -90,5 +92,41 @@ describe("useLiveLoad", () => {
     expect(page.textContent).toBe("loading");
     await settle();
     expect(page.textContent).toBe("one chat");
+  });
+});
+
+describe("useLoad", () => {
+  function Page() {
+    const [loaded] = useLoad(load);
+    return createElement("p", null, loaded.state === "loaded" ? loaded.value : loaded.state);
+  }
+
+  it("shows a page opened again its last answer while it reads, and reads again once a write lands", async () => {
+    answers = [
+      { ok: true, body: "one chat" },
+      { ok: true, body: "two chats" },
+      { ok: true, body: "three chats" },
+    ];
+    act(() => {
+      root.render(createElement(Page));
+    });
+    await settle();
+    expect(page.textContent).toBe("one chat");
+    act(() => {
+      root.render(createElement("p"));
+    });
+    act(() => {
+      root.render(createElement(Page));
+    });
+    expect(page.textContent).toBe("one chat");
+    await settle();
+    expect(page.textContent).toBe("two chats");
+    act(() => {
+      dataChanged();
+    });
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    await settle();
+    expect(page.textContent).toBe("three chats");
+    expect(reads).toBe(3);
   });
 });

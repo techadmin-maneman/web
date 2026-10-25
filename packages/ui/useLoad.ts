@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useAsync, type Settled } from "./useAsync.ts";
 
 /** A call's answer, as packages/web-kit/api.ts gives it, cut to what a page needs. */
@@ -15,14 +15,62 @@ export type Loaded<T> =
   | { readonly state: "failed"; readonly notFound: boolean; readonly requestId: string | null }
   | { readonly state: "loaded"; readonly value: T };
 
+// ---- What the app's writes change ----------------------------------------------------------------------------------
+
+/** Each read's last answer, by the read: a page opened again shows it at once, and reads again behind it. */
+let kept = new WeakMap<object, Answered<unknown>>();
+/** How many times the app's writes have changed what it shows, and who is showing it. */
+let changes = 0;
+const showing = new Set<() => void>();
+/** A run of writes, as a phone's queue sends, is heard as one change once it settles. */
+const SETTLE_MS = 250;
+let settling: ReturnType<typeof setTimeout> | null = null;
+
 /**
- * A page's data, fetched when the page opens and again on "Try again". `load`
- * must keep its identity from one render to the next (a module's function, or
- * one held in useCallback), or it would be fetched on every render. A load that
- * throws fails as one the API never answered.
+ * A write the API took (the apps' clients call this on each, packages/web-kit/api.ts's onWrite): whatever page shows
+ * data reads it again, keeping what it shows until the answer comes, and nothing kept from before is shown again.
+ */
+export function dataChanged(): void {
+  forgetKept();
+  if (settling !== null) return;
+  settling = setTimeout(() => {
+    settling = null;
+    changes += 1;
+    for (const hear of [...showing]) hear();
+  }, SETTLE_MS);
+}
+
+/** Forgets every read's last answer, as a session ends, so whoever signs in next on the device is shown none of it. */
+export function forgetKept(): void {
+  kept = new WeakMap();
+}
+
+const hearChanges = (hear: () => void) => {
+  showing.add(hear);
+  return () => {
+    showing.delete(hear);
+  };
+};
+
+/** How many times writes have changed the app's data, which a page reads again on. */
+const useChanges = () => useSyncExternalStore(hearChanges, () => changes);
+
+/**
+ * A page's data, fetched when the page opens, again on "Try again", and again whenever a write changes the app's
+ * data, keeping what it shows meanwhile; a page opened again shows its last answer while it reads. `load` must keep
+ * its identity from one render to the next (a module's function, or one held in useCallback), or it would be fetched
+ * on every render. A load that throws fails as one the API never answered.
  */
 export function useLoad<T>(load: () => Promise<Answered<T>>): readonly [Loaded<T>, () => void] {
-  const [settled, retry] = useAsync(load);
+  const last = kept.get(load) as Answered<T> | undefined;
+  const [settled, retry] = useAsync(
+    load,
+    useChanges(),
+    last === undefined ? undefined : { state: "done", value: last },
+  );
+  useEffect(() => {
+    if (settled.state === "done" && settled.value.ok) kept.set(load, settled.value);
+  }, [load, settled]);
   const loaded = useMemo(() => loadedOf(settled), [settled]);
   return [loaded, retry] as const;
 }
@@ -46,7 +94,10 @@ const NOT_ANSWERED = { state: "failed", notFound: false, requestId: null } as co
  * identity from one render to the next, as useLoad's does.
  */
 export function useLiveLoad<T>(load: () => Promise<Answered<T>>, everyMs: number): LiveLoad<T> {
-  const [loaded, setLoaded] = useState<Loaded<T>>({ state: "loading" });
+  const [loaded, setLoaded] = useState<Loaded<T>>(() => {
+    const last = kept.get(load) as Answered<T> | undefined;
+    return last === undefined ? { state: "loading" } : loadedFrom(last);
+  });
   const reads = useRef(0);
   const read = useCallback(
     async (quietly: boolean) => {
@@ -55,13 +106,20 @@ export function useLiveLoad<T>(load: () => Promise<Answered<T>>, everyMs: number
       const next = await load().then(loadedFrom, (): Loaded<T> => NOT_ANSWERED);
       // A later read has the newer answer.
       if (mine !== reads.current) return;
+      if (next.state === "loaded") kept.set(load, { ok: true, body: next.value });
       setLoaded((shown) => (quietly && next.state === "failed" && shown.state === "loaded" ? shown : next));
     },
     [load],
   );
   useEffect(() => {
-    void read(false);
-  }, [read]);
+    void read(kept.has(load));
+  }, [read, load]);
+  // A write that changed the app's data is read again, as it would be on the next tick.
+  const changed = useChanges();
+  const opened = useRef(changed);
+  useEffect(() => {
+    if (changed !== opened.current) void read(true);
+  }, [changed, read]);
   useEffect(() => {
     const quietly = () => {
       if (document.visibilityState === "visible") void read(true);
