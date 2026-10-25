@@ -14,7 +14,7 @@ import { useScreen } from "../lib/useScreen.ts";
 import { go } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import frame from "../components/frame.module.css";
-import styles from "../mine/mine.module.css";
+import styles from "./options.module.css";
 
 type Price = Options["packages"][number]["first_fit"];
 
@@ -23,7 +23,7 @@ const priceOf = (price: Price | null) => (price === null ? copy.noPrice : rupees
 function Package({ option }: { option: Options["packages"][number] }) {
   return (
     <section className={styles.section} aria-labelledby={`package-${option.code}`}>
-      <h2 className={styles.packageName} id={`package-${option.code}`}>
+      <h2 className={styles.name} id={`package-${option.code}`}>
         {option.name}
       </h2>
       {option.description !== null && <p className={styles.quiet}>{option.description}</p>}

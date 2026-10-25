@@ -1,16 +1,14 @@
 // What a technician shows a client at their consultation, on the phone's Options (src/routes/tech/options.ts): each
 // package on sale in the client's city that day, its first fit priced for the client as their app prices it, its
-// service visit and replacement and how often each falls due; and the looks the client made with the try-on while
-// each is held (src/domain/try-on/client-try-ons.ts). Prices come from the price book alone.
+// service visit and replacement and how often each falls due. Prices come from the price book alone. The client's
+// try-on looks beside them are src/domain/try-on/client-try-ons.ts's.
 
 import type { Price } from "../money/price-lookup.ts";
-import type { SigningSecret } from "../../lib/signed-token.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { unlocked } from "../../policy/job-visibility.ts";
 import { pricedFor } from "../booking/client-prices.ts";
 import { allPackages } from "../booking/packages.ts";
 import { offeredServices } from "../booking/services.ts";
-import { clientTryOns } from "../try-on/client-try-ons.ts";
 
 /** A consultation of the technician's, once its card is unlocked. */
 export interface OptionsJob {
@@ -31,12 +29,6 @@ export interface PackageOption {
   readonly service_every_days: number;
   readonly replacement: Price | null;
   readonly replace_after_months: number;
-}
-
-export interface LookOption {
-  readonly id: string;
-  /** India's date the look was asked for. */
-  readonly made_on: string;
 }
 
 /** The technician's consultation under the card's own unlock; null for any other job, or before it opens. */
@@ -82,15 +74,4 @@ export async function packageOptions(db: D1Database, job: OptionsJob): Promise<P
       },
     ];
   });
-}
-
-/** The client's try-ons whose look is still held, newest first. */
-export async function lookOptions(
-  db: D1Database,
-  job: OptionsJob,
-  signingKey: SigningSecret,
-  now: Date,
-): Promise<LookOption[]> {
-  const tryOns = await clientTryOns(db, job.personId, signingKey, now);
-  return tryOns.flatMap((each) => (each.look === null ? [] : [{ id: each.id, made_on: each.made_on }]));
 }

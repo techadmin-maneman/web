@@ -4,8 +4,8 @@
 
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { lookOptions, optionsJob, packageOptions } from "../../domain/field/job-options.ts";
-import { ownTryOnImage } from "../../domain/try-on/client-try-ons.ts";
+import { optionsJob, packageOptions } from "../../domain/field/job-options.ts";
+import { clientTryOns, ownTryOnImage } from "../../domain/try-on/client-try-ons.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -14,7 +14,8 @@ import { techRoute } from "../../http/session-routes.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import type { ImageType } from "../../lib/image-bytes.ts";
 import { PriceSchema } from "../schemas/booking.ts";
-import { jobId } from "./jobs.schemas.ts";
+
+const jobId = z.object({ id: z.uuid() });
 
 const OptionsSchema = z
   .object({
@@ -94,11 +95,16 @@ export function registerTechOptions(app: App): void {
   app.openapi(optionsRoute, async (c) => {
     const job = await jobOf(c, c.req.valid("param").id);
     if (job === null) return refuse(c, "not_found");
-    const [packages, looks] = await Promise.all([
+    const [packages, tryOns] = await Promise.all([
       packageOptions(c.env.DB, job),
-      lookOptions(c.env.DB, job, c.var.config.settings.tryon.linkSigningKey, c.var.deps.now()),
+      clientTryOns(c.env.DB, job.personId, c.var.config.settings.tryon.linkSigningKey, c.var.deps.now()),
     ]);
-    const urls = looks.map((look) => ({ ...look, url: `/api/tech/jobs/${job.id}/looks/${look.id}` }));
+    // The looks still held, newest first; a photograph alone is the client's, not for the phone.
+    const urls = tryOns.flatMap((each) =>
+      each.look === null
+        ? []
+        : [{ id: each.id, made_on: each.made_on, url: `/api/tech/jobs/${job.id}/looks/${each.id}` }],
+    );
     return c.json({ packages: [...packages], looks: urls }, 200);
   });
 
