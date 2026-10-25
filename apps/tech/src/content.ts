@@ -425,6 +425,18 @@ export const notHome = {
     callFirst: (who: string) => `Call ${who} before you close`,
     theClient: "the client",
   },
+  /** What the technician adds at the door, which goes with the close for ops to rule on. */
+  door: {
+    note: "Note (optional)",
+    photo: "Photo of the door",
+    taken: "Door photo taken",
+    again: "Take again",
+    shutter: "Take",
+    cancel: "Cancel",
+    view: "The camera’s view of the door",
+    noCamera: "The camera wouldn’t open.",
+    missed: "That didn’t take. Try again.",
+  },
   // The board draws no confirmation. Closing as a no-show can bring the client a charge.
   confirm: {
     title: "Close as a no-show?",

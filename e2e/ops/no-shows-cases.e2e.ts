@@ -14,6 +14,8 @@ import {
   DECIDED,
   DISPUTES,
   fails,
+  inkPhoto,
+  jpeg,
   json,
   NO_SHOW_UNMEASURED,
   NO_SHOWS,
@@ -88,6 +90,18 @@ test("shows each case’s client, the booked window, both clocks and the evidenc
   await expect(fact(page, FIRST, "WhatsApp")).toHaveText("Delivered Sun 19 Sep, 11:32 am");
   // From the check-in to the close, not the fifteen minutes the rules asked for.
   await expect(fact(page, FIRST, "Waited")).toHaveText("16 min · closed 11:47 am");
+});
+
+// A no-show once carried nothing of the door: no note, and no photograph to settle a dispute with.
+test("shows what the technician wrote at the door, and the photograph of it on asking", async ({ page }) => {
+  await open(page);
+  await answer(page, { [`GET /api/no-shows/${CASE}/door-photo`]: jpeg(await inkPhoto()) });
+  await expect(fact(page, FIRST, opsCopy.noShows.queue.facts.note)).toHaveText("Rang twice; the gate was locked.");
+  // Only the case closed with a photograph offers one.
+  await expect(page.getByRole("button", { name: opsCopy.noShows.queue.doorPhoto.show })).toHaveCount(1);
+  await caseOf(page, FIRST).getByRole("button", { name: opsCopy.noShows.queue.doorPhoto.show }).click();
+  await expect(caseOf(page, FIRST).getByRole("img", { name: opsCopy.noShows.queue.doorPhoto.alt })).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("says how long the case had been with us when the check-in reached us late", async ({ page }) => {
@@ -351,7 +365,8 @@ test("shows Finance View the cases and the disputes, with nothing to rule on", a
   await openAs(page, financeAt("view", []));
   const first = caseOf(page, FIRST);
   await expect(fact(page, FIRST, "Check-in")).toBeVisible();
-  await expect(first.getByRole("button")).toHaveCount(0);
+  // Nothing to rule with; the photograph of the door is only looked at.
+  await expect(first.getByRole("button").filter({ hasNotText: opsCopy.noShows.queue.doorPhoto.show })).toHaveCount(0);
   await expect(first.getByRole("textbox")).toHaveCount(0);
   await expect(disputeCard(page).getByRole("button")).toHaveCount(0);
   await expect(disputeCard(page).getByRole("textbox")).toHaveCount(0);

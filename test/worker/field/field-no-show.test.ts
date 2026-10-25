@@ -4,6 +4,7 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { NOW, request } from "../helpers.ts";
+import { syntheticJpeg } from "../tryon-fixtures.ts";
 import {
   AT_THE_DOOR,
   bindings,
@@ -15,6 +16,7 @@ import {
   post,
   postAt,
   startJob,
+  tech,
   techAt,
   TODAY_JOB,
   TODAY_START,
@@ -27,7 +29,7 @@ describe("the no-show", () => {
   it("is refused before the wait ends, then closes with its three facts", async () => {
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
 
-    const early = await post(`/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-noshow-01");
+    const early = await post(`/api/tech/jobs/${TODAY_JOB}/no-show`, {}, "event-noshow-01");
     expect(early.status).toBe(409);
     expect(await early.json()).toMatchObject({ error: { code: "too_early_to_close" } });
 
@@ -56,7 +58,13 @@ describe("the no-show", () => {
       `/api/tech/jobs/${TODAY_JOB}/no-show`,
       {
         method: "POST",
-        headers: { Cookie: cookie, Origin: "https://maneman.test", "X-Client-Event-Id": "event-noshow-01" },
+        headers: {
+          Cookie: cookie,
+          Origin: "https://maneman.test",
+          "Content-Type": "application/json",
+          "X-Client-Event-Id": "event-noshow-01",
+        },
+        body: "{}",
       },
       bindings(),
     );
@@ -100,10 +108,49 @@ describe("the no-show", () => {
     expect(after?.decided_by).not.toBe("");
   });
 
+  // A no-show once carried nothing of the door: no note, and no photograph to settle a dispute with.
+  it("keeps the note and the photograph of the door it is sent with, the photograph under the visit", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-02");
+    const link = await post(`/api/tech/jobs/${TODAY_JOB}/door-photo/upload-url`, undefined, "door-link");
+    expect(link.status).toBe(201);
+    const { upload_url: url } = await link.json<{ upload_url: string }>();
+    const put = await request(
+      tech,
+      url,
+      { method: "PUT", headers: { Cookie: cookie, Origin: "https://maneman.test" }, body: syntheticJpeg(1200, 1600) },
+      bindings(),
+    );
+    expect(put.status).toBe(200);
+    const { take } = await put.json<{ take: string }>();
+
+    const closed = await request(
+      techAt(minutesAfterStart(16)),
+      `/api/tech/jobs/${TODAY_JOB}/no-show`,
+      {
+        method: "POST",
+        headers: {
+          Cookie: cookie,
+          Origin: "https://maneman.test",
+          "Content-Type": "application/json",
+          "X-Client-Event-Id": "event-noshow-02",
+        },
+        body: JSON.stringify({ note: "Rang twice; the gate was locked.", door_photo: take }),
+      },
+      bindings(),
+    );
+    expect(closed.status).toBe(200);
+    const kept = await env.DB.prepare("SELECT door_note, door_photo_key FROM no_show_cases").first();
+    expect(kept).toEqual({
+      door_note: "Rang twice; the gate was locked.",
+      door_photo_key: `visits/${TODAY_JOB}/door-${take}`,
+    });
+    expect(await env.CLIENT_PHOTOS.head(`visits/${TODAY_JOB}/door-${take}`)).not.toBeNull();
+  });
+
   it("is refused once the job has started, and opens no case", async () => {
     await startJob();
 
-    const answer = await postAt(minutesAfterStart(15), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+    const answer = await postAt(minutesAfterStart(15), `/api/tech/jobs/${TODAY_JOB}/no-show`, {}, "event-ns-01");
 
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "already_started" } });
@@ -125,7 +172,13 @@ describe("the no-show", () => {
       `/api/tech/jobs/${TODAY_JOB}/no-show`,
       {
         method: "POST",
-        headers: { Cookie: cookie, Origin: "https://maneman.test", "X-Client-Event-Id": "event-noshow-01" },
+        headers: {
+          Cookie: cookie,
+          Origin: "https://maneman.test",
+          "Content-Type": "application/json",
+          "X-Client-Event-Id": "event-noshow-01",
+        },
+        body: "{}",
       },
       bindings(),
     );

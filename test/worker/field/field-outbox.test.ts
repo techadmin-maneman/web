@@ -43,9 +43,9 @@ describe("the phone's clock", () => {
     expect(body.checked_in_at).toBe(minutesAfterStart(-60).toISOString());
     expect(body.wait_ends_at).toBe(minutesAfterStart(25).toISOString());
 
-    const early = await postAt(minutesAfterStart(11), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+    const early = await postAt(minutesAfterStart(11), `/api/tech/jobs/${TODAY_JOB}/no-show`, {}, "event-ns-01");
     expect(early.status).toBe(409);
-    const closed = await postAt(minutesAfterStart(25), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+    const closed = await postAt(minutesAfterStart(25), `/api/tech/jobs/${TODAY_JOB}/no-show`, {}, "event-ns-01");
     expect(closed.status).toBe(200);
 
     const { cases } = await (

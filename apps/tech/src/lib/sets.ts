@@ -6,6 +6,7 @@
 
 import type { Angle, Phase } from "../api.ts";
 import type { Frame, Queued } from "../store/outbox.ts";
+import { isSetFrame } from "../store/records.ts";
 
 /** The five angles of a visit's set, in the order the design guides them. */
 export const ANGLES: readonly Angle[] = ["front", "top", "left", "right", "hair"];
@@ -34,7 +35,7 @@ export function photoSets(frames: readonly Frame[], events: readonly Queued[]): 
   const setOf = (job: string, phase: Phase) =>
     sets.get(`${job}:${phase}`) ?? { job, phase, held: 0, up: 0, queued: false };
 
-  for (const frame of [...frames].sort((a, b) => a.kept_at - b.kept_at)) {
+  for (const frame of frames.filter(isSetFrame).sort((a, b) => a.kept_at - b.kept_at)) {
     const set = setOf(frame.job_id, frame.phase);
     const up = frame.take === undefined ? set.up : set.up + 1;
     sets.set(`${frame.job_id}:${frame.phase}`, { ...set, held: set.held + 1, up });
@@ -70,7 +71,7 @@ export function anglesTaken(
   jobId: string,
   phase: Phase,
 ): TakenAngle[] {
-  const held = frames.filter((frame) => frame.job_id === jobId && frame.phase === phase);
+  const held = frames.filter(isSetFrame).filter((frame) => frame.job_id === jobId && frame.phase === phase);
   const set = events.filter((event) => event.job_id === jobId && PHASE_OF[event.kind] === phase);
   const finished = set.length > 0;
   const sending = set.some((event) => event.state === "waiting");

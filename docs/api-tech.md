@@ -1058,7 +1058,15 @@ Start the job. The duration runs from here to the outcome
 
 ### POST /api/tech/jobs/{id}/no-show
 
-Close the job as a no-show, once the wait has run
+Close the job as a no-show, once the wait has run, with what the technician saw at the door
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianNoShow"
+}
+```
 
 **200**: Closed, with the case ops will rule on
 
@@ -1919,6 +1927,322 @@ Request body:
                 "superseded",
                 "out_of_order",
                 "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/jobs/{id}/door-photo/upload-url
+
+A link to PUT a photograph of the door to, before the job is closed as a no-show
+
+**201**: The link, good for fifteen minutes
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDoorPhotoUrl"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such job, or never this technician's
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: already_closed: the job has closed, so it takes no more photographs
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### PUT /api/tech/door-photos/{token}
+
+The photograph of the door: a JPEG or PNG, at most 2 MB
+
+**200**: Received; the no-show names the take
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDoorPhotoTaken"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: the link is wrong or expired
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: already_closed: the job has closed, so it takes no more photographs
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**422**: photo_invalid_file: not a JPEG or PNG, or over 2 MB
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "photo_invalid_file"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "busy"
               ]
             }
           },
@@ -6355,6 +6679,28 @@ Request body:
 }
 ```
 
+### TechnicianNoShow
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "What the technician saw at the door."
+    },
+    "door_photo": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The take a photograph of the door was answered with (PUT /api/tech/door-photos/{token})."
+    }
+  },
+  "additionalProperties": false
+}
+```
+
 ### TechnicianPhotoUrl
 
 ```json
@@ -6456,6 +6802,46 @@ Request body:
   },
   "required": [
     "phase"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianDoorPhotoUrl
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "upload_url": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "upload_url",
+    "expires_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianDoorPhotoTaken
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "take": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "take"
   ],
   "additionalProperties": false
 }

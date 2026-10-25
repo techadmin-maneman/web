@@ -30,6 +30,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./no-shows.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { paymentsApi } from "./payments-api.ts";
+import { DoorPhoto } from "./DoorPhoto.tsx";
 
 type Choice = "charged" | "waived";
 
@@ -162,6 +163,9 @@ function Facts({ each }: { each: NoShowCase }) {
     ],
     [copy.facts.whatsapp, messageOf(each)],
     [copy.facts.waited, waitedOf(each)],
+    // What the technician added at the door, where they added anything.
+    ...(each.door_note === null ? [] : [[copy.facts.note, each.door_note] as const]),
+    ...(each.door_photo ? [[copy.facts.photo, <DoorPhoto key="door" caseId={each.id} />] as const] : []),
   ];
 
   return (

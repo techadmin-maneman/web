@@ -138,7 +138,7 @@ this map, or when the map names something that no longer exists.
 ### No-shows and disputes
 
 - **Database work** (`src/domain/no-shows/`): `no-shows`, `no-show-disputes`, `no-show-rulings`,
-  `ruling-claims`, `after-a-ruling`
+  `ruling-claims`, `after-a-ruling`, `door-evidence` (the note and photograph of the door a no-show is sent with)
 - **Rules** (`src/policy/`): `no-show`
 - **Routes** (`src/routes/`): `client/disputes`, `ops/disputes`, `ops/no-shows`, `ops/no-show-rulings`
 - **Screens:** `apps/ops/src/payments/`

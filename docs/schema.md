@@ -1496,7 +1496,7 @@ Indexes:
 
 The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0065_dispute_window.sql`, `0172_retention_reaches_every_table.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0065_dispute_window.sql`, `0172_retention_reaches_every_table.sql`, `0194_no_show_evidence.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -1520,6 +1520,8 @@ Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `004
 | `refund_amount` | INTEGER | yes |  |  |  |
 | `ruling_id` | TEXT | yes |  |  | The ID of the request that ruled, written with the ruling. What goes in the ruling's batch beside it (its audit entry, the client's message, a credit given back) is written only where the case carries that ID, so a ruling that loses a race to another member of staff's writes nothing. NULL while undecided, and on a case ruled before. |
 | `dispute_until` | TEXT | yes |  |  |  |
+| `door_note` | TEXT | yes |  |  |  |
+| `door_photo_key` | TEXT | yes |  |  |  |
 
 Indexes:
 

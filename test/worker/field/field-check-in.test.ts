@@ -126,7 +126,7 @@ describe("checking in", () => {
     expect(told?.n).toBe(0);
     // Five minutes on, the job cannot close as a no-show, and no case opens.
     const fiveMinutesOn = new Date(NOW.getTime() + 5 * 60_000);
-    const closed = await postAt(fiveMinutesOn, `/api/tech/jobs/${OTHER_JOB}/no-show`, undefined, "event-ns-01");
+    const closed = await postAt(fiveMinutesOn, `/api/tech/jobs/${OTHER_JOB}/no-show`, {}, "event-ns-01");
     expect(closed.status).not.toBe(200);
     const cases = await env.DB.prepare("SELECT COUNT(*) AS n FROM no_show_cases").first<{ n: number }>();
     expect(cases?.n).toBe(0);
@@ -224,7 +224,7 @@ describe("the arrival WhatsApp", () => {
     const arrival = (await arrivals()).results[0]?.id;
 
     // Sixteen minutes after the booked start the wait has run.
-    const closed = await postAt(minutesAfterStart(16), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+    const closed = await postAt(minutesAfterStart(16), `/api/tech/jobs/${TODAY_JOB}/no-show`, {}, "event-ns-01");
     expect(closed.status).toBe(200);
 
     const opened = await env.DB.prepare("SELECT message_id FROM no_show_cases").first<{ message_id: string }>();

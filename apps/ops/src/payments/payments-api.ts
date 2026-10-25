@@ -14,6 +14,9 @@ export const paymentsApi = {
     client.post("/api/no-shows/{id}/decision", { path: { id }, body: { decision, reason } }),
   /** What charging the case would keep of the visit's payment and refund, read before the charge is sent. */
   chargePreview: (id: string) => client.get("/api/no-shows/{id}/charge", { path: { id } }),
+  /** The photograph of the door the case was closed with; viewing it is logged as a client photograph's is. */
+  doorPhoto: (id: string) =>
+    client.request<Blob>("GET", `/api/no-shows/${encodeURIComponent(id)}/door-photo`, { file: true }),
   /** The cases ruled on today, the latest first, each with its ruling. */
   decidedNoShows: () => client.get("/api/no-shows/decided"),
   /** The disputed charges still to rule on (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). */

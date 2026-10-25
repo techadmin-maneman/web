@@ -20,7 +20,15 @@ import { cappedBody } from "../../http/capped-body.ts";
 import { refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { takesStep } from "../../policy/in-job-steps.ts";
-import { uploadUrlRoute, uploadRoute, smallUploadRoute, photosRoute } from "./jobs.routes.ts";
+import {
+  doorUploadRoute,
+  doorUploadUrlRoute,
+  uploadUrlRoute,
+  uploadRoute,
+  smallUploadRoute,
+  photosRoute,
+} from "./jobs.routes.ts";
+import { doorUploadLink, storeDoorPhoto, visitOfDoorLink } from "../../domain/no-shows/door-evidence.ts";
 import { type Ctx, hasClosed, namedJob, step, superseded, refusalOf } from "./jobs.record.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -110,6 +118,36 @@ export function registerPhotographs(app: App): void {
   });
 
   app.openapi(photosRoute, (c) => photoSet(c, c.req.valid("json")));
+  registerDoorPhoto(app);
+}
+
+/** The photograph of the door a no-show is sent with: a link for it, and the photograph, before the job closes. */
+function registerDoorPhoto(app: App): void {
+  app.openapi(doorUploadUrlRoute, async (c) => {
+    const job = await namedJob(c, c.req.valid("param").id);
+    if (job === null) return refuse(c, "not_found");
+    if (await hasClosed(c, job.id)) return refuse(c, "already_closed");
+    const link = await doorUploadLink(c.var.config.settings.tryon.linkSigningKey, job.id, c.var.deps.now());
+    return c.json({ upload_url: link.url, expires_at: link.expiresAt.toISOString() }, 201);
+  });
+
+  app.openapi(doorUploadRoute, async (c) => {
+    const visit = await visitOfDoorLink(
+      c.var.config.settings.tryon.linkSigningKey,
+      c.req.valid("param").token,
+      c.var.deps.now(),
+    );
+    const job = visit === null ? null : await workableJob(c.env.DB, visit);
+    if (job?.technicianId !== technicianOf(c).technicianId) return refuse(c, "not_found");
+    const bytes = await cappedBody(c.req.raw, MAX_PHOTO_BYTES);
+    const [closed, room] = await roomInOpenJob(c, job.id, bytes);
+    if (closed) return refuse(c, "already_closed");
+    if (bytes === null || bytes.byteLength === 0) return refuse(c, "photo_invalid_file");
+    if (!room) return refuse(c, "busy");
+    const take = await storeDoorPhoto({ db: c.env.DB, bucket: c.env.CLIENT_PHOTOS, appointmentId: job.id, bytes });
+    if (take === null) return refuse(c, "photo_invalid_file");
+    return c.json({ take }, 200);
+  });
 }
 
 /** The slot an upload link names, while its job is still this technician's; null for any other link. */

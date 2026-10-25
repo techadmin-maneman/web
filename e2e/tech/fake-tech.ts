@@ -127,6 +127,8 @@ export interface Fake {
   readonly writes: Write[];
   /** Every photograph PUT to an upload link, by its angle. */
   readonly photos: string[];
+  /** The takes of the photographs of the door, as uploaded before a no-show. */
+  readonly doorPhotos: string[];
   /** Every thumbnail PUT beside a photograph, by its angle. */
   readonly thumbnails: string[];
   /** What the job's card reports, which the fake moves on as writes land. */
@@ -213,6 +215,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     tomorrow: false,
     writes: [],
     photos: [],
+    doorPhotos: [],
     thumbnails: [],
     progress: NOTHING_DONE,
   };
@@ -275,8 +278,21 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, { take: randomUUID() });
     }
 
+    // The photograph of the door a no-show is sent with, and the take the no-show names it by.
+    if (method === "PUT" && path.startsWith("/api/tech/door-photos/")) {
+      const take = randomUUID();
+      fake.doorPhotos.push(take);
+      return reply(route, 200, { take });
+    }
+
     if (method === "POST") {
       if (path === "/api/tech/auth/logout") return reply(route, 204);
+      if (path.endsWith("/door-photo/upload-url")) {
+        return reply(route, 201, {
+          upload_url: "/api/tech/door-photos/door",
+          expires_at: new Date(Date.now() + 900000).toISOString(),
+        });
+      }
       // The kit's writes are asked straight, never queued (docs/decisions/0164-the-kit-screen.md).
       if (path.startsWith("/api/tech/kit/")) {
         fake.writes.push({ path, eventId, startsAt, body: route.request().postDataJSON() as unknown });

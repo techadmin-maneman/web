@@ -232,9 +232,15 @@ test("tells what happened on a visit in its drawer, step by step, and opens its 
   await open(page, {
     "GET /api/visits/{id}/story": json({
       steps: [
-        { kind: "check_in", at: "2025-09-19T03:32:00.000Z", technician: "Imran Qureshi", outcome: null },
-        { kind: "before_photos", at: "2025-09-19T03:40:00.000Z", technician: "Imran Qureshi", outcome: null },
-        { kind: "outcome", at: "2025-09-19T05:00:00.000Z", technician: "Imran Qureshi", outcome: "done" },
+        { kind: "check_in", at: "2025-09-19T03:32:00.000Z", technician: "Imran Qureshi", outcome: null, door: null },
+        {
+          kind: "before_photos",
+          at: "2025-09-19T03:40:00.000Z",
+          technician: "Imran Qureshi",
+          outcome: null,
+          door: null,
+        },
+        { kind: "outcome", at: "2025-09-19T05:00:00.000Z", technician: "Imran Qureshi", outcome: "done", door: null },
       ],
     }),
   });

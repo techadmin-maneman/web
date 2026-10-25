@@ -688,6 +688,8 @@ export interface Rows {
     readonly refund_amount: number | null;
     readonly ruling_id: string | null;
     readonly dispute_until: string | null;
+    readonly door_note: string | null;
+    readonly door_photo_key: string | null;
   };
   readonly no_show_disputes: {
     readonly id: string;

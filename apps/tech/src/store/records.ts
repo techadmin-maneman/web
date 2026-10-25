@@ -30,12 +30,27 @@ export interface KeptStart {
   readonly starts_at: string;
 }
 
-/** One photograph waiting on the phone, held until the API confirms its upload. */
-export interface Frame {
-  readonly id: string;
-  readonly job_id: string;
+/** One photograph waiting on the phone, held until the API confirms its upload: one of a set, or of the door. */
+export type Frame = SetFrame | DoorFrame;
+
+/** One of a photograph set's five angles, before or after. */
+export interface SetFrame extends FrameParts {
   readonly angle: Angle;
   readonly phase: Phase;
+}
+
+/** The photograph of the door a no-show is sent with, uploaded just before it (../store/outbox.ts). */
+export interface DoorFrame extends FrameParts {
+  readonly angle: "door";
+  readonly phase: "door";
+}
+
+/** Whether a frame is one of a set's angles, and not the door's. */
+export const isSetFrame = (frame: Frame): frame is SetFrame => frame.phase !== "door";
+
+interface FrameParts {
+  readonly id: string;
+  readonly job_id: string;
   readonly frame: Blob;
   /** Its thumbnail, for the client app's rows; missing from a frame kept before the phone made them. */
   readonly small?: Blob;

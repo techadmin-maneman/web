@@ -131,6 +131,42 @@ export const uploadUrlRoute = techRoute({
   },
 });
 
+export const doorUploadUrlRoute = techRoute({
+  method: "post",
+  path: "/api/tech/jobs/{id}/door-photo/upload-url",
+  summary: "A link to PUT a photograph of the door to, before the job is closed as a no-show",
+  request: { params: jobId },
+  responses: {
+    201: {
+      description: "The link, good for fifteen minutes",
+      ...json(
+        z.object({ upload_url: z.string(), expires_at: z.iso.datetime() }).strict().openapi("TechnicianDoorPhotoUrl"),
+      ),
+    },
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
+    404: errorResponse("not_found: no such job, or never this technician's"),
+    409: errorResponse(PHOTOS_CLOSED),
+  },
+});
+
+export const doorUploadRoute = techRoute({
+  method: "put",
+  path: "/api/tech/door-photos/{token}",
+  summary: "The photograph of the door: a JPEG or PNG, at most 2 MB",
+  request: { params: z.object({ token: z.string().min(1).max(500) }) },
+  responses: {
+    200: {
+      description: "Received; the no-show names the take",
+      ...json(z.object({ take: z.uuid() }).strict().openapi("TechnicianDoorPhotoTaken")),
+    },
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
+    404: errorResponse("not_found: the link is wrong or expired"),
+    409: errorResponse(PHOTOS_CLOSED),
+    422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 2 MB"),
+    503: errorResponse("busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later"),
+  },
+});
+
 const PhotoTakenSchema = z
   .object({
     take: z
@@ -255,11 +291,21 @@ export const outcomeRoute = techRoute({
   },
 });
 
+const NoShowRequestSchema = z
+  .object({
+    note: z.string().trim().min(1).max(500).optional().openapi({ description: "What the technician saw at the door." }),
+    door_photo: z.uuid().optional().openapi({
+      description: "The take a photograph of the door was answered with (PUT /api/tech/door-photos/{token}).",
+    }),
+  })
+  .strict()
+  .openapi("TechnicianNoShow");
+
 export const noShowRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/no-show",
-  summary: "Close the job as a no-show, once the wait has run",
-  request: { params: jobId, headers: EventIdSchema },
+  summary: "Close the job as a no-show, once the wait has run, with what the technician saw at the door",
+  request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(NoShowRequestSchema) } },
   responses: {
     200: { description: "Closed, with the case ops will rule on", ...json(NoShowSchema) },
     ...STEP_REFUSALS,

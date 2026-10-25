@@ -13400,6 +13400,121 @@ Ops called the client about a move they had not heard of; its task leaves the bo
 }
 ```
 
+### GET /api/no-shows/{id}/door-photo
+
+The photograph of the door a case was closed with, its viewing logged as a client photograph's is
+
+**200**: The image
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such case in the caller's cities, or none with a photograph
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: the view could not be audited, so no photograph is served
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/no-shows
 
 No-show cases in the caller's cities: undecided first, each with its three facts
@@ -38319,13 +38434,50 @@ Request body:
               }
             ],
             "description": "How the visit ended, on its outcome step: \"done\", \"partial\", \"no_show\"; else null."
+          },
+          "door": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "case_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "note": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "photo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "case_id",
+                  "note",
+                  "photo"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "On a no-show's outcome, its case, and the note and photograph of the door it was closed with; the photograph is GET /api/no-shows/{id}/door-photo. Null on every other step."
           }
         },
         "required": [
           "kind",
           "at",
           "technician",
-          "outcome"
+          "outcome",
+          "door"
         ],
         "additionalProperties": false
       }
@@ -40957,6 +41109,21 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "door_note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the technician wrote at the door; null where they wrote nothing."
+    },
+    "door_photo": {
+      "type": "boolean",
+      "description": "Whether they took a photograph of the door, which GET /api/no-shows/{id}/door-photo serves."
     }
   },
   "required": [
@@ -40982,10 +41149,12 @@ Request body:
     "opened_at",
     "due",
     "decision",
-    "decided_at"
+    "decided_at",
+    "door_note",
+    "door_photo"
   ],
   "additionalProperties": false,
-  "description": "The three facts ops rule on, and nothing else."
+  "description": "The three facts ops rule on, and what the technician added at the door, and nothing else."
 }
 ```
 

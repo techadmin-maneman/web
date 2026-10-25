@@ -36,6 +36,8 @@ const VIKRAMS_CASE = {
   due: "2027-09-21T06:17:00.000Z",
   decision: "undecided",
   decided_at: null,
+  door_note: "Rang twice; the gate was locked.",
+  door_photo: true,
 } satisfies OpsReply<"/api/no-shows">["cases"][number];
 
 export const NO_SHOWS = {
@@ -66,6 +68,8 @@ export const NO_SHOWS = {
       due: "2027-09-22T05:06:00.000Z",
       decision: "undecided",
       decided_at: null,
+      door_note: null,
+      door_photo: false,
     },
   ],
   more: false,

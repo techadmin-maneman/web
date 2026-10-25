@@ -212,6 +212,13 @@ export const api = {
   upload: (link: string, frame: Blob) =>
     client.request<PhotoTaken | null>("PUT", link, { body: frame, patience: PATIENCE_MS.upload }),
 
+  /** A link to PUT the photograph of the door to, before the job is closed as a no-show. */
+  doorUploadLink: (jobId: string) =>
+    client.post("/api/tech/jobs/{id}/door-photo/upload-url", { path: { id: jobId }, patience: PATIENCE_MS.write }),
+  /** The photograph of the door; the no-show names the take it is answered with. */
+  uploadDoor: (link: string, frame: Blob) =>
+    client.request<{ take: string }>("PUT", link, { body: frame, patience: PATIENCE_MS.upload }),
+
   /** Its thumbnail, naming the take the photograph's upload answered, so it is kept beside that take alone. */
   uploadThumbnail: (link: string, take: string, small: Blob) =>
     client.request<null>("PUT", `${link}?take=${encodeURIComponent(take)}`, {
