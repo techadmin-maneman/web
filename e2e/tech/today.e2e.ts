@@ -218,9 +218,12 @@ test("scrolls the whole day on a screen shorter than it, down to tomorrow’s la
   await page.mouse.wheel(0, -3000);
   await expect(last).not.toBeInViewport({ ratio: 1 });
 
-  // A finger's scroll, not a script's: a column that hid what overflows it would leave this job out of reach.
-  await page.mouse.wheel(0, 1000);
-  await expect(last).toBeInViewport({ ratio: 1 });
+  // A finger's scroll, not a script's: a column that hid what overflows it would leave this job out of reach. A step
+  // at a time, since the links beneath the day pass it at the very foot.
+  await expect(async () => {
+    await page.mouse.wheel(0, 200);
+    await expect(last).toBeInViewport({ ratio: 1, timeout: 200 });
+  }).toPass();
 });
 
 test("every target on every screen is at least the design’s 48 px, and the primary action is 64", async ({ page }) => {
