@@ -1,10 +1,13 @@
-// Our cities: each with its state, its zone and whether we serve it. A row opens its record beside the list, where
-// each value, and each rule the city sets for itself, changes where it reads (docs/decisions/0212-editing-in-place.md).
+// Our cities: each with its state, its zone, its technicians and whether we serve it, warned where it is served with
+// none. A row opens its record beside the list, where each value, and each rule the city sets for itself, changes where
+// it reads (docs/decisions/0212-editing-in-place.md).
 
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../components/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
+import { Badge } from "@maneman/ui/Badge";
+import form from "../components/forms.module.css";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useState } from "react";
 import { DrawerButton } from "../components/DrawerButton.tsx";
@@ -51,7 +54,14 @@ function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) 
             </RowHead>
             <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
             <td>{city.zone ?? copy.noZone}</td>
-            <td>{statusOf(city)}</td>
+            <td className={form.figure}>{city.technicians}</td>
+            <td>
+              {city.active && city.served && city.technicians === 0 ? (
+                <Badge tone="attention">{copy.noTechnician}</Badge>
+              ) : (
+                statusOf(city)
+              )}
+            </td>
           </tr>
         ))}
       </tbody>

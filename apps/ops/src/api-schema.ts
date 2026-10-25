@@ -25153,7 +25153,7 @@ export interface components {
             city: string;
         };
         Cities: {
-            cities: components["schemas"]["City"][];
+            cities: components["schemas"]["ListedCity"][];
             zones: string[];
             registrations: components["schemas"]["GstRegistration"][];
             rules: {
@@ -25170,6 +25170,21 @@ export interface components {
             prices: components["schemas"]["CityPrice"][];
             /** Format: date */
             today: string;
+        };
+        ListedCity: {
+            name: string;
+            /** @description The state's GST code, as HR. */
+            state_code: string | null;
+            state: string | null;
+            /** @description The zone a grant of staff access may name. */
+            zone: string | null;
+            /** @description Whether we go there: its pincodes may be served. */
+            served: boolean;
+            /** @description Whether it is offered at all: on the forms and the board. */
+            active: boolean;
+            sort: number;
+            /** @description Active technicians who work there. */
+            technicians: number;
         };
         City: {
             name: string;

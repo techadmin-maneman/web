@@ -44045,7 +44045,7 @@ Request body:
     "cities": {
       "type": "array",
       "items": {
-        "$ref": "#/components/schemas/City"
+        "$ref": "#/components/schemas/ListedCity"
       }
     },
     "zones": {
@@ -44128,6 +44128,77 @@ Request body:
     "rule_names",
     "prices",
     "today"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ListedCity
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "state_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The state's GST code, as HR."
+    },
+    "state": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "zone": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The zone a grant of staff access may name."
+    },
+    "served": {
+      "type": "boolean",
+      "description": "Whether we go there: its pincodes may be served."
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Whether it is offered at all: on the forms and the board."
+    },
+    "sort": {
+      "type": "integer"
+    },
+    "technicians": {
+      "type": "integer",
+      "description": "Active technicians who work there."
+    }
+  },
+  "required": [
+    "name",
+    "state_code",
+    "state",
+    "zone",
+    "served",
+    "active",
+    "sort",
+    "technicians"
   ],
   "additionalProperties": false
 }
