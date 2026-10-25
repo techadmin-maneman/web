@@ -36,6 +36,7 @@ export const SECTIONS = [
   { page: "grievances", path: "/grievances", reads: "GET /api/grievances" },
   { page: "number-changes", path: "/number-changes", reads: "GET /api/number-changes" },
   { page: "deletion-requests", path: "/deletion-requests", reads: "GET /api/deletion-requests" },
+  { page: "ledger", path: "/ledger", reads: "GET /api/payments/ledger" },
   { page: "payments", path: "/payments", reads: "GET /api/no-shows" },
   { page: "technician-pay", path: "/technician-pay", reads: "GET /api/technician-pay" },
   { page: "partner-commission", path: "/partner-commission", reads: "GET /api/partner-statements" },
@@ -67,7 +68,7 @@ export const NAV = [
     pages: ["stock", "counts", "purchasing", "supply-plan", "quality", "usage", "items", "suppliers"],
   },
   { entry: "requests", pages: ["grievances", "number-changes", "deletion-requests"] },
-  { entry: "money", pages: ["payments", "technician-pay", "partner-commission"] },
+  { entry: "money", pages: ["ledger", "payments", "technician-pay", "partner-commission"] },
   { entry: "growth", pages: ["funnel", "referrals", "waitlist", "spend"] },
   { entry: "reports", pages: ["care-numbers", "activity"] },
 ] as const satisfies readonly { entry: string; pages: readonly Page[] }[];
