@@ -351,9 +351,12 @@ const typedCall =
       ...(given?.patience === undefined ? {} : { patience: given.patience }),
     });
 
+/** Calls that record a look or an error and change nothing a screen shows: not heard as writes. */
+const RECORDS_ONLY = /\/(?:client-errors|photos\/view)(?:\?|$)/;
+
 /**
  * A client's sending, with a read a second screen asks for while it is out sharing the first's answer, and each write
- * the API took told to `onWrite`.
+ * the API took told to `onWrite`, but for one that only records.
  */
 function sharedReads<A extends { readonly ok: boolean }>(
   send: (method: string, url: string, init?: Asking) => Promise<A>,
@@ -371,7 +374,7 @@ function sharedReads<A extends { readonly ok: boolean }>(
       return asked;
     }
     const answer = await send(method, url, init);
-    if (method !== "GET" && answer.ok) onWrite?.();
+    if (method !== "GET" && answer.ok && !RECORDS_ONLY.test(url)) onWrite?.();
     return answer;
   };
 }

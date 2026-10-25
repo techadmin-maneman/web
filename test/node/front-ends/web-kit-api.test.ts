@@ -432,9 +432,15 @@ describe("what the screens read", () => {
     expect(sent).toHaveLength(2);
   });
 
-  it("tells the app of each write the API took, and of no read or refusal", async () => {
+  it("tells the app of each write the API took, and of no read, refusal or call that only records", async () => {
     let writes = 0;
-    const answers = [json(202, { challenge_id: "c" }), refusal(400, "invalid_request"), json(200, { id: "v1" })];
+    const answers = [
+      json(202, { challenge_id: "c" }),
+      refusal(400, "invalid_request"),
+      json(200, { id: "v1" }),
+      new Response(null, { status: 204 }),
+      json(200, { photos: [] }),
+    ];
     answering(() => answers.shift() ?? json(200, {}));
     const api = createClient<Paths, Code>({
       onWrite: () => {
@@ -444,6 +450,8 @@ describe("what the screens read", () => {
     await api.post("/api/auth/otp", { body: { mobile: "9810000001" } });
     await api.post("/api/auth/otp", { body: { mobile: "9810000001" } });
     await api.get("/api/visits/{id}", { path: { id: "v1" } });
+    await api.request("POST", "/api/client-errors", { json: { message: "x" } });
+    await api.request("POST", "/api/clients/c1/photos/view", { json: {} });
     expect(writes).toBe(1);
   });
 });
