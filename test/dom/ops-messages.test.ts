@@ -72,6 +72,8 @@ let posted: { path: string; body: unknown }[];
 beforeEach(() => {
   // The drawers open beside the page, as modal dialogs (../../apps/ops/src/components/FormDrawer.tsx).
   openDialogsAsJsdomCan();
+  // A chat opened brings its pane into view, which jsdom cannot scroll.
+  Reflect.set(Element.prototype, "scrollIntoView", () => undefined);
   asked = [];
   posted = [];
   vi.stubGlobal(
