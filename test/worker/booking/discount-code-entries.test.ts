@@ -55,7 +55,7 @@ describe("the client, at the app's pay step", () => {
         "Content-Type": "application/json",
         Origin: "https://maneman.test",
       },
-      body: JSON.stringify({ hold_id: hold.id }),
+      body: JSON.stringify({ hold_id: hold.id, terms: true }),
     });
     expect(await started.json()).toMatchObject({ checkout: { amount: 180_000 } });
     expect(payments.made.orders).toMatchObject([{ amount: 180_000 }]);
@@ -126,7 +126,7 @@ describe("the client, at the app's pay step", () => {
         ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
       });
     const pay = async (holdId: string) => {
-      const started = await withRazorpay("/api/bookings", { method: "POST", body: { hold_id: holdId } });
+      const started = await withRazorpay("/api/bookings", { method: "POST", body: { hold_id: holdId, terms: true } });
       return (await started.json<{ checkout: { order_id: string; amount: number } }>()).checkout;
     };
     const orderOf = (holdId: string) =>

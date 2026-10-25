@@ -72,6 +72,7 @@ async function book(): Promise<string> {
           access_notes: null,
         },
         consent: true,
+        terms: true,
       }),
     },
     { CRM_QUEUE: fakeQueue() },

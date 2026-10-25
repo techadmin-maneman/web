@@ -112,6 +112,7 @@ describe("the public form, with a client's number, while that client's hold is p
           date: "2026-09-25",
           window: "evening",
           consent: true,
+          terms: true,
           address: {
             flat: "Flat 402",
             line1: "Palm Grove Society",
@@ -310,6 +311,7 @@ describe("where a visit booked from the site is", () => {
           date: "2026-09-23",
           window: "morning",
           consent: true,
+          terms: true,
           address: {
             flat: "Flat 402",
             line1: "Palm Grove Society",

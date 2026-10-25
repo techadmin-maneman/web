@@ -15,6 +15,7 @@ import { codeToCarry } from "../../domain/money/discount-code-uses.ts";
 import { enterOnHold } from "../../domain/money/discount-code-holds.ts";
 import { partnerCodeFor } from "../../domain/referrals/channels.ts";
 import { keepShownConsents, recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
+import { acceptTerms } from "../../domain/privacy/terms-acceptances.ts";
 import { bookable, movedService, moveTermsFor, rangeFor, soldAs, startCheckout } from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { Context } from "hono";
@@ -27,6 +28,7 @@ import { visitorOf } from "../../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../../policy/booking.ts";
 import { takesCredit } from "../../policy/referral-reward.ts";
 import { BookingSchema, HoldSchema, Tier } from "../schemas/booking.ts";
+import { TermsSchema } from "../schemas/terms.ts";
 import { driveCheckOf } from "../../http/drive-check.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import { indiaDate, indiaTime } from "../../lib/india-time.ts";
@@ -124,6 +126,7 @@ const BookingStartSchema = z
           "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never " +
           "decided on, recorded once the booking is paid for, or at once for a free visit (ADR 0080); left out, none.",
       }),
+    terms: TermsSchema,
   })
   .strict()
   .openapi("BookingStart");
@@ -290,12 +293,10 @@ function registerHoldOutcomes(app: App): void {
     const booking = await startCheckout(c, holdId, session.subjectId);
     if (booking === null) return refuse(c, "hold_expired");
     const db = c.env.DB;
-    await keepShownConsents(db, {
-      personId: session.subjectId,
-      holdId,
-      shown: consents,
-      ipHash: (await visitorOf(c)).ipHash,
-    });
+    const { ipHash } = await visitorOf(c);
+    await keepShownConsents(db, { personId: session.subjectId, holdId, shown: consents, ipHash });
+    const at = c.var.deps.now().toISOString();
+    await acceptTerms(db, { personId: session.subjectId, source: "app_booking", ipHash, at }).run();
     // A free visit is confirmed already; a paid one is once Razorpay's webhook says so.
     await recordBookingConsents(db, { holdId, requestId: c.var.requestId, now: c.var.deps.now() });
     return c.json(booking, 201);

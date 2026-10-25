@@ -10,12 +10,14 @@ import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../../http/
 import { PersonNameSchema } from "../../http/openapi.ts";
 import { formRequest } from "../../http/public-form.ts";
 import { AttributionSchema } from "../schemas/attribution.ts";
+import { TermsSchema } from "../schemas/terms.ts";
 
 const LeadRequestSchema = z
   .object({
     name: PersonNameSchema,
     mobile: z.string().max(20),
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
+    terms: TermsSchema,
     turnstile_token: z.string().min(1).max(2048),
     attribution: AttributionSchema,
   })

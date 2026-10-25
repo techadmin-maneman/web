@@ -25,6 +25,8 @@ export const EXPORT_QUERIES = {
     FROM addresses WHERE person_id = ?1 ORDER BY created_at`,
   consents: `SELECT purpose, granted, notice_version, source, created_at FROM consents WHERE person_id = ?1
     ORDER BY created_at, rowid`,
+  terms_acceptances: `SELECT terms_version, privacy_version, source, created_at FROM terms_acceptances WHERE person_id = ?1
+    ORDER BY created_at, rowid`,
   visits: `SELECT a.type, (${HAIR_SYSTEM("a")}) AS hair_system, a.window_start, a.window_end, a.status, a.one_visit,
       a.asked_window,
       t.name AS technician, a.service_city, a.service_pincode, a.client_note, a.client_note_at

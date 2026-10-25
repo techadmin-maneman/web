@@ -47,6 +47,7 @@ describe("the Idempotency-Key", () => {
       date: "2026-09-23",
       window: "morning",
       consent: true,
+      terms: true,
       address: ADDRESS,
     };
 
@@ -81,6 +82,7 @@ describe("the Idempotency-Key", () => {
       date: "2026-09-23",
       window: "morning",
       consent: true,
+      terms: true,
       address: ADDRESS,
     };
     await request(site(), "/api/consultation", keyed(body, "key-consult-0002"), bindings());
@@ -104,6 +106,7 @@ describe("the Idempotency-Key", () => {
     date: "2026-09-23",
     window: "morning",
     consent: true,
+    terms: true,
     address: ADDRESS,
   };
 

@@ -206,7 +206,7 @@ describe("what a client may book, and when (docs/decisions/0068-a-paid-hold-is-k
     const paying = await request(app, "/api/bookings", {
       method: "POST",
       headers: { Cookie: lead.cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
-      body: JSON.stringify({ hold_id: first.id }),
+      body: JSON.stringify({ hold_id: first.id, terms: true }),
     });
     expect(paying.status).toBe(409);
   });

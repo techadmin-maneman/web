@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { post, site } from "./consultations-fixtures.ts";
 
-const LEFT = { name: "Karan Bhatia", mobile: "9810000002", consent: true, turnstile_token: "token" };
+const LEFT = { name: "Karan Bhatia", mobile: "9810000002", consent: true, terms: true, turnstile_token: "token" };
 
 const leave = (body: object = LEFT, crm = fakeQueue()) =>
   request(site(), "/api/lead", post(body), { CRM_QUEUE: crm, MESSAGE_QUEUE: fakeQueue() });

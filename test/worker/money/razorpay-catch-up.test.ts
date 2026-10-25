@@ -72,7 +72,7 @@ async function heldAndOrdered() {
   const held = await call("/api/holds", { type: "service", date: "2026-09-24", window: "afternoon" });
   expect(held.status).toBe(201);
   const hold = await held.json<{ id: string }>();
-  const started = await call("/api/bookings", { hold_id: hold.id });
+  const started = await call("/api/bookings", { hold_id: hold.id, terms: true });
   const checkout = (await started.json<{ checkout: { order_id: string; amount: number } }>()).checkout;
   return { holdId: hold.id, orderId: checkout.order_id, amount: checkout.amount };
 }

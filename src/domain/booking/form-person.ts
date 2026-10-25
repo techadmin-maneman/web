@@ -1,10 +1,11 @@
 // The person a form on the site is from (src/domain/booking/public-booking.ts): found by their number, or made, with the
-// consent they gave on the page.
+// consent they gave on the page and the terms they agreed to there.
 
 import type { ConsentSource } from "../../policy/consents.ts";
 import { recordConsent } from "../privacy/consents.ts";
+import { acceptTerms } from "../privacy/terms-acceptances.ts";
 
-/** The person a form is from, and the writes that record them and the consent they gave on the page. */
+/** The person a form is from, and the writes that record them, the consent they gave and the terms they agreed to. */
 interface FormPerson {
   readonly id: string;
   /** Run in one batch with what the form books, so a refusal leaves nothing behind. */
@@ -18,8 +19,9 @@ export async function personWithMobile(db: D1Database, mobile: string): Promise<
 }
 
 /**
- * The person with this number, new or known, and the consent they gave, on the page they gave it. A person we know
- * keeps their name: a form anyone can fill in with a number never renames the one it belongs to.
+ * The person with this number, new or known, the consent they gave, on the page they gave it, and their agreement to
+ * the terms and the privacy policy, which every form that books asks for. A person we know keeps their name: a form
+ * anyone can fill in with a number never renames the one it belongs to.
  */
 export function formPerson(
   db: D1Database,
@@ -56,5 +58,11 @@ export function formPerson(
     ipHash: input.ipHash,
     givenAt: at,
   });
-  return { id, statements: [person, consent.statement] };
+  const terms = acceptTerms(db, {
+    personId: id,
+    source: input.source === "referral_landing" ? "referral_landing" : "site_booking",
+    ipHash: input.ipHash,
+    at,
+  });
+  return { id, statements: [person, consent.statement, terms] };
 }

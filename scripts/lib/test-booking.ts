@@ -50,5 +50,6 @@ export function consultationBody(booking: TestBooking) {
       access_notes: "Nobody lives here: this booking tests the site's form.",
     },
     consent: true,
+    terms: true,
   };
 }

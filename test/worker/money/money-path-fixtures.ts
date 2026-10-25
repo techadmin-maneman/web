@@ -62,7 +62,12 @@ export async function heldAndOrdered(personId: string, now = NOW, date = "2026-0
   const body = { type: "service", date, window };
   const held = await call(personId, "/api/holds", { method: "POST", body }, now);
   const hold = await held.json<{ id: string; expires_at: string }>();
-  const started = await call(personId, "/api/bookings", { method: "POST", body: { hold_id: hold.id } }, now);
+  const started = await call(
+    personId,
+    "/api/bookings",
+    { method: "POST", body: { hold_id: hold.id, terms: true } },
+    now,
+  );
   const checkout = (await started.json<{ checkout: { order_id: string; amount: number } | null }>()).checkout;
   return { holdId: hold.id, orderId: checkout?.order_id ?? "", amount: checkout?.amount ?? 0 };
 }

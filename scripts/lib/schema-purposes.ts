@@ -82,6 +82,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each client's named Care person, given at their first chat and moved by a Customer Care manager (ADR 0131).",
   crm_contact_updates:
     "A client's contact change still owed to their CRM lead, which the sweeper sends again until the lead has it (ADR 0203).",
+  terms_acceptances:
+    "Each time a person agreed to the terms and the privacy policy as they booked: the versions, where and when. Rows are only ever added.",
   vendor_breakers: "Each vendor's failures in a row, and until when its work waits while it is held off (ADR 0203).",
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",

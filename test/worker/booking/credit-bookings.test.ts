@@ -29,7 +29,7 @@ async function bookService(
   window = "afternoon",
 ): Promise<{ visitId: string; hold: Record<string, unknown> }> {
   const hold = await (await post("/api/holds", { type: "service", date, window })).json<Record<string, unknown>>();
-  const started = await post("/api/bookings", { hold_id: hold.id });
+  const started = await post("/api/bookings", { hold_id: hold.id, terms: true });
   expect(await started.json()).toEqual({ hold_id: hold.id, checkout: null });
   const visit = await env.DB.prepare("SELECT state, appointment_id FROM slot_holds WHERE id = ?1")
     .bind(hold.id)
@@ -81,7 +81,7 @@ describe("booking with a credit", () => {
     expect(hold.credit).toBeNull();
     await credits(1);
 
-    const started = await (await post("/api/bookings", { hold_id: hold.id })).json();
+    const started = await (await post("/api/bookings", { hold_id: hold.id, terms: true })).json();
     expect(started).toEqual({ hold_id: hold.id, checkout: null });
     expect(
       await env.DB.prepare("SELECT state, use_credit FROM slot_holds WHERE id = ?1").bind(hold.id).first(),
@@ -92,7 +92,7 @@ describe("booking with a credit", () => {
   it("asks for payment as ever without a credit", async () => {
     const hold = await (await post("/api/holds", { type: "service", date: "2026-09-24", window: "afternoon" })).json();
     expect(hold).toMatchObject({ credit: null });
-    const started = await (await post("/api/bookings", { hold_id: (hold as { id: string }).id })).json();
+    const started = await (await post("/api/bookings", { hold_id: (hold as { id: string }).id, terms: true })).json();
     expect(started).toMatchObject({ checkout: { amount: 200000 } });
   });
 });
@@ -105,7 +105,7 @@ describe("one credit pays for one visit", () => {
       price: unknown;
     }>();
   const book = async (holdId: string, bindings = {}) =>
-    (await post("/api/bookings", { hold_id: holdId }, bindings)).json<{
+    (await post("/api/bookings", { hold_id: holdId, terms: true }, bindings)).json<{
       hold_id: string;
       checkout: { amount: number } | null;
     }>();
@@ -201,7 +201,7 @@ describe("one credit pays for one visit", () => {
     expect(await confirm(first.id)).toBe("already_booked");
     expect(await redeems()).toHaveLength(1);
     // Once the visit is written, a replay is told the hold is booked already, and spends nothing.
-    expect((await post("/api/bookings", { hold_id: first.id })).status).toBe(409);
+    expect((await post("/api/bookings", { hold_id: first.id, terms: true })).status).toBe(409);
     expect(await redeems()).toHaveLength(1);
   });
 

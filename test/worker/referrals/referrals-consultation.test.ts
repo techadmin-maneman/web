@@ -27,9 +27,19 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...FRIEND,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
     );
     expect(answer.status).toBe(201);
+    const agreed = await env.DB.prepare("SELECT terms_version, privacy_version, source FROM terms_acceptances").all();
+    expect(agreed.results).toEqual([{ terms_version: "1.00", privacy_version: "1.00", source: "referral_landing" }]);
     expect(await answer.json()).toEqual({
       state: "booked",
       date: "2026-09-23",
@@ -74,6 +84,7 @@ describe("POST /api/r/:code/consultation", () => {
         date: "2026-09-23",
         window: "morning",
         consent: true,
+        terms: true,
         address: ADDRESS,
       }),
     );
@@ -84,7 +95,15 @@ describe("POST /api/r/:code/consultation", () => {
     const unknown = await request(
       site(),
       "/api/r/ZZ9999/consultation",
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "afternoon", consent: true, address: ADDRESS }),
+      post({
+        ...FRIEND,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "afternoon",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
     );
     expect(await unknown.json()).toMatchObject({ state: "booked", credits: false, invite: "unknown" });
   });
@@ -110,7 +129,15 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...FRIEND,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
       { CRM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
@@ -125,7 +152,15 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...FRIEND,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
     );
     expect(answer.status).toBe(201);
     const attributed = await env.DB.prepare(
@@ -141,7 +176,7 @@ describe("POST /api/r/:code/consultation", () => {
   it("asks for the address, in the pincode checked, and makes it the friend's", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
-    const body = { ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true };
+    const body = { ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, terms: true };
     const bindings = { CRM_QUEUE: fakeQueue() };
 
     const without = await request(site(), `/api/r/${code}/consultation`, post(body), bindings);
@@ -181,6 +216,7 @@ describe("POST /api/r/:code/consultation", () => {
       date: "2026-09-23",
       window: "morning",
       consent: true,
+      terms: true,
       address: ADDRESS,
     };
     expect((await request(site(), `/api/r/${code}/consultation`, post(body))).status).toBe(422);
@@ -196,7 +232,15 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...FRIEND,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
       { CRM_QUEUE: crm },
     );
 
@@ -223,7 +267,15 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site({ selfServeBooking: false, selfServeConsultations: false }),
       `/api/r/${code}/consultation`,
-      post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...FRIEND,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
       { CRM_QUEUE: crm },
     );
 
@@ -272,6 +324,7 @@ describe("POST /api/r/:code/consultation", () => {
         date: "2026-09-23",
         window: "morning",
         consent: true,
+        terms: true,
         address: ADDRESS,
         one_visit: true,
         number_code_id: await provedNumberCode("+919810000002"),

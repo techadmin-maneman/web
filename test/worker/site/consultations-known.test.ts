@@ -32,6 +32,7 @@ describe("an invite the browser remembered", () => {
         date: "2026-09-23",
         window: "morning",
         consent: true,
+        terms: true,
         address: ADDRESS,
         invite_code: inviteCode,
         ...told,
@@ -95,6 +96,7 @@ describe("an invite the browser remembered", () => {
         date: "2026-09-23",
         window: "morning",
         consent: true,
+        terms: true,
         address: ADDRESS,
         invite_code: "RM4K7P",
         invite_told: true,
@@ -170,6 +172,7 @@ describe("an invite the browser remembered", () => {
         date: "2026-09-23",
         window: "morning",
         consent: true,
+        terms: true,
         address: ADDRESS,
         invite_code: "RM4K7P",
         invite_told: true,
@@ -190,7 +193,7 @@ describe("a number the site already knows", () => {
     request(
       site(settings),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", consent: true, address: ADDRESS, ...body }),
+      post({ ...VISITOR, pincode: "122018", consent: true, terms: true, address: ADDRESS, ...body }),
       { CRM_QUEUE: fakeQueue() },
     );
   const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
