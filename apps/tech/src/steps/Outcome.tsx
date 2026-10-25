@@ -19,9 +19,10 @@ import styles from "./outcome.module.css";
 type Choice = "done" | "partial" | null;
 
 /** What the dim Next says: what is still to choose. */
-function stillToChoose(choice: Choice): string {
+function stillToChoose(choice: Choice, unanswered: boolean): string {
   if (choice === null) return copy.outcome.choose;
-  return choice === "done" ? copy.outcome.pickWhy : copy.outcome.pickReason;
+  if (choice === "partial") return copy.outcome.pickReason;
+  return unanswered ? copy.outcome.answerFirst : copy.outcome.pickWhy;
 }
 
 /** The code already on the one visit, in place of the box to type one in. */
@@ -168,16 +169,18 @@ function Choosing({
   const notGoingAhead = asksWhy && (declined || goingAhead === false);
   // Not now asks why; a fit the client declined offers the reasons, to pick or leave.
   const mustSayWhy = notGoingAhead && !declined;
+  // After a consultation the question must be answered: an unanswered one is never recorded as a yes.
+  const unanswered = asksWhy && !job.one_visit && goingAhead === null;
   // A code being checked would change the link closing the visit sends: Next waits for it.
-  const ready =
-    !codeChecking && (choice === "done" ? !mustSayWhy || lost !== null : choice === "partial" && reason !== null);
+  const doneReady = !unanswered && (!mustSayWhy || lost !== null);
+  const ready = !codeChecking && (choice === "done" ? doneReady : choice === "partial" && reason !== null);
 
   return (
     <StepFrame
       title={copy.titles.outcome}
       action={copy.next}
       ready={ready}
-      unfinished={stillToChoose(choice)}
+      unfinished={stillToChoose(choice, unanswered)}
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
       onAction={() => {

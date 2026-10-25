@@ -101,6 +101,8 @@ test("a consultation’s outcome sends the client’s yes", async ({ page }) => 
   await page.goto(`/jobs/${JOB_ID}/outcome`);
 
   await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+  // Unanswered, the question holds Next back: it is never recorded as a yes by default.
+  await expect(page.getByRole("button", { name: techCopy.steps.outcome.answerFirst })).toBeDisabled();
   await page.getByRole("button", { name: techCopy.steps.outcome.yes }).click();
   await page.getByRole("button", { name: techCopy.steps.next }).click();
   await expect.poll(() => writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: true });

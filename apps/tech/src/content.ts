@@ -307,14 +307,17 @@ export const job = {
   call: (who: string) => `Call ${who}`,
   /** A word to the client from our number (docs/decisions/0145-technician-presets.md). */
   tell: {
-    title: (who: string) => `Tell ${who}`,
+    open: (who: string) => `Send ${who} an update`,
+    title: (who: string) => `Update ${who}`,
+    close: "Close",
     minutes: "Minutes",
     minute: (minutes: number) => `${String(minutes)} min`,
-    onTheWay: (minutes: number) => `On the way, ${String(minutes)} min`,
+    onTheWay: (minutes: number) => `On my way · ${String(minutes)} min`,
     late: (minutes: number) => `Running ${String(minutes)} min late`,
-    atGate: "At the gate",
-    sent: (who: string) => `Sent to ${who} from our number.`,
-    noWhatsApp: (who: string) => `${who} takes no WhatsApp messages about visits. Call instead.`,
+    fromUs: "Sent on WhatsApp from Mane Man’s number.",
+    sentAt: (time: string) => `Sent at ${time}`,
+    sent: (who: string, time: string) => `${who} updated at ${time}.`,
+    noWhatsApp: (who: string) => `${who} doesn’t take WhatsApp updates. Call instead.`,
   },
   whatsApp: (who: string) => `WhatsApp ${who}`,
   start: "Start job",
@@ -577,6 +580,7 @@ export const steps = {
     notNow: "Not now",
     why: "Why not?",
     pickWhy: "Pick why to continue",
+    answerFirst: "Say if they’re going ahead",
   },
 } as const;
 
