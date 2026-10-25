@@ -8995,6 +8995,8 @@ export interface paths {
                 query?: {
                     from?: string;
                     city?: string;
+                    /** @description A visit the board is opened on: without from, its seven days start on the visit's day. */
+                    visit?: string;
                 };
                 header?: never;
                 path?: never;

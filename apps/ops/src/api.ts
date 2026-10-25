@@ -242,6 +242,8 @@ export interface Shown {
 export interface BoardQuery {
   readonly from: string | null;
   readonly city: string | null;
+  /** A visit linked to with no week: the board opens on its day. */
+  readonly visit?: string | null;
 }
 
 /** A query's fields that are set: a null leaves one to the route. */

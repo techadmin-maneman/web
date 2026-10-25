@@ -34128,6 +34128,17 @@
             "required": false,
             "name": "city",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "A visit the board is opened on: without from, its seven days start on the visit's day."
+            },
+            "required": false,
+            "description": "A visit the board is opened on: without from, its seven days start on the visit's day.",
+            "name": "visit",
+            "in": "query"
           }
         ],
         "responses": {

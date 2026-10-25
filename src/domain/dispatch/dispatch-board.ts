@@ -208,6 +208,15 @@ export async function boardVersion(db: D1Database): Promise<number> {
   return row?.version ?? 0;
 }
 
+/** The India day a visit starts on, where a link to it on the board starts its week; null for none of that ID. */
+export async function visitDay(db: D1Database, appointmentId: string): Promise<string | null> {
+  const row = await db
+    .prepare("SELECT window_start FROM appointments WHERE id = ?1")
+    .bind(appointmentId)
+    .first<{ window_start: string }>();
+  return row === null ? null : indiaDate(new Date(row.window_start));
+}
+
 /**
  * The board for seven days from `from`, optionally narrowed to one city. `noticeHours` is the notice in force, which a
  * visit no hold sold is changed under (src/domain/visits/visit-changes.ts).
