@@ -1,6 +1,6 @@
 # Grievances
 
-The terms promise every complaint an acknowledgement within 48 hours and a resolution within 30 days (clause 13.6). The Grievance Officer is Adwate Kumar, Co-founder and COO, at grievance@maneman.in and +91 90079 73247, as the privacy policy and the terms name him.
+The terms promise every complaint an acknowledgement within 48 hours and a resolution within 30 days (clause 13.6). The Grievance Officer is Adwate Kumar, Co-founder and COO, at grievance@maneman.in and +91 90079 73247, as named in the privacy policy and the terms.
 
 ## A concern raised in the app
 
