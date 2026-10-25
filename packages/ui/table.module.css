@@ -83,11 +83,12 @@
     white-space: nowrap;
   }
 
-  /* A column head that sorts: its name, in the head's own look, and the arrow of its order. */
+  /* A column head that sorts: its name, in the head's own look, and the arrow of its order, a target 24 px tall. */
   .sort {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-4);
+    min-height: var(--sp-24);
     padding: 0;
     border: 0;
     background: transparent;

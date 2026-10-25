@@ -9,8 +9,11 @@
     border-bottom: var(--hairline) solid var(--ui-line);
   }
 
+  /* A tab as short as Kit still gives a 24 px target. */
   .tab {
+    min-width: var(--sp-24);
     padding: var(--sp-12) 0;
+    text-align: center;
     border-bottom: var(--rule-strong) solid transparent;
     font-size: var(--fs-14);
     color: var(--ui-text-muted);
