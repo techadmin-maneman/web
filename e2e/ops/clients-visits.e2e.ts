@@ -250,11 +250,24 @@ test("asks for what an address cannot do without before it sends one", async ({ 
   const form = page.getByRole("form", { name: opsCopy.clients.visits.given.title });
   await form.getByRole("button", { name: opsCopy.clients.visits.given.save }).click();
   await expect(form.getByRole("alert")).toContainText("Add the flat, building or street");
-  await expect(form.getByLabel(opsCopy.clients.visits.given.flat)).toBeFocused();
+  // The building search is the one building box, and it leads the form, so it takes the keyboard first.
+  const building = form.getByRole("combobox", { name: opsCopy.clients.visits.given.building.label });
+  await expect(building).toBeFocused();
+  await expect(building).toHaveAttribute("aria-invalid", "true");
   await expect(form.getByLabel(opsCopy.clients.visits.given.flat)).toHaveAttribute("required", "");
   expect(sent).toBe(0);
   await form.getByRole("button", { name: opsCopy.clients.visits.given.cancel }).click();
   await expect(page.getByRole("button", { name: opsCopy.clients.visits.given.open })).toBeFocused();
+});
+
+// Replace address opened empty, all eleven boxes to retype to fix one, and asked for the building twice.
+test("opens a phone address on the one they have, the building asked once", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/visits`);
+  await page.getByRole("button", { name: opsCopy.clients.visits.given.change }).click();
+  const form = page.getByRole("form", { name: opsCopy.clients.visits.given.title });
+  await expect(form.getByRole("combobox", { name: opsCopy.clients.visits.given.building.label })).not.toHaveValue("");
+  await expect(form.getByLabel(opsCopy.clients.visits.given.pincode)).toHaveValue("122018");
+  await expect(form.getByLabel(opsCopy.clients.visits.given.line1, { exact: true })).toHaveCount(0);
 });
 
 // The stock the client's profile matches, beneath it (docs/decisions/0173-matching-a-client-to-stock.md).

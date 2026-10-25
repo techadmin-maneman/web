@@ -95,6 +95,7 @@ function Address({
         <FormDrawer title={copy.given.title} onClose={stopRecording}>
           <GivenAddressForm
             clientId={clientId}
+            address={address}
             onSaved={(given) => {
               onAddress(given);
               setSaved(true);

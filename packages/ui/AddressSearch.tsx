@@ -130,6 +130,8 @@ export function AddressSearch(props: {
   readonly words: AddressSearchWords;
   /** The search's place in its form. */
   readonly className?: string | undefined;
+  /** Why its form refused the building, beneath it; none while nothing is wrong. */
+  readonly error?: string | null;
 }) {
   const { words } = props;
   const listId = useId();
@@ -150,7 +152,10 @@ export function AddressSearch(props: {
         aria-expanded={shown}
         aria-controls={listId}
         aria-autocomplete="list"
-        aria-describedby={`${listId}-hint`}
+        aria-describedby={
+          props.error === null || props.error === undefined ? `${listId}-hint` : `${listId}-hint ${listId}-error`
+        }
+        aria-invalid={props.error === null || props.error === undefined ? undefined : true}
         aria-activedescendant={shown && active >= 0 ? `${optionId}-${String(active)}` : undefined}
         value={props.value}
         onKeyDown={onKeyDown}
@@ -184,6 +189,11 @@ export function AddressSearch(props: {
       {hint !== null && (
         <p className={styles.hint} id={`${listId}-hint`}>
           {hint}
+        </p>
+      )}
+      {props.error !== null && props.error !== undefined && (
+        <p className={styles.error} id={`${listId}-error`}>
+          {props.error}
         </p>
       )}
       <VisuallyHidden as="p" role="status">
