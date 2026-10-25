@@ -94,6 +94,8 @@ export const tasks = {
     at_risk_client: "At-risk client",
     // A group the board does not draw.
     partial_visit: "Partly done visit",
+    // A group the board does not draw (docs/decisions/0222-consumables-short-of-expected.md).
+    consumables_short: "Consumables short",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
     // A group the Tasks design does not draw; the Payments design letters the card "Disputed charge".
@@ -222,6 +224,16 @@ export const tasks = {
      * words the job sheet gives it, which ops set in Settings (docs/decisions/0087-consumables-and-stock.md).
      */
     partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
+    /** "Ran out · Imran · Tape strips 2 of 5, Glue 0 of 10 ml", or "Nothing used" where nothing was recorded. */
+    consumables_short: (reason: string, technician: string, short: string) => `${reason} · ${technician} · ${short}`,
+    shortLine: (name: string, used: number, expected: number) => `${name} ${String(used)} of ${String(expected)}`,
+    nothingUsed: "Nothing used",
+    shortReasons: {
+      client_supplies: "Client’s own supplies",
+      ran_out: "Ran out",
+      not_needed: "Not needed",
+      other: "Other",
+    },
     /** A visit closed partial with no reason from the technician. */
     noReason: "No reason given",
     // "Can't fit today" in the technician app: no piece of the client's spec to fit.
@@ -307,6 +319,8 @@ export const tasks = {
     cityMatter: { open: "Mark done", label: "What was done" },
     /** An at-risk client closes with what came of the call. */
     atRisk: { open: "Close", label: "What came of the call" },
+    /** Consumables short close once checked against the kit. */
+    consumablesShort: { open: "Checked", label: "What the kit showed" },
     confirm: "Close task",
     closing: "Closing…",
     cancel: "Cancel",

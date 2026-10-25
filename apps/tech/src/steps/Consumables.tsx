@@ -27,6 +27,8 @@ import { useStep } from "./useStep.ts";
 import shared from "./steps.module.css";
 import styles from "./consumables.module.css";
 import { declinedTheFit } from "../lib/progress.ts";
+import { needsReason, shortfallOf, SHORT_REASONS, type ShortReason } from "@rules/policy/consumable-shortfall.ts";
+import { Chips } from "./ProfileFields.tsx";
 
 type Offered = Job["consumables"][number];
 
@@ -193,6 +195,46 @@ function Picks({
   );
 }
 
+/** What the steppers shown say was used, each one counted above none. */
+const usedOf = (shown: readonly string[], counts: ReadonlyMap<string, number>) =>
+  shown.flatMap((code) => {
+    const quantity = counts.get(code) ?? 0;
+    return quantity > 0 ? [{ code, quantity }] : [];
+  });
+
+/** The step's button: why first where a reason is owed, the routine visit's one tap where all is as expected. */
+const actionOf = (waiting: boolean, expected: boolean): string => {
+  if (waiting) return copy.consumables.pickWhy;
+  return expected ? copy.consumables.asExpected : copy.next;
+};
+
+/** Whether the step owes a reason (src/policy/consumable-shortfall.ts), and the one picked, held to what is counted. */
+function useWhyShort(job: Job, used: readonly { readonly code: string; readonly quantity: number }[]) {
+  const [picked, setPicked] = useState<ShortReason | null>(null);
+  const shortfall = shortfallOf({
+    type: job.one_visit ? "first_fit" : (job.type ?? "service"),
+    expected: job.consumables,
+    used: new Map(used.map((each) => [each.code, each.quantity])),
+    total: used.reduce((sum, each) => sum + each.quantity, 0),
+  });
+  const owed = needsReason(shortfall);
+  const reason = owed ? picked : null;
+  return { owed, short: shortfall.short.length > 0, reason, waiting: owed && reason === null, pick: setPicked };
+}
+
+/** Why less was used than expected, or nothing: one tap, for ops' check of the kit. */
+function WhyShort({ why }: { why: ReturnType<typeof useWhyShort> }) {
+  if (!why.owed) return null;
+  return (
+    <Chips
+      title={why.short ? copy.consumables.whyShort : copy.consumables.whyNone}
+      options={SHORT_REASONS.map((id) => ({ id, label: copy.consumables.shortReasons[id] }))}
+      isChosen={(id) => id === why.reason}
+      onChoose={why.pick}
+    />
+  );
+}
+
 /** The step once the job is in hand: its steppers start from the job, so they are made with it. */
 function Counting({
   job,
@@ -216,20 +258,18 @@ function Counting({
   const [adding, setAdding] = useState(false);
 
   const others = offered.filter((each) => !shown.includes(each.code));
-  const used = shown.flatMap((code) => {
-    const quantity = counts.get(code) ?? 0;
-    return quantity > 0 ? [{ code, quantity }] : [];
-  });
+  const used = usedOf(shown, counts);
+  const why = useWhyShort(job, used);
 
   return (
     <StepFrame
       title={copy.titles.consumables}
-      action={asExpected(offered, counts) ? copy.consumables.asExpected : copy.next}
-      ready
+      action={actionOf(why.waiting, asExpected(offered, counts))}
+      ready={!why.waiting}
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
       onAction={() => {
-        onFinish({ items: used });
+        onFinish(why.reason === null ? { items: used } : { items: used, short_reason: why.reason });
       }}
     >
       <ul className={shared.list}>
@@ -275,6 +315,7 @@ function Counting({
         </div>
       )}
       {used.length === 0 && <p className={shared.note}>{copy.consumables.none}</p>}
+      <WhyShort why={why} />
     </StepFrame>
   );
 }

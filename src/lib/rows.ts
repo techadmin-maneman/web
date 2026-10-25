@@ -235,6 +235,14 @@ export interface Rows {
     readonly one_visit: number;
     readonly discount_code: string | null;
   };
+  readonly consumable_shortfalls: {
+    readonly appointment_id: string;
+    readonly technician_id: string;
+    readonly reason: string;
+    readonly short: string;
+    readonly recorded_at: string;
+    readonly settled_at: string | null;
+  };
   readonly consumable_usage: {
     readonly visit_type: string;
     readonly tier: string;

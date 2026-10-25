@@ -33,6 +33,16 @@ export async function closeTask(
       )
       .bind(id, task.group, task.id, options.reason, options.by, options.now.toISOString()),
     auditStatementIfWritten(db, options.audit, options.now, { table: "task_closures", id }),
+    // A shortfall checked leaves the open list its task is read from (migration 0198).
+    ...(task.group === "consumables_short"
+      ? [
+          db
+            .prepare(
+              "UPDATE consumable_shortfalls SET settled_at = ?2 WHERE appointment_id = ?1 AND settled_at IS NULL",
+            )
+            .bind(task.id, options.now.toISOString()),
+        ]
+      : []),
   ]);
 }
 

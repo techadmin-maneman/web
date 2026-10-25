@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0222. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0223. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -128,6 +128,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0188](0188-failure-rates-and-value-at-risk.md) Failure rates and value at risk
 - [0190](0190-foreign-orders-judged-at-a-rate.md) Foreign orders judged at a rate
 - [0191](0191-a-replaced-piece-comes-off.md) A replaced piece comes off
+- [0222](0222-consumables-short-of-expected.md) Consumables short of what a visit expects are said why, and checked
 
 ### Money and Books
 
@@ -345,7 +346,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0084](0084-a-clients-try-on-is-kept.md) | A client's try-on is kept | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 | [0093](0093-the-storage-meter.md), [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
 | [0085](0085-services-ops-can-edit.md) | Services ops can edit | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0211](0211-packages.md) |
 | [0086](0086-the-next-visit-is-offered.md) | The next visit is offered, and the client books it | 2026-09-27 | accepted | [0085](0085-services-ops-can-edit.md), [0105](0105-a-consultation-and-fit-in-one-visit.md), [0211](0211-packages.md) |
-| [0087](0087-consumables-and-stock.md) | Consumables and their stock, and the job sheet, set in the console | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0085](0085-services-ops-can-edit.md) |
+| [0087](0087-consumables-and-stock.md) | Consumables and their stock, and the job sheet, set in the console | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0085](0085-services-ops-can-edit.md), [0222](0222-consumables-short-of-expected.md) |
 | [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 | [0095](0095-a-booking-fsm-refuses-is-held.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0119](0119-blackouts-by-city-and-trained-fitters.md) |
 | [0089](0089-an-invite-is-not-lost.md) | An invite is not lost when the friend books away from its page | 2026-09-28 | accepted |  |
 | [0092](0092-task-owners.md) | Whose each task is, a visit ops close without a follow-up, and an address given to ops | 2026-09-28 | accepted |  |
@@ -478,3 +479,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0219](0219-one-line-consents.md) | One-line consents, with the full notice a link away | 2026-10-19 | accepted |  |
 | [0220](0220-opening-a-city-from-india-posts-pincodes.md) | Opening a city from India Post's pincodes | 2026-10-25 | accepted | [0221](0221-launches-scheduled-paused-and-checked.md) |
 | [0221](0221-launches-scheduled-paused-and-checked.md) | Launches scheduled, paused and checked first | 2026-10-25 | accepted |  |
+| [0222](0222-consumables-short-of-expected.md) | Consumables short of what a visit expects are said why, and checked | 2026-10-25 | accepted |  |

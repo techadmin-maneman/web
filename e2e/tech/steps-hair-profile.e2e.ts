@@ -141,10 +141,26 @@ test.describe("the client’s hair profile", () => {
     await expect(next(page)).toBeEnabled();
   });
 
+  // A chosen chip under the mouse went blank: its words took the paper of its fill.
+  test("keeps a chosen choice's words readable under the pointer", async ({ page }) => {
+    await atTheProfile(page);
+    const stage = page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true });
+    await stage.click();
+    await stage.hover();
+    const look = await stage.evaluate((chip) => {
+      const style = getComputedStyle(chip);
+      return { words: style.color, fill: style.backgroundColor };
+    });
+    expect(look.words).not.toBe(look.fill);
+  });
+
   test("keeps Next dim on a figure out of its range, and says the range", async ({ page }) => {
     await atTheProfile(page);
     await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
     const circumference = page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm });
+    // A figure says nothing beneath it until it is out of range.
+    await expect(circumference).toHaveAccessibleDescription("");
+    await expect(page.getByText("40–70")).toHaveCount(0);
     await circumference.fill("90");
     await expect(circumference).toHaveAccessibleDescription("40–70");
     const named = techCopy.profile.checkFigure(techCopy.profile.measurements.head_circumference_cm);

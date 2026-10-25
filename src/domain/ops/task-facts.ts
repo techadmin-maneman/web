@@ -1,6 +1,7 @@
 // What each task turns on, by its group, as the board reads it (./tasks.ts): each queue's statement writes its facts
 // as one JSON object, and the board answers them typed, so the console reads fields rather than words by position.
 
+import type { ShortReason } from "../../policy/consumable-shortfall.ts";
 import { PARTIAL_REASONS } from "../../config/job-sheet.ts";
 import type { BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
@@ -55,6 +56,14 @@ export type TaskFacts =
       readonly reason_code: string | null;
       /** The reason in the words ops gave it, or the job sheet's. */
       readonly reason: string | null;
+    }
+  | {
+      readonly group: "consumables_short";
+      readonly kind: VisitType;
+      readonly reason: ShortReason;
+      readonly technician: string;
+      /** Each consumable recorded below what was expected; empty where nothing was used. */
+      readonly short: { name: string; expected: number; used: number }[];
     }
   | { readonly group: "at_risk_client"; readonly last_visit_at: Instant; readonly due_on: Day }
   | {

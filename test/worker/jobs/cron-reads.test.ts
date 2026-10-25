@@ -176,6 +176,9 @@ const HISTORY = [
      fsm_write_state, updated_at)
    SELECT 'je-' || i, 'a-' || i, 'event-' || i, 't-history', 'outcome', '{}', '${AGO}', '${AGO}', 'written', '${AGO}'
    FROM n`,
+  // Shortfalls ops closed long ago, which the Tasks board's queue must not read again.
+  `INSERT INTO consumable_shortfalls (appointment_id, technician_id, reason, short, recorded_at, settled_at)
+   SELECT 'a-' || i, 't-history', 'ran_out', '[]', '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at)
    SELECT 'cu-' || i, 'a-' || i, 'je-' || i, 'Bond strip', 2, '${AGO}' FROM n`,
   `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at)

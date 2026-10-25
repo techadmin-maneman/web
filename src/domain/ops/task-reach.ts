@@ -24,6 +24,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   stock_at_risk: "visit",
   at_risk_client: "visit",
   partial_visit: "visit",
+  consumables_short: "visit",
   referral_review: "referral",
   no_show_decision: "no_show",
   no_show_dispute: "dispute",

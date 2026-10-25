@@ -282,6 +282,23 @@ export const QUEUES: readonly Queue[] = [
      AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)`,
   },
+  // A job that used less than its service expects, or nothing where a visit always uses something, with the
+  // technician's reason (docs/decisions/0222-consumables-short-of-expected.md): open until ops check it against the
+  // kit and close it, which settles the row, so the queue walks the open rows alone.
+  {
+    group: "consumables_short",
+    sql: `SELECT 'consumables_short' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
+         s.reason AS detail,
+         json_object('kind', a.type, 'reason', s.reason, 'technician', COALESCE(t.name, ''),
+           'short', (SELECT json_group_array(json_object('name', COALESCE(c.name, j.value ->> 'code'),
+                       'expected', j.value ->> 'expected', 'used', j.value ->> 'used'))
+                     FROM json_each(s.short) j LEFT JOIN consumables c ON c.code = j.value ->> 'code')) AS facts,
+         s.recorded_at AS since, NULL AS due_by, '' AS episode
+    FROM consumable_shortfalls s INDEXED BY consumable_shortfalls_open
+    JOIN appointments a ON a.id = s.appointment_id JOIN people pe ON pe.id = a.person_id
+    LEFT JOIN technicians t ON t.id = s.technician_id
+   WHERE s.settled_at IS NULL AND a.deleted_at IS NULL AND pe.erased_at IS NULL`,
+  },
   // An At-risk client is a fitted one with nothing booked since their last first fit, service or replacement:
   // `at_risk_after_due` days (?3) past the day their next service fell due by their package's cadence, on or before
   // today (?4); ?1 and ?2 bound the starts any cadence reads. It reads the visit's start as its `since`, from which

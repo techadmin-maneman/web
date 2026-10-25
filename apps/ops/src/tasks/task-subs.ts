@@ -76,6 +76,15 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
     const reason = facts.reason_code === NO_PIECE ? copy.noPiece : (facts.reason ?? copy.noReason);
     return copy.partial_visit(reason, shortDate(indiaDate(task.since)));
   },
+  // Why, whose job, and each consumable short of what was expected.
+  consumables_short: (facts) =>
+    copy.consumables_short(
+      copy.shortReasons[facts.reason],
+      facts.technician,
+      facts.short.length === 0
+        ? copy.nothingUsed
+        : facts.short.map((each) => copy.shortLine(each.name, each.used, each.expected)).join(", "),
+    ),
   at_risk_client: (facts, _, now) =>
     copy.at_risk_client(weeksBetween(facts.last_visit_at, now), shortDate(facts.due_on)),
   first_fit_to_book: (facts) =>

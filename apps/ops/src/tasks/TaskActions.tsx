@@ -22,11 +22,14 @@ type Group = TaskGroup["group"];
 
 /** The group as the close route names it, for the groups whose tasks ops may close; null for any other. */
 const closableAs = (group: Group): ClosableGroup | null =>
-  group === "partial_visit" || group === "at_risk_client" || group === "city_matter" ? group : null;
+  group === "partial_visit" || group === "consumables_short" || group === "at_risk_client" || group === "city_matter"
+    ? group
+    : null;
 
 /** The close button's words and the reason's label, each group's own. */
 const CLOSE_WORDS: Readonly<Record<ClosableGroup, { readonly open: string; readonly label: string }>> = {
   partial_visit: tasks.close,
+  consumables_short: tasks.close.consumablesShort,
   at_risk_client: tasks.close.atRisk,
   city_matter: tasks.close.cityMatter,
 };

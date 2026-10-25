@@ -38,8 +38,9 @@
     color: var(--ui-text);
   }
 
+  /* Only one not chosen brightens: a chosen one's words are ink on paper, which paper would wipe out. */
   @media (hover: hover) {
-    .onInk:hover {
+    .onInk:not([aria-pressed="true"], [aria-checked="true"]):hover {
       color: var(--paper);
     }
 

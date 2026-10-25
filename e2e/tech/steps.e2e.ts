@@ -236,15 +236,25 @@ test.describe("the consumables step", () => {
     await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeVisible();
   });
 
-  test("sends each consumable by its code, and one taken down to nought not at all", async ({ page }) => {
+  // A count stepped below what the service expects closed the job at no cost, and nobody was told (ADR 0222).
+  test("sends each consumable by its code, and says why one taken down to nought was not used", async ({ page }) => {
+    const words = techCopy.steps.consumables;
     const fake = await fakeTech(page);
     startedThrough(fake, "before_photos", "checklist");
     await page.goto(`/jobs/${JOB_ID}/consumables`);
+    await expect(page.getByRole("radiogroup", { name: words.whyShort })).toHaveCount(0);
 
     await page.getByRole("button", { name: "One more tape strips" }).click();
     for (let count = 0; count < 2; count += 1) await page.getByRole("button", { name: "5 ml less solvent" }).click();
-    await page.getByRole("button", { name: techCopy.steps.consumables.add }).click();
+    await page.getByRole("button", { name: words.add }).click();
     await page.getByRole("button", { name: "Add Shampoo sachet" }).click();
+
+    // Short of the solvent expected: Next waits for why.
+    await expect(page.getByRole("button", { name: words.pickWhy })).toBeDisabled();
+    await page
+      .getByRole("radiogroup", { name: words.whyShort })
+      .getByRole("radio", { name: words.shortReasons.ran_out })
+      .click();
     await page.getByRole("button", { name: techCopy.steps.next }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.after_photos })).toBeVisible();
@@ -254,6 +264,7 @@ test.describe("the consumables step", () => {
         { code: "tape_strips", quantity: 5 },
         { code: "shampoo_sachet", quantity: 1 },
       ],
+      short_reason: "ran_out",
     });
   });
 });

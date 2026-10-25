@@ -88,6 +88,10 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
   for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
   await page.getByRole("button", { name: steps.next }).click();
   await expect(page.getByRole("heading", { level: 1, name: steps.titles.consumables })).toBeVisible();
+  // A count short of what ops expect, or nothing at all, is said why, and the API holds the step to it (ADR 0222). A
+  // database with consumables set up opens the step as expected, and asks nothing.
+  const why = page.getByRole("radio", { name: steps.consumables.shortReasons.client_supplies });
+  if (await why.isVisible()) await why.click();
   await page.getByRole("button", { name: steps.next }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: captureWords.after })).toBeVisible();

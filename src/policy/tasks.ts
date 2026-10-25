@@ -91,6 +91,7 @@ export const TASK_GROUPS = [
   "stock_at_risk",
   "at_risk_client",
   "partial_visit",
+  "consumables_short",
   "referral_review",
   "no_show_decision",
   "no_show_dispute",
@@ -152,6 +153,9 @@ export const TASK_SLA_HOURS: Slas = {
   stock_at_risk: 48,
   at_risk_client: 48,
   partial_visit: 48,
+  // A job that used less than its service expects, with the technician's reason: checked against the kit within the
+  // two days (docs/decisions/0222-consumables-short-of-expected.md).
+  consumables_short: 48,
   referral_review: 48,
   no_show_decision: 48,
   no_show_dispute: 48,
@@ -178,11 +182,12 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
 
 /**
  * The groups ops close with a reason: a visit left partly done, whose follow-up the client may never want; an at-risk
- * client, closed with what came of the call; and a City matter, closed with what was done. Every other group leaves
- * the board only when its thing is done.
+ * client, closed with what came of the call; a City matter, closed with what was done; and consumables short of what
+ * a job expects, closed once checked against the kit. Every other group leaves the board only when its thing is done.
  */
 export const CLOSABLE_TASK_GROUPS = [
   "partial_visit",
+  "consumables_short",
   "at_risk_client",
   "city_matter",
 ] as const satisfies readonly TaskGroup[];
