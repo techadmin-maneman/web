@@ -57,6 +57,21 @@ export const dispatch = {
     // The board draws no search, and so no search that finds nothing.
     nothingFound: (text: string) => `Nothing this week matches “${text}”.`,
   },
+  /** The board's day along the hours, which it opens on, and its week of cards. */
+  views: { label: "View", day: "Day", week: "Week" },
+  day: {
+    choose: "Day",
+    /** The timeline's name for a screen reader: "Visits on Thu 24 Sep". */
+    label: (date: string) => `Visits on ${date}`,
+    /** Where the technician last got to, from their phone: "Arrived at Rohit Malhotra". */
+    at: {
+      arrived: (client: string) => `Arrived at ${client}`,
+      started: (client: string) => `Started at ${client}`,
+      closed: (client: string) => `Done at ${client}`,
+    },
+    /** A start the job in hand could take, which places it there: "11:30 am", read as "Place at 11:30 am with Imran". */
+    placeLabel: (time: string, technician: string) => `Place at ${time} with ${technician}`,
+  },
   board: {
     /** A block, for whoever is reading with a screen reader or moving by keyboard. */
     block: (job: string, date: string, time: string) => `${job}, ${date}, ${time}`,

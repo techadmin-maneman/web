@@ -1,11 +1,12 @@
-// The dispatch board: active technicians down, seven days across, and the jobs nobody holds in a tray
-// (src/policy/dispatch.ts). A job is moved from its drawer: the board lists only the technicians' days it would land on,
+// The dispatch board: active technicians down, and their day along the hours (./DayBoard.tsx), which it opens on, or
+// seven days across; and the jobs nobody holds in a tray (src/policy/dispatch.ts). A job is moved from its drawer: the board lists only the technicians' days it would land on,
 // the sheet its starts there and a reason, and the server checks again (docs/decisions/0034-clash-check.md,
 // 0069-dispatch-under-concurrency.md). The address keeps the week, city, search and visit (./address.ts).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { BoardQuery } from "../api.ts";
+import type { Board, BoardQuery } from "../api.ts";
 import { useHeaderSub } from "../components/PageHead.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -14,7 +15,7 @@ import { useAddressKeeps } from "./address.ts";
 import styles from "./dispatch-screen.module.css";
 import { Grid } from "./Grid.tsx";
 import { dispatchAsked } from "../route.ts";
-import { idOf, type Job } from "./job.ts";
+import { idOf, type Job, type Target } from "./job.ts";
 import { MoveBar, type InHand } from "./MoveBar.tsx";
 import { MovePicker } from "./MovePicker.tsx";
 import { Toolbar } from "./Toolbar.tsx";
@@ -26,6 +27,7 @@ import { NoticeLine } from "./NoticeLine.tsx";
 import { useOver, type Over } from "./over.ts";
 import { OpenedDrawer } from "./OpenedDrawer.tsx";
 import { DayRoutes } from "./DayRoutes.tsx";
+import { DayBoard, firstView, shownDay, ViewChoice, type BoardView } from "./DayBoard.tsx";
 import { isBlackout, kmFrom, startsFrom, daysFrom } from "./rooms.ts";
 import { useAskedVisit, useClientCalls } from "./useBoardCalls.ts";
 import { useMove, type Move } from "./useMove.ts";
@@ -94,6 +96,48 @@ function BoardOverlays(props: {
           blackout={isBlackout(moving.rooms, picking.to.date)}
         />
       )}
+    </>
+  );
+}
+
+/** The board itself, by the day or the week, under its choice of the two; what the search keeps of it, or why none. */
+function BoardBody(props: {
+  board: Board;
+  search: ReturnType<typeof useSearch>;
+  asked: ReturnType<typeof dispatchAsked>;
+  inHand: InHand | null;
+  onOpen: (job: Job, from: HTMLElement) => void;
+  onLand: (to: Target) => void;
+  onRoutes: ((date: string) => void) | null;
+}) {
+  const { board, search, inHand, onOpen, onLand } = props;
+  const [view, setView] = useState<BoardView>(() => firstView(props.asked));
+  const [day, setDay] = useState<string | null>(null);
+  const dayShown = shownDay(board.dates, day, todayInIndia(Date.now()));
+  const { rows } = search;
+  return (
+    <>
+      <ViewChoice view={view} onView={setView} dates={board.dates} day={dayShown} onDay={setDay} />
+      <div className={styles.scroll}>
+        {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
+        {board.technicians.length > 0 && rows.length === 0 && (
+          <EmptyState look="panel" line={dispatch.tools.nothingFound(search.settled.trim())} />
+        )}
+        {rows.length > 0 && view === "day" && dayShown !== undefined && (
+          <DayBoard
+            board={board}
+            rows={rows}
+            date={dayShown}
+            inHand={inHand}
+            now={Date.now()}
+            onOpen={onOpen}
+            onLand={onLand}
+          />
+        )}
+        {rows.length > 0 && view === "week" && (
+          <Grid board={board} rows={rows} found={search.found} onOpen={onOpen} onRoutes={props.onRoutes} />
+        )}
+      </div>
     </>
   );
 }
@@ -192,21 +236,15 @@ export function DispatchScreen() {
           {loaded.state === "loading" && <Loading />}
           {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
           {board !== null && (
-            <div className={styles.scroll}>
-              {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
-              {board.technicians.length > 0 && rows.length === 0 && (
-                <EmptyState look="panel" line={dispatch.tools.nothingFound(settled.trim())} />
-              )}
-              {rows.length > 0 && (
-                <Grid
-                  board={board}
-                  rows={rows}
-                  found={found}
-                  onOpen={open}
-                  onRoutes={access.mayCall("GET /api/dispatch/day") ? set.routesOn : null}
-                />
-              )}
-            </div>
+            <BoardBody
+              board={board}
+              search={{ settled, rows, found }}
+              asked={asked}
+              inHand={inHand}
+              onOpen={open}
+              onLand={land}
+              onRoutes={access.mayCall("GET /api/dispatch/day") ? set.routesOn : null}
+            />
           )}
         </div>
         {board !== null && <Tray unassigned={board.unassigned} onOpen={open} />}

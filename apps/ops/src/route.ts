@@ -269,6 +269,8 @@ interface DispatchAsked {
   readonly city: string | null;
   readonly find: string;
   readonly visit: string | null;
+  /** The day along the hours, or the week of cards; null where the address names neither. */
+  readonly view: "day" | "week" | null;
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -318,6 +320,7 @@ export function dispatchAsked(search: string): DispatchAsked {
     city: city === "" ? null : city,
     find: query.get("find") ?? "",
     visit: valueOf(query, "visit", UUID),
+    view: query.get("view") === "day" || query.get("view") === "week" ? (query.get("view") as "day" | "week") : null,
   };
 }
 

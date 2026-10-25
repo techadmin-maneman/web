@@ -26,7 +26,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/ops/src/clients/VisitCode.tsx": { fn: 107 },
   "apps/ops/src/deletion-requests/DeletionsScreen.tsx": { fn: 85 },
   "apps/ops/src/dispatch/BlockDrawer.tsx": { fn: 112 },
-  "apps/ops/src/dispatch/DispatchScreen.tsx": { fn: 124 },
+  "apps/ops/src/dispatch/DispatchScreen.tsx": { fn: 118 },
   "apps/ops/src/number-changes/NumberChangesScreen.tsx": { fn: 84 },
   "apps/ops/src/referrals/ReferralsScreen.tsx": { fn: 107 },
   "apps/ops/src/stock/StockForm.tsx": { fn: 90 },
