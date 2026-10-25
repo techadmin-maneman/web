@@ -85,6 +85,8 @@ export const AUDIT_ACTIONS = [
   // and to the dispatch board alike (ADR 0062).
   "technician.leave",
   "technician.leave_cancelled",
+  // A technician's ask for leave declined; an approved one records the leave, as technician.leave.
+  "technician.leave_declined",
   // Ops adding a technician, changing their name, number or zone, and switching them off or back on.
   "technician.add",
   "technician.change",

@@ -7,20 +7,22 @@
 // base's size, where one is recorded; the board's template is recorded nowhere,
 // so it is not drawn. The piece says what the client paid for, warns when the
 // profile names another product, and gives the piece on the client's head. A
-// consultation fits nothing, so its card has no piece.
+// consultation fits nothing, so its card has no piece; it opens the Options
+// shown to the client instead (./OptionsScreen.tsx).
 //
 // The last visit's photograph is fetched each time the card is open and never
 // kept: the API answers it `no-store`, and the service worker leaves it alone.
 
 import { GLYPHS } from "@maneman/brand/icons";
-import { ButtonLink } from "@maneman/ui/Button";
+import { ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { capsLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
+import { Link } from "@maneman/ui/router";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { TellClient } from "./TellClient.tsx";
 import { addressLine } from "@maneman/web-kit/address";
 import type { HairProfile, Job } from "../api.ts";
-import { job as copy, profile as profileCopy } from "../content.ts";
+import { job as copy, options as optionsCopy, profile as profileCopy } from "../content.ts";
 import { callLink, wayTo } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
@@ -204,7 +206,15 @@ export function JobCard({ job }: { job: Job }) {
         <TellClient job={job} />
       </section>
       <ProfileCard profile={job.profile} />
-      {job.type !== "consultation" && <PieceCard job={job} />}
+      {job.type === "consultation" ? (
+        <section className={styles.piece}>
+          <Link className={buttonLook({ variant: "outlineOnInk", size: "control" })} to={`/jobs/${job.id}/options`}>
+            {optionsCopy.link}
+          </Link>
+        </section>
+      ) : (
+        <PieceCard job={job} />
+      )}
       {job.last_visit !== null && <LastVisit last={job.last_visit} />}
     </>
   );

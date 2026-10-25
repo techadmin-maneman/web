@@ -27,7 +27,7 @@ import {
   keepStartAtCheckIn,
   keptStartAtCheckIn,
 } from "./jobs.ts";
-import type { Frame } from "./records.ts";
+import { isSetFrame, type DoorFrame, type Frame, type SetFrame } from "./records.ts";
 import {
   account,
   MOST_TRIES,
@@ -188,6 +188,20 @@ export async function keepFrame({
   await put("frames", kept);
   changed();
   return id;
+}
+
+/** The photograph of the door a no-show will go with, one a job: a second replaces the first. */
+export async function keepDoorFrame(jobId: string, frame: Blob): Promise<void> {
+  const kept: DoorFrame = {
+    id: `${jobId}:door`,
+    job_id: jobId,
+    angle: "door",
+    phase: "door",
+    frame,
+    kept_at: Date.now(),
+  };
+  await put("frames", kept);
+  changed();
 }
 
 export async function dropFrame(id: string): Promise<void> {
@@ -360,7 +374,7 @@ export function replay(): Promise<Replayed> {
 async function uploadFrames(event: Queued, phase: Phase): Promise<Verdict | null> {
   const inTheOrderTaken = (await frames()).sort((a, b) => a.kept_at - b.kept_at);
   let firstRefusal: Refusal | null = null;
-  for (const frame of inTheOrderTaken) {
+  for (const frame of inTheOrderTaken.filter(isSetFrame)) {
     if (frame.job_id !== event.job_id || frame.phase !== phase) continue;
     const verdict = await uploadFrame(frame);
     if (verdict === null) {
@@ -382,7 +396,7 @@ async function uploadFrames(event: Queued, phase: Phase): Promise<Verdict | null
  * angle was taken again meanwhile or it is not small enough, is let go, since
  * the client app then shows the photograph itself.
  */
-async function uploadFrame(frame: Frame): Promise<Verdict | null> {
+async function uploadFrame(frame: SetFrame): Promise<Verdict | null> {
   const link = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
   if (!link.ok) return classify(link);
   let take = frame.take;
@@ -431,7 +445,35 @@ function phaseOf(kind: EventKind): Phase | null {
   return null;
 }
 
-/** Sends one event, a photograph set's photographs first. Null once it has landed. */
+/**
+ * The photograph of the door a no-show goes with, up first: the API answers it with its take, which the no-show then
+ * names, kept with the frame so a round stopped after it sends only the no-show. One the API will not take is let go,
+ * and the no-show goes without it: the close is what matters.
+ */
+async function withDoorPhoto(event: Queued): Promise<{ readonly body: unknown } | Verdict> {
+  const door = (await frames()).find(
+    (frame): frame is DoorFrame => frame.phase === "door" && frame.job_id === event.job_id,
+  );
+  // A no-show queued by a build before the note and the photograph has no body, which the close now always takes.
+  const body = event.body === null || typeof event.body !== "object" ? {} : event.body;
+  if (door === undefined) return { body };
+  let take = door.take;
+  if (take === undefined) {
+    const link = await api.doorUploadLink(event.job_id);
+    const sent = link.ok ? await api.uploadDoor(link.body.upload_url, door.frame) : link;
+    if (!sent.ok) {
+      const verdict = classify(sent);
+      if (verdict.kind !== "refused") return verdict;
+      await remove("frames", door.id);
+      return { body };
+    }
+    take = sent.body.take;
+    await put("frames", { ...door, take } satisfies DoorFrame);
+  }
+  return { body: { ...body, door_photo: take } };
+}
+
+/** Sends one event, a photograph set's photographs, or a no-show's photograph of the door, first. Null once it has landed. */
 async function send(event: Queued): Promise<Verdict | null> {
   const phase = phaseOf(event.kind);
   if (phase !== null) {
@@ -440,12 +482,15 @@ async function send(event: Queued): Promise<Verdict | null> {
     if (trouble?.kind === "refused") return { ...trouble, note: "photo_rejected", fields: [] };
     if (trouble !== null) return trouble;
   }
-  const answer = await api.send<unknown>(event.path, event.body ?? undefined, {
+  const sending = event.kind === "no_show" ? await withDoorPhoto(event) : { body: event.body };
+  if ("kind" in sending) return sending;
+  const answer = await api.send<unknown>(event.path, sending.body ?? undefined, {
     eventId: event.id,
     startsAt: event.starts_at ?? null,
   });
   if (!answer.ok) return classify(answer);
   await landed(event, answer.body);
+  if (event.kind === "no_show") await remove("frames", `${event.job_id}:door`);
   return null;
 }
 

@@ -173,3 +173,17 @@
 .take {
   flex: 1;
 }
+
+/* The photograph of the door, taken in the no-show's wait (./DoorCamera.tsx): the view, then Take and Cancel. */
+.door {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+
+.doorView {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--ink-frame);
+}

@@ -16,6 +16,7 @@ import { mayFollow } from "../route.ts";
 import { decidedAt } from "../lib/task-links.ts";
 import { nameParts } from "../lib/who.ts";
 import { CallAboutMove } from "./CallAboutMove.tsx";
+import { LeaveDecision } from "./LeaveDecision.tsx";
 import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
 import { subOf } from "./task-subs.ts";
 import { TaskActions } from "./TaskActions.tsx";
@@ -83,6 +84,7 @@ function Body({ group, task, subject, acting }: Omit<Props, "now">) {
         <UpiPaymentAction task={task} subject={subject} onRecorded={acting.onClosed} />
       )}
       <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
+      <LeaveDecision group={group} task={task} onDecided={acting.onClosed} />
       <TaskActions group={group} task={task} subject={subject} {...acting} />
     </div>
   );

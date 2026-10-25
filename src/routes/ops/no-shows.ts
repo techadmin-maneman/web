@@ -17,7 +17,8 @@ import { z } from "@hono/zod-openapi";
 import { json } from "../../http/openapi.ts";
 import { capped, More } from "../../http/paging.ts";
 import { afterRuling } from "../../domain/no-shows/after-a-ruling.ts";
-import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../../domain/no-shows/no-shows.ts";
+import { decideNoShow, doorPhotoOf, listNoShowCases, MESSAGE_STATES } from "../../domain/no-shows/no-shows.ts";
+import { logPhotoView, viewInForce } from "../../domain/field/photo-views.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -91,9 +92,17 @@ const NoShowCaseSchema = z
     }),
     decision: z.enum(NO_SHOW_DECISIONS),
     decided_at: z.union([z.iso.datetime(), z.null()]),
+    door_note: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "What the technician wrote at the door; null where they wrote nothing." }),
+    door_photo: z.boolean().openapi({
+      description: "Whether they took a photograph of the door, which GET /api/no-shows/{id}/door-photo serves.",
+    }),
   })
   .strict()
-  .openapi("NoShowCase", { description: "The three facts ops rule on, and nothing else." });
+  .openapi("NoShowCase", {
+    description: "The three facts ops rule on, and what the technician added at the door, and nothing else.",
+  });
 const NoShowsSchema = z
   .object({
     cases: z.array(NoShowCaseSchema),
@@ -136,7 +145,45 @@ const decisionRoute = opsRoute({
   },
 });
 
+const doorPhotoRoute = opsRoute({
+  method: "get",
+  path: "/api/no-shows/{id}/door-photo",
+  summary: "The photograph of the door a case was closed with, its viewing logged as a client photograph's is",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: {
+      description: "The image",
+      content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
+    },
+    404: errorResponse("not_found: no such case in the caller's cities, or none with a photograph"),
+    503: errorResponse("unavailable: the view could not be audited, so no photograph is served"),
+  },
+});
+
 export function registerOpsNoShows(app: App): void {
+  app.openapi(doorPhotoRoute, async (c) => {
+    const held = await doorPhotoOf(c.env.DB, c.req.valid("param").id, await routeReach(c));
+    if (held === null) return refuse(c, "not_found");
+    const staff = actorOf(c);
+    const now = c.var.deps.now();
+    if (held.personId !== null && !(await viewInForce(c.env.DB, held.personId, staff, now))) {
+      try {
+        await logPhotoView(c.env.DB, { personId: held.personId, actor: staff, requestId: c.var.requestId, now });
+      } catch (error) {
+        c.var.log.error("audit_write_failed", { action: "photo.view", error });
+        return refuse(c, "unavailable");
+      }
+    }
+    const object = await c.env.CLIENT_PHOTOS.get(held.key);
+    if (object === null) return refuse(c, "not_found");
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": object.httpMetadata?.contentType ?? "image/jpeg",
+        "Cache-Control": "private, no-store",
+      },
+    });
+  });
+
   app.openapi(noShowsRoute, async (c) => {
     const { decision } = c.req.valid("query");
     const reached = await routeReach(c);

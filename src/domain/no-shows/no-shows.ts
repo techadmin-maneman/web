@@ -85,6 +85,10 @@ interface NoShowCase {
   readonly opened_at: string;
   readonly decision: NoShowDecision;
   readonly decided_at: string | null;
+  /** What the technician wrote at the door; null where they wrote nothing. */
+  readonly door_note: string | null;
+  /** Whether they took a photograph of the door, which GET /api/no-shows/{id}/door-photo serves. */
+  readonly door_photo: boolean;
 }
 
 interface CaseRow {
@@ -112,6 +116,8 @@ interface CaseRow {
   window_start: string | null;
   window_end: string | null;
   technician: string | null;
+  door_note: string | null;
+  door_photo: number;
 }
 
 /** A WhatsApp's row, as far as the no-show evidence reads it. */
@@ -237,7 +243,7 @@ export async function listNoShowCases(
          n.message_id, o.state AS message_status, o.last_error AS message_error,
          COALESCE(n.message_delivered_at, o.delivered_at) AS message_delivered_at,
          n.wait_ends_at, n.closed_at, n.created_at, n.decision, n.decided_at,
-         a.window_start, a.window_end, t.name AS technician
+         a.window_start, a.window_end, t.name AS technician, n.door_note, n.door_photo_key IS NOT NULL AS door_photo
        FROM no_show_cases n
        JOIN checkins c ON c.id = n.checkin_id
        JOIN appointments a ON a.id = n.appointment_id
@@ -273,7 +279,25 @@ export async function listNoShowCases(
     opened_at: row.created_at,
     decision: row.decision,
     decided_at: row.decided_at,
+    door_note: row.door_note,
+    door_photo: row.door_photo === 1,
   }));
+}
+
+/** Where a case's photograph of the door is kept, and whose visit it was; null for a case not reached, or with none. */
+export async function doorPhotoOf(
+  db: D1Database,
+  caseId: string,
+  reached: PlacesReached,
+): Promise<{ readonly key: string; readonly personId: string | null } | null> {
+  const row = await db
+    .prepare(
+      `SELECT n.door_photo_key AS key, a.person_id FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
+       WHERE n.id = ?1 AND n.door_photo_key IS NOT NULL AND ${withinReach("no_show", "n", "?2")}`,
+    )
+    .bind(caseId, reachBinding(reached))
+    .first<{ key: string; person_id: string | null }>();
+  return row === null ? null : { key: row.key, personId: row.person_id };
 }
 
 /** The terms in force, which a visit no hold sold is charged under. */

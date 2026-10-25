@@ -113,6 +113,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).",
   last_visits:
     "Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.",
+  leave_requests:
+    "A technician's ask for leave from their phone, which Operations approve or decline on Tasks; an approval records the leave and names it.",
   leads:
     "Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).",
   maintenance:

@@ -41,6 +41,7 @@ const SUBJECT_ROUTES: readonly { readonly prefix: string; readonly kind: string 
 const UNAUDITED_SESSION_CALLS = new Set([
   "PUT /api/tech/photos/:token",
   "PUT /api/tech/photos/:token/small",
+  "PUT /api/tech/door-photos/:token",
   "POST /api/address/suggestions",
 ]);
 

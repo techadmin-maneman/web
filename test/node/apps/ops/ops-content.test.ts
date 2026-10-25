@@ -66,7 +66,7 @@ describe("the dispatch board’s words", () => {
   // Activity read "Technician app request · POST /api/tech/jobs/{id}/outcome".
   it("says what each change a client or a technician makes was, as Activity lists it", () => {
     // Made before anyone is signed in, or never logged: a photograph's bytes, an address as it is typed.
-    const unlogged = /\/auth\/(otp|verify)|\/client-errors$|\/address\/suggestions$|\/upload-url$|\/photos\/\{token\}/;
+    const unlogged = /\/auth\/(otp|verify)|\/client-errors$|\/address\/suggestions$|\/upload-url$|photos\/\{token\}/;
     for (const document of ["docs/openapi-client.json", "docs/openapi-tech.json"]) {
       const { paths } = JSON.parse(readFileSync(document, "utf8")) as { paths: Record<string, object> };
       for (const [path, methods] of Object.entries(paths)) {

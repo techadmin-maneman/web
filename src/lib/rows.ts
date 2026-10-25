@@ -636,6 +636,18 @@ export interface Rows {
     readonly source: string | null;
     readonly found_us: string | null;
   };
+  readonly leave_requests: {
+    readonly id: string;
+    readonly technician_id: string;
+    readonly from_date: string;
+    readonly to_date: string;
+    readonly note: string | null;
+    readonly requested_at: string;
+    readonly decision: string | null;
+    readonly decided_by: string | null;
+    readonly decided_at: string | null;
+    readonly leave_id: string | null;
+  };
   readonly lost_reasons: {
     readonly code: string;
     readonly label: string;
@@ -688,6 +700,8 @@ export interface Rows {
     readonly refund_amount: number | null;
     readonly ruling_id: string | null;
     readonly dispute_until: string | null;
+    readonly door_note: string | null;
+    readonly door_photo_key: string | null;
   };
   readonly no_show_disputes: {
     readonly id: string;

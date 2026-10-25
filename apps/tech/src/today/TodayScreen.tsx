@@ -23,10 +23,13 @@ import {
   atRisk as atRiskCopy,
   job as jobCopy,
   kit as kitCopy,
+  leave as leaveCopy,
   leaving as leavingCopy,
+  month as monthCopy,
   queue as queueCopy,
   titles,
   today as copy,
+  week as weekCopy,
 } from "../content.ts";
 import { rowState, type RowState } from "../lib/progress.ts";
 import { useRefreshTick } from "../lib/useRefreshTick.ts";
@@ -270,6 +273,30 @@ function OnThePhone(props: { readonly sending: number; readonly unsentSets: numb
   );
 }
 
+/** The technician's other pages, beneath the day: their week, their month, their leave and their kit. */
+function Elsewhere() {
+  return (
+    <>
+      <Link className={styles.waiting} to="/week">
+        <Icon d={GLYPHS.board} size="md" className={styles.waitingIcon} weight="heavy" />
+        <span className={styles.waitingLine}>{weekCopy.link}</span>
+      </Link>
+      <Link className={styles.waiting} to="/month">
+        <Icon d={GLYPHS.bars} size="md" className={styles.waitingIcon} weight="heavy" />
+        <span className={styles.waitingLine}>{monthCopy.link}</span>
+      </Link>
+      <Link className={styles.waiting} to="/leave">
+        <Icon d={GLYPHS.clock} size="md" className={styles.waitingIcon} weight="heavy" />
+        <span className={styles.waitingLine}>{leaveCopy.link}</span>
+      </Link>
+      <Link className={styles.waiting} to="/kit">
+        <Icon d={GLYPHS.tag} size="md" className={styles.waitingIcon} weight="heavy" />
+        <span className={styles.waitingLine}>{kitCopy.link}</span>
+      </Link>
+    </>
+  );
+}
+
 export function TodayScreen() {
   const { me, offline, atRisk, signOut } = useSession();
   const date = todayInIndia();
@@ -354,10 +381,7 @@ export function TodayScreen() {
       {jobs.length > 0 && <Jobs jobs={jobs} names={names} queued={waiting.events} heard={heard} />}
       {tomorrowJobs.length > 0 && <Tomorrow jobs={tomorrowJobs} names={names} queued={waiting.events} heard={heard} />}
 
-      <Link className={styles.waiting} to="/kit">
-        <Icon d={GLYPHS.tag} size="md" className={styles.waitingIcon} weight="heavy" />
-        <span className={styles.waitingLine}>{kitCopy.link}</span>
-      </Link>
+      <Elsewhere />
       <ReachOps className={styles.ops} />
     </main>
   );

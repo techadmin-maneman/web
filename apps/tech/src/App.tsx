@@ -7,7 +7,11 @@ import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { Stopped, StorageFull } from "./components/Banners.tsx";
 import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
+import { OptionsScreen } from "./job/OptionsScreen.tsx";
 import { KitScreen } from "./kit/KitScreen.tsx";
+import { LeaveScreen } from "./mine/LeaveScreen.tsx";
+import { MonthScreen } from "./mine/MonthScreen.tsx";
+import { WeekScreen } from "./mine/WeekScreen.tsx";
 import { OutboxContext, useOutboxSubscription } from "./lib/useOutbox.ts";
 import { useReplayTriggers } from "./lib/useReplayTriggers.ts";
 import { useSessionLifecycle } from "./lib/useSessionLifecycle.ts";
@@ -34,8 +38,16 @@ function pageFor(route: Route) {
       return <WaitingScreen />;
     case "kit":
       return <KitScreen />;
+    case "week":
+      return <WeekScreen />;
+    case "month":
+      return <MonthScreen />;
+    case "leave":
+      return <LeaveScreen />;
     case "job":
       return <JobScreen id={route.id} />;
+    case "options":
+      return <OptionsScreen id={route.id} />;
     case "done":
       return <CloseOut id={route.id} />;
     case "step":

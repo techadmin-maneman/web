@@ -91,22 +91,23 @@ export const bindings = () => ({ MESSAGE_QUEUE: messageQueue }) as unknown as Pa
 
 export const get = (path: string) => request(tech, path, { headers: { Cookie: cookie } }, bindings());
 
-export const post = (path: string, body: unknown, eventId: string) =>
-  request(
+/** A body as the phone sends one: JSON with its type, or, for a step that takes none, nothing at all. */
+const sent = (body: unknown) =>
+  body === undefined ? {} : { body: JSON.stringify(body), type: { "Content-Type": "application/json" } };
+
+export const post = (path: string, body: unknown, eventId: string) => {
+  const { type, ...rest } = sent(body);
+  return request(
     tech,
     path,
     {
       method: "POST",
-      headers: {
-        Cookie: cookie,
-        Origin: "https://maneman.test",
-        "Content-Type": "application/json",
-        "X-Client-Event-Id": eventId,
-      },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      headers: { Cookie: cookie, Origin: "https://maneman.test", "X-Client-Event-Id": eventId, ...type },
+      ...rest,
     },
     bindings(),
   );
+};
 
 export const opsPost = (path: string, body: unknown) =>
   request(
@@ -130,8 +131,8 @@ export const postAt = (at: Date, path: string, body: unknown, eventId: string, h
       headers: {
         Cookie: cookie,
         Origin: "https://maneman.test",
-        "Content-Type": "application/json",
         "X-Client-Event-Id": eventId,
+        ...sent(body).type,
         ...headers,
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),

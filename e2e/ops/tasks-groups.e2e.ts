@@ -1,6 +1,6 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, json, TASKS, type OpsReply } from "./fixtures.ts";
+import { answer, empty, json, TASKS, type OpsReply } from "./fixtures.ts";
 import { detail, NO_ALERTS, open, row, groupNames } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
@@ -547,4 +547,52 @@ test("names a client as plain text, and offers no way to a section, where the pe
   await expect(row(page, "Kunal Mehta")).toBeVisible();
   await expect(row(page, "Kunal Mehta").getByRole("link", { name: "Kunal Mehta", exact: true })).toHaveCount(0);
   await expect(row(page, "Vikram Sethi").getByRole("link", { name: /^Decide in Number changes/ })).toHaveCount(0);
+});
+
+// A technician's ask for leave from their phone, decided from its drawer: Approve records the leave.
+test("approves a technician’s ask for leave from its drawer", async ({ page }) => {
+  const id = "97000000-0000-4000-8000-000000000001";
+  const board: OpsReply<"/api/tasks"> = {
+    overdue: 0,
+    truncated: false,
+    low_stock_places: 0,
+    lapsed: 0,
+    staff: [],
+    groups: [
+      {
+        group: "leave_request",
+        count: 1,
+        closable: false,
+        tasks: [
+          {
+            id,
+            person: null,
+            facts: {
+              group: "leave_request",
+              technician: "Imran Qureshi",
+              from: "2027-09-26",
+              to: "2027-09-28",
+              note: "Sister’s wedding",
+            },
+            detail: "2027-09-26 Imran Qureshi",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-22T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  };
+  const decided: unknown[] = [];
+  await open(page, board, NO_ALERTS, {
+    "POST /api/leave-requests/{id}/decision": async (route) => {
+      decided.push(route.request().postDataJSON());
+      await empty()(route);
+    },
+  });
+  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.leave_request]);
+  await expect(row(page, "Imran Qureshi")).toContainText("Sister’s wedding");
+  const drawer = await detail(page, "Imran Qureshi");
+  await drawer.getByRole("button", { name: opsCopy.tasks.leave.approve }).click();
+  await expect.poll(() => decided).toEqual([{ decision: "approved" }]);
 });

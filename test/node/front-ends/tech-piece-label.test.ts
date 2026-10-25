@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { asLabel, isLabel } from "../../../apps/tech/src/steps/label.ts";
 import type { Frame, Queued } from "../../../apps/tech/src/store/outbox.ts";
+import type { SetFrame } from "../../../apps/tech/src/store/records.ts";
 import { anglesRefused, anglesTaken, photoSets, sentOf } from "../../../apps/tech/src/lib/sets.ts";
 
 describe("a piece’s label", () => {
@@ -21,7 +22,7 @@ describe("a piece’s label", () => {
   });
 });
 
-const frame = (job: string, phase: "before" | "after", angle: Frame["angle"], at: number): Frame => ({
+const frame = (job: string, phase: "before" | "after", angle: SetFrame["angle"], at: number): Frame => ({
   id: `${job}:${phase}:${angle}`,
   job_id: job,
   phase,

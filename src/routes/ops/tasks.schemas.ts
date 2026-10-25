@@ -44,6 +44,12 @@ export const TaskFactsSchema = z
     facts("unassigned_visit", { kind, starts_at: instant }),
     facts("visit_left_open", { status: z.string(), starts_at: instant }),
     facts("leave_conflict", { starts_at: instant, technician: z.string() }),
+    facts("leave_request", {
+      technician: z.string(),
+      from: z.iso.date(),
+      to: z.iso.date(),
+      note: z.union([z.string(), z.null()]),
+    }),
     facts("address_to_confirm", { starts_at: instant }),
     facts("partial_visit", {
       kind,

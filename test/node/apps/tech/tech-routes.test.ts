@@ -63,7 +63,7 @@ describe("what each of the outbox’s events sends", () => {
     expectTypeOf<EventBody<"piece">>().toEqualTypeOf<Schemas["PieceRequest"]>();
     expectTypeOf<EventBody<"profile">>().toEqualTypeOf<Schemas["TechnicianProfileRequest"]>();
     expectTypeOf<EventBody<"outcome">>().toEqualTypeOf<Schemas["OutcomeRequest"]>();
-    expectTypeOf<EventBody<"no_show">>().toEqualTypeOf<null>();
+    expectTypeOf<EventBody<"no_show">>().toEqualTypeOf<Schemas["TechnicianNoShow"]>();
   });
 });
 

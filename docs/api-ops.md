@@ -3244,6 +3244,128 @@ Take a note off the client's page; it is kept, with who took it off and when, au
 }
 ```
 
+### POST /api/leave-requests/{id}/decision
+
+Approve or decline a technician's ask for leave; an approval records the leave
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/LeaveDecision"
+}
+```
+
+**204**: Decided
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such ask in the caller's places
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: superseded: another member of staff decided it first
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/clients/{id}/stock-match
 
 The stock code the client's hair profile matches exactly, and where its pieces are
@@ -13382,6 +13504,121 @@ Ops called the client about a move they had not heard of; its task leaves the bo
               "type": "string",
               "enum": [
                 "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/no-shows/{id}/door-photo
+
+The photograph of the door a case was closed with, its viewing logged as a client photograph's is
+
+**200**: The image
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such case in the caller's cities, or none with a photograph
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: the view could not be audited, so no photograph is served
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
               ]
             }
           },
@@ -34403,6 +34640,27 @@ Request body:
 }
 ```
 
+### LeaveDecision
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "declined"
+      ]
+    }
+  },
+  "required": [
+    "decision"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientStockMatch
 
 ```json
@@ -38319,13 +38577,50 @@ Request body:
               }
             ],
             "description": "How the visit ended, on its outcome step: \"done\", \"partial\", \"no_show\"; else null."
+          },
+          "door": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "case_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "note": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "photo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "case_id",
+                  "note",
+                  "photo"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "On a no-show's outcome, its case, and the note and photograph of the door it was closed with; the photograph is GET /api/no-shows/{id}/door-photo. Null on every other step."
           }
         },
         "required": [
           "kind",
           "at",
           "technician",
-          "outcome"
+          "outcome",
+          "door"
         ],
         "additionalProperties": false
       }
@@ -39281,6 +39576,7 @@ Request body:
         "no_show.dispute_rule",
         "technician.leave",
         "technician.leave_cancelled",
+        "technician.leave_declined",
         "technician.add",
         "technician.change",
         "technician.deactivate",
@@ -40957,6 +41253,21 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "door_note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the technician wrote at the door; null where they wrote nothing."
+    },
+    "door_photo": {
+      "type": "boolean",
+      "description": "Whether they took a photograph of the door, which GET /api/no-shows/{id}/door-photo serves."
     }
   },
   "required": [
@@ -40982,10 +41293,12 @@ Request body:
     "opened_at",
     "due",
     "decision",
-    "decided_at"
+    "decided_at",
+    "door_note",
+    "door_photo"
   ],
   "additionalProperties": false,
-  "description": "The three facts ops rule on, and nothing else."
+  "description": "The three facts ops rule on, and what the technician added at the door, and nothing else."
 }
 ```
 
@@ -42088,6 +42401,7 @@ Request body:
               "city_matter",
               "remedy_approval",
               "leave_conflict",
+              "leave_request",
               "address_to_confirm",
               "consultation_request",
               "first_fit_to_book",
@@ -42712,6 +43026,46 @@ Request body:
         "group",
         "starts_at",
         "technician"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "leave_request"
+          ]
+        },
+        "technician": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string",
+          "format": "date"
+        },
+        "to": {
+          "type": "string",
+          "format": "date"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "group",
+        "technician",
+        "from",
+        "to",
+        "note"
       ],
       "additionalProperties": false
     },

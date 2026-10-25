@@ -151,6 +151,24 @@ test("gives a consultation’s card the hair profile and no piece", async ({ pag
   await expect(page.getByText(techCopy.job.piece.none)).toHaveCount(0);
 });
 
+test("opens a consultation’s Options: each package and what it costs, and the client’s looks", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "consultation";
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("link", { name: techCopy.options.link }).click();
+
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.options.title })).toBeVisible();
+  const essential = page.getByRole("region", { name: "Mane Man Essential" });
+  await expect(essential.getByRole("term")).toHaveText([
+    techCopy.options.firstFit,
+    techCopy.options.service(30),
+    techCopy.options.replacement(6),
+  ]);
+  await expect(essential.getByRole("definition")).toHaveText(["Rs. 37,760", "Rs. 2,360", techCopy.options.noPrice]);
+  await expect(page.getByRole("img", { name: techCopy.options.look("20 Sep") })).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+});
+
 test("checks in at the door, and records the time and the distance (board B5)", async ({ page }) => {
   const fake = await fakeTech(page);
   // Booked to start ten minutes ago, so the wait runs from the check-in, whatever time of day the test runs.
@@ -254,6 +272,30 @@ test("asks before closing as a no-show, since ops may charge the client", async 
   await expect(page.getByText(/^Delivered /)).toBeVisible();
   await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/no-show")).length).toBe(1);
   expect(await axeViolations(page)).toEqual([]);
+});
+
+// A no-show once carried nothing of the door: no note, and no photograph to settle a dispute with.
+test("sends a note and a photograph of the door with the close, the photograph up first", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.waitLeftMs = 1_000;
+  fake.reminderDelivered = new Date().toISOString();
+  await arrive(page);
+
+  await page.getByLabel(techCopy.notHome.door.note).fill("Rang twice; the gate was locked.");
+  await page.getByRole("button", { name: techCopy.notHome.door.photo }).click();
+  const take = page.getByRole("button", { name: techCopy.notHome.door.shutter });
+  await expect(take).toBeEnabled({ timeout: 10_000 });
+  await take.click();
+  await expect(page.getByText(techCopy.notHome.door.taken)).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+
+  const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
+  await expect(close).toBeEnabled({ timeout: 10_000 });
+  await close.click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.waiting.close }).click();
+  await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/no-show")).length).toBe(1);
+  const sent = fake.writes.find((write) => write.path.endsWith("/no-show"))?.body;
+  expect(sent).toEqual({ note: "Rang twice; the gate was locked.", door_photo: fake.doorPhotos[0] });
 });
 
 test("a no-show the API refuses as early stays open on the card, and never reads as done", async ({ page }) => {

@@ -226,6 +226,16 @@ export const QUEUES: readonly Queue[] = [
   { group: "visit_left_open", sql: VISITS_LEFT_OPEN, binds: (at) => [at.todayStarts] },
   // A job still booked on a day its technician is away: leave moves nothing, so ops move it. It waits from when the
   // leave was recorded, and falls due by the job. The client is named where there is one on our records.
+  // A technician's ask for leave, from their phone, still to approve or decline (../dispatch/leave-requests.ts).
+  {
+    group: "leave_request",
+    sql: `SELECT 'leave_request' AS "group", r.id AS id, NULL AS person_id, NULL AS person_name,
+         r.from_date || ' ' || t.name AS detail,
+         json_object('technician', t.name, 'from', r.from_date, 'to', r.to_date, 'note', r.note) AS facts,
+         r.requested_at AS since, NULL AS due_by, '' AS episode
+    FROM leave_requests r JOIN technicians t ON t.id = r.technician_id
+   WHERE r.decision IS NULL`,
+  },
   {
     group: "leave_conflict",
     sql: `SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
