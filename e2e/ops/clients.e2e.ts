@@ -263,20 +263,25 @@ test("says in words that a client wearing no piece falls due on no date", async 
   ]);
 });
 
-// The page opened on an empty Pieces tab, a click away from the visit.
-test("opens on the visits, with the invite on a Referrals tab of its own", async ({ page }) => {
+// The page opened on an empty Pieces tab, a click away from the visit; then Overview sat last, and Book a visit lived
+// on the Visits tab alone.
+test("opens on the overview, first, with Book a visit on every tab and the invite on a Referrals tab", async ({
+  page,
+}) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText([
+    opsCopy.clients.history.title,
     opsCopy.clients.history.rows.visits,
     opsCopy.clients.pieces.title,
     "Payments",
     opsCopy.referrals.title,
     opsCopy.clients.consents.title,
     "Photos",
-    opsCopy.clients.history.title,
   ]);
-  await expect(clientTab(page, "Visits")).toHaveAttribute("aria-current", "page");
-  await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
+  await expect(clientTab(page, opsCopy.clients.history.title)).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("button", { name: opsCopy.clients.visits.book.open })).toBeVisible();
+  await clientTab(page, "Payments").click();
+  await expect(page.getByRole("button", { name: opsCopy.clients.visits.book.open })).toBeVisible();
 });
 
 test("lists the pieces in the board’s columns", async ({ page }) => {

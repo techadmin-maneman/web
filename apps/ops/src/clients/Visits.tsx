@@ -324,7 +324,15 @@ function AutoRefunds({ refunds }: { refunds: readonly AutoRefund[] }) {
 }
 
 /** Book a visit, and the panel it opens; a visit booked, or a link sent, has the page read the record again. */
-function BookOne({ clientId, record, onBooked }: { clientId: string; record: ClientRecord; onBooked: () => void }) {
+export function BookOne({
+  clientId,
+  record,
+  onBooked,
+}: {
+  clientId: string;
+  record: ClientRecord;
+  onBooked: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
   const mayBook = useAccess().mayCall("POST /api/visits");
@@ -376,7 +384,6 @@ export function Visits({
 }) {
   return (
     <div className={styles.visits}>
-      <BookOne clientId={clientId} record={record} onBooked={onChanged} />
       <Address clientId={clientId} address={address} onAddress={onAddress} />
       <VisitRecords visits={record.visits} name={record.name} onChanged={onChanged} lostReasons={record.lost_reasons} />
       <AutoRefunds refunds={record.auto_refunds} />

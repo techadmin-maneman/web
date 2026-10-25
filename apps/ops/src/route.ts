@@ -145,13 +145,12 @@ export const settingsPageOf = (tab: SettingsTab): SettingsPage => {
 export type PlainPage = Exclude<Page, "clients" | "technicians">;
 
 /**
- * The tabs of the design's eight that a client's page carries, in its order,
- * and History last: the board draws no such tab, so it stands after the ones
- * it does draw. The page opens on Visits.
+ * The tabs of the design's eight that a client's page carries, in its order, after the Overview, which the board draws
+ * no tab for: the page opens on it.
  */
-export const CLIENT_TABS = ["visits", "pieces", "payments", "referrals", "consents", "photos", "history"] as const;
+export const CLIENT_TABS = ["history", "visits", "pieces", "payments", "referrals", "consents", "photos"] as const;
 export type ClientTab = (typeof CLIENT_TABS)[number];
-const OPENING_TAB: ClientTab = "visits";
+const OPENING_TAB: ClientTab = "history";
 
 /** A technician's page, a tab at a time, in its order. It opens on their week. */
 export const TECHNICIAN_TABS = ["week", "hours", "leave", "phones", "kit"] as const;

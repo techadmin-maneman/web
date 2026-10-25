@@ -32,7 +32,7 @@ import { OpenTasks } from "./OpenTasks.tsx";
 import { Payments } from "./Payments.tsx";
 import { Photos, usePhotos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
-import { Visits } from "./Visits.tsx";
+import { BookOne, Visits } from "./Visits.tsx";
 
 type Credits = ClientRecord["credits"];
 type Address = ClientRecord["address"];
@@ -210,6 +210,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                 credits={adjusted === null ? record.credits : adjusted.credits}
                 invite={attached?.invite ?? record.invite}
               />
+              <BookOne clientId={clientId} record={record} onBooked={retry} />
               <OpenTasks clientId={clientId} />
               <Tabs label={record.name}>
                 {clients.tabs.map((each) => (

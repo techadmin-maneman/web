@@ -86,15 +86,15 @@ export const clients = {
    * the gap a missing figure would draw.
    */
   noPiece: "No hair system fitted",
-  /** The tabs of the design's eight that the ops routes answer, in its order, and History, which it draws none of. */
+  /** The tabs of the design's eight that the ops routes answer, the Overview first, which it draws none of. */
   tabs: [
+    { tab: "history", label: "Overview" },
     { tab: "visits", label: "Visits" },
     { tab: "pieces", label: "Hair systems" },
     { tab: "payments", label: "Payments" },
     { tab: "referrals", label: "Referrals" },
     { tab: "consents", label: "Consents" },
     { tab: "photos", label: "Photos" },
-    { tab: "history", label: "Overview" },
   ],
   /**
    * Our words, all of them: what waits on Tasks for the client, under the page's head, each with how long it has left

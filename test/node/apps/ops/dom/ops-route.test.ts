@@ -122,9 +122,10 @@ describe("the ops console’s routes", () => {
   });
 
   // A client's page opened on an empty Pieces tab, and so did every bare link.
-  it("opens a client’s page on their visits, and names the tab of every link to it", () => {
-    expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "visits" });
-    expect(routeOf(`/clients/${CLIENT}`)).toEqual({ page: "clients", clientId: CLIENT, tab: "visits" });
+  // Overview sat last, its path /history; the page now opens on it, first.
+  it("opens a client’s page on their overview, and names the tab of every link to it", () => {
+    expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "history" });
+    expect(routeOf(`/clients/${CLIENT}`)).toEqual({ page: "clients", clientId: CLIENT, tab: "history" });
     expect(clientPath(CLIENT, "visits")).toBe(`/clients/${CLIENT}/visits`);
     expect(routeOf(clientPath(CLIENT, "referrals"))).toEqual({ page: "clients", clientId: CLIENT, tab: "referrals" });
   });
