@@ -4,6 +4,7 @@
 // (docs/decisions/0212-editing-in-place.md).
 
 import { Toast } from "@maneman/ui/Toast";
+import { PageActions } from "../components/PageHead.tsx";
 import { Badge } from "@maneman/ui/Badge";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
@@ -104,28 +105,24 @@ export function Consumables() {
 
   return (
     <>
-      <Panel
-        titleId="consumables"
-        title={copy.title}
-        padded
-        actions={
-          mayAdd && (
-            <DrawerButton label={copy.add}>
-              {(done) => (
-                <AddConsumable
-                  maxUnitCost={current.max_unit_cost}
-                  onAdded={(next) => {
-                    setConsumables(next);
-                    setSaid(copy.form.added);
-                    done();
-                  }}
-                  onCancel={done}
-                />
-              )}
-            </DrawerButton>
-          )
-        }
-      >
+      <PageActions>
+        {mayAdd && (
+          <DrawerButton primary label={copy.add}>
+            {(done) => (
+              <AddConsumable
+                maxUnitCost={current.max_unit_cost}
+                onAdded={(next) => {
+                  setConsumables(next);
+                  setSaid(copy.form.added);
+                  done();
+                }}
+                onCancel={done}
+              />
+            )}
+          </DrawerButton>
+        )}
+      </PageActions>
+      <Panel titleId="consumables" title={copy.title} padded>
         <ConsumableTable
           consumables={current}
           onOpen={(code) => {

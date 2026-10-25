@@ -2,6 +2,7 @@
 // each value, and each rule the city sets for itself, changes where it reads (docs/decisions/0212-editing-in-place.md).
 
 import { Toast } from "@maneman/ui/Toast";
+import { PageActions } from "../components/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -66,13 +67,10 @@ export function CityList({ cities, reread }: { cities: Cities; reread: () => Pro
   const [said, setSaid] = useState<string | null>(null);
   const opened = cities.cities.find((city) => city.name === open) ?? cities.cities.find((city) => city.name === was);
   return (
-    <Panel
-      titleId="cities"
-      title={copy.panel}
-      count={cities.cities.length}
-      actions={
-        mayAdd && (
-          <DrawerButton label={copy.add}>
+    <>
+      <PageActions>
+        {mayAdd && (
+          <DrawerButton primary label={copy.add}>
             {(close) => (
               <AddCity
                 zones={cities.zones}
@@ -85,37 +83,38 @@ export function CityList({ cities, reread }: { cities: Cities; reread: () => Pro
               />
             )}
           </DrawerButton>
-        )
-      }
-    >
-      <CityTable
-        cities={cities}
-        onOpen={(name) => {
-          setSaid(null);
-          setWas(null);
-          setOpen(name);
-        }}
-      />
-      {said !== null && <Toast>{said}</Toast>}
-      {opened !== undefined && (
-        <FormDrawer
-          title={opened.name}
-          onClose={() => {
-            setOpen(null);
+        )}
+      </PageActions>
+      <Panel titleId="cities" title={copy.panel} count={cities.cities.length}>
+        <CityTable
+          cities={cities}
+          onOpen={(name) => {
+            setSaid(null);
             setWas(null);
+            setOpen(name);
           }}
-        >
-          <CityRecord
-            city={opened}
-            cities={cities}
-            reread={reread}
-            onRenamed={(name) => {
-              setWas(opened.name);
-              setOpen(name);
+        />
+        {said !== null && <Toast>{said}</Toast>}
+        {opened !== undefined && (
+          <FormDrawer
+            title={opened.name}
+            onClose={() => {
+              setOpen(null);
+              setWas(null);
             }}
-          />
-        </FormDrawer>
-      )}
-    </Panel>
+          >
+            <CityRecord
+              city={opened}
+              cities={cities}
+              reread={reread}
+              onRenamed={(name) => {
+                setWas(opened.name);
+                setOpen(name);
+              }}
+            />
+          </FormDrawer>
+        )}
+      </Panel>
+    </>
   );
 }

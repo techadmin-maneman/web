@@ -3,6 +3,7 @@
 // list, where each term changes where it reads (docs/decisions/0212-editing-in-place.md).
 
 import { Toast } from "@maneman/ui/Toast";
+import { PageActions } from "../components/PageHead.tsx";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
@@ -99,13 +100,10 @@ export function Partners() {
   const list = changed ?? loaded.value;
   const opened = list.channels.find((each) => each.id === open);
   return (
-    <Panel
-      titleId="partners"
-      title={copy.title}
-      padded
-      actions={
-        mayAdd && (
-          <DrawerButton label={copy.add} title={copy.form.addTitle}>
+    <>
+      <PageActions>
+        {mayAdd && (
+          <DrawerButton primary label={copy.add} title={copy.form.addTitle}>
             {(close) => (
               <AddPartner
                 limits={list.limits}
@@ -118,31 +116,32 @@ export function Partners() {
               />
             )}
           </DrawerButton>
-        )
-      }
-    >
-      {said !== null && <Toast>{said}</Toast>}
-      {list.channels.length === 0 ? (
-        <Note>{copy.none}</Note>
-      ) : (
-        <PartnerTable
-          list={list}
-          onOpen={(id) => {
-            setOpen(id);
-            setSaid(null);
-          }}
-        />
-      )}
-      {opened !== undefined && (
-        <FormDrawer
-          title={opened.name}
-          onClose={() => {
-            setOpen(null);
-          }}
-        >
-          <PartnerRecord partner={opened} list={list} site={SITE} onSaved={setChanged} />
-        </FormDrawer>
-      )}
-    </Panel>
+        )}
+      </PageActions>
+      <Panel titleId="partners" title={copy.title} padded>
+        {said !== null && <Toast>{said}</Toast>}
+        {list.channels.length === 0 ? (
+          <Note>{copy.none}</Note>
+        ) : (
+          <PartnerTable
+            list={list}
+            onOpen={(id) => {
+              setOpen(id);
+              setSaid(null);
+            }}
+          />
+        )}
+        {opened !== undefined && (
+          <FormDrawer
+            title={opened.name}
+            onClose={() => {
+              setOpen(null);
+            }}
+          >
+            <PartnerRecord partner={opened} list={list} site={SITE} onSaved={setChanged} />
+          </FormDrawer>
+        )}
+      </Panel>
+    </>
   );
 }

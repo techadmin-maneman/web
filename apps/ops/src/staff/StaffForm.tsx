@@ -1,7 +1,9 @@
 // Adding a member of staff: their sign-in email and their first grant; more are added from their record. Someone
-// already listed is changed from their record, never added twice, as saving would replace their grants whole.
+// already listed is changed from their record, never added twice, as saving would replace their grants whole. They sign
+// in through the console's Google group, which the form reminds whoever adds them.
 
 import { Field, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { useState } from "react";
 import { type StaffGrant, type StaffList } from "../api.ts";
 import { AddForm } from "../components/AddForm.tsx";
@@ -37,6 +39,7 @@ export function AddPerson(props: {
       onAdded={props.onAdded}
       onCancel={props.onCancel}
     >
+      <Note>{copy.form.group}</Note>
       <div className={form.fields}>
         <Field
           label={copy.form.email}

@@ -4,6 +4,7 @@
 // refuses a change beyond their own.
 
 import { Toast } from "@maneman/ui/Toast";
+import { PageActions } from "../components/PageHead.tsx";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
@@ -120,13 +121,10 @@ function People({ staff, onChanged }: PanelProps) {
     me.value.signed_in_as.toLowerCase() !== person.email;
 
   return (
-    <Panel
-      titleId="staff-people"
-      title={copy.title}
-      padded
-      actions={
-        mayGrant && (
-          <DrawerButton label={copy.add}>
+    <>
+      <PageActions>
+        {mayGrant && (
+          <DrawerButton primary label={copy.add}>
             {(close) => (
               <AddPerson
                 staff={staff}
@@ -139,39 +137,40 @@ function People({ staff, onChanged }: PanelProps) {
               />
             )}
           </DrawerButton>
-        )
-      }
-    >
-      <PeopleTable
-        staff={staff}
-        onOpen={(email) => {
-          setSaid(null);
-          setOpen(email);
-        }}
-      />
-      {said !== null && <Toast>{said}</Toast>}
-      {person !== null && (
-        <FormDrawer
-          title={person.email}
-          onClose={() => {
-            setOpen(null);
+        )}
+      </PageActions>
+      <Panel titleId="staff-people" title={copy.title} padded>
+        <PeopleTable
+          staff={staff}
+          onOpen={(email) => {
+            setSaid(null);
+            setOpen(email);
           }}
-        >
-          <StaffRecord
-            staff={staff}
-            person={person}
-            mayChange={mayGrant}
-            mayRemove={mayRemove}
-            onSaved={onChanged}
-            onRemoved={(next) => {
-              onChanged(next);
+        />
+        {said !== null && <Toast>{said}</Toast>}
+        {person !== null && (
+          <FormDrawer
+            title={person.email}
+            onClose={() => {
               setOpen(null);
-              setSaid(copy.removed);
             }}
-          />
-        </FormDrawer>
-      )}
-    </Panel>
+          >
+            <StaffRecord
+              staff={staff}
+              person={person}
+              mayChange={mayGrant}
+              mayRemove={mayRemove}
+              onSaved={onChanged}
+              onRemoved={(next) => {
+                onChanged(next);
+                setOpen(null);
+                setSaid(copy.removed);
+              }}
+            />
+          </FormDrawer>
+        )}
+      </Panel>
+    </>
   );
 }
 

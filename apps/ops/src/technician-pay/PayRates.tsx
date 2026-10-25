@@ -3,6 +3,7 @@
 // A grade's row opens its record beside the table, where its name and its rates change where they read.
 
 import { Toast } from "@maneman/ui/Toast";
+import { PageActions } from "../components/PageHead.tsx";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
@@ -119,13 +120,10 @@ export function PayRates(props: { pay: TechnicianPay; mayAdd: boolean; onChanged
   const opened = pay.grades.find((grade) => grade.id === open);
   const shown = city === "" ? null : city;
   return (
-    <Panel
-      titleId="pay-rates"
-      title={copy.title}
-      padded
-      actions={
-        props.mayAdd && (
-          <DrawerButton label={copy.addGrade}>
+    <>
+      <PageActions>
+        {props.mayAdd && (
+          <DrawerButton primary label={copy.addGrade}>
             {(close) => (
               <AddGrade
                 onAdded={(next) => {
@@ -137,45 +135,46 @@ export function PayRates(props: { pay: TechnicianPay; mayAdd: boolean; onChanged
               />
             )}
           </DrawerButton>
-        )
-      }
-    >
-      {said !== null && <Toast>{said}</Toast>}
-      {pay.grades.length === 0 ? (
-        <Note>{copy.none}</Note>
-      ) : (
-        <>
-          <CityChoice pay={pay} city={city} onCity={setCity} />
-          <RatesTable
-            pay={pay}
-            city={shown}
-            onOpen={(id) => {
-              setSaid(null);
-              setOpen(id);
-            }}
-          />
-        </>
-      )}
-      {opened !== undefined && (
-        <FormDrawer
-          title={opened.name}
-          onClose={() => {
-            setOpen(null);
-          }}
-        >
-          <GradeRecord
-            pay={pay}
-            grade={opened}
-            city={shown}
-            onSaved={props.onChanged}
-            onDeleted={(next) => {
-              props.onChanged(next);
+        )}
+      </PageActions>
+      <Panel titleId="pay-rates" title={copy.title} padded>
+        {said !== null && <Toast>{said}</Toast>}
+        {pay.grades.length === 0 ? (
+          <Note>{copy.none}</Note>
+        ) : (
+          <>
+            <CityChoice pay={pay} city={city} onCity={setCity} />
+            <RatesTable
+              pay={pay}
+              city={shown}
+              onOpen={(id) => {
+                setSaid(null);
+                setOpen(id);
+              }}
+            />
+          </>
+        )}
+        {opened !== undefined && (
+          <FormDrawer
+            title={opened.name}
+            onClose={() => {
               setOpen(null);
-              setSaid(technicianPay.done.deleted);
             }}
-          />
-        </FormDrawer>
-      )}
-    </Panel>
+          >
+            <GradeRecord
+              pay={pay}
+              grade={opened}
+              city={shown}
+              onSaved={props.onChanged}
+              onDeleted={(next) => {
+                props.onChanged(next);
+                setOpen(null);
+                setSaid(technicianPay.done.deleted);
+              }}
+            />
+          </FormDrawer>
+        )}
+      </Panel>
+    </>
   );
 }

@@ -736,6 +736,8 @@ export const settings = {
     /** A grant's line in a person's record: "Finance · Delhi", its level beside it. */
     grantLabel: (department: string, place: string) => `${department} · ${place}`,
     form: {
+      /** The console admits one Google group: a person added here signs in once they are in it too. */
+      group: "Add them to the console's Google group too, or they can't sign in.",
       addTitle: "Add a person",
       email: "Sign-in email",
       access: "Access",
