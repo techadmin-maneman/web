@@ -33,6 +33,11 @@ export const care = {
   noLine: "Only our messages",
   open: "Open",
   openLabel: (who: string) => `Open the chat with ${who}`,
+  /** The list beside the open chat, and the open chat's place before one is chosen. */
+  chats: "Chats",
+  choose: "Choose a chat to read it here.",
+  /** Said as the list reads itself again and finds a chat it had not shown. */
+  newChat: (who: string) => `New chat from ${who}`,
   thread: {
     title: (who: string) => `Chat with ${who}`,
     empty: "Nothing said yet.",
