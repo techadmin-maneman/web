@@ -8,13 +8,6 @@
 
 .purpose {
   width: auto;
-  padding-inline: 0 var(--sp-8);
-}
-
-.state,
-.date,
-.source {
-  padding-inline: var(--sp-8);
 }
 
 .state {

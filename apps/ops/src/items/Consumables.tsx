@@ -126,7 +126,7 @@ export function Consumables() {
           </DrawerButton>
         )}
       </PageActions>
-      <Panel titleId="consumables" title={copy.title} padded>
+      <Panel titleId="consumables" title={copy.title}>
         <ConsumableTable
           rows={current.consumables.filter((each) => each.hair_system === null)}
           none={copy.none}
@@ -148,7 +148,7 @@ export function Consumables() {
           </FormDrawer>
         )}
       </Panel>
-      <Panel titleId="hair-systems" title={copy.hairSystems} padded>
+      <Panel titleId="hair-systems" title={copy.hairSystems}>
         <ConsumableTable
           rows={current.consumables.filter((each) => each.hair_system !== null)}
           none={copy.noHairSystems}

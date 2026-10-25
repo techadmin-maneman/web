@@ -94,8 +94,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The panel's body sets the table in already, so its first and last columns meet the body's own edge. */
+.table th:first-child,
+.table td:first-child {
+  padding-left: 0;
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: 0;
+}
+
 .name {
-  padding-inline: 0 var(--sp-8);
   font-variant-numeric: normal;
   text-align: left;
 }
@@ -103,7 +113,6 @@
 .figure,
 .quietFigure {
   width: var(--ops-figure);
-  padding-inline: var(--sp-4);
   text-align: right;
 }
 

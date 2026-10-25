@@ -1,4 +1,4 @@
-/* A note (./Note.tsx), --note-inset in from its panel's edge (./base.css). */
+/* A note (./Note.tsx), --note-inset in from its panel's edge (./panel.module.css); on the page, on its column. */
 
 @layer base, ui;
 

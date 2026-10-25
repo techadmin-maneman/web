@@ -224,7 +224,7 @@ export function WindowTimes() {
           </DrawerButton>
         )}
       </PageActions>
-      <Panel titleId="window-times" title={copy.title} padded>
+      <Panel titleId="window-times" title={copy.title}>
         <InForce times={times} />
         {said !== null && <Toast>{said}</Toast>}
         <h3 className={form.ruleTitle}>{copy.history}</h3>

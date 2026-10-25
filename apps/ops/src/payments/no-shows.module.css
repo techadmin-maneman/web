@@ -17,7 +17,11 @@
   max-width: var(--ops-list);
 }
 
+/* Drawn as the console's panel is, so what it holds sets itself in as a panel's does. */
 .panel {
+  --note-inset: var(--sp-20);
+  --form-inset: var(--sp-20);
+
   border: var(--hairline) solid var(--ui-line);
   background: var(--ui-raised);
 }

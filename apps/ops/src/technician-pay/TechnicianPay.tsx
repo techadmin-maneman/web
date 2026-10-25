@@ -61,7 +61,7 @@ function PayTechnicians({ pay, onChanged }: { pay: Pay; onChanged: (pay: Pay) =>
   const gradeOf = (technician: PayTechnician) =>
     pay.grades.find((each) => each.id === technician.grade_id)?.name ?? copy.noGrade;
   return (
-    <Panel titleId="pay-technicians" title={copy.title} padded>
+    <Panel titleId="pay-technicians" title={copy.title}>
       {pay.technicians.length === 0 ? (
         <Note>{copy.none}</Note>
       ) : (

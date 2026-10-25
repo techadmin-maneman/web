@@ -109,7 +109,6 @@ function Words() {
     <Panel
       titleId="words"
       title={copy.title}
-      padded
       actions={
         mayPublish &&
         !publishing && (

@@ -76,12 +76,12 @@
     /* The widest a line of words and a note may run, which the console caps: elsewhere they fill their room. */
     --box-text-max: none;
     --box-note-max: none;
-    /* A note's distance from its panel's edge (./Note.tsx), which a group of fields the panel's edge already sets in
-       sets to nothing. */
-    --note-inset: var(--sp-20);
-    /* A form's groups, actions and words, as far in from their panel's edge; nothing in a drawer, whose body sets
-       them in already. */
-    --form-inset: var(--sp-20);
+    /* A note's distance from the edge of what holds it (./Note.tsx): nothing on the page, a panel's own inset inside
+       one (./panel.module.css), and nothing again in a group of fields the panel's edge already sets in. */
+    --note-inset: 0;
+    /* A form's groups, actions and words, as far in from their panel's edge as a note (./panel.module.css); nothing
+       on the page, or in a drawer, whose body sets them in already. */
+    --form-inset: 0;
     /* A setting's label beside its box (./SettingRow.tsx), and a fact's name beside its value (./DescriptionList.tsx). */
     --setting-label-width: 40%;
     /* Settings' own menu (./SettingsLayout.tsx). */

@@ -1,6 +1,6 @@
 // The ops console's panel: a card raised off the page, headed by its title in
 // the serif, with how many it holds and its actions at the right, and what it
-// holds beneath.
+// holds beneath, with room under it unless a table runs to its foot.
 
 import { useContext, type ReactNode, type Ref, type RefObject } from "react";
 import { classes } from "./classes.ts";
@@ -18,7 +18,6 @@ export function Panel({
   opened = false,
   headingRef,
   actions,
-  padded = false,
   className,
   ref,
   children,
@@ -36,8 +35,6 @@ export function Panel({
   readonly headingRef?: RefObject<HTMLHeadingElement | null>;
   /** What the head holds beside the title: a way to download the list, say. */
   readonly actions?: ReactNode;
-  /** Room beneath what it holds, for a panel of forms and notes rather than a table to its foot. */
-  readonly padded?: boolean;
   readonly className?: string | undefined;
   /** The section, for a panel that scrolls itself into view. */
   readonly ref?: Ref<HTMLElement>;
@@ -48,12 +45,7 @@ export function Panel({
   // A panel titled as its page is has its heading read, not shown: the page's own title says it already.
   const repeats = useContext(PageTitle) === title;
   return (
-    <section
-      className={classes(styles.panel, padded && styles.padded, className)}
-      id={id}
-      aria-labelledby={titleId}
-      ref={ref}
-    >
+    <section className={classes(styles.panel, className)} id={id} aria-labelledby={titleId} ref={ref}>
       <div className={repeats && count === undefined && actions === undefined ? undefined : styles.head}>
         <h2
           className={repeats ? hiddenLook : typeLook("title-4", styles.title)}

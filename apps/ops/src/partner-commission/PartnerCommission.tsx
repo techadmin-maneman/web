@@ -265,7 +265,6 @@ export function PartnerCommission() {
     <Panel
       titleId="partner-commission"
       title={copy.title}
-      padded
       actions={
         statements.statements.length > 0 && (
           <Button

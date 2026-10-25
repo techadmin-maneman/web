@@ -4,7 +4,6 @@
 .code {
   --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack */
   width: var(--local-piece-code);
-  padding-inline: 0 var(--sp-8);
   font-variant-numeric: tabular-nums;
 }
 
@@ -20,14 +19,6 @@
 
 .due {
   width: var(--ops-column-wide);
-}
-
-.base,
-.fitted,
-.lot,
-.due,
-.failure {
-  padding-inline: var(--sp-8);
 }
 
 .lot {

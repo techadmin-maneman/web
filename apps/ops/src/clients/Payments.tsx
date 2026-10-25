@@ -86,7 +86,7 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
       <thead>
         <tr>
           {(["date", "what", "amount", "state"] as const).map((column) => (
-            <th key={column} scope="col" className={column === "amount" ? styles.figureCell : styles.cell}>
+            <th key={column} scope="col" className={column === "amount" ? styles.figureCell : undefined}>
               {copy.columns[column]}
             </th>
           ))}
@@ -95,8 +95,8 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
       <tbody>
         {payments.map((entry) => (
           <tr key={entry.id}>
-            <td className={styles.cell}>{fullDate(entry.date)}</td>
-            <td className={styles.cell}>
+            <td>{fullDate(entry.date)}</td>
+            <td>
               {whatOf(entry)}
               <CodeLine entry={entry} />
             </td>
@@ -151,7 +151,7 @@ function LinkTable({ links }: { links: readonly ClientPaymentLink[] }) {
       <thead>
         <tr>
           {(["sent", "for", "amount", "state"] as const).map((column) => (
-            <th key={column} scope="col" className={column === "amount" ? styles.figureCell : styles.cell}>
+            <th key={column} scope="col" className={column === "amount" ? styles.figureCell : undefined}>
               {linkCopy.columns[column]}
             </th>
           ))}
@@ -160,8 +160,8 @@ function LinkTable({ links }: { links: readonly ClientPaymentLink[] }) {
       <tbody>
         {links.map((link) => (
           <tr key={link.id}>
-            <td className={styles.cell}>{link.sent_at === null ? linkCopy.unsent : longDate(link.sent_at)}</td>
-            <td className={styles.cell}>{linkWhatOf(link)}</td>
+            <td>{link.sent_at === null ? linkCopy.unsent : longDate(link.sent_at)}</td>
+            <td>{linkWhatOf(link)}</td>
             <td className={styles.figureCell}>{rupees(link.amount)}</td>
             <td className={styles.quietCell}>
               {linkStateOf(link)}
@@ -188,7 +188,7 @@ function InvoiceTable({ invoices }: { invoices: readonly ClientInvoice[] }) {
       <thead>
         <tr>
           {invoiceCopy.columns.map((column) => (
-            <th key={column} scope="col" className={styles.cell}>
+            <th key={column} scope="col">
               {column}
             </th>
           ))}
@@ -197,7 +197,7 @@ function InvoiceTable({ invoices }: { invoices: readonly ClientInvoice[] }) {
       <tbody>
         {invoices.map((invoice) => (
           <tr key={invoice.visit_id}>
-            <td className={styles.cell}>{copy.visit(clients.visits.types[invoice.type], fullDate(invoice.date))}</td>
+            <td>{copy.visit(clients.visits.types[invoice.type], fullDate(invoice.date))}</td>
             <td className={styles.quietCell}>{invoiceStateOf(invoice)}</td>
           </tr>
         ))}

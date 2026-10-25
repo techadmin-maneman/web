@@ -4,12 +4,16 @@
 
 @layer ui {
   .panel {
+    --note-inset: var(--sp-20);
+    --form-inset: var(--sp-20);
+
     min-width: 0;
     border: var(--hairline) solid var(--ui-line);
     background: var(--ui-raised);
   }
 
-  .padded {
+  /* Room beneath what it holds, so words and buttons never sit on its foot; a table at its foot runs to it. */
+  .panel:not(:has(> :last-child:is(table, [data-table]))) {
     padding-bottom: var(--sp-16);
   }
 

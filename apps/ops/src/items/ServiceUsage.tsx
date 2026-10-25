@@ -94,7 +94,7 @@ export function ServiceUsage({
   };
 
   return (
-    <Panel titleId="service-usage" title={words.title} padded>
+    <Panel titleId="service-usage" title={words.title}>
       <ServiceChoice consumables={consumables} chosen={chosen} onChoose={setChosen} />
       {listed.length === 0 ? (
         <Note>{words.noneOffered}</Note>

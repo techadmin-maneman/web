@@ -37,7 +37,7 @@ function Steps({ funnel }: { funnel: Funnel }) {
     { key: "fitted", label: copy.steps.fitted, value: steps.fitted, shown: copy.share(steps.fitted, steps.leads) },
   ];
   return (
-    <Panel titleId="funnel-steps" title={copy.steps.title} padded>
+    <Panel titleId="funnel-steps" title={copy.steps.title}>
       <BarChart label={copy.steps.title} bars={bars} />
     </Panel>
   );
@@ -81,7 +81,7 @@ function Channels({ funnel }: { funnel: Funnel }) {
 
 function Dashboards() {
   return (
-    <Panel titleId="funnel-dashboards" title={copy.dashboards.title} padded>
+    <Panel titleId="funnel-dashboards" title={copy.dashboards.title}>
       <Note>{copy.dashboards.note}</Note>
       <ul className={styles.links}>
         {copy.dashboards.links.map((link) => (

@@ -137,7 +137,7 @@ export function PayRates(props: { pay: TechnicianPay; mayAdd: boolean; onChanged
           </DrawerButton>
         )}
       </PageActions>
-      <Panel titleId="pay-rates" title={copy.title} padded>
+      <Panel titleId="pay-rates" title={copy.title}>
         {said !== null && <Toast>{said}</Toast>}
         {pay.grades.length === 0 ? (
           <Note>{copy.none}</Note>

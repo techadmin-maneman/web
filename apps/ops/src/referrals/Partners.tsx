@@ -118,7 +118,7 @@ export function Partners() {
           </DrawerButton>
         )}
       </PageActions>
-      <Panel titleId="partners" title={copy.title} padded>
+      <Panel titleId="partners" title={copy.title}>
         {said !== null && <Toast>{said}</Toast>}
         {list.channels.length === 0 ? (
           <Note>{copy.none}</Note>

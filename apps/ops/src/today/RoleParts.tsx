@@ -12,6 +12,7 @@ import { today as copy } from "../content/today.ts";
 import { useAccess } from "../lib/access.ts";
 import { sectionOf } from "../route.ts";
 import { todayApi } from "./today-api.ts";
+import styles from "./today.module.css";
 
 type Block = Board["technicians"][number]["days"][number]["blocks"][number];
 
@@ -39,8 +40,8 @@ function Road() {
   const road = roadOf(blocks, Date.now());
   const board = sectionOf("dispatch").path;
   return (
-    <Panel titleId="today-road" title={copy.road.title} padded>
-      <Columns>
+    <Panel titleId="today-road" title={copy.road.title}>
+      <Columns className={styles.tiles}>
         <StatTile label={copy.tiles.visits} value={road.visits} to={board} />
         <StatTile label={copy.road.done} value={road.done} to={board} />
         <StatTile label={copy.road.underWay} value={road.underWay} to={board} />
@@ -57,8 +58,8 @@ function Care() {
   const { replies } = loaded.value;
   const page = sectionOf("care-numbers").path;
   return (
-    <Panel titleId="today-care" title={copy.care.title} padded>
-      <Columns>
+    <Panel titleId="today-care" title={copy.care.title}>
+      <Columns className={styles.tiles}>
         <StatTile
           label={copy.care.median}
           value={replies.median_minutes === null ? copy.care.none : copy.care.minutes(replies.median_minutes)}
@@ -79,8 +80,8 @@ function Growth() {
   if (loaded.state !== "loaded") return null;
   const page = sectionOf("funnel").path;
   return (
-    <Panel titleId="today-growth" title={copy.growth.title} padded>
-      <Columns>
+    <Panel titleId="today-growth" title={copy.growth.title}>
+      <Columns className={styles.tiles}>
         <StatTile label={copy.growth.leads} value={loaded.value.steps.leads} to={page} />
         <StatTile label={copy.growth.fitted} value={loaded.value.steps.fitted} to={page} />
       </Columns>

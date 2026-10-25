@@ -22,6 +22,12 @@
   table-layout: fixed;
 }
 
+/* The panel sets the table in already, so its last column meets the panel's own edge, as the pincode's does. */
+.table th:last-child,
+.table td:last-child {
+  padding-right: 0;
+}
+
 /* The pincode is a control, whose own height makes the row's, so the cell has none above or below. */
 .pincode {
   width: var(--ops-figure);
@@ -35,7 +41,6 @@
 }
 
 .area {
-  padding-inline: var(--sp-8);
   text-align: left;
 }
 
@@ -43,7 +48,6 @@
 .oldest,
 .referred,
 .alerts {
-  padding-inline: var(--sp-4);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -62,8 +66,7 @@
 
 /* The board's own widths for the four columns of figures and dates. */
 .count {
-  --local-waitlist-count: 54px; /* the waitlist's three narrower columns of figures, count, Ref and Alerts */
-  width: var(--local-waitlist-count);
+  width: var(--ops-column-narrow);
 }
 
 .oldest {
@@ -72,8 +75,7 @@
 }
 
 .referred {
-  --local-waitlist-ref: 60px;
-  width: var(--local-waitlist-ref);
+  width: var(--ops-column-narrow);
 }
 
 .alerts {

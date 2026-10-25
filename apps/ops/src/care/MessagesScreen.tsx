@@ -256,7 +256,7 @@ export function MessagesScreen() {
   const [search, setSearch] = useState("");
   return (
     <div className={form.screen}>
-      <Panel titleId="messages" title={copy.title} padded>
+      <Panel titleId="messages" title={copy.title}>
         <div className={shared.tools}>
           <ViewChoice view={view} onView={setView} />
           <Search search={search} onSearch={setSearch} />
@@ -271,7 +271,7 @@ export function MessagesScreen() {
 export function CareTeamScreen() {
   return (
     <div className={form.screen}>
-      <Panel titleId="care-team" title={copy.team.title} padded>
+      <Panel titleId="care-team" title={copy.team.title}>
         <CareTeam />
       </Panel>
     </div>
@@ -282,7 +282,7 @@ export function CareTeamScreen() {
 export function RemediesScreen() {
   return (
     <div className={form.screen}>
-      <Panel titleId="remedies" title={copy.remedy.panel} padded>
+      <Panel titleId="remedies" title={copy.remedy.panel}>
         <RemediesPanel />
       </Panel>
     </div>
@@ -293,7 +293,7 @@ export function RemediesScreen() {
 export function QuickRepliesScreen() {
   return (
     <div className={form.screen}>
-      <Panel titleId="quick-replies" title={copy.quick.panel} padded>
+      <Panel titleId="quick-replies" title={copy.quick.panel}>
         <QuickRepliesPanel />
       </Panel>
     </div>

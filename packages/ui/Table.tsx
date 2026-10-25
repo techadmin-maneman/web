@@ -39,9 +39,10 @@ export const tableLook = ({ plain = false, className }: { plain?: boolean; class
  */
 export function TableScroll({ labelledBy, children }: { readonly labelledBy: string; readonly children: ReactNode }) {
   return (
-    // A region the keyboard must reach to scroll it (WCAG 2.1.1): it holds no control of its own to take the focus.
+    // A region the keyboard must reach to scroll it (WCAG 2.1.1): it holds no control of its own to take the focus. Its
+    // panel knows it by data-table, and lets it run to its foot (./panel.module.css).
     // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
-    <div className={styles.scroll} tabIndex={0} role="group" aria-labelledby={labelledBy}>
+    <div className={styles.scroll} tabIndex={0} role="group" aria-labelledby={labelledBy} data-table="">
       {children}
     </div>
   );

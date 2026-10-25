@@ -1,0 +1,5 @@
+/* What ./RoleParts.tsx alone draws: each part's tiles, set in from its panel's edges as its note is. */
+
+.tiles {
+  margin: var(--sp-16) var(--note-inset) 0;
+}

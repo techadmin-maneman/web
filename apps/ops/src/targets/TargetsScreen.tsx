@@ -163,7 +163,7 @@ export function TargetsScreen() {
   const [month, setMonth] = useState<string | null>(null);
   return (
     <div className={form.screen}>
-      <Panel titleId="targets" title={copy.title} padded>
+      <Panel titleId="targets" title={copy.title}>
         <MonthTargets key={month ?? "now"} month={month} onMonth={setMonth} />
       </Panel>
     </div>
