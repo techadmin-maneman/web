@@ -162,7 +162,15 @@ export function TextInput({
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "width"> &
   Sized & { readonly icon?: string; readonly ref?: Ref<HTMLInputElement> }) {
   const input = (
-    <input {...rest} ref={ref} className={classes(styles.box, lineOf({ compact, onInk, width }), className)} />
+    <input
+      {...rest}
+      ref={ref}
+      className={classes(
+        styles.box,
+        lineOf({ compact, onInk, width: width ?? (rest.type === "date" ? "date" : undefined) }),
+        className,
+      )}
+    />
   );
   if (icon === undefined) return input;
   return (
@@ -175,7 +183,7 @@ export function TextInput({
 
 /**
  * A figure to type: a count, a price in rupees, a share, its digits lined up. A number box by default; a caller that
- * takes a figure as text, to keep what was typed, says type="text".
+ * takes a figure as text, to keep what was typed, says type="text". It is an amount's width unless it says otherwise.
  */
 export function NumberInput({
   className,
@@ -189,7 +197,7 @@ export function NumberInput({
     <input
       {...rest}
       type={type}
-      className={classes(styles.box, lineOf({ compact, onInk, width }), styles.figure, className)}
+      className={classes(styles.box, lineOf({ compact, onInk, width: width ?? "amount" }), styles.figure, className)}
     />
   );
 }
@@ -206,7 +214,7 @@ export function DateInput({
     <input
       {...rest}
       type="date"
-      className={classes(styles.box, lineOf({ compact, onInk, width }), styles.figure, className)}
+      className={classes(styles.box, lineOf({ compact, onInk, width: width ?? "date" }), styles.figure, className)}
     />
   );
 }

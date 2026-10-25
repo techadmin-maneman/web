@@ -76,7 +76,11 @@
     color: var(--on-surface-muted);
   }
 
+  /* The body sets what it holds in from its edge, so a note or a form's actions add nothing of their own. */
   .body {
+    --note-inset: 0;
+    --form-inset: 0;
+
     padding: var(--sp-8) var(--sp-20) var(--sp-20);
   }
 }

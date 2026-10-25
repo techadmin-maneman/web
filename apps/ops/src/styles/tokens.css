@@ -37,4 +37,6 @@
   --box-amount: var(--ops-column-wide);
   --box-date: var(--ops-date);
   --box-area: var(--ops-area);
+  --box-text-max: var(--measure-form);
+  --box-note-max: var(--measure-column);
 }

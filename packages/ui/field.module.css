@@ -30,6 +30,7 @@
 
   /* One line: a text, a figure, a date or a choice, at the app's height (./base.css). */
   .line {
+    max-width: var(--box-text-max);
     height: var(--field-height);
     padding: 0 var(--sp-8);
     font-size: var(--field-text);
@@ -147,6 +148,7 @@
   }
 
   .area {
+    max-width: var(--box-note-max);
     resize: none;
   }
 

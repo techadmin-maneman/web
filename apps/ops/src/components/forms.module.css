@@ -42,7 +42,7 @@
 .group {
   --note-inset: 0; /* its notes (@maneman/ui/Note) sit at its edge, which is in from the panel's already */
   min-width: 0;
-  margin: var(--sp-20) var(--sp-20) 0;
+  margin: var(--sp-20) var(--form-inset) 0;
   padding: var(--sp-16) 0 0;
   border: 0;
   border-top: var(--hairline) solid var(--ui-line);
@@ -95,7 +95,7 @@
 section > .field,
 section > .ruleTitle,
 section > .recordFoot {
-  margin: var(--sp-16) var(--sp-20) 0;
+  margin: var(--sp-16) var(--form-inset) 0;
 }
 
 .fieldLabel {
@@ -116,12 +116,12 @@ section > .recordFoot {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-8);
-  margin: var(--sp-12) var(--sp-20) 0;
+  margin: var(--sp-12) var(--form-inset) 0;
 }
 
 /* Where the check before a change stands on a form (./CheckPanel.tsx draws it). */
 .check {
-  margin: var(--sp-16) var(--sp-20) 0;
+  margin: var(--sp-16) var(--form-inset) 0;
 }
 
 .rule .actions,
@@ -132,11 +132,11 @@ section > .recordFoot {
 }
 
 .saved {
-  margin: var(--sp-8) var(--sp-20) 0;
+  margin: var(--sp-8) var(--form-inset) 0;
 }
 
 .error {
-  margin: var(--sp-8) var(--sp-20) 0;
+  margin: var(--sp-8) var(--form-inset) 0;
 }
 
 .rule .saved,

@@ -73,9 +73,15 @@
     --box-amount: 100%;
     --box-date: 100%;
     --box-area: 100%;
+    /* The widest a line of words and a note may run, which the console caps: elsewhere they fill their room. */
+    --box-text-max: none;
+    --box-note-max: none;
     /* A note's distance from its panel's edge (./Note.tsx), which a group of fields the panel's edge already sets in
        sets to nothing. */
     --note-inset: var(--sp-20);
+    /* A form's groups, actions and words, as far in from their panel's edge; nothing in a drawer, whose body sets
+       them in already. */
+    --form-inset: var(--sp-20);
     /* A setting's label beside its box (./SettingRow.tsx), and a fact's name beside its value (./DescriptionList.tsx). */
     --setting-label-width: 40%;
     /* Settings' own menu (./SettingsLayout.tsx). */
