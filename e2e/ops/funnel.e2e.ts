@@ -47,9 +47,11 @@ test("shows try-on to fit with each step's share, each channel that brought some
     `${copy.steps.fitted}${copy.share(2, 10)}`,
   ]);
   const channels = page.getByRole("region", { name: copy.channels.title });
-  await expect(channels.getByRole("rowheader")).toHaveText(["Google Ads", "Referral"]);
+  // Only the channels that brought someone are listed.
+  const brought = FUNNEL.channels.filter((each) => each.leads > 0).map((each) => each.channel);
+  await expect(channels.getByRole("rowheader")).toHaveText(brought);
   const dashboards = page.getByRole("region", { name: copy.dashboards.title });
-  await expect(dashboards.getByRole("link", { name: "Growth" })).toHaveAttribute(
+  await expect(dashboards.getByRole("link", { name: copy.dashboards.links[0]?.name ?? "" })).toHaveAttribute(
     "href",
     copy.dashboards.links[0]?.href ?? "",
   );
