@@ -25,7 +25,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
-| Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visit_outcomes`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
+| Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visit_outcomes`, `consumables_used`, `consumable_shortfalls`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
@@ -68,6 +68,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [city_settings](#city_settings): A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
+- [consumable_shortfalls](#consumable_shortfalls): A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).
 - [consumable_usage](#consumable_usage): What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
 - [consumables](#consumables): The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 - [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
@@ -651,6 +652,25 @@ Indexes:
 - A `UNIQUE` constraint: unique on (`person_id`, `requested_date`, `requested_window`)
 
 Triggers: `consultation_requests_booked_asked`.
+
+## consumable_shortfalls
+
+A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).
+
+Made by `0198_consumable_shortfalls.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `appointment_id` | TEXT | no |  | primary key |  |
+| `technician_id` | TEXT | no |  |  |  |
+| `reason` | TEXT | no |  |  |  |
+| `short` | TEXT | no |  |  | Each consumable recorded below what was expected: [{"code", "expected", "used"}]; empty where nothing was used. |
+| `recorded_at` | TEXT | no |  |  |  |
+| `settled_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `consumable_shortfalls_open`: on (`recorded_at`), where `settled_at IS NULL`
 
 ## consumable_usage
 

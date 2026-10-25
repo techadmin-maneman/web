@@ -71,7 +71,7 @@ const UP_TO_THE_OUTCOME = [
   ["start", undefined, 5],
   ["photos", { phase: "before" }, 10],
   ["checklist", { done: ["piece_removed"] }, 40],
-  ["consumables", { items: [] }, 45],
+  ["consumables", { items: [], short_reason: "other" }, 45],
   ["photos", { phase: "after" }, 75],
 ] as const;
 
@@ -353,11 +353,16 @@ describe("a closed job", () => {
 
     const withinTheHour = minutesAfterClose(59);
     expect((await postAt(withinTheHour, stepPath("checklist"), { done: [] }, uuidv7At(140))).status).toBe(202);
-    expect((await postAt(withinTheHour, stepPath("consumables"), { items: [] }, uuidv7At(141))).status).toBe(202);
+    expect(
+      (await postAt(withinTheHour, stepPath("consumables"), { items: [], short_reason: "other" }, uuidv7At(141)))
+        .status,
+    ).toBe(202);
 
     const pastTheHour = minutesAfterClose(61);
     await refusedAsClosed(await postAt(pastTheHour, stepPath("checklist"), { done: [] }, uuidv7At(150)));
-    await refusedAsClosed(await postAt(pastTheHour, stepPath("consumables"), { items: [] }, uuidv7At(151)));
+    await refusedAsClosed(
+      await postAt(pastTheHour, stepPath("consumables"), { items: [], short_reason: "other" }, uuidv7At(151)),
+    );
   });
 
   it("closes as a no-show by hand from the technician's check-in, opening the case, and never without one", async () => {

@@ -41,7 +41,7 @@ async function added(spec: Record<string, unknown> = SPEC): Promise<string> {
 /** A first fit worked to its piece step: the checklist and what was used sent. */
 async function readyToFit(): Promise<void> {
   await job.workTo("consumables");
-  await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+  await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
 }
 
 beforeEach(async () => {
@@ -162,7 +162,7 @@ describe("a piece fitted", () => {
       "event-consumables-02",
     );
     expect((await errorOf(refused)).fields).toEqual(["items"]);
-    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-03");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-03");
     expect(await heldInKit(code)).toBe(1);
   });
 });

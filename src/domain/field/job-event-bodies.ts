@@ -5,6 +5,7 @@
 
 import { z } from "@hono/zod-openapi";
 import { CONSUMABLE_BOUNDS } from "../../config/consumables.ts";
+import { SHORT_REASONS } from "../../policy/consumable-shortfall.ts";
 
 const QUANTITY = z.number().int().min(1).max(CONSUMABLE_BOUNDS.maxExpected);
 
@@ -71,6 +72,14 @@ export const ConsumablesRequestSchema = z
         ]),
       )
       .max(30),
+    short_reason: z
+      .enum(SHORT_REASONS)
+      .optional()
+      .openapi({
+        description:
+          "Why less was used than the service expects, or nothing on a visit that always uses something; refused, " +
+          "fields short_reason, when it is owed and left out (docs/decisions/0222-consumables-short-of-expected.md).",
+      }),
   })
   .strict()
   .openapi("ConsumablesRequest", {

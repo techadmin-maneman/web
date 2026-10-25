@@ -40,7 +40,7 @@ describe("the technician, before a one visit's payment link", () => {
     await job.workTo("piece");
     await job.post(`/api/tech/jobs/${JOB}/piece`, piece, "event-piece-01");
     await job.post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-01");
-    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
     await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
   };
   const fitted = (job: Awaited<ReturnType<typeof oneVisit>>) => workedWith(job, { ...A_PIECE, product: NATURAL.tier });

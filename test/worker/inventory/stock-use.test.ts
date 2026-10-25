@@ -112,7 +112,11 @@ describe("a job's use", () => {
 
   it("keeps the kit's lots within what it holds once a top-up follows use it had no record of", async () => {
     await job.workTo("consumables");
-    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [{ code: "solvent", quantity: 30 }] }, "event-use-01");
+    await job.post(
+      `/api/tech/jobs/${JOB}/consumables`,
+      { items: [{ code: "solvent", quantity: 30 }], short_reason: "other" },
+      "event-use-01",
+    );
     // A lot ops are warned of, its expiry inside the 30 days before, and one well after.
     await job.opsPost("/api/stock/deliveries", {
       consumable_code: "solvent",
@@ -156,6 +160,7 @@ describe("a job's use", () => {
           { code: "tape_strips", quantity: 5 },
           { code: "shampoo_sachet", quantity: 1 },
         ],
+        short_reason: "other",
       },
       "event-consumables-01",
     );
@@ -174,7 +179,7 @@ describe("a job's use", () => {
 
   it("is written once however often the phone replays the step", async () => {
     await readyToRecord();
-    const step = { items: [{ code: "tape_strips", quantity: 4 }] };
+    const step = { items: [{ code: "tape_strips", quantity: 4 }], short_reason: "other" };
     for (let replay = 0; replay < 3; replay += 1) {
       const answer = await job.post(`/api/tech/jobs/${JOB}/consumables`, step, "event-consumables-01");
       expect(answer.status).toBe(202);
@@ -191,7 +196,7 @@ describe("a job's use", () => {
 
   it("is written once for a step replayed after ops renamed the consumable", async () => {
     await readyToRecord();
-    const step = { items: [{ code: "tape_strips", quantity: 4 }] };
+    const step = { items: [{ code: "tape_strips", quantity: 4 }], short_reason: "other" };
     await job.post(`/api/tech/jobs/${JOB}/consumables`, step, "event-consumables-01");
     await env.DB.prepare("UPDATE consumables SET name = 'Contour tape' WHERE code = 'tape_strips'").run();
     const replayed = await job.post(`/api/tech/jobs/${JOB}/consumables`, step, "event-consumables-01");
@@ -207,7 +212,7 @@ describe("a job's use", () => {
     await readyToRecord();
     await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
-      { items: [{ code: "tape_strips", quantity: 4 }] },
+      { items: [{ code: "tape_strips", quantity: 4 }], short_reason: "other" },
       "event-consumables-01",
     );
     await job.post(
@@ -217,12 +222,13 @@ describe("a job's use", () => {
           { code: "tape_strips", quantity: 6 },
           { code: "solvent", quantity: 10 },
         ],
+        short_reason: "other",
       },
       "event-consumables-02",
     );
     await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
-      { items: [{ code: "tape_strips", quantity: 4 }] },
+      { items: [{ code: "tape_strips", quantity: 4 }], short_reason: "other" },
       "event-consumables-01",
     );
 
@@ -244,6 +250,7 @@ describe("a job's use", () => {
           { name: "tape strips", quantity: 3 },
           { name: "Adhesive", quantity: 2 },
         ],
+        short_reason: "other",
       },
       "event-consumables-01",
     );
@@ -263,7 +270,7 @@ describe("a job's use", () => {
     await readyToRecord();
     const unknown = await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
-      { items: [{ code: "glue", quantity: 1 }] },
+      { items: [{ code: "glue", quantity: 1 }], short_reason: "other" },
       "event-consumables-01",
     );
     expect(unknown.status).toBe(400);
@@ -272,7 +279,7 @@ describe("a job's use", () => {
     await job.opsPost("/api/consumables/solvent/retire", { from: "2026-09-21" });
     const retired = await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
-      { items: [{ code: "solvent", quantity: 8 }] },
+      { items: [{ code: "solvent", quantity: 8 }], short_reason: "other" },
       "event-consumables-02",
     );
     expect(retired.status).toBe(202);
@@ -331,7 +338,7 @@ describe("writes that land together", () => {
     await waiting.arrived;
     await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
-      { items: [{ code: "tape_strips", quantity: 4 }] },
+      { items: [{ code: "tape_strips", quantity: 4 }], short_reason: "other" },
       "event-consumables-01",
     );
     waiting.release();
@@ -378,7 +385,12 @@ describe("writes that land together", () => {
          updated_at)
        VALUES ('row-consumables-01', ?1, 'event-consumables-01', ?2, 'consumables', ?3, ?4, ?4, ?4)`,
     )
-      .bind(JOB, IMRAN, JSON.stringify({ items: [{ code: "tape_strips", quantity: 4 }] }), NOW.toISOString())
+      .bind(
+        JOB,
+        IMRAN,
+        JSON.stringify({ items: [{ code: "tape_strips", quantity: 4 }], short_reason: "other" }),
+        NOW.toISOString(),
+      )
       .run();
     const waiting = holdNextWrite();
     const first = recordJobUse(env.DB, { job: { id: JOB, type: "service" }, technicianId: IMRAN, now: NOW });
@@ -387,7 +399,7 @@ describe("writes that land together", () => {
     // The corrected step lands whole while the first waits.
     const corrected = await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
-      { items: [{ code: "tape_strips", quantity: 6 }] },
+      { items: [{ code: "tape_strips", quantity: 6 }], short_reason: "other" },
       "event-consumables-02",
     );
     expect(corrected.status).toBe(202);

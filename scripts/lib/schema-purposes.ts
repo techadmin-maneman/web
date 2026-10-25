@@ -61,6 +61,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).",
   hair_systems:
     "Each hair system kept in stock: its product, base size, colour, grey and density, matched exactly to a client's profile; its stock code is a row of `consumables`, counted in pieces (ADR 0156).",
+  consumable_shortfalls:
+    "A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).",
   consumables_used:
     "The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).",
   counters: "Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).",

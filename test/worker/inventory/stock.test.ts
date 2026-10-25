@@ -264,7 +264,7 @@ describe("low stock", () => {
 
     await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
-      { items: [{ code: "tape_strips", quantity: 4 }] },
+      { items: [{ code: "tape_strips", quantity: 4 }], short_reason: "other" },
       "event-consumables-01",
     );
     expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 4, low: true });
@@ -285,7 +285,7 @@ describe("low stock", () => {
     // Lower still, and the same alert is counted, not told again.
     await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
-      { items: [{ code: "tape_strips", quantity: 6 }] },
+      { items: [{ code: "tape_strips", quantity: 6 }], short_reason: "other" },
       "event-consumables-02",
     );
     expect(job.deps.alerts).toHaveLength(1);

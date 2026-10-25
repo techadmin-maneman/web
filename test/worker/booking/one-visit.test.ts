@@ -135,7 +135,7 @@ describe("the piece step of a one visit", () => {
   it("refuses a product, or a decision against the fit, on any other visit", async () => {
     const job = await working("first_fit");
     await job.workTo("consumables");
-    await job.post(path("consumables"), { items: [] }, "event-consumables-01");
+    await job.post(path("consumables"), { items: [], short_reason: "other" }, "event-consumables-01");
     for (const body of [{ declined: true }, { ...A_PIECE, product: "standard" }]) {
       const answer = await job.post(path("piece"), body, `event-piece-${String(Object.keys(body).length)}`);
       expect(answer.status).toBe(400);
@@ -379,7 +379,7 @@ describe("closing a one visit the client decided against", () => {
     await job.workTo("piece");
     await job.post(path("piece"), { declined: true }, "event-piece-01");
     await job.post(path("checklist"), { done: [] }, "event-checklist-01");
-    await job.post(path("consumables"), { items: [] }, "event-consumables-01");
+    await job.post(path("consumables"), { items: [], short_reason: "other" }, "event-consumables-01");
     expect((await closeAsDone(job)).status).toBe(202);
     expect(await visitRow()).toMatchObject({ one_visit: "declined" });
   });

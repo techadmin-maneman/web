@@ -114,6 +114,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "checkins",
       "visit_outcomes",
       "consumables_used",
+      "consumable_shortfalls",
       "no_show_cases",
       "no_show_disputes",
       "no_show_refunds",

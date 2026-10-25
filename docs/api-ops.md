@@ -43877,6 +43877,7 @@ Request body:
               "stock_at_risk",
               "at_risk_client",
               "partial_visit",
+              "consumables_short",
               "referral_review",
               "no_show_decision",
               "no_show_dispute",
@@ -44594,6 +44595,70 @@ Request body:
         "kind",
         "reason_code",
         "reason"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "consumables_short"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "client_supplies",
+            "ran_out",
+            "not_needed",
+            "other"
+          ]
+        },
+        "technician": {
+          "type": "string"
+        },
+        "short": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "expected": {
+                "type": "number"
+              },
+              "used": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "expected",
+              "used"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Each consumable recorded below what was expected; empty where nothing was used."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "reason",
+        "technician",
+        "short"
       ],
       "additionalProperties": false
     },
