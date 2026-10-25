@@ -1,5 +1,5 @@
 import { expect, test } from "../support.ts";
-import { answer, fails, json, TECHNICIAN_WORK, TECHNICIANS } from "./fixtures.ts";
+import { answer, BOARD, fails, json, TECHNICIAN_WORK, TECHNICIANS } from "./fixtures.ts";
 import {
   IMRAN,
   SANDEEP,
@@ -313,4 +313,18 @@ test("says so when no technician is active", async ({ page }) => {
   });
   await page.goto("/technicians");
   await expect(page.getByText(opsCopy.technicians.empty)).toBeVisible();
+});
+
+// "This week" held only "Open on the board", with no jobs done, no visits and nothing of how they work.
+test("opens a technician's page on their week: their jobs and average, then each visit by its day", async ({
+  page,
+}) => {
+  const theirs = BOARD.technicians.map((each, at) => (at === 0 ? { ...each, technician_id: IMRAN } : each));
+  await open(page, { "GET /api/dispatch": json({ ...BOARD, technicians: theirs }) });
+  const main = await pageOf(page, "Imran Qureshi");
+  const week = main.getByRole("region", { name: opsCopy.technicians.tabs.week });
+  await expect(week).toContainText(opsCopy.technicians.week.jobs(48, 91));
+  await expect(week).toContainText(opsCopy.technicians.week.average("1 h 24 min"));
+  await expect(week.getByRole("definition").first()).toContainText("Rohit M.");
+  await expect(week.getByRole("link", { name: opsCopy.technicians.week.open })).toBeVisible();
 });

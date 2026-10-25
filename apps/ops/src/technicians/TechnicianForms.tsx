@@ -238,7 +238,7 @@ function DetailRows({
       <TextRow
         label={copy.zone}
         value={technician.zone ?? ""}
-        shown={technician.zone ?? technicians.unknown}
+        shown={technician.zone ?? copy.notSet}
         maxLength={60}
         mayChange={mayChange}
         save={(zone) => save({ zone: zoneOf(zone) })}

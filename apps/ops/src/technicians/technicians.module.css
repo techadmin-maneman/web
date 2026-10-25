@@ -300,3 +300,31 @@
 .leaveForm {
   margin-top: var(--sp-8);
 }
+
+/* Above their week: their jobs over the roster's period and how long a visit takes them. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-16);
+  margin: 0 0 var(--sp-16);
+  font-size: var(--fs-14);
+}
+
+/* Their visits these seven days, a day to a line group. */
+.week {
+  margin: 0 0 var(--sp-16);
+}
+
+.weekDay {
+  padding: var(--sp-8) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.weekDay dt {
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+}
+
+.weekDay dd {
+  margin: var(--sp-4) 0 0;
+}

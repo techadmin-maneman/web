@@ -4,7 +4,6 @@
 // is their details alone.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { buttonLook } from "@maneman/ui/Button";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
@@ -12,14 +11,7 @@ import { type ReturnedVisit, type Roster, type Technician, type TechnicianSummar
 import { OpsLink } from "../components/Shell.tsx";
 import { useRecordTitle } from "../components/PageHead.tsx";
 import { technicians } from "../content.ts";
-import {
-  dispatchPath,
-  go,
-  TECHNICIAN_TAB_NAMES,
-  TECHNICIAN_TABS,
-  technicianPath,
-  type TechnicianTab,
-} from "../route.ts";
+import { go, TECHNICIAN_TAB_NAMES, TECHNICIAN_TABS, technicianPath, type TechnicianTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Details } from "./TechnicianForms.tsx";
 import { Returned } from "./TechnicianSwitch.tsx";
@@ -27,6 +19,7 @@ import { Kit } from "./TechnicianKit.tsx";
 import { Hours } from "./TechnicianHours.tsx";
 import { Leave } from "./TechnicianLeave.tsx";
 import { Phones } from "./TechnicianPhones.tsx";
+import { TechnicianWeek } from "./TechnicianWeek.tsx";
 import styles from "./technicians.module.css";
 import { techniciansApi } from "./technicians-api.ts";
 
@@ -47,19 +40,6 @@ function entryOf(roster: Roster, id: string): Entry | null {
 /** What the last switch on this page did, said until the page is left. */
 type Switched = { readonly to: "off"; readonly visits: readonly ReturnedVisit[] } | { readonly to: "on" };
 
-function Week({ technician }: { technician: TechnicianSummary }) {
-  return (
-    <div className={styles.actions}>
-      <OpsLink
-        className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })}
-        to={dispatchPath({ find: technician.name })}
-      >
-        {technicians.week.open}
-      </OpsLink>
-    </div>
-  );
-}
-
 function TabPanel({
   tab,
   technician,
@@ -73,7 +53,7 @@ function TabPanel({
   if (tab === "leave") return <Leave technician={technician} />;
   if (tab === "phones") return <Phones technician={technician} />;
   if (tab === "kit") return <Kit technician={technician} />;
-  return <Week technician={technician} />;
+  return <TechnicianWeek technician={technician} />;
 }
 
 function TechnicianTabs({
