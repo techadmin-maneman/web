@@ -71,7 +71,7 @@ test("moves an item and takes one off, each sent at once", async ({ page }) => {
   let sent = posted(page, "/api/job-sheet/checklists/service");
   await list.getByRole("button", { name: copy.up("Piece refitted") }).click();
   expect((await sent).postDataJSON()).toEqual({ items: [SERVICE[0], SERVICE[2], SERVICE[1]] });
-  await expect(list.getByRole("status")).toHaveText(copy.saved);
+  await expect(page.getByRole("status").filter({ hasText: copy.saved })).toHaveText(copy.saved);
 
   sent = posted(page, "/api/job-sheet/checklists/service");
   await list.getByRole("button", { name: copy.remove("Piece removed") }).click();

@@ -2,7 +2,7 @@
 // A city with no rate of its own shows every city's, marked; a rate set to start later shows beneath the one in force.
 // A grade's row opens its record beside the table, where its name and its rates change where they read.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
@@ -17,7 +17,6 @@ import { technicianPay } from "../content/technician-pay.ts";
 import { tables } from "../content.ts";
 import { AddGrade, GradeRecord } from "./PayForms.tsx";
 import { rateNow, ratesLater } from "./pay-rates.ts";
-import form from "../components/forms.module.css";
 import shared from "./technician-pay.module.css";
 import styles from "./pay-rates.module.css";
 
@@ -141,11 +140,7 @@ export function PayRates(props: { pay: TechnicianPay; mayAdd: boolean; onChanged
         )
       }
     >
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {pay.grades.length === 0 ? (
         <Note>{copy.none}</Note>
       ) : (

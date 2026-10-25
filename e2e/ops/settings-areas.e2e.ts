@@ -192,7 +192,9 @@ test.describe("the service area", () => {
     await pressTwice(form.getByRole("button", { name: opsCopy.areas.add.add }));
     expect((await sent).postDataJSON()).toEqual({ pincode: "400050", area: "Bandra West", city: "Mumbai" });
 
-    await expect(form.getByRole("status")).toHaveText("400050 added to Mumbai.");
+    await expect(page.getByRole("status").filter({ hasText: "400050 added to Mumbai." })).toHaveText(
+      "400050 added to Mumbai.",
+    );
     expect(adds).toBe(1);
     await expect(page.getByRole("button", { name: "Mumbai · 0 of 1" })).toHaveAttribute("aria-current", "true");
     await expect(row(page, "400050")).toContainText("Bandra West");

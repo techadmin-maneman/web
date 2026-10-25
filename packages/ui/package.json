@@ -65,6 +65,7 @@
     "./Tabs": "./Tabs.tsx",
     "./TextLink": "./TextLink.tsx",
     "./Tile": "./Tile.tsx",
+    "./Toast": "./Toast.tsx",
     "./ToggleButton": "./ToggleButton.tsx",
     "./Toolbar": "./Toolbar.tsx",
     "./type": "./type.ts",

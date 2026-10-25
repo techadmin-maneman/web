@@ -2,7 +2,7 @@
 // link, what its friend gets, its commission per fit, and what has come through it. A row opens its record beside the
 // list, where each term changes where it reads (docs/decisions/0212-editing-in-place.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
@@ -13,7 +13,6 @@ import { useState } from "react";
 import { type Partner, type Partners as PartnerList } from "../api.ts";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
-import form from "../components/forms.module.css";
 import { BOOKING_URL } from "../content/common.ts";
 import { partners as copy } from "../content/partners.ts";
 import { useAccess } from "../lib/access.ts";
@@ -122,11 +121,7 @@ export function Partners() {
         )
       }
     >
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {list.channels.length === 0 ? (
         <Note>{copy.none}</Note>
       ) : (

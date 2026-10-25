@@ -2,7 +2,7 @@
 // supplier, each with the figures behind it, approved at a quantity or rejected with why; and the plan drafted again
 // from the latest forecast. Beneath, the forecast itself and the events calendar it reads.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
@@ -99,11 +99,7 @@ export function SupplyPlanScreen() {
           {current.lines.length === 0 && <Note>{copy.none}</Note>}
           <Lines lines={current.lines} kind="transfer" onAnswer={answered} />
           <Lines lines={current.lines} kind="order" onAnswer={answered} />
-          {said !== null && (
-            <InlineMessage tone="saved" className={form.saved}>
-              {said}
-            </InlineMessage>
-          )}
+          {said !== null && <Toast>{said}</Toast>}
           {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
           {access.mayCall("POST /api/supply-plan/draft") && (
             <FormActions>

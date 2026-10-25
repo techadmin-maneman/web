@@ -3,10 +3,10 @@
 // still sends what the API understands. A checklist's item also has the words the client's record shows, empty for a
 // step only the technician needs.
 
+import { Toast } from "@maneman/ui/Toast";
 import { Button } from "@maneman/ui/Button";
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { Field, TextInput } from "@maneman/ui/Field";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -369,11 +369,7 @@ export function ListEditor(props: Props) {
           );
         })}
       </ol>
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {refused !== null && <Refusal className={form.error} said={refused} />}
       <MoreItems
         editor={props}

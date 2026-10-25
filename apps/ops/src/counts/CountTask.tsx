@@ -1,8 +1,8 @@
 // One count task (docs/decisions/0185-cycle-counts.md): counted blind, item by item; what differed counted again; and
 // a recount that still differs signed off by a manager, who alone sees what the ledger held.
 
+import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -246,11 +246,7 @@ export function CountTaskPanel({
             </Note>
           ),
       )}
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );

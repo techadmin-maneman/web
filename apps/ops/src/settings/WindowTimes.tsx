@@ -3,7 +3,7 @@
 // the API names as the earliest, and is kept for good, so the list of changes only grows. A change is made beside the
 // page, each window's hours read beneath its boxes as they are typed, before it is set.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -228,11 +228,7 @@ export function WindowTimes() {
       }
     >
       <InForce times={times} />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       <h3 className={form.ruleTitle}>{copy.history}</h3>
       <Changes
         times={times}

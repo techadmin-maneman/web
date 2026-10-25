@@ -2,7 +2,7 @@
 // than deleted. A row opens its record beside the list, with what the supplier supplies, where each value changes
 // where it reads (docs/decisions/0212-editing-in-place.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -12,7 +12,6 @@ import { useState } from "react";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
 import { RowHead } from "../components/RowHead.tsx";
-import form from "../components/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -106,11 +105,7 @@ export function Suppliers() {
           setSaid(null);
         }}
       />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {opened !== undefined && (
         <FormDrawer
           title={opened.name}

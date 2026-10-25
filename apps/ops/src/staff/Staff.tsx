@@ -3,7 +3,7 @@
 // the list (docs/decisions/0212-editing-in-place.md). The API narrows the list to the places its viewer may see, and
 // refuses a change beyond their own.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
@@ -149,11 +149,7 @@ function People({ staff, onChanged }: PanelProps) {
           setOpen(email);
         }}
       />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {person !== null && (
         <FormDrawer
           title={person.email}

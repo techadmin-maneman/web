@@ -171,6 +171,6 @@ test("shows a city’s forecast, and adds an event to the calendar", async ({ pa
     ends_on: "2026-11-12",
     uplift_percent: 25,
   });
-  await expect(events.getByRole("status")).toHaveText(copy.events.added);
+  await expect(page.getByRole("status").filter({ hasText: copy.events.added })).toHaveText(copy.events.added);
   expect(await axeViolations(page)).toEqual([]);
 });

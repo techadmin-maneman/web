@@ -3,7 +3,7 @@
 // shown pincode by pincode before the one Save. A save that would message people waiting opens the launch panel first
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { Fieldset } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -106,11 +106,7 @@ function AddBeneath(props: {
   return (
     <Fieldset className={form.group} legend={areas.add.title} legendLook="title">
       <AddPincode pincode={null} cities={props.cities} onAdded={props.onAdded} />
-      {added !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {areas.add.added(added.pincode, added.city)}
-        </InlineMessage>
-      )}
+      {added !== null && <Toast>{areas.add.added(added.pincode, added.city)}</Toast>}
     </Fieldset>
   );
 }

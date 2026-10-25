@@ -2,7 +2,7 @@
 // with their uses and takings. A code is made, and found by how it begins; a row opens its record beside the list,
 // where it is switched off or, while no booking has taken it, deleted. Codes switched off fold away beneath.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { Panel } from "@maneman/ui/Panel";
 import { Note } from "@maneman/ui/Note";
@@ -22,7 +22,6 @@ import { useTableView, type Column } from "../components/useTableView.ts";
 import { CodeRecord } from "./CodeRecord.tsx";
 import { DiscountCodeForm } from "./DiscountCodeForm.tsx";
 import { FindForm } from "./FindCode.tsx";
-import form from "../components/forms.module.css";
 import styles from "./discount-codes.module.css";
 import { discountCodesApi } from "./discount-codes-api.ts";
 import { DrawerButton } from "../components/DrawerButton.tsx";
@@ -279,11 +278,7 @@ export function DiscountCodes() {
       actions={<MakeCodes codes={codes} onMade={() => void refresh()} />}
     >
       <Figures totals={codes.totals} />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {codes.codes.length === 0 ? (
         <>
           <div className={styles.tools}>{findForm}</div>

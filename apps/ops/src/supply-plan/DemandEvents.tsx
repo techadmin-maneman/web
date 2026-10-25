@@ -1,8 +1,8 @@
 // The events calendar on the Supply plan (docs/decisions/0182-the-events-calendar.md): the events still to end, each
 // taken off with a press, and one added with its city, its days and how much it lifts or drops demand.
 
+import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -228,11 +228,7 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
       {access.mayCall("POST /api/demand-events") && (
         <AddEvent cities={demand.cities} failure={failure} onAnswer={answered(copy.added)} />
       )}
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={EVENT_BOXES} />
     </Panel>
   );

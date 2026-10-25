@@ -1,7 +1,7 @@
 // Our cities: each with its state, its zone and whether we serve it. A row opens its record beside the list, where
 // each value, and each rule the city sets for itself, changes where it reads (docs/decisions/0212-editing-in-place.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -9,7 +9,6 @@ import { useState } from "react";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
 import { RowHead } from "../components/RowHead.tsx";
-import form from "../components/forms.module.css";
 import { cities as words } from "../content/cities.ts";
 import { useAccess } from "../lib/access.ts";
 import { AddCity } from "./CityForm.tsx";
@@ -97,11 +96,7 @@ export function CityList({ cities, reread }: { cities: Cities; reread: () => Pro
           setOpen(name);
         }}
       />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {opened !== undefined && (
         <FormDrawer
           title={opened.name}

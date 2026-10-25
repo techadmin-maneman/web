@@ -57,7 +57,7 @@ test("opens a task and counts it blind", async ({ page }) => {
   const request = posted(page, "/api/count-tasks/ct-1/counts");
   await panel.getByRole("button", { name: copy.saveCount }).click();
   expect((await request).postDataJSON()).toEqual({ lines: [{ consumable_code: "hs-1", counted: 2 }] });
-  await expect(panel.getByRole("status")).toHaveText(copy.countSaid(0));
+  await expect(page.getByRole("status").filter({ hasText: copy.countSaid(0) })).toHaveText(copy.countSaid(0));
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -109,7 +109,7 @@ test("signs off a difference with why", async ({ page }) => {
   const request = posted(page, "/api/count-tasks/ct-2/sign-off");
   await panel.getByRole("button", { name: copy.signOff }).click();
   expect((await request).postDataJSON()).toEqual({ note: "One piece not found" });
-  await expect(panel.getByRole("status")).toHaveText(copy.signedSaid);
+  await expect(page.getByRole("status").filter({ hasText: copy.signedSaid })).toHaveText(copy.signedSaid);
   expect(await axeViolations(page)).toEqual([]);
 });
 

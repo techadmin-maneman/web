@@ -2,11 +2,11 @@
 // branch; any other is supplied from the registration Books is set up with (docs/decisions/0198-cities-as-data.md).
 // One is removed from its row, asked once.
 
+import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 import { Table } from "@maneman/ui/Table";
 import { Field, TextInput } from "@maneman/ui/Field";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -170,11 +170,7 @@ export function Registrations({ cities, reread }: { cities: Cities; reread: () =
           </tbody>
         </Table>
       )}
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
     </Panel>
   );
 }

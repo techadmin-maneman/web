@@ -1,8 +1,8 @@
 // Each item's count class (docs/decisions/0185-cycle-counts.md): its kind's own, a hair system weekly and the rest
 // quarterly, or the one ops set.
 
+import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Select } from "@maneman/ui/Field";
 import { SettingRow } from "@maneman/ui/SettingRow";
@@ -61,11 +61,7 @@ export function CountClasses({
           </SettingRow>
         );
       })}
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );

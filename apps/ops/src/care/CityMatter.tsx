@@ -1,8 +1,8 @@
 // Sending a matter from a chat to the client's city (docs/decisions/0135-city-matters.md): what the city team need to
 // know, which waits on their Tasks as a City matter until they close it.
 
+import { Toast } from "@maneman/ui/Toast";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -11,7 +11,6 @@ import { useState } from "react";
 import { care } from "../content/care.ts";
 import { Refused } from "../components/Refusal.tsx";
 import { careApi } from "./care-api.ts";
-import form from "../components/forms.module.css";
 import styles from "./care.module.css";
 
 const copy = care.cityMatter;
@@ -36,11 +35,7 @@ export function CityMatter({ conversationId }: { readonly conversationId: string
     });
   return (
     <div className={styles.closing}>
-      {sentTo !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {copy.sent(sentTo)}
-        </InlineMessage>
-      )}
+      {sentTo !== null && <Toast>{copy.sent(sentTo)}</Toast>}
       {open ? (
         <>
           <Field label={copy.label} className={styles.reply} error={boxError(copy.errors, failure, "note")}>

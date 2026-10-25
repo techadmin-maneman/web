@@ -1,7 +1,7 @@
 // Remedies (docs/decisions/0143-remedies.md): free service visits Care give a client from their chat, with why, and
 // the panel on the Messages page where a Customer Care manager approves or declines those above the limit.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
@@ -14,7 +14,6 @@ import { useAccess } from "../lib/access.ts";
 import { Refused } from "../components/Refusal.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type RemedyReason } from "./care-api.ts";
-import form from "../components/forms.module.css";
 import styles from "./care.module.css";
 
 const copy = care.remedy;
@@ -95,11 +94,7 @@ export function RemedyForm({ personId }: { readonly personId: string }) {
   if (!open) {
     return (
       <div className={styles.closing}>
-        {said !== null && (
-          <InlineMessage tone="saved" className={form.saved}>
-            {said}
-          </InlineMessage>
-        )}
+        {said !== null && <Toast>{said}</Toast>}
         <Button
           variant="outline"
           size="small"

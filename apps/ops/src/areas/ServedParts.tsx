@@ -1,6 +1,7 @@
 // Settings › Areas' parts (./Served.tsx): the city tabs with their bulk pair, one pincode's row, who a save would
 // message, what sits beneath Save, and a file read with its changes shown before they go into the table.
 
+import { Toast } from "@maneman/ui/Toast";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Badge } from "@maneman/ui/Badge";
 import { Field, Checkbox, DateInput, Fieldset, FileInput, TextInput } from "@maneman/ui/Field";
@@ -281,11 +282,7 @@ export function UploadFile({
           onCancel={onCancel}
         />
       )}
-      {upload?.step === "applied" && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {copy.upload.applied}
-        </InlineMessage>
-      )}
+      {upload?.step === "applied" && <Toast>{copy.upload.applied}</Toast>}
       {upload?.step === "failed" && <Refusal className={form.error} said={upload.says} />}
     </Fieldset>
   );
@@ -368,11 +365,7 @@ export function SaveNotes({
       {badName !== undefined && <Refusal className={form.error} said={copy.badName(badName.pincode)} />}
       {later !== undefined && <Refusal className={form.error} said={copy.later(later.pincode)} />}
       {mayChange && changes.length === 0 && saving.step === "editing" && <Note>{copy.nothing}</Note>}
-      {saving.step === "saved" && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {copy.saved(saving.changed, saving.alerted)}
-        </InlineMessage>
-      )}
+      {saving.step === "saved" && <Toast>{copy.saved(saving.changed, saving.alerted)}</Toast>}
       {saving.step === "failed" && (
         <Refusal className={form.error} said={errorText(copy.errors, { code: saving.code })} />
       )}
