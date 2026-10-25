@@ -130,7 +130,7 @@ test("finds a client from any page through Search, and keeps the words out of th
   await palette.getByRole("link", { name: opsCopy.shell.palette.client(FOUND.name, phoneWords(FOUND.mobile)) }).click();
 
   await expect(page.getByRole("heading", NAME)).toBeVisible();
-  expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/visits`);
+  expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/history`);
   expect(new URL(page.url()).search).toBe("");
   expect(asked).toEqual(["98100 0441"]);
 });

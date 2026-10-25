@@ -69,11 +69,14 @@ export const shell = {
   /** Go to anything, by Ctrl K or ⌘K (../components/CommandPalette.tsx). */
   palette: {
     title: "Go to",
-    label: "Page or client",
+    label: "Page, technician or client",
     found: "Found",
     none: "Nothing matches.",
     client: (name: string, mobile: string) => `${name} · ${mobile}`,
     setting: (page: string) => `Settings · ${page}`,
+    technician: (name: string) => `Technician · ${name}`,
+    /** A client opened this session, offered before anything is typed. */
+    recent: (name: string) => `Recent · ${name}`,
   },
   /** A section's name in the navigation, read out with the count of tasks waiting in it. */
   waiting: (section: string, count: number, overdue: boolean) =>

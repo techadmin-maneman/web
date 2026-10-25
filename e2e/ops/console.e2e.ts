@@ -5,7 +5,7 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, DISCOUNT_CODES, fails, json, SETTINGS, TASKS, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, DISCOUNT_CODES, fails, json, SETTINGS, TASKS, TASKS_READ_ON, TECHNICIANS } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 
@@ -345,7 +345,11 @@ test("heads each page of an entry with the entry's pages as tabs, and marks the 
 
 test("goes to a page by its name from anywhere, with Ctrl K or Search", async ({ page }) => {
   // Where it goes is answered here, refused, so the page it opens reads nothing the other specs left behind.
-  await answer(page, { "GET /api/tasks": json(TASKS), "GET /api/dispatch": fails(403, "access_required") });
+  await answer(page, {
+    "GET /api/tasks": json(TASKS),
+    "GET /api/dispatch": fails(403, "access_required"),
+    "GET /api/technicians": json(TECHNICIANS),
+  });
   await page.goto("/tasks");
   await expect(heading(page, opsCopy.shell.sections.tasks)).toBeVisible();
   await page.keyboard.press("Control+k");
@@ -364,4 +368,20 @@ test("goes to a page by its name from anywhere, with Ctrl K or Search", async ({
   await palette.getByLabel(opsCopy.shell.palette.label).fill("packages");
   await palette.getByRole("link", { name: opsCopy.shell.palette.setting(opsCopy.settingsPageNames.packages) }).click();
   await expect(page).toHaveURL(/\/settings\/packages$/);
+});
+
+// Search found pages and clients only; arrow keys did nothing and Enter took the first alone.
+test("finds a technician by name, and moves through what it found with the arrow keys", async ({ page }) => {
+  await answer(page, { "GET /api/tasks": json(TASKS), "GET /api/technicians": json(TECHNICIANS) });
+  await page.goto("/tasks");
+  await page.keyboard.press("Control+k");
+  const palette = page.getByRole("dialog", { name: opsCopy.shell.palette.title });
+  await page.keyboard.type("imran");
+  await expect(
+    palette.getByRole("link", { name: opsCopy.shell.palette.technician("Imran Qureshi"), exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await expect(palette.getByRole("link").first()).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(palette.getByLabel(opsCopy.shell.palette.label)).toBeFocused();
 });
