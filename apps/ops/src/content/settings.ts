@@ -767,6 +767,17 @@ export const settings = {
       group: "Add them to the ops@maneman.in Google group too, or they can’t sign in.",
       addTitle: "Add a person",
       email: "Sign-in email",
+      role: "Role",
+      /** A job's grants at once, or one department chosen by hand. */
+      roles: {
+        one: "One department",
+        dispatcher: "Dispatcher",
+        care_agent: "Care agent",
+        city_head: "City head",
+        finance: "Finance",
+      },
+      /** One of a role's grants: "Operations · Act". */
+      roleGrant: (department: string, level: string) => `${department} · ${level}`,
       access: "Access",
       department: "Department",
       level: "Level",
