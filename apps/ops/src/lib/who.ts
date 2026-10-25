@@ -10,4 +10,5 @@ export const nameParts = (email: string): string[] =>
   (email.split("@")[0] ?? email).split(/[._-]+/).filter((part) => part !== "");
 
 /** One who recorded something: a person by their e-mail, and a token, however the Staff list labels it, as System. */
-export const recordedBy = (who: string): string => (who.includes("@") && !who.endsWith(".access") ? who : shell.serviceToken);
+export const recordedBy = (who: string): string =>
+  who.includes("@") && !who.endsWith(".access") ? who : shell.serviceToken;
