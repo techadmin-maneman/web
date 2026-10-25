@@ -3,6 +3,7 @@
 // can be chosen too, for a waitlist a launch from Settings left untold
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { NextToOpen } from "./Demand.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { TextButton } from "@maneman/ui/TextLink";
 import { Field, DateInput } from "@maneman/ui/Field";
@@ -329,6 +330,16 @@ export function Waiting() {
           onSend={() => void send()}
         />
       )}
+    </div>
+  );
+}
+
+/** The waitlist page: who waits where, then the pincodes to open next (ADR 0224). */
+export function WaitlistPage() {
+  return (
+    <div className={shared.column}>
+      <Waiting />
+      <NextToOpen />
     </div>
   );
 }

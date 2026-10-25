@@ -59,6 +59,8 @@ const EXPIRY_BATCH = 40;
 const IDEMPOTENCY_TTL_MS = DAY_MS;
 /** Rate-limit windows are at most a day; keep two more for inspection. */
 const COUNTER_RETENTION_DAYS = 3;
+/** Lookups of pincodes we do not serve count for ninety days (ADR 0224); a year is kept, then let go. */
+const DEMAND_RETENTION_DAYS = 365;
 /** A login code is kept a day past its expiry, for the logs to be read against; a session 30 days past its end. */
 const CHALLENGE_RETENTION_MS = DAY_MS;
 const SESSION_RETENTION_MS = 30 * DAY_MS;
@@ -294,6 +296,7 @@ export async function deleteExpiredRecords(context: SweepContext): Promise<void>
   await db.batch([
     db.prepare("DELETE FROM idempotency WHERE created_at < ?1").bind(before(IDEMPOTENCY_TTL_MS)),
     db.prepare("DELETE FROM counters WHERE window_start < ?1").bind(addDays(indiaDate(now), -COUNTER_RETENTION_DAYS)),
+    db.prepare("DELETE FROM pincode_demand WHERE day < ?1").bind(addDays(indiaDate(now), -DEMAND_RETENTION_DAYS)),
     db.prepare("DELETE FROM tryon_sessions WHERE expires_at < ?1").bind(now.toISOString()),
     db.prepare("DELETE FROM otp_challenges WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
     db.prepare("DELETE FROM number_codes WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),

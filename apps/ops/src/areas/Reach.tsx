@@ -13,6 +13,7 @@ import { useAccess } from "../lib/access.ts";
 import shared from "./areas.module.css";
 import { areasApi } from "./areas-api.ts";
 import { LaunchList } from "./Launches.tsx";
+import { RecentLaunches } from "./Demand.tsx";
 
 const copy = areas.reach;
 
@@ -124,6 +125,7 @@ export function CityTools({ city, onChoose }: { city: string; onChoose: (pincode
     <>
       {mayRead && city !== "" && <Reach city={city} onChoose={onChoose} />}
       <LaunchList />
+      <RecentLaunches />
     </>
   );
 }

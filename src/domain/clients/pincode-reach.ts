@@ -2,7 +2,9 @@
 // they go from it, and its pincodes, each with the nearest of them by the drive estimate and whether any reaches it.
 // What Areas draws as the city's map and lists as the pincodes out of reach.
 
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 import type { Pin } from "../../lib/geo.ts";
+import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
 import { reachKm, reachMinutes } from "../../policy/reach.ts";
 
@@ -103,4 +105,37 @@ export async function cityReach(
     };
   });
   return { technicians, pincodes };
+}
+
+const UNREACHED = "pincodes_unreached:";
+
+/**
+ * Ops told once a day of each city with served pincodes no technician's reach takes in, where clients there are
+ * offered no start (ADR 0224); the alert closes itself once every one is reached again or no longer served.
+ */
+export async function tellOfUnreachedPincodes(
+  db: D1Database,
+  deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert },
+  inputs: { readonly technicianReachMin: number; readonly driveEstimate: DriveEstimate },
+): Promise<void> {
+  const { results: cities } = await db
+    .prepare("SELECT DISTINCT city FROM serviceable_pincodes WHERE served = 1")
+    .all<{ city: string }>();
+  const still = new Set<string>();
+  for (const { city } of cities) {
+    const reach = await cityReach(db, city, inputs);
+    const pincodes = reach.pincodes.filter((each) => each.served && each.reached === false).length;
+    if (pincodes === 0) continue;
+    still.add(`${UNREACHED}${city}`);
+    await deps.alertOnce({
+      key: `${UNREACHED}${city}`,
+      message: ALERT_WORDS.pincodes_unreached({ city, pincodes }),
+      link: "/settings/areas",
+    });
+  }
+  const { results: open } = await db
+    .prepare("SELECT key FROM alerts WHERE resolved_at IS NULL AND key >= ?1 AND key < ?2")
+    .bind(UNREACHED, `${UNREACHED.slice(0, -1)};`)
+    .all<{ key: string }>();
+  for (const { key } of open) if (!still.has(key)) await deps.resolveAlert(key);
 }

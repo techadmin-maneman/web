@@ -23,6 +23,7 @@ import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { WindowHoursSchema } from "../schemas/booking.ts";
 import { countInviteMiss, countInviteOpen, inviteMissesSpent } from "../../domain/referrals/invite-lookups.ts";
 import { pincodeOf, takesNewClientsOn } from "../../domain/clients/service-area.ts";
+import { countLookup } from "../../domain/clients/pincode-demand.ts";
 import { liveCard } from "../../domain/referrals/referral-cards.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
 import { anyInviteOf, isPartnerInvite, partnerInviteOf, type AnyInvite } from "../../domain/referrals/channels.ts";
@@ -364,6 +365,8 @@ export function registerReferralLanding(app: App): void {
     const row = await pincodeOf(c.env.DB, pin);
     // A paused pincode takes no new client, so the site offers its waitlist (ADR 0221).
     const served = takesNewClientsOn(row, indiaDate(c.var.deps.now()));
+    // A lookup where we do not come yet is demand, counted for the day with nobody's data (ADR 0224).
+    if (!served) await countLookup(c.env.DB, pin, c.var.deps.now());
     return c.json({ pincode: pin, served, area: row?.area ?? null, city: row?.city ?? null }, 200);
   });
 

@@ -60,7 +60,7 @@ const ReferralsScreen = lazyScreen(() =>
 const ActivityScreen = lazyScreen(() =>
   import("./activity/ActivityScreen.tsx").then((module) => module.ActivityScreen),
 );
-const WaitlistScreen = lazyScreen(() => import("./areas/Waiting.tsx").then((module) => module.Waiting));
+const WaitlistScreen = lazyScreen(() => import("./areas/Waiting.tsx").then((module) => module.WaitlistPage));
 const MessagesScreen = lazyScreen(() => import("./care/MessagesScreen.tsx").then((module) => module.MessagesScreen));
 const ItemsScreen = lazyScreen(() => import("./items/ItemsScreen.tsx").then((module) => module.ItemsScreen));
 const SuppliersScreen = lazyScreen(() =>

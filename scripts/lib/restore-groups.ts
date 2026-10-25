@@ -271,6 +271,12 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Putting back that table",
   },
   {
+    what: "Demand looked up",
+    tables: ["pincode_demand"],
+    leftAtT: "Lookups since are not counted, so a pincode looked up since ranks a little lower to open next",
+    putBackBy: "Nothing: the counts rank, they decide nothing",
+  },
+  {
     what: "Launches scheduled",
     tables: ["pincode_launches", "pincode_launch_pincodes"],
     leftAtT:

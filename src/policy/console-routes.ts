@@ -248,6 +248,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/service-area/stop-impact": need("growth", "view"),
   "GET /api/service-area/reach": need("growth", "view"),
   "GET /api/service-area/map": need("growth", "view"),
+  "GET /api/pincode-demand/next": need("growth", "view"),
+  "GET /api/pincode-launches/recent": need("growth", "view"),
   "GET /api/pincode-launches": need("growth", "view"),
   "POST /api/pincode-launches": inOwnPlaces("growth", "manage"),
   "POST /api/pincode-launches/{id}/cancel": inOwnPlaces("growth", "manage"),

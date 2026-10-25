@@ -74,6 +74,7 @@ import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 import { tellOfUncoveredCities } from "../domain/clients/service-area.ts";
 import { runDueLaunches } from "../domain/clients/launch-runs.ts";
+import { tellOfUnreachedPincodes } from "../domain/clients/pincode-reach.ts";
 import { placePincodeCentres } from "../domain/cities/pincode-centres.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
@@ -144,6 +145,9 @@ async function missedJobsJob({ env, deps, config }: CronContext): Promise<void> 
 }
 const unassignedToday = ({ env, deps }: CronContext) => tellOfUnassignedToday(env.DB, deps);
 const uncoveredCities = ({ env, deps }: CronContext) => tellOfUncoveredCities(env.DB, deps);
+
+const unreachedPincodes = async ({ env, deps, inputs }: CronContext) =>
+  tellOfUnreachedPincodes(env.DB, deps, await inputs());
 
 /** Launches due by today, served as the console serves them; one that cannot be is raised to ops once (ADR 0221). */
 async function launchesJob({ env, deps, log }: CronContext): Promise<void> {
@@ -455,6 +459,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "unassigned_today", needs: "nothing", every: 60, at: 46, run: unassignedToday },
   // A city served with nobody to send, each morning; a switch-off asks at once (src/domain/clients/service-area.ts).
   { name: "uncovered_cities", needs: "nothing", every: 60, at: 52, slot: { hour: 9 }, run: uncoveredCities },
+  // Served pincodes out of every reach, once a morning (ADR 0224).
+  { name: "unreached_pincodes", needs: "nothing", every: 60, at: 53, slot: { hour: 9 }, run: unreachedPincodes },
   // Launches go live in the morning, so those waiting are told at an hour they would want to hear it.
   { name: "launches", needs: "nothing", every: 60, at: 6, slot: { hour: 10 }, run: launchesJob },
   // Each pincode's centre, which a drive is estimated from before a client's address has a pin (ADR 0210).

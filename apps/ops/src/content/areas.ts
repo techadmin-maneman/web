@@ -166,6 +166,20 @@ export const areas = {
     chooseWithin: (name: string) => `Choose the pincodes within ${name}’s reach`,
     choose: "Choose",
   },
+  /** Demand for pincodes not served yet, and how the last month's launches went (ADR 0224). */
+  demand: {
+    nextTitle: "Next to open",
+    nextNone: "Nobody is waiting or looking anywhere we don’t serve.",
+    /** "Gurgaon · Sector 99", or India Post's "Mumbai, Maharashtra", or nothing known. */
+    place: (city: string | null, area: string | null, district: string | null, state: string | null) =>
+      [city, area].filter((each) => each !== null).join(" · ") ||
+      [district, state].filter((each) => each !== null).join(", "),
+    figures: (waiting: number, looked: number) => `${String(waiting)} waiting · ${String(looked)} looked in 90 days`,
+    recentTitle: "Last 30 days",
+    recentNone: "Nothing launched in the last 30 days.",
+    recent: (pincode: string, area: string, city: string, day: string) => `${pincode} ${area} · ${city} · ${day}`,
+    recentFigures: (told: number, booked: number) => `${String(told)} told · ${String(booked)} booked`,
+  },
   /** A served pincode taking no new clients for a while; clients we already come to book as before. */
   pause: {
     pause: "Pause",

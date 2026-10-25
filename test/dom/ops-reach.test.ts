@@ -65,6 +65,7 @@ beforeEach(() => {
         return Promise.resolve(new Response("<svg/>", { headers: { "Content-Type": "image/svg+xml" } }));
       }
       if (path === "/api/pincode-launches") return Promise.resolve(Response.json({ launches: [] }));
+      if (path === "/api/pincode-launches/recent") return Promise.resolve(Response.json({ launches: [] }));
       return undefined;
     }),
   );

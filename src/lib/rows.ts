@@ -962,6 +962,11 @@ export interface Rows {
     readonly replacement_booked: number;
     readonly replaced_at: string | null;
   };
+  readonly pincode_demand: {
+    readonly pincode: string;
+    readonly day: string;
+    readonly checks: number;
+  };
   readonly pincode_directory: {
     readonly pincode: string;
     readonly district: string;
