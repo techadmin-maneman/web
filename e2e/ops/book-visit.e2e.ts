@@ -7,6 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import {
   answer,
+  BOARD,
   CLIENT,
   CONSENTS,
   json,
@@ -142,6 +143,26 @@ test("books a fitted client’s service visit at a start someone is free at, sen
 });
 
 // With a replacement due first, Book a visit opened on a service visit and said nothing of the piece it replaces.
+// Booking was done blind: a day, a start and a technician from three lists, with no picture of who was free when.
+test("draws the day along the hours, who is free at each start, and picks the start and technician clicked", async ({
+  page,
+}) => {
+  await openVisits(page, { "GET /api/dispatch": json(BOARD) });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  const booking = panel(page);
+  const day = booking.getByRole("table", { name: opsCopy.clients.visits.book.dayLabel("Thu 23 Sep") });
+  await expect(day.getByRole("rowheader")).toHaveText([IMRAN.name, SANDEEP.name]);
+  await day.getByRole("button", { name: `4 pm${opsCopy.clients.visits.book.pickWith(SANDEEP.name)}` }).click();
+  await expect(booking.getByLabel(opsCopy.clients.visits.book.start, { exact: true })).toHaveValue(
+    "2027-09-23T10:30:00.000Z",
+  );
+  await expect(booking.getByLabel(opsCopy.clients.visits.book.technician, { exact: true })).toHaveValue(SANDEEP.id);
+  await expect(
+    day.getByRole("button", { name: `4 pm${opsCopy.clients.visits.book.pickWith(SANDEEP.name)}` }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
+});
+
 test("opens on the replacement the app offers next, naming the hair system it replaces", async ({ page }) => {
   const due = { ...RECORD, next_visit: { type: "replacement" as const, tier: "standard", due_on: "2027-09-25" } };
   await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json(due) });

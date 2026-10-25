@@ -287,6 +287,10 @@ export const clients = {
       /** "Imran Qureshi · 12 min drive", the drive the visit adds to their day. */
       withDrive: (name: string, minutes: number) => (minutes <= 0 ? name : `${name} · ${String(minutes)} min drive`),
       anyone: "Anyone available",
+      /** The day along the hours: who is free at each start, and the visits already on their day. */
+      dayLabel: (date: string) => `Free starts on ${date}`,
+      /** A start that picks that technician too: "11:30 am", read as "11:30 am with Imran Qureshi". */
+      pickWith: (technician: string) => ` with ${technician}`,
       earlier: "Earlier days",
       later: "Later days",
       noDays: "No one is free on these days.",

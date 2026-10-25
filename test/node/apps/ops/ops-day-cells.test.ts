@@ -1,8 +1,8 @@
-// The board's Day view (apps/ops/src/dispatch/day-cells.ts): a technician's day as half hours, a visit spanning the
+// The board's Day view (apps/ops/src/lib/day-cells.ts): a technician's day as half hours, a visit spanning the
 // half hours it holds, a free start its own, and the time between run together.
 
 import { describe, expect, it } from "vitest";
-import { cellsOf, minuteOfDay, stepsOf } from "../../../../apps/ops/src/dispatch/day-cells.ts";
+import { cellsOf, minuteOfDay, stepsOf } from "../../../../apps/ops/src/lib/day-cells.ts";
 
 describe("a technician's day on the board", () => {
   it("reads an instant as its minute of India's day", () => {
@@ -14,6 +14,18 @@ describe("a technician's day on the board", () => {
     const steps = stepsOf([{ from: 7 * 60 + 15, to: 9 * 60 }]);
     expect(steps[0]).toBe(7 * 60);
     expect(steps.at(-1)).toBe(19 * 60 + 30);
+  });
+
+  it("fits a drawer's day to what is in it, a start at the end taking its own step", () => {
+    expect(
+      stepsOf(
+        [
+          { from: 12 * 60, to: 12 * 60 },
+          { from: 16 * 60, to: 16 * 60 },
+        ],
+        true,
+      ),
+    ).toEqual([12 * 60, 12 * 60 + 30, 13 * 60, 13 * 60 + 30, 14 * 60, 14 * 60 + 30, 15 * 60, 15 * 60 + 30, 16 * 60]);
   });
 
   it("spans a visit over its half hours, gives a free start its own, and runs the rest together", () => {

@@ -1,6 +1,6 @@
 // The board's day along the hours (./DispatchScreen.tsx), which it opens on: each technician's visits that day, done,
 // under way or late marked, and where their phone last put them; a visit opens its drawer. While a job is in hand,
-// each start it could take there is a button that places it, the start chosen (./day-cells.ts).
+// each start it could take there is a button that places it, the start chosen (../lib/day-cells.ts).
 
 import { DayTimeline, type TimelineCell, type TimelineLook } from "@maneman/ui/DayTimeline";
 import { Field, Select } from "@maneman/ui/Field";
@@ -10,7 +10,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { dayClock, indiaClock, shortDate } from "@maneman/web-kit/dates";
 import type { Block, Board, BoardRow } from "../api.ts";
 import { dispatch } from "../content.ts";
-import { cellsOf, minuteOfDay, stepsOf } from "./day-cells.ts";
+import { cellsOf, minuteOfDay, stepsOf } from "../lib/day-cells.ts";
 import type { Job, Target } from "./job.ts";
 import { minutesOf } from "./job.ts";
 import type { InHand } from "./MoveBar.tsx";

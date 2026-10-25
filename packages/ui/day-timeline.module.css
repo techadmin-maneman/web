@@ -66,7 +66,14 @@
     border-left-color: var(--status-warning);
   }
 
-  .free {
+  .free,
+  .chosen {
     text-align: center;
+  }
+
+  .chosen {
+    outline: var(--rule-strong) solid var(--ui-strong);
+    outline-offset: calc(var(--rule-strong) * -1);
+    background: var(--ui-raised);
   }
 }

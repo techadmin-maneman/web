@@ -20,10 +20,15 @@ export function minuteOfDay(iso: string): number {
 const down = (minute: number) => Math.floor(minute / STEP_MINUTES) * STEP_MINUTES;
 const up = (minute: number) => Math.ceil(minute / STEP_MINUTES) * STEP_MINUTES;
 
-/** The steps the day runs over, by their first minute: 8 am to 8 pm, wider where something falls outside. */
-export function stepsOf(spans: readonly { readonly from: number; readonly to: number }[]): number[] {
-  const first = Math.min(DAY_FROM, ...spans.map((span) => down(span.from)));
-  const last = Math.max(DAY_TO, ...spans.map((span) => up(span.to)));
+/**
+ * The steps the day runs over, by their first minute: 8 am to 8 pm, wider where something falls outside; or, `fitted`,
+ * from the first thing in it to the last, where the day is read in a narrow drawer.
+ */
+export function stepsOf(spans: readonly { readonly from: number; readonly to: number }[], fitted = false): number[] {
+  const froms = spans.map((span) => down(span.from));
+  const tos = spans.map((span) => up(Math.max(span.to, span.from + STEP_MINUTES)));
+  const first = fitted && froms.length > 0 ? Math.min(...froms) : Math.min(DAY_FROM, ...froms);
+  const last = fitted && tos.length > 0 ? Math.max(...tos) : Math.max(DAY_TO, ...tos);
   const steps: number[] = [];
   for (let minute = first; minute < last; minute += STEP_MINUTES) steps.push(minute);
   return steps;
