@@ -1,6 +1,6 @@
 // Activity: the audit log, read in the console by Admin's View (src/routes/ops/activity.ts). Every entry, newest
-// first: when, who, what, and the record it touched; a call's own path beneath what it was. What the log is narrowed
-// to lives in the page's address (./filters.ts), so a client's whole record, linked from their History tab, opens
+// first: when, who, what, and the record it touched; a call with no words of its own has its route beneath. Its
+// filters live in the page's address (./filters.ts), so a client's whole record, linked from their History tab, opens
 // already narrowed. The design draws no board for it; it is built as Areas' tables are.
 
 import { ROUTE_NEEDS } from "@rules/policy/console-routes.ts";
@@ -63,21 +63,28 @@ const CALL_SURFACES: Readonly<Record<string, keyof typeof copy.surfaces>> = {
   "tech.call": "tech",
 };
 
-/** What the entry was, and for a call the method and the route it reached, never an ID. */
+/** The route a call reached, "/api/tech/jobs/{id}/outcome": as the log names it, else from its path. */
+function templateOf(method: string, detail: ActivityEntry["detail"]): string | null {
+  if (typeof detail?.route === "string") return detail.route.replace(/:(\w+)/g, "{$1}");
+  return typeof detail?.path === "string" ? routeOf(method, detail.path) : null;
+}
+
+/** What the entry was: a call from either app as what the person did, any other call with its method and route. */
 function What({ action, detail }: Pick<ActivityEntry, "action" | "detail">) {
-  const method = typeof detail?.method === "string" ? detail.method : null;
-  const path = typeof detail?.path === "string" ? routeOf(method ?? "", detail.path) : null;
+  const method = typeof detail?.method === "string" ? detail.method : "";
+  const route = templateOf(method, detail);
+  const did = route === null ? undefined : copy.calls[`${method} ${route}`];
   // The log keeps actions an earlier build wrote under names this one no longer has words for.
   const named = Object.hasOwn(copy.actions, action) ? copy.actions[action] : action;
   const surface = CALL_SURFACES[action];
-  const said = surface !== undefined && method === "GET" ? copy.opened(copy.surfaces[surface]) : named;
+  const said = did ?? (surface !== undefined && method === "GET" ? copy.opened(copy.surfaces[surface]) : named);
   const refused = detail?.refused !== undefined;
   return (
     <>
       <span>{refused ? copy.refused(said) : said}</span>
-      {path !== null && (
+      {did === undefined && route !== null && (
         <code className={styles.call}>
-          {method} {path}
+          {method} {route}
         </code>
       )}
     </>
@@ -90,9 +97,12 @@ const shortId = (id: string) => (/^[0-9a-f]{8}-?[0-9a-f]{4}/i.test(id) ? id.slic
 /** The record the entry touched: a client's page, a visit on the board, or its kind and its name or ID. */
 function Record({ subject }: Pick<ActivityEntry, "subject">) {
   if (subject === null) return null;
-  if (subject.kind === "person") return <OpsLink to={clientPath(subject.id, "visits")}>{copy.records.person}</OpsLink>;
+  if (subject.kind === "person") {
+    return <OpsLink to={clientPath(subject.id, "visits")}>{subject.label ?? copy.records.person}</OpsLink>;
+  }
   if (subject.kind === "appointment") {
-    return <OpsLink to={dispatchPath({ visit: subject.id })}>{copy.records.appointment}</OpsLink>;
+    const named = subject.label === null ? copy.records.appointment : copy.records.visitOf(subject.label);
+    return <OpsLink to={dispatchPath({ visit: subject.id })}>{named}</OpsLink>;
   }
   const kind = copy.kinds[subject.kind] ?? subject.kind;
   return (

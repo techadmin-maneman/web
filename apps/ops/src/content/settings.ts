@@ -710,12 +710,9 @@ export const settings = {
       "Beneath each item is what the client’s record says was done. Leave it empty for a step only the technician needs.",
     clientNone: "Only the technician sees it",
     reason: (position: number) => `Reason ${String(position)}`,
-    /** The buttons beside an item: each names the item after what it does, so a screen reader says which. */
-    upButton: "Move up",
+    /** The icons beside an item: each names what it does and the item, so a screen reader says which. */
     up: (label: string) => `Move up: ${label}`,
-    downButton: "Move down",
     down: (label: string) => `Move down: ${label}`,
-    removeButton: "Remove",
     remove: (label: string) => `Remove: ${label}`,
     add: "Add item",
     addReason: "Add reason",

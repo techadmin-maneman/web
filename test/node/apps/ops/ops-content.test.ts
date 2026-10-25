@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import { profile } from "../../../../apps/app/src/content.ts";
 import { settings } from "../../../../apps/ops/src/content/settings.ts";
 import * as ops from "../../../../apps/ops/src/content.ts";
+import { activity } from "../../../../apps/ops/src/content/activity.ts";
 import { areas, BOOKING_URL, deletions, dispatch, grievances } from "../../../../apps/ops/src/content.ts";
 import { DELETION_ALERT_AFTER_MS } from "../../../../src/domain/privacy/deletion.ts";
 import { renderMessage } from "../../../../src/config/message-templates.ts";
@@ -60,6 +61,21 @@ describe("the dispatch board’s words", () => {
 
   it("writes every window the API answers with", () => {
     for (const window of BOOKING_WINDOWS) expect(dispatch.windows[window], window).toBeTruthy();
+  });
+
+  // Activity read "Technician app request · POST /api/tech/jobs/{id}/outcome".
+  it("says what each change a client or a technician makes was, as Activity lists it", () => {
+    // Made before anyone is signed in, or never logged: a photograph's bytes, an address as it is typed.
+    const unlogged = /\/auth\/(otp|verify)|\/client-errors$|\/address\/suggestions$|\/upload-url$|\/photos\/\{token\}/;
+    for (const document of ["docs/openapi-client.json", "docs/openapi-tech.json"]) {
+      const { paths } = JSON.parse(readFileSync(document, "utf8")) as { paths: Record<string, object> };
+      for (const [path, methods] of Object.entries(paths)) {
+        for (const method of Object.keys(methods).filter((each) => each !== "get" && !unlogged.test(path))) {
+          const call = `${method.toUpperCase()} ${path}`;
+          expect(activity.calls[call], call).toBeTruthy();
+        }
+      }
+    }
   });
 });
 

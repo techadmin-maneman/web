@@ -38624,7 +38624,7 @@ Request body:
               "type": "null"
             }
           ],
-          "description": "Its name or number, where it has one: an item's name, a purchase order's, a setting's title."
+          "description": "Its name or number, where it has one: an item's name, a purchase order's, a setting's title, a visit's client's."
         }
       },
       "required": [

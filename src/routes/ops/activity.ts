@@ -43,7 +43,8 @@ const EntrySchema = z
         kind: z.string(),
         id: z.string(),
         label: z.union([z.string(), z.null()]).openapi({
-          description: "Its name or number, where it has one: an item's name, a purchase order's, a setting's title.",
+          description:
+            "Its name or number, where it has one: an item's name, a purchase order's, a setting's title, a visit's client's.",
         }),
       })
       .strict()

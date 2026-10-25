@@ -3,10 +3,12 @@
 // still sends what the API understands. A checklist's item also has the words the client's record shows, empty for a
 // step only the technician needs.
 
+import { GLYPHS, ICONS } from "@maneman/brand/icons";
 import { Toast } from "@maneman/ui/Toast";
 import { Button } from "@maneman/ui/Button";
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { Field, TextInput } from "@maneman/ui/Field";
+import { IconButton } from "@maneman/ui/IconButton";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -101,7 +103,7 @@ function ItemRow(props: {
   readonly save: (words: Words) => Promise<string | null>;
 }) {
   const { item, position, editor } = props;
-  const withClient = editor.clientLabel !== undefined;
+  const withClient = editor.clientLabel !== undefined && item.client !== item.label;
   return (
     <EditableRow<Words>
       className={styles.row}
@@ -198,7 +200,7 @@ function AddItem(props: {
   );
 }
 
-/** An item's own buttons: up, down, and off the list. */
+/** An item's own buttons, an icon each: up, down, and off the list. The first can't go up, nor the last down. */
 function Moves(props: {
   name: string;
   first: boolean;
@@ -209,24 +211,23 @@ function Moves(props: {
   onRemove: () => void;
 }) {
   const buttons = [
-    [copy.up(props.name), copy.upButton, props.first, props.onUp],
-    [copy.down(props.name), copy.downButton, props.last, props.onDown],
-    [copy.remove(props.name), copy.removeButton, false, props.onRemove],
+    [copy.up(props.name), GLYPHS.up, props.first, props.onUp],
+    [copy.down(props.name), GLYPHS.down, props.last, props.onDown],
+    [copy.remove(props.name), ICONS.cross, false, props.onRemove],
   ] as const;
   return (
     <span className={styles.moves}>
-      {buttons.map(([label, words, shut, onPress]) => (
-        <Button
-          key={words}
-          variant="quiet"
-          size="small"
-          narrow
-          aria-label={label}
+      {buttons.map(([label, d, shut, onPress]) => (
+        <IconButton
+          key={d}
+          className={styles.move}
+          d={d}
+          size="sm"
+          label={label}
+          title={label}
           disabled={shut || props.busy}
           onClick={onPress}
-        >
-          {words}
-        </Button>
+        />
       ))}
     </span>
   );

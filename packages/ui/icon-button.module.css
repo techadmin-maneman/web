@@ -20,6 +20,11 @@
     cursor: pointer;
   }
 
+  .iconButton:disabled {
+    color: var(--ui-text-quiet);
+    cursor: default;
+  }
+
   .edged {
     border: var(--hairline) solid var(--edge-on-ink);
     color: var(--paper);

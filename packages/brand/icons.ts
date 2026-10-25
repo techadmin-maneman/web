@@ -91,6 +91,9 @@ export const GLYPHS = {
   more: "M6 12 H6.01 M12 12 H12.01 M18 12 H18.01",
   /** A value the console changes where it reads. */
   edit: "M4.5 19.5 L5.5 15 L15.5 5 L19 8.5 L9 18.5 Z M13.5 7 L17 10.5",
+  /** A list item's moves in the console: a place up, a place down. */
+  up: "M6 15 L12 9 L18 15",
+  down: "M6 9 L12 15 L18 9",
 } as const;
 
 /** The client app's tab bar (design/phase2/Client App, the tabs() data). */

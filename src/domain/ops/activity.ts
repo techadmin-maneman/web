@@ -37,7 +37,10 @@ interface ActivityEntry {
   /** Named where the console knows a name: a client not erased, a technician, a service token's label. */
   readonly actor: { readonly kind: AuditActor["kind"]; readonly id: string; readonly name: string | null };
   readonly action: AuditAction;
-  /** The record touched, by its kind and ID, and its name or number where it has one: a setting by its title. */
+  /**
+   * The record touched, by its kind and ID, and its name or number where it has one: a setting by its title, a visit
+   * by its client's name.
+   */
   readonly subject: { readonly kind: string; readonly id: string; readonly label: string | null } | null;
   readonly detail: Readonly<Record<string, unknown>> | null;
 }
@@ -80,6 +83,9 @@ const ACTIVITY_SQL = `
       WHEN 'service' THEN (SELECT label FROM staff_service_tokens WHERE client_id = a.actor)
     END AS actor_name,
     CASE a.subject_kind
+      WHEN 'person' THEN (SELECT name FROM people WHERE id = a.subject_id AND erased_at IS NULL)
+      WHEN 'appointment' THEN (SELECT p.name FROM appointments v JOIN people p ON p.id = v.person_id
+                                WHERE v.id = a.subject_id AND p.erased_at IS NULL)
       WHEN 'consumable' THEN (SELECT name FROM consumables WHERE code = a.subject_id)
       WHEN 'purchase_order' THEN (SELECT 'PO-' || printf('%04d', number) FROM purchase_orders WHERE id = a.subject_id)
       WHEN 'count_task' THEN (SELECT p.name FROM count_tasks t JOIN stock_places p ON p.id = t.place_id
