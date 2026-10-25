@@ -45,7 +45,7 @@
   .table thead th {
     position: sticky;
     top: 0;
-    z-index: var(--z-raised);
+    z-index: var(--z-sticky);
     border-bottom-color: var(--ui-line-control);
     background: var(--ui-raised);
     font-size: var(--fs-13);
@@ -61,6 +61,23 @@
     .table tbody tr:hover > * {
       background: var(--ui-ground);
     }
+  }
+
+  /* A row opens where its name does: the name's link or button in the row's head reaches over the whole row, and
+     the row's other controls sit above that reach. */
+  .table tbody tr {
+    position: relative;
+  }
+
+  .table tbody th[scope="row"] :is(a, button):first-of-type::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  .table tbody td :is(a, button, input, select, textarea, label, summary) {
+    position: relative;
+    z-index: var(--z-raised);
   }
 
   .table .figure {
@@ -83,11 +100,12 @@
     white-space: nowrap;
   }
 
-  /* A column head that sorts: its name, in the head's own look, and the arrow of its order. */
+  /* A column head that sorts: its name, in the head's own look, and the arrow of its order, a target 24 px tall. */
   .sort {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-4);
+    min-height: var(--sp-24);
     padding: 0;
     border: 0;
     background: transparent;
@@ -103,9 +121,17 @@
   }
 }
 
-/* A table wider than its panel, scrolled inside it (TableScroll). */
+/* A table wider than its panel, scrolled inside it (TableScroll): a shade at each edge with more beyond it, which the
+   panel's own ground covers once that edge is reached. */
 .scroll {
   overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--ui-raised), transparent) left / var(--sp-24) 100% no-repeat local,
+    linear-gradient(to left, var(--ui-raised), transparent) right / var(--sp-24) 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, var(--ui-line-control), transparent) left / var(--sp-12) 100% no-repeat
+      scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--ui-line-control), transparent) right / var(--sp-12) 100% no-repeat
+      scroll;
 }
 
 /*

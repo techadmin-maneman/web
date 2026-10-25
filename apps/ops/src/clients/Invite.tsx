@@ -2,9 +2,9 @@
 // client who came with none may have one attached, for a friend who booked away from the invite's page
 // (docs/decisions/0089-an-invite-is-not-lost.md).
 
+import { typeLook } from "@maneman/ui/type";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
-import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
@@ -153,7 +153,7 @@ export function Invite({
   const mayAttach = useAccess().mayCall("POST /api/clients/{id}/referral");
   return (
     <section className={shared.invite} aria-labelledby="invite">
-      <h3 className={capsLook(shared.sectionTitle)} id="invite">
+      <h3 className={typeLook("title-4", shared.sectionTitle)} id="invite">
         {copy.title}
       </h3>
       {invite !== null && <Details invite={invite} news={news} />}

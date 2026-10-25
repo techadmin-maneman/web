@@ -3,7 +3,7 @@
 // their scanned labels (docs/decisions/0162-scanning-labels.md); a top-up to a kit counts once the technician scans it
 // in (docs/decisions/0164-the-kit-screen.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { Checkbox, ChoiceGroup, Radio } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -371,11 +371,7 @@ export function StockForm({
           </Button>
         </FormActions>
       )}
-      {step.step === "recorded" && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {copy.recorded}
-        </InlineMessage>
-      )}
+      {step.step === "recorded" && <Toast>{copy.recorded}</Toast>}
       <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={drawnBoxes(stock, draft)} />
     </div>
   );

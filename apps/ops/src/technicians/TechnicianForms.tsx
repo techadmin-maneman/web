@@ -12,7 +12,7 @@ import { useState } from "react";
 import { type ReturnedVisit, type TechnicianChange, type TechnicianSummary } from "../api.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { ChoiceRow, TextRow } from "../components/RecordRows.tsx";
-import { technicians } from "../content.ts";
+import { technicians, CLOSE } from "../content.ts";
 import { GIVING_NO_CITY, useAccess } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
 import styles from "./technicians.module.css";
@@ -168,7 +168,7 @@ export function AddTechnician({
     <Drawer
       titleId="add-title"
       title={copy.title}
-      canClose={!sending}
+      close={!sending ? CLOSE : null}
       onDismiss={onClose}
       onSubmit={(event) => {
         event.preventDefault();

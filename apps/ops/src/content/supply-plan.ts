@@ -8,8 +8,10 @@ export const supplyPlan = {
   transfers: "Transfers",
   orders: "Orders",
   none: "Nothing to approve.",
-  transferColumns: ["Item", "From", "To", "For", "Quantity", ""],
-  orderColumns: ["Item", "Supplier", "For", "Quantity", ""],
+  transferColumns: ["Item", "From", "To", "For", "Quantity", "Status"],
+  orderColumns: ["Item", "Supplier", "For", "Quantity", "Status"],
+  find: "Find an item, place or supplier",
+  openLine: (name: string) => `Decide ${name}`,
   /** "Needs 13 (4 buffer) · 3 on hand": the need, rounded up, with the buffer it holds. */
   why: (line: { need: number; safety: number; usable: number }) =>
     `Needs ${String(Math.ceil(line.need))} (${String(Math.ceil(line.safety))} buffer) · ${String(line.usable)} on hand`,
@@ -24,7 +26,7 @@ export const supplyPlan = {
   drafted: "Drafted again from the latest forecast.",
   approvedSaid: "Approved. Its order is drafted in Purchasing, to approve there.",
   rejectedSaid: "Rejected.",
-  states: { approved: "Approved", rejected: "Rejected" },
+  states: { proposed: "To decide", approved: "Approved", rejected: "Rejected" },
   /** An order line approved: the purchase order it drafted, which Purchasing approves. */
   draftedAs: (number: string) => `Drafted as ${number}, to approve in Purchasing`,
   /** "PO-0007" */

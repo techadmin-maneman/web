@@ -35,21 +35,35 @@
     }
   }
 
+  /* The page stays in view, dimmed a little, so the drawer reads as on top of it. */
   .drawer::backdrop {
-    background: transparent;
+    background: var(--hero-scrim);
   }
 
   .drawer:focus {
     outline: none;
   }
 
+  /* The head stays in view as the body scrolls, and its cross with it. */
   .head {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-raised);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-16);
     padding: var(--sp-12) var(--sp-20);
     border-bottom: var(--hairline) solid var(--on-surface);
+    background: var(--surface);
+  }
+
+  .aside {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--sp-8);
+    margin-right: calc(-1 * var(--sp-8));
   }
 
   .title {
@@ -62,7 +76,11 @@
     color: var(--on-surface-muted);
   }
 
+  /* The body sets what it holds in from its edge, so a note or a form's actions add nothing of their own. */
   .body {
+    --note-inset: 0;
+    --form-inset: 0;
+
     padding: var(--sp-8) var(--sp-20) var(--sp-20);
   }
 }

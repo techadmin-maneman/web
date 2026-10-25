@@ -3,7 +3,7 @@
 // statement sent to the partner, records the month's payment from the payout tool, or deletes one recorded by
 // mistake; the month's file goes to the payout tool.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
@@ -23,7 +23,6 @@ import { saveFile } from "../lib/save-file.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { monthCsv, statementCsv } from "./partner-commission-csv.ts";
 import { PayoutForm } from "./PayoutForm.tsx";
-import form from "../components/forms.module.css";
 import styles from "./partner-commission.module.css";
 import { FormDrawer } from "../components/FormDrawer.tsx";
 import { partnerCommissionApi } from "./partner-commission-api.ts";
@@ -283,11 +282,7 @@ export function PartnerCommission() {
       }
     >
       <MonthChoice statements={statements} onMonth={choose} />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {statements.statements.length === 0 ? <Note>{copy.none}</Note> : <StatementsTable {...row} />}
     </Panel>
   );

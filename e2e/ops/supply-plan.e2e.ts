@@ -109,9 +109,13 @@ test("lists each transfer and order with why, and approves one at a changed quan
   await expect(row).toContainText(copy.why({ need: 10, safety: 5, usable: 0 }));
   await expect(page.getByRole("region", { name: copy.orders })).toContainText("Kesh Supplies");
 
-  await row.getByLabel(copy.quantity("Solvent")).fill("4");
+  // The row says where the line stands; its item opens it to decide.
+  await expect(row).toContainText(copy.states.proposed);
+  await row.getByRole("button", { name: copy.openLine("Solvent") }).click();
+  const line = page.getByRole("dialog", { name: "Solvent" });
+  await line.getByLabel(copy.quantity("Solvent")).fill("4");
   const request = posted(page, "/api/supply-plan/lines/pl-1/approve");
-  await row.getByRole("button", { name: copy.approve }).click();
+  await line.getByRole("button", { name: copy.approve }).click();
   expect((await request).postDataJSON()).toEqual({ quantity: 4 });
   await expect(row).toContainText(copy.states.approved);
   expect(await axeViolations(page)).toEqual([]);
@@ -128,10 +132,12 @@ test("rejects a line with why", async ({ page }) => {
   const rejected = { lines: [LOAN, { ...ORDER, state: "rejected" as const, reject_reason: "Bought last week" }] };
   await open(page, { "POST /api/supply-plan/lines/{id}/reject": json(rejected) });
   const orders = page.getByRole("region", { name: copy.orders });
-  await orders.getByRole("button", { name: copy.reject }).click();
-  await orders.getByLabel(copy.why_label).fill("Bought last week");
+  await orders.getByRole("button", { name: copy.openLine("Solvent") }).click();
+  const line = page.getByRole("dialog", { name: "Solvent" });
+  await line.getByRole("button", { name: copy.reject }).click();
+  await line.getByLabel(copy.why_label).fill("Bought last week");
   const request = posted(page, "/api/supply-plan/lines/pl-2/reject");
-  await orders.getByRole("button", { name: copy.confirmReject }).click();
+  await line.getByRole("button", { name: copy.confirmReject }).click();
   expect((await request).postDataJSON()).toEqual({ reason: "Bought last week" });
   await expect(orders).toContainText("Rejected · Bought last week");
 });
@@ -171,6 +177,6 @@ test("shows a city’s forecast, and adds an event to the calendar", async ({ pa
     ends_on: "2026-11-12",
     uplift_percent: 25,
   });
-  await expect(events.getByRole("status")).toHaveText(copy.events.added);
+  await expect(page.getByRole("status").filter({ hasText: copy.events.added })).toHaveText(copy.events.added);
   expect(await axeViolations(page)).toEqual([]);
 });

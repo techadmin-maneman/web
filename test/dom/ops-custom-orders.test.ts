@@ -139,14 +139,14 @@ describe("the client’s custom orders", () => {
         },
       },
     ]);
-    expect(page.textContent).toContain(copy.raise.raised);
+    expect(document.body.textContent).toContain(copy.raise.raised);
     expect(page.querySelector("a")?.getAttribute("href")).toBe("https://rzp.io/i/abc");
   });
 
   it("sends an unpaid order’s link again, or cancels it", async () => {
     await show();
     await press(copy.sendAgain);
-    expect(page.textContent).toContain(copy.sent);
+    expect(document.body.textContent).toContain(copy.sent);
     // A cancel is asked once more, as the order's link stops working.
     await press(copy.cancel);
     expect(posted.map((each) => each.path)).toEqual(["/api/custom-orders/co-1/send-link"]);
@@ -198,7 +198,7 @@ describe("the client’s custom orders", () => {
       { path: "/api/custom-orders/co-1/refund", body: { reason: "late" } },
       { path: "/api/custom-orders/co-1/refund", body: { reason: "late" } },
     ]);
-    expect(page.textContent).toContain(copy.refunded);
+    expect(document.body.textContent).toContain(copy.refunded);
     expect(page.textContent).toContain(copy.statuses.refunded);
   });
 });

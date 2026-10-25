@@ -9,8 +9,23 @@ import type { Place } from "./stock-places.ts";
 import type { Written } from "./stock.ts";
 
 /**
+ * A count not started by the time its class's next one would have come round is due again today: a weekly count
+ * missed for months reads as due this week, not overdue since the first it missed. One started is left as it is.
+ */
+async function rollMissedCounts(db: D1Database, today: string, classDays: Readonly<Record<CountClass, number>>) {
+  await db
+    .prepare(
+      `UPDATE count_tasks INDEXED BY count_tasks_open SET due_on = ?1
+       WHERE state <> 'done' AND state = 'open' AND consumable_code IS NULL
+         AND due_on <= date(?1, '-' || (SELECT value FROM json_each(?2) WHERE key = count_tasks.count_class) || ' days')`,
+    )
+    .bind(today, JSON.stringify(classDays))
+    .run();
+}
+
+/**
  * Today's count tasks raised: one for each standing place and class it holds whose last count was done longer ago
- * than the class's period, and has none still open. How many were raised.
+ * than the class's period, and has none still open. How many were raised. A count missed a whole period is due again.
  */
 export async function raiseCountTasks(
   db: D1Database,
@@ -18,6 +33,7 @@ export async function raiseCountTasks(
   now: Date,
   classDays: Readonly<Record<CountClass, number>>,
 ): Promise<number> {
+  await rollMissedCounts(db, today, classDays);
   const raised = await db
     .prepare(
       `INSERT INTO count_tasks (id, place_id, count_class, due_on, state, raised_at)

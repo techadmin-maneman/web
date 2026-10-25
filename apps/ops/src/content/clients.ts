@@ -132,6 +132,7 @@ export const clients = {
       goingAhead: "Going ahead",
       notSaid: "Not said",
       kept: (reason: string) => `Not going ahead: ${reason}`,
+      change: "Change why",
       errors: {
         invalid_request: changed("That reason is no longer listed."),
         not_found: changed("Not found."),
@@ -188,6 +189,7 @@ export const clients = {
       /** A one visit's code the client typed when booking on the site, which "Enter a code" starts from. */
       requested: (code: string) => `Client entered ${code} when booking`,
       enter: "Enter a code",
+      drawerTitle: (visit: string) => `Discount code · visit of ${visit}`,
       /** The button's whole name, since every row's says the same. */
       enterLabel: (visit: string) => `Enter a discount code on the visit of ${visit}`,
       label: "Discount code",
@@ -232,7 +234,6 @@ export const clients = {
     book: {
       open: "Book a visit",
       title: (name: string) => `Book a visit for ${name}`,
-      close: "Close",
       kind: "Visit",
       kinds: {
         consultation: "Consultation",
@@ -316,7 +317,6 @@ export const clients = {
       openLabel: (visit: string) => `Cancel the visit of ${visit}`,
       drawer: "Cancel visit",
       title: (name: string) => `Cancel ${name}’s visit`,
-      close: "Close",
       loading: "Checking refund…",
       unreadable: "Couldn’t check the refund.",
       retry: "Try again",
@@ -366,7 +366,6 @@ export const clients = {
       open: "Close by hand",
       openLabel: (visit: string) => `Close the visit of ${visit} by hand`,
       title: (name: string) => `Close ${name}’s visit by hand`,
-      close: "Close",
       outcome: "Outcome",
       outcomes: { done: "Done", partial: "Partly done", no_show: "No-show" },
       started: "Started",

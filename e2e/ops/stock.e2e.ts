@@ -88,9 +88,11 @@ test("past six places, shows the warehouse and one place, picked, marking each p
   const table = onHand(page);
   await expect(table.getByRole("columnheader")).toHaveText([stock.record.consumable, WAREHOUSE, "Technician 1"]);
 
-  const kit = table.getByLabel(stockLabels.place);
-  await expect(kit.getByRole("option", { name: "Technician 5 · low" })).toHaveCount(1);
-  await kit.selectOption({ label: "Technician 5 · low" });
+  // One control: past a handful of places, it names the one beside the warehouse, among the totals.
+  const show = page.getByLabel(stock.totalsBy);
+  await expect(show.getByRole("option", { name: "Technician 5 · low" })).toHaveCount(1);
+  await expect(table.getByLabel(stockLabels.place)).toHaveCount(0);
+  await show.selectOption({ label: "Technician 5 · low" });
   await expect(table.getByRole("columnheader")).toHaveText([stock.record.consumable, WAREHOUSE, "Technician 5"]);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
   await expect(tape.getByRole("cell").nth(1)).toContainText("5 strips");

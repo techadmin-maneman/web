@@ -3,7 +3,7 @@
 
 import { fullDate, todayInIndia } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
-import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -16,6 +16,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { CountClasses, type CountTasks } from "./CountClasses.tsx";
 import { CountTaskPanel, whatOf } from "./CountTask.tsx";
 import { StartCount } from "./StartCount.tsx";
+import { ListTools } from "../components/ListTools.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { countsApi } from "./counts-api.ts";
 
@@ -24,41 +25,43 @@ const loadTasks = () => countsApi.countTasks();
 function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpener }) {
   if (countTasks.tasks.length === 0) return <Note>{copy.none}</Note>;
   return (
-    <Table controls>
-      <thead>
-        <tr>
-          {copy.columns.map((column) => (
-            <th key={column} scope="col">
-              {column}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {countTasks.tasks.map((task) => (
-          <tr key={task.id}>
-            <RowHead>{task.place}</RowHead>
-            <td>{whatOf(task)}</td>
-            <td>
-              {task.state !== "done" && task.due_on < todayInIndia(Date.now())
-                ? copy.overdue(fullDate(task.due_on))
-                : fullDate(task.due_on)}
-            </td>
-            <td>{copy.states[task.state]}</td>
-            <td>
-              <Button
-                variant="outline"
-                size="small"
-                aria-label={`${copy.open} ${copy.heading(task.place, whatOf(task))}`}
-                {...opener(task.id)}
-              >
-                {copy.open}
-              </Button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
+    <ListTools rows={countTasks.tasks} textOf={(task) => `${task.place} ${whatOf(task)}`} label={copy.find}>
+      {(shown) => (
+        <Table controls>
+          <thead>
+            <tr>
+              {copy.columns.map((column) => (
+                <th key={column} scope="col">
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((task) => (
+              <tr key={task.id}>
+                <RowHead>
+                  <TextButton
+                    compact
+                    aria-label={`${copy.open} ${copy.heading(task.place, whatOf(task))}`}
+                    {...opener(task.id)}
+                  >
+                    {task.place}
+                  </TextButton>
+                </RowHead>
+                <td>{whatOf(task)}</td>
+                <td>
+                  {task.state !== "done" && task.due_on < todayInIndia(Date.now())
+                    ? copy.overdue(fullDate(task.due_on))
+                    : fullDate(task.due_on)}
+                </td>
+                <td>{copy.states[task.state]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
+    </ListTools>
   );
 }
 

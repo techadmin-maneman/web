@@ -6,12 +6,14 @@
 import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 
 import { fullDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type ClientVisit, type VisitDiscountCode } from "../api.ts";
 import { clients } from "../content.ts";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 import { useAccess } from "../lib/access.ts";
 import shared from "./clients.module.css";
 import styles from "./visit-code.module.css";
@@ -76,8 +78,12 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
     </p>
   );
 
-  if (step === "entering" || step === "applying") {
-    return (
+  const stopEntering = () => {
+    setStep("showing");
+    setFailure(null);
+  };
+  const entering = (step === "entering" || step === "applying") && (
+    <FormDrawer title={copy.drawerTitle(when)} onClose={stopEntering}>
       <form
         className={styles.codeForm}
         onSubmit={(event) => {
@@ -102,20 +108,12 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
         <Button type="submit" variant="primary" size="small" disabled={typed.trim() === "" || step === "applying"}>
           {step === "applying" ? copy.applying : copy.apply}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
-          disabled={step === "applying"}
-          onClick={() => {
-            setStep("showing");
-            setFailure(null);
-          }}
-        >
+        <Button variant="outline" size="small" disabled={step === "applying"} onClick={stopEntering}>
           {copy.cancel}
         </Button>
       </form>
-    );
-  }
+    </FormDrawer>
+  );
 
   const requested = code === null ? visit.requested_code : null;
   return (
@@ -123,10 +121,9 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
       <Shown code={code} />
       {requested !== null && <span className={shared.closedLine}>{copy.requested(requested)}</span>}
       {mayEnter && code === null && (
-        <Button
-          variant="outline"
-          size="small"
-          className={shared.secondary}
+        <TextButton
+          compact
+          className={shared.rowAction}
           aria-label={copy.enterLabel(when)}
           onClick={() => {
             setTyped(requested ?? "");
@@ -134,21 +131,21 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
           }}
         >
           {copy.enter}
-        </Button>
+        </TextButton>
       )}
       {mayRemove && code !== null && (
-        <Button
-          variant="outline"
-          size="small"
-          className={shared.secondary}
+        <TextButton
+          compact
+          className={shared.rowAction}
           aria-label={copy.removeLabel(when)}
           disabled={step === "removing"}
           onClick={() => void remove()}
         >
           {step === "removing" ? copy.removing : copy.remove}
-        </Button>
+        </TextButton>
       )}
       {problem}
+      {entering}
     </>
   );
 }

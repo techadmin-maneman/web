@@ -143,7 +143,7 @@ test("withdraws a city’s price still to come, asked first", async ({ page }) =
     copy.prices.withdrawing.warning(copy.prices.items.service, "Mumbai", "2027-10-01"),
   );
   await prices.getByRole("button", { name: copy.prices.withdrawing.confirm, exact: true }).click();
-  await expect(prices.getByText(copy.prices.withdrawn)).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: copy.prices.withdrawn })).toBeVisible();
 });
 
 test("refuses a GSTIN another state has, in the form’s own words", async ({ page }) => {

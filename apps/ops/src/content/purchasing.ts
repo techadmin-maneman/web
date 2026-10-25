@@ -48,6 +48,7 @@ export const purchasing = {
     item: "Item",
     quantity: "Quantity",
     addLine: "Add a line",
+    remove: "Remove",
     removeLine: (name: string) => `Remove ${name}`,
     /** "Minimum 1,000 ml, packs of 250 ml · Rs. 5 per ml" */
     minimum: (minimum: number, pack: number, unit: string, price: string) =>

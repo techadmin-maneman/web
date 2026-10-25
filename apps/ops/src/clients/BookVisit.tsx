@@ -19,6 +19,7 @@ import { Refusal } from "../components/Refusal.tsx";
 import { clientsApi } from "./clients-api.ts";
 import { WhatIsBooked, WhenAndWho, StripButtons } from "./BookSteps.tsx";
 import { copy, type Choice, kindOf, type Picked, slotOf } from "./book-slot.ts";
+import { CLOSE } from "../content.ts";
 
 /** What a task starts the form with; the client's page starts it with a choice alone. */
 export interface Prefill {
@@ -271,19 +272,7 @@ export function BookVisit({
     <Drawer
       titleId="book-visit-title"
       title={copy.title(name)}
-      aside={
-        <Button
-          variant="outline"
-          size="small"
-          className={shared.quiet}
-          onClick={() => {
-            onClose(booked);
-          }}
-        >
-          {copy.close}
-        </Button>
-      }
-      canClose
+      close={CLOSE}
       onDismiss={() => {
         onClose(booked);
       }}

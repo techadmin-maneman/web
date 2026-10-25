@@ -8,6 +8,7 @@ import { Drawer } from "@maneman/ui/Drawer";
 import { useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { InDrawer } from "./FormDrawer.tsx";
+import { CLOSE } from "../content.ts";
 
 export function DrawerButton({
   label,
@@ -45,7 +46,7 @@ export function DrawerButton({
       </Button>
       {open &&
         createPortal(
-          <Drawer titleId={id} title={title} canClose onDismiss={close}>
+          <Drawer titleId={id} title={title} close={CLOSE} onDismiss={close}>
             <InDrawer value>{children(close)}</InDrawer>
           </Drawer>,
           document.body,

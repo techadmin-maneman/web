@@ -2,7 +2,8 @@
 // than deleted. A row opens its record beside the list, with what the supplier supplies, where each value changes
 // where it reads (docs/decisions/0212-editing-in-place.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
+import { PageActions } from "../components/PageHead.tsx";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -12,7 +13,6 @@ import { useState } from "react";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
 import { RowHead } from "../components/RowHead.tsx";
-import form from "../components/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -78,13 +78,10 @@ export function Suppliers() {
   const opened = current.suppliers.find((each) => each.id === open);
 
   return (
-    <Panel
-      titleId="suppliers"
-      title={copy.title}
-      padded
-      actions={
-        mayAdd && (
-          <DrawerButton label={copy.form.addTitle}>
+    <>
+      <PageActions>
+        {mayAdd && (
+          <DrawerButton primary label={copy.form.addTitle}>
             {(close) => (
               <AddSupplier
                 onAdded={(next) => {
@@ -96,31 +93,28 @@ export function Suppliers() {
               />
             )}
           </DrawerButton>
-        )
-      }
-    >
-      <SupplierTable
-        suppliers={current}
-        onOpen={(id) => {
-          setOpen(id);
-          setSaid(null);
-        }}
-      />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
-      {opened !== undefined && (
-        <FormDrawer
-          title={opened.name}
-          onClose={() => {
-            setOpen(null);
+        )}
+      </PageActions>
+      <Panel titleId="suppliers" title={copy.title} padded>
+        <SupplierTable
+          suppliers={current}
+          onOpen={(id) => {
+            setOpen(id);
+            setSaid(null);
           }}
-        >
-          <SupplierRecord supplier={opened} suppliers={current} onSaved={setSuppliers} />
-        </FormDrawer>
-      )}
-    </Panel>
+        />
+        {said !== null && <Toast>{said}</Toast>}
+        {opened !== undefined && (
+          <FormDrawer
+            title={opened.name}
+            onClose={() => {
+              setOpen(null);
+            }}
+          >
+            <SupplierRecord supplier={opened} suppliers={current} onSaved={setSuppliers} />
+          </FormDrawer>
+        )}
+      </Panel>
+    </>
   );
 }

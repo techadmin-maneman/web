@@ -2,8 +2,8 @@
 // client, found by page or by what it says. A row opens the line's record beside the table, where its wording changes
 // where it reads, with its history beneath it (docs/decisions/0212-editing-in-place.md).
 
+import { Toast } from "@maneman/ui/Toast";
 import { whoWords } from "../lib/who.ts";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
@@ -142,11 +142,7 @@ function Words() {
           }}
         />
       )}
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       <WordsTable
         view={view}
         onOpen={(key) => {

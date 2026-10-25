@@ -3,10 +3,10 @@
 // from the client's own number. Where the API refuses for a booked visit or money held, ops may erase anyway and settle
 // it by hand today.
 
+import { typeLook } from "@maneman/ui/type";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
-import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
@@ -123,7 +123,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
 
   return (
     <section className={styles.erase} aria-label={copy.title}>
-      <h3 className={capsLook(styles.eraseTitle)}>{copy.title}</h3>
+      <h3 className={typeLook("title-4", styles.eraseTitle)}>{copy.title}</h3>
       {erasing.step === "confirming" && (
         <Confirm
           name={name}

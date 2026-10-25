@@ -4,9 +4,10 @@
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { SlotTimes } from "../../apps/ops/src/api.ts";
 import { settings } from "../../apps/ops/src/content/settings.ts";
+import { PageHead } from "../../apps/ops/src/components/PageHead.tsx";
 import { WindowTimes } from "../../apps/ops/src/settings/WindowTimes.tsx";
 import { contractChecked } from "./contract-fetch.ts";
 import { openDialogsAsJsdomCan } from "./dialogs.ts";
@@ -68,9 +69,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** The page in a head with room for its actions, as the frame draws it: Change window times is drawn there. */
 async function show() {
+  const actions = document.createElement("div");
+  document.body.append(actions);
+  onTestFinished(() => {
+    actions.remove();
+  });
+  const head = { setSub: () => undefined, setRecord: () => undefined, actions };
   act(() => {
-    root.render(createElement(WindowTimes));
+    root.render(createElement(PageHead, { value: head }, createElement(WindowTimes)));
   });
   await answered();
 }
@@ -159,7 +167,7 @@ describe("the window times", () => {
         day_end: "21:00",
       },
     ]);
-    expect(page.textContent).toContain(copy.set);
+    expect(document.body.textContent).toContain(copy.set);
   });
 
   it("say a day too soon, by the box it names", async () => {

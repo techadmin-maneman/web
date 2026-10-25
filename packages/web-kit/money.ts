@@ -18,6 +18,12 @@ export function rupees(paise: number): string {
   return `Rs. ${rupeeFigure(paise)}`;
 }
 
+/**
+ * A value worked out rather than paid, as stock at its landed cost or what a lot left over is worth, to the nearest
+ * rupee: paise there would claim a precision it does not have. 4296888 → "Rs. 42,969".
+ */
+export const roundRupees = (paise: number): string => rupees(Math.round(paise / 100) * 100);
+
 /** "499.50", as a form takes rupees, → 49950: the paise the API counts in, to the nearest paisa. */
 export const paiseFromRupees = (typed: string): number => Math.round(Number(typed) * 100);
 

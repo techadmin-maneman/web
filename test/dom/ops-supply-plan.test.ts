@@ -3,6 +3,7 @@
 // plan drafted again. Every name is made up.
 
 import { act, createElement } from "react";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SupplyPlanScreen } from "../../apps/ops/src/supply-plan/SupplyPlanScreen.tsx";
@@ -45,7 +46,10 @@ let root: Root;
 let posted: { path: string; body: unknown }[];
 let next: unknown;
 
-const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+/** A button on the page, or in the drawer a line opens, which is drawn in the document's body. */
+const buttons = (text: string) =>
+  [...document.body.querySelectorAll("button")].filter((each) => each.textContent.trim() === text);
+const button = (text: string) => buttons(text)[0];
 
 async function press(element: HTMLButtonElement | undefined) {
   await act(async () => {
@@ -63,6 +67,7 @@ function type(input: HTMLInputElement | null, value: string) {
 }
 
 beforeEach(() => {
+  openDialogsAsJsdomCan();
   posted = [];
   next = { lines: [LOAN, ORDER] };
   vi.stubGlobal(
@@ -109,19 +114,24 @@ describe("the supply plan", () => {
         { ...ORDER, state: "approved", quantity: 24, po_number: 7 },
       ],
     };
-    const quantity = page.querySelector<HTMLInputElement>('input[inputmode="numeric"]');
+    // The row says where the line stands; its item opens it to decide.
+    expect(page.textContent).toContain(copy.states.proposed);
+    await press(button("Solvent"));
+    const quantity = document.body.querySelector<HTMLInputElement>('dialog input[inputmode="numeric"]');
     type(quantity, "4");
     await press(button(copy.approve));
     expect(posted).toEqual([{ path: "/api/supply-plan/lines/pl-1/approve", body: { quantity: 4 } }]);
-    expect(page.textContent).toContain(copy.approvedSaid);
+    expect(document.body.textContent).toContain(copy.approvedSaid);
     expect(page.textContent).toContain(copy.draftedAs(copy.order(7)));
   });
 
   it("rejects a line with why, and drafts the plan again", async () => {
     await show();
     next = { lines: [LOAN, { ...ORDER, state: "rejected", reject_reason: "Bought last week" }] };
-    await press([...page.querySelectorAll("button")].filter((each) => each.textContent.trim() === copy.reject)[1]);
-    type(page.querySelector<HTMLInputElement>('input[maxlength="200"]'), "Bought last week");
+    // The order's line, the second named Solvent.
+    await press(buttons("Solvent")[1]);
+    await press(button(copy.reject));
+    type(document.body.querySelector<HTMLInputElement>('dialog input[maxlength="200"]'), "Bought last week");
     await press(button(copy.confirmReject));
     expect(page.textContent).toContain("Rejected · Bought last week");
     next = { lines: [] };

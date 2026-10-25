@@ -3,13 +3,13 @@
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). A ruling needs a reason and a charge is asked about once
 // more; the server never charges by itself (src/policy/no-show.ts).
 
+import { typeLook } from "@maneman/ui/type";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, DateInput, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
-import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { type Loaded, useLoad } from "@maneman/ui/useLoad";
@@ -94,7 +94,7 @@ function Money() {
           <dd className={styles.amount}>{rupees(day.charged)}</dd>
         </div>
       </dl>
-      <h3 className={capsLook(styles.chargesTitle)}>{copy.charges.title}</h3>
+      <h3 className={typeLook("title-4", styles.chargesTitle)}>{copy.charges.title}</h3>
       <Charges charges={day.charges} today={isToday} more={day.more} />
     </section>
   );

@@ -1,0 +1,27 @@
+/* What a form just did, at the foot of the window (./Toast.tsx): ink, with paper words, above whatever the page holds. */
+
+@layer base, ui;
+
+@layer ui {
+  .region {
+    position: fixed;
+    bottom: var(--sp-24);
+    left: 50%;
+    z-index: var(--z-bar);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
+    align-items: center;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .toast {
+    margin: 0;
+    padding: var(--sp-12) var(--sp-20);
+    font-size: var(--fs-15);
+    color: var(--paper);
+    background: var(--ink);
+    pointer-events: auto;
+  }
+}

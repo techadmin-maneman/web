@@ -7,7 +7,7 @@
 // The refusals are the API's own shape: invalid_request, with the fields it
 // names (src/http/errors.ts).
 
-import type { Locator, Page } from "@playwright/test";
+import type { Locator, Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fails, json, SETTINGS } from "./fixtures.ts";
@@ -141,6 +141,45 @@ test.describe("the rules", () => {
       `150 ${cities.rules.units.checkin_radius_m}`,
     );
     await expect(change(radius, cities.rules.names.checkin_radius_m)).toBeFocused();
+  });
+
+  /** The check-in radius set by hand to 150, and what each send of it answers: the default for null, else as set. */
+  async function setByHand(page: Page): Promise<unknown[]> {
+    const standard = ruleNamed("checkin_radius_m");
+    const byHand = { ...standard, value: 150, set_by: "ops@maneman.in", set_at: "2027-09-21T06:00:00.000Z" };
+    const sent: unknown[] = [];
+    const settings = SETTINGS.settings.map((each) => (each.name === "checkin_radius_m" ? byHand : each));
+    await open(page, "/settings/field", {
+      "GET /api/settings": json({ ...SETTINGS, settings }),
+      "POST /api/settings/checkin_radius_m": async (route: Route) => {
+        const body = route.request().postDataJSON() as { value: unknown };
+        sent.push(body.value);
+        await json(body.value === null ? standard : byHand)(route);
+      },
+    });
+    return sent;
+  }
+
+  test("puts a rule back to its default when its default is typed, its pencil showing at rest", async ({ page }) => {
+    const sent = await setByHand(page);
+    const radius = page.getByRole("group", { name: cities.rules.names.checkin_radius_m });
+    await expect(change(radius, cities.rules.names.checkin_radius_m).locator("svg")).toBeVisible();
+    await change(radius, cities.rules.names.checkin_radius_m).click();
+    const box = radius.getByLabel(cities.rules.names.checkin_radius_m, { exact: true });
+    await box.fill("200");
+    await box.press("Enter");
+    await expect.poll(() => sent).toEqual([null]);
+  });
+
+  test("says a rule was reset, and undoes it in one press", async ({ page }) => {
+    const sent = await setByHand(page);
+    const radius = page.getByRole("group", { name: cities.rules.names.checkin_radius_m });
+    await radius
+      .getByRole("button", { name: settingsCopy.rules.resetLabel(cities.rules.names.checkin_radius_m) })
+      .click();
+    await expect(radius.getByText(settingsCopy.rules.wasReset)).toBeVisible();
+    await radius.getByRole("button", { name: settingsCopy.rules.undo }).click();
+    await expect.poll(() => sent).toEqual([null, 150]);
   });
 
   test("puts the figure back on Escape, and sends nothing", async ({ page }) => {

@@ -2,6 +2,7 @@
 // payments, referrals, consents, photographs and history. The record is read once for the page, so moving between tabs
 // costs no request; an erased client's page keeps only their visits and money (Erase.tsx).
 
+import { Stack } from "@maneman/ui/Layout";
 import { ClientPackage } from "./ClientPackage.tsx";
 import { TextLink } from "@maneman/ui/TextLink";
 import { ButtonLink } from "@maneman/ui/Button";
@@ -222,7 +223,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                   </OpsLink>
                 ))}
               </Tabs>
-              <div>
+              <Stack>
                 <Tab
                   clientId={clientId}
                   tab={tab}
@@ -243,7 +244,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                   }}
                   photos={photos}
                 />
-              </div>
+              </Stack>
             </div>
           ),
       })}

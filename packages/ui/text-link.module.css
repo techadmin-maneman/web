@@ -76,6 +76,18 @@
     }
   }
 
+  /* In a table a row's name reads as its name, not as a link: no line until the pointer is on it. */
+  :where(table) .words:not(.danger) {
+    font-weight: var(--weight-medium);
+    text-decoration-line: none;
+  }
+
+  @media (hover: hover) {
+    :where(table tr:hover) .words:not(:disabled) {
+      text-decoration-line: underline;
+    }
+  }
+
   .words:active:not(:disabled) {
     text-decoration-thickness: var(--rule-strong);
   }

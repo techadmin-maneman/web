@@ -31,17 +31,21 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   });
   const row = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
-  await row.getByLabel(opsCopy.clients.visits.code.label).fill("wrong1");
-  await row.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
-  await expect(row.getByRole("alert")).toHaveText(opsCopy.clients.visits.code.errors.code_not_applicable);
+  // The code is typed in a drawer beside the page, not in a box in the row.
+  const drawer = page.getByRole("dialog", { name: opsCopy.clients.visits.code.drawerTitle("25 Sep 2027") });
+  const box = drawer.getByLabel(opsCopy.clients.visits.code.label, { exact: true });
+  await box.fill("wrong1");
+  await drawer.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
+  await expect(drawer.getByRole("alert")).toHaveText(opsCopy.clients.visits.code.errors.code_not_applicable);
   // One ops switched off said only that it did not apply.
-  await row.getByLabel(opsCopy.clients.visits.code.label).fill("RPLC2K");
-  await row.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
-  await expect(row.getByRole("alert")).toHaveText(opsCopy.clients.visits.code.errors.code_off);
+  await box.fill("RPLC2K");
+  await drawer.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
+  await expect(drawer.getByRole("alert")).toHaveText(opsCopy.clients.visits.code.errors.code_off);
 
   applies = true;
-  await row.getByLabel(opsCopy.clients.visits.code.label).fill("weddng25");
-  await row.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
+  await box.fill("weddng25");
+  await drawer.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
+  await expect(drawer).toBeHidden();
   await expect(row).toContainText("WEDDNG25, Rs. 500 off");
   await expect(row).toContainText(opsCopy.clients.visits.code.givenBy.ops);
   expect(await axeViolations(page)).toEqual([]);
@@ -65,7 +69,8 @@ test("shows the code the client gave when booking, and starts the box from it", 
   const row = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
   await expect(row).toContainText("Client entered TENPC when booking");
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
-  await expect(row.getByLabel(opsCopy.clients.visits.code.label)).toHaveValue("TENPC");
+  const drawer = page.getByRole("dialog", { name: opsCopy.clients.visits.code.drawerTitle("25 Sep 2027") });
+  await expect(drawer.getByLabel(opsCopy.clients.visits.code.label, { exact: true })).toHaveValue("TENPC");
 });
 
 test("offers no code on a visit already paid for", async ({ page }) => {
@@ -122,7 +127,9 @@ test("sets why a client is not going ahead on a closed consultation, from the jo
       return json({ lost_reason: "price" })(route);
     },
   });
-  await page.getByLabel(opsCopy.clients.visits.lostReason.label).selectOption("price");
+  await page.getByRole("button", { name: opsCopy.clients.visits.lostReason.label }).click();
+  const drawer = page.getByRole("dialog", { name: opsCopy.clients.visits.lostReason.label });
+  await drawer.getByLabel(opsCopy.clients.visits.lostReason.label, { exact: true }).selectOption("price");
   await expect.poll(() => sent).toEqual({ lost_reason: "price" });
 });
 

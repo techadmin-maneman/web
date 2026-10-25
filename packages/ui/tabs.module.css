@@ -3,14 +3,22 @@
 @layer base, ui;
 
 @layer ui {
+  /* One line of tabs, however many: past the room it scrolls sideways rather than wrap a tab onto two lines. */
   .tabs {
     display: flex;
     gap: var(--sp-24);
+    overflow-x: auto;
     border-bottom: var(--hairline) solid var(--ui-line);
+    scrollbar-width: thin;
   }
 
+  /* A tab as short as Kit still gives a 24 px target. */
   .tab {
+    flex: none;
+    min-width: var(--sp-24);
+    white-space: nowrap;
     padding: var(--sp-12) 0;
+    text-align: center;
     border-bottom: var(--rule-strong) solid transparent;
     font-size: var(--fs-14);
     color: var(--ui-text-muted);

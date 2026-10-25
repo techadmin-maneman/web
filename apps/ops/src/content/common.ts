@@ -1,6 +1,7 @@
 // The console's words every screen may use: a refusal of access, an erased client, the loading and failure lines,
 // and the site's booking page a launch sends people to.
 
+import { quantity } from "@maneman/web-kit/figures";
 import type { EnvironmentName } from "@rules/config/environments.ts";
 
 /** The public site's booking page, which a launch alert sends people to, as apps/app/src/content.ts has it. */
@@ -24,6 +25,20 @@ export const firstShown = (count: number) => `Showing the first ${String(count)}
 
 /** A refusal with no words of its own. */
 export const FAILED = "That didn’t work. Try again.";
+
+/** A long list's search and pages (../components/ListTools.tsx). */
+export const LIST_TOOLS = {
+  matching: (count: number) => `${quantity(count)} ${count === 1 ? "match" : "matches"}`,
+  none: (find: string) => `Nothing matches “${find}”.`,
+  pages: {
+    range: (from: number, to: number, total: number) => `${quantity(from)}–${quantity(to)} of ${quantity(total)}`,
+    previous: "Previous page",
+    next: "Next page",
+  },
+} as const;
+
+/** What a drawer's cross is read as: never "Close" alone, which some forms use for closing days or a stockroom. */
+export const CLOSE = "Close panel";
 
 /** Razorpay not answering, wherever a payment, refund or link waits on it. */
 export const RAZORPAY_DOWN = "Razorpay isn’t responding. Try again in a minute.";
@@ -87,6 +102,8 @@ export const deleting = {
   confirm: "Delete",
   sending: "Deleting…",
   cancel: "Cancel",
+  /** A switch that reaches everyone asks for a word typed before it goes. */
+  typeToConfirm: (word: string) => `Type ${word} to confirm`,
 } as const;
 
 /**

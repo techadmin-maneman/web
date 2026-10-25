@@ -10,7 +10,7 @@ import { ChoiceGroup, Field, Radio, TextArea, TextInput } from "@maneman/ui/Fiel
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useId, useState } from "react";
 import { type HandClose } from "../api.ts";
-import { clients } from "../content.ts";
+import { clients, CLOSE } from "../content.ts";
 import shared from "../components/visit-dialog.module.css";
 import styles from "./close-visit.module.css";
 import { FormRefusal } from "../components/Refusal.tsx";
@@ -155,17 +155,7 @@ export function CloseVisit({
     onClose(closed !== null);
   };
   return (
-    <Drawer
-      titleId="close-visit-title"
-      title={copy.title(name)}
-      aside={
-        <Button variant="outline" size="small" className={shared.quiet} onClick={dismiss}>
-          {copy.close}
-        </Button>
-      }
-      canClose
-      onDismiss={dismiss}
-    >
+    <Drawer titleId="close-visit-title" title={copy.title(name)} close={CLOSE} onDismiss={dismiss}>
       {closed === null ? (
         <ClosingForm visitId={visitId} date={date} onClosed={setClosed} />
       ) : (

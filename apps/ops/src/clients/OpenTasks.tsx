@@ -1,8 +1,8 @@
 // What waits on Tasks for this client, under the head of their page: each task's group, how long it has left, and a
 // way to where it is done. No board draws it.
 
+import { typeLook } from "@maneman/ui/type";
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { capsLook } from "@maneman/ui/Caps";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useCallback } from "react";
@@ -63,7 +63,7 @@ function Strip({ clientId }: { clientId: string }) {
   const [loaded] = useLoad(load);
   return (
     <section className={styles.open} aria-labelledby="open-tasks">
-      <h3 className={capsLook(styles.sectionTitle)} id="open-tasks">
+      <h3 className={typeLook("title-4", styles.sectionTitle)} id="open-tasks">
         {copy.title}
       </h3>
       {whenLoaded(loaded, {

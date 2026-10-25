@@ -10,7 +10,7 @@ import { Drawer } from "@maneman/ui/Drawer";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { OpsLink } from "../components/Shell.tsx";
-import { dispatch } from "../content.ts";
+import { dispatch, CLOSE } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
@@ -77,7 +77,7 @@ export function BlockDrawer(props: Props) {
       title={person?.name ?? nameOf(job)}
       sub={copy.when(shortDate(job.date), timeOf(job), job.technician.name)}
       aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge]}</span>}
-      canClose
+      close={CLOSE}
       onDismiss={onClose}
     >
       <dl className={styles.rows}>
@@ -170,9 +170,6 @@ export function BlockDrawer(props: Props) {
             {copy.letIn}
           </Button>
         )}
-        <Button variant="outline" size="small" onClick={onClose}>
-          {copy.close}
-        </Button>
       </div>
     </Drawer>
   );

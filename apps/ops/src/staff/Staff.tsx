@@ -3,7 +3,8 @@
 // the list (docs/decisions/0212-editing-in-place.md). The API narrows the list to the places its viewer may see, and
 // refuses a change beyond their own.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
+import { PageActions } from "../components/PageHead.tsx";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
@@ -51,6 +52,7 @@ function Enforcement({ staff, onChanged }: PanelProps) {
             name={copy.title}
             tone={on ? "danger" : "primary"}
             words={on ? words.stopping : words.starting}
+            typed={on ? words.typed : undefined}
             send={() => staffApi.setEnforcement(!on)}
             refusal={(code) => errorText(words.errors, { code })}
             onDeleted={onChanged}
@@ -119,13 +121,10 @@ function People({ staff, onChanged }: PanelProps) {
     me.value.signed_in_as.toLowerCase() !== person.email;
 
   return (
-    <Panel
-      titleId="staff-people"
-      title={copy.title}
-      padded
-      actions={
-        mayGrant && (
-          <DrawerButton label={copy.add}>
+    <>
+      <PageActions>
+        {mayGrant && (
+          <DrawerButton primary label={copy.add}>
             {(close) => (
               <AddPerson
                 staff={staff}
@@ -138,43 +137,40 @@ function People({ staff, onChanged }: PanelProps) {
               />
             )}
           </DrawerButton>
-        )
-      }
-    >
-      <PeopleTable
-        staff={staff}
-        onOpen={(email) => {
-          setSaid(null);
-          setOpen(email);
-        }}
-      />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
-      {person !== null && (
-        <FormDrawer
-          title={person.email}
-          onClose={() => {
-            setOpen(null);
+        )}
+      </PageActions>
+      <Panel titleId="staff-people" title={copy.title} padded>
+        <PeopleTable
+          staff={staff}
+          onOpen={(email) => {
+            setSaid(null);
+            setOpen(email);
           }}
-        >
-          <StaffRecord
-            staff={staff}
-            person={person}
-            mayChange={mayGrant}
-            mayRemove={mayRemove}
-            onSaved={onChanged}
-            onRemoved={(next) => {
-              onChanged(next);
+        />
+        {said !== null && <Toast>{said}</Toast>}
+        {person !== null && (
+          <FormDrawer
+            title={person.email}
+            onClose={() => {
               setOpen(null);
-              setSaid(copy.removed);
             }}
-          />
-        </FormDrawer>
-      )}
-    </Panel>
+          >
+            <StaffRecord
+              staff={staff}
+              person={person}
+              mayChange={mayGrant}
+              mayRemove={mayRemove}
+              onSaved={onChanged}
+              onRemoved={(next) => {
+                onChanged(next);
+                setOpen(null);
+                setSaid(copy.removed);
+              }}
+            />
+          </FormDrawer>
+        )}
+      </Panel>
+    </>
   );
 }
 

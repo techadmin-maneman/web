@@ -3,7 +3,8 @@
 // the API names as the earliest, and is kept for good, so the list of changes only grows. A change is made beside the
 // page, each window's hours read beneath its boxes as they are typed, before it is set.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Toast } from "@maneman/ui/Toast";
+import { PageActions } from "../components/PageHead.tsx";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -204,13 +205,10 @@ export function WindowTimes() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const times = loaded.value;
   return (
-    <Panel
-      titleId="window-times"
-      title={copy.title}
-      padded
-      actions={
-        access.mayCall("POST /api/slot-times") && (
-          <DrawerButton label={copy.formTitle}>
+    <>
+      <PageActions>
+        {access.mayCall("POST /api/slot-times") && (
+          <DrawerButton primary label={copy.formTitle}>
             {(close) => (
               <ChangeForm
                 key={times.earliest}
@@ -224,23 +222,20 @@ export function WindowTimes() {
               />
             )}
           </DrawerButton>
-        )
-      }
-    >
-      <InForce times={times} />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
-      <h3 className={form.ruleTitle}>{copy.history}</h3>
-      <Changes
-        times={times}
-        onWithdrawn={() => {
-          setSaid(copy.withdrawn);
-          retry();
-        }}
-      />
-    </Panel>
+        )}
+      </PageActions>
+      <Panel titleId="window-times" title={copy.title} padded>
+        <InForce times={times} />
+        {said !== null && <Toast>{said}</Toast>}
+        <h3 className={form.ruleTitle}>{copy.history}</h3>
+        <Changes
+          times={times}
+          onWithdrawn={() => {
+            setSaid(copy.withdrawn);
+            retry();
+          }}
+        />
+      </Panel>
+    </>
   );
 }

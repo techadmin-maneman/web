@@ -3,8 +3,8 @@
 // printed order says of us (./Letterhead.tsx); the claims on suppliers, with the returned pieces to settle
 // (./Claims.tsx); and each supplier's scorecard.
 
+import { Toast } from "@maneman/ui/Toast";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
@@ -84,11 +84,7 @@ export function PurchasingScreen() {
         <div className={form.screen}>
           <Panel titleId="orders" title={copy.orders}>
             <OrdersTable orders={current} opener={opener} />
-            {said !== null && (
-              <InlineMessage tone="saved" className={form.saved}>
-                {said}
-              </InlineMessage>
-            )}
+            {said !== null && <Toast>{said}</Toast>}
           </Panel>
           {opened !== null && (
             <OrderPanel key={opened.id} id={panelId} orders={current} order={opened} onChanged={changed} />

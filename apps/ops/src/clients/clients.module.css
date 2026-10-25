@@ -186,8 +186,6 @@
 
 .sectionTitle {
   margin: 0 0 var(--sp-8);
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
 }
 
 .visitList .table {

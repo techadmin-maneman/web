@@ -1,12 +1,12 @@
 // The prices a city sets apart from the book's: each from its day, before the national price there. One still to come
 // may be withdrawn, asked once in its row; the one in force and the spent ones stay, as an invoice may stand on them.
 
+import { Toast } from "@maneman/ui/Toast";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 import { Table } from "@maneman/ui/Table";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -247,11 +247,7 @@ export function CityPrices({ cities, reread }: { cities: Cities; reread: () => P
       }
     >
       <PriceTable cities={cities} onDone={saved(copy.withdrawn)} />
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
     </Panel>
   );
 }

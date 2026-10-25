@@ -3,6 +3,7 @@
 // ops change them. Links from Tasks landed on this week's bare board, and Back from a client reset it.
 
 import { act, createElement } from "react";
+import { CLOSE } from "../../apps/ops/src/content/common.ts";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DispatchScreen } from "../../apps/ops/src/dispatch/DispatchScreen.tsx";
@@ -71,7 +72,9 @@ const asked = () => Object.fromEntries(new URLSearchParams(window.location.searc
 const drawer = () => page.querySelector("dialog[open]");
 
 function press(name: string, within: ParentNode = page) {
-  const found = [...within.querySelectorAll("button")].find((each) => each.textContent.trim() === name);
+  const found = [...within.querySelectorAll("button")].find(
+    (each) => each.textContent.trim() === name || each.getAttribute("aria-label") === name,
+  );
   if (found === undefined) throw new Error(`No button "${name}" in: ${page.textContent}`);
   act(() => {
     found.click();
@@ -123,7 +126,7 @@ describe("the dispatch board’s place in the address", () => {
     expect(asked()).toMatchObject({ visit: ROHIT });
     const open = drawer();
     if (open === null) throw new Error("The drawer did not open");
-    press("Close", open);
+    press(CLOSE, open);
     expect(asked()).toEqual({ from: "2025-09-26", city: "Delhi", find: "Rohit" });
   });
 
@@ -131,7 +134,7 @@ describe("the dispatch board’s place in the address", () => {
     await openAt(`/dispatch?from=2025-09-19&visit=${IN_THE_TRAY}`);
 
     expect(drawer()).not.toBeNull();
-    press("Close", drawer() ?? page);
+    press(CLOSE, drawer() ?? page);
     await settle();
     expect(drawer()).toBeNull();
     expect(document.activeElement?.getAttribute("data-appointment")).toBe(IN_THE_TRAY);

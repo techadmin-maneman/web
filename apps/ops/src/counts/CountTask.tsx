@@ -1,11 +1,10 @@
 // One count task (docs/decisions/0185-cycle-counts.md): counted blind, item by item; what differed counted again; and
 // a recount that still differs signed off by a manager, who alone sees what the ledger held.
 
+import { FormDrawer } from "../components/FormDrawer.tsx";
+import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
-import { TextButton } from "@maneman/ui/TextLink";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
@@ -90,6 +89,7 @@ function Counting({
             {(control) => (
               <TextInput
                 {...control}
+                width="figure"
                 inputMode="numeric"
                 value={figures[item.consumable_code] ?? ""}
                 onChange={(event) => {
@@ -152,6 +152,7 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
         {(control) => (
           <TextInput
             {...control}
+            width="figure"
             maxLength={200}
             value={note}
             onChange={(event) => {
@@ -230,28 +231,20 @@ export function CountTaskPanel({
     return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <Loading />;
   }
   return (
-    <Panel
-      id={panelId}
-      opened
-      titleId="count-task"
-      title={copy.heading(current.task.place, whatOf(current.task))}
-      actions={<TextButton onClick={onClose}>{copy.close}</TextButton>}
-    >
-      <Step task={current} onAnswer={answered} />
-      {current.items.map(
-        (item) =>
-          item.unknown_labels.length > 0 && (
-            <Note key={item.consumable_code}>
-              {item.name}: {copy.notHeld(item.unknown_labels)}
-            </Note>
-          ),
-      )}
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
-      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
-    </Panel>
+    <FormDrawer title={copy.heading(current.task.place, whatOf(current.task))} onClose={onClose}>
+      <div id={panelId}>
+        <Step task={current} onAnswer={answered} />
+        {current.items.map(
+          (item) =>
+            item.unknown_labels.length > 0 && (
+              <Note key={item.consumable_code}>
+                {item.name}: {copy.notHeld(item.unknown_labels)}
+              </Note>
+            ),
+        )}
+        {said !== null && <Toast>{said}</Toast>}
+        {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+      </div>
+    </FormDrawer>
   );
 }

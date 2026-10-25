@@ -4,17 +4,21 @@
  * rows are the client page's quiet key beside the value (docs/decisions/0106-a-clients-hair-profile.md).
  */
 
+/* Raised and full width, as every record on the page is; its rows read as the package's do above it. */
 .profile {
   display: flex;
   flex-direction: column;
   gap: var(--sp-16);
-  max-width: var(--ops-panel);
-  margin-bottom: var(--sp-28);
   border: var(--hairline) solid var(--ui-line);
-  padding: var(--sp-24);
+  padding: var(--sp-20);
+  background: var(--ui-raised);
 }
 
-.title,
+.title {
+  margin: 0;
+  padding: 0;
+}
+
 .subtitle {
   margin: 0;
   padding: 0;
@@ -35,9 +39,9 @@
 }
 
 .row {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--setting-label-width) 1fr;
   gap: var(--sp-16);
-  justify-content: space-between;
   padding: var(--sp-8) 0;
   border-bottom: var(--hairline) solid var(--ui-line);
 }
@@ -51,7 +55,6 @@
   margin: 0;
   font-size: var(--fs-14);
   font-variant-numeric: tabular-nums;
-  text-align: right;
   color: var(--ui-text);
 }
 

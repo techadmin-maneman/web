@@ -3,7 +3,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
-import { rupees } from "@maneman/web-kit/money";
+import { roundRupees } from "@maneman/web-kit/money";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
@@ -34,7 +34,7 @@ function ReceiptList({ orders, order }: { orders: Orders; order: Order }) {
                 damaged: line.damaged,
                 failed: line.qc_failed,
                 // Whole rupees, as every other amount is: what a unit landed at, freight shared, is never to the paisa.
-                landed: rupees(Math.round(line.landed_unit_paise / 100) * 100),
+                landed: roundRupees(line.landed_unit_paise),
               })}
             </Note>
           ))}

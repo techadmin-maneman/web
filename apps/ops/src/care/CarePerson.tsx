@@ -1,8 +1,8 @@
 // A client's Care person in their chat (docs/decisions/0131-care-people.md): who looks after them, and for a Customer
 // Care manager, moving them to another of the team.
 
+import { Toast } from "@maneman/ui/Toast";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
@@ -13,7 +13,6 @@ import { useAccess } from "../lib/access.ts";
 import { care as copy } from "../content/care.ts";
 import { Refused } from "../components/Refusal.tsx";
 import { careApi, type CareMember } from "./care-api.ts";
-import form from "../components/forms.module.css";
 import styles from "./care.module.css";
 
 const { carePerson: words } = copy;
@@ -112,11 +111,7 @@ export function CarePerson(props: {
       <Note>
         {words.label}: {now === null ? words.none : coveredOf(now, props.email, props.coveredBy)}
       </Note>
-      {said !== null && (
-        <InlineMessage tone="saved" className={form.saved}>
-          {said}
-        </InlineMessage>
-      )}
+      {said !== null && <Toast>{said}</Toast>}
       {mayMove && (
         <Team
           personId={props.personId}

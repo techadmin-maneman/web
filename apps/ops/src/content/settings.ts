@@ -168,6 +168,8 @@ export const settings = {
     saved: "Saved.",
     reset: "Reset to default",
     resetLabel: (rule: string) => `Reset ${rule} to default`,
+    wasReset: "Back to the default.",
+    undo: "Undo",
     /** Beside the title of a page of policies the person may read and not change. */
     viewOnly: "View only",
     /** The open-keyed rule's extra row: a currency, and its rate. */
@@ -576,6 +578,7 @@ export const settings = {
     },
   },
   consumables: {
+    find: "Find an item",
     title: "Consumables",
     add: "Add a consumable",
     columns: ["Consumable", "Cost each", "Low at", "Status"],
@@ -733,6 +736,8 @@ export const settings = {
     /** A grant's line in a person's record: "Finance · Delhi", its level beside it. */
     grantLabel: (department: string, place: string) => `${department} · ${place}`,
     form: {
+      /** The console admits one Google group: a person added here signs in once they are in it too. */
+      group: "Add them to the console’s Google group too, or they can’t sign in.",
       addTitle: "Add a person",
       email: "Sign-in email",
       access: "Access",
@@ -788,6 +793,8 @@ export const settings = {
         sending: "Saving…",
         cancel: "Cancel",
       },
+      /** Typed before access control goes off for everyone. */
+      typed: "OFF",
       errors: {
         not_permitted: "Only national Admin · Manage can change this.",
         offline: OFFLINE,

@@ -3,6 +3,7 @@
 // only with a reason; a close by hand sends its times on the visit's own day in India.
 
 import { act, createElement } from "react";
+import { CLOSE } from "../../apps/ops/src/content/common.ts";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CancelVisit } from "../../apps/ops/src/clients/CancelVisit.tsx";
@@ -92,7 +93,9 @@ async function show(panel: React.ReactElement) {
 const text = () => page.textContent;
 
 function button(name: string): HTMLButtonElement {
-  const found = [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === name);
+  const found = [...page.querySelectorAll("button")].find(
+    (each) => each.textContent.trim() === name || each.getAttribute("aria-label") === name,
+  );
   if (found === undefined) throw new Error(`No button "${name}" in: ${text()}`);
   return found;
 }
@@ -159,7 +162,7 @@ describe("cancelling a client’s visit from the console", () => {
       body: { confirm: true, notice: "late", reason: "Client phoned: their father is unwell" },
     });
     expect(text()).toContain("Cancelled. Rs. 2,000 refunded to their UPI.");
-    await press("Close");
+    await press(CLOSE);
     expect(closedWith).toEqual([true]);
   });
 
@@ -261,7 +264,7 @@ describe("closing a visit by hand from the console", () => {
       },
     ]);
     expect(text()).toContain("Closed as done.");
-    await press("Close");
+    await press(CLOSE);
     expect(closedWith).toEqual([true]);
   });
 

@@ -10,7 +10,7 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import styles from "../components/visit-dialog.module.css";
-import { dispatch } from "../content.ts";
+import { dispatch, CLOSE } from "../content.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { dispatchApi } from "./dispatch-api.ts";
 
@@ -82,17 +82,7 @@ export function LetIn({
     onClose(done);
   };
   return (
-    <Drawer
-      titleId="let-in-title"
-      title={copy.title(technician)}
-      aside={
-        <Button variant="outline" size="small" className={styles.quiet} onClick={dismiss}>
-          {copy.close}
-        </Button>
-      }
-      canClose
-      onDismiss={dismiss}
-    >
+    <Drawer titleId="let-in-title" title={copy.title(technician)} close={CLOSE} onDismiss={dismiss}>
       {done ? (
         <p className={styles.done} role="status">
           {copy.done(technician)}

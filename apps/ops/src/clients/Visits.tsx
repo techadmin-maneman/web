@@ -3,8 +3,8 @@
 // cancel one (CancelVisit.tsx) or close one by hand (CloseVisit.tsx). Beneath, any booking that refunded itself, and
 // why.
 
+import { typeLook } from "@maneman/ui/type";
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
@@ -245,7 +245,7 @@ function VisitTable({
 }) {
   return (
     <section className={styles.visitList} aria-label={title}>
-      <h3 className={capsLook(styles.sectionTitle)}>{title}</h3>
+      <h3 className={typeLook("title-4", styles.sectionTitle)}>{title}</h3>
       {visits.length === 0 ? (
         <EmptyState look="panel" line={empty} />
       ) : (
@@ -302,7 +302,7 @@ function AutoRefunds({ refunds }: { refunds: readonly AutoRefund[] }) {
   const words = copy.autoRefunds;
   return (
     <section className={styles.visitList} aria-labelledby="auto-refunds">
-      <h3 className={capsLook(styles.sectionTitle)} id="auto-refunds">
+      <h3 className={typeLook("title-4", styles.sectionTitle)} id="auto-refunds">
         {words.title}
       </h3>
       <ul className={styles.refundList}>

@@ -1,0 +1,17 @@
+/* Where a long list's page stands, and the pages either side (./Pager.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .pager {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-4);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The one chevron, turned to point back. */
+  .previous svg {
+    transform: scaleX(-1);
+  }
+}
