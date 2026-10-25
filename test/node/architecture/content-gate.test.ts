@@ -47,12 +47,16 @@ describe("the production gate on the apps' copy", () => {
       site: [
         "site/src/content/referral.ts",
         "site/src/content/site.ts",
+        "site/src/content/site/aftercare.ts",
         "site/src/content/site/contact.ts",
         "site/src/content/site/home.ts",
         "site/src/content/site/legal.ts",
         "site/src/content/site/media.ts",
         "site/src/content/site/notices.ts",
+        "site/src/content/site/offer-terms.ts",
         "site/src/content/site/pages.ts",
+        "site/src/content/site/privacy-policy.ts",
+        "site/src/content/site/terms-and-conditions.ts",
         "site/src/content/site/tryon.ts",
       ],
       app: [

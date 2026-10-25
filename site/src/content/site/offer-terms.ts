@@ -1,5 +1,5 @@
-// The terms of discount codes, referral rewards and free service visits, which yield to the Terms: a draft for the owner
-// to approve, which holds production's build until it is (docs/open-points.md, item 189).
+// The terms of discount codes, referral rewards and free service visits, which yield to the Terms: a draft, which holds
+// production's build until it is approved (docs/open-points.md, item 189).
 
 import type { LegalPage } from "./legal.ts";
 

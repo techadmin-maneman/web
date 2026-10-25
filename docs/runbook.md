@@ -30,6 +30,7 @@ An alert in the alert space names what went wrong with IDs only; [What each aler
 | The heartbeat or the uptime monitor says mm-api is down | [The outside watchers](runbook/alerts.md#the-outside-watchers), [A cron run cut short](runbook/alerts.md#a-cron-run-cut-short)                                                             |
 | A release is misbehaving                                | [Rolling back a Worker version](runbook/rolling-back.md)                                                                                                                                   |
 | Personal data may have leaked                           | [A personal data breach](runbook/data-breach.md)                                                                                                                                           |
+| A complaint, by the app, email or post                  | [Grievances](runbook/grievances.md)                                                                                                                                                        |
 
 ---
 
@@ -54,6 +55,7 @@ Each answers one kind of task.
 - [Erasure within the day](runbook/erasure.md)
 - [The service area and the referral log](runbook/service-area.md)
 - [A personal data breach](runbook/data-breach.md)
+- [Grievances](runbook/grievances.md)
 - [The texts file](runbook/texts-file.md)
 - [Cities and visit days](runbook/cities.md)
 - [Restoring D1](runbook/restoring-d1.md)

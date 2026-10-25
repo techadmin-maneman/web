@@ -31,7 +31,7 @@ import { isMessageHeldBack } from "../policy/staging-test-records.ts";
 import { composeBookingRefunded } from "../domain/money/auto-refunds.ts";
 import { composeCreditsExpiring } from "../domain/money/credit-reminders.ts";
 import { composeDeletionRejected } from "../domain/privacy/deletion.ts";
-import { composeConcernAnswered } from "../domain/ops/grievances.ts";
+import { composeConcernAnswered, composeConcernReceived } from "../domain/ops/grievances.ts";
 import { composeNextServiceReminder } from "../domain/visits/next-visit.ts";
 import { composeLinkPaid } from "../domain/money/payment-links-paid.ts";
 import {
@@ -237,6 +237,8 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
       return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
     case "deletion_rejected":
       return composeDeletionRejected(db, row.subject_id, row.person_id);
+    case "concern_received":
+      return composeConcernReceived(db, row.subject_id, row.person_id);
     case "concern_answered":
       return composeConcernAnswered(db, row.subject_id, row.person_id);
     case "recall_notice":

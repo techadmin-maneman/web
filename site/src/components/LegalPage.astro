@@ -1,6 +1,7 @@
 ---
 // The privacy policy or the terms, as counsel's documents lay them out: the version, the opening paragraphs, the
 // numbered sections and their clauses, and a table after them where there is one.
+import { tableLook } from "@maneman/ui/Table";
 import type { LegalPage } from "../content/site.ts";
 import TextPage from "../layouts/TextPage.astro";
 import LegalBlocks from "./LegalBlocks.astro";
@@ -16,7 +17,7 @@ const { pageTitle, description, page } = Astro.props;
 ---
 
 <TextPage pageTitle={pageTitle} description={description} title={page.title} publish={page.publish}>
-  <table class="version">
+  <table class={tableLook({ plain: true, className: "version" })}>
     <tbody>
       <tr>
         <th scope="row">Version Number</th>
@@ -45,7 +46,7 @@ const { pageTitle, description, page } = Astro.props;
   {page.annex !== undefined && (
     <section>
       <h2>{page.annex.heading}</h2>
-      <table class="annex">
+      <table class={tableLook({ plain: true, className: "annex" })}>
         <thead>
           <tr>
             {page.annex.head.map((cell) => (

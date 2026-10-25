@@ -1,5 +1,5 @@
-// The aftercare policy the terms' guarantee and wear clauses point to: a draft for the owner to correct, which holds
-// production's build until it is approved (docs/open-points.md, item 189).
+// The aftercare policy the terms' guarantee and wear clauses point to: a draft, which holds production's build until
+// it is approved (docs/open-points.md, item 189).
 
 import type { LegalPage } from "./legal.ts";
 

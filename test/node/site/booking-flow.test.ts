@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { Booking, Listing } from "../../../site/src/islands/invite/outcomes.ts";
 import { flow, holdsConfirmation, OPENED, type FlowEvent } from "../../../site/src/islands/invite/flow.ts";
 
-const PERSON = { name: "Karan Bhatia", mobile: "98100 00002", consent: true };
+const PERSON = { name: "Karan Bhatia", mobile: "98100 00002", consent: true, terms: true };
 const BOOKING: Booking = {
   result: {
     state: "booked",

@@ -8,7 +8,8 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { auditStatementIfWritten, recordAudit } from "../../domain/platform/audit.ts";
 import { readPersonData } from "../../domain/privacy/data-export.ts";
-import { openGrievanceInWords } from "../../domain/ops/grievances.ts";
+import { concernReceivedMessage, openGrievanceInWords } from "../../domain/ops/grievances.ts";
+import { queueMessage } from "../../http/queue-message.ts";
 import { myDataPage } from "../../domain/privacy/my-data-page.ts";
 import { takeOne } from "../../domain/sign-in/rate-limit.ts";
 import { clientOf } from "../../http/client-session.ts";
@@ -149,7 +150,13 @@ export function registerClientData(app: App): void {
         { table: "grievances", id },
       ),
     ]);
-    if (raised?.results.length === 1) return c.json({ id, state: "open" as const }, 201);
+    if (raised?.results.length === 1) {
+      // Acknowledged on WhatsApp as it arrives, as the terms promise within 48 hours.
+      const told = concernReceivedMessage(db, { grievanceId: id, personId: session.subjectId, now });
+      await told.statement.run();
+      await queueMessage(c, told.id);
+      return c.json({ id, state: "open" as const }, 201);
+    }
     // The tap that recorded nothing answers with the grievance the other raised, so both name one concern.
     const other = await openGrievanceInWords(db, session.subjectId, text);
     return c.json({ id: other ?? id, state: "open" as const }, 201);
