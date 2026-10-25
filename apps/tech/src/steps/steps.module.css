@@ -94,18 +94,16 @@
   align-items: center;
 }
 
+/* The count between the steppers, a tap to type it: the shared button, then its box, at the stepper's square. */
 .number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: var(--tech-stepper);
+  min-width: var(--tech-stepper);
   height: var(--tech-stepper);
-  border-top: var(--hairline) solid var(--ink-line);
-  border-bottom: var(--hairline) solid var(--ink-line);
+  padding: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-22);
   font-variant-numeric: lining-nums;
-  color: var(--paper);
+  text-align: center;
 }
 
 .note {

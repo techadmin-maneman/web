@@ -116,12 +116,33 @@ test("ticks the whole checklist with one tap when everything was done, and shows
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  await expect(page.getByRole("img", { name: /^Step 2 of d+$/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Step 2 of \d+$/ })).toBeVisible();
   await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
   await page.getByRole("button", { name: techCopy.steps.next }).click();
   await expect
     .poll(() => writesTo(fake, "checklist").at(-1)?.body)
     .toEqual({ done: ["piece_removed", "scalp_cleaned", "piece_cleaned"] });
+});
+
+test("steps a measure by five and takes a typed count, landing back on the fives", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos", "checklist");
+  await page.goto(`/jobs/${JOB_ID}/consumables`);
+  await page.getByRole("button", { name: "5 ml more solvent" }).click();
+  await expect(page.getByRole("button", { name: "Type the solvent used" })).toHaveText("15");
+  await page.getByRole("button", { name: "Type the solvent used" }).click();
+  await page.getByRole("spinbutton", { name: "Type the solvent used" }).fill("32");
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "5 ml less solvent" }).click();
+  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await expect
+    .poll(() => writesTo(fake, "consumables").at(-1)?.body)
+    .toEqual({
+      items: [
+        { code: "tape_strips", quantity: 4 },
+        { code: "solvent", quantity: 30 },
+      ],
+    });
 });
 
 test("draws nothing in gold but the one primary action", async ({ page }) => {
@@ -216,7 +237,7 @@ test.describe("the consumables step", () => {
     await page.goto(`/jobs/${JOB_ID}/consumables`);
 
     await page.getByRole("button", { name: "One more tape strips" }).click();
-    for (let count = 0; count < 10; count += 1) await page.getByRole("button", { name: "One fewer solvent" }).click();
+    for (let count = 0; count < 2; count += 1) await page.getByRole("button", { name: "5 ml less solvent" }).click();
     await page.getByRole("button", { name: techCopy.steps.consumables.add }).click();
     await page.getByRole("button", { name: "Add Shampoo sachet" }).click();
     await page.getByRole("button", { name: techCopy.steps.next }).click();
@@ -416,7 +437,7 @@ test("the consumables step says what the kit holds, and when more is counted tha
   startedThrough(fake, "before_photos", "checklist");
   await page.goto(`/jobs/${JOB_ID}/consumables`);
   await expect(page.getByText(techCopy.steps.consumables.inKit(5, "strip", false))).toBeVisible();
-  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips") }).click();
-  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips") }).click();
+  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips", 1, "strip") }).click();
+  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips", 1, "strip") }).click();
   await expect(page.getByText(techCopy.steps.consumables.inKit(5, "strip", true))).toBeVisible();
 });

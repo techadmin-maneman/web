@@ -511,8 +511,11 @@ export const steps = {
     all: "Tick all: everything was done",
   },
   consumables: {
-    less: (name: string) => `One fewer ${name.toLowerCase()}`,
-    more: (name: string) => `One more ${name.toLowerCase()}`,
+    less: (name: string, step: number, unit: string) =>
+      step === 1 ? `One fewer ${name.toLowerCase()}` : `${amountOf(step, unit)} less ${name.toLowerCase()}`,
+    more: (name: string, step: number, unit: string) =>
+      step === 1 ? `One more ${name.toLowerCase()}` : `${amountOf(step, unit)} more ${name.toLowerCase()}`,
+    type: (name: string) => `Type the ${name.toLowerCase()} used`,
     count: (name: string, count: number) => `${name}: ${String(count)}`,
     // The board draws the name alone; what one is counted in, and what the visit's service expects.
     unit: (unit: string, expected: number) => (expected === 0 ? unit : `${amountOf(expected, unit)} expected`),
