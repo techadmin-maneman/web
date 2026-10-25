@@ -21,7 +21,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fieldDigits, formatMobileField, mobileDigits, typedDigits } from "../../../packages/web-kit/mobile.ts";
 import { distance, quantity } from "../../../packages/web-kit/figures.ts";
-import { rupees } from "../../../packages/web-kit/money.ts";
+import { roundRupees, rupees } from "../../../packages/web-kit/money.ts";
 import { WHATSAPP_NUMBER, whatsappChat, whatsappShare } from "../../../packages/web-kit/whatsapp.ts";
 
 describe("web-kit figures", () => {
@@ -132,6 +132,11 @@ describe("web-kit money", () => {
     [0, "Rs. 0"],
   ])("writes %i paise as the design does: %s", (paise, written) => {
     expect(rupees(paise)).toBe(written);
+  });
+
+  it("writes a value worked out to the nearest rupee, with no paise it cannot claim", () => {
+    expect(roundRupees(4296888)).toBe("Rs. 42,969");
+    expect(roundRupees(1100000)).toBe("Rs. 11,000");
   });
 
   it("is the one way any front end writes rupees", () => {

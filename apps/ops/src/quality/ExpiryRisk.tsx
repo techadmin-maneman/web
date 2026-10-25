@@ -6,7 +6,7 @@ import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { rupees } from "@maneman/web-kit/money";
+import { roundRupees } from "@maneman/web-kit/money";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
@@ -29,7 +29,7 @@ function Lots({ risk }: { risk: Risk }) {
   if (risk.lots.length === 0) return <Note>{copy.noRisk}</Note>;
   return (
     <>
-      <Note>{copy.riskTotal(rupees(risk.total_value))}</Note>
+      <Note>{copy.riskTotal(roundRupees(risk.total_value))}</Note>
       <ListTools rows={risk.lots} textOf={(lot) => `${lot.place} ${lot.name} ${lot.lot_code}`} label={copy.findLot}>
         {(shown) => (
           <Table controls>
@@ -50,7 +50,7 @@ function Lots({ risk }: { risk: Risk }) {
                   <td>{lot.lot_code}</td>
                   <td>{fullDate(lot.expires_on)}</td>
                   <td className={form.figure}>{quantity(lot.quantity)}</td>
-                  <td className={form.figure}>{rupees(lot.value)}</td>
+                  <td className={form.figure}>{roundRupees(lot.value)}</td>
                   <td>{todo(lot)}</td>
                 </tr>
               ))}

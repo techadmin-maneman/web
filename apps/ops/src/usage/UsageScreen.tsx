@@ -8,7 +8,7 @@ import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { quantity } from "@maneman/web-kit/figures";
-import { rupees } from "@maneman/web-kit/money";
+import { roundRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
@@ -72,8 +72,8 @@ function Technicians({ usage }: { usage: Usage }) {
                   {technician.flagged && <Note>{copy.flagged}</Note>}
                 </RowHead>
                 <td className={form.figure}>{technician.visits}</td>
-                <td className={form.figure}>{rupees(technician.expected_value)}</td>
-                <td className={form.figure}>{rupees(technician.used_value)}</td>
+                <td className={form.figure}>{roundRupees(technician.expected_value)}</td>
+                <td className={form.figure}>{roundRupees(technician.used_value)}</td>
                 <td className={form.figure}>{copy.over(technician.over_percent)}</td>
                 <td>
                   <Button
@@ -117,8 +117,8 @@ function Places({ usage }: { usage: Usage }) {
                   {place.place}
                   {place.flagged && <Note>{copy.flagged}</Note>}
                 </RowHead>
-                <td className={form.figure}>{rupees(place.left_value)}</td>
-                <td className={form.figure}>{rupees(place.lost_value)}</td>
+                <td className={form.figure}>{roundRupees(place.left_value)}</td>
+                <td className={form.figure}>{roundRupees(place.lost_value)}</td>
                 <td className={form.figure}>{copy.percent(place.shrinkage_percent)}</td>
                 <td className={form.figure}>{place.write_offs}</td>
                 <td className={form.figure}>{copy.percent(place.count_accuracy_percent)}</td>
