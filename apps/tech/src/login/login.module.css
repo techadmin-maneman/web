@@ -72,6 +72,15 @@
   margin: var(--sp-16) 0 0;
 }
 
+/* For a number we do not know: the way to ops, beneath the field. */
+.help {
+  margin-top: var(--sp-28);
+}
+
+.helpReach {
+  margin-top: var(--sp-12);
+}
+
 /* Gloved use: the one action sits at the bottom, in the same place on every screen. */
 .foot {
   margin-top: auto;

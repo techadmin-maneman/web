@@ -9,12 +9,13 @@ import { fakeTech } from "./fake-tech.ts";
 import { heldOnPhone, storeOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
-test("opens on the sign-in, as the Prototype draws it", async ({ page }) => {
+test("opens on the sign-in: the number first, the code once it is sent, and the way to ops", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Mane Man technician");
   await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   await expect(page.getByRole("textbox", { name: techCopy.signIn.mobileLabel })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: techCopy.signIn.codeLabel })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: techCopy.signIn.codeLabel })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: techCopy.ops.call })).toHaveAttribute("href", /^tel:+91/);
 });
 
 test("serves its policy: its own origin, the camera and geolocation to itself, and noindex", async ({ page }) => {

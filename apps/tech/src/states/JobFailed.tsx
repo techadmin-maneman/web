@@ -4,6 +4,7 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { IconButton } from "@maneman/ui/IconButton";
+import { ReachOps } from "../components/ReachOps.tsx";
 import { job as copy } from "../content.ts";
 import { go } from "../route.ts";
 import frame from "../components/frame.module.css";
@@ -32,6 +33,7 @@ export function JobFailed({
         ) : (
           <Failed message={copy.failed} retry={copy.retry} onRetry={onRetry} requestId={failed.requestId} />
         )}
+        <ReachOps className={styles.reach} />
       </div>
     </main>
   );

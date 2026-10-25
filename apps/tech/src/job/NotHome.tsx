@@ -17,6 +17,7 @@ import { go, stepPath } from "../route.ts";
 import { keepClosed, keptArrival } from "../store/jobs.ts";
 import { checkInRefusedAsEarly, events, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
+import { ReachOps } from "../components/ReachOps.tsx";
 import { receiptLine, type ReceiptLine } from "./receipt.ts";
 import frame from "../components/frame.module.css";
 import styles from "./job.module.css";
@@ -243,6 +244,7 @@ function CheckInFailed(props: { distance: number | null; noPosition: boolean; bu
       >
         {copy.failed.action}
       </Button>
+      <ReachOps className={styles.second} />
     </section>
   );
 }

@@ -3,3 +3,7 @@
 .body {
   padding: var(--sp-24) var(--sp-20);
 }
+
+.reach {
+  margin-top: var(--sp-28);
+}

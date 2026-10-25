@@ -40,6 +40,7 @@ export const signIn = {
   // installed iPhone app has its own cookie jar, so the first sign-in inside it
   // is a second one and looks like the account has gone (ADR 0053's update).
   installed: "Sign in here once, then use the home-screen app. Anything waiting in the browser still sends.",
+  notRegistered: "New, or your number changed? Ask ops to add it.",
 } as const;
 
 export const today = {
@@ -399,7 +400,7 @@ export const notHome = {
     away: (km: string) => `You are ${km} from the address.`,
     // The board draws a distance; an address with no coordinates has none (ADR 0036).
     unmeasured: "We couldn’t measure how far you are from the address.",
-    body: "Go to the door and tap again. Still refused? Ask ops to let you check in.",
+    body: "Go to the door and tap again. Still refused? Call ops.",
     action: "Try again",
   },
   waiting: {
