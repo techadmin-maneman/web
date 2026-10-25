@@ -2855,6 +2855,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/month": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The technician's visits in a month, and what they earned at their rates */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description YYYY-MM; this month when left out. */
+                    month?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The month */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianMonth"];
+                    };
+                };
+                /** @description invalid_request: month is YYYY-MM */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3637,6 +3712,21 @@ export interface components {
              * @default false
              */
             expired: boolean;
+        };
+        /** @description The visits closed in the month, by kind and city, at the rate in force. */
+        TechnicianMonth: {
+            /** @description India's month, as YYYY-MM. */
+            month: string;
+            lines: {
+                /** @enum {string} */
+                kind: "consultation" | "one_visit" | "first_fit" | "service" | "replacement" | "no_show";
+                city: string | null;
+                visits: number;
+                /** @description Paise a visit; null where none was in force. */
+                rate: number | null;
+                /** @description Paise in all; null where none was. */
+                amount: number | null;
+            }[];
         };
     };
     responses: never;

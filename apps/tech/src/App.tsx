@@ -8,6 +8,8 @@ import { Stopped, StorageFull } from "./components/Banners.tsx";
 import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { KitScreen } from "./kit/KitScreen.tsx";
+import { MonthScreen } from "./mine/MonthScreen.tsx";
+import { WeekScreen } from "./mine/WeekScreen.tsx";
 import { OutboxContext, useOutboxSubscription } from "./lib/useOutbox.ts";
 import { useReplayTriggers } from "./lib/useReplayTriggers.ts";
 import { useSessionLifecycle } from "./lib/useSessionLifecycle.ts";
@@ -34,6 +36,10 @@ function pageFor(route: Route) {
       return <WaitingScreen />;
     case "kit":
       return <KitScreen />;
+    case "week":
+      return <WeekScreen />;
+    case "month":
+      return <MonthScreen />;
     case "job":
       return <JobScreen id={route.id} />;
     case "done":

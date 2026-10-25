@@ -40,8 +40,10 @@ describe("the technician app’s content", () => {
     expect(DESIGN).toContain(badges.prepaid);
     // The fourth, a consultation and fit in one visit paid for once fitted, is one no board draws (ADR 0105).
     expect(DESIGN).not.toContain(badges.at_visit);
-    // "No money anywhere in the technician app": a Prepaid or Credit badge only.
-    expect(sources.filter((path) => readFileSync(path, "utf8").includes("@maneman/web-kit/money"))).toEqual([]);
+    // No money on a job: a Prepaid or Credit badge only. An amount shows only on the technician's own month, what
+    // they earned.
+    const amounts = sources.filter((path) => readFileSync(path, "utf8").includes("@maneman/web-kit/money"));
+    expect(amounts.map((path) => path.replaceAll("\\", "/"))).toEqual(["apps/tech/src/mine/MonthScreen.tsx"]);
   });
 
   // The label's field drew a barcode, though a label is typed, never scanned.

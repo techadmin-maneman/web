@@ -825,6 +825,41 @@ export const session = {
 } as const;
 
 // The kit (docs/decisions/0164-the-kit-screen.md). No board draws it; every line is ours.
+/** The technician's next days, a day at a time, as the jobs route gives later days: time, kind and area. */
+export const week = {
+  title: "Your week",
+  link: "Your week",
+  back: "Back to today",
+  failed: "Your week didn’t load.",
+  retry: "Try again",
+  none: "Nothing booked.",
+  /** "9:30 am · Service visit · Sector 65" */
+  job: (time: string, kind: string, area: string | null) =>
+    [time, kind, area].filter((part) => part !== null && part !== "").join(" · "),
+};
+
+/** The technician's own month: the visits they closed, by kind, and what each earned at their rates. */
+export const month = {
+  title: "Your month",
+  link: "Your month",
+  back: "Back to today",
+  failed: "Your month didn’t load.",
+  retry: "Try again",
+  none: "No visits closed yet this month.",
+  kinds: {
+    consultation: "Consultations",
+    one_visit: "Consultation and fit",
+    first_fit: "First fits",
+    service: "Service visits",
+    replacement: "Replacements",
+    no_show: "Not home",
+  },
+  /** "Service visits · 12" */
+  line: (kind: string, visits: number) => `${kind} · ${String(visits)}`,
+  noRate: "No rate set yet",
+  total: "So far",
+};
+
 export const kit = {
   title: "Your kit",
   link: "Your kit",

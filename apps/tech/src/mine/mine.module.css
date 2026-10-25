@@ -1,0 +1,74 @@
+/* The technician's week and month (./WeekScreen.tsx, ./MonthScreen.tsx), on the ink as the kit is. */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--ink-deep);
+}
+
+.back {
+  --icon-button-size: var(--tech-min);
+
+  margin-left: calc(-1 * var(--sp-12));
+  color: var(--paper);
+}
+
+.title {
+  margin: 0;
+  outline: none;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-regular);
+  color: var(--paper);
+}
+
+.section {
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--sp-12);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-regular);
+  color: var(--ink-muted);
+}
+
+.list {
+  display: grid;
+  gap: var(--sp-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.quiet {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
+}
+
+.figures {
+  display: grid;
+  gap: var(--sp-12);
+  margin: 0;
+}
+
+.figure {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  font-size: var(--fs-17);
+  color: var(--paper);
+}
+
+.figure dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}

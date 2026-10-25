@@ -186,6 +186,8 @@ export const api = {
 
   /** The kit: what it holds, what is coming to it, and its pieces to hand back (docs/decisions/0164-the-kit-screen.md). */
   kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),
+  /** This month's visits closed, by kind and city, at the technician's own rates. */
+  month: () => client.get("/api/tech/month", { patience: PATIENCE_MS.read }),
   /**
    * A top-up received in hand: all of it, or of a hair system the pieces scanned, the rest still to come or missing.
    * Asked straight, with signal.

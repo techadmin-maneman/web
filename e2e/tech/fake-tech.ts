@@ -111,6 +111,8 @@ export interface Fake {
   /** The kit screen: what it holds, what is coming, and its pieces to hand back; and what it is after a kit write. */
   kit: Omit<TechReply<"/api/tech/kit">, "today">;
   kitAfter: Omit<TechReply<"/api/tech/kit">, "today"> | null;
+  /** The technician's month, as GET /api/tech/month answers. */
+  month: TechReply<"/api/tech/month">;
   /** The client's hair profile on the card, or none recorded. */
   profile: HairProfile | null;
   /** The checklist on the card: three items unless a test gives a longer one. */
@@ -214,6 +216,13 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     reminderDelivered: undefined,
     tomorrow: false,
     writes: [],
+    month: {
+      month: "2026-10",
+      lines: [
+        { kind: "service", city: "Gurgaon", visits: 12, rate: 45_000, amount: 540_000 },
+        { kind: "first_fit", city: "Gurgaon", visits: 2, rate: null, amount: null },
+      ],
+    },
     photos: [],
     doorPhotos: [],
     thumbnails: [],
@@ -389,6 +398,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, ME);
     }
     if (path === "/api/tech/kit") return reply(route, 200, { ...fake.kit, today });
+    if (path === "/api/tech/month") return reply(route, 200, fake.month);
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";
       // Outside the contract on purpose: what a broken release might send, which the app must survive.

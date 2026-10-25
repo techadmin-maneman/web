@@ -3840,6 +3840,92 @@ Request body:
 }
 ```
 
+### GET /api/tech/month
+
+The technician's visits in a month, and what they earned at their rates
+
+**200**: The month
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianMonth"
+}
+```
+
+**400**: invalid_request: month is YYYY-MM
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -7554,5 +7640,87 @@ Request body:
     }
   },
   "additionalProperties": false
+}
+```
+
+### TechnicianMonth
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "description": "India's month, as YYYY-MM."
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "one_visit",
+              "first_fit",
+              "service",
+              "replacement",
+              "no_show"
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visits": {
+            "type": "integer"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paise a visit; null where none was in force."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paise in all; null where none was."
+          }
+        },
+        "required": [
+          "kind",
+          "city",
+          "visits",
+          "rate",
+          "amount"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "month",
+    "lines"
+  ],
+  "additionalProperties": false,
+  "description": "The visits closed in the month, by kind and city, at the rate in force."
 }
 ```

@@ -213,10 +213,12 @@ test("scrolls the whole day on a screen shorter than it, down to tomorrow’s la
 
   const last = page.getByRole("listitem").last();
   await expect(last).toContainText("Sector 50");
+  // From the top of the day, whatever opening tomorrow scrolled.
+  await page.mouse.move(180, 240);
+  await page.mouse.wheel(0, -3000);
   await expect(last).not.toBeInViewport({ ratio: 1 });
 
   // A finger's scroll, not a script's: a column that hid what overflows it would leave this job out of reach.
-  await page.mouse.move(180, 240);
   await page.mouse.wheel(0, 1000);
   await expect(last).toBeInViewport({ ratio: 1 });
 });
