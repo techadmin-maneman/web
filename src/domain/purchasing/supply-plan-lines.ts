@@ -57,10 +57,13 @@ const DECIDED_SHOWN_DAYS = 7;
 export async function planLines(db: D1Database, now: Date): Promise<PlanLine[]> {
   const { results } = await db
     .prepare(
-      `SELECT l.id, l.kind, l.consumable_code, c.name, c.unit, l.city, f.name AS from_name, t.name AS to_name, s.name AS supplier,
+      `SELECT l.id, l.kind, l.consumable_code, c.name, c.unit, l.city, COALESCE(f.name, ft.name) AS from_name,
+         COALESCE(t.name, tt.name) AS to_name, s.name AS supplier,
          l.proposed, l.quantity, l.usable, l.need, l.safety, l.state, l.reject_reason, o.number AS po_number
        FROM plan_lines l JOIN consumables c ON c.code = l.consumable_code
        LEFT JOIN stock_places f ON f.id = l.from_place LEFT JOIN stock_places t ON t.id = l.to_place
+       -- A kit is named by its technician (./stock-places.ts in inventory).
+       LEFT JOIN technicians ft ON ft.id = f.technician_id LEFT JOIN technicians tt ON tt.id = t.technician_id
        LEFT JOIN suppliers s ON s.id = l.supplier_id LEFT JOIN purchase_orders o ON o.id = l.po_id
        WHERE l.state = 'proposed' OR l.decided_at >= ?1
        ORDER BY l.kind DESC, c.name COLLATE NOCASE, l.city`,
