@@ -20,8 +20,9 @@
     cursor: pointer;
   }
 
+  /* Faded to a control's edge, so a move that can't be made reads at a glance beside one that can. */
   .iconButton:disabled {
-    color: var(--ui-text-quiet);
+    color: var(--ui-line-control);
     cursor: default;
   }
 
