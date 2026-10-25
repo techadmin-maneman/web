@@ -117,7 +117,7 @@ export const areas = {
     upload: {
       title: "Upload",
       label: "Edited CSV",
-      hint: "Columns: pincode, served, launch_on.",
+      hint: "The file from Download CSV, with your changes.",
       /** What the file would change, pincode by pincode, before any of it is taken. */
       read: (changed: number) => (changed === 1 ? "1 pincode changes:" : `${String(changed)} pincodes change:`),
       columns: ["Pincode", "Area", "Now", "In the file"],
@@ -131,7 +131,7 @@ export const areas = {
       cancel: "Cancel",
       badDate: (pincode: string) => `${pincode}: write the date as 2026-10-01.`,
       badServed: (pincode: string) => `${pincode}: served must be yes or no.`,
-      badHeader: "Needs pincode, served and launch_on columns.",
+      badHeader: "Not the file from Download CSV. Download it again and make your changes there.",
     },
     download: "Download CSV",
     downloadName: "service-area.csv",

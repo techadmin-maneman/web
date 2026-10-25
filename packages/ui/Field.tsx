@@ -246,8 +246,12 @@ export function Label({
 }
 
 /** More than a line: a reason, an answer to a client. Its height is the caller's; it does not stretch. */
-export function TextArea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...rest} className={classes(styles.box, styles.area, className)} />;
+export function TextArea({
+  className,
+  ref,
+  ...rest
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { readonly ref?: Ref<HTMLTextAreaElement> }) {
+  return <textarea {...rest} ref={ref} className={classes(styles.box, styles.area, className)} />;
 }
 
 /**

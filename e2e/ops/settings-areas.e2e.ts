@@ -215,7 +215,7 @@ test.describe("the service area", () => {
   test("refuses a file that leaves out one of its three columns", async ({ page }) => {
     await open(page, "/settings/areas");
     await upload(page, "pincode,launch_on\n110017,2026-09-01\n");
-    await expect(page.getByRole("alert")).toContainText("Needs pincode, served and launch_on columns");
+    await expect(page.getByRole("alert")).toContainText("Not the file from Download CSV");
     await expect(page.getByRole("button", { name: opsCopy.areas.served.upload.apply })).toHaveCount(0);
   });
 });
