@@ -17,26 +17,8 @@
   font-weight: var(--weight-medium);
 }
 
-.number {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.line {
-  --local-care-line: 360px; /* the widest the last message runs before it is cut short */
-  max-width: var(--local-care-line);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .figure {
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  text-align: right;
-}
-
-.actions {
   white-space: nowrap;
   text-align: right;
 }

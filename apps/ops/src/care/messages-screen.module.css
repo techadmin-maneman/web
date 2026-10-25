@@ -20,3 +20,97 @@
 .overdue {
   color: var(--status-warning);
 }
+
+/* The list of chats beside the chat open; on a narrow screen the chat falls beneath the list. */
+.inbox {
+  --local-chat-list: 16rem; /* the narrowest the list of chats runs beside a chat */
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-16);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .inbox {
+    grid-template-columns: minmax(var(--local-chat-list), 2fr) minmax(0, 3fr);
+  }
+
+  .list {
+    position: sticky;
+    top: 0;
+    max-height: calc(100vh - var(--sp-64) * 2);
+    overflow-y: auto;
+  }
+}
+
+.chats {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A chat in the list: who and when on its first line, then what they said, then the number, the Care person and when
+   our reply is due. */
+.chat,
+.chatOpen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  width: 100%;
+  padding: var(--sp-12) var(--sp-16);
+  border-top: var(--hairline) solid var(--ui-line);
+  border-left: var(--rule-strong) solid transparent;
+  text-align: start;
+}
+
+.chatOpen {
+  border-left-color: var(--ui-strong);
+  background: var(--ui-raised);
+}
+
+@media (hover: hover) {
+  .chat:hover {
+    background: var(--ui-raised);
+  }
+}
+
+.chatHead {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-8);
+}
+
+.chatWho {
+  font-size: var(--fs-15);
+  color: var(--ui-text);
+}
+
+.chatAt,
+.chatMeta {
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+}
+
+.chatDetails {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.chatLine {
+  overflow: hidden;
+  font-size: var(--fs-14);
+  color: var(--ui-text);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pane {
+  min-width: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
+}

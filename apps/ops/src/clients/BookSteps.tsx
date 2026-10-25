@@ -8,6 +8,7 @@ import { type VisitAvailability } from "../api.ts";
 import styles from "../components/visit-dialog.module.css";
 import { Choose } from "./book-choices.tsx";
 import { CHOICES, copy, kindOf, STRIP_DAYS, type Choice, type Picked, type slotOf } from "./book-slot.ts";
+import { BookDay } from "./BookDay.tsx";
 
 /** The fortnight before the one shown, and the one after. */
 export function StripButtons(props: {
@@ -120,6 +121,7 @@ export function WhenAndWho({
               onPick({ start: next });
             }}
           />
+          <BookDay day={day} picked={{ start: start?.starts_at, technician }} onPick={onPick} />
           <Choose
             label={copy.technician}
             value={technician}

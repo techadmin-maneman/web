@@ -105,3 +105,28 @@
   margin: 0;
   font-size: var(--fs-14);
 }
+
+/* The board's day along the hours (./DayBoard.tsx): a technician's name over where their phone last put them, and a
+   visit's client over its start and kind. */
+.dayHead,
+.dayVisit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.dayVisitWhat {
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+  white-space: nowrap;
+}
+
+/* Day or Week over the board, and the day the Day view shows beside it. */
+.viewChoice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8) var(--sp-24);
+  padding: var(--sp-8) var(--sp-32);
+}

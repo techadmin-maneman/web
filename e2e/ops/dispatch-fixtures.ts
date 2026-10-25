@@ -23,7 +23,7 @@ export const ROHIT_JOB = BOARD.technicians[0]?.days[0]?.blocks[0];
 
 export async function open(page: Page, writes: Answers = {}): Promise<void> {
   await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM), ...writes });
-  await page.goto("/dispatch");
+  await page.goto("/dispatch?view=week");
   await expect(page.getByRole("heading", { level: 1, name: dispatch.title })).toBeVisible();
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeVisible();
 }

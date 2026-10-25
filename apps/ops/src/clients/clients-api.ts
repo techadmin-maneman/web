@@ -94,6 +94,8 @@ export const clientsApi = {
     client.post("/api/clients/{id}/notes", { path: { id }, body: { body, replaces } }),
   takeOffStaffNote: (id: string, note: string) =>
     client.post("/api/clients/{id}/notes/{note_id}/take-off", { path: { id, note_id: note } }),
+  /** The board from a day on, for the visits already on each technician's day a booking is chosen on. */
+  board: (from: string) => client.get("/api/dispatch", { query: { from } }),
   /** What waits on ops for one client alone, for the head of their page. */
   clientTasks: (person: string) => client.get("/api/tasks", { query: { person } }),
   /**

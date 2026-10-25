@@ -1,0 +1,79 @@
+/* A day along the hours (./DayTimeline.tsx): the names a column at the start, then a step of the day a column each,
+   wide enough for a start's time; a visit shaded over the steps it holds, by how it stands. */
+
+@layer base, ui;
+
+@layer ui {
+  .timeline {
+    min-width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-13);
+  }
+
+  .corner,
+  .head {
+    position: sticky;
+    left: 0;
+    z-index: var(--z-sticky);
+    min-width: calc(var(--sp-64) * 2.5);
+    padding: var(--sp-8) var(--sp-12);
+    background: var(--ui-raised);
+    text-align: start;
+    font-weight: var(--weight-regular);
+  }
+
+  .head {
+    border-top: var(--hairline) solid var(--ui-line);
+    font-size: var(--fs-14);
+  }
+
+  .step {
+    min-width: var(--sp-48);
+    padding: var(--sp-4) 0;
+    color: var(--ui-text-muted);
+    font-weight: var(--weight-regular);
+    text-align: start;
+    white-space: nowrap;
+  }
+
+  .cell {
+    height: var(--sp-48);
+    padding: var(--sp-2);
+    border-top: var(--hairline) solid var(--ui-line);
+    border-left: var(--hairline) dashed var(--ui-line);
+    vertical-align: middle;
+  }
+
+  .busy,
+  .done,
+  .underway,
+  .late {
+    padding: var(--sp-4) var(--sp-8);
+    border-left: var(--rule-strong) solid var(--ui-strong);
+    background: var(--ui-shade);
+  }
+
+  .done {
+    border-left-color: var(--status-done);
+    color: var(--ui-text-muted);
+  }
+
+  .underway {
+    border-left-color: var(--status-attention);
+  }
+
+  .late {
+    border-left-color: var(--status-warning);
+  }
+
+  .free,
+  .chosen {
+    text-align: center;
+  }
+
+  .chosen {
+    outline: var(--rule-strong) solid var(--ui-strong);
+    outline-offset: calc(var(--rule-strong) * -1);
+    background: var(--ui-raised);
+  }
+}

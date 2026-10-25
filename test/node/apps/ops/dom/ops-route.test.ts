@@ -151,9 +151,12 @@ describe("the ops console’s routes", () => {
     const asked = { from: "2027-10-04", city: "Gurgaon", find: "Rohit", visit: VISIT };
     const path = dispatchPath(asked);
     expect(path).toBe(`/dispatch?from=2027-10-04&city=Gurgaon&find=Rohit&visit=${VISIT}`);
-    expect(dispatchAsked(path.slice(path.indexOf("?")))).toEqual(asked);
-    expect(dispatchAsked("?from=next-week")).toEqual(nothing);
-    expect(dispatchAsked("?visit=not-a-visit&city=%20")).toEqual(nothing);
+    expect(dispatchAsked(path.slice(path.indexOf("?")))).toEqual({ ...asked, view: null });
+    expect(dispatchAsked("?from=next-week")).toEqual({ ...nothing, view: null });
+    expect(dispatchAsked("?visit=not-a-visit&city=%20")).toEqual({ ...nothing, view: null });
+    // The day or the week, where the address names one; anything else names neither.
+    expect(dispatchAsked("?view=week").view).toBe("week");
+    expect(dispatchAsked("?view=month").view).toBeNull();
   });
 
   it("opens the pages that moved at their old addresses, and moves the address to the new one", () => {

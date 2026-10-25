@@ -131,7 +131,9 @@ function StartChoice(props: {
 
 export function MovePicker({ job, to, starts, blackout, sending, clearingCheckIn, onSend, onCancel }: Props) {
   const [reason, setReason] = useState<MoveReason | null>(null);
-  const [landsAt, setLandsAt] = useState<string | null>(starts[0] ?? null);
+  // A start the Day view placed the job at stands, while the server still offers it.
+  const placed = to.start !== undefined && starts.includes(to.start) ? to.start : undefined;
+  const [landsAt, setLandsAt] = useState<string | null>(placed ?? starts[0] ?? null);
   const [blackoutReason, setBlackoutReason] = useState("");
   const copy = dispatch.move;
 

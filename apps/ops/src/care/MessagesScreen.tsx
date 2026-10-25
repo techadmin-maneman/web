@@ -1,16 +1,16 @@
 // Customer Care · Messages (docs/decisions/0129-the-care-inbox.md): the chats on our WhatsApp number, a view at a
-// time, the longest-waiting first to see, and each chat opened beneath its row with our automatic messages in it.
+// time, the longest-waiting first, as a list beside the chat open, with our automatic messages and the client in it.
+// The list and the chat read themselves again while in view, and a chat new to the list is said as it comes.
 
-import { RowButton } from "@maneman/ui/Button";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table, TableScroll } from "@maneman/ui/Table";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { Tile } from "@maneman/ui/Tile";
+import { Toast } from "@maneman/ui/Toast";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { careApi, type Conversation, type ConversationView } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -22,7 +22,6 @@ import form from "../components/forms.module.css";
 import shared from "./care.module.css";
 import styles from "./messages-screen.module.css";
 import { phoneWords } from "../lib/phone.ts";
-import { FormDrawer } from "../components/FormDrawer.tsx";
 import { SearchInput } from "@maneman/ui/SearchInput";
 
 const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed", "all"];
@@ -115,60 +114,57 @@ function ReplyBy({ at }: { at: string | null }) {
   );
 }
 
-function ConversationRows(props: {
-  conversation: Conversation;
-  open: boolean;
-  onOpen: (id: string | null) => void;
-  onChanged: () => void;
-}) {
+/** One chat in the list: who, what they last said, when our reply is due and the day it last moved; it opens beside. */
+function ConversationCard(props: { conversation: Conversation; open: boolean; onOpen: (id: string) => void }) {
   const { conversation } = props;
   const who = whoOf(conversation);
+  const detailsId = `chat-${conversation.id}`;
+  const carePerson = carePersonOf(conversation);
   return (
-    <>
-      <tr>
-        <th scope="row" className={shared.who}>
-          {conversation.technician === null
-            ? (conversation.person?.name ?? copy.unknown)
-            : copy.technicianName(conversation.technician.name)}
-        </th>
-        <td className={shared.number}>{phoneWords(conversation.mobile)}</td>
-        <td>{carePersonOf(conversation)}</td>
-        <td className={shared.line}>{conversation.last_line ?? copy.noLine}</td>
-        <td className={shared.figure}>
-          <ReplyBy at={conversation.reply_by} />
-        </td>
-        <td className={shared.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
-        <td className={shared.actions}>
-          <RowButton
-            beside
-            aria-label={copy.openLabel(who)}
-            aria-expanded={props.open}
-            onClick={() => {
-              props.onOpen(props.open ? null : conversation.id);
-            }}
-          >
-            {copy.open}
-          </RowButton>
-        </td>
-      </tr>
-      {props.open && (
-        <FormDrawer
-          title={conversation.person?.name ?? phoneWords(conversation.mobile)}
-          onClose={() => {
-            props.onOpen(null);
-          }}
-        >
-          <Thread
-            conversation={conversation}
-            onClose={() => {
-              props.onOpen(null);
-            }}
-            onChanged={props.onChanged}
-          />
-        </FormDrawer>
-      )}
-    </>
+    <li>
+      <Tile
+        className={props.open ? styles.chatOpen : styles.chat}
+        aria-label={copy.openLabel(who)}
+        aria-describedby={detailsId}
+        aria-current={props.open ? "true" : undefined}
+        onClick={() => {
+          props.onOpen(conversation.id);
+        }}
+      >
+        <span className={styles.chatHead}>
+          <span className={styles.chatWho}>
+            {conversation.technician === null
+              ? (conversation.person?.name ?? copy.unknown)
+              : copy.technicianName(conversation.technician.name)}
+          </span>
+          <span className={styles.chatAt}>{shortDate(indiaDate(conversation.last_message_at))}</span>
+        </span>
+        <span id={detailsId} className={styles.chatDetails}>
+          <span className={styles.chatLine}>{conversation.last_line ?? copy.noLine}</span>
+          <span className={styles.chatMeta}>
+            {[phoneWords(conversation.mobile), carePerson].filter((part) => part !== "").join(" · ")}
+          </span>
+          <span className={styles.chatMeta}>
+            <ReplyBy at={conversation.reply_by} />
+          </span>
+        </span>
+      </Tile>
+    </li>
   );
+}
+
+/** Says a chat the list had not shown before has come in, once the list has been read at least once. */
+function useNewChats(conversations: readonly Conversation[] | null): string | null {
+  const seen = useRef<ReadonlySet<string> | null>(null);
+  const [said, setSaid] = useState<string | null>(null);
+  useEffect(() => {
+    if (conversations === null) return;
+    const before = seen.current;
+    seen.current = new Set(conversations.map((each) => each.id));
+    const arrived = before === null ? undefined : conversations.find((each) => !before.has(each.id));
+    if (arrived !== undefined) setSaid(copy.newChat(whoOf(arrived)));
+  }, [conversations]);
+  return said;
 }
 
 interface Older {
@@ -189,6 +185,8 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
   const [opened, setOpened] = useState<string | null>(null);
   const [older, setOlder] = useState<Older | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const pane = useRef<HTMLElement>(null);
+  const arrived = useNewChats(loaded.state === "loaded" ? loaded.value.conversations : null);
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const conversations = shownOf(loaded.value.conversations, older);
@@ -204,61 +202,52 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
       next: answer.body.next_cursor,
     });
   };
+  const open = conversations.find((each) => each.id === opened) ?? null;
   return (
-    <>
-      <ConversationTable conversations={conversations} opened={opened} onOpen={setOpened} onChanged={refresh} />
-      {next !== null && (
-        <div className={styles.more}>
-          <Note>{copy.latest(conversations.length)}</Note>
-          <Button variant="outline" size="small" busy={loadingOlder} onClick={() => void showOlder(next)}>
-            {loadingOlder ? copy.loadingMore : copy.more}
-          </Button>
-        </div>
-      )}
-    </>
-  );
-}
-
-function ConversationTable(props: {
-  conversations: readonly Conversation[];
-  opened: string | null;
-  onOpen: (id: string | null) => void;
-  onChanged: () => void;
-}) {
-  const columns = copy.columns;
-  return (
-    <TableScroll labelledBy="messages">
-      <Table controls className={shared.table}>
-        <thead>
-          <tr>
-            <th scope="col">{columns.client}</th>
-            <th scope="col">{columns.number}</th>
-            <th scope="col">{columns.carePerson}</th>
-            <th scope="col">{columns.said}</th>
-            <th scope="col" className={shared.figure}>
-              {columns.replyBy}
-            </th>
-            <th scope="col" className={shared.figure}>
-              {columns.at}
-            </th>
-            <th scope="col">
-              <VisuallyHidden>{columns.open}</VisuallyHidden>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.conversations.map((conversation) => (
-            <ConversationRows
+    <div className={styles.inbox}>
+      <div className={styles.list}>
+        <ul className={styles.chats} aria-label={copy.chats}>
+          {conversations.map((conversation) => (
+            <ConversationCard
               key={conversation.id}
               conversation={conversation}
-              open={props.opened === conversation.id}
-              onOpen={props.onOpen}
-              onChanged={props.onChanged}
+              open={conversation.id === opened}
+              onOpen={(id) => {
+                setOpened(id);
+                pane.current?.scrollIntoView({ block: "nearest" });
+              }}
             />
           ))}
-        </tbody>
-      </Table>
-    </TableScroll>
+        </ul>
+        {next !== null && (
+          <div className={styles.more}>
+            <Note>{copy.latest(conversations.length)}</Note>
+            <Button variant="outline" size="small" busy={loadingOlder} onClick={() => void showOlder(next)}>
+              {loadingOlder ? copy.loadingMore : copy.more}
+            </Button>
+          </div>
+        )}
+      </div>
+      <section
+        className={styles.pane}
+        ref={pane}
+        aria-label={open === null ? copy.chats : copy.thread.title(whoOf(open))}
+      >
+        {open === null ? (
+          <Note>{copy.choose}</Note>
+        ) : (
+          <Thread
+            key={open.id}
+            conversation={open}
+            onClose={() => {
+              setOpened(null);
+            }}
+            onChanged={refresh}
+          />
+        )}
+      </section>
+      {arrived !== null && <Toast key={arrived}>{arrived}</Toast>}
+    </div>
   );
 }
 
