@@ -108,10 +108,11 @@ function useKeptFirst<T>(
   return [shown, retry];
 }
 
-export function useDay(date: string): readonly [KeptLoad<readonly JobSummary[]>, () => void] {
+/** A day's jobs; `watch` reads them again when it changes, the last answer standing while it does. */
+export function useDay(date: string, watch: unknown = null): readonly [KeptLoad<readonly JobSummary[]>, () => void] {
   const load = useCallback(() => loadDay(date), [date]);
   const readKept = useCallback(() => keptDay(date).catch(() => null), [date]);
-  return useKeptFirst(readKept, load, null);
+  return useKeptFirst(readKept, load, watch);
 }
 
 /**

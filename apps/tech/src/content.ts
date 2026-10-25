@@ -44,7 +44,9 @@ export const signIn = {
 
 export const today = {
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
-  first: (time: string, sector: string) => `First at ${time} · ${sector}`,
+  /** The next job still to do, by its start and area. */
+  next: (time: string, sector: string) => `Next at ${time} · ${sector}`,
+  allDone: "All done for today.",
   tomorrow: (count: number) => `Tomorrow · ${String(count)} ${count === 1 ? "job" : "jobs"}`,
   /** The drive to the day's next job, by our estimate. */
   drive: (minutes: number) => `${String(minutes)} min to the next job`,
@@ -55,21 +57,27 @@ export const today = {
   signOut: "Sign out",
   empty: {
     label: "No jobs",
-    title: "Nothing booked for today",
+    title: "No jobs today",
     tomorrow: (count: number, time: string) =>
       `Tomorrow you have ${String(count)} ${count === 1 ? "job" : "jobs"}, first at ${time}.`,
     // The board draws the line with a job tomorrow only.
     none: "Nothing tomorrow either.",
   },
   offline: {
-    title: "No signal · working offline",
-    body: "Today’s jobs and cards are on the phone.",
+    title: "No signal",
+    body: "Your jobs are on the phone.",
     /** On a job's step: what the technician does is kept, and goes once the signal is back. */
-    step: "This job’s steps and photographs are kept on the phone and send when the signal is back.",
+    step: "Saved on the phone. Sends when you’re back online.",
   },
   // The board draws no failure for the day's list.
   failed: "The day’s jobs didn’t load.",
   retry: "Try again",
+} as const;
+
+/** The way to ops from anywhere the app says to ask them (./components/ReachOps.tsx). */
+export const ops = {
+  call: "Call ops",
+  whatsApp: "WhatsApp ops",
 } as const;
 
 /** "1 photo set", "3 actions": a count and the word for it. */
@@ -283,17 +291,17 @@ function opensAt(unlocksAt: string, now: Date = apiDate()): string {
   return `Open since ${timeAndDay(unlocksAt, now)}. Go back and open the job again.`;
 }
 
-/** A length as the board writes it, the visit's booked length and the time a job took alike: "45 m", "3 h", "1 h 30 m". */
+/** A length as the board writes it, the visit's booked length and the time a job took alike: "45 min", "3 h", "1 h 30 min". */
 function lengthOf(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  if (hours === 0) return minutes === 0 ? "Under 1 m" : `${String(minutes)} m`;
-  return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} m`;
+  if (hours === 0) return minutes === 0 ? "Under 1 min" : `${String(minutes)} min`;
+  return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} min`;
 }
 
 export const job = {
   back: "Back",
-  /** "9:30 am · service · 1 h 30 m", and "Tomorrow · …" for a job on another day. */
+  /** "9:30 am · service · 1 h 30 min", and "Tomorrow · …" for a job on another day. */
   when: (parts: readonly string[]) => parts.join(" · "),
   tomorrow: "Tomorrow",
   // The board writes "1 slot"; the visit's length says more.

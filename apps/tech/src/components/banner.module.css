@@ -4,28 +4,24 @@
  */
 
 .offline {
-  flex-shrink: 0;
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.offlineTitle {
   display: flex;
-  gap: var(--sp-12);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: var(--sp-4) var(--sp-12);
   align-items: center;
   margin: 0;
-  padding: var(--sp-16) var(--sp-20);
+  padding: var(--sp-12) var(--sp-20);
   background: var(--paper);
-  font-size: var(--fs-17);
-  font-weight: var(--weight-medium);
   color: var(--ink-deep);
 }
 
+.offlineTitle {
+  font-size: var(--fs-17);
+  font-weight: var(--weight-medium);
+}
+
 .offlineBody {
-  margin: 0;
-  padding: var(--sp-20);
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
+  font-size: var(--fs-15);
 }
 
 /* A failure, as the evidence chain draws one: the error's rule, words in paper. */
