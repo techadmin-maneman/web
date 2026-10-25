@@ -3,11 +3,12 @@
 // time with how right it was (docs/decisions/0183-forecast-accuracy.md), and the events calendar
 // (docs/decisions/0182-the-events-calendar.md).
 
-import type { Page } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { supplyPlan as copy } from "../../apps/ops/src/content/supply-plan.ts";
+import { review } from "../../apps/ops/src/content/common.ts";
 
 const LOAN = {
   id: "pl-1",
@@ -119,6 +120,30 @@ test("lists each transfer and order with why, and approves one at a changed quan
   expect((await request).postDataJSON()).toEqual({ quantity: 4 });
   await expect(row).toContainText(copy.states.approved);
   expect(await axeViolations(page)).toEqual([]);
+});
+
+// 64 near-identical rows, each approved by itself: a place's lines now sit together, approved at once when asked.
+test("puts the lines for one place together, and approves them all at the quantities proposed once asked", async ({
+  page,
+}) => {
+  const TAPE = { ...LOAN, id: "pl-3", consumable_code: "tape_strips", name: "Tape strips", proposed: 12 };
+  const approving: string[] = [];
+  await open(page, {
+    "GET /api/supply-plan": json({ lines: [LOAN, TAPE, ORDER] }),
+    "POST /api/supply-plan/lines/{id}/approve": (route: Route) => {
+      approving.push(new URL(route.request().url()).pathname);
+      return json({ lines: [LOAN, TAPE, ORDER].map((line) => ({ ...line, state: "approved" as const })) })(route);
+    },
+  });
+  const transfers = page.getByRole("region", { name: copy.transfers });
+  await expect(transfers.getByRole("columnheader", { name: copy.group.title("Gurgaon stockroom", 2) })).toBeVisible();
+  await transfers.getByRole("button", { name: copy.group.approveAll(2) }).click();
+  const check = transfers.getByRole("group", { name: copy.group.check(2, "Gurgaon stockroom") });
+  await expect(check).toBeFocused();
+  expect(approving).toEqual([]);
+  await check.getByRole("button", { name: review.send }).click();
+  await expect(page.getByRole("status")).toHaveText(copy.group.approved(2));
+  expect(approving).toEqual(["/api/supply-plan/lines/pl-1/approve", "/api/supply-plan/lines/pl-3/approve"]);
 });
 
 test("says a forecast every period of which is over is out of date", async ({ page }) => {

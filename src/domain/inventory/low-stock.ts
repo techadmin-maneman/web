@@ -44,8 +44,6 @@ const PREFIX = "low_stock:";
 const CENTRAL = "central";
 const KIT = "kit:";
 const STORE = "store:";
-/** A kit short for tomorrow or the week (./kit-check.ts): "kit_short:<technician>:<day>". */
-const KIT_SHORT = "kit_short:";
 
 interface Where {
   readonly kind: string;
@@ -79,33 +77,6 @@ async function openAt(db: D1Database, key: string): Promise<string[]> {
     .bind(key, `${key}:`, `${key};`)
     .all<{ key: string }>();
   return results.map((row) => row.key);
-}
-
-/**
- * The open alerts as the console shows them: a kit low or short, which the chat is told of by its technician's ID,
- * named by them. Every other alert's message is as it was sent.
- */
-export async function namedForTheConsole<A extends { readonly key: string; readonly message: string }>(
-  db: D1Database,
-  alerts: readonly A[],
-): Promise<A[]> {
-  const kitOf = (alert: A) => {
-    if (alert.key.startsWith(`${PREFIX}${KIT}`)) return ofKey(alert.key).place;
-    return alert.key.startsWith(KIT_SHORT) ? (alert.key.slice(KIT_SHORT.length).split(":")[0] ?? null) : null;
-  };
-  const kits = alerts.flatMap((alert) => kitOf(alert) ?? []);
-  if (kits.length === 0) return [...alerts];
-  const { results } = await db
-    .prepare("SELECT id, name FROM technicians WHERE id IN (SELECT value FROM json_each(?1))")
-    .bind(JSON.stringify(kits))
-    .all<{ id: string; name: string }>();
-  const names = new Map(results.map((row) => [row.id, row.name]));
-  return alerts.map((alert) => {
-    const kit = kitOf(alert);
-    const name = kit === null ? undefined : names.get(kit);
-    if (kit === null || name === undefined) return alert;
-    return { ...alert, message: alert.message.replace(`technician ${kit}'s kit`, `${name}'s kit`) };
-  });
 }
 
 /**

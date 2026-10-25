@@ -9,6 +9,15 @@ import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts
 // it is switched off or deleted (docs/decisions/0212-editing-in-place.md).
 test.describe("the discount codes", () => {
   const copy = settingsCopy.discountCodes;
+
+  // Four ways to search: codes took "Code starts with" and a Find; they are now found as typed.
+  test("finds codes by how they begin as it is typed, with no Find to press", async ({ page }) => {
+    await open(page, "/settings/discount-codes");
+    const asked = page.waitForRequest((request) => request.url().includes("/api/discount-codes?code=DIW"));
+    await page.getByRole("search", { name: copy.find }).getByLabel(copy.find).fill("DIW");
+    await asked;
+    await expect(page.getByRole("button", { name: copy.findButton, exact: true })).toHaveCount(0);
+  });
   const made = (codes: string[]) => json({ codes }, 201);
   const row = (page: Page, code: string) =>
     page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open(code), exact: true }) });

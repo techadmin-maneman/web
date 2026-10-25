@@ -4,6 +4,7 @@
 import type { Page } from "@playwright/test";
 import { expect } from "../support.ts";
 import {
+  BOARD,
   answer,
   json,
   LEAVE_CANCELLED,
@@ -60,6 +61,7 @@ function answersWith(changed: Answers = {}): Answers {
   return {
     [READ_ROSTER]: json(TECHNICIANS),
     [READ_WORK]: json(TECHNICIAN_WORK),
+    "GET /api/dispatch": json(BOARD),
     [IMRANS_LEAVE]: json(NO_LEAVE),
     [SANDEEPS_LEAVE]: json(SANDEEP_LEAVE),
     [FAIZANS_LEAVE]: json(NO_LEAVE),

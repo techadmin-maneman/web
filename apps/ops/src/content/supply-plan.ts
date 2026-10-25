@@ -18,6 +18,13 @@ export const supplyPlan = {
   everyCity: "Every city",
   quantity: (name: string) => `Quantity of ${name}`,
   approve: "Approve",
+  /** The lines that go to one place, or come from one supplier, together. */
+  group: {
+    title: (where: string, count: number) => (count === 1 ? where : `${where} · ${String(count)} lines`),
+    approveAll: (count: number) => `Approve all ${String(count)}`,
+    check: (count: number, where: string) => `Approve ${String(count)} lines for ${where} at the quantities proposed?`,
+    approved: (count: number) => `${String(count)} lines approved.`,
+  },
   reject: "Reject",
   why_label: "Reason",
   confirmReject: "Reject it",

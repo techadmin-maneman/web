@@ -1,7 +1,7 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, json, type OpsReply } from "./fixtures.ts";
-import { open, row, groupNames } from "./tasks-fixtures.ts";
+import { answer, json, TASKS, type OpsReply } from "./fixtures.ts";
+import { NO_ALERTS, open, row, groupNames } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 /** What a task turns on, as the board answers it. */
@@ -454,4 +454,45 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
     "href",
     "/grievances#grievance-97000000-0000-4000-8000-000000000001",
   );
+});
+
+// Tasks had no way to narrow it: not to a person's own, a kind, or a client.
+test("narrows the board to my own tasks, one kind, or a client found by name", async ({ page }) => {
+  await open(page, TASKS, NO_ALERTS, {
+    "GET /api/whoami": json({
+      signed_in_as: "priya@maneman.in",
+      sign_out: "/cdn-cgi/access/logout",
+      staff: {
+        enforced: false,
+        listed: true,
+        grants: [
+          { department: "operations" as const, level: "manage" as const, geography: "national" as const, place: null },
+          {
+            department: "customer_care" as const,
+            level: "manage" as const,
+            geography: "national" as const,
+            place: null,
+          },
+          { department: "finance" as const, level: "manage" as const, geography: "national" as const, place: null },
+          { department: "growth" as const, level: "manage" as const, geography: "national" as const, place: null },
+          { department: "admin" as const, level: "manage" as const, geography: "national" as const, place: null },
+        ],
+        may_call: ["GET /api/tasks", "GET /api/alerts"],
+      },
+    }),
+  });
+  const filters = page.getByRole("search", { name: opsCopy.tasks.filters.label });
+  await filters.getByLabel(opsCopy.tasks.filters.mine).check();
+  await expect(row(page, "Kunal Mehta")).toBeVisible();
+  await expect(row(page, "Rohan Bhalla")).toHaveCount(0);
+
+  await filters.getByLabel(opsCopy.tasks.filters.mine).uncheck();
+  await filters.getByLabel(opsCopy.tasks.filters.kind).selectOption({ label: opsCopy.tasks.groups.referral_review });
+  await expect(row(page, "Rohan Bhalla")).toBeVisible();
+  await expect(row(page, "Kunal Mehta")).toHaveCount(0);
+
+  await filters.getByLabel(opsCopy.tasks.filters.kind).selectOption("");
+  await filters.getByLabel(opsCopy.tasks.filters.search).fill("karan");
+  await expect(row(page, "Karan Bose")).toBeVisible();
+  await expect(row(page, "Rohan Bhalla")).toHaveCount(0);
 });

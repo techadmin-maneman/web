@@ -5,3 +5,14 @@
   color: var(--ui-text-muted);
   text-align: right;
 }
+
+/* A kind's alerts together, under its name and count. */
+.group + .group {
+  margin-top: var(--sp-16);
+}
+
+.groupTitle {
+  margin: 0 var(--sp-20) var(--sp-8);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-medium);
+}

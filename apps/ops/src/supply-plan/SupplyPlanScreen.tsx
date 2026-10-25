@@ -1,6 +1,7 @@
-// Operations · Supply plan (docs/decisions/0180-supply-plan.md): the latest draft's transfers, by city, and orders, by
-// supplier, each with the figures behind it, approved at a quantity or rejected with why; and the plan drafted again
-// from the latest forecast. Beneath, the forecast itself and the events calendar it reads.
+// Operations · Supply plan (docs/decisions/0180-supply-plan.md): the latest draft's transfers, by where they go, and
+// orders, by supplier, each with the figures behind it; a run approved together once asked, or a line at a time at a
+// quantity or rejected with why; and the plan drafted again from the latest forecast. Beneath, the forecast itself and
+// the events calendar it reads.
 
 import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
@@ -18,6 +19,7 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { LineState, PlanLineSteps, type Answer, type Line, type Plan } from "./PlanLine.tsx";
 import { Planning } from "./Planning.tsx";
+import { LineGroup } from "./LineGroup.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
@@ -55,6 +57,10 @@ function LineRow({ line, kind, onOpen }: { line: Line; kind: "transfer" | "order
   );
 }
 
+/** Where a line goes, or where it comes from: a transfer's place, an order's supplier. */
+const whereOf = (line: Line, kind: "transfer" | "order"): string =>
+  (kind === "transfer" ? line.to : line.supplier) ?? copy.everyCity;
+
 function Lines({
   lines,
   kind,
@@ -87,18 +93,20 @@ function Lines({
                 ))}
               </tr>
             </thead>
-            <tbody>
-              {shown.map((line) => (
-                <LineRow
-                  key={line.id}
-                  line={line}
-                  kind={kind}
-                  onOpen={() => {
-                    setOpen(line.id);
-                  }}
-                />
-              ))}
-            </tbody>
+            {[...Map.groupBy(shown, (line) => whereOf(line, kind))].map(([where, group]) => (
+              <LineGroup key={where} where={where} lines={group} columns={columns.length} onAnswer={onAnswer}>
+                {group.map((line) => (
+                  <LineRow
+                    key={line.id}
+                    line={line}
+                    kind={kind}
+                    onOpen={() => {
+                      setOpen(line.id);
+                    }}
+                  />
+                ))}
+              </LineGroup>
+            ))}
           </Table>
         )}
       </ListTools>

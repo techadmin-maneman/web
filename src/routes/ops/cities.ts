@@ -5,7 +5,7 @@ import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { GSTIN_FORMAT, STATE_CODE_FORMAT } from "../../config/gst.ts";
 import { addCity, changeCity, type CityFields } from "../../domain/cities/city-changes.ts";
-import { allCities, cityNamed } from "../../domain/cities/cities.ts";
+import { allCities, cityNamed, techniciansByCity } from "../../domain/cities/cities.ts";
 import { cityPrices, setCityPrice, withdrawCityPrice } from "../../domain/money/city-prices.ts";
 import { cityRules, setCityRule } from "../../domain/cities/city-rules.ts";
 import { removeRegistration, setRegistration, stateRegistrations } from "../../domain/cities/gst-registrations.ts";
@@ -87,7 +87,11 @@ const citiesRoute = opsRoute({
       ...json(
         z
           .object({
-            cities: z.array(CitySchema),
+            cities: z.array(
+              CitySchema.extend({
+                technicians: z.number().int().openapi({ description: "Active technicians who work there." }),
+              }).openapi("ListedCity"),
+            ),
             zones: z.array(z.string()),
             registrations: z.array(RegistrationSchema),
             rules: z.array(z.object({ city: z.string(), rule: z.enum(CITY_SETTING_NAMES), value: RuleValue }).strict()),
@@ -265,8 +269,9 @@ export function registerOpsCities(app: App): void {
   app.openapi(citiesRoute, async (c) => {
     const db = c.env.DB;
     const today = indiaDate(c.var.deps.now());
-    const [cities, zones, registrations, rules, prices] = await Promise.all([
+    const [cities, technicians, zones, registrations, rules, prices] = await Promise.all([
       allCities(db),
+      techniciansByCity(db),
       db.prepare("SELECT name FROM zones ORDER BY sort, name").all<{ name: string }>(),
       stateRegistrations(db),
       cityRules(db),
@@ -282,7 +287,7 @@ export function registerOpsCities(app: App): void {
     );
     return c.json(
       {
-        cities,
+        cities: cities.map((city) => ({ ...city, technicians: technicians.get(city.name) ?? 0 })),
         zones: zones.results.map((row) => row.name),
         registrations,
         rules: ruleRows,

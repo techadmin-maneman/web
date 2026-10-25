@@ -40,7 +40,7 @@ function ConsumableRow({ consumable, onOpen }: { consumable: Consumable; onOpen:
         </TextButton>{" "}
         <span className={styles.unit}>{consumable.unit}</span>
       </RowHead>
-      <td className={form.figure}>{rupees(consumable.unit_cost)}</td>
+      <td className={form.figure}>{consumable.unit_cost === 0 ? copy.noCost : rupees(consumable.unit_cost)}</td>
       <td>
         {copy.levels({
           kit: consumable.reorder_kit,
@@ -55,10 +55,10 @@ function ConsumableRow({ consumable, onOpen }: { consumable: Consumable; onOpen:
   );
 }
 
-function ConsumableTable(props: { consumables: ConsumableList; onOpen: (code: string) => void }) {
-  if (props.consumables.consumables.length === 0) return <Note>{copy.none}</Note>;
+function ConsumableTable(props: { rows: readonly Consumable[]; none: string; onOpen: (code: string) => void }) {
+  if (props.rows.length === 0) return <Note>{props.none}</Note>;
   return (
-    <ListTools rows={props.consumables.consumables} textOf={(each) => each.name} label={copy.find}>
+    <ListTools rows={props.rows} textOf={(each) => each.name} label={copy.find}>
       {(shown) => (
         <Table>
           <thead>
@@ -102,6 +102,10 @@ export function Consumables() {
   const close = () => {
     setOpen(null);
   };
+  const opening = (code: string) => {
+    setOpen(code);
+    setSaid(null);
+  };
 
   return (
     <>
@@ -124,11 +128,9 @@ export function Consumables() {
       </PageActions>
       <Panel titleId="consumables" title={copy.title} padded>
         <ConsumableTable
-          consumables={current}
-          onOpen={(code) => {
-            setOpen(code);
-            setSaid(null);
-          }}
+          rows={current.consumables.filter((each) => each.hair_system === null)}
+          none={copy.none}
+          onOpen={opening}
         />
         {said !== null && <Toast>{said}</Toast>}
         {opened !== undefined && (
@@ -145,6 +147,13 @@ export function Consumables() {
             />
           </FormDrawer>
         )}
+      </Panel>
+      <Panel titleId="hair-systems" title={copy.hairSystems} padded>
+        <ConsumableTable
+          rows={current.consumables.filter((each) => each.hair_system !== null)}
+          none={copy.noHairSystems}
+          onOpen={opening}
+        />
       </Panel>
       <ServiceUsage consumables={current} onSaved={setConsumables} />
     </>

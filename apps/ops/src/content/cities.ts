@@ -13,9 +13,11 @@ export const cities = {
   title: "Cities",
   list: {
     panel: "Cities",
-    columns: ["City", "State", "Zone", "Status"],
+    columns: ["City", "State", "Zone", "Technicians", "Status"],
     served: "Served",
     notServed: "Not served",
+    /** A city served that no active technician works in: clients there can book, and nobody can go. */
+    noTechnician: "Served, but no technician works here",
     hidden: "Not offered",
     noZone: "No zone",
     add: "Add a city",

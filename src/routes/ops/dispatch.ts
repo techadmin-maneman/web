@@ -10,7 +10,7 @@ import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
-import { BOARD_DAYS, boardVersion, dispatchBoard } from "../../domain/dispatch/dispatch-board.ts";
+import { BOARD_DAYS, boardVersion, dispatchBoard, visitDay } from "../../domain/dispatch/dispatch-board.ts";
 import { dispatchRoomFor } from "../../domain/dispatch/dispatch.ts";
 import { nearestKm } from "../../domain/dispatch/nearest.ts";
 import { APPOINTMENT_STATUSES, STATUS_MEANINGS } from "../../domain/visits/visit-status.ts";
@@ -172,7 +172,15 @@ const boardRoute = opsRoute({
   path: "/api/dispatch",
   summary:
     "The dispatch board: seven days of the visits and active technicians in the caller's cities, with the unassigned tray",
-  request: { query: z.object({ from: z.iso.date().optional(), city: z.string().min(1).max(60).optional() }) },
+  request: {
+    query: z.object({
+      from: z.iso.date().optional(),
+      city: z.string().min(1).max(60).optional(),
+      visit: z.uuid().optional().openapi({
+        description: "A visit the board is opened on: without from, its seven days start on the visit's day.",
+      }),
+    }),
+  },
   responses: {
     200: { description: "The board", ...json(BoardSchema) },
   },
@@ -239,13 +247,15 @@ const roomRoute = opsRoute({
 export function registerOpsDispatch(app: App): void {
   app.openapi(boardRoute, async (c) => {
     const now = c.var.deps.now();
-    const { from, city } = c.req.valid("query");
-    const [inputs, reach] = await Promise.all([opsInputs(c), routeReach(c)]);
+    const { from, city, visit } = c.req.valid("query");
+    const [inputs, reach, visitsDay] = await Promise.all([
+      opsInputs(c),
+      routeReach(c),
+      from === undefined && visit !== undefined ? visitDay(c.env.DB, visit) : null,
+    ]);
     const noticeHours = inputs.changeNoticeHours;
-    return c.json(
-      await dispatchBoard(c.env.DB, { from: from ?? indiaDate(now), city: city ?? null, noticeHours, reach, now }),
-      200,
-    );
+    const start = from ?? visitsDay ?? indiaDate(now);
+    return c.json(await dispatchBoard(c.env.DB, { from: start, city: city ?? null, noticeHours, reach, now }), 200);
   });
 
   app.openapi(versionRoute, async (c) => c.json({ version: await boardVersion(c.env.DB) }, 200));

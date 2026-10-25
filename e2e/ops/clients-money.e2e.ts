@@ -256,7 +256,7 @@ test("puts a client’s credits right, with the reason, and shows the balance it
     "Done. They now have 1 visit.",
   );
   // The head reads the balance the API answered, without the record being read again.
-  await expect(meta(page).nth(1)).toHaveText("1 · use by 3 Jan 2028");
+  await expect(meta(page).nth(6)).toHaveText("1 · use by 3 Jan 2028");
 });
 
 test("offers no change of nought, or of more than twelve visits either way", async ({ page }) => {

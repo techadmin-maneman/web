@@ -277,6 +277,13 @@ describe("what the board carries of each visit", () => {
     expect(block?.person).toBeNull();
   });
 
+  // A link to a visit in another week opened this week, and no drawer.
+  it("opens on a visit's own day when it is linked to with no week", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+    expect((await board(`visit=${A}`)).from).toBe("2026-09-22");
+    expect((await board(`visit=${A}&from=2026-09-29`)).from).toBe("2026-09-29");
+  });
+
   // The brief's "city and week picker"; the route took both, and the board sent neither.
   it("names the city it is narrowed to, and the cities it can be", async () => {
     const week = await board("from=2026-09-22&city=Gurgaon");

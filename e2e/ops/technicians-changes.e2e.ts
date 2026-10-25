@@ -11,6 +11,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import {
   answer,
+  BOARD,
   fails,
   json,
   RAVI,
@@ -50,7 +51,12 @@ function rosterOf(initial: Roster): { readonly roster: { current: Roster }; read
 
 async function openWith(page: Page, answers: Answers, roster: Answer = json(TECHNICIANS)): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { [READ_ROSTER]: roster, [READ_WORK]: json(TECHNICIAN_WORK), ...answers });
+  await answer(page, {
+    [READ_ROSTER]: roster,
+    [READ_WORK]: json(TECHNICIAN_WORK),
+    "GET /api/dispatch": json(BOARD),
+    ...answers,
+  });
   await page.goto("/technicians");
   await expect(page.getByRole("heading", { level: 1, name: opsCopy.technicians.title })).toBeVisible();
 }

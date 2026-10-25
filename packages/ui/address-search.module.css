@@ -53,4 +53,11 @@
     font-size: var(--fs-13);
     color: var(--ui-text-muted);
   }
+
+  /* Why the form refused the building, as a field's own refusal reads. */
+  .error {
+    margin: var(--sp-8) 0 0;
+    font-size: var(--fs-14);
+    color: var(--ui-error);
+  }
 }

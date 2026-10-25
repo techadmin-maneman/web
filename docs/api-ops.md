@@ -9921,6 +9921,91 @@ Request body:
 }
 ```
 
+### GET /api/visits/{id}/story
+
+What happened on a visit: each step the technician's phone landed, in order, and how it ended
+
+**200**: The steps, the first taken first; none before the technician arrives
+
+```json
+{
+  "$ref": "#/components/schemas/VisitStory"
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no visit by this id in the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/clients/{id}/remedies
 
 Give a client free service visits, with why: at once within the limit ops set, else for a manager
@@ -37530,6 +37615,74 @@ Request body:
 }
 ```
 
+### VisitStory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "check_in",
+              "start",
+              "before_photos",
+              "checklist",
+              "consumables",
+              "piece",
+              "after_photos",
+              "outcome"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The phone's clock when the step was taken."
+          },
+          "technician": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How the visit ended, on its outcome step: \"done\", \"partial\", \"no_show\"; else null."
+          }
+        },
+        "required": [
+          "kind",
+          "at",
+          "technician",
+          "outcome"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "steps"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### RemedyNew
 
 ```json
@@ -42283,7 +42436,18 @@ Request body:
     },
     "message": {
       "type": "string",
-      "description": "What happened and what to do, as the chat was told, with IDs only; a low kit names its technician."
+      "description": "What happened and what to do, as the chat was told, with IDs only; a kit names its technician."
+    },
+    "about": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Whose visit it is about and on what day, where it names one: \"Rohit Malhotra's visit on Tue 20 Oct 2026\"."
     },
     "link": {
       "anyOf": [
@@ -42318,6 +42482,7 @@ Request body:
     "id",
     "kind",
     "message",
+    "about",
     "link",
     "count",
     "told_at",
@@ -44033,7 +44198,7 @@ Request body:
     "cities": {
       "type": "array",
       "items": {
-        "$ref": "#/components/schemas/City"
+        "$ref": "#/components/schemas/ListedCity"
       }
     },
     "zones": {
@@ -44116,6 +44281,77 @@ Request body:
     "rule_names",
     "prices",
     "today"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ListedCity
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "state_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The state's GST code, as HR."
+    },
+    "state": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "zone": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The zone a grant of staff access may name."
+    },
+    "served": {
+      "type": "boolean",
+      "description": "Whether we go there: its pincodes may be served."
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Whether it is offered at all: on the forms and the board."
+    },
+    "sort": {
+      "type": "integer"
+    },
+    "technicians": {
+      "type": "integer",
+      "description": "Active technicians who work there."
+    }
+  },
+  "required": [
+    "name",
+    "state_code",
+    "state",
+    "zone",
+    "served",
+    "active",
+    "sort",
+    "technicians"
   ],
   "additionalProperties": false
 }

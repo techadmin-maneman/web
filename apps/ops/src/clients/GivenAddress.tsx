@@ -47,6 +47,24 @@ const EMPTY: Draft = {
   place_id: null,
 };
 
+/** The address they have, to change rather than retype: its building is the search's words, and its pin is found again. */
+const draftOf = (address: ClientRecord["address"]): Draft =>
+  address === null
+    ? EMPTY
+    : {
+        ...EMPTY,
+        line2: address.line2,
+        locality: address.locality,
+        city: address.city,
+        pincode: address.pincode,
+        access_notes: address.access_notes,
+        building: address.building ?? address.line1,
+        flat: address.flat ?? "",
+        floor: address.floor,
+        tower: address.tower,
+        landmark: address.landmark,
+      };
+
 /** The draft with a building typed over any picked: words, and no pin. */
 const withTyped = (was: Draft, building: string): Draft => ({
   ...was,
@@ -73,6 +91,7 @@ function BuildingSearch({
   pincode,
   onType,
   onChoose,
+  error,
 }: {
   clientId: string;
   value: string;
@@ -82,6 +101,7 @@ function BuildingSearch({
   /** Typing after a choice abandons it: the building is then whatever was typed, with no pin. */
   onType: (building: string) => void;
   onChoose: (chosen: AddressSuggestion) => void;
+  error: string | null;
 }) {
   const searchCopy = copy.building;
   return (
@@ -101,6 +121,7 @@ function BuildingSearch({
         found: searchCopy.found,
       }}
       className={styles.search}
+      error={error}
     />
   );
 }
@@ -117,12 +138,14 @@ function FormTitle({ id }: { id: string }) {
 
 interface GivenAddressProps {
   readonly clientId: string;
+  /** The address they have, which the form opens with; null for none. */
+  readonly address: ClientRecord["address"];
   readonly onSaved: (address: NonNullable<ClientRecord["address"]>) => void;
   readonly onCancel: () => void;
 }
 
-export function GivenAddressForm({ clientId, onSaved, onCancel }: GivenAddressProps) {
-  const [draft, setDraft] = useState<Draft>(EMPTY);
+export function GivenAddressForm({ clientId, address, onSaved, onCancel }: GivenAddressProps) {
+  const [draft, setDraft] = useState<Draft>(() => draftOf(address));
   const [invalid, setInvalid] = useState<readonly AddressPart[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
   // One token for the whole search, made when the form opens.
@@ -134,8 +157,8 @@ export function GivenAddressForm({ clientId, onSaved, onCancel }: GivenAddressPr
 
   const save = () =>
     once(async () => {
-      // A building chosen from the search is the address's first line, as the app's form makes it.
-      const sent: Draft = given(draft.building) ? { ...draft, line1: draft.building } : draft;
+      // The building, chosen from the search or typed into it, is the address's first line.
+      const sent: Draft = { ...draft, line1: draft.building ?? "" };
       const left = missingParts(sent);
       setInvalid(left);
       if (left.length > 0) {
@@ -207,9 +230,9 @@ export function GivenAddressForm({ clientId, onSaved, onCancel }: GivenAddressPr
         onChoose={(chosen) => {
           setDraft((was) => withPicked(was, chosen));
         }}
+        error={invalid.includes("line1") ? copy.invalid : null}
       />
-      {/* A building chosen from the search is line one, so line one is asked only where none was. */}
-      {ADDRESS_FIELDS.filter(({ part }) => part !== "line1" || !given(draft.building)).map(field)}
+      {ADDRESS_FIELDS.filter(({ part }) => part !== "line1").map(field)}
       {problem !== null && <Refusal className={styles.error} said={problem} />}
       <div className={styles.actions}>
         <Button variant="primary" size="small" type="submit" busy={busy}>

@@ -38,6 +38,15 @@ describe("a city", () => {
     );
   });
 
+  it("is listed with how many active technicians work there", async () => {
+    await aTechnician({ city: "Gurgaon" });
+    await aTechnician({ city: "Gurgaon" });
+    await aTechnician({ city: "Gurgaon", active: 0 });
+    const body = await (await request(ops, "/api/cities")).json<{ cities: { name: string; technicians: number }[] }>();
+    const count = (name: string) => body.cities.find((city) => city.name === name)?.technicians;
+    expect([count("Gurgaon"), count("Delhi")]).toEqual([2, 0]);
+  });
+
   it("is added in the console, last in the order, and audited; a name held already is refused", async () => {
     const added = await send("POST", "/api/cities", PUNE);
     expect(added.status).toBe(201);

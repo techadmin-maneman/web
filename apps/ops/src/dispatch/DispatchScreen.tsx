@@ -100,7 +100,7 @@ function BoardOverlays(props: {
 
 export function DispatchScreen() {
   const [asked] = useState(() => dispatchAsked(window.location.search));
-  const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: asked.city });
+  const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: asked.city, visit: asked.visit });
   const [find, setFind] = useState(asked.find);
   const [over, set] = useOver();
   const { opened, changing, notice } = over;

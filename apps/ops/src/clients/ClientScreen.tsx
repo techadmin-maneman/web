@@ -11,7 +11,8 @@ import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { longDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock, longDate, todayInIndia } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useEffect, useState } from "react";
 import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
@@ -32,7 +33,7 @@ import { OpenTasks } from "./OpenTasks.tsx";
 import { Payments } from "./Payments.tsx";
 import { Photos, usePhotos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
-import { Visits } from "./Visits.tsx";
+import { BookOne, Visits } from "./Visits.tsx";
 
 type Credits = ClientRecord["credits"];
 type Address = ClientRecord["address"];
@@ -60,16 +61,32 @@ function InvitedBy({ invite }: { invite: ClientInvite }) {
   );
 }
 
+/** What they have paid, less what was refunded, in paise. */
+const paidToDate = (payments: ClientRecord["payments"]): number =>
+  payments.reduce((sum, each) => sum + (each.kind === "payment" ? each.amount : -each.amount), 0);
+
+/** Their next visit booked, "25 Sep 2027, 9 am"; none while nothing is booked ahead. */
+function nextVisitWords(record: ClientRecord): string {
+  const today = todayInIndia(Date.now());
+  const next = record.visits.upcoming.find((visit) => visit.date >= today);
+  return next === undefined ? clients.list.noVisit : `${fullDate(next.date)}, ${indiaClock(next.starts_at)}`;
+}
+
 /** The client's name as the page's title, the way to message them at its right, and their standing beneath. */
 function Head({ record, credits, invite }: { record: ClientRecord; credits: Credits; invite: ClientInvite | null }) {
   useRecordTitle(record.name);
   const mobile = phoneWords(record.mobile);
   const facts = [
     { term: clients.meta.state, details: clients.states[record.state] },
+    { term: clients.meta.city, details: record.address?.city ?? clients.list.noCity },
+    { term: clients.meta.package, details: record.package?.name ?? clients.noneYet },
+    { term: clients.meta.nextVisit, details: nextVisitWords(record) },
+    { term: clients.meta.since, details: longDate(record.known_since) },
+    { term: clients.meta.spent, details: rupees(paidToDate(record.payments)) },
     { term: clients.meta.credits, details: creditsOf(credits) },
     {
       term: clients.meta.replacement,
-      details: <span className={styles.metaBrass}>{replacementDueOf(record.history)}</span>,
+      details: <span className={styles.metaBrass}>{replacementDueOf(record.history, record.state === "fitted")}</span>,
     },
     {
       term: clients.meta.mobile,
@@ -210,6 +227,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                 credits={adjusted === null ? record.credits : adjusted.credits}
                 invite={attached?.invite ?? record.invite}
               />
+              <BookOne clientId={clientId} record={record} onBooked={retry} />
               <OpenTasks clientId={clientId} />
               <Tabs label={record.name}>
                 {clients.tabs.map((each) => (

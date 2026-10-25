@@ -5,8 +5,11 @@
 import { client, type Landing, type Shown, type BoardQuery, moveBody, setOnly } from "../api.ts";
 
 export const dispatchApi = {
+  /** What happened on a visit, step by step. */
+  story: (id: string) => client.get("/api/visits/{id}/story", { path: { id } }),
   /** Seven days from `from`, or from today, in one city or every one. No name or number is in the query. */
-  board: (asked: BoardQuery) => client.get("/api/dispatch", { query: setOnly({ from: asked.from, city: asked.city }) }),
+  board: (asked: BoardQuery) =>
+    client.get("/api/dispatch", { query: setOnly({ from: asked.from, city: asked.city, visit: asked.visit ?? null }) }),
   /** A number that moves whenever something the board draws changes; one row, where the board is hundreds. */
   boardVersion: () => client.get("/api/dispatch/version"),
   /** A day's routes: each technician's visits in order, and the drive between each two. */

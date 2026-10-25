@@ -46,14 +46,24 @@ export const tasks = {
   // Not drawn: the list's heading, the tasks open, as the page's bar already says "Tasks".
   /** The head's count, in oxblood, as the board writes "4 overdue". */
   openCount: (count: number) => `${String(count)} open`,
-  /** The head's count: the tasks open, and the alerts above them, "90 open · 3 need a hand". */
+  /** The head's count: the tasks open, and the alerts beside them, "90 open · 3 alerts". */
   openWithAlerts: (count: number, alerts: number) =>
-    alerts === 0 ? `${String(count)} open` : `${String(count)} open · ${String(alerts)} need a hand`,
+    alerts === 0
+      ? `${String(count)} open`
+      : `${String(count)} open · ${String(alerts)} ${alerts === 1 ? "alert" : "alerts"}`,
   overdue: (count: number) => `${String(count)} overdue`,
   /** The head's count as a screen reader names it, with what it does. */
   overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
   /** Each department's section, named as the navigation names it. */
   departments: DEPARTMENT_NAMES,
+  /** The bar over the board: a person's own, one kind, or a client by name or number. */
+  filters: {
+    label: "Narrow the tasks",
+    search: "Find a client",
+    kind: "Kind",
+    allKinds: "Every kind",
+    mine: "Mine",
+  },
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
     // A group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
@@ -340,7 +350,15 @@ export const tasks = {
  * somebody puts right what it was about. A few words name each kind; its message says what happened and what to do.
  */
 export const needsAHand = {
-  title: "Needs a hand",
+  title: "Alerts",
+  /** Tasks' two views: the work people do, and what the system needs a hand with, each with its count. */
+  views: {
+    label: "Tasks or alerts",
+    tasks: (count: number) => `Tasks · ${String(count)}`,
+    alerts: (count: number) => `Alerts · ${String(count)}`,
+  },
+  /** A kind's alerts together: "Stock low · 7". */
+  group: (title: string, count: number) => (count === 1 ? title : `${title} · ${String(count)}`),
   kinds: {
     message_failed: "WhatsApp message failed",
     messages_unsent: "WhatsApp messages stuck for a day",

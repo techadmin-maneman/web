@@ -96,7 +96,7 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
 
   const sent = page.waitForRequest((request) => request.url().includes("/clients/find"));
   await page.getByLabel(opsCopy.clients.find.label).fill("malhotra");
-  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await page.getByLabel(opsCopy.clients.find.label).press("Enter");
 
   const request = await sent;
   expect(request.method()).toBe("POST");
@@ -168,11 +168,11 @@ test("says so when nobody matches, and when more match than are listed", async (
   await answer(page, { [FIND]: json({ clients: [], more: false }) });
   await page.goto("/clients");
   await page.getByLabel(opsCopy.clients.find.label).fill("98100 0441");
-  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await page.getByLabel(opsCopy.clients.find.label).press("Enter");
   await expect(page.getByRole("status")).toContainText("No match for “98100 0441”.");
 
   await answer(page, { [FIND]: json({ clients: [FOUND], more: true }) });
-  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await page.getByLabel(opsCopy.clients.find.label).press("Enter");
   await expect(page.getByText("Too many matches.")).toBeVisible();
 });
 
@@ -180,7 +180,7 @@ test("asks for two letters or four digits when given fewer", async ({ page }) =>
   await answer(page, { [FIND]: fails(400, "invalid_request") });
   await page.goto("/clients");
   await page.getByLabel(opsCopy.clients.find.label).fill("r");
-  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await page.getByLabel(opsCopy.clients.find.label).press("Enter");
   await expect(page.getByRole("alert")).toContainText(opsCopy.clients.find.errors.invalid_request);
 });
 
@@ -189,8 +189,14 @@ test("heads the page with the client’s standing and the number to reach them o
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
   // The replacement is the month the board's head writes, never the day the pieces table carries.
+  // The head named no city, package, next visit, start or spend.
   await expect(meta(page)).toHaveText([
     opsCopy.clients.pieces.columns.fitted,
+    "Gurgaon",
+    "Mane Man Essential",
+    "25 Sep 2027, 9 am",
+    "1 Nov 2026",
+    "Rs. 2,360",
     "2 · use by 3 Jan 2028",
     "Mar 2028",
     MOBILE,
@@ -257,26 +263,44 @@ test("says in words that a client wearing no piece falls due on no date", async 
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: json(NEW_RECORD) });
   await expect(meta(page)).toHaveText([
     opsCopy.clients.states.lead,
+    opsCopy.clients.list.noCity,
+    opsCopy.clients.noneYet,
+    opsCopy.clients.list.noVisit,
+    "1 Nov 2026",
+    "Rs. 0",
     "2 · use by 3 Jan 2028",
     opsCopy.clients.noPiece,
     MOBILE,
   ]);
 });
 
-// The page opened on an empty Pieces tab, a click away from the visit.
-test("opens on the visits, with the invite on a Referrals tab of its own", async ({ page }) => {
+// "Status Fitted" sat beside "Replacement due: No hair system fitted".
+test("says a fitted client's hair system was not recorded, rather than that none was fitted", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}`, {
+    [READ_RECORD]: json({ ...RECORD, history: { ...RECORD.history, replacement_due: null } }),
+  });
+  await expect(meta(page)).toContainText([opsCopy.clients.pieces.columns.fitted, opsCopy.clients.pieceNotRecorded]);
+});
+
+// The page opened on an empty Pieces tab, a click away from the visit; then Overview sat last, and Book a visit lived
+// on the Visits tab alone.
+test("opens on the overview, first, with Book a visit on every tab and the invite on a Referrals tab", async ({
+  page,
+}) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText([
+    opsCopy.clients.history.title,
     opsCopy.clients.history.rows.visits,
     opsCopy.clients.pieces.title,
     "Payments",
     opsCopy.referrals.title,
     opsCopy.clients.consents.title,
     "Photos",
-    opsCopy.clients.history.title,
   ]);
-  await expect(clientTab(page, "Visits")).toHaveAttribute("aria-current", "page");
-  await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
+  await expect(clientTab(page, opsCopy.clients.history.title)).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("button", { name: opsCopy.clients.visits.book.open })).toBeVisible();
+  await clientTab(page, "Payments").click();
+  await expect(page.getByRole("button", { name: opsCopy.clients.visits.book.open })).toBeVisible();
 });
 
 test("lists the pieces in the board’s columns", async ({ page }) => {

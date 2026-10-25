@@ -6,12 +6,17 @@ import { expect } from "../support.ts";
 import { answer, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
 import { tasks } from "../../apps/ops/src/content.ts";
 
-/** No alert open: "Needs a hand" draws nothing. */
+/** No alert open: the Alerts tab is not drawn. */
 export const NO_ALERTS: OpsReply<"/api/alerts"> = { count: 0, alerts: [] };
 
-export async function open(page: Page, body: OpsReply<"/api/tasks"> = TASKS, alerts = NO_ALERTS): Promise<void> {
+export async function open(
+  page: Page,
+  body: OpsReply<"/api/tasks"> = TASKS,
+  alerts = NO_ALERTS,
+  extra: Parameters<typeof answer>[1] = {},
+): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "GET /api/tasks": json(body), "GET /api/alerts": json(alerts) });
+  await answer(page, { "GET /api/tasks": json(body), "GET /api/alerts": json(alerts), ...extra });
   await page.goto("/tasks");
   await expect(page.getByRole("heading", { level: 1, name: tasks.title })).toBeVisible();
   // The frame draws the title before the list is read; a spec's own answers come after this.

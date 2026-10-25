@@ -1,13 +1,12 @@
-// The way into a client's page: any part of a name, or four or more digits of a number, sent in the body so a number
-// stays out of URLs and logs (src/routes/ops/clients.ts). The search and its results are kept in the history entry, so
+// The way into a client's page: any part of a name, or four or more digits of a number, found as it is typed and sent
+// in the body so a number stays out of URLs and logs (src/routes/ops/clients.ts). The search and its results are kept in the history entry, so
 // Back finds them; before a search, the clients opened this session (lib/client-search.ts), then every client
 // (./ClientList.tsx).
 
 import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
@@ -19,6 +18,13 @@ import styles from "./clients.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.find;
+
+/** A pause in typing long enough to search: the API is asked once a word is down, not at every key. */
+const FIND_AFTER_MS = 300;
+
+/** What the API takes: two letters of a name, or four digits of a number. */
+const askable = (typed: string): boolean =>
+  (typed.match(/\p{L}/gu) ?? []).length >= 2 || (typed.match(/\d/g) ?? []).length >= 4;
 
 /** What the last search answered, with the words it was for, or why it did not. */
 type Finding =
@@ -95,9 +101,13 @@ export function FindClientScreen() {
   const [text, setText] = useState(kept?.text ?? "");
   const [finding, setFinding] = useState<Finding>(() => findingOf(kept));
 
+  // The last search asked, so an answer to an earlier one, arriving late, is dropped.
+  const asked = useRef(kept?.text ?? "");
   const find = useCallback(async (typed: string) => {
+    asked.current = typed;
     setFinding({ step: "finding" });
     const answer = await api.findClients(typed);
+    if (asked.current !== typed) return;
     if (!answer.ok) {
       setFinding({ step: "failed", code: answer.code });
       return;
@@ -110,13 +120,28 @@ export function FindClientScreen() {
     if (kept !== null && kept.found === null) void find(kept.text);
   }, [kept, find]);
 
+  useEffect(() => {
+    const typed = text.trim();
+    if (typed === asked.current) return;
+    if (!askable(typed)) {
+      asked.current = typed;
+      if (typed === "") setFinding({ step: "idle" });
+      return;
+    }
+    const wait = setTimeout(() => void find(typed), FIND_AFTER_MS);
+    return () => {
+      clearTimeout(wait);
+    };
+  }, [text, find]);
+
   return (
     <>
       <form
         className={styles.find}
         onSubmit={(event) => {
           event.preventDefault();
-          void find(text.trim());
+          if (askable(text.trim())) void find(text.trim());
+          else setFinding({ step: "failed", code: "invalid_request" });
         }}
       >
         <Field label={copy.label} look={{ label: styles.findLabel }}>
@@ -133,15 +158,6 @@ export function FindClientScreen() {
             />
           )}
         </Field>
-        <Button
-          variant="primary"
-          size="small"
-          className={styles.primary}
-          type="submit"
-          disabled={finding.step === "finding" || text.trim() === ""}
-        >
-          {finding.step === "finding" ? copy.finding : copy.submit}
-        </Button>
         {finding.step === "failed" && (
           <Refusal className={styles.error} said={errorText(copy.errors, { code: finding.code })} />
         )}

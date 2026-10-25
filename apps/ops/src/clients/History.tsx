@@ -54,6 +54,9 @@ export function History({ clientId, history }: { clientId: string; history: Clie
   );
 }
 
-/** The head's fifth line, as the board writes it: the month, never the day (ADR 0059). */
-export const replacementDueOf = (history: ClientRecord["history"]): string =>
-  history.replacement_due === null ? clients.noPiece : shortMonth(history.replacement_due.month);
+/** The head's replacement line, as the board writes it: the month, never the day (ADR 0059). A client fitted with no
+ * hair system recorded says so, rather than that none was fitted. */
+export const replacementDueOf = (history: ClientRecord["history"], fitted = false): string => {
+  if (history.replacement_due !== null) return shortMonth(history.replacement_due.month);
+  return fitted ? clients.pieceNotRecorded : clients.noPiece;
+};

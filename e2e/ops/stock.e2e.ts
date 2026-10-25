@@ -28,6 +28,9 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: stock.title })).toBeVisible();
 }
 
+/** Opens one of the page's views by its tab. */
+const showView = (page: Page, name: string) => page.getByRole("button", { name, exact: true }).click();
+
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
@@ -63,6 +66,19 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
   await expect(tape.getByRole("cell").nth(2)).not.toContainText(stock.low);
   const solvent = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Solvent" }) });
   await expect(solvent.getByRole("cell").nth(0)).toHaveText(`-20 ml${stock.belowZero}`);
+});
+
+// A kit with none left read Low.
+test("says a place with none left of something it keeps is out, not low", async ({ page }) => {
+  const empty = STOCK.holdings.map((each) =>
+    each.consumable_code === "tape_strips" && each.place_id === IMRAN ? { ...each, quantity: 0 } : each,
+  );
+  await open(page, { "GET /api/stock": json({ ...STOCK, holdings: empty }) });
+  const tape = onHand(page)
+    .getByRole("row")
+    .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
+  await expect(tape.getByRole("cell").nth(1)).toContainText(stock.out);
+  await expect(tape.getByRole("cell").nth(1)).not.toContainText(stock.low);
 });
 
 // A column a kit was unreadable past eight or ten.
@@ -249,6 +265,7 @@ test("a loss needs its words, and a refusal names what was wrong", async ({ page
 
 test("lists the latest movements, a job’s use under the technician who recorded it", async ({ page }) => {
   await open(page);
+  await showView(page, stock.views.names.movements);
   const movements = page.getByRole("region", { name: stock.movements.title });
   const used = movements.getByRole("row").filter({ hasText: stock.movements.reasons.used });
   await expect(used).toContainText("Tape strips");
@@ -259,6 +276,7 @@ test("lists the latest movements, a job’s use under the technician who recorde
 
 test("sorts the movements by a column, and narrows them by a list or a search", async ({ page }) => {
   await open(page);
+  await showView(page, stock.views.names.movements);
   const movements = page.getByRole("region", { name: stock.movements.title });
   const rows = movements.getByRole("row");
   await expect(movements.getByRole("columnheader", { name: activity.columns.when })).toHaveAttribute(
@@ -308,6 +326,7 @@ const withRoom = {
 
 test("adds a stockroom under the warehouse, and closes it again", async ({ page }) => {
   await open(page, { "POST /api/stock/places": json(withRoom), [`POST /api/stock/places/${ROOM}`]: json(STOCK) });
+  await showView(page, stock.views.names.places);
   const places = page.getByRole("region", { name: stockPlaces.title });
   await expect(places.getByRole("button", { name: stockPlaces.open(WAREHOUSE) })).toBeVisible();
   await places.getByRole("button", { name: stockPlaces.add.title }).click();
@@ -389,6 +408,7 @@ test("adds up every place, and each city, and lists the lots that expire soon", 
   await expect(tape.getByRole("cell").nth(0)).toHaveText("129 strips");
   await expect(tape.getByRole("cell").nth(1)).toHaveText("9 strips");
 
+  await showView(page, stock.views.names.expiring);
   const panel = page.getByRole("region", { name: stockViews.expiring.title });
   await expect(panel.getByRole("row").filter({ hasText: "SV-0930" })).toContainText("Imran Qureshi");
   expect(await axeViolations(page)).toEqual([]);
@@ -457,6 +477,7 @@ test("opens a hair system’s labels after its delivery, the latest batch ticked
   await form.getByRole("button", { name: stock.record.check }).click();
   await form.getByRole("button", { name: review.send }).click();
 
+  await showView(page, stock.views.names.labels);
   const labels = page.getByRole("region", { name: stockLabels.title });
   await expect(labels.getByLabel(stockLabels.item)).toHaveValue(HAIR.code);
   await expect(labels.getByLabel(stockLabels.place)).toHaveValue("central");
@@ -479,6 +500,7 @@ test("labels the pieces a place held before labels", async ({ page }) => {
     "GET /api/stock/units": json(before),
     "POST /api/stock/units": json(UNITS),
   });
+  await showView(page, stock.views.names.labels);
   const labels = page.getByRole("region", { name: stockLabels.title });
   await labels.getByLabel(stockLabels.item).selectOption({ label: HAIR.name });
   await expect(labels).toContainText(stockLabels.unlabelled(4));
@@ -494,6 +516,7 @@ test("prints a lot’s label for each of its boxes", async ({ page }) => {
     "POST /api/stock/lots/{id}/label": json({ label: "MM-LT-0000001-B" }),
   });
   const printed = await catchPrints(page);
+  await showView(page, stock.views.names.labels);
   const labels = page.getByRole("region", { name: stockLabels.title });
   await labels.getByLabel(stockLabels.item).selectOption({ label: "Tape strips" });
   await labels.getByLabel(stockLabels.copies).fill("3");
@@ -576,6 +599,7 @@ test("finds the piece a label names, where it is and its history", async ({ page
     ],
   } satisfies OpsReply<"/api/stock/units/{code}">;
   await open(page, { "GET /api/stock": json(withPieces), "GET /api/stock/units/{code}": json(found) });
+  await showView(page, stock.views.names.labels);
   const labels = page.getByRole("region", { name: stockLabels.title });
   const find = labels.getByLabel(stockLabels.find);
   await find.fill("MM-ESS-0000001-B");
@@ -594,6 +618,7 @@ test("says so when no camera opens, leaving the label to be typed", async ({ pag
       value: { getUserMedia: () => Promise.reject(new Error("No camera")) },
     });
   });
+  await showView(page, stock.views.names.labels);
   const labels = page.getByRole("region", { name: stockLabels.title });
   await labels.getByRole("button", { name: stockLabels.scan.camera }).click();
   await expect(labels.getByRole("alert")).toHaveText(stockLabels.scan.refused);

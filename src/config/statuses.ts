@@ -18,8 +18,11 @@ export const PAYMENT_REFUNDED = ["partially_refunded", "refunded"] as const;
 
 /** A visit that happened: done, or ended before it was. */
 export const VISIT_ENDED = ["completed", "terminated"] as const;
-/** What a day on the dispatch board holds: its live jobs, and those done, so a past day reads as it was worked. */
-export const VISIT_ON_THE_BOARD = [...VISIT_LIVE, "completed"] as const;
+/**
+ * What a day on the dispatch board holds: its live jobs, and those done or ended before they were, so a past day reads
+ * as it was worked and a no-show stays where it happened.
+ */
+export const VISIT_ON_THE_BOARD = [...VISIT_LIVE, ...VISIT_ENDED] as const;
 
 /** A refund asked of Razorpay that has not failed: waiting, or made (refunds.status). */
 export const REFUND_NOT_FAILED = ["created", "processed"] as const;

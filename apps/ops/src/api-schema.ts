@@ -7521,6 +7521,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/{id}/story": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What happened on a visit: each step the technician's phone landed, in order, and how it ended */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The steps, the first taken first; none before the technician arrives */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VisitStory"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no visit by this id in the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/remedies": {
         parameters: {
             query?: never;
@@ -8995,6 +9069,8 @@ export interface paths {
                 query?: {
                     from?: string;
                     city?: string;
+                    /** @description A visit the board is opened on: without from, its seven days start on the visit's day. */
+                    visit?: string;
                 };
                 header?: never;
                 path?: never;
@@ -23690,6 +23766,20 @@ export interface components {
             /** @description One of the job sheet's lost_reasons, by its code; null where they are going ahead. */
             lost_reason: string | null;
         };
+        VisitStory: {
+            steps: {
+                /** @enum {string} */
+                kind: "check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome";
+                /**
+                 * Format: date-time
+                 * @description The phone's clock when the step was taken.
+                 */
+                at: string;
+                technician: string | null;
+                /** @description How the visit ended, on its outcome step: "done", "partial", "no_show"; else null. */
+                outcome: string | null;
+            }[];
+        };
         RemedyNew: {
             visits: number;
             /** @enum {string} */
@@ -24758,8 +24848,10 @@ export interface components {
             id: string;
             /** @description What went wrong: the alert's key up to its first colon, "crm_lead". */
             kind: string;
-            /** @description What happened and what to do, as the chat was told, with IDs only; a low kit names its technician. */
+            /** @description What happened and what to do, as the chat was told, with IDs only; a kit names its technician. */
             message: string;
+            /** @description Whose visit it is about and on what day, where it names one: "Rohit Malhotra's visit on Tue 20 Oct 2026". */
+            about: string | null;
             /** @description Where in the console to act on it, as a path: "/clients/<personId>". */
             link: string | null;
             /** @description How many times it has happened. */
@@ -25149,7 +25241,7 @@ export interface components {
             city: string;
         };
         Cities: {
-            cities: components["schemas"]["City"][];
+            cities: components["schemas"]["ListedCity"][];
             zones: string[];
             registrations: components["schemas"]["GstRegistration"][];
             rules: {
@@ -25166,6 +25258,21 @@ export interface components {
             prices: components["schemas"]["CityPrice"][];
             /** Format: date */
             today: string;
+        };
+        ListedCity: {
+            name: string;
+            /** @description The state's GST code, as HR. */
+            state_code: string | null;
+            state: string | null;
+            /** @description The zone a grant of staff access may name. */
+            zone: string | null;
+            /** @description Whether we go there: its pincodes may be served. */
+            served: boolean;
+            /** @description Whether it is offered at all: on the forms and the board. */
+            active: boolean;
+            sort: number;
+            /** @description Active technicians who work there. */
+            technicians: number;
         };
         City: {
             name: string;

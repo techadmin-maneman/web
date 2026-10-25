@@ -47,6 +47,8 @@ export const clients = {
     nextVisit: "Next visit",
     underWay: "Under way",
     noVisit: "None booked",
+    /** A visit whose day has passed and is not yet closed: not a next visit, one to close. */
+    overdue: (day: string) => `Overdue since ${day}`,
     none: "No clients match.",
     previous: "Previous",
     next: "Next",
@@ -61,6 +63,11 @@ export const clients = {
    */
   meta: {
     state: "Status",
+    city: "City",
+    package: "Package",
+    nextVisit: "Next visit",
+    since: "Client since",
+    spent: "Paid to date",
     credits: "Free service visits",
     replacement: "Replacement due",
     mobile: "Mobile",
@@ -84,15 +91,19 @@ export const clients = {
    * the gap a missing figure would draw.
    */
   noPiece: "No hair system fitted",
-  /** The tabs of the design's eight that the ops routes answer, in its order, and History, which it draws none of. */
+  /** A client fitted whose hair system was not recorded, so no replacement can be dated. */
+  pieceNotRecorded: "Hair system not recorded",
+  /** A figure the head has nothing for yet. */
+  noneYet: "None yet",
+  /** The tabs of the design's eight that the ops routes answer, the Overview first, which it draws none of. */
   tabs: [
+    { tab: "history", label: "Overview" },
     { tab: "visits", label: "Visits" },
     { tab: "pieces", label: "Hair systems" },
     { tab: "payments", label: "Payments" },
     { tab: "referrals", label: "Referrals" },
     { tab: "consents", label: "Consents" },
     { tab: "photos", label: "Photos" },
-    { tab: "history", label: "Overview" },
   ],
   /**
    * Our words, all of them: what waits on Tasks for the client, under the page's head, each with how long it has left
@@ -172,6 +183,8 @@ export const clients = {
       failed: FAILED,
     },
     upcoming: "To come",
+    /** Visits whose day has passed and nobody has closed: each waits to be closed by hand. */
+    overdue: "Overdue",
     past: "Done",
     columns: ["Date", "Time", "Visit", "Technician", "Status", "Discount code"],
     onBoard: "See on the board",

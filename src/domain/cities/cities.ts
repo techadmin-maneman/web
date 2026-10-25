@@ -87,6 +87,16 @@ export async function allCities(db: D1Database): Promise<CityRow[]> {
   return results.map(rowOf);
 }
 
+/** How many active technicians work in each city, by its name: a city served with none can book nobody. */
+export async function techniciansByCity(db: D1Database): Promise<ReadonlyMap<string, number>> {
+  const { results } = await db
+    .prepare(
+      "SELECT city, COUNT(*) AS technicians FROM technicians WHERE active = 1 AND city IS NOT NULL GROUP BY city",
+    )
+    .all<{ city: string; technicians: number }>();
+  return new Map(results.map((row) => [row.city, row.technicians]));
+}
+
 export async function cityNamed(db: D1Database, name: string): Promise<CityRow | null> {
   const row = await db.prepare(`SELECT ${COLUMNS} FROM cities WHERE name = ?1`).bind(name).first<Stored>();
   return row === null ? null : rowOf(row);

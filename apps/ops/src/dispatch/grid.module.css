@@ -214,3 +214,21 @@
 .dayMap {
   margin-top: var(--sp-4);
 }
+
+/* The key beneath the board: each kind of block's edge, and each state a block may wear. */
+.legend {
+  caption-side: bottom;
+  padding: var(--sp-12) 0 0;
+  text-align: left;
+}
+
+.legend > * {
+  margin-right: var(--sp-12);
+}
+
+.key {
+  display: inline-block;
+  padding: var(--sp-2) var(--sp-8);
+  border-left: var(--sp-4) solid;
+  font-size: var(--fs-13);
+}

@@ -23,6 +23,7 @@ import {
 } from "../helpers.ts";
 import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
 import { insertJob, insertPerson } from "../tryon-fixtures.ts";
+import { aTechnician, aVisit } from "../fixtures/index.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../../src/config/pipeline.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -78,6 +79,20 @@ describe("the open alerts on Tasks", () => {
     expect(listed.alerts).toMatchObject([
       { kind: "message_failed", link: `/clients/${PERSON}`, count: 1, send_again: true },
       { kind: "invoice_refused", message: "Books refused the invoice.", send_again: false },
+    ]);
+  });
+
+  // "Visit has no price to invoice" fired for weeks without saying whose visit; a kit read "technician's kit".
+  it("says whose visit an alert is about and on what day, and names a kit by its technician", async () => {
+    const { id: visit } = await aVisit({ window_start: "2026-10-20T04:30:00.000Z" });
+    const { id: imran } = await aTechnician();
+    await alertOnce({ key: `invoice_unpriced:${visit}`, message: `Raise visit ${visit}'s invoice in Books by hand.` });
+    await alertOnce({ key: `kit_short:${imran}`, message: `technician ${imran}'s kit is short for tomorrow.` });
+
+    const { alerts } = await list();
+    expect(alerts).toMatchObject([
+      { kind: "invoice_unpriced", about: "Rohit Malhotra's visit on 20 Oct 2026" },
+      { kind: "kit_short", message: "Imran Qureshi's kit is short for tomorrow.", about: null },
     ]);
   });
 

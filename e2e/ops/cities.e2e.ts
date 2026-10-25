@@ -29,7 +29,10 @@ const MUMBAI = {
 };
 
 const BOOK = {
-  cities: [GURGAON, MUMBAI],
+  cities: [
+    { ...GURGAON, technicians: 2 },
+    { ...MUMBAI, technicians: 0 },
+  ],
   zones: ["NCR"],
   registrations: [],
   rules: [{ city: "Mumbai", rule: "checkin_radius_m", value: 400 }],
@@ -71,6 +74,22 @@ test("lists each city with its state, zone and status, and meets WCAG 2.2 AA", a
   await expect(cityRow(page, "Gurgaon")).toContainText(copy.list.served);
   await expect(cityRow(page, "Mumbai")).toContainText(copy.list.noZone);
   expect(await axeViolations(page)).toEqual([]);
+});
+
+// Delhi, Faridabad and Ghaziabad read Served with no active technician working there.
+test("counts each city's technicians, and warns of one served with none", async ({ page }) => {
+  await open(page, {
+    "GET /api/cities": json({
+      ...BOOK,
+      cities: [
+        { ...GURGAON, technicians: 2 },
+        { ...MUMBAI, name: "Delhi", served: true, technicians: 0 },
+      ],
+    }),
+  });
+  await expect(cityRow(page, "Gurgaon")).toContainText("2");
+  await expect(cityRow(page, "Gurgaon")).not.toContainText(copy.list.noTechnician);
+  await expect(cityRow(page, "Delhi")).toContainText(copy.list.noTechnician);
 });
 
 test("adds a city, sending it as typed", async ({ page }) => {

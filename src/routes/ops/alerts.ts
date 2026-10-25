@@ -12,7 +12,7 @@ import { json } from "../../http/openapi.ts";
 import { callerAccess, permits } from "../../http/staff-access.ts";
 import { markDone, openAlert, openAlerts, sendAgain, type OpenAlert } from "../../domain/ops/needs-a-hand.ts";
 import type { AuditAction, AuditEntry } from "../../domain/platform/audit.ts";
-import { namedForTheConsole } from "../../domain/inventory/low-stock.ts";
+import { namedForTheConsole } from "../../domain/ops/alert-names.ts";
 import { maySendAgain } from "../../policy/alerts.ts";
 import { alertNeed, markDoneNeed, callerMeetsNeed } from "../../policy/console-routes.ts";
 
@@ -24,7 +24,11 @@ const AlertSchema = z
     id: z.uuid(),
     kind: z.string().openapi({ description: 'What went wrong: the alert\'s key up to its first colon, "crm_lead".' }),
     message: z.string().openapi({
-      description: "What happened and what to do, as the chat was told, with IDs only; a low kit names its technician.",
+      description: "What happened and what to do, as the chat was told, with IDs only; a kit names its technician.",
+    }),
+    about: z.union([z.string(), z.null()]).openapi({
+      description:
+        'Whose visit it is about and on what day, where it names one: "Rohit Malhotra\'s visit on Tue 20 Oct 2026".',
     }),
     link: z
       .union([z.string(), z.null()])
@@ -93,11 +97,12 @@ async function seenBy(c: Context<AppEnv>): Promise<(kind: string) => boolean> {
   return (kind) => callerMeetsNeed(access.caller, alertNeed(kind, "view"), access.zoneOf);
 }
 
-const shown = (alert: OpenAlert) => ({
+const shown = (alert: OpenAlert & { readonly about: string | null }) => ({
   id: alert.id,
   kind: alert.kind,
   message: alert.message,
   link: alert.link,
+  about: alert.about,
   count: alert.count,
   told_at: alert.toldAt,
   last_seen_at: alert.lastSeenAt,

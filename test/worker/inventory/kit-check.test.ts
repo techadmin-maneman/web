@@ -97,6 +97,12 @@ describe("tomorrow's kits", () => {
         { consumable_code: "solvent", from_place: "gurgaon-room", to_place: IMRAN, proposed: 6 },
       ].sort((a, b) => a.consumable_code.localeCompare(b.consumable_code)),
     );
+    // The supply plan read "Gurgaon stockroom → (blank)": a kit is named by its technician.
+    const plan = await (await request(job.ops, "/api/supply-plan")).json<{ lines: { from: string; to: string }[] }>();
+    expect(plan.lines.map((line) => [line.from, line.to])).toEqual([
+      ["Gurgaon stockroom", "Imran Qureshi"],
+      ["Gurgaon stockroom", "Imran Qureshi"],
+    ]);
     // The chat is told the kit by its technician's ID; the console names them.
     expect(told[0]).toContain(`technician ${IMRAN}'s kit is short for tomorrow of `);
     expect(told[0]).not.toContain("Imran");

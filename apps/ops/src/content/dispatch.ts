@@ -9,9 +9,14 @@ export const dispatch = {
   week: (from: string, to: string) => `${from} to ${to}`,
   /** A cell, a zone or a sector the board has nothing for. */
   unknown: "—",
+  /** A block's state, where it is no longer simply booked: drawn on the block itself. */
+  chips: { completed: "Done", terminated: "Not done", proposal: "Move proposed" },
+  /** The key beneath the board: a block's edge by its kind of visit. */
+  legend: { service: "Consultation or service", replacement: "Replacement", fit: "First fit" },
   /** A job with neither a client nor a kind on it, which a title still has to name. */
   unnamed: "this visit",
-  util: (percent: number) => `${String(percent)}%`,
+  /** A day's head: how much of its working technicians' time is booked. */
+  util: (percent: number) => `${String(percent)}% booked`,
   /**
    * The board letters 92 and 88 per cent in brass and leaves 67 and
    * below quiet, so the peak reads without a chart. It writes no line, and this
@@ -113,6 +118,28 @@ export const dispatch = {
   },
   /** The drawer a block opens. */
   drawer: {
+    /** What happened on the visit, a step a line, under its facts. */
+    story: {
+      title: "What happened",
+      none: "Nothing yet. The technician hasn’t arrived.",
+      failed: "Couldn’t load what happened.",
+      steps: {
+        check_in: "Arrived",
+        start: "Started",
+        before_photos: "Before photos taken",
+        piece: "Hair system recorded",
+        checklist: "Checklist ticked",
+        consumables: "What was used recorded",
+        after_photos: "After photos taken",
+        outcome: "Closed",
+      } as Readonly<Record<string, string | undefined>>,
+      outcomes: { done: "done", partial: "partly done", no_show: "as a no-show" } as Readonly<
+        Record<string, string | undefined>
+      >,
+      /** "Closed, done", "Arrived": a step, and on the last how the visit ended. */
+      step: (step: string, outcome: string | undefined) => (outcome === undefined ? step : `${step}, ${outcome}`),
+      photos: "See the photographs",
+    },
     /** The way past the geofence, for a visit today they have not checked in to. */
     letIn: "Allow check-in",
     /** A move to another day the client is asked to confirm: the visit is still here until they do. */
