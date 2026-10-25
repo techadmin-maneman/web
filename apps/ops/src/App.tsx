@@ -6,8 +6,6 @@
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Fragment, Suspense, useCallback, useEffect, useState, type ComponentType } from "react";
-import { ClientScreen } from "./clients/ClientScreen.tsx";
-import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
 import { Shell } from "./components/Shell.tsx";
 import { useMayCall } from "./lib/access.ts";
@@ -28,6 +26,10 @@ import { Loading } from "./states/States.tsx";
 
 const DispatchScreen = lazyScreen(() =>
   import("./dispatch/DispatchScreen.tsx").then((module) => module.DispatchScreen),
+);
+const ClientScreen = lazyScreen(() => import("./clients/ClientScreen.tsx").then((module) => module.ClientScreen));
+const FindClientScreen = lazyScreen(() =>
+  import("./clients/FindClientScreen.tsx").then((module) => module.FindClientScreen),
 );
 const TodayScreen = lazyScreen(() => import("./today/TodayScreen.tsx").then((module) => module.TodayScreen));
 const TasksScreen = lazyScreen(() => import("./tasks/TasksScreen.tsx").then((module) => module.TasksScreen));
