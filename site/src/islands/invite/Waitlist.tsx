@@ -30,7 +30,7 @@ export function Waitlist(props: FormProps & { person: PersonFields | null; onLis
   const form = useTurnstileForm(
     props.turnstileSiteKey,
     undefined,
-    person === null ? undefined : { ...person, consent: false },
+    person === null ? undefined : { ...person, consent: false, terms: null },
   );
   // Joining the list is asking to be told at launch, so the box starts ticked.
   const [alert, setAlert] = useState(false);

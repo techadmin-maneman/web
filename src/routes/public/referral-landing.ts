@@ -13,6 +13,7 @@
 
 import { indiaDate } from "../../lib/india-time.ts";
 import { FormStartSchema, startOnDate } from "../schemas/booking.ts";
+import { TermsSchema } from "../schemas/terms.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -133,6 +134,7 @@ const ConsultationRequestSchema = z
     one_visit: OneVisitRequestSchema,
     number_code_id: OneVisitNumberCodeSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
+    terms: TermsSchema,
   })
   .strict()
   .refine(startOnDate, { message: "the start is on another day", path: ["starts_at"] });

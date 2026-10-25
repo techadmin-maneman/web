@@ -35,6 +35,7 @@ describe("a consultation and fit in one visit", () => {
         date: "2026-09-23",
         window: "morning",
         consent: true,
+        terms: true,
         address: ADDRESS,
         number_code_id: proved,
         ...body,

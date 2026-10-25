@@ -366,7 +366,7 @@ export const NOTICES = [
     line: { says: "You may contact me about this request.", link: null, section: "whatsapp" },
   },
   // One line each, in words of their own, linking to its section of the site's /notices page. The lines
-  // whose words stayed keep their versions above, with the link beside them. PLACEHOLDER: awaits counsel.
+  // whose words stayed keep their versions above, with the link beside them.
   oneLine("photo-v7", "tryon_photo", {
     says: "By using this photo, you agree to our try-on notice.",
     link: "try-on notice",

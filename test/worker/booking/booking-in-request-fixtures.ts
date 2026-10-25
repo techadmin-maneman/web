@@ -107,7 +107,7 @@ export async function heldAndOrdered(body: object = { type: "service", date: "20
   const held = await call(PERSON, "/api/holds", { method: "POST", body });
   expect(held.status).toBe(201);
   const hold = await held.json<{ id: string }>();
-  const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+  const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id, terms: true } });
   const checkout = (await started.json<{ checkout: { order_id: string; amount: number } | null }>()).checkout;
   return { holdId: hold.id, orderId: checkout?.order_id ?? "", amount: checkout?.amount ?? 0 };
 }

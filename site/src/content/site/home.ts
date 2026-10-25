@@ -49,6 +49,8 @@ export const footer = {
       links: [
         { label: "Privacy", href: "/privacy" },
         { label: "Terms", href: "/terms" },
+        { label: "Aftercare", href: "/aftercare" },
+        { label: "Offer terms", href: "/offer-terms" },
       ],
     },
   },

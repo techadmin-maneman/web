@@ -71,6 +71,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
           date: "2026-09-23",
           window: "morning",
           consent: true,
+          terms: true,
           address: ADDRESS,
           one_visit: true,
           number_code_id: await provedNumberCode(`+91${mobile}`),

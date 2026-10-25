@@ -10486,10 +10486,18 @@ Request body:
       },
       "maxItems": 2,
       "description": "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on, recorded once the booking is paid for, or at once for a free visit (ADR 0080); left out, none."
+    },
+    "terms": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "\"I agree to the Terms and Conditions and the Privacy Policy.\" Required, and recorded with their versions."
     }
   },
   "required": [
-    "hold_id"
+    "hold_id",
+    "terms"
   ],
   "additionalProperties": false
 }

@@ -469,6 +469,11 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut: "When ops' own tasks opened and closed, for the reporting figures.",
     erasure: { why: "Kept: when a task about them opened and closed, nothing about them." },
   },
+  terms_acceptances: {
+    leftOut: ["id", "person_id", "ip_hash"],
+    whyLeftOut: "Our key, and a one-way hash of the network address it was given from, which reads as nothing.",
+    erasure: { why: "Kept, as the record of the terms agreed to: their versions, where and when, nothing about them." },
+  },
   tryon_jobs: {
     leftOut: [
       "id",

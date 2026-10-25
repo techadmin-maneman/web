@@ -2613,6 +2613,13 @@
                       true
                     ],
                     "description": "\"You may contact me on WhatsApp about this consultation.\""
+                  },
+                  "terms": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "\"I agree to the Terms and Conditions and the Privacy Policy.\" Required, and recorded with their versions."
                   }
                 },
                 "required": [
@@ -2623,7 +2630,8 @@
                   "date",
                   "window",
                   "address",
-                  "consent"
+                  "consent",
+                  "terms"
                 ],
                 "additionalProperties": false
               }
@@ -3389,6 +3397,13 @@
                     ],
                     "description": "\"You may contact me on WhatsApp about this consultation.\""
                   },
+                  "terms": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "\"I agree to the Terms and Conditions and the Privacy Policy.\" Required, and recorded with their versions."
+                  },
                   "turnstile_token": {
                     "type": "string",
                     "minLength": 1,
@@ -3437,6 +3452,7 @@
                   "name",
                   "mobile",
                   "consent",
+                  "terms",
                   "turnstile_token"
                 ],
                 "additionalProperties": false
@@ -3944,6 +3960,13 @@
                       true
                     ],
                     "description": "\"You may contact me on WhatsApp about this consultation.\""
+                  },
+                  "terms": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "\"I agree to the Terms and Conditions and the Privacy Policy.\" Required, and recorded with their versions."
                   }
                 },
                 "required": [
@@ -3954,7 +3977,8 @@
                   "date",
                   "window",
                   "address",
-                  "consent"
+                  "consent",
+                  "terms"
                 ],
                 "additionalProperties": false
               }

@@ -27,7 +27,7 @@ The DPDP Act and its Rules require us to tell the Data Protection Board and each
 4. **Notify.**
    - **The Board,** at once in brief, and in full within 72 hours: what happened, when, the data and people affected, the harm likely, what we have done, and who to contact.
    - **Each person affected,** in plain words on WhatsApp or by phone: what happened to their data, what it may mean for them, what we have done, what they can do, and who to contact.
-   - **The Grievance Officer** leads both (`docs/open-points.md`, item 51).
+   - **The Grievance Officer,** Adwate Kumar, Co-founder and COO (grievance@maneman.in), leads both.
 5. **Record.** Keep a note of the breach, the timeline, the decisions and the notices, for the Board and for us. Review it within two weeks, and fix what let it happen.
 
 ---

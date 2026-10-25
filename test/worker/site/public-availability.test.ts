@@ -56,6 +56,7 @@ describe("GET /api/availability/public", () => {
         date: "2026-09-23",
         window: "morning",
         consent: true,
+        terms: true,
         address: ADDRESS,
         ...body,
       }),

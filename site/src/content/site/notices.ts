@@ -46,6 +46,9 @@ const APPROVED_NOTICES: readonly string[] = [
   "referral-consultation-v1",
   "waitlist-v1",
   "whatsapp-launches-v1",
+  "photo-v7",
+  "gate-v7",
+  "referral-consultation-v2",
 ];
 
 function notice(version: string): Notice {

@@ -33,7 +33,11 @@ async function held(body: object = { type: "service", date: "2026-09-24", window
 }
 
 const book = (holdId: string, consents?: string[], minutesLater = 0) =>
-  post("/api/bookings", consents === undefined ? { hold_id: holdId } : { hold_id: holdId, consents }, minutesLater);
+  post(
+    "/api/bookings",
+    consents === undefined ? { hold_id: holdId, terms: true } : { hold_id: holdId, consents, terms: true },
+    minutesLater,
+  );
 
 interface Ordered {
   readonly holdId: string;
@@ -118,6 +122,18 @@ describe("a paid visit's consents", () => {
     await tappedToPay();
     expect(await ledger()).toEqual([]);
     expect(await audited()).toEqual([]);
+  });
+
+  // The terms are agreed to by the tap itself, whatever becomes of the payment.
+  it("record the terms agreed to at the tap, with their versions", async () => {
+    await tappedToPay();
+    const agreed = await env.DB.prepare(
+      "SELECT person_id, terms_version, privacy_version, source FROM terms_acceptances",
+    ).all();
+    expect(agreed.results).toEqual([
+      { person_id: PERSON, terms_version: "1.00", privacy_version: "1.00", source: "app_booking" },
+    ]);
+    expect((await post("/api/bookings", { hold_id: await held() })).status).toBe(400);
   });
 
   it("are recorded once Razorpay says it is paid, as given when it was paid, on the pay step's own notices", async () => {

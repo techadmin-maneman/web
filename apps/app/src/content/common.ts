@@ -49,6 +49,13 @@ export const NOTICES_URL: Readonly<Record<EnvironmentName, string>> = {
   production: "https://maneman.in/notices",
 };
 
+/** The public site's terms and privacy policy, which a booking agrees to. */
+export const LEGAL_URLS: Readonly<Record<EnvironmentName, { readonly terms: string; readonly privacy: string }>> = {
+  local: { terms: "http://127.0.0.1:4321/terms", privacy: "http://127.0.0.1:4321/privacy" },
+  staging: { terms: "https://staging.maneman.in/terms", privacy: "https://staging.maneman.in/privacy" },
+  production: { terms: "https://maneman.in/terms", privacy: "https://maneman.in/privacy" },
+};
+
 /** The public site's try-on, for a client with no photographs yet: the look it makes comes back to Photos. */
 export const TRY_ON_URL: Readonly<Record<EnvironmentName, string>> = {
   local: "http://127.0.0.1:4321/try",

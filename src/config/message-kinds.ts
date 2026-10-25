@@ -38,6 +38,7 @@ export const MESSAGE_KINDS = [
   "address_not_served",
   // Ops kept the account the client asked us to delete, with their reason (src/domain/privacy/deletion.ts).
   "deletion_rejected",
+  "concern_received", // the client raised a concern about their data, which we have (src/routes/client/data.ts)
   "concern_answered", // ops answered a concern the client raised about their data (src/routes/ops/grievances.ts)
   "recall_notice", // a lot the client wears was recalled: replaced free (src/domain/inventory/recalls.ts)
   // What follows a visit (src/domain/visits/follow-ups.ts): the technician's recommendation after a consultation,

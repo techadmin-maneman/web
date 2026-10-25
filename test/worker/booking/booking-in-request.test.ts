@@ -123,7 +123,7 @@ describe("a free booking", () => {
     expect(held.status).toBe(201);
     const hold = await held.json<{ id: string }>();
 
-    const started = await call(NEWCOMER, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const started = await call(NEWCOMER, "/api/bookings", { method: "POST", body: { hold_id: hold.id, terms: true } });
     expect(await started.json()).toEqual({ hold_id: hold.id, checkout: null });
 
     const booked = await holdRow(hold.id);
@@ -153,7 +153,7 @@ describe("a free booking", () => {
       body: { type: "consultation", date: "2026-09-24", window: "morning" },
     });
     const hold = await held.json<{ id: string }>();
-    await call(NEWCOMER, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    await call(NEWCOMER, "/api/bookings", { method: "POST", body: { hold_id: hold.id, terms: true } });
     const owner = await env.DB.prepare("SELECT email FROM care_owners WHERE person_id = ?1").bind(NEWCOMER).first();
     expect(owner).toEqual({ email: "care@maneman.test" });
   });
@@ -188,6 +188,7 @@ describe("a free booking", () => {
           date: "2026-09-23",
           window: "morning",
           consent: true,
+          terms: true,
           address: {
             flat: "Flat 402",
             line1: "Palm Grove Society",
@@ -221,7 +222,7 @@ describe("one credit pays for one visit", () => {
     return (await held.json<{ id: string }>()).id;
   };
   const book = async (holdId: string) => {
-    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: holdId } });
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: holdId, terms: true } });
     // A call that finds its hold booked already answers 409, with no checkout.
     return started.json<{ checkout?: { amount: number } | null }>();
   };

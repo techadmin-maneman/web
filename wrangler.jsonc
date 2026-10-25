@@ -417,11 +417,12 @@
         "BOOKS_SAC": "",
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",
-        "GEOCODE_PROVIDER": "none",
+        // Google, for the address search and, below, routes: the GOOGLE_MAPS_API_KEY secret, the same key as staging.
+        "GEOCODE_PROVIDER": "google",
         // The nightly copy for Zoho Analytics, off until launch so the copy Zoho reads stays as it is; its client-key
         // secret is set (docs/decisions/0146-the-nightly-analytics-copy.md; docs/go-live.md).
         "ANALYTICS_PROVIDER": "none",
-        "ROUTES_PROVIDER": "none",
+        "ROUTES_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "false",
         // A free consultation is booked outright with no payment taken; paid visits go through ops until online
         // payment is on.

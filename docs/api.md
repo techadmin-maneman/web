@@ -744,6 +744,13 @@ Request body:
         true
       ],
       "description": "\"You may contact me on WhatsApp about this consultation.\""
+    },
+    "terms": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "\"I agree to the Terms and Conditions and the Privacy Policy.\" Required, and recorded with their versions."
     }
   },
   "required": [
@@ -754,7 +761,8 @@ Request body:
     "date",
     "window",
     "address",
-    "consent"
+    "consent",
+    "terms"
   ],
   "additionalProperties": false
 }
@@ -1447,6 +1455,13 @@ Request body:
       ],
       "description": "\"You may contact me on WhatsApp about this consultation.\""
     },
+    "terms": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "\"I agree to the Terms and Conditions and the Privacy Policy.\" Required, and recorded with their versions."
+    },
     "turnstile_token": {
       "type": "string",
       "minLength": 1,
@@ -1495,6 +1510,7 @@ Request body:
     "name",
     "mobile",
     "consent",
+    "terms",
     "turnstile_token"
   ],
   "additionalProperties": false
@@ -1901,6 +1917,13 @@ Request body:
         true
       ],
       "description": "\"You may contact me on WhatsApp about this consultation.\""
+    },
+    "terms": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "\"I agree to the Terms and Conditions and the Privacy Policy.\" Required, and recorded with their versions."
     }
   },
   "required": [
@@ -1911,7 +1934,8 @@ Request body:
     "date",
     "window",
     "address",
-    "consent"
+    "consent",
+    "terms"
   ],
   "additionalProperties": false
 }

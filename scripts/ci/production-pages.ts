@@ -52,17 +52,26 @@ await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 const address = server.address();
 const origin = `http://127.0.0.1:${String(typeof address === "object" && address !== null ? address.port : 0)}`;
 
+// The API is mm-api's, not the site build's: a page's call to it answers 404 here, and is no file missing.
+const API = `${origin}/api/`;
+// Production's analytics tags answer empty, so a check sends no visit to production's own analytics.
+const TAGS =
+  /^https:\/\/([a-z0-9-]+\.)*(googletagmanager\.com|google-analytics\.com|analytics\.google\.com|doubleclick\.net|facebook\.net)\//;
+
 const browser = await chromium.launch();
 const problems: string[] = [];
 try {
   for (const page of pages) {
     const tab = await browser.newPage();
+    await tab.route(TAGS, (route) => route.fulfill({ status: 204 }));
     const url = `${origin}/${page === "index.html" ? "" : page}`;
     tab.on("pageerror", (error) => problems.push(`${page}: ${error.message}`));
     tab.on("console", (message) => {
-      if (message.type() === "error") problems.push(`${page}: console: ${message.text()}`);
+      if (message.type() !== "error" || message.location().url.startsWith(API)) return;
+      problems.push(`${page}: console: ${message.text()}`);
     });
     tab.on("response", (answer) => {
+      if (answer.url().startsWith(API)) return;
       if (answer.url().startsWith(origin) && answer.status() === 404 && answer.url() !== url) {
         problems.push(`${page}: ${answer.url().slice(origin.length)} is not in the build`);
       }

@@ -63,7 +63,7 @@ const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
  */
 const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
   // A table read top to bottom, every table holding a client's rows in turn: kept whole on purpose.
-  "src/policy/personal-data.ts": { lines: 524 },
+  "src/policy/personal-data.ts": { lines: 529 },
 };
 
 export default defineConfig(

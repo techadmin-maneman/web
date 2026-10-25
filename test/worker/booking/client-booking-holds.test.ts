@@ -160,7 +160,7 @@ describe("POST /api/holds", () => {
       request(app, "/api/bookings", {
         method: "POST",
         headers: { Cookie: who.cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
-        body: JSON.stringify({ hold_id: holdId }),
+        body: JSON.stringify({ hold_id: holdId, terms: true }),
       });
     const afternoonOf = async (who: { cookie: string }) => {
       const offered = await (

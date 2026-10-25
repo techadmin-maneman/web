@@ -192,6 +192,22 @@
     "reviewed": true
   },
   {
+    "key": "site:home/footer.columns.legal.links.2.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Aftercare",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/footer.columns.legal.links.3.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Offer terms",
+    "reviewed": false
+  },
+  {
     "key": "site:home/footer.pagesLabel",
     "surface": "site",
     "group": "Home",
@@ -1760,6 +1776,22 @@
     "reviewed": true
   },
   {
+    "key": "site:pages/pageTitles.aftercare",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Aftercare — Mane Man",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/pageTitles.offers",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Offer terms — Mane Man",
+    "reviewed": false
+  },
+  {
     "key": "site:pages/pageTitles.notices",
     "surface": "site",
     "group": "Page titles",
@@ -1822,6 +1854,22 @@
     "where": "pageDescriptions",
     "text": "The terms of Mane Man’s hair system service.",
     "reviewed": true
+  },
+  {
+    "key": "site:pages/pageDescriptions.aftercare",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageDescriptions",
+    "text": "How to look after a Mane Man hair system between visits, and what the fitting guarantee asks of you.",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/pageDescriptions.offers",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageDescriptions",
+    "text": "The terms of Mane Man’s discount codes, referral rewards and free service visits.",
+    "reviewed": false
   },
   {
     "key": "site:pages/pageDescriptions.notices",
@@ -5016,6 +5064,46 @@
     "reviewed": true
   },
   {
+    "key": "site:referral/referral.form.agree.before",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "I agree to the ",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.form.agree.terms",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Terms and Conditions",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.form.agree.between",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": " and the ",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.form.agree.privacy",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Privacy Policy",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.form.agreeError",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Agree to the Terms and the Privacy Policy to book.",
+    "reviewed": false
+  },
+  {
     "key": "site:referral/referral.form.marked",
     "surface": "site",
     "group": "Invite page",
@@ -5942,6 +6030,14 @@
     "where": "recall_notice_v1",
     "text": "Hi {{1}}, we're recalling a batch we supplied, and yours is one of them.\nWe'll replace your hair system free, at a time that suits you. Book it in the Mane Man app, or reply here and we'll arrange it.",
     "reviewed": true
+  },
+  {
+    "key": "message:concern_received_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "concern_received_v1",
+    "text": "Hi {{1}}, we've received your concern.\nWe'll reply in the Mane Man app, under Profile, within 30 days.",
+    "reviewed": false
   },
   {
     "key": "message:concern_answered_v1",

@@ -1,6 +1,7 @@
 // The client reads one word for each thing (docs/glossary.md, "The client's words"): what the site, the app's content
-// and the WhatsApp messages say. A consent notice keeps the words its version was published in, and the legal pages
-// may say "photograph" and "simulation". Only prose is read: a string with a space in it.
+// and the WhatsApp messages say. A consent notice keeps the words its version was published in, and the legal pages,
+// in counsel's words, may say "photograph", "simulation" and the terms' "Mane Man Credits". Only prose is read: a
+// string with a space in it.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -10,11 +11,15 @@ import { NOTICES } from "../../../src/config/notices.ts";
 
 const ROOTS = ["apps/app/src/content", "site/src/content", "packages/web-kit"];
 const MESSAGES = "src/config/message-templates.ts";
-const LEGAL = "site/src/content/site/legal.ts";
+const LEGAL = new Set(
+  ["privacy-policy", "terms-and-conditions", "aftercare", "offer-terms"].map(
+    (page) => `site/src/content/site/${page}.ts`,
+  ),
+);
 
 /** Each word the client never reads, with the one they do. */
 const NOT_SAID: readonly { readonly word: RegExp; readonly say: string; readonly legalMay?: true }[] = [
-  { word: /\bcredits?\b/i, say: "free service visit" },
+  { word: /\bcredits?\b/i, say: "free service visit", legalMay: true },
   { word: /\bno-show|\bnot home\b/i, say: "missed visit" },
   { word: /\bhouse (example|sample)|\bour example\b|\bA Mane Man example\b/i, say: "the Mane Man example card" },
   { word: /\brevoke/i, say: "switch off" },
@@ -61,7 +66,7 @@ describe("the client's words", () => {
   });
 
   it.each(NOT_SAID.map((rule) => [rule.say, rule] as const))("say %s", (_, rule) => {
-    const said = prose.filter((each) => rule.word.test(each.text) && !(rule.legalMay === true && each.path === LEGAL));
+    const said = prose.filter((each) => rule.word.test(each.text) && !(rule.legalMay === true && LEGAL.has(each.path)));
     expect(said.map((each) => `${each.path}:${String(each.line)} ${each.text.slice(0, 80)}`)).toEqual([]);
   });
 });

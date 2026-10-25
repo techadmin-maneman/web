@@ -215,6 +215,7 @@ describe("POST /api/r/:code/*: the Idempotency-Key", () => {
       date: "2026-09-23",
       window: "morning",
       consent: true,
+      terms: true,
       address: ADDRESS,
     };
 

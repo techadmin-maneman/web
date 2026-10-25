@@ -79,6 +79,9 @@ function formFor(person: PersonFields | null): [readonly string[], PersonFields,
     : [MARKED_HERE, { ...person, consent: true }, false];
 }
 
+/** What a form sent only once both are ticked agrees to: WhatsApp about the visit, and the terms. */
+const AGREED = { consent: true, terms: true } as const;
+
 /** Whether a refusal means the strip is out of date: a window filled, or a day closed, since it was drawn. */
 const outOfDate = (code: Code): boolean => code === "taken" || code === "not_bookable";
 
@@ -294,7 +297,7 @@ export function Consultation(props: ConsultationProps) {
       address: addressToSend(address, pincode),
       ...(plan === "one_visit" ? { one_visit: true } : {}),
       ...(numberCodeId === null ? {} : { number_code_id: numberCodeId }),
-      consent: true as const,
+      ...AGREED,
     };
     const door = { invited: props.invited, credits: props.credits, remembered };
     const { onInvite, onBook: onSite } = byDoor(request, door);

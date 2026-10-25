@@ -132,6 +132,7 @@ describe("restoring the whole database", () => {
       "discount_code_uses",
       "hair_profiles",
       "slot_times",
+      "terms_acceptances",
     ]);
     expect(carry.writtenByTriggers).toEqual([
       "people",

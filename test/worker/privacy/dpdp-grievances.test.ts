@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { tellOfNewGrievances } from "../../../src/domain/ops/grievances.ts";
+import { composeConcernReceived, tellOfNewGrievances } from "../../../src/domain/ops/grievances.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { PERSON, MOBILE } from "./dpdp-fixtures.ts";
@@ -74,6 +74,21 @@ describe("grievances", () => {
   });
 
   // Once the app reloaded, a client saw nothing of the concern they raised, nor ops' answer.
+  // The terms promise an acknowledgement within 48 hours: it goes on WhatsApp as the concern arrives, once.
+  it("are acknowledged on WhatsApp as they arrive, once for the same words", async () => {
+    const client = appFor("local", fakeDependencies(), {}, "client");
+    const { id } = await (await raiseAs(client, "Who can see my hair profile?")).json<{ id: string }>();
+    await raiseAs(client, "Who can see my hair profile?");
+    const told = await env.DB.prepare("SELECT kind, subject_kind, subject_id, state FROM outbound_messages").all();
+    expect(told.results).toEqual([
+      { kind: "concern_received", subject_kind: "grievance", subject_id: id, state: "queued" },
+    ]);
+    expect(await composeConcernReceived(env.DB, id, PERSON)).toEqual({
+      template: "concern_received_v1",
+      params: ["Rohit"],
+    });
+  });
+
   it("are listed on the client's profile, open and then with ops' answer", async () => {
     const deps = fakeDependencies();
     const client = appFor("local", deps, {}, "client");

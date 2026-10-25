@@ -22,6 +22,7 @@ import {
   fillAndBook,
   bookHere,
   TOLD,
+  AGREE_TERMS,
 } from "./book-fixtures.ts";
 
 // The full address before a slot is confirmed, on the site too (ADR 0081).
@@ -281,6 +282,7 @@ test("a browser that blocks storage books on the invite’s page and here, and s
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
   await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();

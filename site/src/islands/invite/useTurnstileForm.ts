@@ -12,7 +12,7 @@ import type { PersonFields } from "./person.ts";
 export type { PersonFields };
 
 /** The person's fields, by the names the API gives them when it refuses one. */
-export const PERSON_FIELDS = ["name", "mobile", "consent"] as const;
+export const PERSON_FIELDS = ["name", "mobile", "consent", "terms"] as const;
 export type PersonField = (typeof PERSON_FIELDS)[number];
 
 const isPersonField = (field: string): field is PersonField => isOneOf(PERSON_FIELDS, field);
@@ -28,6 +28,7 @@ function personProblems(fields: PersonFields): PersonField[] {
   if (!isPersonName(fields.name)) problems.push("name");
   if (mobileDigits(fields.mobile) === null) problems.push("mobile");
   if (!fields.consent) problems.push("consent");
+  if (fields.terms === false) problems.push("terms");
   return problems;
 }
 
@@ -90,7 +91,9 @@ function useRememberedPerson(empty: boolean, setFields: (fields: PersonFields) =
     if (done.current || !empty) return;
     done.current = true;
     const visitor = rememberedVisitor();
-    if (visitor !== null) setFields({ name: visitor.name, mobile: formatMobileField(visitor.mobile), consent: true });
+    if (visitor !== null) {
+      setFields({ name: visitor.name, mobile: formatMobileField(visitor.mobile), consent: true, terms: false });
+    }
   }, [empty, setFields]);
 }
 
@@ -105,7 +108,7 @@ function useRememberedPerson(empty: boolean, setFields: (fields: PersonFields) =
 export function useTurnstileForm(
   siteKey: string,
   marks: readonly string[] = PERSON_FIELDS,
-  given: PersonFields = { name: "", mobile: "", consent: false },
+  given: PersonFields = { name: "", mobile: "", consent: false, terms: null },
   remembers = false,
 ) {
   const [fields, setFields] = useState<PersonFields>(given);

@@ -29,6 +29,10 @@ export function Table({
   );
 }
 
+/** The table's classes, for an Astro page, which renders no component of this package's: `plain` as Table takes it. */
+export const tableLook = ({ plain = false, className }: { plain?: boolean; className?: string } = {}): string =>
+  classes(plain ? styles.plain : styles.table, className);
+
 /**
  * A table wider than its panel, scrolled sideways inside it. The keyboard can reach it, so the columns past the edge
  * can be scrolled to with the arrow keys, and it is named by its panel's title (`labelledBy`).

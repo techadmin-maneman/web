@@ -1,7 +1,8 @@
 // Every control is drawn by the shared package (packages/ui): a button, a link, a field, a choice, a fold. An app or
 // a site island that draws its own <button> or <input> draws a look of its own beside the shared one, so neither
 // stays the house's. An Astro page renders no component of the shared package's, so its raw element takes the shared
-// look instead: buttonLook(), textLinkLook(), iconButtonLook(), skipLinkLook() or the ruled disclosure's classes.
+// look instead: buttonLook(), textLinkLook(), iconButtonLook(), skipLinkLook(), tableLook() or the ruled disclosure's
+// classes.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -10,7 +11,8 @@ const ROOTS = ["apps/ops/src", "apps/app/src", "apps/tech/src", "site/src"];
 const CONTROLS = ["a", "button", "input", "select", "textarea", "label", "fieldset", "legend", "details", "summary"];
 const OTHERS = ["table", "dialog", "progress", "meter"];
 const TAG = new RegExp(`<(${[...CONTROLS, ...OTHERS].join("|")})(?=[\\s>/])`, "g");
-const SHARED_LOOK = /^<\w+\s[^>]*?\bclass=\{(buttonLook|textLinkLook|iconButtonLook|skipLinkLook|ruled\.\w+)\b/s;
+const SHARED_LOOK =
+  /^<\w+\s[^>]*?\bclass=\{(buttonLook|textLinkLook|iconButtonLook|skipLinkLook|tableLook|ruled\.\w+)\b/s;
 
 function filesUnder(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

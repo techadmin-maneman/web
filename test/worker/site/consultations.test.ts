@@ -33,7 +33,15 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
       { CRM_QUEUE: crm },
     );
 
@@ -90,7 +98,15 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
       { CRM_QUEUE: fakeQueue() },
     );
     const line = logs.lines().find((each) => each.event === "request");
@@ -125,7 +141,7 @@ describe("POST /api/consultation", () => {
   it("refuses a pincode we do not serve, and a day outside the fortnight, as not bookable", async () => {
     await pincode("400050", "Bandra", "Mumbai", false);
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
-    const body = { ...VISITOR, date: "2026-09-23", window: "morning", consent: true, address: ADDRESS };
+    const body = { ...VISITOR, date: "2026-09-23", window: "morning", consent: true, terms: true, address: ADDRESS };
 
     for (const refused of [
       { ...body, pincode: "400050" },
@@ -147,6 +163,7 @@ describe("POST /api/consultation", () => {
       date: "2026-09-23",
       window: "morning",
       consent: true,
+      terms: true,
       address: ADDRESS,
     };
 
@@ -164,7 +181,15 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site({ selfServeBooking: false }),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
       { CRM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
@@ -181,7 +206,15 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site({ selfServeBooking: false, selfServeConsultations: false }),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
       { CRM_QUEUE: crm },
     );
 
@@ -237,6 +270,7 @@ describe("an area ops have not named yet", () => {
         date: "2026-09-23",
         window: "morning",
         consent: true,
+        terms: true,
         address: { ...ADDRESS, locality: "Greater Kailash II", city: "Delhi", pincode: "110048" },
       }),
       { CRM_QUEUE: fakeQueue() },

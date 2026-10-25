@@ -216,9 +216,9 @@ this map, or when the map names something that no longer exists.
 ### Privacy
 
 - **Database work** (`src/domain/privacy/`): `consents`, `booking-consents`, `deletion`, `erasure`, `erasure-statements`,
-  `erasure-files`, `data-export`, `my-data-page`, `retention`
+  `erasure-files`, `data-export`, `my-data-page`, `retention`, `terms-acceptances`
 - **Rules** (`src/policy/`): `consents`, `account-deletion`, `retention`, `personal-data`
-- **Data** (`src/config/`): `notices`, `my-data`
+- **Data** (`src/config/`): `notices`, `my-data`, `legal-versions`
 - **Routes** (`src/routes/`): `client/data`, `ops/erasure`
 - **Jobs** (`src/scheduled/`): `retention`
 - **Screens:** `apps/app/src/profile/`, `apps/ops/src/deletion-requests/`

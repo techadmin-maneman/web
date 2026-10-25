@@ -22,11 +22,15 @@ import {
   continueAndBook,
   bookHere,
   leadCalls,
+  AGREE_TERMS,
 } from "./book-fixtures.ts";
 
 // An empty submit left focus on the button, with the first errors two or three screens above it.
-// The WhatsApp line starts ticked (ADR 0213), so an empty first step marks only the name and the number.
-test("an empty first step marks the name and the number, focuses the name, and keeps nothing", async ({ page }) => {
+// The WhatsApp line starts ticked (ADR 0213) and the terms do not, so an empty first step marks the name, the number
+// and the terms.
+test("an empty first step marks the name, the number and the terms, focuses the name, and keeps nothing", async ({
+  page,
+}) => {
   await mockApi(page);
   const leads = await leadCalls(page);
   await visit(page, "/book");
@@ -36,6 +40,8 @@ test("an empty first step marks the name and the number, focuses the name, and k
   await expect(page.getByText(referralCopy.referral.form.nameError)).toBeVisible();
   await expect(page.getByText(siteCopy.tryOn.gate.mobileError)).toBeVisible();
   await expect(page.getByText(referralCopy.referral.form.consentError)).toHaveCount(0);
+  await expect(page.getByText(referralCopy.referral.form.agreeError)).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: AGREE_TERMS })).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toBeFocused();
   expect(await axeViolations(page)).toEqual([]);
   expect(leads).toHaveLength(0);
@@ -67,6 +73,7 @@ test("a number that is not a mobile is marked at its field, focused, and not sen
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("5876543210");
   await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: siteCopy.booking.start }).click();
 
   const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
@@ -85,6 +92,7 @@ test("a name that is not letters is marked at its field, focused, and not sent",
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Win at example.com");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
   await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: siteCopy.booking.start }).click();
 
   const name = page.getByLabel(siteCopy.tryOn.gate.name);
@@ -106,6 +114,7 @@ test("the fields the API refuses are marked where they are, the first focused, a
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
   await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: siteCopy.booking.start }).click();
 
   const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);

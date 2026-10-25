@@ -21,7 +21,7 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `BOOKS_SAC` | — | — | — |
 | `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |
 | `ENVIRONMENT` | `local` | `staging` | `production` |
-| `GEOCODE_PROVIDER` | `stub` | `google` | `none` |
+| `GEOCODE_PROVIDER` | `stub` | `google` | `google` |
 | `IMAGE_PROVIDER` | `stub` | `youcam` | `youcam` |
 | `MESSAGING_ENABLED` | `true` | `true` | `false` |
 | `MESSAGING_PROVIDER` | `stub` | `evolution` | `evolution` |
@@ -31,7 +31,7 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `RENDER_DAILY_CEILING` | `20` | `20` | `40` |
 | `RESULT_READ_DAILY_CEILING` | `400` | `400` | `800` |
 | `RESULT_RETENTION_DAYS` | `3` | `3` | `14` |
-| `ROUTES_PROVIDER` | `stub` | `google` | `none` |
+| `ROUTES_PROVIDER` | `stub` | `google` | `google` |
 | `SELF_SERVE_BOOKING` | `true` | `false` | `false` |
 | `SELF_SERVE_CONSULTATIONS` | `true` | `true` | `true` |
 | `SERVICE_TOKEN_ACTS_AS` | — | `test-operator@maneman.in` | — |

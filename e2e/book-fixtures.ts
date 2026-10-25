@@ -113,6 +113,9 @@ export async function openInvite(page: Page): Promise<void> {
 
 export const remembered = (page: Page) => page.evaluate(() => localStorage.getItem("mm_invite"));
 
+/** The box every form that books asks the visitor to tick, by its whole line. */
+export const AGREE_TERMS = Object.values(referralCopy.referral.form.agree).join("");
+
 /** Where the agreement on /book's first step, and on the consultation's, is ticked. */
 export const CONSULTATION_CONSENT = referralCopy.referral.consultation.consent.says;
 
@@ -121,6 +124,7 @@ export async function leaveDetails(page: Page, mobile = "9810000000"): Promise<v
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill(mobile);
   await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
 }

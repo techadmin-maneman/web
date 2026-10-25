@@ -75,6 +75,8 @@ export const pageTitles = {
   book: "Book a free consultation — Mane Man",
   privacy: "Privacy — Mane Man",
   terms: "Terms — Mane Man",
+  aftercare: "Aftercare — Mane Man",
+  offers: "Offer terms — Mane Man",
   notices: "Notices — Mane Man",
   notFound: "Not found — Mane Man",
   stop: "Stop messages — Mane Man",
@@ -87,5 +89,7 @@ export const pageDescriptions = {
   book: booking.intro.join(" "),
   privacy: "What Mane Man keeps about you, who processes it, how long it is kept, and how to have it erased.",
   terms: "The terms of Mane Man’s hair system service.",
+  aftercare: "How to look after a Mane Man hair system between visits, and what the fitting guarantee asks of you.",
+  offers: "The terms of Mane Man’s discount codes, referral rewards and free service visits.",
   notices: "What each agreement on Mane Man’s site and app covers: the try-on, your photos and WhatsApp.",
 };

@@ -57,7 +57,7 @@ describe("the client, at the app's pay step", () => {
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
     await make();
     const onCredit = await heldService(PERSON);
-    const booked = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: onCredit.id } });
+    const booked = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: onCredit.id, terms: true } });
     expect(await booked.json()).toEqual({ hold_id: onCredit.id, checkout: null });
     const next = await heldService(PERSON, NOW, "morning");
     const answer = await enter(PERSON, next.id, "TENPC");
@@ -68,13 +68,13 @@ describe("the client, at the app's pay step", () => {
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
     await make();
     const onCredit = await heldService(PERSON);
-    await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: onCredit.id } });
+    await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: onCredit.id, terms: true } });
     const next = await heldService(PERSON, NOW, "morning");
     // The other device read the balance just before the first booking was confirmed.
     await env.DB.prepare("UPDATE slot_holds SET use_credit = 1 WHERE id = ?1").bind(next.id).run();
 
     expect((await enter(PERSON, next.id, "TENPC")).status).toBe(200);
-    const booked = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: next.id } });
+    const booked = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: next.id, terms: true } });
     expect(await booked.json()).toMatchObject({ checkout: { amount: 180_000 } });
     const hold = await env.DB.prepare("SELECT use_credit FROM slot_holds WHERE id = ?1").bind(next.id).first();
     expect(hold).toEqual({ use_credit: 0 });
@@ -91,7 +91,7 @@ describe("the client, at the app's pay step", () => {
       .run();
     const hold = await heldService(PERSON);
     expect(await (await enter(PERSON, hold.id, "ALLFREE")).json()).toMatchObject({ price: { amount: 0 } });
-    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id, terms: true } });
     expect(await started.json()).toMatchObject({ checkout: null });
 
     const told = await env.DB.prepare("SELECT kind, subject_id FROM outbound_messages").first<{
@@ -168,7 +168,7 @@ describe("the client, at the app's pay step", () => {
     await make();
     const hold = await heldService(PERSON);
     await enter(PERSON, hold.id, "TENPC");
-    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id, terms: true } });
     const { checkout } = await started.json<{ checkout: { order_id: string; amount: number } }>();
     await env.DB.prepare(
       `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, status,
@@ -189,7 +189,7 @@ describe("the client, at the app's pay step", () => {
     await make();
     const hold = await heldService(PERSON);
     await enter(PERSON, hold.id, "TENPC");
-    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id, terms: true } });
     const { checkout } = await started.json<{ checkout: { order_id: string; amount: number } }>();
     // Razorpay made the payment twenty minutes on, after the hold and its grace had run out.
     await env.DB.prepare(
@@ -216,7 +216,7 @@ describe("the client, at the app's pay step", () => {
     await fittedClient(OTHER, "+919810000005");
     const hold = await heldService(PERSON);
     await enter(PERSON, hold.id, "UNQ5");
-    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id, terms: true } });
     const { checkout } = await started.json<{ checkout: { order_id: string; amount: number } }>();
     await env.DB.batch([
       env.DB.prepare(

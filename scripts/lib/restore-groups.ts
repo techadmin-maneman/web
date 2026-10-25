@@ -19,6 +19,12 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Adding the rows since `<T>`: they are only ever added",
   },
   {
+    what: "Terms agreed to",
+    tables: ["terms_acceptances"],
+    leftAtT: "A booking made since `<T>` has no record of the terms its client agreed to",
+    putBackBy: "Adding the rows since `<T>`: they are only ever added",
+  },
+  {
     what: "Revoked sessions and phones",
     tables: ["sessions", "technician_devices"],
     leftAtT: "A lost phone, or a session that was ended, works again",

@@ -23,6 +23,7 @@ import {
   continueAndBook,
   bookHere,
   leadCalls,
+  AGREE_TERMS,
 } from "./book-fixtures.ts";
 
 test("the page introduces itself, with no invite and no card", async ({ page }) => {
@@ -151,6 +152,7 @@ test("a number with +91, 91, 0 or 0091 in front books its own ten digits, pasted
     await expect(mobile).toHaveValue("98765 43210");
   }
   await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await checkPincode(page, SERVED.pincode);
   await continueAndBook(page);
@@ -402,6 +404,7 @@ test("starts from the try-on's name and number, and a booking for the number it 
   await visit(page, "/book");
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
   await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveValue("98100 00000");
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
 
   await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await checkPincode(page, SERVED.pincode);

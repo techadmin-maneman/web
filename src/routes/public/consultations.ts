@@ -39,6 +39,7 @@ import { LOSS_EXTENTS } from "../../config/booking.ts";
 import { TOLD_NOTICES } from "../../config/notices.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { WindowHoursSchema } from "../schemas/booking.ts";
+import { TermsSchema } from "../schemas/terms.ts";
 import { openDays, tellIfFullyBooked } from "../../domain/booking/open-windows.ts";
 import { isServed } from "../../domain/clients/service-area.ts";
 import { DISCOUNT_KINDS } from "../../policy/discount-codes.ts";
@@ -163,6 +164,7 @@ const ConsultationRequestSchema = z
           "the booking, code_not_applicable, and so does any code with the consultation alone.",
       }),
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
+    terms: TermsSchema,
   })
   .strict()
   .refine(startOnDate, { message: "the start is on another day", path: ["starts_at"] });

@@ -22,8 +22,11 @@ export const refusedFor = (output: string): string[] =>
     .filter((line) => line.startsWith("  - "))
     .map((line) => line.slice(4));
 
-/** Pages that stay out of search engines: the 404, and the referral landing, whose address holds an invite code. */
-const NOT_INDEXED = new Set(["404.html", "r.html"]);
+/**
+ * Pages that stay out of search engines: the 404, the referral landing, whose address holds an invite code, and /stop,
+ * whose address holds the token that stops a person's messages.
+ */
+const NOT_INDEXED = new Set(["404.html", "r.html", "stop.html"]);
 
 /** What a passing build, in `out`, shipped of the design's placeholder material, or of a page kept from search. */
 export function shippedPlaceholders(out: string): string[] {

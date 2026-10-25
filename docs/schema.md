@@ -16,6 +16,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | What | Tables | Left at `<T>` | Put back by |
 | --- | --- | --- | --- |
 | Consents given and withdrawn | `consents` | Someone who said stop is messaged again | Adding the rows since `<T>`: they are only ever added |
+| Terms agreed to | `terms_acceptances` | A booking made since `<T>` has no record of the terms its client agreed to | Adding the rows since `<T>`: they are only ever added |
 | Revoked sessions and phones | `sessions`, `technician_devices` | A lost phone, or a session that was ended, works again | Revoking again: a phone in the console, a client's session with `sessions.revoked_at` |
 | Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
@@ -174,6 +175,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [technician_leave](#technician_leave): A technician's leave, in whole days or between two times of one day, which the clash check reads beside `slot_claims` (ADR 0062, ADR 0210).
 - [technician_updates](#technician_updates): A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).
 - [technicians](#technicians): Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
+- [terms_acceptances](#terms_acceptances): Each time a person agreed to the terms and the privacy policy as they booked: the versions, where and when. Rows are only ever added.
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
 - [vendor_breakers](#vendor_breakers): Each vendor's failures in a row, and until when its work waits while it is held off (ADR 0203).
@@ -3236,6 +3238,28 @@ Indexes:
 - `technicians_by_mobile`: on (`mobile_e164`)
 
 Triggers: `technicians_board_added`, `technicians_board_changed`, `technicians_kit`.
+
+## terms_acceptances
+
+Each time a person agreed to the terms and the privacy policy as they booked: the versions, where and when. Rows are only ever added.
+
+Made by `0191_terms_acceptances.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `terms_version` | TEXT | no |  |  |  |
+| `privacy_version` | TEXT | no |  |  |  |
+| `source` | TEXT | no |  |  |  |
+| `ip_hash` | TEXT | yes |  |  | A one-way hash of the network address it was given from, as a consent keeps. |
+| `created_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `terms_acceptances_person`: on (`person_id`, `created_at`)
+
+Triggers: `terms_acceptances_no_delete`, `terms_acceptances_no_update`.
 
 ## tryon_jobs
 

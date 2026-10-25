@@ -98,7 +98,7 @@ describe("POST /api/bookings", () => {
     const payments = createStubPayments();
     const app = appFor("local", fakeDependencies({ payments }), {}, "client");
     const holdId = await heldService(app);
-    const answer = await post(app, "/api/bookings", { hold_id: holdId });
+    const answer = await post(app, "/api/bookings", { hold_id: holdId, terms: true });
     expect(answer.status).toBe(201);
     expect(await answer.json()).toEqual({
       hold_id: holdId,
@@ -117,7 +117,7 @@ describe("POST /api/bookings", () => {
       { amount: 200000, receipt: holdId, notes: { hold_id: holdId, person_id: PERSON } },
     ]);
     // Asked again, the same order.
-    await post(app, "/api/bookings", { hold_id: holdId });
+    await post(app, "/api/bookings", { hold_id: holdId, terms: true });
     expect(payments.made.orders).toHaveLength(1);
   });
 
@@ -127,8 +127,8 @@ describe("POST /api/bookings", () => {
     const holdId = await heldService(app);
     // Both taps are in flight together, as they are when a client taps Retry twice on the confirmation.
     const both = await Promise.all([
-      post(app, "/api/bookings", { hold_id: holdId }),
-      post(app, "/api/bookings", { hold_id: holdId }),
+      post(app, "/api/bookings", { hold_id: holdId, terms: true }),
+      post(app, "/api/bookings", { hold_id: holdId, terms: true }),
     ]);
     expect(both.map((answer) => answer.status)).toEqual([201, 201]);
     const orders = await Promise.all(
@@ -149,12 +149,17 @@ describe("POST /api/bookings", () => {
     const consult = await (
       await post(app, "/api/holds", { type: "consultation", date: "2026-09-22", window: "morning" })
     ).json<{ id: string }>();
-    const answer = await post(app, "/api/bookings", { hold_id: consult.id }, { MESSAGE_QUEUE: fakeQueue() });
+    const answer = await post(
+      app,
+      "/api/bookings",
+      { hold_id: consult.id, terms: true },
+      { MESSAGE_QUEUE: fakeQueue() },
+    );
     expect(await answer.json()).toEqual({ hold_id: consult.id, checkout: null });
     expect(await visitOf(consult.id)).toMatchObject({ type: "consultation", status: "scheduled" });
 
     const later = appFor("local", fakeDependencies({ now: () => new Date(NOW.getTime() + 11 * 60_000) }), {}, "client");
-    const lapsed = await post(later, "/api/bookings", { hold_id: consult.id });
+    const lapsed = await post(later, "/api/bookings", { hold_id: consult.id, terms: true });
     expect(lapsed.status).toBe(409);
   });
 });
@@ -164,7 +169,7 @@ describe("confirmBooking", () => {
   it("books a paid hold unassigned, and tells ops, once its technician was switched off", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(app);
-    await post(app, "/api/bookings", { hold_id: holdId });
+    await post(app, "/api/bookings", { hold_id: holdId, terms: true });
     await captured(holdId);
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = 't1'").run();
     const told: string[] = [];
@@ -185,7 +190,7 @@ describe("confirmBooking", () => {
   it("books a paid hold with its technician and times, its own ID its FSM ID, and links the payment", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(app);
-    await post(app, "/api/bookings", { hold_id: holdId });
+    await post(app, "/api/bookings", { hold_id: holdId, terms: true });
     const payments = createStubPayments();
     expect(await confirmBooking({ db: env.DB, payments: payments, now: NOW, log: createLogger() }, holdId)).toBe(
       "not_paid",
@@ -224,7 +229,7 @@ describe("confirmBooking", () => {
   it("refunds, once, a payment made after its hold had lapsed and the two minutes' grace after it", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(app);
-    await post(app, "/api/bookings", { hold_id: holdId });
+    await post(app, "/api/bookings", { hold_id: holdId, terms: true });
     await captured(holdId, new Date(NOW.getTime() + 13 * 60_000).toISOString());
     const payments = createStubPayments();
     const later = new Date(NOW.getTime() + 13 * 60_000);
@@ -242,7 +247,7 @@ describe("confirmBooking", () => {
   it("tells the client of a refund made because the hold had lapsed, once, without their visits consent", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(app);
-    await post(app, "/api/bookings", { hold_id: holdId });
+    await post(app, "/api/bookings", { hold_id: holdId, terms: true });
     const later = new Date(NOW.getTime() + 13 * 60_000);
     await captured(holdId, later.toISOString());
     const notified: string[] = [];
@@ -293,7 +298,7 @@ describe("confirmBooking", () => {
       await post(app, "/api/holds", { type: "consultation", date: "2026-09-22", window: "morning" })
     ).json<{ id: string }>();
     // Confirmed, and its booking lost with the request, as the half-hour pass finds it.
-    await post(app, "/api/bookings", { hold_id: consult.id }, { DB: leaseRefused(env.DB) });
+    await post(app, "/api/bookings", { hold_id: consult.id, terms: true }, { DB: leaseRefused(env.DB) });
     await env.DB.prepare("UPDATE slot_holds SET state = 'released' WHERE id = ?1").bind(consult.id).run();
     const later = new Date(NOW.getTime() + 13 * 60_000);
     expect(
@@ -334,7 +339,9 @@ describe("booking a service ops added", () => {
       .bind(holdId)
       .first();
     expect(held).toEqual({ type: "service", tier: "premium", minutes: 120, amount: 250000 });
-    const started = await (await post(app, "/api/bookings", { hold_id: holdId })).json<{ checkout: object }>();
+    const started = await (
+      await post(app, "/api/bookings", { hold_id: holdId, terms: true })
+    ).json<{ checkout: object }>();
     expect(started.checkout).toMatchObject({ amount: 250000, description: "Premium service · Tue 22 Sep" });
 
     await captured(holdId);
@@ -361,7 +368,7 @@ describe("booking a service ops added", () => {
       ),
       env.DB.prepare("UPDATE services SET minutes = 180 WHERE tier = 'premium'"),
     ]);
-    await post(app, "/api/bookings", { hold_id: holdId });
+    await post(app, "/api/bookings", { hold_id: holdId, terms: true });
     await captured(holdId);
 
     await confirmBooking({ db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() }, holdId);
@@ -376,7 +383,7 @@ describe("Razorpay's capture of a hold's payment", () => {
   it("books the visit in the webhook's own request", async () => {
     const client = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(client);
-    const started = await post(client, "/api/bookings", { hold_id: holdId });
+    const started = await post(client, "/api/bookings", { hold_id: holdId, terms: true });
     const { checkout } = await started.json<{ checkout: { order_id: string } }>();
     const event = {
       entity: "event",

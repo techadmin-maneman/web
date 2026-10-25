@@ -2,13 +2,14 @@
 
 import { Checkbox } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
+import { TextLink } from "@maneman/ui/TextLink";
 import { NoticeLine } from "@maneman/ui/NoticeLine";
 import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold, MoveTerms } from "../../api.ts";
-import { arrivalHours, booking, change, ONE_VISIT } from "../../content.ts";
+import { arrivalHours, booking, change, LEGAL_URLS, ONE_VISIT } from "../../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../../lib/money.ts";
 import { CodeBox } from "../CodeBox.tsx";
@@ -117,6 +118,60 @@ function RemindLine() {
   );
 }
 
+/** "I agree to the Terms and Conditions and the Privacy Policy.", each a link to the site's page, in a new tab. */
+function AgreeLine() {
+  const words = booking.pay.agree;
+  const urls = LEGAL_URLS[import.meta.env.MM_ENV];
+  return (
+    <span>
+      {words.before}
+      <TextLink inline newTab href={urls.terms}>
+        {words.terms}
+      </TextLink>
+      {words.between}
+      <TextLink inline newTab href={urls.privacy}>
+        {words.privacy}
+      </TextLink>
+      {words.after}
+    </span>
+  );
+}
+
+/** The pay step's ticks: the day-before reminder, where it is not on already, and a new booking's agreement. */
+function Agreements(props: {
+  askToRemind: boolean;
+  remind: boolean;
+  onRemind: (remind: boolean) => void;
+  asksAgreement: boolean;
+  agreed: boolean;
+  onAgree: (agreed: boolean) => void;
+}) {
+  return (
+    <>
+      {props.askToRemind && (
+        <Checkbox
+          className={styles.remind}
+          label={<RemindLine />}
+          checked={props.remind}
+          onChange={(event) => {
+            props.onRemind(event.target.checked);
+          }}
+        />
+      )}
+      {props.asksAgreement && (
+        <Checkbox
+          className={styles.remind}
+          label={<AgreeLine />}
+          checked={props.agreed}
+          onChange={(event) => {
+            props.onAgree(event.target.checked);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 /** What every visit's photographs are, in one line beneath Pay, with its link to the notice. */
 function VisitPhotos() {
   return (
@@ -157,6 +212,9 @@ export function PayStep(props: {
   const { split } = priceFigures(hold.price);
   // A code being applied or taken off may change the price: Pay waits for it, so the order is for the price shown.
   const [codeSending, setCodeSending] = useState(false);
+  // A new booking agrees to the terms by a tick of the client's own; a move keeps the booking it moves.
+  const asksAgreement = moving === undefined;
+  const [agreed, setAgreed] = useState(false);
   return (
     <>
       <Heading title={free ? copy.titleFree : copy.title} aside={copy.held(minutesAndSeconds(left))} />
@@ -186,16 +244,14 @@ export function PayStep(props: {
         <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} stake={stake} late={late} />
       </div>
       {takesACode && <CodeBox hold={hold} busy={props.busy} onHold={props.onHold} onSending={setCodeSending} />}
-      {props.askToRemind && (
-        <Checkbox
-          className={styles.remind}
-          label={<RemindLine />}
-          checked={props.remind}
-          onChange={(event) => {
-            props.onRemind(event.target.checked);
-          }}
-        />
-      )}
+      <Agreements
+        askToRemind={props.askToRemind}
+        remind={props.remind}
+        onRemind={props.onRemind}
+        asksAgreement={asksAgreement}
+        agreed={agreed}
+        onAgree={setAgreed}
+      />
       {props.problem !== null && (
         <p className={styles.problem} role="alert">
           {props.problem}
@@ -205,7 +261,7 @@ export function PayStep(props: {
         variant="primary"
         size="action"
         className={styles.primary}
-        disabled={props.busy || codeSending || left === 0}
+        disabled={props.busy || codeSending || left === 0 || (asksAgreement && !agreed)}
         busy={props.busy}
         onClick={props.onPay}
       >

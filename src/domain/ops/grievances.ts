@@ -84,6 +84,32 @@ function newGrievancesMessage(raised: number, queueLink: string): string {
   return `${String(raised)} grievances were raised in the last hour. Answer them in Grievances: ${queueLink}`;
 }
 
+/** The message that tells the client their concern is in, queued once it is recorded. */
+export function concernReceivedMessage(
+  db: D1Database,
+  input: { readonly grievanceId: string; readonly personId: string; readonly now: Date },
+): { id: string; statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = queueMessage(db, {
+    id,
+    personId: input.personId,
+    kind: "concern_received",
+    subject: { kind: "grievance", id: input.grievanceId },
+    at: input.now.toISOString(),
+  });
+  return { id, statement };
+}
+
+/** What the acknowledgement says: the client's first name; it goes whatever they chose about visit messages. */
+export async function composeConcernReceived(db: D1Database, grievanceId: string, personId: string): Promise<Composed> {
+  const row = await db
+    .prepare("SELECT p.name FROM grievances g JOIN people p ON p.id = g.person_id WHERE g.id = ?1 AND g.person_id = ?2")
+    .bind(grievanceId, personId)
+    .first<{ name: string }>();
+  if (row === null) return { skip: "the concern is not there" };
+  return { template: "concern_received_v1", params: [firstNameOf(row.name)] };
+}
+
 /** The message that tells the client their concern is answered; for the batch that records the answer. */
 function concernAnsweredMessage(
   db: D1Database,

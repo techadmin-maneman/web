@@ -1,7 +1,7 @@
 import { expect, test } from "../support.ts";
 import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
-import { toPayment, openSheet, scanOf } from "./booking-fixtures.ts";
+import { toPayment, openSheet, scanOf, AGREE_TERMS } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 import { PAY_SERVICE } from "./booking-fixtures.ts";
 
@@ -86,6 +86,7 @@ test("the payment’s outcomes meet WCAG 2.2 AA: failed, the slot gone back, and
   await fakeCheckout(page, "failed");
   await page.clock.install();
   await toPayment(page);
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
   await expect(page.getByRole("dialog", { name: appCopy.booking.failed.title })).toBeVisible();
   await scanOf(page);
@@ -99,6 +100,7 @@ test("a confirmed booking meets WCAG 2.2 AA", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   await toPayment(page);
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
   await expect(page.getByRole("dialog", { name: appCopy.booking.confirmed.label })).toBeVisible({ timeout: 15_000 });
   await scanOf(page);

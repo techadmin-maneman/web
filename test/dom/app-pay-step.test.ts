@@ -59,14 +59,39 @@ const payButton = () => {
   return button;
 };
 
+/** Ticks the box that agrees to the terms and the privacy policy. */
+const agree = () => {
+  const box = [...page.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find((each) =>
+    each.closest("label")?.textContent.includes(copy.agree.terms),
+  );
+  if (box === undefined) throw new Error("no agreement");
+  act(() => {
+    box.click();
+  });
+};
+
 describe("the pay step", () => {
-  it("asks a visit's price, and pays at a tap", () => {
+  it("asks a visit's price, and pays at a tap once the terms are agreed to", () => {
     draw(holdOf());
     expect(payButton().textContent).toBe(copy.pay(rupees(200000)));
+    agree();
     act(() => {
       payButton().click();
     });
     expect(paid).toBe(1);
+  });
+
+  // Counsel asks for a tick of the client's own wherever they pay, the terms and the privacy policy each a link.
+  it("holds Pay until the client agrees to the terms and the privacy policy, each a link in a new tab", () => {
+    draw(holdOf());
+    expect(payButton().disabled).toBe(true);
+    const links = [...page.querySelectorAll("a")].filter((link) => /\/(terms|privacy)$/.test(link.href));
+    expect(links.map((link) => [link.textContent, link.target])).toEqual([
+      [copy.agree.terms, "_blank"],
+      [copy.agree.privacy, "_blank"],
+    ]);
+    agree();
+    expect(payButton().disabled).toBe(false);
   });
 
   it("confirms a visit a free service visit covers, with the credit it uses and no code box", () => {
@@ -116,6 +141,7 @@ describe("the pay step", () => {
     draw(holdOf({ expires_at: minutesFromNow(-1) }));
     expect(payButton().disabled).toBe(true);
     draw(holdOf());
+    agree();
     expect(payButton().disabled).toBe(false);
   });
 });

@@ -23,7 +23,15 @@ describe("the address the consultation is at", () => {
     request(
       site(),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, ...body }),
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        ...body,
+      }),
       { CRM_QUEUE: fakeQueue(), ...bindings },
     );
   const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
@@ -117,7 +125,15 @@ describe("the address the consultation is at", () => {
     const answer = await request(
       site({ selfServeBooking: false, selfServeConsultations: false }),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      post({
+        ...VISITOR,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+      }),
       { CRM_QUEUE: fakeQueue() },
     );
     expect(await answer.json()).toMatchObject({ state: "requested" });
@@ -202,7 +218,15 @@ describe("the address the consultation is at", () => {
       const answer = await request(
         site({ selfServeBooking: false, selfServeConsultations: false }),
         "/api/consultation",
-        post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+        post({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
         { CRM_QUEUE: fakeQueue() },
       );
       expect(await answer.json()).toMatchObject({ state: "requested" });

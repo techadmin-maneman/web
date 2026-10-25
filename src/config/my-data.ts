@@ -2,6 +2,7 @@
 // heading, in the order the page shows them, and each field's label and how its value reads.
 
 import { code, day, money, text, time, words, yesNo, type Part } from "./my-data-fields.ts";
+import { CONSENTS_PART, TERMS_PART } from "./my-data-agreements.ts";
 import { CUSTOM_ORDERS_PART } from "./my-data-orders.ts";
 import { CODE_WORDS, PURPOSE_WORDS } from "./my-data-words.ts";
 
@@ -46,16 +47,8 @@ export const MY_DATA = {
         replaced_at: time("Replaced"),
       },
     },
-    consents: {
-      title: "What you agreed to",
-      fields: {
-        purpose: { label: "For", as: "purpose" },
-        granted: yesNo("Agreed"),
-        notice_version: { label: "What you were shown", as: "notice" },
-        source: words("Where"),
-        created_at: time("When"),
-      },
-    },
+    consents: CONSENTS_PART,
+    terms_acceptances: TERMS_PART,
     visits: {
       title: "Your visits",
       fields: {
