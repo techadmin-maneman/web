@@ -11,7 +11,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { type CancelOutcome, type CancelTerms } from "../api.ts";
-import { clients } from "../content.ts";
+import { clients, CLOSE } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { clientsApi } from "./clients-api.ts";
@@ -205,17 +205,7 @@ export function CancelVisit({
     onClose(cancelled !== null);
   };
   return (
-    <Drawer
-      titleId="cancel-visit-title"
-      title={copy.title(name)}
-      aside={
-        <Button variant="outline" size="small" className={styles.quiet} onClick={close}>
-          {copy.close}
-        </Button>
-      }
-      canClose
-      onDismiss={close}
-    >
+    <Drawer titleId="cancel-visit-title" title={copy.title(name)} close={CLOSE} onDismiss={close}>
       {cancelled === null ? (
         <Body visitId={visitId} onCancelled={setCancelled} />
       ) : (

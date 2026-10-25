@@ -12,7 +12,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useId, useState } from "react";
 import { type Task, type VisitType } from "../api.ts";
-import { dispatch, tasks } from "../content.ts";
+import { dispatch, tasks, CLOSE } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import shared from "./tasks.module.css";
 import { tasksApi } from "./tasks-api.ts";
@@ -39,7 +39,13 @@ function UpiDrawer(props: {
 }) {
   const titleId = useId();
   return (
-    <Drawer titleId={titleId} title={copy.title} sub={props.sub} canClose={!props.busy} onDismiss={props.onClose}>
+    <Drawer
+      titleId={titleId}
+      title={copy.title}
+      sub={props.sub}
+      close={!props.busy ? CLOSE : null}
+      onDismiss={props.onClose}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();

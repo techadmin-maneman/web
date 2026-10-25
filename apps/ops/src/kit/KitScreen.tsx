@@ -38,6 +38,7 @@ import { kit as words } from "../content/kit.ts";
 import styles from "./kit.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { ConsoleKit } from "./ConsoleKit.tsx";
+import { CLOSE } from "../content.ts";
 
 const SIZES: readonly ButtonSize[] = ["action", "control", "small", "compact"];
 const STYLES: readonly TextStyle[] = [
@@ -267,7 +268,7 @@ function Modals() {
           titleId="kit-drawer"
           title={words.drawer}
           sub={words.noteLine}
-          canClose
+          close={CLOSE}
           onDismiss={() => {
             setOpen(null);
           }}

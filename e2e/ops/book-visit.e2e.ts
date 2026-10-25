@@ -256,7 +256,7 @@ test("books a consultation asked for from its Tasks row, at the first start in t
     },
   ]);
 
-  await booking.getByRole("button", { name: opsCopy.clients.visits.book.close }).click();
+  await booking.getByRole("button", { name: opsCopy.CLOSE }).click();
   await expect(tasks.getByRole("listitem")).toHaveCount(0);
 });
 
@@ -343,7 +343,7 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
       covers: FIT,
     },
   ]);
-  await booking.getByRole("button", { name: opsCopy.clients.visits.book.close }).click();
+  await booking.getByRole("button", { name: opsCopy.CLOSE }).click();
   await expect(tasks.getByRole("listitem")).toHaveCount(0);
 });
 

@@ -100,7 +100,6 @@ export const dispatch = {
     reason: "Reason",
     confirm: "Allow check-in",
     sending: "Allowing…",
-    close: "Close",
     done: (technician: string) => `${technician} can check in now. Ask them to tap I have arrived again.`,
     errors: {
       invalid_request: "Give a reason.",
@@ -177,7 +176,6 @@ export const dispatch = {
     /** A visit ops cancel for the client, or close by hand once its technician's phone was lost. */
     cancel: "Cancel visit",
     closeByHand: "Close by hand",
-    close: "Close",
   },
   /** The reason a move must carry, asked for before anything is written. */
   move: {

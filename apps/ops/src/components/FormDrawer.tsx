@@ -4,6 +4,7 @@
 import { Drawer } from "@maneman/ui/Drawer";
 import { createContext, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { CLOSE } from "../content.ts";
 
 /** Whether a form stands in a drawer, whose title names it already: its own name is read, not shown. */
 export const InDrawer = createContext(false);
@@ -20,7 +21,7 @@ export function FormDrawer({
 }) {
   const id = useId();
   return createPortal(
-    <Drawer titleId={id} title={title} canClose onDismiss={onClose}>
+    <Drawer titleId={id} title={title} close={CLOSE} onDismiss={onClose}>
       <InDrawer value>{children}</InDrawer>
     </Drawer>,
     document.body,

@@ -11,7 +11,7 @@ import { Drawer } from "@maneman/ui/Drawer";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import type { Unassigned } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
-import { dispatch } from "../content.ts";
+import { dispatch, CLOSE } from "../content.ts";
 import { clientPath } from "../route.ts";
 import styles from "./dispatch.module.css";
 import { nameOf } from "./job.ts";
@@ -47,7 +47,7 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
         </>
       }
       aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[each.badge]}</span>}
-      canClose
+      close={CLOSE}
       onDismiss={onClose}
     >
       <dl className={styles.rows}>
@@ -84,9 +84,6 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
             </OpsLink>
           </>
         )}
-        <Button variant="outline" size="small" onClick={onClose}>
-          {copy.close}
-        </Button>
       </div>
     </Drawer>
   );

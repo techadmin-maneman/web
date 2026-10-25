@@ -5,7 +5,7 @@ import { Drawer } from "@maneman/ui/Drawer";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useEffect, useState } from "react";
 import { type DispatchDay } from "../api.ts";
-import { dispatch } from "../content.ts";
+import { dispatch, CLOSE } from "../content.ts";
 import shared from "./dispatch.module.css";
 import styles from "./day-routes.module.css";
 import { dispatchApi } from "./dispatch-api.ts";
@@ -97,7 +97,7 @@ export function DayRoutes({ date, city, onClose }: { date: string; city: string 
   }, [date, city]);
 
   return (
-    <Drawer titleId="day-routes-title" title={copy.title(day)} canClose onDismiss={onClose}>
+    <Drawer titleId="day-routes-title" title={copy.title(day)} close={CLOSE} onDismiss={onClose}>
       {map !== null && <img className={styles.routeMap} src={map} alt={copy.mapAlt(day)} width={640} height={400} />}
       {loaded.state === "loading" && <p className={shared.untoldLine}>{copy.loading}</p>}
       {loaded.state === "failed" && <p className={shared.untoldLine}>{copy.failed}</p>}
