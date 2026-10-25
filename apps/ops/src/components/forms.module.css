@@ -91,6 +91,13 @@
   min-width: var(--ops-figure);
 }
 
+/* A field or a sub-heading set straight in a panel takes the panel's inset, as its rows and actions do. */
+section > .field,
+section > .ruleTitle,
+section > .recordFoot {
+  margin: var(--sp-16) var(--sp-20) 0;
+}
+
 .fieldLabel {
   display: block;
   font-size: var(--fs-14);

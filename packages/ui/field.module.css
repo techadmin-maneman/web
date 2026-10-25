@@ -87,8 +87,16 @@
     font-size: var(--fs-14);
   }
 
+  /* A figure is typed, never nudged by a spinner. */
   .figure {
     font-variant-numeric: tabular-nums;
+    appearance: textfield;
+  }
+
+  .figure::-webkit-inner-spin-button,
+  .figure::-webkit-outer-spin-button {
+    margin: 0;
+    appearance: none;
   }
 
   /* A box's width by what it holds (./Field.tsx's BoxWidth), each the app's own (./base.css); a date's shows the whole
@@ -121,9 +129,10 @@
     background-image:
       linear-gradient(45deg, transparent 50%, var(--ui-text) 50%),
       linear-gradient(135deg, var(--ui-text) 50%, transparent 50%);
+    /* The two halves of one caret, side by side. */
     background-position:
-      calc(100% - var(--sp-16)) 50%,
-      calc(100% - var(--sp-8)) 50%;
+      calc(100% - var(--sp-20)) 50%,
+      calc(100% - var(--sp-16)) 50%;
     background-size: var(--sp-4) var(--sp-4);
     background-repeat: no-repeat;
   }
