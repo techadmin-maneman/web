@@ -73,7 +73,7 @@ test("counts the jobs each has finished, and how long those took", async ({ page
 // The figures counted a fixed 90 days, and nothing on the page could change that.
 test("counts over the period chosen, ops’s own until then", async ({ page }) => {
   await open(page);
-  const period = page.getByLabel(opsCopy.technicians.work.over);
+  const period = page.getByLabel(opsCopy.technicians.work.over, { exact: true });
   await expect(period).toHaveValue("91");
   const asked = page.waitForRequest((request) => request.url().includes("/api/technicians/work?from="));
   await period.selectOption({ label: opsCopy.technicians.work.days(30) });
