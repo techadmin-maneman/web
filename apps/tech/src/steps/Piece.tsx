@@ -7,8 +7,9 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
-import { job as jobCopy, steps as copy } from "../content.ts";
-import { Failed, Loading } from "../states/States.tsx";
+import { steps as copy } from "../content.ts";
+import { JobFailed } from "../states/JobFailed.tsx";
+import { Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import {
   choiceSent,
@@ -214,7 +215,7 @@ export function Piece({ id }: { id: string }) {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+    return <JobFailed failed={loaded} onRetry={retry} />;
   }
   const finishing = (body: EventBody<"piece"> | typeof CANNOT_FIT_TODAY) =>
     void (body === CANNOT_FIT_TODAY ? closeWith(CANNOT_FIT) : finish(body));

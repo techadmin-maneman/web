@@ -9,13 +9,14 @@ import { Icon } from "@maneman/ui/Icon";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useCallback } from "react";
 import type { Job, JobSummary } from "../api.ts";
-import { closeOut as copy, job as jobCopy, oneVisit, titles } from "../content.ts";
+import { closeOut as copy, oneVisit, titles } from "../content.ts";
 import { declinedTheFit, outcomeOf, type Outcome } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
+import { JobFailed } from "../states/JobFailed.tsx";
 import { Failed, Loading } from "../states/States.tsx";
 import { type Heard, keptArrival, keptClosed, keptStates } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
@@ -111,11 +112,7 @@ export function CloseOut({ id }: { id: string }) {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
-    return (
-      <main className={frame.screen}>
-        <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />
-      </main>
-    );
+    return <JobFailed failed={loaded} onRetry={retry} />;
   }
 
   const job = loaded.value;

@@ -33,6 +33,19 @@ test("sends Navigate to a route any phone opens, by the pin when the address has
   await expect(navigate).toHaveAttribute("target", "_blank");
 });
 
+test("says a job that is no longer theirs is off their list, with the way back to Today at the top", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.moved = true;
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  await expect(page.getByText(techCopy.job.gone)).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.job.retry })).toHaveCount(0);
+  await page.getByRole("button", { name: techCopy.job.backToToday }).first().click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
 test("sends Navigate to the typed address when it was saved without a pin", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.pin = false;

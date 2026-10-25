@@ -8,8 +8,9 @@ import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
-import { capture as copy, job as jobCopy } from "../content.ts";
-import { Failed, Loading } from "../states/States.tsx";
+import { capture as copy } from "../content.ts";
+import { JobFailed } from "../states/JobFailed.tsx";
+import { Loading } from "../states/States.tsx";
 import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } from "../store/outbox.ts";
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
 import { BlankFrame, captureFrame, openCamera } from "./capture.ts";
@@ -207,7 +208,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+    return <JobFailed failed={loaded} onRetry={retry} />;
   }
 
   const all = angle === undefined;

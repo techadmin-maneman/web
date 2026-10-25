@@ -281,7 +281,7 @@ describe("a day’s jobs", () => {
   it("never shows what the phone kept once the API has ended the session", async () => {
     await keepDay(TODAY, [summary("a", TODAY)]);
     api({ [`/api/tech/jobs?date=${TODAY}`]: revoked });
-    expect(await loadDay(TODAY)).toEqual({ state: "failed", requestId: "test" });
+    expect(await loadDay(TODAY)).toEqual({ state: "failed", requestId: "test", gone: false });
   });
 
   it("still shows a fresh day that a full phone could not keep", async () => {
@@ -297,7 +297,7 @@ describe("a day’s jobs", () => {
       throw new DOMException("gone", "InvalidStateError");
     });
     api({});
-    expect(await loadDay(TODAY)).toEqual({ state: "failed", requestId: null });
+    expect(await loadDay(TODAY)).toEqual({ state: "failed", requestId: null, gone: false });
   });
 
   // With no signal, the row of a job started since the list was kept lost its "In progress".
@@ -352,13 +352,13 @@ describe("a job’s card", () => {
   it("is never read from the phone after a 401, which ends the session", async () => {
     await keepJob(card("a", TODAY));
     api({ "/api/tech/jobs/a": revoked });
-    expect(await loadJob("a")).toEqual({ state: "failed", requestId: "test" });
+    expect(await loadJob("a")).toEqual({ state: "failed", requestId: "test", gone: false });
   });
 
-  it("is not read from the phone when the API says the job is not this technician’s", async () => {
+  it("is not read from the phone when the API says the job is not this technician’s, which no retry mends", async () => {
     await keepJob(card("a", TODAY));
     api({ "/api/tech/jobs/a": { status: 404, json: { error: { code: "not_found", request_id: "test" } } } });
-    expect(await loadJob("a")).toEqual({ state: "failed", requestId: "test" });
+    expect(await loadJob("a")).toEqual({ state: "failed", requestId: "test", gone: true });
   });
 
   // Kept by a build from before ops set the job sheet and the consumables (docs/decisions/0087-consumables-and-stock.md):

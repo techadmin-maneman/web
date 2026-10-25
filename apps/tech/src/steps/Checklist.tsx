@@ -11,9 +11,10 @@
 import { CheckRow } from "@maneman/ui/CheckRow";
 import { useEffect, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
-import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
+import { oneVisit, steps as copy } from "../content.ts";
 import { declinedTheFit } from "../lib/progress.ts";
-import { Failed, Loading } from "../states/States.tsx";
+import { JobFailed } from "../states/JobFailed.tsx";
+import { Loading } from "../states/States.tsx";
 import { put, remove } from "../store/db.ts";
 import type { Queued } from "../store/outbox.ts";
 import { useDraft, type Draft } from "./drafts.ts";
@@ -104,7 +105,7 @@ export function Checklist({ id }: { id: string }) {
 
   if (loaded.state === "loading" || !kept.read) return <Loading />;
   if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+    return <JobFailed failed={loaded} onRetry={retry} />;
   }
   const job = loaded.value;
   return (

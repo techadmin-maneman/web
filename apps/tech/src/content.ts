@@ -365,6 +365,8 @@ export const job = {
   // The board draws no failure for a job's card.
   failed: "This job’s card didn’t load.",
   retry: "Try again",
+  gone: "This job isn’t on your list.",
+  backToToday: "Back to today",
 } as const;
 
 /** The evidence chain when the client is not home. */

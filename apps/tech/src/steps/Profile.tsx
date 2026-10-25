@@ -14,9 +14,10 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { capsLook } from "@maneman/ui/Caps";
 import { useEffect, useId, useState } from "react";
 import type { FitSpec, HairProfile, History, Job, ProfileRequest } from "../api.ts";
-import { job as jobCopy, profile as copy, steps as stepsCopy } from "../content.ts";
+import { profile as copy, steps as stepsCopy } from "../content.ts";
 import { todayInIndia } from "../lib/when.ts";
-import { Failed, Loading } from "../states/States.tsx";
+import { JobFailed } from "../states/JobFailed.tsx";
+import { Loading } from "../states/States.tsx";
 import { put, remove } from "../store/db.ts";
 import type { Queued } from "../store/outbox.ts";
 import {
@@ -340,7 +341,7 @@ export function Profile({ id }: { id: string }) {
 
   if (loaded.state === "loading" || !kept.read) return <Loading />;
   if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+    return <JobFailed failed={loaded} onRetry={retry} />;
   }
   return (
     <ProfileForm

@@ -16,8 +16,9 @@ import { Button } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
-import { job as jobCopy, steps as copy } from "../content.ts";
-import { Failed, Loading } from "../states/States.tsx";
+import { steps as copy } from "../content.ts";
+import { JobFailed } from "../states/JobFailed.tsx";
+import { Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -221,7 +222,7 @@ export function Consumables({ id }: { id: string }) {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+    return <JobFailed failed={loaded} onRetry={retry} />;
   }
   // A consultation and fit the client said no to: nothing was fitted, so nothing is expected of the kit.
   const job = declinedTheFit(loaded.value, queued)

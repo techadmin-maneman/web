@@ -5,9 +5,10 @@
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { useState } from "react";
 import type { EventBody, Job, OutcomeRequest, PartialReason } from "../api.ts";
-import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
+import { oneVisit, steps as copy } from "../content.ts";
 import { choiceOf, type ClientChoice } from "../lib/progress.ts";
-import { Failed, Loading } from "../states/States.tsx";
+import { JobFailed } from "../states/JobFailed.tsx";
+import { Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import { DiscountCode } from "./DiscountCode.tsx";
 import { outcomeSent } from "./sent-before.ts";
@@ -227,7 +228,7 @@ export function Outcome({ id }: { id: string }) {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
-    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+    return <JobFailed failed={loaded} onRetry={retry} />;
   }
   const job = loaded.value;
   return (
