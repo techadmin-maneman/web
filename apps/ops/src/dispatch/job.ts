@@ -5,6 +5,7 @@
 import type { Block, Board, BoardClient, BookingWindow, BoardRow, MoveReason, Shown, Unassigned } from "../api.ts";
 import { indiaDate, indiaClock } from "@maneman/web-kit/dates";
 import { asksTheClient } from "@rules/policy/dispatch.ts";
+import { MINUTES_PER_UNIT } from "@rules/policy/visit-length.ts";
 import { dispatch } from "../content.ts";
 
 /** A window as the board names it. */
@@ -75,6 +76,12 @@ export function nameOf(job: Job): string {
   );
   return parts.length === 0 ? dispatch.unnamed : parts.join(" · ");
 }
+
+/** The time a job holds on the board: a slot is two half-slots of MINUTES_PER_UNIT each. */
+export const minutesOf = (slots: number): number => slots * 2 * MINUTES_PER_UNIT;
+
+/** The job as a sheet or a line over the board names it: the client in full, where the board's card is cramped. */
+export const fullNameOf = (job: Job): string => personOf(job)?.name ?? nameOf(job);
 
 /** The day and window a job stands in now, which the tray's jobs have as well. */
 export function whenOf(job: Job): { readonly date: string | null; readonly window: BookingWindow | null } {

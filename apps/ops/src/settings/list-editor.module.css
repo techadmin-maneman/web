@@ -36,6 +36,11 @@
   gap: var(--sp-4);
 }
 
+/* Each an icon at a table row's height. */
+.move {
+  --icon-button-size: var(--ops-row);
+}
+
 .add {
   margin-top: var(--sp-12);
 }

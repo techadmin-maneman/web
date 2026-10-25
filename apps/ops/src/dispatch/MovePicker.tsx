@@ -19,7 +19,7 @@ import { phoneWords } from "../lib/phone.ts";
 import {
   asksTheClientOf,
   changesTime,
-  nameOf,
+  fullNameOf,
   personOf,
   startOf,
   whenOf,
@@ -41,19 +41,19 @@ function noticeInside(job: Job, now: Date): number | null {
 function noticeOf(job: Job, to: Target, landsAt: string | null): { readonly line: string; readonly messaged: boolean } {
   const copy = dispatch.move;
   const person = personOf(job);
-  if (!changesTime(job, to, landsAt)) return { line: copy.sameTime(nameOf(job)), messaged: false };
+  if (!changesTime(job, to, landsAt)) return { line: copy.sameTime(fullNameOf(job)), messaged: false };
   const badge = job.kind === "block" ? job.block.badge : job.job.badge;
   const paid = badge === "prepaid" || badge === "credit";
   const withPayment = (line: string) => (paid ? `${line} ${copy.carries}` : line);
   if (person === null) return { line: withPayment(copy.noClient), messaged: false };
-  if (person.whatsapp_visits) return { line: withPayment(copy.note(nameOf(job))), messaged: true };
+  if (person.whatsapp_visits) return { line: withPayment(copy.note(fullNameOf(job))), messaged: true };
   return { line: withPayment(copy.call(person.name, phoneWords(person.mobile))), messaged: false };
 }
 
-/** "Move and notify" only where a message will go; "Ask Rohit M. to confirm" where the client is asked instead. */
+/** "Move and notify" only where a message will go; "Ask Rohit Malhotra to confirm" where the client is asked instead. */
 function sendLabel(job: Job, sending: boolean, messaged: boolean, asking: boolean): string {
   const copy = dispatch.move;
-  if (asking) return sending ? copy.asking : copy.askSend(nameOf(job));
+  if (asking) return sending ? copy.asking : copy.askSend(fullNameOf(job));
   if (sending) return copy.sending;
   return messaged ? copy.send : copy.sendQuietly;
 }
@@ -61,7 +61,7 @@ function sendLabel(job: Job, sending: boolean, messaged: boolean, asking: boolea
 /** What the client hears when they are asked: on WhatsApp, or by a call from ops. */
 function askLine(job: Job): string {
   const person = personOf(job);
-  if (person === null || person.whatsapp_visits) return dispatch.move.ask(nameOf(job));
+  if (person === null || person.whatsapp_visits) return dispatch.move.ask(fullNameOf(job));
   return dispatch.move.askCall(person.name, phoneWords(person.mobile));
 }
 
@@ -151,11 +151,11 @@ export function MovePicker({ job, to, starts, blackout, sending, clearingCheckIn
       onDismiss={onCancel}
     >
       <h2 className={styles.pickerTitle} id="move-title">
-        {copy.title(nameOf(job), to.technician.name)}
+        {copy.title(fullNameOf(job), to.technician.name)}
       </h2>
       <p className={styles.pickerWhen}>{whenWords(stood, lands)}</p>
       {starts.length > 1 && <StartChoice starts={starts} chosen={landsAt} sending={sending} onChoose={setLandsAt} />}
-      <ChoiceGroup className={styles.reasons} legend={copy.legend} legendLook="hidden" disabled={sending} ruled>
+      <ChoiceGroup className={styles.reasons} legend={copy.legend} disabled={sending} ruled>
         {copy.reasons.map((each) => (
           <Radio
             key={each.reason}

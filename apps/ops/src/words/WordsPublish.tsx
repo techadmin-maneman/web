@@ -3,7 +3,6 @@
 // shows them. Only its second press publishes.
 
 import { Note } from "@maneman/ui/Note";
-import { whoWords } from "../lib/who.ts";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -16,13 +15,15 @@ import { wordsApi } from "./words-api.ts";
 
 const { publish } = copy;
 
-/** When the site's words were last published, and by whom. */
+/** When the site's words were last published, and by whom: a person by their e-mail, a deploy as automatic. */
+function lastLine(published: WordsPublish | null): string {
+  if (published === null) return publish.never;
+  const day = shortDate(indiaDate(published.at));
+  return published.by.includes("@") ? publish.last(day, published.by) : publish.lastAutomatic(day);
+}
+
 export function LastPublished({ published }: { published: WordsPublish | null }) {
-  return (
-    <Note>
-      {published === null ? publish.never : publish.last(shortDate(indiaDate(published.at)), whoWords(published.by))}
-    </Note>
-  );
+  return <Note>{lastLine(published)}</Note>;
 }
 
 /** The check before a publish: the lines changed since the last, and when this environment's site shows them. */

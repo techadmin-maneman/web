@@ -4,12 +4,13 @@
 
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { TextArea } from "@maneman/ui/Field";
+import { TextLink } from "@maneman/ui/TextLink";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type Word } from "../api.ts";
 import { ReadRow } from "../components/RecordRows.tsx";
 import form from "../components/forms.module.css";
-import { EDITING } from "../content/common.ts";
+import { BOOKING_URL, EDITING } from "../content/common.ts";
 import { words as copy } from "../content/words.ts";
 import { useAccess } from "../lib/access.ts";
 import { WordHistory } from "./WordHistory.tsx";
@@ -24,15 +25,40 @@ const holesOf = (text: string): string[] => [...new Set(text.match(/\{\{\d+\}\}|
 /** Whether messages send in new words at once, as the bridge does, or once WhatsApp approves them, as MSG91 does. */
 export type Messages = "at_once" | "after_approval";
 
-/** A part of a line's place in words: "howItWorks" is "How it works", "visit_reminder_v1" is "Visit reminder". */
+/**
+ * A part of a line's place in words: "howItWorks" is "How it works", "visit_reminder_v1" is "Visit reminder". A part
+ * named in the content keeps its own capitals: "WhatsApp button".
+ */
 function partOf(name: string): string {
-  const said =
-    copy.places[name] ??
-    name
-      .replace(/_v\d+$/, "")
-      .replaceAll("_", " ")
-      .replace(/([a-z])([A-Z])/g, "$1 $2");
-  return said.charAt(0).toUpperCase() + said.slice(1).toLowerCase();
+  const named = copy.places[name];
+  if (named !== undefined) return named;
+  const said = name
+    .replace(/_v\d+$/, "")
+    .replaceAll("_", " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .toLowerCase();
+  return (said.charAt(0).toUpperCase() + said.slice(1)).replace(/\bwhatsapp\b/gi, "WhatsApp");
+}
+
+/** The site's own address in this environment, whose pages a line is seen on. */
+const SITE = new URL(BOOKING_URL[import.meta.env.MM_ENV]).origin;
+
+/** The page a site line is seen on, by its page and part; none for a message or a line on no one page. */
+const PAGES: Readonly<Record<string, string | undefined>> = {
+  home: "/",
+  contact: "/",
+  tryon: "/try",
+  guides: "/guides",
+  booking: "/book",
+  stopMessages: "/stop",
+  areasPage: "/areas",
+  cityPage: "/areas",
+};
+
+function pageOf(word: Word): string | null {
+  const [, page = "", part = ""] = /^site:([^/]+)\/([^.]+)/.exec(word.key) ?? [];
+  const path = PAGES[part] ?? PAGES[page];
+  return path === undefined ? null : `${SITE}${path}`;
 }
 
 /** Where a line sits, as the table names it: "Header · Menu link 1 · Label"; a message by its name. */
@@ -58,6 +84,7 @@ export function WordRecord(props: {
   const [used, setUsed] = useState<string | null>(null);
   const [uses, setUses] = useState(0);
   const holes = holesOf(word.text);
+  const page = pageOf(word);
   return (
     <>
       <div className={form.record}>
@@ -93,6 +120,13 @@ export function WordRecord(props: {
           )}
         </EditableRow>
       </div>
+      {page !== null && (
+        <p className={styles.hint}>
+          <TextLink href={page} newTab>
+            {copy.seePage}
+          </TextLink>
+        </p>
+      )}
       <p className={styles.hint}>
         {holes.length > 0 && `${formWords.keep(holes.join(", "))} `}
         {formWords.longest(word.longest)}

@@ -11,7 +11,8 @@ import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { addDays, fullDate, listDate, todayInIndia } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { Field, Select } from "@maneman/ui/Field";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   type Leave,
   type Roster as RosterBook,
@@ -34,6 +35,8 @@ import { techniciansApi } from "./technicians-api.ts";
 
 /** The route's period ends the day after the last one counted; the note names that last day. */
 const lastDay = (exclusiveEnd: string) => addDays(exclusiveEnd, -1);
+
+const DAY_MS = 86_400_000;
 
 /**
  * How long the technician's visits took, on average. A technician the phone
@@ -95,13 +98,45 @@ function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
   );
 }
 
-/** The roster's table: the active technicians, one row each. */
+/** The periods offered beside the one shown: a month, a quarter and a year. */
+const PERIODS = [30, 90, 365];
+
+/** Over how many days back the figures count, ops's own period until another is chosen. */
+function PeriodChoice({ counted, onFrom }: { counted: { from: string; to: string }; onFrom: (from: string) => void }) {
+  const days = Math.round((Date.parse(counted.to) - Date.parse(counted.from)) / DAY_MS);
+  const offered = [...new Set([...PERIODS, days])].sort((one, other) => one - other);
+  return (
+    <Field label={technicians.work.over} labelHidden>
+      {(control) => (
+        <Select
+          {...control}
+          width="choice"
+          value={String(days)}
+          onChange={(event) => {
+            // The route counts to tomorrow, so the last N days start N - 1 days before today.
+            onFrom(addDays(todayInIndia(Date.now()), 1 - Number(event.target.value)));
+          }}
+        >
+          {offered.map((each) => (
+            <option key={each} value={each}>
+              {technicians.work.days(each)}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
+  );
+}
+
+/** The roster's table: the active technicians, one row each, and the period its figures count over. */
 function RosterTable({
   active,
   figures,
+  period,
 }: {
   active: readonly Technician[];
   figures: ReadonlyMap<string, TechnicianWork>;
+  period: ReactNode;
 }) {
   const today = todayInIndia(Date.now());
   const city = (row: Technician) => row.city ?? "";
@@ -116,7 +151,9 @@ function RosterTable({
   const view = useTableView(active, columns, { search: (row) => `${row.name} ${city(row)}` });
   return (
     <>
-      <Narrowing view={view} label={technicians.narrow} className={styles.narrow} />
+      <Narrowing view={view} label={technicians.narrow} className={styles.narrow}>
+        {period}
+      </Narrowing>
       <Table className={styles.table}>
         <thead>
           <tr>
@@ -156,11 +193,19 @@ function Period({ from, to }: { from: string; to: string }) {
   return null;
 }
 
+/** The figures, over ops's own period until another is chosen; a choice keeps the last shown until it answers. */
+function useWork() {
+  const [from, setFrom] = useState<string | null>(null);
+  const read = useCallback(() => techniciansApi.technicianWork(from), [from]);
+  const [work, retry] = useLoad(read);
+  return [work, retry, setFrom] as const;
+}
+
 function Roster() {
   const [loaded, retry] = useLoad(techniciansApi.technicians);
   // The roster carries no period, so the figures are a read of their own; the
   // table is one table either way, and waits for both.
-  const [work, retryWork] = useLoad(techniciansApi.technicianWork);
+  const [work, retryWork, setFrom] = useWork();
   // The roster as read again after a technician is added.
   const [fresh, setFresh] = useState<RosterBook | null>(null);
   const [adding, setAdding] = useState(false);
@@ -215,7 +260,11 @@ function Roster() {
       {roster.technicians.length === 0 ? (
         <EmptyState look="panel" line={technicians.empty} />
       ) : (
-        <RosterTable active={roster.technicians} figures={figures} />
+        <RosterTable
+          active={roster.technicians}
+          figures={figures}
+          period={<PeriodChoice counted={work.value} onFrom={setFrom} />}
+        />
       )}
       {roster.switched_off.length > 0 && <SwitchedOff list={roster.switched_off} />}
       {adding && (

@@ -40,7 +40,7 @@ async function recording(page: Page) {
 
 test("is a section of its own beside the technicians, titled by what it is", async ({ page }) => {
   await open(page);
-  await expect(page).toHaveTitle("Stock · Mane Man operations");
+  await expect(page).toHaveTitle("Stock · Mane Man Ops");
   await expect(page.getByRole("navigation").getByRole("link", { name: stock.title })).toHaveAttribute(
     "aria-current",
     "page",

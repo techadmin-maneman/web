@@ -150,7 +150,8 @@ export const care = {
     none: "No quick replies yet.",
     title: "Title",
     text: "Answer",
-    holes: "{name} becomes the client’s first name, and {next_visit} their next visit.",
+    insertName: "Insert the client’s first name",
+    insertNextVisit: "Insert their next visit",
     add: "Add",
     cancel: "Cancel",
     addOne: "Add a quick reply",
@@ -238,7 +239,7 @@ export const care = {
     title: "Care team",
     columns: {
       member: "Member",
-      name: "Known to clients as",
+      name: "Name clients see",
       clients: "Clients",
       daysOff: "Days off",
       leave: "Leave",

@@ -97,7 +97,7 @@ describe("the activity log", () => {
       [
         { kind: "staff", id: "care@maneman.in", name: null },
         "visit.cancel",
-        { kind: "appointment", id: VISIT, label: null },
+        { kind: "appointment", id: VISIT, label: "Rohit Malhotra" },
       ],
       [{ kind: "technician", id: IMRAN, name: "Imran Qureshi" }, "tech.call", null],
       [{ kind: "client", id: CLIENT, name: "Rohit Malhotra" }, "client.call", null],

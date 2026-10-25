@@ -26,6 +26,14 @@ export const firstShown = (count: number) => `Showing the first ${String(count)}
 /** A refusal with no words of its own. */
 export const FAILED = "That didn’t work. Try again.";
 
+/** A length of time as the console writes it: "1 h 30 min", "45 min", "3 h". */
+export function hoursAndMinutes(total: number): string {
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  if (hours === 0) return `${String(minutes)} min`;
+  return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} min`;
+}
+
 /** A long list's search and pages (../components/ListTools.tsx). */
 export const LIST_TOOLS = {
   matching: (count: number) => `${quantity(count)} ${count === 1 ? "match" : "matches"}`,

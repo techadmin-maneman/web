@@ -99,7 +99,7 @@ describe("the ops console’s routes", () => {
   it("names the money page Charges, at the address it has always had", () => {
     expect(routeOf("/payments")).toEqual({ page: "payments" });
     expect(SECTION_NAMES.payments).toBe("Charges");
-    expect(titleOf(routeOf("/payments"))).toBe("Charges · Mane Man operations");
+    expect(titleOf(routeOf("/payments"))).toBe("Charges · Mane Man Ops");
   });
 
   it("shows each page to those whose call opening it is one the API lists", () => {
@@ -190,13 +190,13 @@ describe("the ops console’s routes", () => {
   });
 
   it("titles each page by what it is, never by whom, so no two share a title (WCAG 2.4.2)", () => {
-    expect(titleOf(routeOf("/"))).toBe("Today · Mane Man operations");
-    expect(titleOf(routeOf("/settings/services"))).toBe("Consultation and fees · Settings · Mane Man operations");
-    expect(titleOf(routeOf("/settings/packages"))).toBe("Packages · Settings · Mane Man operations");
-    expect(titleOf(routeOf("/settings/stock"))).toBe("Stock · Settings · Mane Man operations");
-    expect(titleOf(routeOf("/stock"))).toBe("Stock · Mane Man operations");
-    expect(titleOf(routeOf(`/clients/${CLIENT}/consents`))).toBe("Consents · Clients · Mane Man operations");
-    expect(titleOf(routeOf(technicianPath(TECHNICIAN, "phones")))).toBe("Phones · Technicians · Mane Man operations");
+    expect(titleOf(routeOf("/"))).toBe("Today · Mane Man Ops");
+    expect(titleOf(routeOf("/settings/services"))).toBe("Services and fees · Settings · Mane Man Ops");
+    expect(titleOf(routeOf("/settings/packages"))).toBe("Packages · Settings · Mane Man Ops");
+    expect(titleOf(routeOf("/settings/stock"))).toBe("Stock · Settings · Mane Man Ops");
+    expect(titleOf(routeOf("/stock"))).toBe("Stock · Mane Man Ops");
+    expect(titleOf(routeOf(`/clients/${CLIENT}/consents`))).toBe("Consents · Clients · Mane Man Ops");
+    expect(titleOf(routeOf(technicianPath(TECHNICIAN, "phones")))).toBe("Phones · Technicians · Mane Man Ops");
     const titles = [
       ...SECTIONS.map((section) => titleOf(routeOf(section.path))),
       ...SETTINGS_PAGES.map((page) => titleOf(routeOf(settingsPath(page.tab)))),

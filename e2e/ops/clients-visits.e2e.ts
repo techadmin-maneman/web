@@ -147,12 +147,12 @@ test("lists where visits go, and every visit to come and done", async ({ page })
     "22 Aug 2027",
   );
   // A visit to come opens on the dispatch board, on its week with its drawer open; a visit done does not.
-  await expect(coming.getByRole("link", { name: "Show on board: the visit of 25 Sep 2027" })).toHaveAttribute(
+  await expect(coming.getByRole("link", { name: "See the visit of 25 Sep 2027 on the board" })).toHaveAttribute(
     "href",
     "/dispatch?from=2027-09-25&visit=33000000-0000-4000-8000-000000000002",
   );
   await expect(
-    page.getByRole("region", { name: opsCopy.clients.visits.past }).getByRole("link", { name: /Show on board/ }),
+    page.getByRole("region", { name: opsCopy.clients.visits.past }).getByRole("link", { name: /on the board/ }),
   ).toHaveCount(0);
 });
 

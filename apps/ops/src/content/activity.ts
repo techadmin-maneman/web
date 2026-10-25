@@ -79,8 +79,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "standard_cost.set": "Hair system cost set",
   "target.set": "Target set",
   "target.remove": "Target taken off",
-  "slot_times.set": "Window times set",
-  "slot_times.withdraw": "Window times change withdrawn",
+  "slot_times.set": "Day times set",
+  "slot_times.withdraw": "Day times change withdrawn",
   "pincode.set": "Pincode served or stopped",
   "pincode.rename": "Area renamed",
   "pincode.add": "Pincode added",
@@ -191,9 +191,55 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "staff.delete": "Staff member removed",
 };
 
+/**
+ * What a client or a technician did, by the call their app made, as a line says it beside their name. A call missing
+ * here reads by its app and its path; the sign-in calls are made before anyone is signed in, so none is logged.
+ */
+const CALLS: Readonly<Partial<Record<string, string>>> = {
+  "GET /api/tech/jobs/{id}": "Opened the visit",
+  "POST /api/tech/jobs/{id}/checkin": "Arrived at the visit",
+  "POST /api/tech/jobs/{id}/start": "Started the visit",
+  "POST /api/tech/jobs/{id}/photos": "Took the photographs",
+  "POST /api/tech/jobs/{id}/checklist": "Ticked the checklist",
+  "POST /api/tech/jobs/{id}/consumables": "Recorded what was used",
+  "POST /api/tech/jobs/{id}/piece": "Recorded the hair system fitted",
+  "POST /api/tech/jobs/{id}/profile": "Updated the hair profile",
+  "POST /api/tech/jobs/{id}/outcome": "Closed the visit",
+  "POST /api/tech/jobs/{id}/no-show": "Closed the visit as a no-show",
+  "POST /api/tech/jobs/{id}/updates": "Sent the client an update",
+  "POST /api/tech/jobs/{id}/discount-code": "Applied a discount code",
+  "POST /api/tech/kit/transfers/{id}/receive": "Received stock into their kit",
+  "POST /api/tech/kit/hand-back": "Handed pieces back",
+  "POST /api/tech/auth/logout": "Signed out",
+  "POST /api/holds": "Held a start time",
+  "DELETE /api/holds/{id}": "Let a held time go",
+  "POST /api/holds/{id}/discount-code": "Applied a discount code",
+  "DELETE /api/holds/{id}/discount-code": "Took a discount code off",
+  "POST /api/bookings": "Booked a visit",
+  "POST /api/appointments/{id}/reschedule": "Moved the visit",
+  "POST /api/appointments/{id}/cancel": "Cancelled the visit",
+  "POST /api/appointments/{id}/note": "Left a note for the technician",
+  "POST /api/visits/{id}/proposed-move/accept": "Accepted a new day",
+  "POST /api/visits/{id}/dispute": "Disputed a no-show charge",
+  "PATCH /api/profile/address": "Changed their address",
+  "PATCH /api/consents/{purpose}": "Changed a consent",
+  "POST /api/number-change": "Asked to change their number",
+  "POST /api/number-change/verify": "Confirmed their new number",
+  "DELETE /api/number-change": "Withdrew a number change",
+  "POST /api/deletion-request": "Asked for their record to be deleted",
+  "POST /api/me/problems": "Told Care something is wrong",
+  "POST /api/grievances": "Raised a concern",
+  "POST /api/refer/card": "Made their referral card",
+  "DELETE /api/refer/card": "Took their referral card down",
+  "DELETE /api/sessions/others": "Signed out their other phones",
+  "DELETE /api/sessions/{id}": "Signed out a phone",
+  "POST /api/auth/logout": "Signed out",
+};
+
 export const activity = {
   title: "Activity",
   actions: ACTIONS,
+  calls: CALLS,
   filters: {
     label: "Narrow the log",
     filter: "Filter",
@@ -224,8 +270,8 @@ export const activity = {
   surfaces: { public: "Site", client: "Client app", ops: "Console", tech: "Technician app" },
   /** A client the log names only by ID: erased, or never named. */
   unnamedClient: "Client",
-  /** The kind of record an entry names, where the console has a page for it. */
-  records: { person: "Client", appointment: "Visit" },
+  /** The kind of record an entry names, where the console has a page for it; a visit by its client where known. */
+  records: { person: "Client", appointment: "Visit", visitOf: (client: string) => `${client}’s visit` },
   /** A call that only read, as its line says it: "Console page opened". */
   opened: (surface: string) => `${surface} page opened`,
   /** A change the API refused, which changed nothing: "Console request, refused". */
@@ -246,7 +292,7 @@ export const activity = {
     demand_event: "Demand event",
     discount_code: "Discount code",
     dispatch_move: "Move",
-    grievance: "Grievance",
+    grievance: "Concern",
     gst_registration: "GST registration",
     hold: "Booking hold",
     move_proposal: "Proposed move",

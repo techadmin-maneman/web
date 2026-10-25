@@ -19,7 +19,7 @@ export const counts = {
   open: "Open",
   /** "Imran Qureshi · Weekly" */
   heading: (place: string, countClass: string) => `${place} · ${countClass}`,
-  countNote: "Count what’s there.",
+  countNote: "Count every item on the shelf, whatever the system says.",
   /** A count not done by its day: "Mon 23 Aug 2026 · overdue". */
   overdue: (date: string) => `${date} · overdue`,
   recountNote: "These didn’t match: a figure differed or a label wasn’t scanned. Count them again.",

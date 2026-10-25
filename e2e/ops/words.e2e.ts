@@ -4,7 +4,7 @@
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
-import { EDITING, review } from "../../apps/ops/src/content/common.ts";
+import { CLOSE, EDITING, review } from "../../apps/ops/src/content/common.ts";
 import { words as copy } from "../../apps/ops/src/content/words.ts";
 
 type Word = OpsReply<"/api/words">["words"][number];
@@ -135,6 +135,30 @@ test("puts a line back to the code’s wording from its history, read in its box
   expect(sent).toBeNull();
   await record.getByRole("button", { name: EDITING.save }).click();
   await expect.poll(() => sent).toEqual({ key: HERO.key, text: null });
+});
+
+// Rows read "Bar at the foot · Whatsapp label", with no way to see the line where it sits, and "Last published … by a
+// service token".
+test("names each line in plain words, and opens the page it sits on", async ({ page }) => {
+  const sticky: Word = {
+    ...FAQ,
+    key: "site:home/stickyBar.whatsappLabel",
+    where: "stickyBar",
+    text: "Message us on WhatsApp",
+    now: "Message us on WhatsApp",
+  };
+  await open(page, {
+    "GET /api/words": json({
+      words: [sticky, REMINDER],
+      published: { at: "2026-10-11T06:30:00.000Z", by: "5ef59a45.access", lines: 1 },
+      messages: "at_once",
+    }),
+  });
+  await expect(page.getByText(/^Last published .+, automatically\.$/)).toBeVisible();
+  const record = await recordOf(page, "Bar at the foot · WhatsApp button");
+  await expect(record.getByRole("link", { name: copy.seePage })).toHaveAttribute("href", /^https?:\/\/[^/]+\/$/);
+  await record.getByRole("button", { name: CLOSE }).click();
+  await expect((await recordOf(page, "Visit reminder")).getByRole("link", { name: copy.seePage })).toHaveCount(0);
 });
 
 test("publishes the site’s changed words once confirmed", async ({ page }) => {

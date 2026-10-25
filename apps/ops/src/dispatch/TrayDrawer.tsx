@@ -14,7 +14,7 @@ import { OpsLink } from "../components/Shell.tsx";
 import { dispatch, CLOSE } from "../content.ts";
 import { clientPath } from "../route.ts";
 import styles from "./dispatch.module.css";
-import { nameOf } from "./job.ts";
+import { minutesOf, nameOf } from "./job.ts";
 import { askedWord, offeredWord } from "./Tray.tsx";
 import { firstNameOf } from "@rules/lib/names.ts";
 
@@ -31,7 +31,7 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
   const referredBy = person === null ? null : person.referred_by;
   const typeName = each.type === null ? dispatch.unknown : dispatch.typeNames[each.type];
   const rows = [
-    { key: copy.rows.type, value: copy.type(typeName, each.slots) },
+    { key: copy.rows.type, value: copy.type(typeName, minutesOf(each.slots)) },
     ...(each.service === null ? [] : [{ key: copy.rows.service, value: each.service }]),
     { key: copy.rows.area, value: each.sector === null ? dispatch.unknown : copy.area(each.sector, each.pincode) },
     ...(referredBy === null ? [] : [{ key: copy.rows.referred, value: referredBy }]),

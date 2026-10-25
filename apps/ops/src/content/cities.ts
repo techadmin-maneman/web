@@ -26,7 +26,7 @@ export const cities = {
     addTitle: "Add a city",
     name: "Name",
     stateCode: "State code",
-    stateCodeHint: "Two letters, as Books names the state: HR",
+    stateCodeHint: "Two letters: HR for Haryana",
     state: "State",
     zone: "Zone",
     noZone: "No zone",

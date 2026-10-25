@@ -1,12 +1,13 @@
 // Saved answers (docs/decisions/0141-quick-replies.md): picked in a chat and filled in with the client's first name and
 // next visit, and kept on the Messages page by a Customer Care manager, who adds them and retires them, asked once.
 
+import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextArea, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { api, isErased } from "../api.ts";
 import { AddForm } from "../components/AddForm.tsx";
 import { DeleteAction } from "../components/DeleteAction.tsx";
@@ -73,9 +74,25 @@ export function QuickReplyPick(props: {
   );
 }
 
+/** What a reply may hold that is filled in as it is sent, each put in at the cursor by a button, never typed. */
+const HOLES = [
+  ["{name}", copy.insertName],
+  ["{next_visit}", copy.insertNextVisit],
+] as const;
+
 function AddReply({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => void }) {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
+  const box = useRef<HTMLTextAreaElement>(null);
+  const insert = (hole: string) => {
+    const at = box.current?.selectionStart ?? text.length;
+    const end = box.current?.selectionEnd ?? at;
+    setText(text.slice(0, at) + hole + text.slice(end));
+    requestAnimationFrame(() => {
+      box.current?.focus();
+      box.current?.setSelectionRange(at + hole.length, at + hole.length);
+    });
+  };
   return (
     <AddForm
       title={copy.addOne}
@@ -103,6 +120,7 @@ function AddReply({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => 
           {(control) => (
             <TextArea
               {...control}
+              ref={box}
               className={styles.box}
               rows={3}
               maxLength={1000}
@@ -114,7 +132,20 @@ function AddReply({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => 
           )}
         </Field>
       </div>
-      <Note>{copy.holes}</Note>
+      <div className={form.recordFoot}>
+        {HOLES.map(([hole, label]) => (
+          <Button
+            key={hole}
+            variant="outline"
+            size="small"
+            onClick={() => {
+              insert(hole);
+            }}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
     </AddForm>
   );
 }

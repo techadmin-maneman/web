@@ -126,7 +126,7 @@ export const OPS_SETTINGS = [
     name: "change_notice_hours",
     title: "Free to move or cancel until",
     note: "Moves and cancels are free until then. Existing bookings keep their terms.",
-    unit: "hours before the window",
+    unit: "hours before the visit",
     min: 1,
     max: 168,
     keys: null,
@@ -220,7 +220,7 @@ export const OPS_SETTINGS = [
     // Ten minutes, and two minutes' grace for a payment made late (docs/decisions/0068-a-paid-hold-is-kept.md).
     name: "payment_hold",
     title: "Payment hold",
-    note: "How long a slot is held while the client pays, and the grace after.",
+    note: "How long a time is held while the client pays, and the grace after.",
     unit: "minutes",
     min: 1,
     max: 30,
@@ -321,7 +321,7 @@ export const OPS_SETTINGS = [
   {
     // The retention figures (docs/decisions/0151-retention-figures.md).
     name: "lost_after_days",
-    title: "Lost after",
+    title: "Count a client lost after",
     note: "Days a client may stay lapsed, past their next service and its grace with nothing done, before the figures count them lost.",
     unit: "days",
     min: 30,

@@ -101,7 +101,8 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/inventory/`): `stock`, `stock-places`, `stock-lots`, `stock-units`, `stock-transit`,
   `stock-view`, `stock-photos`, `stock-match`, `stock-risks`, `stock-usage`, `stock-quality`, `stock-watch`,
   `stock-gap`, `low-stock`, `pieces`, `piece-use`, `piece-returns`, `returned-pieces`, `kit`, `kit-check`, `kit-week`,
-  `cycle-counts`, `count-tasks`, `count-labels`, `recalls`, `recall-notice`, `consumables`, `hair-systems`
+  `cycle-counts`, `count-tasks`, `count-labels`, `recalls`, `recall-notice`, `consumables`, `hair-systems`,
+  `hair-system-names`
 - **Rules** (`src/policy/`): `stock`
 - **Data** (`src/config/`): `consumables`
 - **Routes** (`src/routes/`): `ops/stock`, `ops/stock.places`, `ops/stock.transit`, `ops/stock.read`, `ops/stock.units`,

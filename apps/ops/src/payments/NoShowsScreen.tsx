@@ -209,6 +209,16 @@ function questionOf(preview: Loaded<ChargePreview>): string {
   return chargeQuestion(preview.value);
 }
 
+/** Nothing paid and no free visit used: the rule charges nothing, so the case is closed as a no-show, not charged. */
+const keepsNothing = (preview: Loaded<ChargePreview>): boolean =>
+  preview.state === "loaded" && preview.value.paid === 0 && !preview.value.credit_kept;
+
+/** The case's action, in words that fit what a charge would keep: Close as no-show where it keeps nothing. */
+function ChargeWords({ caseId }: { caseId: string }) {
+  const [preview] = useLoad(useCallback(() => paymentsApi.chargePreview(caseId), [caseId]));
+  return <>{keepsNothing(preview) ? copy.closeNoShow : copy.charge}</>;
+}
+
 /** A charge on a visit paid for in money and with a credit keeps both, and the question names only the money. */
 const keepsCreditToo = (preview: Loaded<ChargePreview>): boolean =>
   preview.state === "loaded" && preview.value.paid > 0 && preview.value.credit_kept;
@@ -239,7 +249,7 @@ function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge:
       </p>
       <div className={styles.actions}>
         <Button variant="primary" size="small" disabled={preview.state !== "loaded"} onClick={onCharge}>
-          {copy.confirmCharge}
+          {keepsNothing(preview) ? copy.closeNoShow : copy.confirmCharge}
         </Button>
         <Button variant="outline" size="small" onClick={onBack}>
           {copy.back}
@@ -339,7 +349,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
               setRuling({ step: "confirming" });
             }}
           >
-            {sending ? copy.deciding : copy.charge}
+            {sending ? copy.deciding : <ChargeWords caseId={each.id} />}
           </Button>
           {may.waive && (
             <Button variant="outline" size="small" disabled={sending || noReason} onClick={() => void decide("waived")}>

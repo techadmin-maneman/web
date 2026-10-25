@@ -6,7 +6,9 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { profile } from "../../../../apps/app/src/content.ts";
+import { settings } from "../../../../apps/ops/src/content/settings.ts";
 import * as ops from "../../../../apps/ops/src/content.ts";
+import { activity } from "../../../../apps/ops/src/content/activity.ts";
 import { areas, BOOKING_URL, deletions, dispatch, grievances } from "../../../../apps/ops/src/content.ts";
 import { DELETION_ALERT_AFTER_MS } from "../../../../src/domain/privacy/deletion.ts";
 import { renderMessage } from "../../../../src/config/message-templates.ts";
@@ -60,6 +62,21 @@ describe("the dispatch board’s words", () => {
   it("writes every window the API answers with", () => {
     for (const window of BOOKING_WINDOWS) expect(dispatch.windows[window], window).toBeTruthy();
   });
+
+  // Activity read "Technician app request · POST /api/tech/jobs/{id}/outcome".
+  it("says what each change a client or a technician makes was, as Activity lists it", () => {
+    // Made before anyone is signed in, or never logged: a photograph's bytes, an address as it is typed.
+    const unlogged = /\/auth\/(otp|verify)|\/client-errors$|\/address\/suggestions$|\/upload-url$|\/photos\/\{token\}/;
+    for (const document of ["docs/openapi-client.json", "docs/openapi-tech.json"]) {
+      const { paths } = JSON.parse(readFileSync(document, "utf8")) as { paths: Record<string, object> };
+      for (const [path, methods] of Object.entries(paths)) {
+        for (const method of Object.keys(methods).filter((each) => each !== "get" && !unlogged.test(path))) {
+          const call = `${method.toUpperCase()} ${path}`;
+          expect(activity.calls[call], call).toBeTruthy();
+        }
+      }
+    }
+  });
 });
 
 // Ops read "0.00 GB in R2", "Set by 5ef59a45….access" and the board's design notes.
@@ -111,5 +128,20 @@ describe("the console’s label maps", () => {
       /as\s+Readonly<\s*Record<string,\s*string>\s*>/.test(readFileSync(path, "utf8")),
     );
     expect(widened).toEqual([]);
+  });
+});
+
+// A rule's figure reads as the house writes it: "500000 rupees", "720 hours" and "1 service visits" did not.
+describe("a rule's figure", () => {
+  it.each([
+    [500000, "rupees", "Rs. 5,00,000"],
+    [720, "hours", "30 days"],
+    [36, "hours", "36 hours"],
+    [20, "per cent", "20%"],
+    [140, "% of the straight line", "140% of the straight line"],
+    [1, "service visits", "1 service visit"],
+    [1000, "a day", "1,000 a day"],
+  ])("writes %i %s as %s", (value, unit, written) => {
+    expect(settings.rules.confirm.figure(value, unit)).toBe(written);
   });
 });

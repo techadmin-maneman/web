@@ -130,7 +130,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | --- | --- | --- | --- |
 | `checkin_radius_m` | Check-in radius | metres | `200` |
 | `no_show_wait_min` | No-show wait | minutes | `{"consultation":15,"service":15,"replacement":15,"first_fit":15}` |
-| `change_notice_hours` | Free to move or cancel until | hours before the window | `24` |
+| `change_notice_hours` | Free to move or cancel until | hours before the visit | `24` |
 | `late_change_charge` | Late move or cancel charge | a choice | `{"consultation":"nothing","first_fit":"late_fee","replacement":"late_fee","service":"visit"}` |
 | `no_show_charge` | No-show charge | a choice | `{"consultation":"nothing","first_fit":"late_fee","replacement":"late_fee","service":"visit"}` |
 | `no_show_waiver` | No-show waiver | a choice | `{"payment":"refunded","credit":"returned"}` |
@@ -146,7 +146,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `referral_reward` | Referral reward | service visits | `{"referrer_visits":3,"friend_visits":3,"valid_days":365}` |
 | `care_hours` | Customer Care hours | hour of the day, in India | `{"opens":9,"closes":21,"first_reply":60,"answered_by":10}` |
 | `remedy_limit` | Remedies without approval | service visits | `{"visits":1,"days":90}` |
-| `lost_after_days` | Lost after | days | `90` |
+| `lost_after_days` | Count a client lost after | days | `90` |
 | `booking_rules` | Start times | minutes | `{"step":30,"arrival":30,"wrap_up":10,"lead":3,"break":30,"break_from":12,"break_to":16,"visits":5,"fits":2}` |
 | `same_day_booking` | Booking for today | a choice | `{"consultation":"yes","first_fit":"no","service":"yes","replacement":"yes"}` |
 | `working_hours` | Working hours | hour of the day, in India | `{"opens":9,"closes":20}` |
@@ -155,20 +155,20 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `arrival_notice_min` | Arrival message | minutes | `10` |
 | `move_proposal_hours` | Move proposals | hours | `48` |
 | `credit_reminder_days` | Free visit reminders | days | `{"first":30,"last":7}` |
-| `check_in_days` | Check-ins after a fit | days | `{"first":2,"second":21}` |
-| `referral_monthly_cap` | Referral review above | fits a month | `5` |
-| `tryon_look_days` | Try-on looks | days | `30` |
+| `check_in_days` | Follow-ups after a fit | days | `{"first":2,"second":21}` |
+| `referral_monthly_cap` | Hold referral rewards above | fits a month | `5` |
+| `tryon_look_days` | One try-on look per number every | days | `30` |
 | `stock_watch` | Stock alerts | days | `{"expiry_warning_days":30,"demand_days":28,"transfer_overdue_days":7}` |
 | `stock_usage` | Usage flags | days | `{"days":28,"over_percent":20,"min_visits":5,"write_offs":3}` |
 | `stock_quality` | Quality figures | days | `{"failure_days":365,"pace_days":28}` |
 | `cycle_counts` | Cycle counts | days | `{"weekly":7,"monthly":30,"quarterly":90,"recount_above_percent":5}` |
 | `kit_check` | Tomorrow's kits | hour of the day, in India | `{"from_hour":17,"one_visit_range":5,"top_up_weekday":0}` |
 | `scorecard_days` | Supplier scorecard | days | `365` |
-| `po_second_approval_above_rupees` | Second approver above | rupees | `0` |
-| `po_rupees_to_one` | Rupees to one, for approvals | rupees | `{"default":0}` |
-| `custom_order_grace_days` | Custom order grace | days | `7` |
+| `po_second_approval_above_rupees` | Second approver for orders above | rupees | `0` |
+| `po_rupees_to_one` | Exchange rates, for approvals | rupees | `{"default":0}` |
+| `custom_order_grace_days` | A custom order is late, past its promised date, after | days | `7` |
 | `planning_period_days` | Planning period | days | `7` |
-| `planning_horizon_periods` | Forecast horizon | periods | `12` |
+| `planning_horizon_periods` | Forecast ahead by | periods | `12` |
 | `forecast_assumptions` | Forecast assumptions | days | `{"baseline_periods":8,"learning_days":180,"enough_to_learn":10,"due_booking_percent":80,"consultation_fit_percent":50,"consultation_to_fit_days":14}` |
 | `daily_ceilings` | Daily ceilings | a day | `{"upload":80,"render":40,"result_read":800,"login_code":300,"tech_code":100,"form_code":300,"geocode":200,"route":1000,"route_map":300}` |
 

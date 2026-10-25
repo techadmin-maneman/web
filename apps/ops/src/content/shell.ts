@@ -10,13 +10,10 @@ export const DEPARTMENT_NAMES = {
 } as const;
 
 export const shell = {
-  /** Who did something, where it was a service token rather than a person. */
-  serviceToken: "a service token",
-  /**
-   * The sidebar's own title. The design letters it "Operations", which is now the name of one of the
-   * departments beneath it.
-   */
-  title: "Console",
+  /** Whatever the console did by itself, or a token for the console did: never its ID or its label. */
+  serviceToken: "System",
+  /** The sidebar's own title: the console's name. */
+  title: "Mane Man Ops",
   /** The header's way to the navigation, in a window too narrow to keep it beside the page. */
   menu: "Menu",
   closeMenu: "Close menu",
@@ -87,8 +84,8 @@ export const shell = {
   skip: "Skip to content",
   /** A page opened by its address that the person's access does not reach. */
   closed: "You don’t have access to this page. An admin can grant it on Staff.",
-  /** The browser tab's title: "Blackout days · Settings · Mane Man operations". */
-  documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
+  /** The browser tab's title: "Blackout days · Settings · Mane Man Ops". */
+  documentTitle: (parts: readonly string[]) => [...parts, "Mane Man Ops"].join(" · "),
   /** Who is signed in, the theme, and the way out: Access's own session, which is the only one the console has. */
   account: {
     label: "Account",

@@ -14,7 +14,15 @@ import { dispatch, CLOSE } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
-import { isMovable, movesIfCheckInCleared, nameOf, type BlockJob, type VisitChange, windowWord } from "./job.ts";
+import {
+  isMovable,
+  minutesOf,
+  movesIfCheckInCleared,
+  nameOf,
+  type BlockJob,
+  type VisitChange,
+  windowWord,
+} from "./job.ts";
 import { firstNameOf } from "@rules/lib/names.ts";
 
 /** Each action is null when the person's access does not let them take it. */
@@ -62,7 +70,7 @@ export function BlockDrawer(props: Props) {
   const referredBy = person === null ? null : person.referred_by;
   const typeName = block.type === null ? dispatch.unknown : dispatch.typeNames[block.type];
   const rows = [
-    { key: copy.rows.type, value: copy.type(typeName, block.slots) },
+    { key: copy.rows.type, value: copy.type(typeName, minutesOf(block.slots)) },
     ...(block.service === null ? [] : [{ key: copy.rows.service, value: block.service }]),
     { key: copy.rows.area, value: block.sector === null ? dispatch.unknown : copy.area(block.sector, block.pincode) },
     { key: copy.rows.state, value: stateOf(block) },

@@ -23884,7 +23884,7 @@ export interface components {
             subject: {
                 kind: string;
                 id: string;
-                /** @description Its name or number, where it has one: an item's name, a purchase order's, a setting's title. */
+                /** @description Its name or number, where it has one: an item's name, a purchase order's, a setting's title, a visit's client's. */
                 label: string | null;
             } | null;
             /** @description IDs, counts and codes; for a call, its method, route and path, IDs only. */

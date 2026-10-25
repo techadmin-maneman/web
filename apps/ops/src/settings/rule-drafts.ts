@@ -55,6 +55,6 @@ export const READ_AS: Readonly<Record<string, { readonly say: (figure: number) =
 export function rangeWords(bounds: { min: number; max: number; unit: string }): string {
   const reading = READ_AS[bounds.unit];
   return reading === undefined
-    ? copy.outOfBounds(String(bounds.min), `${String(bounds.max)} ${bounds.unit}`)
+    ? copy.outOfBounds(String(bounds.min), copy.confirm.figure(bounds.max, bounds.unit))
     : copy.allowedWords(reading.say(bounds.min), reading.say(bounds.max), reading.range);
 }

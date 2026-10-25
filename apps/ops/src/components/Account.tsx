@@ -41,7 +41,7 @@ export function Account() {
   if (loaded.state !== "loaded") return null;
   const { signed_in_as: who, sign_out: signOut } = loaded.value;
   return (
-    <Popover label={shell.account.label} button={initialsOf(who)}>
+    <Popover label={shell.account.label} button={initialsOf(whoWords(who))}>
       {() => (
         <>
           <PopoverNote>{whoWords(who)}</PopoverNote>

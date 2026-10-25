@@ -16,8 +16,9 @@ export const techniciansApi = {
   switchOn: (id: string) => client.post("/api/technicians/{id}/reactivate", { path: { id } }),
   /** Refused, as in_use, once anything records work of theirs. */
   deleteTechnician: (id: string) => client.post("/api/technicians/{id}/delete", { path: { id } }),
-  /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
-  technicianWork: () => client.get("/api/technicians/work"),
+  /** What each of them has finished, from an India date to today, or over ops's own period; the roster carries none. */
+  technicianWork: (from: string | null) =>
+    client.get("/api/technicians/work", { query: from === null ? {} : { from } }),
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
   revokeDevice: (id: string, deviceId: string) =>
     client.post("/api/technicians/{id}/devices/{device}/revoke", { path: { id, device: deviceId } }),
