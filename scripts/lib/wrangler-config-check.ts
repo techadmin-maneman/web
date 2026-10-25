@@ -3,6 +3,7 @@
 // fine. See docs/decisions/0005-environment-isolation-in-wrangler-config.md.
 
 import { checkBindingCosts } from "./binding-costs.ts";
+import { SITE_WORKER_PAGES } from "./site-worker-pages.ts";
 import {
   ENABLED_SURFACES,
   EXPECTED_DATABASE_NAME,
@@ -475,23 +476,7 @@ export function checkSiteConfig(config: JsonObject): string[] {
     entry: {
       main: "./src/worker.ts",
       assetsBinding: "ASSETS",
-      // Every page, for the nonce its policy is given; "/" and "/areas" also name the cities ops serve, and each city's
-      // page its areas, written in by the Worker (site/src/lib/cities.ts).
-      runWorkerFirst: [
-        "/",
-        "/areas",
-        "/areas/*",
-        "/book",
-        "/guides/*",
-        "/privacy",
-        "/notices",
-        "/r",
-        "/r/*",
-        "/stop",
-        "/terms",
-        "/try",
-        "/_astro/*.mp4",
-      ],
+      runWorkerFirst: SITE_WORKER_PAGES,
       service: { binding: "API", worker: "mm-api" },
     },
   });

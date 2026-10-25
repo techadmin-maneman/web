@@ -1,6 +1,8 @@
-// The privacy policy and the terms, as counsel drafted them (privacy-policy.ts, terms-and-conditions.ts), and the shape
-// a legal page takes.
+// The privacy policy and the terms, as counsel drafted them (privacy-policy.ts, terms-and-conditions.ts), the aftercare
+// policy and the offer terms the terms point to, and the shape a legal page takes.
 
+import { aftercarePolicy } from "./aftercare.ts";
+import { offerTerms } from "./offer-terms.ts";
 import { privacyPolicy } from "./privacy-policy.ts";
 import { termsAndConditions } from "./terms-and-conditions.ts";
 
@@ -36,9 +38,16 @@ export interface LegalPage {
   };
 }
 
-export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPage } = {
+export const legalPages: {
+  readonly privacy: LegalPage;
+  readonly terms: LegalPage;
+  readonly aftercare: LegalPage;
+  readonly offers: LegalPage;
+} = {
   privacy: privacyPolicy,
   terms: termsAndConditions,
+  aftercare: aftercarePolicy,
+  offers: offerTerms,
 };
 
 // ---------------------------------------------------------------------------
