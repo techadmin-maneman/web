@@ -2,6 +2,7 @@
 // rejected with why; once decided, what came of it.
 
 import type { Success } from "@maneman/web-kit/api";
+import { Badge } from "@maneman/ui/Badge";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
@@ -25,6 +26,12 @@ function Decided({ line, decided }: { line: Line; decided: Exclude<Line["state"]
   if (decided === "approved" && line.po_number !== null) return <>{copy.draftedAs(copy.order(line.po_number))}</>;
   if (decided === "rejected" && line.reject_reason !== null) return <>{`${state} · ${line.reject_reason}`}</>;
   return <>{state}</>;
+}
+
+/** Where a line stands, in its row: still to decide, or what came of it. */
+export function LineState({ line }: { line: Line }) {
+  if (line.state === "proposed") return <Badge tone="attention">{copy.states.proposed}</Badge>;
+  return <Decided line={line} decided={line.state} />;
 }
 
 /** A line rejected, with why. */

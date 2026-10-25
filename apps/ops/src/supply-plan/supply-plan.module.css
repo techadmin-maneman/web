@@ -1,1 +1,10 @@
 /* The Supply plan's forecast: one row an item, one column a period, scrolled sideways on a narrow screen. */
+
+/* Why the line is there, beneath its item: "Needs 13 (4 buffer) · 3 on hand". */
+.why {
+  display: block;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-regular);
+  color: var(--ui-text-muted);
+}
