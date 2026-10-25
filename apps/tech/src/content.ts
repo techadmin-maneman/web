@@ -609,6 +609,10 @@ export const closeOut = {
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
   duration: "Duration",
+  why: "Why",
+  fit: "Fit",
+  goingAhead: "Going ahead",
+  notNow: (why: string | null) => (why === null ? "Not now" : `Not now · ${why}`),
   // The board writes "1 h 22 m"; the phone times it from Start job (open point 60).
   length: (hours: number, minutes: number) => lengthOf(hours * 60 + minutes),
   photos: "Photos",

@@ -1,7 +1,7 @@
 // What each IndexedDB store holds (./db.ts): one record type per store, so a read says what it gets.
 
 import type { FitForm, HistoryForm } from "@maneman/web-kit/hair-profile";
-import type { Angle, CheckIn, Job, JobSummary, Me, Phase } from "../api.ts";
+import type { Angle, CheckIn, Job, JobSummary, Me, OutcomeRequest, Phase } from "../api.ts";
 import type { Queued } from "./replay.ts";
 
 /** A day's list of jobs, by its date. */
@@ -16,10 +16,12 @@ export interface KeptArrival {
   readonly arrival: CheckIn;
 }
 
-/** When the technician took the outcome, which the close-out's duration runs to. */
+/** When the technician took the outcome, which the close-out's duration runs to, and what was chosen, which it repeats. */
 export interface KeptClosure {
   readonly job_id: string;
   readonly at: number;
+  /** Null for a no-show; absent on a closure kept before the close-out repeated it. */
+  readonly outcome?: OutcomeRequest | null;
 }
 
 /** The job's start as the card showed it at check-in, which every later step is sent with. */

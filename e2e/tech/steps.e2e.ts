@@ -91,6 +91,8 @@ test("a consultation’s outcome asks whether the client is going ahead, and why
   await expect
     .poll(() => writesTo(fake, "outcome").at(-1)?.body)
     .toEqual({ outcome: "done", lost_reason: "price", going_ahead: false });
+  // The close-out repeats what was decided.
+  await expect(page.getByText(techCopy.closeOut.notNow("The price"))).toBeVisible();
 });
 
 // A yes was sent as nothing at all, so the console could not tell it from a question never asked.

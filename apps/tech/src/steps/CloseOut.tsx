@@ -18,7 +18,7 @@ import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { JobFailed } from "../states/JobFailed.tsx";
 import { Failed, Loading } from "../states/States.tsx";
-import { type Heard, keptArrival, keptClosed, keptStates } from "../store/jobs.ts";
+import { type Heard, keptArrival, keptClosed, keptOutcome, keptStates } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
 import frame from "../components/frame.module.css";
 import shared from "./steps.module.css";
@@ -87,6 +87,29 @@ function Evidence({ job }: { job: Job }) {
   );
 }
 
+/** What was decided, as the outcome step took it: why it was partly done, or whether the client goes ahead with a fit. */
+function Decided({ job }: { job: Job }) {
+  const readOutcome = useCallback(() => keptOutcome(job.id), [job.id]);
+  const said = valueOr(useAsync(readOutcome)[0], null);
+  if (said === null) return null;
+  const label = (reasons: Job["partial_reasons"], id: string | undefined) =>
+    reasons.find((reason) => reason.id === id)?.label ?? null;
+  if (said.outcome === "partial") {
+    const why = label(job.partial_reasons, said.reason);
+    return why === null ? null : <Row name={copy.why} value={why} />;
+  }
+  if (said.going_ahead === undefined) return null;
+  const fit = said.going_ahead ? copy.goingAhead : copy.notNow(label(job.lost_reasons, said.lost_reason));
+  return <Row name={copy.fit} value={fit} />;
+}
+
+/** When the job started: as the card says, as the API's answer did, or, started with no signal, when the phone took it. */
+function startedAt(job: Job, heard: Heard | undefined, queued: readonly Queued[]): number | null {
+  const said = job.progress.started_at ?? heard?.started_at ?? null;
+  if (said !== null) return Date.parse(said);
+  return queued.find((event) => event.job_id === job.id && event.kind === "start")?.queued_at ?? null;
+}
+
 /** How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed. */
 function useOutcome(
   job: Job | null,
@@ -131,7 +154,7 @@ export function CloseOut({ id }: { id: string }) {
   }
 
   const who = names.get(id) ?? job.client?.name ?? "";
-  const started = job.progress.started_at === null ? null : new Date(job.progress.started_at).getTime();
+  const started = startedAt(job, states?.get(id), waiting.events);
   const took = started === null || closedAt === null ? null : lengthOf(started, closedAt);
 
   const sets = job.progress.steps_done.filter((step) => step === "before_photos" || step === "after_photos").length;
@@ -143,7 +166,7 @@ export function CloseOut({ id }: { id: string }) {
     <main className={frame.screen}>
       <section className={shared.close}>
         <p className={capsLook(shared.closeLabel)}>{copy.label}</p>
-        <Icon className={shared.closeTick} d={ICONS.tick} size="xl" weight="heavy" />
+        <Icon className={shared.closeTick} d={outcome === "done" ? ICONS.tick : ICONS.minus} size="xl" weight="heavy" />
         <h1 className={shared.closeWho} ref={heading} tabIndex={-1}>
           {copy.who(who)}
           <span className={shared.closedAs}>{closedAs(job, outcome, waiting.events)}</span>
@@ -152,6 +175,7 @@ export function CloseOut({ id }: { id: string }) {
           <Evidence job={job} />
         ) : (
           <dl className={shared.rows}>
+            <Decided job={job} />
             {took !== null && <Row name={copy.duration} value={copy.length(took.hours, took.minutes)} />}
             <Row name={copy.photos} value={queuedFrames > 0 ? copy.queued(queuedFrames) : copy.sent(sets * IN_A_SET)} />
             {/* A card the phone kept from before one visits names neither. */}

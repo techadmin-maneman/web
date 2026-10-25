@@ -9,7 +9,7 @@
 // to. So is the job's start as the card showed it at check-in, which every
 // later step is sent with. Each has a store of its own (./db.ts).
 
-import type { CheckIn, Job, JobState, JobSummary } from "../api.ts";
+import type { CheckIn, Job, JobState, JobSummary, OutcomeRequest } from "../api.ts";
 import { dayAfter } from "../lib/when.ts";
 import { all, clear, get, put, remove } from "./db.ts";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -66,13 +66,21 @@ export async function keptArrival(jobId: string): Promise<CheckIn | null> {
   return (await get("arrivals", jobId))?.arrival ?? null;
 }
 
-/** When the technician took the outcome, which the close-out's duration runs to. */
-export async function keepClosed(jobId: string, at: number = apiNow()): Promise<void> {
-  await put("closures", { job_id: jobId, at });
+/** When the technician took the outcome, which the close-out's duration runs to, and what was chosen, which it repeats. */
+export async function keepClosed(
+  jobId: string,
+  at: number = apiNow(),
+  outcome: OutcomeRequest | null = null,
+): Promise<void> {
+  await put("closures", { job_id: jobId, at, outcome });
 }
 
 export async function keptClosed(jobId: string): Promise<number | null> {
   return (await get("closures", jobId))?.at ?? null;
+}
+
+export async function keptOutcome(jobId: string): Promise<OutcomeRequest | null> {
+  return (await get("closures", jobId))?.outcome ?? null;
 }
 
 /**
