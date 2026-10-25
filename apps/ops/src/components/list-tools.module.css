@@ -1,0 +1,11 @@
+/* A long list's search and pages, over its table at the panel's inset (./ListTools.tsx). */
+
+.tools {
+  padding: var(--sp-12) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.find {
+  width: var(--search-width);
+  max-width: 100%;
+}

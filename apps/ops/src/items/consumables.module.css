@@ -24,7 +24,3 @@
   color: var(--ui-text-muted);
 }
 
-/* A consumable retired reads quieter than one in order. */
-.quiet {
-  color: var(--ui-text-muted);
-}

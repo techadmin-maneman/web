@@ -7,7 +7,8 @@ export const counts = {
   title: "Counts",
   tasks: "Count tasks",
   none: "Nothing to count today.",
-  columns: ["Place", "Class", "Due", "Status", ""],
+  columns: ["Place", "Class", "Due", "Status"],
+  find: "Find a place",
   classes: { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" },
   states: {
     open: "To count",

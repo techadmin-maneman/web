@@ -576,6 +576,7 @@ export const settings = {
     },
   },
   consumables: {
+    find: "Find an item",
     title: "Consumables",
     add: "Add a consumable",
     columns: ["Consumable", "Cost each", "Low at", "Status"],

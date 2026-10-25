@@ -44,6 +44,7 @@
     "./NoticeLine": "./NoticeLine.tsx",
     "./Note": "./Note.tsx",
     "./PageHeader": "./PageHeader.tsx",
+    "./Pager": "./Pager.tsx",
     "./Panel": "./Panel.tsx",
     "./PhotoCapture": "./PhotoCapture.tsx",
     "./Popover": "./Popover.tsx",

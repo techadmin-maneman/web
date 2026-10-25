@@ -13,6 +13,7 @@ import { quality as copy } from "../content/quality.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { fullDate } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
+import { ListTools } from "../components/ListTools.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { qualityApi } from "./quality-api.ts";
 
@@ -29,30 +30,34 @@ function Lots({ risk }: { risk: Risk }) {
   return (
     <>
       <Note>{copy.riskTotal(rupees(risk.total_value))}</Note>
-      <Table controls>
-        <thead>
-          <tr>
-            {copy.riskColumns.map((column) => (
-              <th key={column} scope="col">
-                {column}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {risk.lots.map((lot) => (
-            <tr key={`${lot.place_id}-${lot.lot_code}-${lot.consumable_code}`}>
-              <RowHead>{lot.place}</RowHead>
-              <td>{lot.name}</td>
-              <td>{lot.lot_code}</td>
-              <td>{fullDate(lot.expires_on)}</td>
-              <td className={form.figure}>{quantity(lot.quantity)}</td>
-              <td className={form.figure}>{rupees(lot.value)}</td>
-              <td>{todo(lot)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      <ListTools rows={risk.lots} textOf={(lot) => `${lot.place} ${lot.name} ${lot.lot_code}`} label={copy.findLot}>
+        {(shown) => (
+          <Table controls>
+            <thead>
+              <tr>
+                {copy.riskColumns.map((column) => (
+                  <th key={column} scope="col">
+                    {column}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((lot) => (
+                <tr key={`${lot.place_id}-${lot.lot_code}-${lot.consumable_code}`}>
+                  <RowHead>{lot.place}</RowHead>
+                  <td>{lot.name}</td>
+                  <td>{lot.lot_code}</td>
+                  <td>{fullDate(lot.expires_on)}</td>
+                  <td className={form.figure}>{quantity(lot.quantity)}</td>
+                  <td className={form.figure}>{rupees(lot.value)}</td>
+                  <td>{todo(lot)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </ListTools>
     </>
   );
 }
