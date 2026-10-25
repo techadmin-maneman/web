@@ -56,6 +56,14 @@ export const tasks = {
   overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
   /** Each department's section, named as the navigation names it. */
   departments: DEPARTMENT_NAMES,
+  /** The bar over the board: a person's own, one kind, or a client by name or number. */
+  filters: {
+    label: "Narrow the tasks",
+    search: "Find a client",
+    kind: "Kind",
+    allKinds: "Every kind",
+    mine: "Mine",
+  },
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
     // A group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).

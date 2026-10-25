@@ -28,6 +28,7 @@ import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
 import { UpiPaymentAction } from "./UpiPaymentAction.tsx";
 import { decidedAt, subjectOf, taskClientPath } from "../lib/task-links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
+import { narrowed, NO_FILTER, TaskFilters, type TaskFilter } from "./TaskFilters.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
 import { subOf } from "./task-subs.ts";
 import { TaskActions } from "./TaskActions.tsx";
@@ -190,18 +191,25 @@ const keyOf = (group: Group, id: string) => `${group}/${id}`;
  * The board as it was read, less the tasks closed here since, with their groups' counts and the overdue count: the
  * list follows what ops close on it without being read again.
  */
-function sinceRead(board: Tasks, closed: readonly string[], now: Date): Tasks & { readonly open: number } {
+/** What the board is narrowed to, and who is asking, for Mine. */
+interface Filter {
+  readonly by: TaskFilter;
+  readonly me: string | null;
+}
+
+function sinceRead(board: Tasks, closed: readonly string[], now: Date, filter: Filter): Tasks & { open: number } {
   const groups = board.groups
     .map((each) => {
       const left = each.tasks.filter((task) => !closed.includes(keyOf(each.group, task.id)));
       return { ...each, count: each.count - (each.tasks.length - left.length), tasks: left };
     })
     .filter((each) => each.count > 0);
+  const shown = narrowed(groups, filter.by, filter.me);
   const closedOverdue = board.groups.flatMap((each) =>
     each.tasks.filter((task) => closed.includes(keyOf(each.group, task.id)) && daysUntil(task.due, now) < 0),
   );
-  const open = groups.reduce((sum, group) => sum + group.count, 0);
-  return { ...board, overdue: board.overdue - closedOverdue.length, groups, open };
+  const open = shown.reduce((sum, group) => sum + group.count, 0);
+  return { ...board, overdue: board.overdue - closedOverdue.length, groups: shown, open };
 }
 
 function toggled(groups: ReadonlySet<Group>, group: Group): ReadonlySet<Group> {
@@ -239,7 +247,14 @@ function BoardNotes(props: { truncated: boolean; lapsed: number; shown: boolean;
   );
 }
 
-function TaskQueue({ alerts, onOpen }: { alerts: number; onOpen: (count: number) => void }) {
+/** What the queue is given: the alerts counted beside it, where to say how many are open, and what it is narrowed to. */
+interface QueueProps {
+  readonly alerts: number;
+  readonly onOpen: (count: number) => void;
+  readonly filter: TaskFilter;
+}
+
+function TaskQueue({ alerts, onOpen, filter }: QueueProps) {
   const { loaded, retry, lapsed } = useBoard();
   const [signedIn] = useLoad(whoami);
   const access = useAccess();
@@ -254,7 +269,7 @@ function TaskQueue({ alerts, onOpen }: { alerts: number; onOpen: (count: number)
 
   const now = new Date();
   const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as : null;
-  const { overdue, truncated, staff, groups, open } = sinceRead(loaded.value, closed, now);
+  const { overdue, truncated, staff, groups, open } = sinceRead(loaded.value, closed, now, { by: filter, me });
   const sections = sectionsOf(groups);
   const first = firstOverdue(sections, now);
 
@@ -365,6 +380,7 @@ export function TasksScreen() {
   const [alerts, setAlerts] = useState(0);
   const [open, setOpen] = useState(0);
   const [view, setView] = useState<"tasks" | "alerts">("tasks");
+  const [filter, setFilter] = useState<TaskFilter>(NO_FILTER);
   const views = needsAHand.views;
   return (
     <div className={shared.board}>
@@ -392,7 +408,8 @@ export function TasksScreen() {
         <NeedsAHand onCount={setAlerts} />
       </div>
       <div hidden={view === "alerts" && alerts > 0}>
-        <TaskQueue alerts={alerts} onOpen={setOpen} />
+        <TaskFilters filter={filter} onFilter={setFilter} />
+        <TaskQueue alerts={alerts} onOpen={setOpen} filter={filter} />
       </div>
     </div>
   );

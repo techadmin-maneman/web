@@ -3,10 +3,10 @@
 // with why. The design draws each task's owner and none of these; they sit beneath the
 // task's own lines, as the way to where it is decided does.
 
-import { TextButton } from "@maneman/ui/TextLink";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
+import { staffName } from "../lib/who.ts";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -80,7 +80,7 @@ function GiveForm({
           >
             {others.map((email) => (
               <option key={email} value={email}>
-                {email === me ? copy.you(email) : email}
+                {email === me ? copy.you(staffName(email)) : staffName(email)}
               </option>
             ))}
             {owner !== null && <option value="">{copy.giveNobody}</option>}
@@ -173,9 +173,9 @@ function Act({
   expanded?: boolean;
 }) {
   return (
-    <TextButton tone="muted" compact ref={actRef} aria-expanded={expanded} onClick={onClick}>
+    <RowButton ref={actRef} aria-expanded={expanded} onClick={onClick}>
       <Named label={label} subject={subject} />
-    </TextButton>
+    </RowButton>
   );
 }
 

@@ -67,6 +67,8 @@ test("gives a task to another member of staff who has signed in, and says so whe
   await deepak.getByRole("button", { name: "Assign… · Deepak Rao" }).click();
   const whom = deepak.getByLabel("Assign to · Deepak Rao");
   await expect(whom).toBeFocused();
+  // Staff by name, not by e-mail.
+  await expect(whom.getByRole("option", { name: "Anil", exact: true })).toHaveCount(1);
   await whom.selectOption("anil@maneman.in");
   expect(await axeViolations(page)).toEqual([]);
   await deepak.getByRole("button", { name: opsCopy.tasks.owner.save, exact: true }).click();
