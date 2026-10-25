@@ -7,7 +7,7 @@ import { typeLook } from "@maneman/ui/type";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
-import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaClock, longDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
 import { addressLine } from "@maneman/web-kit/address";
@@ -384,7 +384,7 @@ export function Visits({
   );
 }
 
-/** The visits to come, which ops may cancel or close by hand, then the visits done. */
+/** The visits past their day and not closed, which ops close by hand; those to come; then the visits done. */
 export function VisitRecords({
   visits,
   name,
@@ -398,11 +398,16 @@ export function VisitRecords({
   /** What a closed consultation's reason may be set to; null on a page where it is only shown. */
   lostReasons?: ClientRecord["lost_reasons"] | null;
 }) {
+  const today = todayInIndia(Date.now());
+  const overdue = visits.upcoming.filter((visit) => visit.date < today);
   return (
     <>
+      {overdue.length > 0 && (
+        <VisitTable title={copy.overdue} visits={overdue} empty="" changing={{ name, onChanged }} onBoard />
+      )}
       <VisitTable
         title={copy.upcoming}
-        visits={visits.upcoming}
+        visits={visits.upcoming.filter((visit) => visit.date >= today)}
         empty={copy.noUpcoming}
         changing={{ name, onChanged }}
         onBoard

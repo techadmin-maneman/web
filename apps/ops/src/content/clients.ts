@@ -47,6 +47,8 @@ export const clients = {
     nextVisit: "Next visit",
     underWay: "Under way",
     noVisit: "None booked",
+    /** A visit whose day has passed and is not yet closed: not a next visit, one to close. */
+    overdue: (day: string) => `Overdue since ${day}`,
     none: "No clients match.",
     previous: "Previous",
     next: "Next",
@@ -172,6 +174,8 @@ export const clients = {
       failed: FAILED,
     },
     upcoming: "To come",
+    /** Visits whose day has passed and nobody has closed: each waits to be closed by hand. */
+    overdue: "Overdue",
     past: "Done",
     columns: ["Date", "Time", "Visit", "Technician", "Status", "Discount code"],
     onBoard: "See on the board",

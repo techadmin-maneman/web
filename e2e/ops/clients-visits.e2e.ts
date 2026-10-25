@@ -7,7 +7,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { CLIENT, fails, HAIR_PROFILE, json, NEW_RECORD, type Call, type OpsReply } from "./fixtures.ts";
+import { CLIENT, fails, HAIR_PROFILE, json, NEW_RECORD, RECORD, type Call, type OpsReply } from "./fixtures.ts";
 import {
   NO_CUSTOM_ORDERS,
   NO_STOCK_MATCH,
@@ -154,6 +154,23 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(
     page.getByRole("region", { name: opsCopy.clients.visits.past }).getByRole("link", { name: /on the board/ }),
   ).toHaveCount(0);
+});
+
+// On 25 Oct, a 20 Oct visit nobody arrived for sat under "To come".
+test("sets a visit past its day and not closed apart, as overdue, from those to come", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2027-09-24T06:00:00.000Z"));
+  const [coming] = RECORD.visits.upcoming;
+  if (coming === undefined) throw new Error("the record has a visit to come");
+  const missed = { ...coming, id: "33000000-0000-4000-8000-000000000009", date: "2027-09-20" };
+  await openClient(page, `/clients/${CLIENT.id}/visits`, {
+    [READ_RECORD]: json({ ...RECORD, visits: { ...RECORD.visits, upcoming: [missed, coming] } }),
+  });
+  const overdue = page.getByRole("region", { name: opsCopy.clients.visits.overdue });
+  await expect(overdue.getByRole("row")).toHaveCount(2);
+  await expect(overdue).toContainText("20 Sep 2027");
+  const toCome = page.getByRole("region", { name: opsCopy.clients.visits.upcoming });
+  await expect(toCome).toContainText("25 Sep 2027");
+  await expect(toCome).not.toContainText("20 Sep 2027");
 });
 
 test("says so when there is no address and no visit either way", async ({ page }) => {

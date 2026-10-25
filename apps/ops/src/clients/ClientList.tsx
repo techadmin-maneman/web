@@ -7,7 +7,7 @@ import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type ClientList as Listed, type ClientListQuery } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
@@ -102,11 +102,13 @@ function Narrow({
   );
 }
 
-/** Their next visit, "Thu 24 Sep, 10:30 am"; under way, once one has begun; or none booked. */
-function nextVisitOf(client: Listed["clients"][number]): string {
+/** Their next visit, "Thu 24 Sep, 10:30 am"; under way, once one has begun; overdue, past its day; or none booked. */
+function nextVisitOf(client: Listed["clients"][number], today: string): string {
   if (client.under_way) return copy.underWay;
   if (client.next_visit === null) return copy.noVisit;
-  return `${shortDate(indiaDate(client.next_visit))}, ${indiaClock(client.next_visit)}`;
+  const day = indiaDate(client.next_visit);
+  if (day < today) return copy.overdue(shortDate(day));
+  return `${shortDate(day)}, ${indiaClock(client.next_visit)}`;
 }
 
 function Rows({ listed }: { listed: Listed }) {
@@ -134,7 +136,7 @@ function Rows({ listed }: { listed: Listed }) {
               <td>{phoneWords(client.mobile)}</td>
               <td>{clients.states[client.state]}</td>
               <td>{client.city ?? copy.noCity}</td>
-              <td>{nextVisitOf(client)}</td>
+              <td>{nextVisitOf(client, todayInIndia(Date.now()))}</td>
             </tr>
           ))}
         </tbody>
