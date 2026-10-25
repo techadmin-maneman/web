@@ -58,7 +58,7 @@ export const today = {
   signOut: "Sign out",
   empty: {
     label: "No jobs",
-    title: "No jobs today",
+    title: "Nothing booked for today",
     tomorrow: (count: number, time: string) =>
       `Tomorrow you have ${String(count)} ${count === 1 ? "job" : "jobs"}, first at ${time}.`,
     // The board draws the line with a job tomorrow only.
@@ -66,7 +66,7 @@ export const today = {
   },
   offline: {
     title: "No signal",
-    body: "Your jobs are on the phone.",
+    body: "Today’s jobs and cards are on the phone.",
     /** On a job's step: what the technician does is kept, and goes once the signal is back. */
     step: "Saved on the phone. Sends when you’re back online.",
   },

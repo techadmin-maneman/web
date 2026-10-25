@@ -14,7 +14,7 @@
 import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
-import { NumberInput } from "@maneman/ui/Field";
+import { Field, NumberInput } from "@maneman/ui/Field";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
@@ -66,23 +66,27 @@ function Figure({ name, count, onChange }: { name: string; count: number; onChan
     );
   }
   return (
-    <NumberInput
-      onInk
-      autoFocus
-      className={shared.number}
-      aria-label={copy.consumables.type(name)}
-      inputMode="numeric"
-      min={0}
-      max={MOST}
-      value={typing}
-      onChange={(event) => {
-        setTyping(event.target.value);
-      }}
-      onBlur={done}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") done();
-      }}
-    />
+    <Field label={copy.consumables.type(name)} labelHidden onInk>
+      {(control) => (
+        <NumberInput
+          {...control}
+          onInk
+          autoFocus
+          className={shared.number}
+          inputMode="numeric"
+          min={0}
+          max={MOST}
+          value={typing}
+          onChange={(event) => {
+            setTyping(event.target.value);
+          }}
+          onBlur={done}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") done();
+          }}
+        />
+      )}
+    </Field>
   );
 }
 

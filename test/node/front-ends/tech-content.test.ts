@@ -191,13 +191,13 @@ describe("photographs never touch the phone’s gallery", () => {
   });
 });
 
-// Durations read "0 m", "1 m" and "180 min" on one phone.
+// Durations read "0 m", "1 m" and "180 min" on one phone; and "m" is the metres the close-out's distance is in.
 describe("a length", () => {
-  it("reads as the board writes it, the booked length and the time a job took alike", () => {
-    expect(job.minutes(45)).toBe("45 m");
-    expect(job.minutes(90)).toBe("1 h 30 m");
+  it("reads in minutes, the booked length and the time a job took alike", () => {
+    expect(job.minutes(45)).toBe("45 min");
+    expect(job.minutes(90)).toBe("1 h 30 min");
     expect(job.minutes(180)).toBe("3 h");
-    expect(closeOut.length(1, 22)).toBe("1 h 22 m");
-    expect(closeOut.length(0, 0)).toBe("Under 1 m");
+    expect(closeOut.length(1, 22)).toBe("1 h 22 min");
+    expect(closeOut.length(0, 0)).toBe("Under 1 min");
   });
 });
