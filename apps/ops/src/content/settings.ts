@@ -32,6 +32,8 @@ function figureWords(value: number, unit: string): string {
  */
 export const settings = {
   title: "Settings",
+  find: "Find a setting",
+  noneFound: "No setting matches.",
   /** Gigabytes as Cloudflare bills them, a thousand million bytes. */
   storage: (held: number, share: number) =>
     `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
