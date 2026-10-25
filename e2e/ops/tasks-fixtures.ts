@@ -30,5 +30,13 @@ export const list = (page: Page) => page.getByRole("region", { name: /^\d+ open$
 /** A task's row, found by the line that heads it. */
 export const row = (page: Page, heading: string) => list(page).getByRole("listitem").filter({ hasText: heading });
 
+/** A task's drawer, opened from its card's Details, which holds all else done on it. */
+export async function detail(page: Page, heading: string) {
+  await row(page, heading)
+    .getByRole("button", { name: `${tasks.details} · ${heading}` })
+    .click();
+  return page.getByRole("dialog", { name: heading });
+}
+
 /** The groups' names, as each department lists them. */
 export const groupNames = (page: Page) => list(page).getByRole("heading", { level: 4 });

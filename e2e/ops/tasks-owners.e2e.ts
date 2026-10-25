@@ -1,7 +1,7 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, empty, fails, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
-import { NO_ALERTS, open, list, row } from "./tasks-fixtures.ts";
+import { detail, NO_ALERTS, open, list, row } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // The counts were cut at 200 tasks across every group, and said nothing of it.
@@ -24,7 +24,9 @@ test("counts a group whole when it lists only its longest waits, and says when i
 test("offers no close on the board’s own groups: only a visit left partly done closes here", async ({ page }) => {
   await open(page);
   // Nothing in the board's own groups closes here.
-  await expect(list(page).getByRole("button", { name: /^Close without follow-up/ })).toHaveCount(0);
+  const kunal = await detail(page, "Kunal Mehta");
+  await expect(kunal).toBeVisible();
+  await expect(kunal.getByRole("button", { name: /^Close without follow-up/ })).toHaveCount(0);
 });
 
 // Whose each task is (docs/decisions/0092-task-owners.md): the design's own column, by first name.
@@ -38,7 +40,7 @@ test("writes each task’s owner in the board’s column, by first name, and non
   await expect(row(page, "Deepak Rao").getByText("Owner: unassigned")).toBeAttached();
 });
 
-test("takes a task, and hands it back, from the row", async ({ page }) => {
+test("takes a task, and hands it back, from its drawer", async ({ page }) => {
   const sent: unknown[] = [];
   await open(page);
   await answer(page, {
@@ -49,7 +51,7 @@ test("takes a task, and hands it back, from the row", async ({ page }) => {
       await json({ owner: body.owner })(route);
     },
   });
-  const deepak = row(page, "Deepak Rao");
+  const deepak = await detail(page, "Deepak Rao");
   await deepak.getByRole("button", { name: "Take · Deepak Rao" }).click();
   await expect(deepak).toContainText("Ops");
   await deepak.getByRole("button", { name: "Hand back · Deepak Rao" }).click();
@@ -63,7 +65,7 @@ test("gives a task to another member of staff who has signed in, and says so whe
     "GET /api/tasks": json(TASKS),
     "PUT /api/tasks/{group}/{id}/owner": json({ owner: "anil@maneman.in" }),
   });
-  const deepak = row(page, "Deepak Rao");
+  const deepak = await detail(page, "Deepak Rao");
   await deepak.getByRole("button", { name: "Assign… · Deepak Rao" }).click();
   const whom = deepak.getByLabel("Assign to · Deepak Rao");
   await expect(whom).toBeFocused();
@@ -74,9 +76,11 @@ test("gives a task to another member of staff who has signed in, and says so whe
   await deepak.getByRole("button", { name: opsCopy.tasks.owner.save, exact: true }).click();
   await expect(deepak).toContainText("Anil");
   await expect(deepak.getByRole("button", { name: "Assign… · Deepak Rao" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(row(page, "Deepak Rao")).toContainText("Anil");
 
   await answer(page, { "PUT /api/tasks/{group}/{id}/owner": fails(404, "not_found") });
-  await row(page, "Sanjay Bhatia").getByRole("button", { name: "Take · Sanjay Bhatia" }).click();
+  await (await detail(page, "Sanjay Bhatia")).getByRole("button", { name: "Take · Sanjay Bhatia" }).click();
   await expect(page.getByText("Already handled. Here’s the latest.")).toBeVisible();
 });
 
@@ -129,7 +133,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
       await empty()(route);
     },
   });
-  const manish = row(page, "Manish Tandon");
+  const manish = await detail(page, "Manish Tandon");
   await manish.getByRole("button", { name: "Close without follow-up · Manish Tandon" }).click();
   const why = manish.getByLabel("Why no follow-up is needed · Manish Tandon");
   await expect(why).toBeFocused();
@@ -147,7 +151,9 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
 
 // The call about a move was recorded only from a block ops had to find on the board, and both of the
 // board's tasks opened this week's bare board.
-test("records a call about a move from its row, and opens each of the board’s tasks on its visit", async ({ page }) => {
+test("records a call about a move from its drawer, and opens each of the board’s tasks on its visit", async ({
+  page,
+}) => {
   const MOVE = "99000000-0000-4000-8000-000000000001";
   const MOVED_VISIT = "77000000-0000-4000-8000-000000000101";
   const ON_LEAVE = "77000000-0000-4000-8000-000000000102";
@@ -206,10 +212,6 @@ test("records a call about a move from its row, and opens each of the board’s 
   const vikram = row(page, "Vikram Sethi");
   // The row says why they were not told, so the call starts from the right place.
   await expect(vikram).toContainText(" · not opted in to WhatsApp");
-  await expect(vikram.getByRole("link", { name: "Call +91 98100 04418 · Vikram Sethi" })).toHaveAttribute(
-    "href",
-    "tel:+919810004418",
-  );
   await expect(vikram.getByRole("link", { name: "Open in Dispatch · Vikram Sethi" })).toHaveAttribute(
     "href",
     `/dispatch?from=2027-09-24&visit=${MOVED_VISIT}`,
@@ -220,7 +222,12 @@ test("records a call about a move from its row, and opens each of the board’s 
   );
   expect(await axeViolations(page)).toEqual([]);
 
-  await vikram.getByRole("button", { name: "Told by phone · Vikram Sethi" }).click();
+  const call = await detail(page, "Vikram Sethi");
+  await expect(call.getByRole("link", { name: "Call +91 98100 04418 · Vikram Sethi" })).toHaveAttribute(
+    "href",
+    "tel:+919810004418",
+  );
+  await call.getByRole("button", { name: "Told by phone · Vikram Sethi" }).click();
   await expect(list(page).getByRole("listitem")).toHaveCount(1);
   await expect(list(page)).toBeFocused();
   expect(told).toEqual([`/api/dispatch/moves/${MOVE}/told`]);

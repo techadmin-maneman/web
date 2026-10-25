@@ -119,6 +119,8 @@ export const tasks = {
   decide: DECIDE,
   /** A group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `Longest ${String(shown)} of ${String(count)}.`,
+  /** A card's way to its drawer, with everything else done on the task. */
+  details: "Details",
   /** A group shows its five longest waits until ops ask for the rest. */
   more: (count: number) => `Show ${String(count)} more`,
   fewer: "Show fewer",

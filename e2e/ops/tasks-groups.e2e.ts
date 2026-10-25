@@ -1,7 +1,7 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, TASKS, type OpsReply } from "./fixtures.ts";
-import { NO_ALERTS, open, row, groupNames } from "./tasks-fixtures.ts";
+import { detail, NO_ALERTS, open, row, groupNames } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 /** What a task turns on, as the board answers it. */
@@ -255,23 +255,29 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
   await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000 · link sent");
   await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000 · link not sent");
   await expect(row(page, "Ravi Menon")).toContainText("link refused by Razorpay");
-  // A link Razorpay made can be copied; one not made yet can only be asked for again; a refused one, neither.
-  await expect(row(page, "Nikhil Suri").getByRole("button", { name: "Copy link · Nikhil Suri" })).toBeVisible();
-  await expect(row(page, "Manoj Iyer").getByRole("button", { name: /^Copy link/ })).toHaveCount(0);
-  await expect(row(page, "Manoj Iyer").getByRole("button", { name: "Send again · Manoj Iyer" })).toBeVisible();
-  await expect(row(page, "Ravi Menon").getByRole("button", { name: /^(Copy link|Send again)/ })).toHaveCount(0);
   await expect(row(page, "Kabir Sethi")).toContainText("Mane Man Natural, Rs. 35,000 · link closed unpaid");
-  await expect(row(page, "Kabir Sethi").getByRole("button", { name: /^(Copy link|Send again)/ })).toHaveCount(0);
   await expect(row(page, "Nikhil Suri").getByRole("link", { name: "Nikhil Suri", exact: true })).toHaveAttribute(
     "href",
     "/clients/22000000-0000-4000-8000-000000000020/payments",
   );
-  expect(await axeViolations(page)).toEqual([]);
+  // A link Razorpay made can be copied; one not made yet can only be asked for again; a refused one, neither.
+  const linkButtons = async (heading: string) => {
+    const drawer = await detail(page, heading);
+    const names = await drawer.getByRole("button", { name: /^(Copy link|Send again)/ }).allTextContents();
+    await page.keyboard.press("Escape");
+    return names;
+  };
+  expect(await linkButtons("Manoj Iyer")).toEqual(["Send again · Manoj Iyer"]);
+  expect(await linkButtons("Ravi Menon")).toEqual([]);
+  expect(await linkButtons("Kabir Sethi")).toEqual([]);
 
-  // A client who lost the SMS is texted the link again from the row.
+  // A client who lost the SMS is texted the link again from the task's drawer.
   await answer(page, { "POST /api/payment-links/{id}/resend": json({ outcome: "resent" }) });
-  await row(page, "Nikhil Suri").getByRole("button", { name: "Send again · Nikhil Suri" }).click();
-  await expect(row(page, "Nikhil Suri").getByRole("status")).toHaveText(opsCopy.tasks.link.outcomes.resent);
+  const nikhil = await detail(page, "Nikhil Suri");
+  await expect(nikhil.getByRole("button", { name: "Copy link · Nikhil Suri" })).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  await nikhil.getByRole("button", { name: "Send again · Nikhil Suri" }).click();
+  await expect(nikhil.getByRole("status")).toHaveText(opsCopy.tasks.link.outcomes.resent);
 });
 
 // Money owed back that no refund reached waited nowhere.

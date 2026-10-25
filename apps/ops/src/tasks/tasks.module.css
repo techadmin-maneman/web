@@ -154,6 +154,23 @@ a.subject {
   color: var(--ui-text-muted);
 }
 
+/* A card's one action and its Details, on a line. */
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-4) var(--sp-16);
+  font-size: var(--fs-14);
+}
+
+/* A task's drawer (TaskDetail.tsx): its lines and actions one under another. */
+.detail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-12);
+}
+
 /* The way to the row the task is decided on, in the section that decides it. */
 .decide {
   color: var(--ui-text-muted);

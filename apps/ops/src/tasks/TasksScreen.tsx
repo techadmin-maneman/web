@@ -1,7 +1,7 @@
-// Tasks: what ops still have to do, in groups under the department that decides each, with whose it is and how long it
-// has left. A task is a row in a queue the database keeps (src/policy/tasks.ts), so it leaves when that row is decided;
-// each leads to where it is done, some on the row itself (BookFromTask.tsx, PaymentLinkActions.tsx, CallAboutMove.tsx,
-// TaskActions.tsx).
+// Tasks: what ops still have to do, a card each in groups under the department that decides each, with whose it is and
+// how long it has left. A task is a row in a queue the database keeps (src/policy/tasks.ts), so it leaves when that row
+// is decided; each card leads to where it is done, and its Details open a drawer with all else done on it here
+// (./TaskDetail.tsx).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
@@ -22,43 +22,17 @@ import { readTasks } from "../lib/waiting.ts";
 import { api } from "../api.ts";
 import { rowId } from "../lib/target.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { BookFromTask } from "./BookFromTask.tsx";
-import { CallAboutMove } from "./CallAboutMove.tsx";
-import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
-import { UpiPaymentAction } from "./UpiPaymentAction.tsx";
-import { decidedAt, subjectOf, taskClientPath } from "../lib/task-links.ts";
+import { subjectOf, taskClientPath } from "../lib/task-links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { narrowed, NO_FILTER, TaskFilters, type TaskFilter } from "./TaskFilters.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
 import { subOf } from "./task-subs.ts";
-import { TaskActions } from "./TaskActions.tsx";
+import { DecideLink, ownerName, TaskDetail, type Acting } from "./TaskDetail.tsx";
+import { BookFromTask } from "./BookFromTask.tsx";
 import shared from "./tasks.module.css";
 import styles from "./tasks-screen.module.css";
-import { nameParts } from "../lib/who.ts";
 
 type Group = TaskGroup["group"];
-
-/** "priya.sharma@maneman.in" reads "Priya", as the board names an owner in ops by their first name. */
-function ownerName(email: string): string {
-  const [first = email] = nameParts(email);
-  return first.charAt(0).toUpperCase() + first.slice(1);
-}
-
-/**
- * What the row's actions need beyond the task: who is signed in, who a task may be given to, what their access lets
- * them do with it, and what changed.
- */
-interface Acting {
-  readonly me: string | null;
-  readonly staff: readonly string[];
-  /** Whether they may take it, give it or hand it back: Act in the department that decides its group. */
-  readonly mayOwn: boolean;
-  /** Whether they may close it without a follow-up: a group that allows it, and access that reaches it. */
-  readonly closable: boolean;
-  readonly owner: string | null;
-  readonly onOwner: (owner: string | null) => void;
-  readonly onClosed: () => void;
-}
 
 /** The element id of a task's row, which the head's overdue count takes the keyboard to. */
 const taskRowId = (group: Group, id: string): string => rowId(`task-${group}`, id);
@@ -72,10 +46,12 @@ interface RowProps {
   readonly marked: boolean;
 }
 
+/**
+ * A task's card: what it is, its one action (where it is decided, or a booking) and its Details; whose it is; and when
+ * it is due.
+ */
 function TaskRow({ group, task, now, acting, marked }: RowProps) {
   const subject = subjectOf(group, task);
-  const where = decidedAt(group, task);
-  const action = tasks.decide[group];
   const { owner } = acting;
 
   return (
@@ -89,22 +65,11 @@ function TaskRow({ group, task, now, acting, marked }: RowProps) {
           </OpsLink>
         )}
         <span className={shared.sub}>{subOf(task, now)}</span>
-        {where !== null && action !== undefined && (
-          <span className={shared.sub}>
-            <OpsLink className={shared.decide} to={where}>
-              {action}
-              {/* Every row of a group links the same words, so each says whose it is to a screen reader. */}
-              <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
-            </OpsLink>
-          </span>
-        )}
-        <BookFromTask task={task} subject={subject} onBooked={acting.onClosed} />
-        {group === "payment_owed" && <PaymentLinkActions task={task} subject={subject} />}
-        {(group === "upi_due" || group === "payment_owed") && (
-          <UpiPaymentAction task={task} subject={subject} onRecorded={acting.onClosed} />
-        )}
-        <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
-        <TaskActions group={group} task={task} subject={subject} {...acting} />
+        <span className={shared.cardActions}>
+          <DecideLink group={group} task={task} subject={subject} />
+          <BookFromTask task={task} subject={subject} onBooked={acting.onClosed} />
+          <TaskDetail group={group} task={task} subject={subject} now={now} acting={acting} />
+        </span>
       </div>
       <span className={styles.owner}>
         <VisuallyHidden>{tasks.owner.label}</VisuallyHidden>
@@ -407,7 +372,7 @@ export function TasksScreen() {
       <div hidden={view !== "alerts" || alerts === 0}>
         <NeedsAHand onCount={setAlerts} />
       </div>
-      <div hidden={view === "alerts" && alerts > 0}>
+      <div className={shared.board} hidden={view === "alerts" && alerts > 0}>
         <TaskFilters filter={filter} onFilter={setFilter} />
         <TaskQueue alerts={alerts} onOpen={setOpen} filter={filter} />
       </div>
