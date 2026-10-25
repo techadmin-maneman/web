@@ -39,7 +39,7 @@ export async function toThePiece(job: Working, piece: object): Promise<Response>
   await job.workTo("piece");
   const answer = await job.post(path("piece"), piece, "event-piece-01");
   await job.post(path("checklist"), { done: [] }, "event-checklist-01");
-  await job.post(path("consumables"), { items: [] }, "event-consumables-01");
+  await job.post(path("consumables"), { items: [], short_reason: "other" }, "event-consumables-01");
   await job.post(path("photos"), { phase: "after" }, "event-afterphotos-01");
   return answer;
 }
