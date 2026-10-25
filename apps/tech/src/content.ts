@@ -528,6 +528,7 @@ export const steps = {
     },
     // The board draws four steppers and no way to record a fifth consumable.
     add: "Add a consumable",
+    asExpected: "Used as expected",
     addOne: (name: string) => `Add ${name}`,
     none: "None used",
     // The console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).

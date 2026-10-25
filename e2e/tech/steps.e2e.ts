@@ -221,6 +221,8 @@ test.describe("the consumables step", () => {
     await expect(page.getByRole("status").filter({ hasText: "Solvent: 10" })).toBeAttached();
     await expect(page.getByText("4 strips expected")).toBeVisible();
     await expect(page.getByRole("button", { name: "One more bonding glue" })).toHaveCount(0);
+    // Untouched, the step goes on in one tap that says so.
+    await expect(page.getByRole("button", { name: techCopy.steps.consumables.asExpected })).toBeVisible();
 
     const another = page.getByRole("button", { name: techCopy.steps.consumables.add });
     await expect(another).toHaveAttribute("aria-expanded", "false");
@@ -231,6 +233,7 @@ test.describe("the consumables step", () => {
     await page.getByRole("button", { name: "Add Bonding glue" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Bonding glue: 1" })).toBeAttached();
     await expect(page.getByRole("button", { name: "Add Bonding glue" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeVisible();
   });
 
   test("sends each consumable by its code, and one taken down to nought not at all", async ({ page }) => {

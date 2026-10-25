@@ -90,6 +90,10 @@ function Figure({ name, count, onChange }: { name: string; count: number; onChan
   );
 }
 
+/** Whether every count still stands at what the service expects: the routine visit's one tap on. */
+const asExpected = (offered: readonly Offered[], counts: ReadonlyMap<string, number>): boolean =>
+  offered.some((each) => each.expected > 0) && offered.every((each) => (counts.get(each.code) ?? 0) === each.expected);
+
 /** What a refused step sent, by code, so the technician corrects it rather than counting again. */
 function sentBefore(refused: Queued | null): Map<string, number> | null {
   const items = (refused?.body as { items?: unknown } | null | undefined)?.items;
@@ -220,7 +224,7 @@ function Counting({
   return (
     <StepFrame
       title={copy.titles.consumables}
-      action={copy.next}
+      action={asExpected(offered, counts) ? copy.consumables.asExpected : copy.next}
       ready
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
