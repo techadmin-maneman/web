@@ -2911,6 +2911,339 @@ Request body:
 }
 ```
 
+### GET /api/clients/{id}/notes
+
+Staff's notes on the client still on, newest first
+
+**200**: The notes
+
+```json
+{
+  "$ref": "#/components/schemas/StaffNotes"
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/notes
+
+Write a note on the client, new or in the place of one, under the member of staff, audited
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StaffNoteWritten"
+}
+```
+
+**201**: Written, and the notes as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/StaffNotes"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: superseded: the note it replaces is no longer on; read the notes again
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/notes/{note_id}/take-off
+
+Take a note off the client's page; it is kept, with who took it off and when, audited
+
+**200**: Taken off, or already off, and the notes as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/StaffNotes"
+}
+```
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/clients/{id}/stock-match
 
 The stock code the client's hair profile matches exactly, and where its pieces are
@@ -33900,6 +34233,91 @@ Request body:
 }
 ```
 
+### StaffNotes
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "notes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/StaffNote"
+      },
+      "description": "The notes still on, newest first."
+    }
+  },
+  "required": [
+    "notes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffNote
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "body": {
+      "type": "string"
+    },
+    "written_by": {
+      "type": "string",
+      "description": "The member of staff's work e-mail."
+    },
+    "written_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "id",
+    "body",
+    "written_by",
+    "written_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffNoteWritten
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "replaces": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The note this one changes, as the page read it; null for a new note."
+    }
+  },
+  "required": [
+    "body",
+    "replaces"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientStockMatch
 
 ```json
@@ -38896,6 +39314,8 @@ Request body:
         "visit.lost_reason",
         "visit.move_accepted",
         "hair_profile.correct",
+        "staff_note.write",
+        "staff_note.take_off",
         "discount_code.make",
         "discount_code.switch_off",
         "discount_code.delete",
@@ -43138,6 +43558,10 @@ Request body:
       ],
       "description": "What the same jobs were planned to take, so the two can be read against each other."
     },
+    "on_time_jobs": {
+      "type": "integer",
+      "description": "Of the jobs, those checked in by the end of the client's arrival window (booking_rules.arrival), as the warehouse counts a visit on time."
+    },
     "runs_over": {
       "type": "boolean",
       "description": "Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to begin with); false when the phone timed none of the jobs."
@@ -43149,6 +43573,7 @@ Request body:
     "timed_jobs",
     "average_minutes",
     "average_planned_minutes",
+    "on_time_jobs",
     "runs_over"
   ],
   "additionalProperties": false

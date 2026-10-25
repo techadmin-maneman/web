@@ -18,7 +18,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Consents given and withdrawn | `consents` | Someone who said stop is messaged again | Adding the rows since `<T>`: they are only ever added |
 | Terms agreed to | `terms_acceptances` | A booking made since `<T>` has no record of the terms its client agreed to | Adding the rows since `<T>`: they are only ever added |
 | Revoked sessions and phones | `sessions`, `technician_devices` | A lost phone, or a session that was ended, works again | Revoking again: a phone in the console, a client's session with `sessions.revoked_at` |
-| Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
+| Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
@@ -149,6 +149,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [staff](#staff): Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
 - [staff_access_mode](#staff_access_mode): One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
 - [staff_grants](#staff_grants): What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).
+- [staff_notes](#staff_notes): Staff's short notes on a client, at the top of their page: a change writes a new note in the place of the one before, and one taken off is marked so, never deleted, until an erasure.
 - [staff_service_tokens](#staff_service_tokens): The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).
 - [standard_costs](#standard_costs): What each first fit and replacement product costs us, from its date, for the margin figures until stock lots carry what was paid; an old row stays for the visits under it (ADR 0152).
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
@@ -2677,6 +2678,28 @@ Made by `0069_staff_and_access.sql`.
 Indexes:
 
 - `staff_grants_by_email`: on (`email`)
+
+## staff_notes
+
+Staff's short notes on a client, at the top of their page: a change writes a new note in the place of the one before, and one taken off is marked so, never deleted, until an erasure.
+
+Made by `0193_staff_notes.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `body` | TEXT | no |  |  |  |
+| `written_by` | TEXT | no |  |  | The member of staff's work e-mail. |
+| `written_at` | TEXT | no |  |  |  |
+| `replaces` | TEXT | yes |  | → `staff_notes.id` | The note this one changed, which is taken off as it is written. |
+| `taken_off_at` | TEXT | yes |  |  |  |
+| `taken_off_by` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `staff_notes_person`: on (`person_id`, `written_at`)
+- `staff_notes_replaces`: on (`replaces`)
 
 ## staff_service_tokens
 

@@ -1284,6 +1284,16 @@ export interface Rows {
     readonly granted_by: string;
     readonly granted_at: string;
   };
+  readonly staff_notes: {
+    readonly id: string;
+    readonly person_id: string;
+    readonly body: string;
+    readonly written_by: string;
+    readonly written_at: string;
+    readonly replaces: string | null;
+    readonly taken_off_at: string | null;
+    readonly taken_off_by: string | null;
+  };
   readonly staff_service_tokens: {
     readonly client_id: string;
     readonly label: string;

@@ -78,6 +78,7 @@ export async function clientRoutes(page: Page, over: Answers = {}): Promise<void
     [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
     [READ_STOCK_MATCH]: json(NO_STOCK_MATCH),
     [READ_CUSTOM_ORDERS]: json(NO_CUSTOM_ORDERS),
+    "GET /api/clients/{id}/notes": json({ notes: [] }),
     "GET /api/clients/{id}/photos/{photo_id}": jpeg(await inkPhoto()),
     ...over,
   });

@@ -13,7 +13,7 @@ export const technicians = {
    * Four of the design's five columns, and Leave where it draws Skill: nothing
    * records a skill, and a day off is what ops need to see down the roster.
    */
-  columns: ["Technician", "City", "Jobs", "Average visit", "Leave"],
+  columns: ["Technician", "City", "Jobs", "Average visit", "On time", "Leave"],
   narrow: "Filter technicians",
   /** The Leave column: away today until when, the first day of leave to come, or nothing. */
   away: (until: string) => `Away until ${until}`,
@@ -35,6 +35,8 @@ export const technicians = {
     days: (days: number) => (days === 365 ? "The last 12 months" : `The last ${String(days)} days`),
     /** When the phone timed fewer jobs than were finished, the average says what it is of: "13 of 14 timed". */
     base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)} timed`,
+    /** The jobs checked in by the end of the arrival window, of all done: "92%". */
+    onTime: (onTime: number, jobs: number) => `${String(Math.round((onTime / jobs) * 100))}%`,
     /** Beneath the table, where the board writes its own note: what the two columns count. */
     period: (from: string, to: string) => `Jobs ${from} – ${to}`,
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
@@ -92,6 +94,7 @@ export const technicians = {
     jobs: (count: number, days: number) =>
       `${String(count)} ${count === 1 ? "job" : "jobs"} in the last ${String(days)} days`,
     average: (time: string) => `Average visit ${time}`,
+    onTime: (share: string) => `${share} on time`,
     runsOver: "Runs over the planned length",
   },
   kit: {

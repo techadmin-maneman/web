@@ -54,6 +54,14 @@ const TechnicianWorkSchema = z
     average_planned_minutes: z
       .union([z.number().int(), z.null()])
       .openapi({ description: "What the same jobs were planned to take, so the two can be read against each other." }),
+    on_time_jobs: z
+      .number()
+      .int()
+      .openapi({
+        description:
+          "Of the jobs, those checked in by the end of the client's arrival window (booking_rules.arrival), as the " +
+          "warehouse counts a visit on time.",
+      }),
     runs_over: z.boolean().openapi({
       description:
         "Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to " +
@@ -276,8 +284,9 @@ async function mayGiveCity(c: Context<AppEnv>, city: string | null | undefined):
 
 /** Each technician's work over the period, for the technicians in the caller's cities. */
 async function workInReach(c: Context<AppEnv>, period: { from: string; to: string }): Promise<TechnicianWork[]> {
+  const arrival = (await opsInputs(c)).bookingRules.arrival;
   const [everyone, reached] = await Promise.all([
-    technicianWork(c.env.DB, period),
+    technicianWork(c.env.DB, period, arrival),
     routeReach(c).then((reach) => techniciansWithin(c.env.DB, reach)),
   ]);
   return everyone.filter((each) => isWithin(reached, each.technician_id));

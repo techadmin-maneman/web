@@ -179,6 +179,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   staff_access_mode: "One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).",
   staff_grants:
     "What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).",
+  staff_notes:
+    "Staff's short notes on a client, at the top of their page: a change writes a new note in the place of the one before, and one taken off is marked so, never deleted, until an erasure.",
   staff_service_tokens:
     "The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).",
   stock_balances:

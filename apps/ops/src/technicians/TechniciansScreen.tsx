@@ -67,6 +67,15 @@ function Service({ figures }: { figures: TechnicianWork | undefined }) {
   );
 }
 
+/** The share of the jobs checked in by the end of the arrival window; null with no job done. */
+const onTimeShare = (figures: TechnicianWork | undefined): number | null =>
+  figures === undefined || figures.jobs === 0 ? null : figures.on_time_jobs / figures.jobs;
+
+function OnTime({ figures }: { figures: TechnicianWork | undefined }) {
+  if (figures === undefined || figures.jobs === 0) return <span className={shared.none}>{technicians.unknown}</span>;
+  return <>{technicians.work.onTime(figures.on_time_jobs, figures.jobs)}</>;
+}
+
 /** The Leave column: away today and until when, the first day of leave still to come, or a gap. */
 function LeaveCell({ leave, today }: { leave: readonly Leave[]; today: string }) {
   const next = leave[0];
@@ -140,12 +149,13 @@ function RosterTable({
 }) {
   const today = todayInIndia(Date.now());
   const city = (row: Technician) => row.city ?? "";
-  const [name, cityLabel, jobs, service, leave] = technicians.columns;
+  const [name, cityLabel, jobs, service, onTime, leave] = technicians.columns;
   const columns: readonly Column<Technician>[] = [
     { label: name, sort: (row) => row.name },
     { label: cityLabel, sort: city, choice: city, all: tables.allCities },
     { label: jobs, sort: (row) => figures.get(row.id)?.jobs ?? -1 },
     { label: service, sort: (row) => figures.get(row.id)?.average_minutes ?? -1 },
+    { label: onTime, sort: (row) => onTimeShare(figures.get(row.id)) ?? -1 },
     { label: leave, sort: (row) => row.leave[0]?.from ?? "" },
   ];
   const view = useTableView(active, columns, { search: (row) => `${row.name} ${city(row)}` });
@@ -174,6 +184,9 @@ function RosterTable({
               <td className={shared.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
               <td className={shared.service}>
                 <Service figures={figures.get(technician.id)} />
+              </td>
+              <td className={shared.jobs}>
+                <OnTime figures={figures.get(technician.id)} />
               </td>
               <td className={shared.leaveCell}>
                 <LeaveCell leave={technician.leave} today={today} />

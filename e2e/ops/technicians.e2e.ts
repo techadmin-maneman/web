@@ -68,6 +68,9 @@ test("counts the jobs each has finished, and how long those took", async ({ page
   await expect(faizan).toContainText("29");
   await expect(faizan).toContainText("1 h 48 min");
   await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText("1 h 24 min");
+  await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText(
+    opsCopy.technicians.work.onTime(46, 48),
+  );
 });
 
 // The figures counted a fixed 90 days, and nothing on the page could change that.
@@ -106,6 +109,7 @@ test("reads as a gap, never as a nought, when the phone timed none of the jobs",
   const untimed = TECHNICIAN_WORK.technicians.map((each) => ({
     ...each,
     timed_jobs: 0,
+    on_time_jobs: 0,
     average_minutes: null,
     average_planned_minutes: null,
     runs_over: false,
@@ -325,6 +329,7 @@ test("opens a technician's page on their week: their jobs and average, then each
   const week = main.getByRole("region", { name: opsCopy.technicians.tabs.week });
   await expect(week).toContainText(opsCopy.technicians.week.jobs(48, 91));
   await expect(week).toContainText(opsCopy.technicians.week.average("1 h 24 min"));
+  await expect(week).toContainText(opsCopy.technicians.week.onTime(opsCopy.technicians.work.onTime(46, 48)));
   await expect(week.getByRole("definition").first()).toContainText("Rohit M.");
   await expect(week.getByRole("link", { name: opsCopy.technicians.week.open })).toBeVisible();
 });

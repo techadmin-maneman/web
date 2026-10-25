@@ -80,6 +80,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('cm1', 'cv1', 'in', 'client', 'Hello', '${AT}', '${AT}')`,
   // Their Care person (docs/decisions/0131-care-people.md).
   `INSERT INTO care_owners (person_id, email, since, assigned_by) VALUES ('p1', 'care@maneman.in', '${AT}', 'system')`,
+  `INSERT INTO staff_notes (id, person_id, body, written_by, written_at)
+     VALUES ('sn1', 'p1', 'Prefers mornings.', 'ops@maneman.in', '${AT}')`,
   `INSERT INTO crm_contact_updates (person_id, owed_at, changed_at) VALUES ('p1', '${AT}', '${AT}')`,
   `INSERT INTO vendor_breakers (vendor, failures) VALUES ('crm', 1)`,
   // A matter sent to their city (docs/decisions/0135-city-matters.md).

@@ -37,11 +37,15 @@ export interface TechnicianWork {
   readonly average_minutes: number | null;
   /** What the same jobs were planned to take, so the two can be read against each other. */
   readonly average_planned_minutes: number | null;
+  /** Of the jobs, those checked in by the end of the client's arrival window. */
+  readonly on_time_jobs: number;
 }
 
 /**
- * Every active technician, with the jobs they finished in the period and what
- * the phone timed of them.
+ * Every active technician, with the jobs they finished in the period, what
+ * the phone timed of them, and how many they were on time for: a check-in that
+ * passed by the end of the client's arrival window, as the warehouse counts it
+ * (../analytics/rows.ts).
  *
  * The technicians drive the join, so one who finished nothing still answers
  * with a nought rather than being left out for the console to guess at. A start
@@ -51,7 +55,9 @@ export interface TechnicianWork {
 const WORK = `SELECT t.id AS technician_id, a.type AS type, sv.minutes AS service_minutes,
     COUNT(a.id) AS jobs,
     SUM(CASE WHEN o.at > s.at THEN 1 ELSE 0 END) AS timed,
-    SUM(CASE WHEN o.at > s.at THEN (julianday(o.at) - julianday(s.at)) * 1440 ELSE 0 END) AS minutes
+    SUM(CASE WHEN o.at > s.at THEN (julianday(o.at) - julianday(s.at)) * 1440 ELSE 0 END) AS minutes,
+    SUM(CASE WHEN EXISTS (SELECT 1 FROM checkins c WHERE c.appointment_id = a.id AND c.passed = 1
+      AND c.at <= strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '+' || ?3 || ' minutes')) THEN 1 ELSE 0 END) AS on_time
   FROM technicians t
   LEFT JOIN appointments a ON a.technician_id = t.id AND a.deleted_at IS NULL AND a.status = 'completed'
     AND a.window_start >= ?1 AND a.window_start < ?2
@@ -73,13 +79,25 @@ interface Row {
   jobs: number;
   timed: number;
   minutes: number;
+  on_time: number;
 }
 
-/** The counts the Technicians page shows, for every active technician, over the days given. */
-export async function technicianWork(db: D1Database, period: { from: string; to: string }): Promise<TechnicianWork[]> {
+/**
+ * The counts the Technicians page shows, for every active technician, over the days given; `arrivalMinutes` is the
+ * arrival window after a start, as booking sets it.
+ */
+export async function technicianWork(
+  db: D1Database,
+  period: { from: string; to: string },
+  arrivalMinutes: number,
+): Promise<TechnicianWork[]> {
   const { results } = await db
     .prepare(WORK)
-    .bind(indiaInstant(period.from, "00:00").toISOString(), indiaInstant(period.to, "00:00").toISOString())
+    .bind(
+      indiaInstant(period.from, "00:00").toISOString(),
+      indiaInstant(period.to, "00:00").toISOString(),
+      arrivalMinutes,
+    )
     .all<Row>();
 
   const byTechnician = new Map<string, Row[]>();
@@ -97,6 +115,7 @@ export async function technicianWork(db: D1Database, period: { from: string; to:
       timed_jobs: timed,
       average_minutes: timed === 0 ? null : Math.round(minutes / timed),
       average_planned_minutes: timed === 0 ? null : Math.round(planned / timed),
+      on_time_jobs: rows.reduce((total, row) => total + row.on_time, 0),
     };
   });
 }

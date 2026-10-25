@@ -43,6 +43,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "grievances",
       "no_show_disputes",
       "task_closures",
+      "staff_notes",
     ],
     leftAtT: "Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored",
     putBackBy:

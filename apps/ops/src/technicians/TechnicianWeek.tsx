@@ -16,7 +16,10 @@ const copy = technicians.week;
 
 const DAY_MS = 86_400_000;
 
-/** Their jobs over the roster's period and how long a visit takes them, where the phone timed any. */
+/**
+ * Their jobs over the roster's period, how long a visit takes them where the phone timed any, and how often they were
+ * at the door by the end of the arrival window.
+ */
 function WorkStrip({ technicianId }: { technicianId: string }) {
   const read = useCallback(() => techniciansApi.technicianWork(null), []);
   const [loaded] = useLoad(read);
@@ -28,6 +31,7 @@ function WorkStrip({ technicianId }: { technicianId: string }) {
     <p className={styles.strip}>
       <span>{copy.jobs(work.jobs, days)}</span>
       {work.average_minutes !== null && <span>{copy.average(hoursAndMinutes(work.average_minutes))}</span>}
+      {work.jobs > 0 && <span>{copy.onTime(technicians.work.onTime(work.on_time_jobs, work.jobs))}</span>}
       {work.runs_over && <span className={styles.over}>{copy.runsOver}</span>}
     </p>
   );

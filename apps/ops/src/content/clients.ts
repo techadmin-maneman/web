@@ -116,6 +116,28 @@ export const clients = {
     /** A task done on a tab of the client's page: "Open Payments". */
     toTab: (tab: string) => `Open ${tab}`,
   },
+  /** Staff's notes on the client, under the head of their page, each with who wrote it and when. */
+  notes: {
+    title: "Notes",
+    none: "No notes.",
+    failed: "Couldn’t load notes.",
+    add: "Add a note",
+    label: "Note",
+    change: "Change",
+    takeOff: "Take off",
+    save: "Save",
+    saving: "Saving…",
+    cancel: "Cancel",
+    /** "Priya · 12 Oct 2026" */
+    by: (name: string, date: string) => `${name} · ${date}`,
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      superseded: changed("Someone changed this note first."),
+      invalid_request: "Write the note first.",
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
   failed: "Couldn’t load this client.",
   /*
    * Our words, all of them: the board draws a Visits tab and nothing in it. It

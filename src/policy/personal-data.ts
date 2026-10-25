@@ -454,6 +454,11 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut: "Our keys, and Care's note about them and who gave or decided it, which are staff's own record.",
     erasure: { blanks: ["note"], why: "Care's words about them go; the remedy stays with the credits it granted." },
   },
+  staff_notes: {
+    leftOut: ["id", "person_id", "body", "written_by", "written_at", "replaces", "taken_off_at", "taken_off_by"],
+    whyLeftOut: "Staff's own notes on them, as Care's notes in a chat are.",
+    erasure: { deletes: true, why: "Deleted: staff's notes on an erased record go." },
+  },
   task_closures: {
     leftOut: ["id", "task_group", "subject_id", "reason", "closed_by", "closed_at"],
     whyLeftOut: "Ops' own to-do list.",

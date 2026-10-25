@@ -102,7 +102,7 @@ export async function personalDataStatements(
   ];
 }
 
-/** What Care hold about them: their chats, who looks after them, and Care's words about them. */
+/** What Care hold about them: their chats, who looks after them, and Care's and staff's words about them. */
 function careRecords(db: D1Database, personId: string): D1PreparedStatement[] {
   return [
     // Their chats with the Care team: the words go, and the thread's number becomes nobody's
@@ -127,6 +127,8 @@ function careRecords(db: D1Database, personId: string): D1PreparedStatement[] {
     // Care's words to the city team about them (docs/decisions/0135-city-matters.md).
     db.prepare("UPDATE city_matters SET note = NULL WHERE person_id = ?1").bind(personId),
     db.prepare("UPDATE remedies SET note = NULL WHERE person_id = ?1").bind(personId),
+    // Staff's notes on them, every one at once, so a note that replaced another goes with it.
+    db.prepare("DELETE FROM staff_notes WHERE person_id = ?1").bind(personId),
   ];
 }
 
