@@ -186,9 +186,7 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
   await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
   await expect(page.getByText(techCopy.notHome.failed.title)).toBeVisible();
   await expect(page.getByText("You are 1.4 km from the address.")).toBeVisible();
-  await expect(
-    page.getByText(/^Go to the door and tap again\. Still refused\? Ask ops to let you check in\./),
-  ).toBeVisible();
+  await expect(page.getByText(/^Go to the door and tap again\. Still refused\? Call ops\./)).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toHaveCount(0);
   // The evidence chain draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
   await expect(page.getByRole("button", { name: techCopy.notHome.failed.action })).toBeVisible();
@@ -360,7 +358,7 @@ test("tomorrow’s job shows its day, and cannot be checked in to today", async 
   await atTheDoor(page);
   await page.goto(`/jobs/${TOMORROW_JOB_ID}`);
 
-  await expect(page.getByText(/^Tomorrow · 10–10:30 am · service visit · 1 h 30 m$/)).toBeVisible();
+  await expect(page.getByText(/^Tomorrow · 10–10:30 am · service visit · 1 h 30 min$/)).toBeVisible();
   await expect(page.getByText(techCopy.job.notToday.tomorrow)).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);

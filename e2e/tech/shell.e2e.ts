@@ -15,7 +15,7 @@ test("opens on the sign-in: the number first, the code once it is sent, and the 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   await expect(page.getByRole("textbox", { name: techCopy.signIn.mobileLabel })).toBeVisible();
   await expect(page.getByRole("textbox", { name: techCopy.signIn.codeLabel })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: techCopy.ops.call })).toHaveAttribute("href", /^tel:+91/);
+  await expect(page.getByRole("link", { name: techCopy.ops.call })).toHaveAttribute("href", /^tel:\+91/);
 });
 
 test("serves its policy: its own origin, the camera and geolocation to itself, and noindex", async ({ page }) => {
