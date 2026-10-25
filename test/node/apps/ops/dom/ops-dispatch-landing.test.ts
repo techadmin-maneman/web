@@ -83,11 +83,11 @@ describe("what a move says once it is sent", () => {
       row("t2", "Salim Khan", [block({ window: "evening", starts_at: "2025-09-19T10:30:00.000Z" })]),
     ]);
     expect(staleWords(JOB, "superseded", elsewhere)).toBe(
-      dispatch.landing.superseded("Rohit M.", dispatch.landing.supersededWhere("Salim Khan", "Fri 19 Sep", "4 pm")),
+      dispatch.landing.superseded("Rohit Malhotra", dispatch.landing.supersededWhere("Salim Khan", "Fri 19 Sep", "4 pm")),
     );
-    expect(staleWords(JOB, "superseded", board([IMRAN]))).toBe(dispatch.landing.beingMoved("Rohit M."));
+    expect(staleWords(JOB, "superseded", board([IMRAN]))).toBe(dispatch.landing.beingMoved("Rohit Malhotra"));
     expect(staleWords(JOB, "superseded", board([]))).toBe(
-      dispatch.landing.superseded("Rohit M.", dispatch.landing.supersededGone),
+      dispatch.landing.superseded("Rohit Malhotra", dispatch.landing.supersededGone),
     );
     expect(staleWords(JOB, "not_found", null)).toBe(dispatch.landing.errors.not_found);
   });

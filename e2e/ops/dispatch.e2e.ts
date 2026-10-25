@@ -89,7 +89,7 @@ test("says how much of a day the job takes, and lists only the technicians' days
   expect(days.filter((day) => day.startsWith("Faizan Ali · Sun 21 Sep"))).toEqual([]);
   expect(days.filter((day) => day.startsWith("Arjun Negi · Tue 23 Sep"))).toEqual([]);
   // Nothing on the board is a drop target.
-  await expect(page.getByRole("button", { name: /^Move Rohit M\. to / })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Move Rohit Malhotra to / })).toHaveCount(0);
 
   // Sandeep's Saturday afternoon is full: his day's sheet offers the morning and the evening.
   await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");

@@ -76,6 +76,9 @@ export function nameOf(job: Job): string {
   return parts.length === 0 ? dispatch.unnamed : parts.join(" · ");
 }
 
+/** The job as a sheet or a line over the board names it: the client in full, where the board's card is cramped. */
+export const fullNameOf = (job: Job): string => personOf(job)?.name ?? nameOf(job);
+
 /** The day and window a job stands in now, which the tray's jobs have as well. */
 export function whenOf(job: Job): { readonly date: string | null; readonly window: BookingWindow | null } {
   if (job.kind === "block") return { date: job.date, window: job.block.window };

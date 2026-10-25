@@ -56,10 +56,10 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   // The list of technicians' days, then the sheet.
   await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
 
-  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
+  const picker = page.getByRole("dialog", { name: "Move Rohit Malhotra to Sandeep Yadav" });
   // The exact start the move takes, not the window alone.
   await expect(picker).toContainText("Fri 19 Sep, 9 am → Sat 20 Sep, 9 am");
-  await expect(picker).toContainText("Rohit M. gets the new time on WhatsApp. Their payment carries over.");
+  await expect(picker).toContainText("Rohit Malhotra gets the new time on WhatsApp. Their payment carries over.");
   // Nothing has gone out, and nothing can until a reason is chosen.
   expect(sent).toEqual([]);
   await expect(picker.getByRole("button", { name: opsCopy.dispatch.move.send })).toBeDisabled();
@@ -68,7 +68,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await press(page, "Move and notify");
 
   // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
-  await expect(page.getByRole("status")).toHaveText("Moved. Rohit M. gets the new time on WhatsApp.");
+  await expect(page.getByRole("status")).toHaveText("Moved. Rohit Malhotra gets the new time on WhatsApp.");
   expect(sent).toEqual([
     {
       appointment_id: ROHIT_JOB?.appointment_id,
@@ -97,11 +97,11 @@ test("asks the client to confirm a move to another day, sending it as a proposal
   await press(page, "Move visit");
   await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
   await reason(page, "Zone rebalance");
-  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("We’ll ask Rohit M. on WhatsApp. It moves when they accept.");
-  await press(page, "Ask Rohit M. to confirm");
+  const picker = page.getByRole("dialog", { name: "Move Rohit Malhotra to Sandeep Yadav" });
+  await expect(picker).toContainText("We’ll ask Rohit Malhotra on WhatsApp. It moves when they accept.");
+  await press(page, "Ask Rohit Malhotra to confirm");
 
-  await expect(page.getByRole("status")).toHaveText("Asked Rohit M. on WhatsApp to confirm Sat 20 Sep, 9 am.");
+  await expect(page.getByRole("status")).toHaveText("Asked Rohit Malhotra on WhatsApp to confirm Sat 20 Sep, 9 am.");
   expect(sent).toEqual([
     expect.objectContaining({ date: "2025-09-20", starts_at: "2025-09-20T03:30:00.000Z", reason: "zone_rebalance" }),
   ]);
@@ -143,8 +143,8 @@ test("says a payment carries over only where one was made", async ({ page }) => 
   await press(page, "Move visit");
   await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
 
-  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("Rohit M. gets the new time on WhatsApp.");
+  const picker = page.getByRole("dialog", { name: "Move Rohit Malhotra to Sandeep Yadav" });
+  await expect(picker).toContainText("Rohit Malhotra gets the new time on WhatsApp.");
   await expect(picker).not.toContainText("carries over");
   // No technician's skills are recorded, so a move cannot claim one.
   await expect(picker.getByRole("radio")).toHaveCount(4);
@@ -263,14 +263,14 @@ test("asks why before a move onto a blacked-out day, and sends the reason with i
   await press(page, "Move visit");
   await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
 
-  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
+  const picker = page.getByRole("dialog", { name: "Move Rohit Malhotra to Sandeep Yadav" });
   await expect(picker).toContainText("Sat 20 Sep is a closed day.");
   await reason(page, "Client asked");
   await expect(picker.getByRole("button", { name: opsCopy.dispatch.move.send })).toBeDisabled();
   await picker.getByLabel(opsCopy.dispatch.move.legend).fill("Their only free day before they travel");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new time on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit Malhotra gets the new time on WhatsApp.");
   expect(sent).toEqual([expect.objectContaining({ blackout_reason: "Their only free day before they travel" })]);
 });
 
@@ -290,7 +290,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   await page.getByRole("radio", { name: "Client asked" }).check();
   await page.getByRole("button", { name: opsCopy.dispatch.move.sendQuietly, exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Moved. Vikram S. gets the new time on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Vikram Sethi gets the new time on WhatsApp.");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -316,7 +316,7 @@ test("asks ops to call a client who has not agreed to WhatsApp, and records the 
   await press(page, "Vikram S., Fri 19 Sep, 12 pm");
   await press(page, "Move visit");
   await moveTo(page, "Sandeep Yadav", "Sat 20 Sep");
-  const picker = page.getByRole("dialog", { name: "Move Vikram S. to Sandeep Yadav" });
+  const picker = page.getByRole("dialog", { name: "Move Vikram Sethi to Sandeep Yadav" });
   await expect(picker).toContainText("Vikram Sethi isn’t on WhatsApp updates. Call +91 98100 00002 with the new time.");
   // No message goes, so the button promises none.
   await expect(picker.getByRole("button", { name: opsCopy.dispatch.move.send })).toHaveCount(0);
@@ -325,7 +325,7 @@ test("asks ops to call a client who has not agreed to WhatsApp, and records the 
 
   const status = page.getByRole("status");
   await expect(status).toContainText(
-    "Vikram S. moved. Vikram Sethi isn’t on WhatsApp updates: call +91 98100 00002 with the new time.",
+    "Moved. Vikram Sethi isn’t on WhatsApp updates: call +91 98100 00002 with the new time.",
   );
   await status.getByRole("button", { name: opsCopy.dispatch.landing.told }).click();
   await expect(page.getByRole("status")).toHaveText(`Recorded: ${VIKRAM.name} told by phone.`);
@@ -339,11 +339,11 @@ test("tells ops a change of technician alone messages nobody", async ({ page }) 
   await press(page, "Move visit");
   await moveTo(page, "Sandeep Yadav", "Fri 19 Sep");
 
-  const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("Rohit M. keeps the same time. No message sent.");
+  const picker = page.getByRole("dialog", { name: "Move Rohit Malhotra to Sandeep Yadav" });
+  await expect(picker).toContainText("Rohit Malhotra keeps the same time. No message sent.");
   await reason(page, "Zone rebalance");
   await press(page, "Move");
-  await expect(page.getByRole("status")).toHaveText("Rohit M. is now with Sandeep Yadav. Same time.");
+  await expect(page.getByRole("status")).toHaveText("Rohit Malhotra is now with Sandeep Yadav. Same time.");
 });
 
 // Escape during "Moving" let the same job be moved twice.
@@ -369,11 +369,11 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
 
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Move Rohit Malhotra to Sandeep Yadav" })).toBeVisible();
   await expect(page.getByRole("button", { name: opsCopy.dispatch.move.cancel })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new time on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit Malhotra gets the new time on WhatsApp.");
   expect(sent).toHaveLength(1);
 });
 
@@ -399,7 +399,7 @@ test("refuses a move made from a stale board, and says where the job is now", as
   await press(page, "Move and notify");
 
   await expect(page.getByRole("alert")).toHaveText(
-    "Rohit M. was just moved by someone else. It’s now with Arjun Negi, Sat 20 Sep, 9 am.",
+    "Rohit Malhotra was just moved by someone else. It’s now with Arjun Negi, Sat 20 Sep, 9 am.",
   );
   await expect(page.getByText("Moving Rohit M.")).toBeHidden();
 });

@@ -6,7 +6,7 @@ import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import type { Board, Moved, Proposed } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
-import { atOf, idOf, nameOf, personOf, shownOf, typeOf, type Job, type Target } from "./job.ts";
+import { atOf, fullNameOf, idOf, nameOf, personOf, shownOf, typeOf, type Job, type Target } from "./job.ts";
 
 /** A line over the board: what a move did, or why it was refused. A call still to make carries its move. */
 export interface Notice {
@@ -21,7 +21,7 @@ export interface Notice {
  */
 export function doneNotice(job: Job, to: Target, moved: Moved): Notice {
   const copy = dispatch.landing.moved;
-  const name = nameOf(job);
+  const name = fullNameOf(job);
   const person = personOf(job);
   if (moved.client_notice === "messaged") return { tone: "done", text: copy.messaged(name), call: null };
   if (moved.client_notice === "unchanged") {
@@ -30,7 +30,7 @@ export function doneNotice(job: Job, to: Target, moved: Moved): Notice {
   if (person !== null) {
     return {
       tone: "done",
-      text: copy.call(name, person.name, phoneWords(person.mobile)),
+      text: copy.call(person.name, phoneWords(person.mobile)),
       call: { moveId: moved.move_id, name: person.name },
     };
   }
@@ -45,7 +45,7 @@ export function askedNotice(job: Job, to: Target, proposed: Proposed): Notice {
   if (proposed.client_notice === "call" && person !== null) {
     return { tone: "done", text: copy.call(person.name, phoneWords(person.mobile), when), call: null };
   }
-  return { tone: "done", text: copy.messaged(nameOf(job), when), call: null };
+  return { tone: "done", text: copy.messaged(fullNameOf(job), when), call: null };
 }
 
 /** Why a move was refused, in the board's words. Nothing was written either way. */
@@ -96,6 +96,6 @@ export function staleWords(job: Job, code: string, now: Board | null): string {
   if (code === "not_found") return copy.errors.not_found;
   if (code === "in_progress") return copy.errors.in_progress;
   const place = now === null ? null : placeOn(now, job);
-  if (place?.unchanged === true) return copy.beingMoved(nameOf(job));
-  return copy.superseded(nameOf(job), place?.words ?? copy.supersededGone);
+  if (place?.unchanged === true) return copy.beingMoved(fullNameOf(job));
+  return copy.superseded(fullNameOf(job), place?.words ?? copy.supersededGone);
 }

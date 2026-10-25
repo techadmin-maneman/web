@@ -213,7 +213,8 @@ export const dispatch = {
      * The board's extra line inside the notice the visit was sold under, which the board writes as 24 hours. The
      * client keeps the free change they had: their own change counts from the time before we moved it (ADR 0096).
      */
-    soon: (hours: number) => `Within ${String(hours)} hours. No charge, as we moved it.`,
+    soon: (hours: number) =>
+      `The visit is less than ${String(hours)} hours away, but the client pays nothing for the change, as we moved it.`,
     /** A move of a visit the technician had checked in at, chosen after the drawer's warning. */
     checkInCleared: "The check-in is cleared. They check in again at the new time.",
     /** A move onto a day ops blacked out goes only with a reason, kept with the move. */
@@ -273,8 +274,8 @@ export const dispatch = {
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
     moved: {
       messaged: (job: string) => `Moved. ${job} gets the new time on WhatsApp.`,
-      call: (job: string, name: string, mobile: string) =>
-        `${job} moved. ${name} isn’t on WhatsApp updates: call ${mobile} with the new time.`,
+      call: (name: string, mobile: string) =>
+        `Moved. ${name} isn’t on WhatsApp updates: call ${mobile} with the new time.`,
       unchanged: (job: string, technician: string) => `${job} is now with ${technician}. Same time.`,
       noClient: (job: string) => `${job} moved. No client to notify.`,
     },
