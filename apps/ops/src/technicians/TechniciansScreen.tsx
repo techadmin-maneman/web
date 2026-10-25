@@ -2,6 +2,7 @@
 // a technician's skills, so Leave stands in the design's Skill column (docs/open-points.md, item 59). A name opens
 // their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
+import { typeLook } from "@maneman/ui/type";
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
@@ -77,7 +78,7 @@ function LeaveCell({ leave, today }: { leave: readonly Leave[]; today: string })
 function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
   return (
     <section className={shared.off} aria-labelledby="switched-off">
-      <h3 className={capsLook(shared.sectionTitle)} id="switched-off">
+      <h3 className={typeLook("title-4", shared.sectionTitle)} id="switched-off">
         {technicians.switchedOff}
       </h3>
       <ul className={shared.offList}>

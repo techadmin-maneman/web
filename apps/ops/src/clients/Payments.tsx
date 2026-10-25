@@ -2,10 +2,10 @@
 // page holds; and their service-visit credits, which ops correct by hand, the server writing the ledger and audit
 // entries together (docs/decisions/0068-a-paid-hold-is-kept.md).
 
+import { typeLook } from "@maneman/ui/type";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, ChoiceGroup, Radio, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
-import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -252,7 +252,7 @@ function CreditSection({
   const [saved, setSaved] = useState<number | null>(null);
   return (
     <section className={styles.credits} aria-labelledby="credits">
-      <h3 className={capsLook(styles.sectionTitle)} id="credits">
+      <h3 className={typeLook("title-4", styles.sectionTitle)} id="credits">
         {creditCopy.title}
       </h3>
       <Balance credits={credits} />
@@ -394,15 +394,15 @@ export function MoneyRecords({
   return (
     <>
       <section className={styles.visitList} aria-label={copy.title}>
-        <h3 className={capsLook(styles.sectionTitle)}>{copy.title}</h3>
+        <h3 className={typeLook("title-4", styles.sectionTitle)}>{copy.title}</h3>
         <PaymentTable payments={payments} />
       </section>
       <section className={styles.visitList} aria-label={linkCopy.title}>
-        <h3 className={capsLook(styles.sectionTitle)}>{linkCopy.title}</h3>
+        <h3 className={typeLook("title-4", styles.sectionTitle)}>{linkCopy.title}</h3>
         <LinkTable links={links} />
       </section>
       <section className={styles.visitList} aria-label={invoiceCopy.title}>
-        <h3 className={capsLook(styles.sectionTitle)}>{invoiceCopy.title}</h3>
+        <h3 className={typeLook("title-4", styles.sectionTitle)}>{invoiceCopy.title}</h3>
         <InvoiceTable invoices={invoices} />
       </section>
     </>

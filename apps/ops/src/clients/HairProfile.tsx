@@ -2,6 +2,7 @@
 // spec a replacement is ordered to, every version with who recorded it at which visit, and the form ops correct it
 // with. A correction is the whole profile sent as a new version, so the form starts from the latest.
 
+import { typeLook } from "@maneman/ui/type";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
@@ -385,7 +386,7 @@ export function HairProfile({ clientId }: { clientId: string }) {
   const page = saved ?? loaded.value;
   return (
     <section className={styles.profile} aria-labelledby="hair-profile-title">
-      <h3 className={capsLook(styles.title)} id="hair-profile-title">
+      <h3 className={typeLook("title-4", styles.title)} id="hair-profile-title">
         {copy.title}
       </h3>
       {moved && <Refusal className={styles.error} said={copy.moved} />}

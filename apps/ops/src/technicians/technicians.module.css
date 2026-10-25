@@ -195,12 +195,9 @@
   margin-top: var(--sp-8);
 }
 
-/* The technicians switched off, in the small capitals the board letters its group names in. */
+/* A section's title within the page, in the serif every section takes: the technicians switched off, a home. */
 .sectionTitle {
   margin: 0 0 var(--sp-8);
-  letter-spacing: var(--tracking-12);
-  font-size: var(--fs-15);
-  color: var(--ui-text-muted);
 }
 
 /* ---- One phone, and its revoke ------------------------------------------- */
