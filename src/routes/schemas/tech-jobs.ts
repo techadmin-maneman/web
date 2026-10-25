@@ -39,8 +39,8 @@ export const JobSummarySchema = z
     }),
     sector: z.union([z.string(), z.null()]).openapi({
       description:
-        "The area, never the street: the one the visit's pincode is in, from the service area; else the address's " +
-        "locality, or the city.",
+        "The area, never the street: the address's locality, as the dispatch board names it; else the area the " +
+        "visit's pincode is in, or the city.",
     }),
     status: z.enum(APPOINTMENT_STATUSES).openapi({ description: STATUS_MEANINGS }),
     badge: z.enum(PAYMENT_BADGES).openapi({

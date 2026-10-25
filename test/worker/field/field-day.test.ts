@@ -44,8 +44,9 @@ describe("the day's jobs", () => {
     expect(JSON.stringify(job)).not.toContain("9810000001");
   });
 
-  // ADR 0069: the board names the area of the pincode a visit is booked for; the technician's card used the address.
-  it("names the area of the visit's pincode, as the dispatch board does", async () => {
+  // The board names the client's own locality rather than the pincode's wider area, which can be a neighbour of the
+  // client's: the card and the list name it the same way.
+  it("names the client's own locality, as the dispatch board does, not the pincode's wider area", async () => {
     await env.DB.prepare(
       "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65 and 66', 'Gurgaon', 1)",
     ).run();
@@ -53,8 +54,8 @@ describe("the day's jobs", () => {
     const later = await (await get(`/api/tech/jobs/${LATER_JOB}`)).json<Record<string, unknown>>();
     const listed = await (await get("/api/tech/jobs?date=2026-09-25")).json<{ jobs: Record<string, unknown>[] }>();
 
-    expect(later).toMatchObject({ unlocked: false, sector: "Sector 65 and 66" });
-    expect(listed.jobs[0]).toMatchObject({ id: LATER_JOB, sector: "Sector 65 and 66" });
+    expect(later).toMatchObject({ unlocked: false, sector: "Sector 65" });
+    expect(listed.jobs[0]).toMatchObject({ id: LATER_JOB, sector: "Sector 65" });
   });
 
   it("shows the address, access notes and client card from the day before", async () => {
