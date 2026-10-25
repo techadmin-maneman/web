@@ -32,11 +32,12 @@ const postAt = (at: Date, path: string, body: unknown, eventId: string) =>
     path,
     {
       method: "POST",
+      // As the phone sends a step: JSON with its type, or, for a step that takes none, nothing at all.
       headers: {
         Cookie: cookie,
         Origin: "https://maneman.test",
-        "Content-Type": "application/json",
         "X-Client-Event-Id": eventId,
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     },
@@ -200,7 +201,7 @@ describe("a technician's steps", () => {
     await work(NOW, TODAY_JOB, [["checkin", AT_THE_DOOR, -30]]);
 
     // Sixteen minutes after the booked start, the wait has run.
-    const closed = await postAt(minutesAfterStart(16), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
+    const closed = await postAt(minutesAfterStart(16), `/api/tech/jobs/${TODAY_JOB}/no-show`, {}, "event-ns-01");
 
     expect(closed.status).toBe(200);
     expect(await statusOf(TODAY_JOB)).toBe("terminated");

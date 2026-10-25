@@ -46,6 +46,7 @@ export function decidedAt(group: Group, task: Task): string | null {
  */
 export function subjectOf(group: Group, task: Task): string {
   if (task.person !== null) return task.person.name;
+  if (task.facts.group === "leave_request") return task.facts.technician;
   if (group === "no_show_dispute") return tasks.disputeErased;
   if (task.facts.group === "unanswered_chat") return task.facts.mobile;
   return tasks.visit(shortDate(indiaDate(task.since)));

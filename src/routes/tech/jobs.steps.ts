@@ -67,6 +67,7 @@ import { pieceBody } from "./jobs.piece.ts";
 import { registerPhotographs } from "./jobs.photos.ts";
 import { NO_PIECE, takesStep } from "../../policy/in-job-steps.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
+import { keepDoorEvidence } from "../../domain/no-shows/door-evidence.ts";
 
 export function registerTechJobSteps(app: App): void {
   registerArrival(app);
@@ -183,6 +184,15 @@ function registerNoShow(app: App): void {
       waitStartsAt: readiness.waitStartsAt,
       waitEndsAt: readiness.waitEndsAt,
       now,
+    });
+    const seen = c.req.valid("json");
+    await keepDoorEvidence({
+      db: c.env.DB,
+      bucket: c.env.CLIENT_PHOTOS,
+      caseId,
+      appointmentId: job.id,
+      note: seen.note,
+      take: seen.door_photo,
     });
     return c.json(
       {

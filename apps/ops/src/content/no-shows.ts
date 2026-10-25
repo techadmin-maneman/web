@@ -88,6 +88,14 @@ export const noShows = {
       distance: "Distance",
       whatsapp: "WhatsApp",
       waited: "Waited",
+      note: "At the door",
+      photo: "Door photo",
+    },
+    /** The technician's photograph of the door, shown on asking, as its viewing is logged. */
+    doorPhoto: {
+      show: "Show",
+      alt: "The door, as the technician found it",
+      failed: "Couldn’t load the photo.",
     },
     /** "Sat 19 Sep, 9 am to 12 pm". */
     booked: (date: string, from: string, to: string) => `${date}, ${from} to ${to}`,

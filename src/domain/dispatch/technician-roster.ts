@@ -278,6 +278,8 @@ export async function deleteTechnician(
   const theirs = (statement: string) => db.prepare(`${statement} AND NOT ${HAS_WORK}`).bind(technicianId);
   try {
     await db.batch([
+      // Their asks for leave first, as an approved one names the leave it recorded.
+      theirs("DELETE FROM leave_requests WHERE technician_id = ?1"),
       theirs("DELETE FROM technician_leave WHERE technician_id = ?1"),
       theirs("DELETE FROM technician_hours WHERE technician_id = ?1"),
       theirs("DELETE FROM technician_devices WHERE technician_id = ?1"),

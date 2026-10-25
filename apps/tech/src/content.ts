@@ -425,6 +425,18 @@ export const notHome = {
     callFirst: (who: string) => `Call ${who} before you close`,
     theClient: "the client",
   },
+  /** What the technician adds at the door, which goes with the close for ops to rule on. */
+  door: {
+    note: "Note (optional)",
+    photo: "Photo of the door",
+    taken: "Door photo taken",
+    again: "Take again",
+    shutter: "Take",
+    cancel: "Cancel",
+    view: "The camera’s view of the door",
+    noCamera: "The camera wouldn’t open.",
+    missed: "That didn’t take. Try again.",
+  },
   // The board draws no confirmation. Closing as a no-show can bring the client a charge.
   confirm: {
     title: "Close as a no-show?",
@@ -813,6 +825,82 @@ export const session = {
 } as const;
 
 // The kit (docs/decisions/0164-the-kit-screen.md). No board draws it; every line is ours.
+/** The technician's next days, a day at a time, as the jobs route gives later days: time, kind and area. */
+export const week = {
+  title: "Your week",
+  link: "Your week",
+  back: "Back to today",
+  failed: "Your week didn’t load.",
+  retry: "Try again",
+  none: "Nothing booked.",
+  /** "9:30 am · Service visit · Sector 65" */
+  job: (time: string, kind: string, area: string | null) =>
+    [time, kind, area].filter((part) => part !== null && part !== "").join(" · "),
+};
+
+/** The technician's own month: the visits they closed, by kind, and what each earned at their rates. */
+export const month = {
+  title: "Your month",
+  link: "Your month",
+  back: "Back to today",
+  failed: "Your month didn’t load.",
+  retry: "Try again",
+  none: "No visits closed yet this month.",
+  kinds: {
+    consultation: "Consultations",
+    one_visit: "Consultation and fit",
+    first_fit: "First fits",
+    service: "Service visits",
+    replacement: "Replacements",
+    no_show: "Not home",
+  },
+  /** "Service visits · 12" */
+  line: (kind: string, visits: number) => `${kind} · ${String(visits)}`,
+  noRate: "No rate set yet",
+  total: "So far",
+};
+
+/** A consultation's Options: each package and what it costs the client, and the looks they made with the try-on. */
+export const options = {
+  title: "Options",
+  link: "Options and prices",
+  back: "Back to the job",
+  failed: "Options didn’t load.",
+  retry: "Try again",
+  none: "Nothing on sale yet.",
+  firstFit: "First fit",
+  /** "Service visit · every 30 days" */
+  service: (days: number) => `Service visit · every ${String(days)} days`,
+  /** "Replacement · every 6 months" */
+  replacement: (months: number) => `Replacement · every ${String(months)} months`,
+  noPrice: "No price set yet",
+  looksTitle: "Their looks",
+  /** A look's description for a screen reader: "Look made 20 Sep". */
+  look: (date: string) => `Look made ${date}`,
+};
+
+/** The technician's asks for leave: a new one, and where each stands once ops decide it. */
+export const leave = {
+  title: "Your leave",
+  link: "Your leave",
+  back: "Back to today",
+  failed: "Your leave didn’t load.",
+  retry: "Try again",
+  askTitle: "Ask for leave",
+  from: "From",
+  to: "To",
+  note: "Why, in a line",
+  ask: "Ask",
+  needsSignal: "Needs signal",
+  badDates: "Pick days from today on, the last no earlier than the first.",
+  notDone: "That didn’t go through. Try again.",
+  askedTitle: "Asked",
+  none: "Nothing asked for.",
+  states: { asked: "With ops", approved: "Approved", declined: "Declined" },
+  /** "26 Sep – 28 Sep", or "5 Oct" for one day. */
+  days: (from: string, to: string) => (from === to ? from : `${from} – ${to}`),
+};
+
 export const kit = {
   title: "Your kit",
   link: "Your kit",

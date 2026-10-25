@@ -69,11 +69,12 @@ this map, or when the map names something that no longer exists.
 ### Dispatch
 
 - **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
-  `technician-work`, `technician-days` (a technician's own week and home), `leave`, `blackouts`, `day-route`, `nearest`
+  `technician-work`, `technician-days` (a technician's own week and home), `leave`, `leave-requests` (a technician's
+  ask for leave, decided on Tasks), `blackouts`, `day-route`, `nearest`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`, `start-times`, `drive-estimate`
 - **Vendor** (`src/providers/`): `routes/`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/dispatch-day`, `ops/blackouts`, `ops/technicians`,
-  `ops/technician-leave`, `ops/technician-phones`
+  `ops/technician-leave`, `ops/leave-requests`, `ops/technician-phones`
 - **Screens:** `apps/ops/src/dispatch/`, `apps/ops/src/technicians/`
 - **Tests:** `test/worker/dispatch/dispatch.test.ts`, `test/worker/field/field-dispatch.test.ts`,
   `e2e/ops/dispatch.e2e.ts`, `e2e/ops/technicians.e2e.ts`
@@ -89,7 +90,8 @@ this map, or when the map names something that no longer exists.
 ### The technician's work in the field
 
 - **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`,
-  `job-record`, `job-use`, `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`
+  `job-record`, `job-use`, `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `job-options` (a
+  consultation's packages, prices and the client's try-on looks)
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`
 - **Data** (`src/config/`): `job-sheet`, `pieces`
 - **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/job-sheet`
@@ -138,7 +140,7 @@ this map, or when the map names something that no longer exists.
 ### No-shows and disputes
 
 - **Database work** (`src/domain/no-shows/`): `no-shows`, `no-show-disputes`, `no-show-rulings`,
-  `ruling-claims`, `after-a-ruling`
+  `ruling-claims`, `after-a-ruling`, `door-evidence` (the note and photograph of the door a no-show is sent with)
 - **Rules** (`src/policy/`): `no-show`
 - **Routes** (`src/routes/`): `client/disputes`, `ops/disputes`, `ops/no-shows`, `ops/no-show-rulings`
 - **Screens:** `apps/ops/src/payments/`

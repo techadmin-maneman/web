@@ -154,6 +154,9 @@ export const dispatch = {
       /** "Closed, done", "Arrived": a step, and on the last how the visit ended. */
       step: (step: string, outcome: string | undefined) => (outcome === undefined ? step : `${step}, ${outcome}`),
       photos: "See the photographs",
+      /** What the technician wrote at the door on a no-show, as they wrote it. */
+      doorNote: (note: string) => `“${note}”`,
+      doorPhoto: "Door photo in Charges",
     },
     /** The way past the geofence, for a visit today they have not checked in to. */
     letIn: "Allow check-in",

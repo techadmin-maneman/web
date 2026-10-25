@@ -84,6 +84,7 @@ export const tasks = {
     remedy_approval: "Remedy to approve",
     // Two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     leave_conflict: "Visit on a day off",
+    leave_request: "Leave asked for",
     address_to_confirm: "Address to confirm",
     consultation_request: "Consultation request",
     // A group the board does not draw (docs/decisions/0086-the-next-visit-is-offered.md).
@@ -163,6 +164,8 @@ export const tasks = {
     },
     /** "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
     leave_conflict: (when: string, technician: string) => `${when} · ${technician} is away`,
+    /** "Sat 26 Sep to Mon 28 Sep · Sister's wedding" */
+    leave_request: (days: string, note: string | null) => (note === null ? days : `${days} · ${note}`),
     /**
      * "Visit Tue 22 Sep, 10 am; no address yet". The client saves one in the app, whose Home asks for it,
      * or gives it to ops on the phone, who record it on their page; the task goes when either does (ADR 0092).
@@ -253,6 +256,19 @@ export const tasks = {
       `${amount} to refund on ${payment} · ${why === "refund_failed" ? "refund failed" : "refund refused"}`,
     // A held grant whose fraud signals were not recorded.
     unknown: "Held for review",
+  },
+  /** A technician's ask for leave, decided in its task's drawer; an approval records the leave. */
+  leave: {
+    days: (from: string, to: string) => `${from} to ${to}`,
+    approve: "Approve",
+    decline: "Decline",
+    sending: "Saving…",
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      superseded: changed("Already decided."),
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
   },
   /**
    * Whose each task is. The board writes each owner in ops by their first name,

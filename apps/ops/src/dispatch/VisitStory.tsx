@@ -7,7 +7,8 @@ import { useCallback } from "react";
 import { OpsLink } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { clientPath } from "../route.ts";
+import { rowPath } from "../lib/target.ts";
+import { clientPath, sectionOf } from "../route.ts";
 import styles from "./dispatch.module.css";
 import { dispatchApi } from "./dispatch-api.ts";
 
@@ -38,6 +39,17 @@ export function VisitStory({ visitId, clientId }: { visitId: string; clientId: s
                   step.outcome === null ? undefined : copy.outcomes[step.outcome],
                 )}
                 {step.technician !== null && <span className={styles.storyBy}> · {step.technician}</span>}
+                {step.door?.note !== undefined && step.door.note !== null && (
+                  <span className={styles.storyBy}> · {copy.doorNote(step.door.note)}</span>
+                )}
+                {step.door?.photo === true && (
+                  <>
+                    {" · "}
+                    <OpsLink to={rowPath(sectionOf("payments").path, "case", step.door.case_id)}>
+                      {copy.doorPhoto}
+                    </OpsLink>
+                  </>
+                )}
               </span>
             </li>
           ))}

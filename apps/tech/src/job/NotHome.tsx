@@ -16,7 +16,18 @@ import { checkedIn, theWait } from "../lib/progress.ts";
 import { clock, countdown, metres } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
 import { keepClosed, keptArrival } from "../store/jobs.ts";
-import { checkInRefusedAsEarly, events, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
+import {
+  checkInRefusedAsEarly,
+  events,
+  frames,
+  keepDoorFrame,
+  queue,
+  refusedAsEarly,
+  replay,
+  type Queued,
+} from "../store/outbox.ts";
+import { DoorCamera } from "../camera/index.ts";
+import { Field, TextArea } from "@maneman/ui/Field";
 import { CardFrame } from "./CardFrame.tsx";
 import { ReachOps } from "../components/ReachOps.tsx";
 import { receiptLine, type ReceiptLine } from "./receipt.ts";
@@ -81,8 +92,63 @@ function evidenceOf(job: Job): Evidence {
   return { ...receiptLine(reminder, who), who, call: reached || job.client === null ? null : job.client.mobile };
 }
 
+/**
+ * What the technician adds at the door while they wait: a note, and a photograph of the door, which the outbox sends
+ * just before the close (../store/outbox.ts). A photograph already taken for the job stays, through a restart.
+ */
+function AtTheDoor({ jobId, note, onNote }: { jobId: string; note: string; onNote: (note: string) => void }) {
+  const [shooting, setShooting] = useState(false);
+  const readDoor = useCallback(async () => (await frames()).some((frame) => frame.id === `${jobId}:door`), [jobId]);
+  const [taken, setTaken] = useState(false);
+  const held = valueOr(useAsync(readDoor, [])[0], false);
+  const keep = async (photo: Blob) => {
+    await keepDoorFrame(jobId, photo);
+    setTaken(true);
+    setShooting(false);
+  };
+  return (
+    <section className={styles.stage}>
+      <Field onInk label={copy.door.note}>
+        {(control) => (
+          <TextArea
+            {...control}
+            maxLength={500}
+            value={note}
+            onChange={(event) => {
+              onNote(event.currentTarget.value);
+            }}
+          />
+        )}
+      </Field>
+      {shooting ? (
+        <DoorCamera
+          onTaken={(photo) => void keep(photo)}
+          onCancel={() => {
+            setShooting(false);
+          }}
+        />
+      ) : (
+        <>
+          {(taken || held) && <p className={styles.stageNote}>{copy.door.taken}</p>}
+          <Button
+            variant="outlineOnInk"
+            size="control"
+            className={styles.outline}
+            onClick={() => {
+              setShooting(true);
+            }}
+          >
+            {taken || held ? copy.door.again : copy.door.photo}
+          </Button>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queued[]; card: ReactNode }) {
   const [noPosition, setNoPosition] = useState(false);
+  const [note, setNote] = useState("");
   const [asking, once] = useOneAtATime();
   const [confirming, setConfirming] = useState(false);
 
@@ -134,7 +200,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
   const close = () =>
     once(async () => {
       setConfirming(false);
-      await queue("no_show", job.id, null, job.starts_at);
+      await queue("no_show", job.id, note.trim() === "" ? {} : { note: note.trim() }, job.starts_at);
       await replay();
       // The phone's clock ran ahead of ours: nothing was recorded, and the wait goes on.
       if (refusedAsEarly(await events(), job.id)) return;
@@ -177,14 +243,12 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
           }}
         />
       )}
+      {here && <AtTheDoor jobId={job.id} note={note} onNote={setNote} />}
       {here && <Appears job={job} />}
 
       {confirming && (
-        <ConfirmSheet
-          title={copy.confirm.title}
-          body={job.badge === "free" || job.badge === "at_visit" ? copy.confirm.bodyNothingPaid : copy.confirm.body}
-          yes={copy.confirm.yes}
-          no={copy.confirm.no}
+        <ConfirmClose
+          job={job}
           onYes={() => void close()}
           onNo={() => {
             setConfirming(false);
@@ -192,6 +256,20 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
         />
       )}
     </CardFrame>
+  );
+}
+
+/** Asked before a no-show closes, since it can bring the client a charge; one with nothing paid says so. */
+function ConfirmClose({ job, onYes, onNo }: { job: Job; onYes: () => void; onNo: () => void }) {
+  return (
+    <ConfirmSheet
+      title={copy.confirm.title}
+      body={job.badge === "free" || job.badge === "at_visit" ? copy.confirm.bodyNothingPaid : copy.confirm.body}
+      yes={copy.confirm.yes}
+      no={copy.confirm.no}
+      onYes={onYes}
+      onNo={onNo}
+    />
   );
 }
 

@@ -218,6 +218,8 @@ export const ROWS_AT_T: readonly string[] = [
    VALUES (1, 'Mane Man Private Limited', NULL, 'Sector 37', 'ops@example.com', '${AT}')`,
   `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
      VALUES ('tl1', 't1', '2026-10-10', '2026-10-11', 'ops@example.com', '${AT}')`,
+  `INSERT INTO leave_requests (id, technician_id, from_date, to_date, requested_at, decision, decided_by, decided_at, leave_id)
+     VALUES ('lr1', 't1', '2026-10-10', '2026-10-11', '${AT}', 'approved', 'ops@example.com', '${AT}', 'tl1')`,
   `INSERT INTO technician_hours (technician_id, weekday, starts, ends, set_by, set_at)
      VALUES ('t1', 1, '09:00', '18:00', 'ops@example.com', '${AT}')`,
   `INSERT INTO alerts (id, key, message, count, first_seen_at, last_seen_at)

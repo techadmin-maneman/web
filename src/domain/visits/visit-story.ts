@@ -1,5 +1,6 @@
 // What happened on a visit, in order, for its drawer on the dispatch board: each step the technician's phone landed,
-// when the phone took it and by whom, and how the visit ended. A step overtaken by a change of FSM's is left out.
+// when the phone took it and by whom, and how the visit ended, with what the technician added at the door on a
+// no-show. A step overtaken by a change of FSM's is left out.
 
 import type { JobEventKind } from "../../policy/in-job-steps.ts";
 
@@ -10,6 +11,8 @@ export interface StoryStep {
   readonly technician: string | null;
   /** How the visit ended, on its outcome: "done", "partial", "no_show"; null on every other step. */
   readonly outcome: string | null;
+  /** On a no-show's outcome, its case, and the note and photograph of the door it was closed with; else null. */
+  readonly door: { readonly case_id: string; readonly note: string | null; readonly photo: boolean } | null;
 }
 
 /** The visit's steps, the first landed first; null for no visit of that ID. */
@@ -25,10 +28,22 @@ export async function visitStory(db: D1Database, appointmentId: string): Promise
     )
     .bind(appointmentId)
     .all<{ kind: JobEventKind; occurred_at: string; technician: string | null; outcome: string | null }>();
-  return results.map((row) => ({
-    kind: row.kind,
-    at: row.occurred_at,
-    technician: row.technician,
-    outcome: row.kind === "outcome" ? row.outcome : null,
-  }));
+  const kept = await db
+    .prepare(
+      `SELECT id, door_note, door_photo_key IS NOT NULL AS photo FROM no_show_cases WHERE appointment_id = ?1
+       ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+    )
+    .bind(appointmentId)
+    .first<{ id: string; door_note: string | null; photo: number }>();
+  const door = kept === null ? null : { case_id: kept.id, note: kept.door_note, photo: kept.photo === 1 };
+  return results.map((row) => {
+    const outcome = row.kind === "outcome" ? row.outcome : null;
+    return {
+      kind: row.kind,
+      at: row.occurred_at,
+      technician: row.technician,
+      outcome,
+      door: outcome === "no_show" ? door : null,
+    };
+  });
 }

@@ -22,6 +22,16 @@ const StorySchema = z
           outcome: z.union([z.string(), z.null()]).openapi({
             description: 'How the visit ended, on its outcome step: "done", "partial", "no_show"; else null.',
           }),
+          door: z
+            .union([
+              z.object({ case_id: z.uuid(), note: z.union([z.string(), z.null()]), photo: z.boolean() }).strict(),
+              z.null(),
+            ])
+            .openapi({
+              description:
+                "On a no-show's outcome, its case, and the note and photograph of the door it was closed with; " +
+                "the photograph is GET /api/no-shows/{id}/door-photo. Null on every other step.",
+            }),
         })
         .strict(),
     ),

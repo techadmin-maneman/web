@@ -45,6 +45,8 @@ export type JobState = Schema["TechnicianJobState"];
 export type CheckIn = Schema["CheckIn"];
 export type PieceLookup = Schema["PieceLookup"];
 export type Kit = Schema["TechnicianKit"];
+export type LeaveRequests = Schema["TechnicianLeaveRequests"];
+export type Options = Schema["TechnicianOptions"];
 type PhotoTaken = Schema["TechnicianPhotoTaken"];
 /** The client's hair profile, which the profile step sends and the piece card reads (ADR 0106). */
 export type HairProfile = Schema["HairProfile"];
@@ -186,6 +188,15 @@ export const api = {
 
   /** The kit: what it holds, what is coming to it, and its pieces to hand back (docs/decisions/0164-the-kit-screen.md). */
   kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),
+  /** This month's visits closed, by kind and city, at the technician's own rates. */
+  month: () => client.get("/api/tech/month", { patience: PATIENCE_MS.read }),
+  /** A consultation's packages and what each costs the client, and the looks they made with the try-on. */
+  options: (id: string) => client.get("/api/tech/jobs/{id}/options", { path: { id }, patience: PATIENCE_MS.read }),
+  /** The technician's asks for leave not yet past, and where each stands. */
+  leave: () => client.get("/api/tech/leave", { patience: PATIENCE_MS.read }),
+  /** An ask for leave, which ops decide on Tasks. Asked straight, with signal. */
+  askLeave: (ask: { from: string; to: string; note?: string }) =>
+    client.post("/api/tech/leave", { body: ask, patience: PATIENCE_MS.write }),
   /**
    * A top-up received in hand: all of it, or of a hair system the pieces scanned, the rest still to come or missing.
    * Asked straight, with signal.
@@ -211,6 +222,13 @@ export const api = {
   /** The photograph itself. The link is a path on this host, so this call is same-origin too. */
   upload: (link: string, frame: Blob) =>
     client.request<PhotoTaken | null>("PUT", link, { body: frame, patience: PATIENCE_MS.upload }),
+
+  /** A link to PUT the photograph of the door to, before the job is closed as a no-show. */
+  doorUploadLink: (jobId: string) =>
+    client.post("/api/tech/jobs/{id}/door-photo/upload-url", { path: { id: jobId }, patience: PATIENCE_MS.write }),
+  /** The photograph of the door; the no-show names the take it is answered with. */
+  uploadDoor: (link: string, frame: Blob) =>
+    client.request<{ take: string }>("PUT", link, { body: frame, patience: PATIENCE_MS.upload }),
 
   /** Its thumbnail, naming the take the photograph's upload answered, so it is kept beside that take alone. */
   uploadThumbnail: (link: string, take: string, small: Blob) =>

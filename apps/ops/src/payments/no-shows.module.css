@@ -262,3 +262,17 @@
 .error {
   margin: var(--sp-12) 0 0;
 }
+
+/* The technician's photograph of the door, on asking (./DoorPhoto.tsx). */
+.doorPhoto {
+  display: block;
+  max-width: 100%;
+  max-height: calc(var(--sp-64) * 5);
+  border: var(--hairline) solid var(--ui-line);
+}
+
+.doorFailed {
+  margin-left: var(--sp-8);
+  font-size: var(--fs-13);
+  color: var(--status-error);
+}

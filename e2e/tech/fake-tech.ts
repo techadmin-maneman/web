@@ -111,6 +111,12 @@ export interface Fake {
   /** The kit screen: what it holds, what is coming, and its pieces to hand back; and what it is after a kit write. */
   kit: Omit<TechReply<"/api/tech/kit">, "today">;
   kitAfter: Omit<TechReply<"/api/tech/kit">, "today"> | null;
+  /** The technician's month, as GET /api/tech/month answers. */
+  month: TechReply<"/api/tech/month">;
+  /** A consultation's options: its packages and prices, and the client's try-on looks. */
+  options: TechReply<"/api/tech/jobs/{id}/options">;
+  /** The technician's asks for leave, as GET /api/tech/leave answers; an ask adds one, with ops. */
+  leave: TechReply<"/api/tech/leave">;
   /** The client's hair profile on the card, or none recorded. */
   profile: HairProfile | null;
   /** The checklist on the card: three items unless a test gives a longer one. */
@@ -127,6 +133,8 @@ export interface Fake {
   readonly writes: Write[];
   /** Every photograph PUT to an upload link, by its angle. */
   readonly photos: string[];
+  /** The takes of the photographs of the door, as uploaded before a no-show. */
+  readonly doorPhotos: string[];
   /** Every thumbnail PUT beside a photograph, by its angle. */
   readonly thumbnails: string[];
   /** What the job's card reports, which the fake moves on as writes land. */
@@ -163,6 +171,9 @@ const LAST_VISIT_PHOTO = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgAB4iG8MwAAAABJRU5ErkJggg==",
   "base64",
 );
+
+/** The client's one try-on look, which the same grey square stands for. */
+const LOOK_ID = "c0000000-0000-4000-8000-000000000001";
 
 /**
  * Answers the technician API for one page. Anything not named here is a 404, so
@@ -212,7 +223,31 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     reminderDelivered: undefined,
     tomorrow: false,
     writes: [],
+    month: {
+      month: "2026-10",
+      lines: [
+        { kind: "service", city: "Gurgaon", visits: 12, rate: 45_000, amount: 540_000 },
+        { kind: "first_fit", city: "Gurgaon", visits: 2, rate: null, amount: null },
+      ],
+    },
+    leave: { requests: [] },
+    options: {
+      packages: [
+        {
+          code: "essential",
+          name: "Mane Man Essential",
+          description: "A natural hairline, worn every day.",
+          first_fit: { amount_ex_gst: 3_200_000, amount: 3_776_000, gst_percent: 18 },
+          service: { amount_ex_gst: 200_000, amount: 236_000, gst_percent: 18 },
+          service_every_days: 30,
+          replacement: null,
+          replace_after_months: 6,
+        },
+      ],
+      looks: [{ id: LOOK_ID, made_on: "2026-09-20", url: `/api/tech/jobs/${JOB_ID}/looks/${LOOK_ID}` }],
+    },
     photos: [],
+    doorPhotos: [],
     thumbnails: [],
     progress: NOTHING_DONE,
   };
@@ -275,8 +310,35 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, { take: randomUUID() });
     }
 
+    // The photograph of the door a no-show is sent with, and the take the no-show names it by.
+    if (method === "PUT" && path.startsWith("/api/tech/door-photos/")) {
+      const take = randomUUID();
+      fake.doorPhotos.push(take);
+      return reply(route, 200, { take });
+    }
+
     if (method === "POST") {
       if (path === "/api/tech/auth/logout") return reply(route, 204);
+      if (path.endsWith("/door-photo/upload-url")) {
+        return reply(route, 201, {
+          upload_url: "/api/tech/door-photos/door",
+          expires_at: new Date(Date.now() + 900000).toISOString(),
+        });
+      }
+      if (path === "/api/tech/leave") {
+        const ask = route.request().postDataJSON() as { from: string; to: string; note?: string };
+        fake.writes.push({ path, eventId, startsAt, body: ask });
+        const asked = {
+          id: randomUUID(),
+          from: ask.from,
+          to: ask.to,
+          note: ask.note ?? null,
+          state: "asked" as const,
+          requested_at: new Date().toISOString(),
+        };
+        fake.leave = { requests: [asked, ...fake.leave.requests] };
+        return reply(route, 201, fake.leave);
+      }
       // The kit's writes are asked straight, never queued (docs/decisions/0164-the-kit-screen.md).
       if (path.startsWith("/api/tech/kit/")) {
         fake.writes.push({ path, eventId, startsAt, body: route.request().postDataJSON() as unknown });
@@ -373,6 +435,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, ME);
     }
     if (path === "/api/tech/kit") return reply(route, 200, { ...fake.kit, today });
+    if (path === "/api/tech/month") return reply(route, 200, fake.month);
+    if (method === "GET" && path === "/api/tech/leave") return reply(route, 200, fake.leave);
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";
       // Outside the contract on purpose: what a broken release might send, which the app must survive.
@@ -392,6 +456,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         belongs_to_this_job: code === ROHITS_PIECE.piece_code,
         in_kit: false,
       });
+    }
+    if (path === `/api/tech/jobs/${JOB_ID}/options`) return reply(route, 200, fake.options);
+    if (path === `/api/tech/jobs/${JOB_ID}/looks/${LOOK_ID}`) {
+      assertInContract("tech", method, path, 200);
+      return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
     if (path === `/api/tech/jobs/${JOB_ID}/last-visit-photo`) {
       if (fake.moved || !fake.lastVisit) return refuse(route, 404, "not_found");

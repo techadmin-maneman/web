@@ -227,12 +227,12 @@ describe("a photograph the API refuses", () => {
 describe("a step the API says is early", () => {
   // The card's warning was held in memory, and went with a reload.
   it("is kept, so the card can tell a no-show was refused rather than sent, until one lands", async () => {
-    await queue("no_show", "a", null);
+    await queue("no_show", "a", {});
     api(() => ({ status: 409, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
     await replay();
     expect(refusedAsEarly(await events(), "a")).toBe(true);
 
-    await queue("no_show", "a", null);
+    await queue("no_show", "a", {});
     expect(refusedAsEarly(await events(), "a")).toBe(true);
     api(() => ({ status: 200, json: { closed: true, wait_ends_at: "t", case_id: null, accepted: null } }));
     await replay();
@@ -271,7 +271,7 @@ describe("where a job stands, once a write of its lands", () => {
 
   it("is kept from a no-show’s answer, which carries the step it recorded", async () => {
     await keepDay("2030-09-19", [kept()]);
-    await queue("no_show", "a", null);
+    await queue("no_show", "a", {});
     const recorded = { ...accepted.json, progress: { started_at: null, outcome: "no_show" } };
     api(() => ({ status: 200, json: { closed: true, wait_ends_at: "t", case_id: null, accepted: recorded } }));
 

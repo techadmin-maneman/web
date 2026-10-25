@@ -83,6 +83,7 @@ export const TASK_GROUPS = [
   "city_matter",
   "remedy_approval",
   "leave_conflict",
+  "leave_request",
   "address_to_confirm",
   "consultation_request",
   "first_fit_to_book",
@@ -139,6 +140,8 @@ export const TASK_SLA_HOURS: Slas = {
   city_matter: 24,
   // A client promised something waits on a manager: within the day.
   remedy_approval: 24,
+  // A technician waits on Operations to plan around the days they asked for: within the day.
+  leave_request: 24,
   // These two are never later than the visit itself (src/domain/ops/tasks.ts).
   leave_conflict: 48,
   address_to_confirm: 48,

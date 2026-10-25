@@ -16,6 +16,7 @@ export type TokenPurpose =
   | "photo"
   | "photo_small"
   | "tech_photo"
+  | "door_photo"
   | "tryon_photo"
   | "tryon_look"
   | "stop_messages";

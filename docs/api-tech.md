@@ -1058,7 +1058,15 @@ Start the job. The duration runs from here to the outcome
 
 ### POST /api/tech/jobs/{id}/no-show
 
-Close the job as a no-show, once the wait has run
+Close the job as a no-show, once the wait has run, with what the technician saw at the door
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianNoShow"
+}
+```
 
 **200**: Closed, with the case ops will rule on
 
@@ -1919,6 +1927,322 @@ Request body:
                 "superseded",
                 "out_of_order",
                 "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/jobs/{id}/door-photo/upload-url
+
+A link to PUT a photograph of the door to, before the job is closed as a no-show
+
+**201**: The link, good for fifteen minutes
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDoorPhotoUrl"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such job, or never this technician's
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: already_closed: the job has closed, so it takes no more photographs
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### PUT /api/tech/door-photos/{token}
+
+The photograph of the door: a JPEG or PNG, at most 2 MB
+
+**200**: Received; the no-show names the take
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDoorPhotoTaken"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: the link is wrong or expired
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: already_closed: the job has closed, so it takes no more photographs
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**422**: photo_invalid_file: not a JPEG or PNG, or over 2 MB
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "photo_invalid_file"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "busy"
               ]
             }
           },
@@ -3498,6 +3822,402 @@ Request body:
                 "session_required",
                 "device_revoked",
                 "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/tech/month
+
+The technician's visits in a month, and what they earned at their rates
+
+**200**: The month
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianMonth"
+}
+```
+
+**400**: invalid_request: month is YYYY-MM
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/tech/leave
+
+The technician's asks for leave not yet past, and where each stands
+
+**200**: The asks
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianLeaveRequests"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/leave
+
+Ask for leave, from today on; Operations decide it on Tasks
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianLeaveAsk"
+}
+```
+
+**201**: Asked, and every ask as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianLeaveRequests"
+}
+```
+
+**400**: invalid_request: from before today, to before from, or further ahead than leave is kept
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/tech/jobs/{id}/options
+
+A consultation's packages and prices, and the client's try-on looks, under the card's own unlock
+
+**200**: The options
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianOptions"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such consultation of this technician's, or not unlocked yet
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/tech/jobs/{id}/looks/{look}
+
+One of the client's try-on looks, under the card's own unlock, never cached
+
+**200**: The image
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such consultation of this technician's, not unlocked yet, or no such look held
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
               ]
             }
           },
@@ -6355,6 +7075,28 @@ Request body:
 }
 ```
 
+### TechnicianNoShow
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "What the technician saw at the door."
+    },
+    "door_photo": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The take a photograph of the door was answered with (PUT /api/tech/door-photos/{token})."
+    }
+  },
+  "additionalProperties": false
+}
+```
+
 ### TechnicianPhotoUrl
 
 ```json
@@ -6456,6 +7198,46 @@ Request body:
   },
   "required": [
     "phase"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianDoorPhotoUrl
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "upload_url": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "upload_url",
+    "expires_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianDoorPhotoTaken
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "take": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "take"
   ],
   "additionalProperties": false
 }
@@ -7168,5 +7950,317 @@ Request body:
     }
   },
   "additionalProperties": false
+}
+```
+
+### TechnicianMonth
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "description": "India's month, as YYYY-MM."
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "one_visit",
+              "first_fit",
+              "service",
+              "replacement",
+              "no_show"
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visits": {
+            "type": "integer"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paise a visit; null where none was in force."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paise in all; null where none was."
+          }
+        },
+        "required": [
+          "kind",
+          "city",
+          "visits",
+          "rate",
+          "amount"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "month",
+    "lines"
+  ],
+  "additionalProperties": false,
+  "description": "The visits closed in the month, by kind and city, at the rate in force."
+}
+```
+
+### TechnicianLeaveRequests
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "description": "Counted, as the first day is."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "asked",
+              "approved",
+              "declined"
+            ]
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to",
+          "note",
+          "state",
+          "requested_at"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "requests"
+  ],
+  "additionalProperties": false,
+  "description": "The asks not yet past, the latest first."
+}
+```
+
+### TechnicianLeaveAsk
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date"
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why, in a line; never a medical detail."
+    }
+  },
+  "required": [
+    "from",
+    "to"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianOptions
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_fit": {
+            "$ref": "#/components/schemas/Price"
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "service_every_days": {
+            "type": "integer"
+          },
+          "replacement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The replacement and its service visit, as the visit is sold."
+          },
+          "replace_after_months": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "description",
+          "first_fit",
+          "service",
+          "service_every_days",
+          "replacement",
+          "replace_after_months"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "looks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "made_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "type": "string",
+            "description": "The look's image, through the job."
+          }
+        },
+        "required": [
+          "id",
+          "made_on",
+          "url"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "packages",
+    "looks"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Price
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included: what the client pays."
+    },
+    "gst_percent": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "amount_ex_gst",
+    "amount",
+    "gst_percent"
+  ],
+  "additionalProperties": false,
+  "description": "The hair system made to the client's profile and the service visit; from the cheapest before."
 }
 ```

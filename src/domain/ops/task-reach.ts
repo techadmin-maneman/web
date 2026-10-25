@@ -15,6 +15,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   city_matter: "city_matter",
   remedy_approval: "remedy",
   leave_conflict: "visit",
+  leave_request: "leave_request",
   address_to_confirm: "visit",
   consultation_request: "consultation_request",
   first_fit_to_book: "client",
