@@ -7099,6 +7099,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/growth/funnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The growth funnel over the last 30 or 90 days: try-ons, then leads to consultations to fits, by channel */
+        get: {
+            parameters: {
+                query?: {
+                    days?: "30" | "90";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The funnel */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GrowthFunnel"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/standard-costs": {
         parameters: {
             query?: never;
@@ -23710,6 +23766,39 @@ export interface components {
             /** @description Paise, before GST. */
             amount: number;
             note?: string;
+        };
+        GrowthFunnel: {
+            /** Format: date */
+            from: string;
+            /**
+             * Format: date
+             * @description The last day counted.
+             */
+            to: string;
+            /** @description First looks at the try-on, a second look of one photo not again. */
+            tryons: number;
+            steps: {
+                /** @description Clients whose first lead in the period came then. */
+                leads: number;
+                /** @description Of those, how many booked a consultation. */
+                booked: number;
+                /** @description Had one, or a first fit, which counts as one. */
+                consulted: number;
+                /** @description Were fitted. */
+                fitted: number;
+            };
+            channels: {
+                /** @enum {string} */
+                channel: "Google Ads" | "Meta Ads" | "Referral" | "Organic search" | "Direct" | "Offline and partners" | "Organic social";
+                /** @description Clients whose first lead in the period came then. */
+                leads: number;
+                /** @description Of those, how many booked a consultation. */
+                booked: number;
+                /** @description Had one, or a first fit, which counts as one. */
+                consulted: number;
+                /** @description Were fitted. */
+                fitted: number;
+            }[];
         };
         ProductCosts: {
             products: {

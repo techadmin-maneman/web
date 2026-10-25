@@ -9363,6 +9363,55 @@ Take an entry off the figures
 }
 ```
 
+### GET /api/growth/funnel
+
+The growth funnel over the last 30 or 90 days: try-ons, then leads to consultations to fits, by channel
+
+**200**: The funnel
+
+```json
+{
+  "$ref": "#/components/schemas/GrowthFunnel"
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/standard-costs
 
 Each first fit and replacement product still sold, with what it costs us today
@@ -37297,6 +37346,109 @@ Request body:
     "city",
     "channel",
     "amount"
+  ],
+  "additionalProperties": false
+}
+```
+
+### GrowthFunnel
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date",
+      "description": "The last day counted."
+    },
+    "tryons": {
+      "type": "integer",
+      "description": "First looks at the try-on, a second look of one photo not again."
+    },
+    "steps": {
+      "type": "object",
+      "properties": {
+        "leads": {
+          "type": "integer",
+          "description": "Clients whose first lead in the period came then."
+        },
+        "booked": {
+          "type": "integer",
+          "description": "Of those, how many booked a consultation."
+        },
+        "consulted": {
+          "type": "integer",
+          "description": "Had one, or a first fit, which counts as one."
+        },
+        "fitted": {
+          "type": "integer",
+          "description": "Were fitted."
+        }
+      },
+      "required": [
+        "leads",
+        "booked",
+        "consulted",
+        "fitted"
+      ],
+      "additionalProperties": false
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "Google Ads",
+              "Meta Ads",
+              "Referral",
+              "Organic search",
+              "Direct",
+              "Offline and partners",
+              "Organic social"
+            ]
+          },
+          "leads": {
+            "type": "integer",
+            "description": "Clients whose first lead in the period came then."
+          },
+          "booked": {
+            "type": "integer",
+            "description": "Of those, how many booked a consultation."
+          },
+          "consulted": {
+            "type": "integer",
+            "description": "Had one, or a first fit, which counts as one."
+          },
+          "fitted": {
+            "type": "integer",
+            "description": "Were fitted."
+          }
+        },
+        "required": [
+          "channel",
+          "leads",
+          "booked",
+          "consulted",
+          "fitted"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "tryons",
+    "steps",
+    "channels"
   ],
   "additionalProperties": false
 }

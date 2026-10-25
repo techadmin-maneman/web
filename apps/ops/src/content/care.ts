@@ -104,8 +104,6 @@ export const care = {
     nothing: "—",
     reasons: "What chats were about",
     remedies: "Remedies given",
-    /** "Fit problem · 4" */
-    counted: (label: string, count: number) => `${label} · ${String(count)}`,
     /** "Fit problem · 2 remedies, 3 free service visits" */
     remedied: (label: string, remedies: number, visits: number) =>
       `${label} · ${String(remedies)} ${remedies === 1 ? "remedy" : "remedies"}, ${String(visits)} free service ${visits === 1 ? "visit" : "visits"}`,

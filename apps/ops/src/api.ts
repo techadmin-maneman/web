@@ -275,6 +275,8 @@ export const api = {
    * never in a path or a query string, so a number stays out of logs and referrers.
    */
   findClients: (text: string) => client.post("/api/clients/find", { body: { text } }),
+  /** Every technician, active and switched off, for the search that goes to their page. */
+  roster: () => client.get("/api/technicians"),
   client: (id: string) => client.get("/api/clients/{id}", { path: { id } }),
   /** Every queue ops still have to work through, and whose each task is. A task leaves when its row is decided. */
   tasks: () => client.get("/api/tasks"),

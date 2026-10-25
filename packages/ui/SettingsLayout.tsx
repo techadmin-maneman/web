@@ -3,7 +3,9 @@
 //
 //   <SettingsLayout menu={<SubNav label={copy.menu} groups={groups} />}>{page}</SettingsLayout>
 
-import type { ReactNode } from "react";
+import { GLYPHS } from "@maneman/brand/icons";
+import { useId, useState, type ReactNode } from "react";
+import { Icon } from "./Icon.tsx";
 import { Link } from "./router.tsx";
 import styles from "./settings-layout.module.css";
 
@@ -21,25 +23,68 @@ export interface SubNavGroup {
   readonly items: readonly { readonly name: string; readonly to: string; readonly current: boolean }[];
 }
 
-/** A menu by group, each group's name over its pages; a group with no page is left out. */
-export function SubNav({ label, groups }: { readonly label: string; readonly groups: readonly SubNavGroup[] }) {
+function Group({
+  group,
+  open,
+  onToggle,
+}: {
+  readonly group: SubNavGroup;
+  readonly open: boolean;
+  readonly onToggle: () => void;
+}) {
+  const id = useId();
+  return (
+    <div className={styles.group}>
+      <button type="button" className={styles.groupName} aria-expanded={open} aria-controls={id} onClick={onToggle}>
+        <Icon className={styles.fold} d={GLYPHS.chevron} size="xs" />
+        {group.name}
+      </button>
+      <ul id={id} className={styles.items} hidden={!open}>
+        {group.items.map((item) => (
+          <li key={item.to}>
+            <Link className={styles.item} to={item.to} current={item.current}>
+              {item.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * A menu by group, each group's name a button that folds its pages away: the open page's group shows its pages, the
+ * rest only their names until opened, and every group shows its pages while `unfolded` (a search's matches). A group
+ * with no page is left out; `children` sit above the groups.
+ */
+export function SubNav({
+  label,
+  groups,
+  unfolded = false,
+  children,
+}: {
+  readonly label: string;
+  readonly groups: readonly SubNavGroup[];
+  readonly unfolded?: boolean;
+  readonly children?: ReactNode;
+}) {
+  /** The groups opened or folded by hand; the rest follow the open page. */
+  const [byHand, setByHand] = useState<Readonly<Record<string, boolean>>>({});
+  const openOf = (group: SubNavGroup) => unfolded || (byHand[group.name] ?? group.items.some((item) => item.current));
   return (
     <nav className={styles.menu} aria-label={label}>
+      {children}
       {groups
         .filter((group) => group.items.length > 0)
         .map((group) => (
-          <div key={group.name}>
-            <p className={styles.groupName}>{group.name}</p>
-            <ul className={styles.items}>
-              {group.items.map((item) => (
-                <li key={item.to}>
-                  <Link className={styles.item} to={item.to} current={item.current}>
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <Group
+            key={group.name}
+            group={group}
+            open={openOf(group)}
+            onToggle={() => {
+              setByHand((already) => ({ ...already, [group.name]: !openOf(group) }));
+            }}
+          />
         ))}
     </nav>
   );

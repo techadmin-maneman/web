@@ -40,6 +40,7 @@ export const shell = {
     payments: "Charges",
     "technician-pay": "Technician pay",
     "partner-commission": "Partner commission",
+    funnel: "Funnel",
     referrals: "Referrals",
     waitlist: "Waitlist",
     spend: "Spend",
@@ -69,11 +70,14 @@ export const shell = {
   /** Go to anything, by Ctrl K or ⌘K (../components/CommandPalette.tsx). */
   palette: {
     title: "Go to",
-    label: "Page or client",
+    label: "Page, technician or client",
     found: "Found",
     none: "Nothing matches.",
     client: (name: string, mobile: string) => `${name} · ${mobile}`,
     setting: (page: string) => `Settings · ${page}`,
+    technician: (name: string) => `Technician · ${name}`,
+    /** A client opened this session, offered before anything is typed. */
+    recent: (name: string) => `Recent · ${name}`,
   },
   /** A section's name in the navigation, read out with the count of tasks waiting in it. */
   waiting: (section: string, count: number, overdue: boolean) =>
@@ -86,6 +90,13 @@ export const shell = {
   closed: "You don’t have access to this page. An admin can grant it on Staff.",
   /** The browser tab's title: "Blackout days · Settings · Mane Man Ops". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man Ops"].join(" · "),
+  /** The header's list of the tasks given to the person signed in, with how many are new to them. */
+  mine: {
+    button: "Mine",
+    label: (unseen: number) => (unseen === 0 ? "My tasks" : `My tasks, ${String(unseen)} new`),
+    none: "Nothing is yours.",
+    item: (kind: string, subject: string) => `${kind} · ${subject}`,
+  },
   /** Who is signed in, the theme, and the way out: Access's own session, which is the only one the console has. */
   account: {
     label: "Account",

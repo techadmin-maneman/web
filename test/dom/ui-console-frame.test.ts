@@ -107,18 +107,24 @@ describe("Settings' own menu", () => {
       label: "Settings",
       groups: [
         { name: "Visits", items: [{ name: "Field", to: "/settings/field", current: true }] },
+        { name: "Team", items: [{ name: "Staff", to: "/settings/staff", current: false }] },
         { name: "Prices", items: [] },
       ],
     }),
   );
 
   it("leaves out a group with no page the person may open", () => {
-    expect(markup).toContain(">Visits</p>");
+    expect(markup).toContain("Visits</button>");
     expect(markup).not.toContain("Prices");
   });
 
   it("marks the page open", () => {
     expect(markup).toMatch(/href="\/settings\/field"[^>]*aria-current="page"/);
+  });
+
+  it("opens the open page's group and folds the rest, each group's name the button that says which", () => {
+    expect(markup).toMatch(/aria-expanded="true"[^>]*>.*Visits<\/button><ul[^>]*>/);
+    expect(markup).toMatch(/aria-expanded="false"[^>]*>.*Team<\/button><ul[^>]*hidden=""/);
   });
 });
 

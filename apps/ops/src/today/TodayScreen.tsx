@@ -1,6 +1,7 @@
-// Today: the figures that matter now, each a tile that opens where it is acted on, and the tasks that need the person,
-// longest overdue first. It reads the board the navigation reads and the day's routes; each tile is shown only to a
-// person who may open the page it leads to.
+// Today, dated: the figures that matter now, each a tile that opens where it is acted on; a part for each kind of work
+// the person's access reaches (./RoleParts.tsx); and the tasks that need them, their own first, then the longest
+// overdue. It reads the board the navigation reads and the day's routes; each tile is shown only to a person who may
+// open the page it leads to.
 
 import { Columns, Stack } from "@maneman/ui/Layout";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -8,13 +9,15 @@ import { Panel } from "@maneman/ui/Panel";
 import { StatTile, type StatTone } from "@maneman/ui/StatTile";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { indiaDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { tasks as taskWords } from "../content.ts";
 import { today as copy } from "../content/today.ts";
-import { useAccess, useMayCall } from "../lib/access.ts";
+import { useAccess, useMayCall, whoami } from "../lib/access.ts";
+import { useHeaderSub } from "../components/PageHead.tsx";
+import { RoleParts } from "./RoleParts.tsx";
 import { Left } from "../lib/Left.tsx";
 import { decidedAt, subjectOf, taskClientPath } from "../lib/task-links.ts";
 import { useTaskBoard } from "../lib/waiting.ts";
@@ -46,6 +49,7 @@ const TILES: readonly Tile[] = [
   { key: "chats", page: "messages", counts: ["unanswered_chat"], tone: "attention" },
   { key: "lowStock", page: "stock", counts: "low_stock", tone: "attention" },
   { key: "charges", page: "payments", counts: ["no_show_decision", "no_show_dispute"], tone: "plain" },
+  { key: "upi", page: "tasks", counts: ["upi_due"], tone: "attention" },
 ];
 
 function figureOf(tile: Tile, board: Tasks): number {
@@ -96,16 +100,18 @@ interface Waiting {
 /** The tasks the person may act on, the longest overdue first, as many as one look takes in. */
 const NEEDS_SHOWN = 10;
 
-function needsOf(board: Tasks): Waiting[] {
+function needsOf(board: Tasks, me: string | null): Waiting[] {
+  const mine = (waiting: Waiting) => (me !== null && waiting.task.owner === me ? 0 : 1);
   return board.groups
     .flatMap((group) => group.tasks.map((task) => ({ group: group.group, task })))
-    .sort((one, other) => Date.parse(one.task.due) - Date.parse(other.task.due))
+    .sort((one, other) => mine(one) - mine(other) || Date.parse(one.task.due) - Date.parse(other.task.due))
     .slice(0, NEEDS_SHOWN);
 }
 
 function Needs({ board }: { board: Tasks }) {
   const now = new Date();
-  const needs = needsOf(board);
+  const [signedIn] = useLoad(whoami);
+  const needs = needsOf(board, signedIn.state === "loaded" ? signedIn.value.signed_in_as : null);
   return (
     <Panel titleId="needs" title={copy.needs} count={needs.length}>
       {needs.length === 0 ? (
@@ -150,10 +156,12 @@ function Needs({ board }: { board: Tasks }) {
 
 export function TodayScreen() {
   const board = useTaskBoard(true);
+  useHeaderSub(copy.day(fullDate(todayInIndia(Date.now()))));
   if (board === null) return <Loading />;
   return (
     <Stack gap="24">
       <Figures board={board} />
+      <RoleParts />
       <Needs board={board} />
     </Stack>
   );

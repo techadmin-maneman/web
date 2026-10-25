@@ -41,6 +41,7 @@ export const SECTIONS = [
   { page: "partner-commission", path: "/partner-commission", reads: "GET /api/partner-statements" },
   { page: "referrals", path: "/referrals", reads: "GET /api/referrals/held" },
   { page: "waitlist", path: "/waitlist", reads: "GET /api/waitlist" },
+  { page: "funnel", path: "/funnel", reads: "GET /api/growth/funnel" },
   { page: "spend", path: "/spend", reads: "GET /api/spend" },
   { page: "care-numbers", path: "/care-numbers", reads: "GET /api/care-numbers" },
   { page: "activity", path: "/activity", reads: "GET /api/activity" },
@@ -67,7 +68,7 @@ export const NAV = [
   },
   { entry: "requests", pages: ["grievances", "number-changes", "deletion-requests"] },
   { entry: "money", pages: ["payments", "technician-pay", "partner-commission"] },
-  { entry: "growth", pages: ["referrals", "waitlist", "spend"] },
+  { entry: "growth", pages: ["funnel", "referrals", "waitlist", "spend"] },
   { entry: "reports", pages: ["care-numbers", "activity"] },
 ] as const satisfies readonly { entry: string; pages: readonly Page[] }[];
 
@@ -241,12 +242,15 @@ export const routeOf = (path: string): Route => knownRoute(path) ?? TODAY;
 
 export const settingsPath = (tab: SettingsTab): string => `/settings/${tab}`;
 
-/** Settings' page that holds a rule, and the rule on it, which the page scrolls to once it has loaded. */
-export function rulePath(name: OpsSettingName): string {
+/** Settings' page that holds a rule. */
+export function rulePageOf(name: string): SettingsPage {
   const group = RULE_GROUPS.find((each) => (each.rules as readonly string[]).includes(name))?.id ?? OTHER_GROUP;
   const page = SETTINGS_PAGES.find((each) => "rules" in each && (each.rules as readonly string[]).includes(group));
-  return `${settingsPath(page?.tab ?? "console")}#${name}`;
+  return page ?? settingsPageOf("console");
 }
+
+/** Settings' page that holds a rule, and the rule on it, which the page scrolls to once it has loaded. */
+export const rulePath = (name: OpsSettingName): string => `${settingsPath(rulePageOf(name).tab)}#${name}`;
 
 /** A client's page on the tab named, so a link lands on what it is about. */
 export const clientPath = (clientId: string, tab: ClientTab): string => `/clients/${clientId}/${tab}`;

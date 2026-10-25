@@ -4,6 +4,7 @@
 import type { Success } from "@maneman/web-kit/api";
 import { quantity } from "@maneman/web-kit/figures";
 import { Note } from "@maneman/ui/Note";
+import { BarChart } from "@maneman/ui/BarChart";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
@@ -37,6 +38,15 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
   if (accuracy.periods.length === 0) return <Note>{copy.none}</Note>;
   return (
     <>
+      <BarChart
+        label={copy.chart}
+        bars={accuracy.periods.map((period) => ({
+          key: period.period_start,
+          label: dayAfter(period.period_start, 0, true),
+          value: period.error_percent ?? 0,
+          shown: copy.percent(period.error_percent),
+        }))}
+      />
       <TableScroll labelledBy="plan-forecast">
         <Table controls>
           <Head columns={copy.periodColumns} />

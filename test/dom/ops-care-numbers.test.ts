@@ -61,7 +61,8 @@ describe("the Care numbers page", () => {
     expect(page.textContent).toContain(copy.minutes(42));
     expect(page.textContent).toContain("75%");
     expect(page.textContent).toContain("50%");
-    expect(page.textContent).toContain(copy.counted(care.reasons.fit_problem, 4));
+    // What chats were about is a chart: each reason, its bar, and its count beside it.
+    expect(page.textContent).toContain(`${care.reasons.fit_problem}4`);
     expect(page.textContent).toContain(copy.remedied(care.remedy.reasons.fit_problem, 2, 3));
     expect(page.textContent).toContain("asha@maneman.test");
     expect(page.textContent).toContain("86%");

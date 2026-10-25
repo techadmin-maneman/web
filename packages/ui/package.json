@@ -9,6 +9,7 @@
     "./AddressSearch": "./AddressSearch.tsx",
     "./arrival": "./arrival.ts",
     "./Badge": "./Badge.tsx",
+    "./BarChart": "./BarChart.tsx",
     "./base.css": "./base.css",
     "./Breadcrumbs": "./Breadcrumbs.tsx",
     "./Button": "./Button.tsx",

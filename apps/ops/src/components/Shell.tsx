@@ -27,6 +27,7 @@ import {
   type Route,
 } from "../route.ts";
 import { Account } from "./Account.tsx";
+import { Mine } from "./Mine.tsx";
 import { CommandPalette } from "./CommandPalette.tsx";
 import { Navigation, NAV_ID } from "./Navigation.tsx";
 import { PageHead } from "./PageHead.tsx";
@@ -196,6 +197,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
             {shell.search}
             <kbd className={styles.keys}>{shell.searchKeys}</kbd>
           </Button>
+          <Mine />
           <Account />
         </header>
         {lapsed && <Lapsed />}

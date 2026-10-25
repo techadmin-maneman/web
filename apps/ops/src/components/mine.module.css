@@ -1,0 +1,9 @@
+/* The header's tasks given to the person signed in (./Mine.tsx): the count of those new to them, beside its name. */
+
+.count {
+  margin-left: var(--sp-8);
+  padding: 0 var(--sp-4);
+  font-size: var(--fs-13);
+  color: var(--ui-on-strong);
+  background: var(--ui-strong);
+}

@@ -1,6 +1,7 @@
 // Go to anything from anywhere: Ctrl K (or ⌘K), or the frame's Search, opens a box that finds the pages the person
-// may open by their names, Settings' among them, and clients by part of a name or four digits of a number; Enter, or a
-// click, goes there. Escape closes it.
+// may open by their names, Settings' among them, technicians by name, and clients by part of a name or four digits of a
+// number; before anything is typed, the clients opened this session come first. Enter goes to the first found, the
+// arrow keys move through them, and Escape closes it.
 
 import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -12,6 +13,7 @@ import { api, type ClientsFound } from "../api.ts";
 import { shell } from "../content.ts";
 import { useAccess, useMayCall } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
+import { recentClients } from "../lib/client-search.ts";
 import {
   clientPath,
   mayOpen,
@@ -21,6 +23,7 @@ import {
   settingsPath,
   SETTINGS_PAGE_NAMES,
   SETTINGS_PAGES,
+  technicianPath,
 } from "../route.ts";
 import styles from "./command-palette.module.css";
 
@@ -57,15 +60,42 @@ function useClients(text: string, mayFind: boolean): ClientsFound["clients"] {
   return found;
 }
 
-function Palette({ onClose }: { onClose: () => void }) {
-  const mayCall = useMayCall();
-  const mayFind = useAccess().mayCall("POST /api/clients/find");
-  const [text, setText] = useState("");
-  // Once the dialog has taken the keyboard to read out its name, the box takes it, so typing searches at once.
-  const box = useRef<HTMLInputElement>(null);
+/** The technicians, read once as the palette opens, for those who may read the roster. */
+function useTechnicians(mayRead: boolean): readonly { readonly id: string; readonly name: string }[] {
+  const [technicians, setTechnicians] = useState<readonly { readonly id: string; readonly name: string }[]>([]);
   useEffect(() => {
-    box.current?.focus();
-  }, []);
+    if (!mayRead) return;
+    let current = true;
+    void api.roster().then((answer) => {
+      if (current && answer.ok) setTechnicians([...answer.body.technicians, ...answer.body.switched_off]);
+    });
+    return () => {
+      current = false;
+    };
+  }, [mayRead]);
+  return technicians;
+}
+
+/** The arrow keys through the places found: down from the box into them, up out of the first back to it. */
+function moveThrough(
+  event: Pick<KeyboardEvent, "key" | "preventDefault">,
+  list: HTMLElement | null,
+  box: HTMLInputElement | null,
+): void {
+  if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+  const links = [...(list?.querySelectorAll<HTMLElement>("a") ?? [])];
+  const at = links.indexOf(document.activeElement as HTMLElement);
+  event.preventDefault();
+  if (event.key === "ArrowDown") links[Math.min(at + 1, links.length - 1)]?.focus();
+  else if (at <= 0) box?.focus();
+  else links[at - 1]?.focus();
+}
+
+/** What the words find, in the order the palette lists them: the clients opened this session before anything is
+ * typed, then the pages, then technicians, then clients. */
+function usePlaces(text: string): Place[] {
+  const mayCall = useMayCall();
+  const access = useAccess();
   const asked = text.trim().toLowerCase();
   const pages: Place[] = [
     ...SECTIONS.filter((each) => mayOpen(mayCall, each.page)).map((each) => ({
@@ -79,12 +109,45 @@ function Palette({ onClose }: { onClose: () => void }) {
       to: settingsPath(each.tab),
     })),
   ].filter((place) => place.name.toLowerCase().includes(asked));
-  const clients: Place[] = useClients(text, mayFind).map((each) => ({
+  const technicians: Place[] = useTechnicians(access.mayCall("GET /api/technicians"))
+    .filter((each) => asked !== "" && each.name.toLowerCase().includes(asked))
+    .map((each) => ({ key: `technician ${each.id}`, name: words.technician(each.name), to: technicianPath(each.id) }));
+  const clients: Place[] = useClients(text, access.mayCall("POST /api/clients/find")).map((each) => ({
     key: each.id,
     name: words.client(each.name, phoneWords(each.mobile)),
-    to: clientPath(each.id, "visits"),
+    to: clientPath(each.id, "history"),
   }));
-  const places = [...pages, ...clients];
+  const recent: Place[] =
+    asked === ""
+      ? recentClients().map((each) => ({
+          key: `recent ${each.id}`,
+          name: words.recent(each.name),
+          to: clientPath(each.id, "history"),
+        }))
+      : [];
+  return [...recent, ...pages, ...technicians, ...clients];
+}
+
+function Palette({ onClose }: { onClose: () => void }) {
+  const list = useRef<HTMLUListElement>(null);
+  const [text, setText] = useState("");
+  // Once the dialog has taken the keyboard to read out its name, the box takes it, so typing searches at once.
+  const box = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    box.current?.focus();
+  }, []);
+  const places = usePlaces(text);
+  // The arrow keys move between the places found as they do from the box, up out of the first back into it.
+  useEffect(() => {
+    const found = list.current;
+    const move = (event: KeyboardEvent) => {
+      moveThrough(event, found, box.current);
+    };
+    found?.addEventListener("keydown", move);
+    return () => {
+      found?.removeEventListener("keydown", move);
+    };
+  }, [places.length]);
   return (
     <Dialog className={styles.palette} labelledBy="palette-title" canClose onDismiss={onClose}>
       <h2 className={typeLook("title-3", styles.title)} id="palette-title">
@@ -104,6 +167,9 @@ function Palette({ onClose }: { onClose: () => void }) {
               {...control}
               ref={box}
               autoComplete="off"
+              onKeyDown={(event) => {
+                moveThrough(event, list.current, box.current);
+              }}
               value={text}
               onChange={(event) => {
                 setText(event.target.value);
@@ -115,7 +181,7 @@ function Palette({ onClose }: { onClose: () => void }) {
       {places.length === 0 ? (
         <p className={styles.none}>{words.none}</p>
       ) : (
-        <ul className={styles.places} aria-label={words.found}>
+        <ul ref={list} className={styles.places} aria-label={words.found}>
           {places.map((place) => (
             <li key={place.key}>
               <Link className={textLinkLook({ className: styles.place })} to={place.to}>

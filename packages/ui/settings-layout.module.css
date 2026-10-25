@@ -22,14 +22,42 @@
     top: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-20);
+    gap: var(--sp-8);
   }
 
   .groupName {
-    margin: 0 0 var(--sp-4);
-    padding: 0 var(--sp-12);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+    width: 100%;
+    margin: 0;
+    padding: var(--sp-4) var(--sp-12);
+    border: 0;
+    background: none;
+    font: inherit;
     font-size: var(--fs-13);
     color: var(--ui-text-muted);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .groupName:focus-visible {
+    outline-offset: var(--focus-inset);
+  }
+
+  .fold {
+    flex: none;
+    transition: transform var(--duration-quick) var(--ease-house);
+  }
+
+  .groupName[aria-expanded="true"] .fold {
+    transform: rotate(90deg);
+  }
+
+  @media (hover: hover) {
+    .groupName:hover {
+      color: var(--ui-text);
+    }
   }
 
   .items {
@@ -87,8 +115,8 @@
     gap: var(--sp-8);
   }
 
-  /* Below a wide screen the menu runs across the top, each group a line of its pages, so a page's tables have the
-     width. */
+  /* Below a wide screen the menu runs across the top, so a page's tables have the width: what sits above the groups on
+     a line, the groups' names on the next, and the open group's pages on a line under them. */
   @media (max-width: 1279px) {
     .layout {
       grid-template-columns: minmax(0, 1fr);
@@ -98,12 +126,27 @@
     .menu {
       position: static;
       flex-flow: row wrap;
-      gap: var(--sp-8) var(--sp-24);
+      align-items: center;
+      gap: var(--sp-8) var(--sp-16);
+    }
+
+    .menu > :not(.group) {
+      flex-basis: 100%;
+    }
+
+    .group {
+      display: contents;
+    }
+
+    .groupName {
+      width: auto;
     }
 
     .items {
       display: flex;
+      flex-basis: 100%;
       flex-wrap: wrap;
+      order: 1;
     }
 
     .item {

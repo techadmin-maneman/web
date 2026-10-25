@@ -14,7 +14,14 @@ import { fails, json, SETTINGS } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
 import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
-import { cities, dispatch, referrals, settingsPageNames, shell } from "../../apps/ops/src/content.ts";
+import {
+  cities,
+  dispatch,
+  referrals,
+  settingsGroupNames,
+  settingsPageNames,
+  shell,
+} from "../../apps/ops/src/content.ts";
 import { EDITING } from "../../apps/ops/src/content/common.ts";
 
 const PANELS = [
@@ -258,11 +265,39 @@ test.describe("the rules", () => {
     await expect(field.getByRole("group")).toHaveText([/^Check-in radius/, /^No-show wait/, /^Phone clock limits/]);
     await expect(page.getByRole("button", { name: EDITING.save, exact: true })).toHaveCount(0);
 
+    // Only the open page's group shows its pages; the rest open by their name.
+    await expect(menu.getByRole("button", { name: settingsGroupNames.visits })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    await expect(menu.getByRole("link", { name: settingsPageNames.referrals })).toHaveCount(0);
+    await menu.getByRole("button", { name: settingsGroupNames.growth }).click();
     await menu.getByRole("link", { name: settingsPageNames.referrals }).click();
     await expect(page).toHaveURL(/\/settings\/referrals$/);
     await expect(section(page, "Referrals")).toBeVisible();
     await expect(page.getByRole("group", { name: cities.rules.names.checkin_radius_m })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
+  });
+
+  // Twenty-nine pages in a menu longer than the screen, and a rule found only by knowing its page.
+  test("finds a page by its name and a rule by its title or note, from Settings' menu", async ({ page }) => {
+    await open(page, "/settings/booking");
+    const menu = page.getByRole("navigation", { name: shell.settings, exact: true });
+    const radius = SETTINGS.settings[0];
+    if (radius === undefined) throw new Error("the fixture has a rule");
+    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill(radius.note.split(" ").slice(0, 3).join(" "));
+    await expect(menu.getByRole("link", { name: radius.title })).toHaveAttribute(
+      "href",
+      `/settings/field#${radius.name}`,
+    );
+
+    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill(settingsPageNames["pay-grades"]);
+    await expect(menu.getByRole("link")).toHaveText([settingsPageNames["pay-grades"]]);
+
+    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill("zzz");
+    await expect(menu.getByText(settingsCopy.noneFound)).toBeVisible();
+    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill("");
+    await expect(menu.getByRole("link", { name: settingsPageNames.booking })).toHaveAttribute("aria-current", "page");
   });
 
   test("links each late-fee rule to where it is priced, and the late fees back to the rule", async ({ page }) => {
