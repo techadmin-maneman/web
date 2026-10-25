@@ -312,12 +312,20 @@
 
   /* ---- A file, and a value along a scale ------------------------------------ */
 
+  /* A file to choose, or to drop: the browser takes a file dropped on its chooser, drawn here as a dashed box. */
   .file {
-    padding: 0;
-    border: 0;
-    background: none;
+    width: 100%;
+    max-width: var(--box-text-max);
+    padding: var(--sp-20);
+    border: var(--hairline) dashed var(--ui-line-control);
+    background: var(--ui-ground);
     font-size: var(--fs-14);
     color: var(--ui-text-muted);
+    cursor: pointer;
+  }
+
+  .file:hover:not(:disabled) {
+    border-color: var(--ui-strong);
   }
 
   .file::file-selector-button {

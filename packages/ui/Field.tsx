@@ -370,7 +370,7 @@ export function ChoiceGroup({
   );
 }
 
-/** A file to choose, as a photograph or a supplier's invoice; the browser's own chooser, in the field's box. */
+/** A file to choose or drop, as a photograph or a supplier's invoice: the browser's own chooser, in a box to drop on. */
 export function FileInput({ className, ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
   return <input {...rest} type="file" className={classes(styles.box, styles.file, className)} />;
 }
