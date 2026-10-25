@@ -10,13 +10,16 @@ import { Button, RowButton } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { Table } from "@maneman/ui/Table";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import type { ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import form from "../components/forms.module.css";
 import styles from "./served-parts.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
-import { rowOf, type FileChange, type Row } from "./served-draft.ts";
+import { rowOf, type FileChange, type Row, type Upload } from "./served-draft.ts";
+import type { CsvRow } from "./csv.ts";
+import { AREA_NAME } from "./rules.ts";
 import type { Saving } from "./useAreaSaves.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
@@ -25,10 +28,6 @@ import { FormDrawer } from "../components/FormDrawer.tsx";
 
 const copy = areas.served;
 const launch = areas.launch;
-
-/** A file read, before its changes are saved. */
-export type Upload =
-  { readonly step: "read"; readonly rows: readonly FileChange[] } | { readonly step: "failed"; readonly says: string };
 
 interface PincodeRowProps {
   readonly pincode: ServedPincode;
@@ -249,15 +248,65 @@ function FilePreview({
   );
 }
 
-/** The whole file handed over: chosen, read, its changes shown, and put into the table or set aside. */
+/** The pincodes a file would add, not served yet, each in the city the file names: added before its changes are read. */
+function FileAdds({
+  adds,
+  onAdd,
+  onCancel,
+}: {
+  adds: readonly CsvRow[];
+  onAdd: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [busy, once] = useOneAtATime();
+  return (
+    <div className={styles.uploaded}>
+      <InlineMessage tone="saved" className={form.saved}>
+        {copy.upload.adds(adds.length)}
+      </InlineMessage>
+      <Table controls>
+        <thead>
+          <tr>
+            {copy.upload.addColumns.map((column) => (
+              <th key={column} scope="col">
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {adds.map((each) => (
+            <tr key={each.pincode}>
+              <RowHead>{each.pincode}</RowHead>
+              <td>{AREA_NAME.test(each.area) ? each.area : copy.upload.suggested}</td>
+              <td>{each.city}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <FormActions>
+        <Button variant="primary" size="small" disabled={busy} onClick={() => void once(onAdd)}>
+          {busy ? copy.upload.adding : copy.upload.add(adds.length)}
+        </Button>
+        <Button variant="outline" size="small" narrow onClick={onCancel}>
+          {copy.upload.cancel}
+        </Button>
+      </FormActions>
+    </div>
+  );
+}
+
+/** The whole file handed over: chosen, read, its new pincodes added, its changes shown, and put into the table or set aside. */
 export function UploadFile({
   upload,
   onFile,
+  onAdd,
   onApply,
   onCancel,
 }: {
   upload: Upload | null;
   onFile: (file: File) => void;
+  onAdd: (lines: readonly CsvRow[], adds: readonly CsvRow[]) => Promise<void>;
   onApply: (rows: readonly FileChange[]) => void;
   onCancel: () => void;
 }) {
@@ -281,7 +330,11 @@ export function UploadFile({
           />
         )}
       </Field>
-      {upload?.step === "read" && (
+      {upload?.step === "read" && upload.said !== null && <Toast>{upload.said}</Toast>}
+      {upload?.step === "read" && upload.adds.length > 0 && (
+        <FileAdds adds={upload.adds} onAdd={() => onAdd(upload.lines, upload.adds)} onCancel={onCancel} />
+      )}
+      {upload?.step === "read" && upload.adds.length === 0 && (
         <FilePreview
           rows={upload.rows}
           onApply={() => {

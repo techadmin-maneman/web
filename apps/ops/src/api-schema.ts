@@ -2470,6 +2470,294 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pincode-directory/states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The states India Post's directory lists */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The states */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            states: string[];
+                        };
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pincode-directory/districts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A state's districts, each with its pincodes and how many the service area holds */
+        get: {
+            parameters: {
+                query: {
+                    state: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The districts, in order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DirectoryDistricts"];
+                    };
+                };
+                /** @description invalid_request: no state named */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pincode-directory/pincodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The pincodes of up to ten of a state's districts, with what each area would be called */
+        get: {
+            parameters: {
+                query: {
+                    state: string;
+                    /** @description Named once for each district. */
+                    district: string | string[];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pincodes, in order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DirectoryPincodes"];
+                    };
+                };
+                /** @description invalid_request: no state, or no district or more than ten */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pincodes/from-directory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add pincodes the directory lists, unserved, in one of our cities */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PincodesFromDirectory"];
+                };
+            };
+            responses: {
+                /** @description Those added, as the service area lists them */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            added: components["schemas"]["ServedPincode"][];
+                            /** @description Pincodes the service area held already, left as they were. */
+                            held: string[];
+                            /** @description Pincodes the directory does not list, not added. */
+                            unlisted: string[];
+                        };
+                    };
+                };
+                /** @description invalid_request: city for a city that is not one of ours */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required, or not_permitted: the city is outside the caller's Growth MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/stock-match": {
         parameters: {
             query?: never;
@@ -23570,6 +23858,50 @@ export interface components {
             /** @enum {string} */
             decision: "approved" | "declined";
         };
+        DirectoryDistricts: {
+            districts: {
+                state: string;
+                district: string;
+                pincodes: number;
+                /** @description Of them, those the service area holds. */
+                held: number;
+            }[];
+        };
+        DirectoryPincodes: {
+            pincodes: {
+                pincode: string;
+                district: string;
+                /** @description The shortest of its post offices, until ops name it. */
+                area: string;
+                offices: string[];
+                latitude: number | null;
+                longitude: number | null;
+                held: {
+                    city: string;
+                    area: string;
+                    served: boolean;
+                } | null;
+            }[];
+        };
+        ServedPincode: {
+            pincode: string;
+            area: string;
+            city: string;
+            served: boolean;
+            launch_on: string | null;
+            /** @description How many are on its waitlist. */
+            waiting: number;
+            /** @description How many of them serving it would tell now: those who asked, and have not been told yet. */
+            to_alert: number;
+        };
+        PincodesFromDirectory: {
+            city: string;
+            pincodes: {
+                pincode: string;
+                /** @description What messages call the area. Left out, the directory's suggestion, until ops name it. */
+                area?: string;
+            }[];
+        };
         ClientStockMatch: {
             /** @enum {string} */
             kind: "no_profile" | "incomplete" | "custom" | "stocked";
@@ -25924,17 +26256,6 @@ export interface components {
             tier: string;
             /** Format: date */
             valid_from: string;
-        };
-        ServedPincode: {
-            pincode: string;
-            area: string;
-            city: string;
-            served: boolean;
-            launch_on: string | null;
-            /** @description How many are on its waitlist. */
-            waiting: number;
-            /** @description How many of them serving it would tell now: those who asked, and have not been told yet. */
-            to_alert: number;
         };
         ServiceAreaChange: {
             changes: {

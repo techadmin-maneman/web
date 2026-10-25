@@ -25,9 +25,21 @@ One row per pincode. The header names the columns and `scripts/ops/import-pincod
 
 Leave a pincode you have not decided on blank in both columns. Blank is "not served", which is the safe answer.
 
-**Uploading the file in the ops console** (Areas › Served) reads the same two columns, and is stricter than the import: the file must have `pincode`, `served` and `launch_on` columns, `served` may be yes, y, true or 1 for served and no, n, false, 0 or blank for not, and any other word stops the upload with its pincode. What the file would change is shown pincode by pincode before anything is saved. The console will not serve a pincode from a day still to come: leave it unserved until its day. The list the console downloads writes `yes` or `no`.
+**Uploading the file in the ops console** (Areas › Served) reads the same two columns, and is stricter than the import: the file must have `pincode`, `served` and `launch_on` columns, `served` may be yes, y, true or 1 for served and no, n, false, 0 or blank for not, and any other word stops the upload with its pincode. What the file would change is shown pincode by pincode before anything is saved. The console will not serve a pincode from a day still to come: leave it unserved until its day. The list the console downloads writes `yes` or `no`. A row for a pincode the service area does not hold yet, with a `city`, adds that pincode first, unserved, from India Post's list below; its `area` is used where the console would take it, and India Post's name otherwise. Then the same file shows its changes as before.
 
 **An area's name** starts as the shortest of its post offices. Ops can give it a better one in the console, and the import leaves a name ops gave alone (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+
+## India Post's directory
+
+`india-pincodes.csv` lists every pincode in India, about 19,600, with the same `pincode`, `district`, `state`, `office_names`, `latitude` and `longitude` columns as above, built the same way for every district. `india-pincodes.date` holds the day data.gov.in last updated it. Neither file is edited by hand.
+
+The console reads it from the `pincode_directory` table to open a city: Areas › Served › Add pincodes by district (docs/decisions/0220-opening-a-city-from-india-posts-pincodes.md). Nothing a client sees comes from it until ops add a pincode.
+
+**Refresh it each quarter:**
+
+1. Register at data.gov.in and put the key in `.env.data-gov` as `DATA_GOV_IN_API_KEY=` (the file is gitignored; `.env.data-gov.example` shows the name). Never commit the key.
+2. `node --env-file=.env.data-gov scripts/ops/fetch-pincode-directory.ts` rewrites both files. `--state NAME` fetches one state, for a quick look.
+3. `node scripts/ops/load-pincode-directory.ts <local|staging|production>` loads them. It is safe to run again: a pincode's row is replaced, and one India Post drops stays, since a client's address may still name it.
 
 ## Source and licence
 

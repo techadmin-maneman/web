@@ -56,6 +56,41 @@ export const areas = {
       unknown: FAILED,
     },
   },
+  /** Opening a city from India Post's pincodes: a state, its districts, then the pincodes to add, unserved. */
+  directory: {
+    title: "Add pincodes by district",
+    state: "State",
+    chooseState: "Choose a state",
+    districts: "Districts",
+    districtsHint: "Up to ten.",
+    /** "Pune · 98 pincodes, 12 held" */
+    district: (name: string, pincodes: number, held: number) =>
+      held === 0
+        ? `${name} · ${String(pincodes)} pincodes`
+        : `${name} · ${String(pincodes)} pincodes, ${String(held)} held`,
+    show: "Show pincodes",
+    showing: "Loading…",
+    pincodes: "Pincodes",
+    columns: ["Pincode", "Area", "District", "Post offices", "Held"],
+    /** A pincode the service area holds already: its city. */
+    held: (city: string) => `In ${city}`,
+    notHeld: "—",
+    all: "Tick every pincode not held",
+    tick: (pincode: string, area: string) => `Add ${pincode}, ${area}`,
+    city: "Add them to",
+    add: (count: number) => (count === 1 ? "Add 1 pincode" : `Add ${String(count)} pincodes`),
+    adding: "Adding…",
+    added: (count: number, city: string, held: number) =>
+      `${String(count)} added to ${city}, not served yet.${held === 0 ? "" : ` ${String(held)} already held.`}`,
+    tooMany: "Choose ten districts or fewer.",
+    errors: {
+      invalid_request: "Check the city.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
+  },
   /** Our words, all of them: adding a pincode the service area does not hold, on Waiting and on Served. */
   add: {
     /** The panel's head on Waiting. */
@@ -124,7 +159,7 @@ export const areas = {
     upload: {
       title: "Upload",
       label: "Edited CSV",
-      hint: "The file from Download CSV, with your changes.",
+      hint: "The file from Download CSV, with your changes. A new pincode needs its city.",
       /** What the file would change, pincode by pincode, before any of it is taken. */
       read: (changed: number) => (changed === 1 ? "1 pincode changes:" : `${String(changed)} pincodes change:`),
       columns: ["Pincode", "Area", "Now", "In the file"],
@@ -133,6 +168,18 @@ export const areas = {
         return launch === null ? serving : `${serving}, launch ${launch}`;
       },
       none: "No changes in the file.",
+      /** Pincodes the file names that we do not hold yet, added from India Post's list before anything else. */
+      adds: (count: number) =>
+        count === 1 ? "1 new pincode, added not served:" : `${String(count)} new pincodes, added not served:`,
+      addColumns: ["Pincode", "Area", "City"],
+      /** A row with no area name, or one the API would not take: the area takes India Post's name until ops give one. */
+      suggested: "India Post’s name",
+      add: (count: number) => (count === 1 ? "Add 1 pincode" : `Add ${String(count)} pincodes`),
+      adding: "Adding…",
+      added: (count: number, unlisted: readonly string[]) =>
+        unlisted.length === 0
+          ? `${String(count)} added.`
+          : `${String(count)} added. Not in India Post’s list: ${unlisted.join(", ")}. Add those below.`,
       apply: "Save these changes",
       cancel: "Cancel",
       badDate: (pincode: string) => `${pincode}: write the date as 2026-10-01.`,

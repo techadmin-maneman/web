@@ -72,7 +72,7 @@ export const launchedPincode = (held: Pincode): LaunchedPincode => ({
   launchOn: launchDateOf(held.launched_at),
 });
 
-interface AreaPincode {
+export interface AreaPincode {
   readonly pincode: string;
   readonly area: string;
   readonly city: string;

@@ -19,15 +19,7 @@ export function fields(line: string): string[] {
   return out;
 }
 
-/** The shortest recognisable name among a pincode's sub and head offices. */
-export function areaOf(officeNames: string, city: string): string {
-  const names = officeNames
-    .split(";")
-    .filter((office) => /\s(SO|HO)(\s|$)/.test(office))
-    .map((office) => office.replace(/\s(SO|HO)(\s.*)?$/, "").trim())
-    .filter((name) => name !== "");
-  return names.sort((a, b) => a.length - b.length)[0] ?? city;
-}
+export { areaOf } from "../../src/policy/area-names.ts";
 
 /** One pincode as the import writes it: its launch as an instant, midnight in India on the day. */
 export interface PincodeRow {

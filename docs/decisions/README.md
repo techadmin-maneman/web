@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0220. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0221. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -252,6 +252,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0193](0193-the-rest-of-the-rules-in-the-console.md) The rest of the rules in the console
 - [0208](0208-the-console-redesigned.md) The console redesigned: work first, Settings in one place, and two themes
 - [0212](0212-editing-in-place.md) Editing in place
+- [0220](0220-opening-a-city-from-india-posts-pincodes.md) Opening a city from India Post's pincodes
 
 ## Every decision, oldest first
 
@@ -317,7 +318,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0058](0058-one-tap-per-intent.md) | One tap per intent | 2026-09-24 | accepted |  |
 | [0059](0059-a-clients-history.md) | A client's history, and where a customer lives in the CRM | 2026-09-24 | accepted for the derivation, the ops console and the client app |  |
 | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md) | An invited friend reaches ops and the CRM | 2026-09-24 | accepted |  |
-| [0061](0061-ops-editable-inputs.md) | The business inputs ops change without a developer | 2026-09-24 | accepted | [0071](0071-what-ops-see-before-a-setting-changes.md), [0072](0072-ops-clients-and-queues.md), [0085](0085-services-ops-can-edit.md), [0086](0086-the-next-visit-is-offered.md), [0087](0087-consumables-and-stock.md), [0088](0088-every-policy-in-the-console.md) |
+| [0061](0061-ops-editable-inputs.md) | The business inputs ops change without a developer | 2026-09-24 | accepted | [0071](0071-what-ops-see-before-a-setting-changes.md), [0072](0072-ops-clients-and-queues.md), [0085](0085-services-ops-can-edit.md), [0086](0086-the-next-visit-is-offered.md), [0087](0087-consumables-and-stock.md), [0088](0088-every-policy-in-the-console.md), [0220](0220-opening-a-city-from-india-posts-pincodes.md) |
 | [0062](0062-leave-on-the-dispatch-board.md) | Leave on the dispatch board | 2026-09-24 | accepted | [0074](0074-hand-offs-and-messages.md), [0210](0210-booking-by-start-time.md) |
 | [0063](0063-the-asked-window.md) | The asked window and the offered one | 2026-09-24 | accepted | [0069](0069-dispatch-under-concurrency.md), [0070](0070-vendor-correctness.md), [0074](0074-hand-offs-and-messages.md), [0101](0101-phase-1s-path-into-fsm-removed.md) |
 | [0064](0064-converting-a-request.md) | Converting a Request by API | 2026-09-24 | superseded by 0110 on 4 October 2026: no booking becomes an FSM work order | [0101](0101-phase-1s-path-into-fsm-removed.md), [0110](0110-field-work-without-fsm.md) |
@@ -474,3 +475,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0217](0217-the-try-ons-photo-taken-and-looked-at.md) | The try-on's photo, taken and looked at; no question of where the hair loss is | 2026-10-19 | accepted | [0219](0219-one-line-consents.md) |
 | [0218](0218-refer-opens-at-the-first-consultation.md) | Refer opens at the first consultation | 2026-10-19 | accepted |  |
 | [0219](0219-one-line-consents.md) | One-line consents, with the full notice a link away | 2026-10-19 | accepted |  |
+| [0220](0220-opening-a-city-from-india-posts-pincodes.md) | Opening a city from India Post's pincodes | 2026-10-25 | accepted |  |

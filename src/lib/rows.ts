@@ -954,6 +954,15 @@ export interface Rows {
     readonly replacement_booked: number;
     readonly replaced_at: string | null;
   };
+  readonly pincode_directory: {
+    readonly pincode: string;
+    readonly district: string;
+    readonly state: string;
+    readonly office_names: string;
+    readonly latitude: number | null;
+    readonly longitude: number | null;
+    readonly refreshed_on: string;
+  };
   readonly plan_lines: {
     readonly id: string;
     readonly run_id: string;

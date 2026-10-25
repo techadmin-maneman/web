@@ -1,7 +1,7 @@
 // Areas' calls to mm-api: who waits in each pincode, a launch, the service area, and a pincode added. Each is the
 // console's client's (../api.ts), one function a route, so a call is found, and changed, in one place.
 
-import { client, type AreaChange, type NewPincode } from "../api.ts";
+import { client, type AreaChange, type NewPincode, type PincodesFromDirectory } from "../api.ts";
 
 export const areasApi = {
   waitlist: () => client.get("/api/waitlist"),
@@ -22,4 +22,11 @@ export const areasApi = {
     client.post("/api/service-area", { body: { changes: [...changes] } }),
   /** A pincode the service area does not hold, added unserved in one of our cities. */
   addPincode: (pincode: NewPincode) => client.post("/api/pincodes", { body: pincode }),
+  /** India Post's states, a state's districts, and the pincodes of those chosen, for opening a city. */
+  states: () => client.get("/api/pincode-directory/states"),
+  districts: (state: string) => client.get("/api/pincode-directory/districts", { query: { state } }),
+  directory: (state: string, districts: readonly string[]) =>
+    client.get("/api/pincode-directory/pincodes", { query: { state, district: [...districts] } }),
+  /** The pincodes ticked, added unserved in one of our cities; any held already are named back. */
+  addFromDirectory: (add: PincodesFromDirectory) => client.post("/api/pincodes/from-directory", { body: add }),
 };
