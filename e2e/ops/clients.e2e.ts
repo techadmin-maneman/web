@@ -96,7 +96,7 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
 
   const sent = page.waitForRequest((request) => request.url().includes("/clients/find"));
   await page.getByLabel(opsCopy.clients.find.label).fill("malhotra");
-  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await page.getByLabel(opsCopy.clients.find.label).press("Enter");
 
   const request = await sent;
   expect(request.method()).toBe("POST");
@@ -168,11 +168,11 @@ test("says so when nobody matches, and when more match than are listed", async (
   await answer(page, { [FIND]: json({ clients: [], more: false }) });
   await page.goto("/clients");
   await page.getByLabel(opsCopy.clients.find.label).fill("98100 0441");
-  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await page.getByLabel(opsCopy.clients.find.label).press("Enter");
   await expect(page.getByRole("status")).toContainText("No match for “98100 0441”.");
 
   await answer(page, { [FIND]: json({ clients: [FOUND], more: true }) });
-  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await page.getByLabel(opsCopy.clients.find.label).press("Enter");
   await expect(page.getByText("Too many matches.")).toBeVisible();
 });
 
@@ -180,7 +180,7 @@ test("asks for two letters or four digits when given fewer", async ({ page }) =>
   await answer(page, { [FIND]: fails(400, "invalid_request") });
   await page.goto("/clients");
   await page.getByLabel(opsCopy.clients.find.label).fill("r");
-  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await page.getByLabel(opsCopy.clients.find.label).press("Enter");
   await expect(page.getByRole("alert")).toContainText(opsCopy.clients.find.errors.invalid_request);
 });
 

@@ -10,7 +10,7 @@ import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { careApi, type Conversation, type ConversationView } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -55,9 +55,21 @@ function ViewChoice({ view, onView }: { view: ConversationView; onView: (view: C
   );
 }
 
-/** A chat found by the client's name or number, in the view shown; found when Find is pressed. */
+/** A pause in typing long enough to search, so the list is asked once a word is down. */
+const SEARCH_AFTER_MS = 300;
+
+/** A chat found by the client's name or number, in the view shown, as it is typed. */
 function Search({ search, onSearch }: { search: string; onSearch: (search: string) => void }) {
   const [typed, setTyped] = useState(search);
+  useEffect(() => {
+    if (typed.trim() === search) return;
+    const wait = setTimeout(() => {
+      onSearch(typed.trim());
+    }, SEARCH_AFTER_MS);
+    return () => {
+      clearTimeout(wait);
+    };
+  }, [typed, search, onSearch]);
   return (
     <form
       className={styles.search}
@@ -68,9 +80,6 @@ function Search({ search, onSearch }: { search: string; onSearch: (search: strin
       }}
     >
       <SearchInput label={copy.search} value={typed} maxLength={80} onChange={setTyped} />
-      <Button type="submit" variant="outline" size="small">
-        {copy.find}
-      </Button>
       {search !== "" && (
         <Button
           variant="outline"

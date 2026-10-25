@@ -1,15 +1,29 @@
-// Finding discount codes by how they begin, however old: the list on Discount codes holds only the latest made.
+// Finding discount codes by how they begin, however old, as it is typed: the list on Discount codes holds only the
+// latest made.
 
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { settings } from "../content/settings.ts";
 import styles from "./find-code.module.css";
 
 const copy = settings.discountCodes;
 
+/** A pause in typing long enough to look, so the codes are asked once a few letters are down. */
+const FIND_AFTER_MS = 300;
+
 export function FindForm({ finding, onFind }: { finding: string | null; onFind: (code: string | null) => void }) {
   const [text, setText] = useState(finding ?? "");
+  useEffect(() => {
+    const typed = text.trim() === "" ? null : text.trim();
+    if (typed === finding) return;
+    const wait = setTimeout(() => {
+      onFind(typed);
+    }, FIND_AFTER_MS);
+    return () => {
+      clearTimeout(wait);
+    };
+  }, [text, finding, onFind]);
   return (
     <form
       className={styles.find}
@@ -32,9 +46,6 @@ export function FindForm({ finding, onFind }: { finding: string | null; onFind: 
           />
         )}
       </Field>
-      <Button type="submit" variant="outline" size="small" narrow>
-        {copy.findButton}
-      </Button>
       {finding !== null && (
         <Button
           variant="outline"

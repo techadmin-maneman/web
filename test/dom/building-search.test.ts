@@ -137,7 +137,12 @@ describe("the client app’s building search", () => {
 describe("the console’s building search, for an address given on the phone", () => {
   it("asks once typing pauses, and not again for the building chosen", async () => {
     show(
-      createElement(GivenAddressForm, { clientId: "client-1", onSaved: () => undefined, onCancel: () => undefined }),
+      createElement(GivenAddressForm, {
+        clientId: "client-1",
+        address: null,
+        onSaved: () => undefined,
+        onCancel: () => undefined,
+      }),
     );
 
     await typeThenChoose();

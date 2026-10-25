@@ -107,7 +107,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await answer(page, { [FIND]: json({ clients: [FOUND], more: false }) });
   await page.goto("/clients");
   await page.getByLabel(opsCopy.clients.find.label).fill("malhotra");
-  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await page.getByLabel(opsCopy.clients.find.label).press("Enter");
   await expect(page.getByRole("link", NAME)).toBeVisible();
   await clean("/clients");
 

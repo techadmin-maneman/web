@@ -91,3 +91,18 @@ test("names a Care person by the name clients know them by, once a manager has s
   await row.getByRole("button", { name: copy.openLabel("Arjun Mehta") }).click();
   await expect(page.getByText(`${copy.carePerson.label}: Asha`)).toBeVisible();
 });
+
+// Four ways to search: Messages took a box and a Find; it now finds as it is typed.
+test("finds a chat by the client's name as it is typed, with no Find to press", async ({ page }) => {
+  await answer(page, {
+    "GET /api/conversations": json({ conversations: [ARJUN], next_cursor: null }),
+    "GET /api/care-team": json({ team: [], me: null }),
+  });
+  await page.goto("/messages");
+  const asked = page.waitForRequest(
+    (request) => request.url().includes("/api/conversations?") && request.url().includes("search=Arjun"),
+  );
+  await page.getByRole("searchbox", { name: copy.search }).fill("Arjun");
+  await asked;
+  await expect(page.getByRole("button", { name: "Find", exact: true })).toHaveCount(0);
+});
