@@ -146,6 +146,26 @@ export const areas = {
     /** Only the first stops a launch; the rest are for ops to weigh. */
     blocks: "Nothing can be booked without an active technician.",
   },
+  /** A city's map and its technicians' reach from home (docs/decisions/0223-reach-from-home.md). */
+  reach: {
+    title: "Reach",
+    mapAlt: (city: string) => `${city}: its pincodes, and each technician’s reach from home`,
+    key: "Green served · Grey not served · Amber paused · Red served, out of every reach · Navy a technician’s home and reach",
+    outOfReach: (count: number) =>
+      count === 1
+        ? "1 served pincode no technician reaches:"
+        : `${String(count)} served pincodes no technician reaches:`,
+    unreached: (pincode: string, area: string, nearest: string | null) =>
+      nearest === null ? `${pincode} ${area}` : `${pincode} ${area} (nearest ${nearest})`,
+    nearest: (name: string, minutes: number) => `${name}, ${String(minutes)} min`,
+    allReached: "Every served pincode is in someone’s reach.",
+    unmeasured: "Set your technicians’ homes to see their reach.",
+    chooseUnreached: "Choose them",
+    within: (name: string, minutes: number, count: number) =>
+      `${name} · ${String(minutes)} min · ${count === 1 ? "1 pincode" : `${String(count)} pincodes`}`,
+    chooseWithin: (name: string) => `Choose the pincodes within ${name}’s reach`,
+    choose: "Choose",
+  },
   /** A served pincode taking no new clients for a while; clients we already come to book as before. */
   pause: {
     pause: "Pause",

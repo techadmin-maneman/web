@@ -1618,6 +1618,7 @@ export interface Rows {
     readonly home_place_id: string | null;
     readonly home_lat: number | null;
     readonly home_lng: number | null;
+    readonly reach_min: number | null;
   };
   readonly terms_acceptances: {
     readonly id: string;

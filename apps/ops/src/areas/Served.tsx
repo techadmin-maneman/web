@@ -22,7 +22,7 @@ import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
 import { addFromFile, OpenCity } from "./OpenCity.tsx";
-import { LaunchList } from "./Launches.tsx";
+import { CityTools } from "./Reach.tsx";
 import { readServiceAreaCsv, serviceAreaCsv } from "./csv.ts";
 import { AREA_NAME } from "./rules.ts";
 import {
@@ -242,7 +242,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           }}
         />
       )}
-      <LaunchList />
+      <CityTools city={city} onChoose={setChosen} />
       {mayOpen && <OpenCity cities={cities} onAdded={addRows} />}
       {mayAdd && <AddBeneath cities={cities} onAdded={addRows} />}
     </Panel>

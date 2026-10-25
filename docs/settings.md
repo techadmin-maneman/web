@@ -151,6 +151,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `same_day_booking` | Booking for today | a choice | `{"consultation":"yes","first_fit":"no","service":"yes","replacement":"yes"}` |
 | `working_hours` | Working hours | hour of the day, in India | `{"opens":9,"closes":20}` |
 | `drive_estimate` | Drive estimate | minutes | `{"road_factor":140,"peak_kmh":18,"offpeak_kmh":24,"parking":10,"least":10,"morning_from":8,"morning_to":11,"evening_from":17,"evening_to":21}` |
+| `technician_reach_min` | Technician reach | minutes | `45` |
 | `payment_links` | Payment links | hours | `{"holds_hours":24,"closes_before_hours":2,"pay_within_days":14}` |
 | `arrival_notice_min` | Arrival message | minutes | `10` |
 | `move_proposal_hours` | Move proposals | hours | `48` |

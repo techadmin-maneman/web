@@ -33,11 +33,23 @@ export type MapResult =
   | { readonly ok: true; readonly image: ArrayBuffer; readonly contentType: string }
   | { readonly ok: false; readonly detail: string };
 
+/**
+ * A city's pincodes and its technicians' reach on one picture (docs/decisions/0223-reach-from-home.md): each group of
+ * pincodes a small marker in its colour, each home a labelled one, and each reach a circle filled in its colour.
+ */
+export interface AreaMap {
+  readonly pincodes: readonly { readonly colour: string; readonly points: readonly Point[] }[];
+  readonly homes: readonly { readonly colour: string; readonly label: string; readonly point: Point }[];
+  readonly reaches: readonly { readonly colour: string; readonly centre: Point; readonly km: number }[];
+}
+
 export interface RoutesProvider {
   /** The drive through the stops in their order: one leg between each two. */
   route(stops: readonly Point[]): Promise<RouteResult>;
   /** One picture of every route, each in its colour, its stops numbered in order. */
   map(routes: readonly MapRoute[]): Promise<MapResult>;
+  /** One picture of a city's pincodes and its technicians' reach. */
+  areaMap(area: AreaMap): Promise<MapResult>;
 }
 
 /** Whoever ROUTES_PROVIDER names; null for "none", where the board shows no drive times and no map. */

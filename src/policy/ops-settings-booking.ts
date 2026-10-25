@@ -4,6 +4,7 @@
 
 import { HOUR_OF_DAY } from "../config/setting-units.ts";
 import { DRIVE_ESTIMATE, DRIVE_ESTIMATE_KEYS, driveEstimateConflicts } from "./drive-estimate.ts";
+import { TECHNICIAN_REACH_MIN } from "./reach.ts";
 import type { OpsSetting } from "./ops-settings.ts";
 import {
   BOOKING_RULE_KEYS,
@@ -81,5 +82,16 @@ export const BOOKING_SETTINGS = [
     },
     fallback: DRIVE_ESTIMATE,
     conflicts: (value) => driveEstimateConflicts(value),
+  },
+  {
+    // A technician's own reach, set on their page, comes first (docs/decisions/0223-reach-from-home.md).
+    name: "technician_reach_min",
+    title: "Technician reach",
+    note: "Minutes of driving from home within which a technician is offered visits, unless their own is set.",
+    unit: "minutes",
+    min: 10,
+    max: 180,
+    keys: null,
+    fallback: TECHNICIAN_REACH_MIN,
   },
 ] as const satisfies readonly OpsSetting[];

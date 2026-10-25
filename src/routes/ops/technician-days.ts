@@ -14,7 +14,7 @@ import { routeReach } from "../../http/staff-access.ts";
 import { reachesCity } from "../../policy/access.ts";
 import { weekProblems } from "../../policy/start-times.ts";
 import { rosterTechnician } from "../../domain/dispatch/technician-roster.ts";
-import { setHome, setWeek } from "../../domain/dispatch/technician-days.ts";
+import { setHome, setReach, setWeek } from "../../domain/dispatch/technician-days.ts";
 import { SuggestionsSchema } from "../schemas/address.ts";
 import { HomeSchema, WorkingDaySchema } from "../schemas/technician-days.ts";
 
@@ -106,6 +106,29 @@ const homeRoute = opsRoute({
   },
 });
 
+const reachRoute = opsRoute({
+  method: "post",
+  path: "/api/technicians/{id}/reach",
+  summary: "Set how far a technician goes from home, in minutes of driving, or return them to the business's with null",
+  request: {
+    params: technicianId,
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({ reach_min: z.union([z.number().int().min(10).max(180), z.null()]) })
+          .strict()
+          .openapi("TechnicianReach"),
+      ),
+    },
+  },
+  responses: {
+    200: { description: "Set", ...json(z.object({ reach_min: z.union([z.number().int(), z.null()]) }).strict()) },
+    400: errorResponse("invalid_request: a reach outside 10 to 180 minutes"),
+    404: unknownTechnician,
+  },
+});
+
 /** Whether the path names a technician in the caller's cities. */
 async function inReach(c: Context<AppEnv>, id: string): Promise<boolean> {
   const technician = await rosterTechnician(c.env.DB, id);
@@ -165,5 +188,24 @@ export function registerOpsTechnicianDays(app: App): void {
       now: c.var.deps.now(),
     });
     return c.json({ home: { label: place.label } }, 200);
+  });
+
+  app.openapi(reachRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const { reach_min: reachMin } = c.req.valid("json");
+    if (!(await inReach(c, id))) return refuse(c, "not_found");
+    await setReach(c.env.DB, {
+      technicianId: id,
+      reachMin,
+      audit: {
+        surface: "ops",
+        actor: actorOf(c),
+        action: "technician.reach",
+        subject: { kind: "technician", id },
+        requestId: c.var.requestId,
+      },
+      now: c.var.deps.now(),
+    });
+    return c.json({ reach_min: reachMin }, 200);
   });
 }
