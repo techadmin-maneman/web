@@ -1,5 +1,5 @@
-// Settings › Areas' parts (./Served.tsx): the city tabs with their bulk pair, one pincode's row, who a save would
-// message, what sits beneath Save, and a file read with its changes shown before they go into the table.
+// Settings › Areas' parts (./Served.tsx): the city tabs, one pincode's row and its drawer, who a save would message,
+// how the last save went, and a file read with its changes shown before they are saved.
 
 import { Toast } from "@maneman/ui/Toast";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
@@ -9,15 +9,15 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
-import type { AreaChange, ServedPincode } from "../api.ts";
+import type { ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import form from "../components/forms.module.css";
 import styles from "./served-parts.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
-import type { Draft, FileChange, Row } from "./served-draft.ts";
+import { rowOf, type FileChange, type Row } from "./served-draft.ts";
+import type { Saving } from "./useAreaSaves.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { RowHead } from "../components/RowHead.tsx";
@@ -26,38 +26,33 @@ import { FormDrawer } from "../components/FormDrawer.tsx";
 const copy = areas.served;
 const launch = areas.launch;
 
-export type Saving =
-  | { readonly step: "editing" | "checking" | "saving" }
-  | { readonly step: "saved"; readonly changed: number; readonly alerted: number }
-  | { readonly step: "failed"; readonly code: string };
-
-/** A file read, before its changes are put into the table. */
+/** A file read, before its changes are saved. */
 export type Upload =
-  | { readonly step: "read"; readonly rows: readonly FileChange[] }
-  | { readonly step: "applied" }
-  | { readonly step: "failed"; readonly says: string };
+  { readonly step: "read"; readonly rows: readonly FileChange[] } | { readonly step: "failed"; readonly says: string };
 
 interface PincodeRowProps {
   readonly pincode: ServedPincode;
-  readonly row: Row;
-  /** Whether the person's access lets them change it; if not, its boxes only show how it stands. */
-  readonly mayChange: boolean;
-  readonly onChange: (next: Row) => void;
+  /** Whether it is chosen for the bar's pair; null where the person's access lets them change nothing. */
+  readonly chosen: boolean | null;
+  readonly onChoose: (chosen: boolean) => void;
+  /** Sends the row's settings, or answers why they cannot go. */
+  readonly onSave: (next: Row) => string | null;
 }
 
-/** One pincode's three settings, a box each, in a drawer beside the table; Done puts them into the page's change. */
+/** One pincode's three settings, a box each, in a drawer beside the table; Save sends them. */
 function PincodeDrawer({
   id,
   row,
-  onDone,
+  onSave,
   onClose,
 }: {
   id: string;
   row: Row;
-  onDone: (next: Row) => void;
+  onSave: (next: Row) => string | null;
   onClose: () => void;
 }) {
   const [next, setNext] = useState(row);
+  const [refused, setRefused] = useState<string | null>(null);
   return (
     <FormDrawer title={copy.editTitle(id, row.area)} onClose={onClose}>
       <div className={form.fields}>
@@ -93,15 +88,16 @@ function PincodeDrawer({
           )}
         </Field>
       </div>
+      {refused !== null && <Refusal className={form.error} said={refused} />}
       <FormActions>
         <Button
           variant="primary"
           size="small"
           onClick={() => {
-            onDone(next);
+            setRefused(onSave(next));
           }}
         >
-          {copy.done}
+          {copy.save}
         </Button>
         <Button variant="outline" size="small" narrow onClick={onClose}>
           {copy.cancel}
@@ -111,17 +107,28 @@ function PincodeDrawer({
   );
 }
 
-export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProps) {
+export function PincodeRow({ pincode, chosen, onChoose, onSave }: PincodeRowProps) {
   const id = pincode.pincode;
   const [editing, setEditing] = useState(false);
   return (
     <tr>
+      {chosen !== null && (
+        <td className={styles.choose}>
+          <Checkbox
+            aria-label={copy.chosen.one(id)}
+            checked={chosen}
+            onChange={(event) => {
+              onChoose(event.target.checked);
+            }}
+          />
+        </td>
+      )}
       <RowHead>{id}</RowHead>
-      <td>{row.area}</td>
-      <td>{row.served ? <Badge tone="done">{copy.yes}</Badge> : copy.no}</td>
-      <td>{row.launch_on === null ? "" : shortDate(row.launch_on)}</td>
+      <td>{pincode.area}</td>
+      <td>{pincode.served ? <Badge tone="done">{copy.yes}</Badge> : copy.no}</td>
+      <td>{pincode.launch_on === null ? "" : shortDate(pincode.launch_on)}</td>
       <td className={form.figure}>{pincode.waiting}</td>
-      {mayChange && (
+      {chosen !== null && (
         <td className={styles.actions}>
           <RowButton
             aria-label={copy.editLabel(id)}
@@ -134,10 +141,11 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
           {editing && (
             <PincodeDrawer
               id={id}
-              row={row}
-              onDone={(next) => {
-                onChange(next);
-                setEditing(false);
+              row={rowOf(pincode)}
+              onSave={(next) => {
+                const refused = onSave(next);
+                if (refused === null) setEditing(false);
+                return refused;
               }}
               onClose={() => {
                 setEditing(false);
@@ -282,93 +290,48 @@ export function UploadFile({
           onCancel={onCancel}
         />
       )}
-      {upload?.step === "applied" && <Toast>{copy.upload.applied}</Toast>}
       {upload?.step === "failed" && <Refusal className={form.error} said={upload.says} />}
     </Fieldset>
   );
 }
 
-/** A city at a time: its tab says how many of its pincodes are served, and the bulk pair serves them all or none. */
+/** A city at a time: its tab says how many of its pincodes are served. */
 export function CityTabs({
   pincodes,
-  draft,
   city,
-  mayChange,
   onCity,
-  onBulk,
 }: {
   pincodes: readonly ServedPincode[];
-  draft: Draft;
   city: string;
-  mayChange: boolean;
   onCity: (city: string) => void;
-  onBulk: (served: boolean) => void;
 }) {
   const cityTabs = [...new Set(pincodes.map((each) => each.city))];
   return (
-    <>
-      <Tabs className={styles.cities} label={copy.title}>
-        {cityTabs.map((each) => {
-          const all = pincodes.filter((one) => one.city === each);
-          const served = all.filter((one) => draft[one.pincode]?.served === true).length;
-          return (
-            <TabButton
-              key={each}
-              current={each === city}
-              onClick={() => {
-                onCity(each);
-              }}
-            >
-              {copy.city(each, served, all.length)}
-            </TabButton>
-          );
-        })}
-      </Tabs>
-
-      {mayChange && (
-        <FormActions>
-          {[true, false].map((served) => (
-            <Button
-              variant="outline"
-              size="small"
-              key={String(served)}
-              narrow
-              onClick={() => {
-                onBulk(served);
-              }}
-            >
-              {served ? copy.bulk.serve(city) : copy.bulk.stop(city)}
-            </Button>
-          ))}
-        </FormActions>
-      )}
-    </>
+    <Tabs className={styles.cities} label={copy.title}>
+      {cityTabs.map((each) => {
+        const all = pincodes.filter((one) => one.city === each);
+        const served = all.filter((one) => one.served).length;
+        return (
+          <TabButton
+            key={each}
+            current={each === city}
+            onClick={() => {
+              onCity(each);
+            }}
+          >
+            {copy.city(each, served, all.length)}
+          </TabButton>
+        );
+      })}
+    </Tabs>
   );
 }
 
-/** Beneath Save: what keeps it dim, that nothing has changed yet, or how the save went. */
-export function SaveNotes({
-  saving,
-  changes,
-  badName,
-  later,
-  mayChange,
-}: {
-  saving: Saving;
-  changes: readonly AreaChange[];
-  badName: AreaChange | undefined;
-  later: AreaChange | undefined;
-  mayChange: boolean;
-}) {
-  return (
-    <>
-      {badName !== undefined && <Refusal className={form.error} said={copy.badName(badName.pincode)} />}
-      {later !== undefined && <Refusal className={form.error} said={copy.later(later.pincode)} />}
-      {mayChange && changes.length === 0 && saving.step === "editing" && <Note>{copy.nothing}</Note>}
-      {saving.step === "saved" && <Toast>{copy.saved(saving.changed, saving.alerted)}</Toast>}
-      {saving.step === "failed" && (
-        <Refusal className={form.error} said={errorText(copy.errors, { code: saving.code })} />
-      )}
-    </>
-  );
+/** How the last save went. */
+export function SaveNotes({ saving }: { saving: Saving }) {
+  if (saving.step === "saved") return <Toast>{copy.saved(saving.changed, saving.alerted)}</Toast>;
+  if (saving.step === "failed") {
+    return <Refusal className={form.error} said={errorText(copy.errors, { code: saving.code })} />;
+  }
+  return null;
 }

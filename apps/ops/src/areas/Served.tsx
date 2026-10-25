@@ -1,15 +1,15 @@
-// Settings › Areas: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md). The pincodes live in a
-// spreadsheet (data/pincodes/README.md), so the tab does two things: launch one area, and take the whole file back,
-// shown pincode by pincode before the one Save. A save that would message people waiting opens the launch panel first
+// Settings › Areas: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md; the pincodes are kept in
+// data/pincodes/README.md). Each change saves as it is made: a pincode from its drawer, the chosen ones once asked, a
+// file once its changes are shown. One that would message people waiting opens the launch panel first
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { Toast } from "@maneman/ui/Toast";
-import { Fieldset } from "@maneman/ui/Field";
+import { Checkbox, Fieldset } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { type ServedPincode } from "../api.ts";
@@ -21,30 +21,24 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
-import styles from "./served.module.css";
 import { readServiceAreaCsv, serviceAreaCsv } from "./csv.ts";
 import { AREA_NAME } from "./rules.ts";
 import {
-  afterSave,
   changesIn,
-  draftOf,
+  chosenServed,
   fileChanges,
-  launchesIn,
-  rowOf,
+  fileDraft,
   servesLater,
   uploadRefusal,
-  withCity,
-  withFile,
-  type Draft,
-  type FileChange,
+  type Row,
 } from "./served-draft.ts";
-import { CityTabs, LaunchCheck, PincodeRow, SaveNotes, UploadFile, type Saving, type Upload } from "./ServedParts.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { CityTabs, PincodeRow, SaveNotes, UploadFile, type Upload } from "./ServedParts.tsx";
+import { AskingCheck, ChosenBar } from "./Chosen.tsx";
+import { useAreaSaves } from "./useAreaSaves.ts";
 import { areasApi } from "./areas-api.ts";
 
 const copy = areas.served;
 
-// Sorted and narrowed by what is saved, so a row stays put while its boxes are typed in.
 const servedWord = (row: ServedPincode) => (row.served ? copy.yes : copy.no);
 const [PIN, NAME, SERVED, LAUNCH, WAITING] = copy.columns;
 const COLUMNS: readonly Column<ServedPincode>[] = [
@@ -55,22 +49,42 @@ const COLUMNS: readonly Column<ServedPincode>[] = [
   { label: WAITING, sort: (row) => row.waiting },
 ];
 
-/** A city's pincodes, narrowed and sorted as ops ask, each row's boxes holding the draft. */
+/** A city's pincodes, narrowed and sorted as ops ask; where ops may change them, each with a box to choose it. */
 function PincodeTable(props: {
   view: ReturnType<typeof useTableView<ServedPincode>>;
-  draft: Draft;
-  mayChange: boolean;
-  onEdit: (next: Draft) => void;
+  chosen: ReadonlySet<string> | null;
+  onChosen: (next: ReadonlySet<string>) => void;
+  onSave: (pincode: string, next: Row) => string | null;
 }) {
-  const { view, draft, mayChange, onEdit } = props;
+  const { view, chosen, onChosen } = props;
+  const shown = view.shown.map((each) => each.pincode);
+  const choose = (pincodes: readonly string[], on: boolean) => {
+    const next = new Set(chosen);
+    for (const each of pincodes) {
+      if (on) next.add(each);
+      else next.delete(each);
+    }
+    onChosen(next);
+  };
   return (
     <>
       <Narrowing view={view} label={copy.narrow} />
       <Table controls>
         <thead>
           <tr>
+            {chosen !== null && (
+              <th scope="col">
+                <Checkbox
+                  aria-label={copy.chosen.all}
+                  checked={shown.length > 0 && shown.every((each) => chosen.has(each))}
+                  onChange={(event) => {
+                    choose(shown, event.target.checked);
+                  }}
+                />
+              </th>
+            )}
             <SortHeads view={view} />
-            {mayChange && (
+            {chosen !== null && (
               <th scope="col">
                 <VisuallyHidden>{copy.edit}</VisuallyHidden>
               </th>
@@ -82,11 +96,11 @@ function PincodeTable(props: {
             <PincodeRow
               key={each.pincode}
               pincode={each}
-              row={draft[each.pincode] ?? rowOf(each)}
-              mayChange={mayChange}
-              onChange={(next) => {
-                onEdit({ ...draft, [each.pincode]: next });
+              chosen={chosen === null ? null : chosen.has(each.pincode)}
+              onChoose={(on) => {
+                choose([each.pincode], on);
               }}
+              onSave={(next) => props.onSave(each.pincode, next)}
             />
           ))}
         </tbody>
@@ -112,71 +126,41 @@ function AddBeneath(props: {
 }
 
 function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedPincode[]; cities: readonly string[] }) {
-  const [pincodes, setPincodes] = useState(loadedPincodes);
+  const [pincodes, setPincodes] = useState<readonly ServedPincode[]>(loadedPincodes);
   const [city, setCity] = useState(pincodes[0]?.city ?? "");
-  const [draft, setDraft] = useState<Draft>(() => draftOf(loadedPincodes));
-  const [saving, setSaving] = useState<Saving>({ step: "editing" });
+  const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
   const [upload, setUpload] = useState<Upload | null>(null);
   const [added, setAdded] = useState<ServedPincode | null>(null);
   const access = useAccess();
   const mayChange = access.mayCall("POST /api/service-area");
   const mayAdd = access.mayCall("POST /api/pincodes");
-  const today = todayInIndia(Date.now());
-
+  const saves = useAreaSaves(pincodes, setPincodes, () => {
+    setChosen(new Set());
+    setUpload(null);
+  });
   const inCity = pincodes.filter((each) => each.city === city);
   const view = useTableView(inCity, COLUMNS, { search: (row) => `${row.pincode} ${row.area}` });
-  const changes = changesIn(pincodes, draft);
-  const badName = changes.find((change) => change.area !== undefined && !AREA_NAME.test(change.area));
-  const later = changes.find((change) => servesLater(pincodes, change, today));
-  const launching = launchesIn(pincodes, changes);
-  const busy = saving.step === "saving";
 
-  /** A pincode added beneath the table joins it, unserved, in its city. */
-  const addedHere = (held: ServedPincode) => {
-    setPincodes((all) => [...all, held]);
-    setDraft((now) => ({ ...now, [held.pincode]: rowOf(held) }));
-    setCity(held.city);
-    setAdded(held);
+  /** A row's settings from its drawer: sent at once, or why they cannot go. */
+  const saveRow = (pincode: string, next: Row): string | null => {
+    const [change] = changesIn(pincodes, { [pincode]: next });
+    if (change === undefined) return null;
+    if (change.area !== undefined && !AREA_NAME.test(change.area)) return copy.badName(pincode);
+    if (servesLater(pincodes, change, todayInIndia(Date.now()))) return copy.later(pincode);
+    saves.commit([change]);
+    return null;
   };
 
-  const edit = (next: Draft) => {
-    setDraft(next);
-    setSaving({ step: "editing" });
-  };
-
-  const send = async () => {
-    setSaving({ step: "saving" });
-    const answer = await areasApi.setServiceArea(changes);
-    if (!answer.ok) {
-      setSaving({ step: "failed", code: answer.code });
-      return;
-    }
-    // The change is made, so what was a draft is now what we hold.
-    setPincodes((held) => afterSave(held, changes));
-    setSaving({ step: "saved", changed: answer.body.changed, alerted: answer.body.alerted });
+  const serveChosen = (served: boolean) => {
+    const question = served ? copy.chosen.serveCheck : copy.chosen.stopCheck;
+    saves.commit(changesIn(pincodes, chosenServed(pincodes, chosen, served)), question(chosen.size, city));
   };
 
   const readFile = async (file: File) => {
     const read = readServiceAreaCsv(await file.text());
-    if (read.ok) setUpload({ step: "read", rows: fileChanges(pincodes, draft, read.rows) });
+    if (read.ok) setUpload({ step: "read", rows: fileChanges(pincodes, read.rows) });
     else setUpload({ step: "failed", says: uploadRefusal(read) });
   };
-
-  const applyFile = (rows: readonly FileChange[]) => {
-    edit(withFile(draft, rows));
-    setUpload({ step: "applied" });
-  };
-
-  const download = () => {
-    saveFile(copy.downloadName, serviceAreaCsv(pincodes), "text/csv");
-  };
-
-  const pressSave = () => {
-    if (launching.length > 0) setSaving({ step: "checking" });
-    else void send();
-  };
-
-  const checking = saving.step === "checking" || (saving.step === "saving" && launching.length > 0);
 
   return (
     <Panel
@@ -184,62 +168,68 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
       title={copy.title}
       padded
       actions={
-        <Button variant="outline" size="small" narrow onClick={download}>
+        <Button
+          variant="outline"
+          size="small"
+          narrow
+          onClick={() => {
+            saveFile(copy.downloadName, serviceAreaCsv(pincodes), "text/csv");
+          }}
+        >
           {copy.download}
         </Button>
       }
     >
       <CityTabs
         pincodes={pincodes}
-        draft={draft}
         city={city}
-        mayChange={mayChange}
-        onCity={setCity}
-        onBulk={(served) => {
-          edit(withCity(draft, inCity, served));
+        onCity={(next) => {
+          setCity(next);
+          setChosen(new Set());
         }}
       />
-
-      <PincodeTable view={view} draft={draft} mayChange={mayChange} onEdit={edit} />
-
-      {checking && (
-        <div className={styles.inPanel}>
-          <LaunchCheck
-            launching={launching}
-            busy={busy}
-            onSend={() => void send()}
-            onCancel={() => {
-              setSaving({ step: "editing" });
-            }}
-          />
-        </div>
+      {chosen.size > 0 && saves.asking === null && (
+        <ChosenBar
+          count={chosen.size}
+          onServe={serveChosen}
+          onClear={() => {
+            setChosen(new Set());
+          }}
+        />
       )}
-      {!checking && mayChange && (
-        <FormActions>
-          <Button
-            variant="primary"
-            size="small"
-            disabled={busy || changes.length === 0 || badName !== undefined || later !== undefined}
-            onClick={pressSave}
-          >
-            {busy ? copy.saving : copy.save}
-          </Button>
-        </FormActions>
+      {saves.asking !== null && (
+        <AskingCheck
+          asking={saves.asking}
+          busy={saves.saving.step === "saving"}
+          onSend={() => void saves.send(saves.asking?.changes ?? [])}
+          onCancel={saves.cancel}
+        />
       )}
-      <SaveNotes saving={saving} changes={changes} badName={badName} later={later} mayChange={mayChange} />
-
+      <SaveNotes saving={saves.saving} />
+      <PincodeTable view={view} chosen={mayChange ? chosen : null} onChosen={setChosen} onSave={saveRow} />
       {mayChange && (
         <UploadFile
           upload={upload}
           onFile={(file) => void readFile(file)}
-          onApply={applyFile}
+          onApply={(rows) => {
+            saves.commit(changesIn(pincodes, fileDraft(rows)));
+          }}
           onCancel={() => {
             setUpload(null);
           }}
         />
       )}
-
-      {mayAdd && <AddBeneath cities={cities} added={added} onAdded={addedHere} />}
+      {mayAdd && (
+        <AddBeneath
+          cities={cities}
+          added={added}
+          onAdded={(held) => {
+            setPincodes((all) => [...all, held]);
+            setCity(held.city);
+            setAdded(held);
+          }}
+        />
+      )}
     </Panel>
   );
 }

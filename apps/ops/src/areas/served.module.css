@@ -4,3 +4,13 @@
 .inPanel {
   margin: var(--sp-16) var(--sp-20) 0;
 }
+
+/* The bar over the table once a pincode is chosen. */
+.chosen {
+  margin: var(--sp-12) var(--sp-20) 0;
+}
+
+.count {
+  font-size: var(--fs-14);
+  font-weight: var(--weight-medium);
+}

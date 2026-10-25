@@ -6,11 +6,12 @@ import type { ServedPincode } from "../../../../../apps/ops/src/api.ts";
 import {
   afterSave,
   changesIn,
-  draftOf,
+  chosenServed,
   fileChanges,
+  fileDraft,
   launchesIn,
+  rowOf,
   servesLater,
-  withCity,
 } from "../../../../../apps/ops/src/areas/served-draft.ts";
 
 const TODAY = "2027-09-22";
@@ -34,23 +35,29 @@ const KHAR = pincode("400052", { area: "Khar", served: true, launch_on: "2027-01
 describe("the Served tab", () => {
   it("sends only what moved, and a renamed area only once its name is trimmed and different", () => {
     const held = [BANDRA, KHAR];
-    const draft = draftOf(held);
-    expect(changesIn(held, draft)).toEqual([]);
-    expect(changesIn(held, { ...draft, "400052": { ...KHAR, area: " Khar " } })).toEqual([]);
-    expect(changesIn(held, { ...draft, "400052": { ...KHAR, area: "Khar Road" } })).toEqual([
+    expect(changesIn(held, { "400052": rowOf(KHAR) })).toEqual([]);
+    expect(changesIn(held, { "400052": { ...rowOf(KHAR), area: " Khar " } })).toEqual([]);
+    expect(changesIn(held, { "400052": { ...rowOf(KHAR), area: "Khar Road" } })).toEqual([
       { pincode: "400052", served: true, launch_on: "2027-01-01", area: "Khar Road" },
     ]);
   });
 
   it("treats serving a pincode with people to tell as a launch, and tells them only once", () => {
     const held = [BANDRA, KHAR];
-    const changes = changesIn(held, withCity(draftOf(held), held, true));
+    const changes = changesIn(held, chosenServed(held, new Set(["400050", "400052"]), true));
     expect(changes.map((change) => change.pincode)).toEqual(["400050"]);
     expect(launchesIn(held, changes)).toEqual([BANDRA]);
 
     const saved = afterSave(held, changes);
     expect(saved[0]).toMatchObject({ served: true, to_alert: 0, waiting: 3 });
-    expect(launchesIn(saved, changesIn(saved, draftOf(saved)))).toEqual([]);
+    expect(launchesIn(saved, changesIn(saved, chosenServed(saved, new Set(["400050"]), true)))).toEqual([]);
+  });
+
+  it("serves or stops only the pincodes chosen", () => {
+    const held = [BANDRA, KHAR];
+    expect(changesIn(held, chosenServed(held, new Set(["400052"]), false))).toEqual([
+      { pincode: "400052", served: false, launch_on: "2027-01-01" },
+    ]);
   });
 
   it("refuses to serve from a day still to come, but leaves a held future date alone", () => {
@@ -61,14 +68,15 @@ describe("the Served tab", () => {
     expect(servesLater([heldLater], later, TODAY)).toBe(false);
   });
 
-  it("shows a file’s changes only for pincodes we hold that it would change", () => {
+  it("shows a file’s changes only for pincodes we hold that it would change, and saves them as they read", () => {
     const held = [BANDRA, KHAR];
-    const rows = fileChanges(held, draftOf(held), [
+    const rows = fileChanges(held, [
       { pincode: "400050", served: true, launch_on: null },
       { pincode: "400052", served: true, launch_on: "2027-01-01" },
       { pincode: "110001", served: true, launch_on: null },
     ]);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ pincode: BANDRA, now: { served: false }, file: { served: true } });
+    expect(changesIn(held, fileDraft(rows))).toEqual([{ pincode: "400050", served: true, launch_on: null }]);
   });
 });

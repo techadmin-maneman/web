@@ -1,5 +1,5 @@
-// What Settings › Areas (./Served.tsx) works out, apart from how it draws it: the table as ops have it, what has moved
-// since it loaded, what a save would launch or the API refuse, and a file's changes before they go into the table.
+// What Settings › Areas (./Served.tsx) works out, apart from how it draws it: what a change moves, what it would
+// launch or the API refuse, and a file's changes before they are saved.
 
 import type { AreaChange, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
@@ -26,9 +26,6 @@ export const rowOf = (pincode: ServedPincode): Row => ({
   launch_on: pincode.launch_on,
   area: pincode.area,
 });
-
-export const draftOf = (pincodes: readonly ServedPincode[]): Draft =>
-  Object.fromEntries(pincodes.map((each) => [each.pincode, rowOf(each)]));
 
 const sameRow = (a: Row, b: Row) => a.served === b.served && a.launch_on === b.launch_on && a.area === b.area;
 
@@ -66,12 +63,11 @@ export function servesLater(pincodes: readonly ServedPincode[], change: AreaChan
   return held.served !== change.served || held.launch_on !== change.launch_on;
 }
 
-/** Every pincode of a city served, or none: the bulk pair. */
-export function withCity(draft: Draft, inCity: readonly ServedPincode[], served: boolean): Draft {
-  const next: Record<string, Row> = { ...draft };
-  for (const each of inCity) next[each.pincode] = { ...(next[each.pincode] ?? rowOf(each)), served };
-  return next;
-}
+/** The chosen pincodes served, or none of them. */
+export const chosenServed = (pincodes: readonly ServedPincode[], chosen: ReadonlySet<string>, served: boolean): Draft =>
+  Object.fromEntries(
+    pincodes.filter((each) => chosen.has(each.pincode)).map((each) => [each.pincode, { ...rowOf(each), served }]),
+  );
 
 /** The pincodes as they stand once a save is made: whoever waited where one launched has been told. */
 export function afterSave(held: readonly ServedPincode[], changes: readonly AreaChange[]): ServedPincode[] {
@@ -89,26 +85,23 @@ export function afterSave(held: readonly ServedPincode[], changes: readonly Area
   });
 }
 
-/** What a file would change in the table: pincodes we do not hold, and lines that change nothing, are left out. */
-export function fileChanges(pincodes: readonly ServedPincode[], draft: Draft, lines: readonly CsvRow[]): FileChange[] {
+/** What a file would change: pincodes we do not hold, and lines that change nothing, are left out. */
+export function fileChanges(pincodes: readonly ServedPincode[], lines: readonly CsvRow[]): FileChange[] {
   const held = new Map(pincodes.map((each) => [each.pincode, each]));
   const rows: FileChange[] = [];
   for (const line of lines) {
     const pincode = held.get(line.pincode);
-    const now = draft[line.pincode];
-    if (pincode === undefined || now === undefined) continue;
+    if (pincode === undefined) continue;
+    const now = rowOf(pincode);
     const file = { ...now, served: line.served, launch_on: line.launch_on };
     if (!sameRow(file, now)) rows.push({ pincode, now, file });
   }
   return rows;
 }
 
-/** The file's changes put into the draft, where the table shows them and the one Save sends them. */
-export function withFile(draft: Draft, rows: readonly FileChange[]): Draft {
-  const next: Record<string, Row> = { ...draft };
-  for (const row of rows) next[row.pincode.pincode] = row.file;
-  return next;
-}
+/** The file's changes as one draft, which is saved whole. */
+export const fileDraft = (rows: readonly FileChange[]): Draft =>
+  Object.fromEntries(rows.map((row) => [row.pincode.pincode, row.file]));
 
 /** What a file read says, as the upload's line. */
 export function uploadRefusal(read: Extract<CsvRead, { ok: false }>): string {

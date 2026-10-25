@@ -96,7 +96,6 @@ export const areas = {
     edit: "Edit",
     editLabel: (pincode: string) => `Edit ${pincode}`,
     editTitle: (pincode: string, area: string) => (area === "" ? pincode : `${pincode} · ${area}`),
-    done: "Done",
     cancel: "Cancel",
     /** The name a row's box holds: a letter or a digit first, as the API takes it. */
     badName: (pincode: string) => `${pincode}: 2–40 characters, starting with a letter or digit.`,
@@ -107,12 +106,20 @@ export const areas = {
       if (alerted === 0) return pincodes;
       return `${pincodes} ${String(alerted)} WhatsApp ${alerted === 1 ? "message" : "messages"} sending.`;
     },
-    nothing: "No changes.",
     /** A row that would serve a pincode from a day still to come, which /book would take bookings for at once. */
     later: (pincode: string) => `${pincode}: the launch date must be today or earlier.`,
-    bulk: {
-      serve: (city: string) => `Serve all of ${city}`,
-      stop: (city: string) => `Stop serving ${city}`,
+    /** Pincodes chosen in the table, served or stopped together once ops say yes. */
+    chosen: {
+      one: (pincode: string) => `Choose ${pincode}`,
+      all: "Choose every pincode shown",
+      count: (count: number) => (count === 1 ? "1 pincode chosen" : `${String(count)} pincodes chosen`),
+      serve: "Serve",
+      stop: "Stop serving",
+      clear: "Clear",
+      serveCheck: (count: number, city: string) =>
+        count === 1 ? `Serve 1 pincode in ${city}?` : `Serve ${String(count)} pincodes in ${city}?`,
+      stopCheck: (count: number, city: string) =>
+        count === 1 ? `Stop serving 1 pincode in ${city}?` : `Stop serving ${String(count)} pincodes in ${city}?`,
     },
     upload: {
       title: "Upload",
@@ -126,8 +133,7 @@ export const areas = {
         return launch === null ? serving : `${serving}, launch ${launch}`;
       },
       none: "No changes in the file.",
-      apply: "Apply to table",
-      applied: "Applied. Review, then save.",
+      apply: "Save these changes",
       cancel: "Cancel",
       badDate: (pincode: string) => `${pincode}: write the date as 2026-10-01.`,
       badServed: (pincode: string) => `${pincode}: served must be yes or no.`,

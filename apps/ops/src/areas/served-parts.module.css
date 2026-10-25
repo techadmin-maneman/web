@@ -25,3 +25,8 @@
   text-align: right;
   white-space: nowrap;
 }
+
+/* A row's box to choose it, at the row's start. */
+.choose {
+  width: var(--sp-32);
+}

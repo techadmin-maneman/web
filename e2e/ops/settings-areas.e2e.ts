@@ -20,7 +20,7 @@ test.describe("the service area", () => {
   const row = (page: Page, pincode: string) =>
     page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: pincode, exact: true }) });
 
-  /** Opens a pincode's drawer from its row, changes what is asked, and puts it into the page's change. */
+  /** Opens a pincode's drawer from its row, changes what is asked, and saves it. */
   async function change(
     page: Page,
     pincode: string,
@@ -31,7 +31,7 @@ test.describe("the service area", () => {
     if (to.area !== undefined) await drawer.getByLabel(served.columns[1]).fill(to.area);
     if (to.served !== undefined) await drawer.getByLabel(served.columns[2]).setChecked(to.served);
     if (to.launchOn !== undefined) await drawer.getByLabel(served.columns[3]).fill(to.launchOn);
-    await drawer.getByRole("button", { name: served.done }).click();
+    await drawer.getByRole("button", { name: served.save }).click();
   }
 
   test("lists one city at a time, since 198 pincodes is not a page", async ({ page }) => {
@@ -58,19 +58,19 @@ test.describe("the service area", () => {
     await expect(row(page, "110017")).toBeVisible();
   });
 
-  test("sends only the pincodes that changed", async ({ page }) => {
+  // A row was changed in its drawer, then saved by a Save under the table that said "No changes." until then.
+  test("saves a pincode from its drawer, sending only what changed", async ({ page }) => {
     await open(page, "/settings/areas", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
-    await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
-    await change(page, "110017", { launchOn: "2026-09-02" });
-
+    await expect(page.getByText(opsCopy.review.nothing)).toHaveCount(0);
     const sent = posted(page, "/api/service-area");
-    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
+    await change(page, "110017", { launchOn: "2026-09-02" });
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110017", served: true, launch_on: "2026-09-02" }],
     });
     await expect(page.getByRole("status").filter({ hasText: "One pincode changed." })).toBeVisible();
+    await expect(row(page, "110017")).toContainText("2 Sep");
   });
 
   // Launch messages read "we now come to Sec91", with no way to say it better.
@@ -80,22 +80,47 @@ test.describe("the service area", () => {
     });
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
     await change(page, "122018", { area: "=Sector 65" });
-    await expect(page.getByRole("alert")).toContainText("122018: 2–40 characters");
-    await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer.getByRole("alert")).toContainText("122018: 2–40 characters");
 
-    await change(page, "122018", { area: "Sector 65 " });
+    await drawer.getByLabel(served.columns[1]).fill("Sector 65 ");
     const sent = posted(page, "/api/service-area");
-    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
+    await drawer.getByRole("button", { name: served.save }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "122018", served: false, launch_on: null, area: "Sector 65" }],
     });
+    await expect(drawer).toBeHidden();
   });
 
-  test("fills a whole city in one press", async ({ page }) => {
+  // "Serve all of Bengaluru" and "Stop serving Bengaluru" were the page's first buttons, and acted at a press.
+  test("serves or stops the pincodes chosen, once asked", async ({ page }) => {
+    await open(page, "/settings/areas", {
+      "POST /api/service-area": json({ changed: 1, served: 0, alerted: 0 }),
+    });
+    await expect(page.getByRole("button", { name: served.chosen.stop })).toHaveCount(0);
+    await page.getByRole("checkbox", { name: served.chosen.one("110017") }).check();
+    await expect(page.getByText(served.chosen.count(1))).toBeVisible();
+    await page.getByRole("button", { name: served.chosen.stop }).click();
+
+    const check = page.getByRole("group", { name: served.chosen.stopCheck(1, "Delhi") });
+    await expect(check).toBeFocused();
+    const sent = posted(page, "/api/service-area");
+    await check.getByRole("button", { name: opsCopy.review.send }).click();
+    expect((await sent).postDataJSON()).toEqual({
+      changes: [{ pincode: "110017", served: false, launch_on: "2026-09-01" }],
+    });
+    await expect(page.getByRole("button", { name: "Delhi · 0 of 2" })).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: served.chosen.one("110017") })).not.toBeChecked();
+  });
+
+  test("chooses every pincode shown at once, and asks before serving any that would message people", async ({
+    page,
+  }) => {
     await open(page, "/settings/areas");
-    await page.getByRole("button", { name: "Serve all of Delhi" }).click();
-    await expect(page.getByRole("button", { name: "Delhi · 2 of 2" })).toBeVisible();
-    await expect(row(page, "110024")).toContainText(served.yes);
+    await page.getByRole("checkbox", { name: served.chosen.all }).check();
+    await expect(page.getByText(served.chosen.count(2))).toBeVisible();
+    await page.getByRole("button", { name: served.chosen.serve, exact: true }).click();
+    await expect(page.getByRole("region", { name: "Mark 110024 live" })).toBeFocused();
   });
 
   // Serving a pincode here sent none of the launch alerts the waitlist's launch sends. It had a
@@ -105,7 +130,6 @@ test.describe("the service area", () => {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 3 }),
     });
     await change(page, "110024", { served: true });
-    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
 
     const check = page.getByRole("region", { name: "Mark 110024 live" });
     await expect(check).toBeFocused();
@@ -126,8 +150,8 @@ test.describe("the service area", () => {
       "POST /api/service-area": fails(400, "no_service_area"),
     });
     await change(page, "110017", { served: false });
-    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
     await expect(page.getByRole("alert")).toContainText(opsCopy.areas.served.errors.no_service_area);
+    await expect(row(page, "110017")).toContainText(served.yes);
   });
 
   const upload = (page: Page, csv: string) =>
@@ -138,7 +162,7 @@ test.describe("the service area", () => {
     });
 
   // The table kept the old values after an upload, and the next Save put them back.
-  test("puts a file’s changes in the table, so the one Save sends the file’s values", async ({ page }) => {
+  test("shows a file’s changes, then saves the file’s values", async ({ page }) => {
     await open(page, "/settings/areas", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 0 }),
     });
@@ -146,16 +170,14 @@ test.describe("the service area", () => {
     const preview = page.getByRole("row").filter({ hasText: "110024" }).last();
     await expect(preview).toContainText(opsCopy.cities.list.notServed);
     await expect(preview).toContainText("Not served, launch 2026-11-01");
-    await page.getByRole("button", { name: opsCopy.areas.served.upload.apply }).click();
-    await expect(row(page, "110024")).toContainText("1 Nov");
 
     const sent = posted(page, "/api/service-area");
-    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
+    await page.getByRole("button", { name: opsCopy.areas.served.upload.apply }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110024", served: false, launch_on: "2026-11-01" }],
     });
     await expect(row(page, "110024")).toContainText("1 Nov");
-    await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
+    await expect(page.getByRole("button", { name: opsCopy.areas.served.upload.apply })).toHaveCount(0);
   });
 
   // A pincode served from a later day was served at once.
@@ -163,8 +185,9 @@ test.describe("the service area", () => {
     await page.clock.setFixedTime(new Date("2026-10-04T06:00:00.000Z"));
     await open(page, "/settings/areas");
     await change(page, "110024", { served: true, launchOn: "2026-10-20" });
-    await expect(page.getByRole("alert")).toContainText("110024: the launch date must be today or earlier");
-    await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
+    await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+      "110024: the launch date must be today or earlier",
+    );
   });
 
   // No screen could add a pincode the reference file does not hold.
