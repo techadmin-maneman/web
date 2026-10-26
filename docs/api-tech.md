@@ -7682,6 +7682,16 @@ One of the client's try-on looks, under the card's own unlock, never cached
         ]
       },
       "maxItems": 30
+    },
+    "short_reason": {
+      "type": "string",
+      "enum": [
+        "client_supplies",
+        "ran_out",
+        "not_needed",
+        "other"
+      ],
+      "description": "Why less was used than the service expects, or nothing on a visit that always uses something; refused, fields short_reason, when it is owed and left out (docs/decisions/0222-consumables-short-of-expected.md)."
     }
   },
   "required": [

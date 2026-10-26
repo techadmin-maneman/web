@@ -1,13 +1,5 @@
 /* What ./ProfileFields.tsx alone draws; what it shares is in ./steps.module.css. */
 
-/* A figure's range beneath it, until a figure outside it turns it into .hint. */
-.range {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-17);
-  line-height: var(--lh-145);
-  color: var(--ink-muted);
-}
-
 /* Short choices, a stage or a colour code, sit side by side and wrap: 56 px each, the outcome's edge when chosen. */
 .chips {
   display: flex;

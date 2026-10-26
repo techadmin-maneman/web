@@ -133,6 +133,7 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, created_at)
      VALUES ('vc1', 'ap2', 'p2', 'moved', 'free', '2026-10-04T03:30:00.000Z', '${AT}')`,
   `INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122002', 'DLF Phase 1', 'Gurgaon', 1)`,
+  `INSERT INTO pincode_demand (pincode, day, checks) VALUES ('400050', '2026-09-20', 3)`,
   `INSERT INTO pincode_launches (id, city, go_live_on, state, created_by, created_at)
      VALUES ('pl1', 'Gurgaon', '2026-10-01', 'scheduled', 'ops@example.com', '${AT}')`,
   `INSERT INTO pincode_launch_pincodes (launch_id, pincode) VALUES ('pl1', '122002')`,
@@ -186,6 +187,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('2026-10', 'Gurgaon', 'new_clients', 40, 'admin@maneman.in', '${AT}')`,
   `INSERT INTO standard_costs (item, tier, cost, valid_from, set_by, set_at)
      VALUES ('first_fit', 'standard', 600000, '2026-09-01', 'finance@maneman.in', '${AT}')`,
+  `INSERT INTO consumable_shortfalls (appointment_id, technician_id, reason, short, recorded_at)
+     VALUES ('ap1', 't1', 'ran_out', '[]', '${AT}')`,
   `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at, consumable_code)
      VALUES ('cu1', 'ap1', 'je1', 'Bond strip', 2, '${AT}', 'strip')`,
   `INSERT INTO consumable_usage (visit_type, consumable_code, quantity, set_by, set_at)

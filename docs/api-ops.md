@@ -4590,6 +4590,376 @@ What stopping these pincodes leaves behind: the visits booked there still to com
 }
 ```
 
+### GET /api/service-area/reach
+
+A city's technicians and how far each goes from home, and its pincodes with the nearest of them
+
+**200**: The city's reach
+
+```json
+{
+  "$ref": "#/components/schemas/CityReach"
+}
+```
+
+**400**: invalid_request: no city named
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/service-area/map
+
+A city's pincodes and its technicians' reach as one picture
+
+**200**: The map
+
+**400**: invalid_request: no city named
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: nothing in the city has a place on the map yet
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: no maps provider, today's ceiling reached, or Google could not draw it
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/pincode-demand/next
+
+The pincodes not served, most waiting first, then most looked up in the last ninety days
+
+**200**: The pincodes, in order
+
+```json
+{
+  "$ref": "#/components/schemas/NextToOpen"
+}
+```
+
+**400**: invalid_request: most outside 1 to 100
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/pincode-launches/recent
+
+The pincodes served from a day in the last thirty, with who was told and what has been booked there
+
+**200**: The launches, newest first
+
+```json
+{
+  "$ref": "#/components/schemas/RecentLaunches"
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/clients/{id}/stock-match
 
 The stock code the client's hair profile matches exactly, and where its pieces are
@@ -20175,6 +20545,151 @@ Request body:
               "type": "string",
               "enum": [
                 "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/technicians/{id}/reach
+
+Set how far a technician goes from home, in minutes of driving, or return them to the business's with null
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianReach"
+}
+```
+
+**200**: Set
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reach_min": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "reach_min"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: a reach outside 10 to 180 minutes
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such technician in the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
               ]
             }
           },
@@ -39330,6 +39845,312 @@ Request body:
 }
 ```
 
+### CityReach
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "technicians": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string"
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number"
+                  },
+                  "lng": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "lat",
+                  "lng"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reach_min": {
+            "type": "integer"
+          },
+          "reach_km": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "initials",
+          "home",
+          "reach_min",
+          "reach_km"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "pincodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "served": {
+            "type": "boolean"
+          },
+          "paused_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "centre": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number"
+                  },
+                  "lng": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "lat",
+                  "lng"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nearest": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "technician_id": {
+                    "type": "string"
+                  },
+                  "minutes": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "technician_id",
+                  "minutes"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reached": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether any reach takes it in; null where nothing could be measured."
+          },
+          "reached_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The technicians whose reach takes it in."
+          }
+        },
+        "required": [
+          "pincode",
+          "area",
+          "served",
+          "paused_until",
+          "centre",
+          "nearest",
+          "reached",
+          "reached_by"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "technicians",
+    "pincodes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NextToOpen
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pincodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "waiting": {
+            "type": "integer"
+          },
+          "looked": {
+            "type": "integer",
+            "description": "Lookups on the site in the last ninety days."
+          }
+        },
+        "required": [
+          "pincode",
+          "city",
+          "area",
+          "district",
+          "state",
+          "waiting",
+          "looked"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "pincodes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### RecentLaunches
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "launches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pincode": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "launched_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "told": {
+            "type": "integer"
+          },
+          "booked": {
+            "type": "integer",
+            "description": "Visits booked there since, cancelled ones left out."
+          }
+        },
+        "required": [
+          "pincode",
+          "area",
+          "city",
+          "launched_on",
+          "told",
+          "booked"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "launches"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientStockMatch
 
 ```json
@@ -44253,6 +45074,7 @@ Request body:
         "technician.delete",
         "technician.hours",
         "technician.home",
+        "technician.reach",
         "technician.pay_grade",
         "pay_grade.add",
         "pay_grade.rename",
@@ -46345,6 +47167,17 @@ Request body:
               }
             ],
             "description": "Where their day starts; null until ops set it."
+          },
+          "reach_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Minutes of driving from home they take visits within; null takes the business's (ADR 0223)."
           }
         },
         "required": [
@@ -46361,7 +47194,8 @@ Request body:
           "devices",
           "leave",
           "hours",
-          "home"
+          "home",
+          "reach_min"
         ],
         "additionalProperties": false
       }
@@ -47154,6 +47988,7 @@ Request body:
               "stock_at_risk",
               "at_risk_client",
               "partial_visit",
+              "consumables_short",
               "referral_review",
               "no_show_decision",
               "no_show_dispute",
@@ -47871,6 +48706,70 @@ Request body:
         "kind",
         "reason_code",
         "reason"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "consumables_short"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "client_supplies",
+            "ran_out",
+            "not_needed",
+            "other"
+          ]
+        },
+        "technician": {
+          "type": "string"
+        },
+        "short": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "expected": {
+                "type": "number"
+              },
+              "used": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "expected",
+              "used"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Each consumable recorded below what was expected; empty where nothing was used."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "reason",
+        "technician",
+        "short"
       ],
       "additionalProperties": false
     },
@@ -49106,6 +50005,32 @@ Request body:
 }
 ```
 
+### TechnicianReach
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reach_min": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 180
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "reach_min"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### TechnicianPay
 
 ```json
@@ -49562,6 +50487,7 @@ Request body:
         "same_day_booking",
         "working_hours",
         "drive_estimate",
+        "technician_reach_min",
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
@@ -49756,6 +50682,7 @@ Request body:
         "same_day_booking",
         "working_hours",
         "drive_estimate",
+        "technician_reach_min",
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",

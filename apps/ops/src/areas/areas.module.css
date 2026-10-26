@@ -277,3 +277,11 @@
 .missing {
   color: var(--ui-error);
 }
+
+/* A city's map, at the width of the panel. */
+.areaMap {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: var(--hairline) solid var(--ui-line);
+}

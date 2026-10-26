@@ -33,6 +33,20 @@ test("sends Navigate to a route any phone opens, by the pin when the address has
   await expect(navigate).toHaveAttribute("target", "_blank");
 });
 
+// "WhatsApp Rohan" broke over two lines beside "Call Rohan".
+test("calls and messages the client from two one-word buttons, each naming the client to a screen reader", async ({
+  page,
+}) => {
+  await fakeTech(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  const call = page.getByRole("link", { name: techCopy.job.call("Rohit"), exact: true });
+  const whatsApp = page.getByRole("link", { name: techCopy.job.whatsApp("Rohit"), exact: true });
+  await expect(call).toHaveText(techCopy.job.callShort);
+  await expect(whatsApp).toHaveText(techCopy.job.whatsAppShort);
+  const heights = await Promise.all([call, whatsApp].map((link) => link.evaluate((each) => each.clientHeight)));
+  expect(heights[0]).toBe(heights[1]);
+});
+
 test("says a job that is no longer theirs is off their list, with the way back to Today at the top", async ({
   page,
 }) => {

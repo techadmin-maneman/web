@@ -235,6 +235,14 @@ export interface Rows {
     readonly one_visit: number;
     readonly discount_code: string | null;
   };
+  readonly consumable_shortfalls: {
+    readonly appointment_id: string;
+    readonly technician_id: string;
+    readonly reason: string;
+    readonly short: string;
+    readonly recorded_at: string;
+    readonly settled_at: string | null;
+  };
   readonly consumable_usage: {
     readonly visit_type: string;
     readonly tier: string;
@@ -954,6 +962,11 @@ export interface Rows {
     readonly replacement_booked: number;
     readonly replaced_at: string | null;
   };
+  readonly pincode_demand: {
+    readonly pincode: string;
+    readonly day: string;
+    readonly checks: number;
+  };
   readonly pincode_directory: {
     readonly pincode: string;
     readonly district: string;
@@ -1610,6 +1623,7 @@ export interface Rows {
     readonly home_place_id: string | null;
     readonly home_lat: number | null;
     readonly home_lng: number | null;
+    readonly reach_min: number | null;
   };
   readonly terms_acceptances: {
     readonly id: string;

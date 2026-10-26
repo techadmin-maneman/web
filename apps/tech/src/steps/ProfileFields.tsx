@@ -87,7 +87,7 @@ export function BaseInCentimetres({ width, length }: { width: Typed; length: Typ
   return <p className={styles.inCentimetres}>{copy.baseInCentimetres(cm(width), cm(length))}</p>;
 }
 
-/** One figure, typed, with the range it must be in said beneath it while it is not. */
+/** One figure, typed; the range it must be in is said beneath it only once it is outside it. */
 export function Figure({
   label,
   value,
@@ -101,15 +101,13 @@ export function Figure({
   hint: string;
   onChange: (text: string) => void;
 }) {
-  // The range always shows, so a figure outside it is never refused without saying why.
   return (
     <Field
       onInk
       className={styles.figure}
       label={label}
-      hint={invalid ? undefined : hint}
       error={invalid ? hint : null}
-      look={{ label: shared.fieldLabel, hint: styles.range, error: shared.hint }}
+      look={{ label: shared.fieldLabel, error: shared.hint }}
     >
       {(control) => (
         <TextInput

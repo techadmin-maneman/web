@@ -7,7 +7,7 @@ import { typeLook } from "@maneman/ui/type";
 import { AddressSearch } from "@maneman/ui/AddressSearch";
 import { Button } from "@maneman/ui/Button";
 import { EditableRow } from "@maneman/ui/EditableRow";
-import { Checkbox, Field, Select } from "@maneman/ui/Field";
+import { Checkbox, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { dayClock } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useRef, useState } from "react";
@@ -174,6 +174,42 @@ function WeekRow(props: { technician: Technician; mayChange: boolean; onChange: 
   );
 }
 
+/** How far they go from home, their own or the business's, changed where it reads (docs/decisions/0223-reach-from-home.md). */
+function ReachRow(props: { technician: Technician; mayChange: boolean; onChange: () => Promise<void> }) {
+  const { technician } = props;
+  return (
+    <EditableRow<string>
+      label={copy.reach}
+      words={EDITING}
+      mayChange={props.mayChange}
+      value={technician.reach_min === null ? copy.businessReach : copy.reachValue(technician.reach_min)}
+      start={() => (technician.reach_min === null ? "" : String(technician.reach_min))}
+      save={async (typed) => {
+        const minutes = typed.trim() === "" ? null : Number(typed);
+        if (minutes !== null && (!Number.isInteger(minutes) || minutes < 10 || minutes > 180)) return copy.errors.reach;
+        const answer = await techniciansApi.setReach(technician.id, minutes);
+        if (!answer.ok) return errorText(copy.errors, answer);
+        await props.onChange();
+        return null;
+      }}
+    >
+      {(control, typed, setTyped) => (
+        <NumberInput
+          {...control}
+          width="figure"
+          inputMode="numeric"
+          min={10}
+          max={180}
+          value={typed}
+          onChange={(event) => {
+            setTyped(event.target.value);
+          }}
+        />
+      )}
+    </EditableRow>
+  );
+}
+
 export function TimeField(props: { label: string; value: string; onChange: (time: string) => void }) {
   return (
     <Field label={props.label}>
@@ -243,6 +279,11 @@ export function Hours({ technician, onChange }: { technician: Technician; onChan
         <WeekRow
           technician={technician}
           mayChange={access.mayCall("POST /api/technicians/{id}/hours")}
+          onChange={onChange}
+        />
+        <ReachRow
+          technician={technician}
+          mayChange={access.mayCall("POST /api/technicians/{id}/reach")}
           onChange={onChange}
         />
       </section>

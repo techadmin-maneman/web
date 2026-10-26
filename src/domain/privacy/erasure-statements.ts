@@ -209,7 +209,7 @@ function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] 
     db
       .prepare(
         `UPDATE task_closures SET reason = NULL
-         WHERE (task_group IN ('partial_visit', 'at_risk_client')
+         WHERE (task_group IN ('partial_visit', 'consumables_short', 'at_risk_client')
                 AND subject_id IN (SELECT id FROM appointments WHERE person_id = ?1))
             OR (task_group = 'city_matter' AND subject_id IN (SELECT id FROM city_matters WHERE person_id = ?1))`,
       )

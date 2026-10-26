@@ -123,6 +123,7 @@ export type DirectoryPincode = Body<paths["/api/pincode-directory/pincodes"]["ge
 export type DirectoryDistrict = Body<paths["/api/pincode-directory/districts"]["get"]>["districts"][number];
 export type PincodeLaunch = Body<paths["/api/pincode-launches"]["get"]>["launches"][number];
 export type LaunchReadiness = Body<paths["/api/pincode-launches/readiness"]["get"]>["checks"][number];
+export type CityReach = Body<paths["/api/service-area/reach"]["get"]>;
 
 /** The consumables, each service's expected use, the job sheet, and the stock (docs/decisions/0087-consumables-and-stock.md). */
 export type Consumables = Body<paths["/api/consumables"]["get"]>;

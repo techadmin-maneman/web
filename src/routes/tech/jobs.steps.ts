@@ -7,7 +7,10 @@ import {
   recordFailedArrival,
   type ArrivalInput,
 } from "../../domain/visits/check-ins.ts";
-import { allConsumables } from "../../domain/inventory/consumables.ts";
+import { allConsumables, offeredForJob, serviceOfJob } from "../../domain/inventory/consumables.ts";
+import { keepShortfall } from "../../domain/field/consumable-shortfalls.ts";
+import { needsReason, shortfallOf, type Shortfall } from "../../policy/consumable-shortfall.ts";
+import { indiaDate } from "../../lib/india-time.ts";
 import { profileLanded, recordAtVisit } from "../../domain/clients/hair-profiles.ts";
 import {
   answerBeforeLanding,
@@ -23,7 +26,7 @@ import { recordJobUse } from "../../domain/field/job-use.ts";
 import { recordPieceUse } from "../../domain/inventory/piece-use.ts";
 import { tellOfLowStock } from "../../domain/inventory/stock.ts";
 import { noShowReadiness, openNoShowCase } from "../../domain/no-shows/no-shows.ts";
-import { closeOneVisit } from "../../domain/visits/one-visit.ts";
+import { closeOneVisit, decisionAtVisit } from "../../domain/visits/one-visit.ts";
 import { progressOf } from "../../domain/field/job-card.ts";
 import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { refuse } from "../../http/errors.ts";
@@ -206,6 +209,34 @@ function registerNoShow(app: App): void {
   });
 }
 
+/** What a consumables step recorded against what the job's service expects, by the expected usage ops set. */
+async function shortfallOfStep(
+  db: D1Database,
+  job: WorkableJob,
+  items: readonly ({ code: string; quantity: number } | { name: string; quantity: number })[],
+  catalogue: readonly { readonly code: string; readonly name: string }[],
+): Promise<Shortfall> {
+  const expected = await offeredForJob(db, await serviceOfJob(db, { id: job.id, type: job.type }), {
+    today: indiaDate(job.windowStart),
+    kit: job.technicianId,
+  });
+  // A line by name, from a phone that queued the step before codes, counts as the consumable of that name.
+  const byName = new Map(catalogue.map((each) => [each.name.toLowerCase(), each.code]));
+  const used = new Map<string, number>();
+  for (const item of items) {
+    const code = "code" in item ? item.code : byName.get(item.name.trim().toLowerCase());
+    if (code !== undefined) used.set(code, (used.get(code) ?? 0) + item.quantity);
+  }
+  const total = items.reduce((sum, item) => sum + item.quantity, 0);
+  // A consultation and fit in one visit is a fit by what was used, unless the client said no at its piece step.
+  if (job.oneVisit !== null) {
+    const decision = await decisionAtVisit(db, job.id);
+    if (decision !== null && "declined" in decision) return { short: [], nothing: false };
+  }
+  const type = job.oneVisit === null ? job.type : "first_fit";
+  return shortfallOf({ type, expected, used, total });
+}
+
 /** The steps on the card: the checklist, what was used, and the piece. */
 function registerSteps(app: App): void {
   // An item ops have taken off since the phone kept the job is still one it may send.
@@ -223,22 +254,31 @@ function registerSteps(app: App): void {
   // it was used. What was used comes out of the technician's kit as the step lands, once however often it does. A
   // hair system is the piece step's, never this one's.
   app.openapi(consumablesRoute, (c) => {
-    const { items } = c.req.valid("json");
+    const { items, short_reason: reason } = c.req.valid("json");
+    let shortfall: Shortfall = { short: [], nothing: false };
     return step(
       c,
       "consumables",
-      async () => {
+      async (job) => {
         const hairSystems = await hairSystemSpecs(c.env.DB);
-        const codes = new Set(
-          (await allConsumables(c.env.DB)).flatMap((consumable) =>
-            hairSystems.has(consumable.code) ? [] : [consumable.code],
-          ),
-        );
-        return items.some((item) => "code" in item && !codes.has(item.code)) ? { invalid: ["items"] } : { items };
+        const catalogue = (await allConsumables(c.env.DB)).filter((consumable) => !hairSystems.has(consumable.code));
+        const codes = new Set(catalogue.map((consumable) => consumable.code));
+        if (items.some((item) => "code" in item && !codes.has(item.code))) return { invalid: ["items"] };
+        shortfall = await shortfallOfStep(c.env.DB, job, items, catalogue);
+        // Less than the service expects, or nothing on a visit that always uses something, is said why (ADR 0222).
+        if (needsReason(shortfall) && reason === undefined) return { invalid: ["short_reason"] };
+        return reason === undefined ? { items } : { items, short_reason: reason };
       },
       async (job) => {
         const { technicianId } = technicianOf(c);
         const { deps } = c.var;
+        await keepShortfall(c.env.DB, {
+          appointmentId: job.id,
+          technicianId,
+          shortfall,
+          reason: reason ?? null,
+          now: deps.now(),
+        });
         const used = await recordJobUse(c.env.DB, { job, technicianId, now: deps.now() });
         await tellOfLowStock(c.env.DB, deps, {
           touched: [technicianId],

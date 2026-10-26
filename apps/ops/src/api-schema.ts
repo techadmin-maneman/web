@@ -3357,6 +3357,319 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/service-area/reach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A city's technicians and how far each goes from home, and its pincodes with the nearest of them */
+        get: {
+            parameters: {
+                query: {
+                    city: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The city's reach */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CityReach"];
+                    };
+                };
+                /** @description invalid_request: no city named */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/service-area/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A city's pincodes and its technicians' reach as one picture */
+        get: {
+            parameters: {
+                query: {
+                    city: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The map */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/png": string;
+                        "image/svg+xml": string;
+                    };
+                };
+                /** @description invalid_request: no city named */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: nothing in the city has a place on the map yet */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description unavailable: no maps provider, today's ceiling reached, or Google could not draw it */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "unavailable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pincode-demand/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The pincodes not served, most waiting first, then most looked up in the last ninety days */
+        get: {
+            parameters: {
+                query?: {
+                    most?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pincodes, in order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NextToOpen"];
+                    };
+                };
+                /** @description invalid_request: most outside 1 to 100 */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pincode-launches/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The pincodes served from a day in the last thirty, with who was told and what has been booked there */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The launches, newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RecentLaunches"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/stock-match": {
         parameters: {
             query?: never;
@@ -10572,7 +10885,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -13228,7 +13541,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "move_unanswered" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                    group: "untold_move" | "move_unanswered" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -13326,7 +13639,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "partial_visit" | "at_risk_client" | "city_matter";
+                    group: "partial_visit" | "consumables_short" | "at_risk_client" | "city_matter";
                     id: string;
                 };
                 cookie?: never;
@@ -14872,6 +15185,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/technicians/{id}/reach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set how far a technician goes from home, in minutes of driving, or return them to the business's with null */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianReach"];
+                };
+            };
+            responses: {
+                /** @description Set */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            reach_min: number | null;
+                        };
+                    };
+                };
+                /** @description invalid_request: a reach outside 10 to 180 minutes */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such technician in the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/technician-pay": {
         parameters: {
             query?: never;
@@ -15579,7 +15990,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
                 };
                 cookie?: never;
             };
@@ -26020,6 +26431,61 @@ export interface components {
             visits: number;
             clients: number;
         };
+        CityReach: {
+            technicians: {
+                id: string;
+                name: string;
+                initials: string;
+                home: {
+                    lat: number;
+                    lng: number;
+                } | null;
+                reach_min: number;
+                reach_km: number;
+            }[];
+            pincodes: {
+                pincode: string;
+                area: string;
+                served: boolean;
+                paused_until: string | null;
+                centre: {
+                    lat: number;
+                    lng: number;
+                } | null;
+                nearest: {
+                    technician_id: string;
+                    minutes: number;
+                } | null;
+                /** @description Whether any reach takes it in; null where nothing could be measured. */
+                reached: boolean | null;
+                /** @description The technicians whose reach takes it in. */
+                reached_by: string[];
+            }[];
+        };
+        NextToOpen: {
+            pincodes: {
+                pincode: string;
+                city: string | null;
+                area: string | null;
+                district: string | null;
+                state: string | null;
+                waiting: number;
+                /** @description Lookups on the site in the last ninety days. */
+                looked: number;
+            }[];
+        };
+        RecentLaunches: {
+            launches: {
+                pincode: string;
+                area: string;
+                city: string;
+                /** Format: date */
+                launched_on: string;
+                told: number;
+                /** @description Visits booked there since, cancelled ones left out. */
+                booked: number;
+            }[];
+        };
         ClientStockMatch: {
             /** @enum {string} */
             kind: "no_profile" | "incomplete" | "custom" | "stocked";
@@ -27049,7 +27515,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;
@@ -27519,6 +27985,8 @@ export interface components {
                 hours: components["schemas"]["WorkingDay"][];
                 /** @description Where their day starts; null until ops set it. */
                 home: components["schemas"]["TechnicianHome"] | null;
+                /** @description Minutes of driving from home they take visits within; null takes the business's (ADR 0223). */
+                reach_min: number | null;
             }[];
             /** @description Technicians switched off, by name: they cannot sign in, and nothing is booked on them. */
             switched_off: {
@@ -27714,7 +28182,7 @@ export interface components {
             lapsed: number;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "move_unanswered" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                group: "untold_move" | "move_unanswered" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -27884,6 +28352,20 @@ export interface components {
             reason_code: string | null;
             /** @description In the words ops gave it, or the job sheet's. */
             reason: string | null;
+        } | {
+            /** @enum {string} */
+            group: "consumables_short";
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @enum {string} */
+            reason: "client_supplies" | "ran_out" | "not_needed" | "other";
+            technician: string;
+            /** @description Each consumable recorded below what was expected; empty where nothing was used. */
+            short: {
+                name: string;
+                expected: number;
+                used: number;
+            }[];
         } | {
             /** @enum {string} */
             group: "at_risk_client";
@@ -28191,6 +28673,9 @@ export interface components {
             place_id: string;
             session_token: string;
         };
+        TechnicianReach: {
+            reach_min: number | null;
+        };
         TechnicianPay: {
             /**
              * Format: date
@@ -28282,7 +28767,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;
@@ -28315,7 +28800,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;

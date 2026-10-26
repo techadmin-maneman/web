@@ -66,7 +66,7 @@ describe("a piece scanned from the kit", () => {
     expect(listed?.units[0]?.lot_code).toBe("HS-1");
 
     await job.workTo("consumables");
-    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
     const step = await job.post(
       `/api/tech/jobs/${JOB}/piece`,
       { piece_code: label, stock_code: other },
@@ -83,7 +83,7 @@ describe("a piece scanned from the kit", () => {
   it("is refused once it has expired", async () => {
     const [label = ""] = await inTheKit(code, { lot_code: "OLD", expires_on: "2026-09-20" });
     await job.workTo("consumables");
-    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
     const step = await job.post(`/api/tech/jobs/${JOB}/piece`, { piece_code: label }, "event-piece-01");
     expect(step.status).toBe(400);
     expect((await step.json<{ error: { fields?: string[] } }>()).error.fields).toEqual(["piece_code"]);
@@ -106,7 +106,7 @@ describe("a piece that comes off", () => {
       ).bind(PERSON, worn, NOW.toISOString()),
     ]);
     await job.workTo("consumables");
-    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
     const step = {
       piece_code: fresh,
       stock_code: code,

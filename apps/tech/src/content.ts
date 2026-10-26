@@ -312,7 +312,8 @@ export const job = {
   landmark: "Landmark",
   // The design draws no client's note; the client leaves one in their app.
   clientNote: (who: string, note: string) => `${who}’s note: ${note}`,
-  // The board draws no way to reach the client from the card.
+  // The board draws no way to reach the client from the card. The buttons say the act; a screen reader hears whom.
+  callShort: "Call",
   call: (who: string) => `Call ${who}`,
   /** A word to the client from our number (docs/decisions/0145-technician-presets.md). */
   tell: {
@@ -328,6 +329,7 @@ export const job = {
     sent: (who: string, time: string) => `${who} updated at ${time}.`,
     noWhatsApp: (who: string) => `${who} doesn’t take WhatsApp updates. Call instead.`,
   },
+  whatsAppShort: "WhatsApp",
   whatsApp: (who: string) => `WhatsApp ${who}`,
   start: "Start job",
   continueJob: "Continue",
@@ -545,6 +547,16 @@ export const steps = {
     none: "None used",
     // The console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).
     nothingOffered: "No consumables to record. Tell ops if you used any.",
+    /** Less than the service expects, or nothing at all on a visit that always uses something: why, for ops. */
+    whyShort: "Less than expected. Why?",
+    whyNone: "Nothing used. Why?",
+    pickWhy: "Pick why to continue",
+    shortReasons: {
+      client_supplies: "Client’s own supplies",
+      ran_out: "Ran out",
+      not_needed: "Not needed",
+      other: "Other",
+    },
   },
   piece: {
     // A label is scanned by its QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).

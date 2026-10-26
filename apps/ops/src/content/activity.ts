@@ -68,6 +68,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "technician.delete": "Technician deleted",
   "technician.hours": "Technician’s hours set",
   "technician.home": "Technician’s day start set",
+  "technician.reach": "Technician’s reach set",
   "technician.pay_grade": "Technician’s grade set",
   "pay_grade.add": "Pay grade added",
   "pay_grade.rename": "Pay grade renamed",

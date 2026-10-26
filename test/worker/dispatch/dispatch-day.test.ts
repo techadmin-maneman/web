@@ -45,6 +45,7 @@ const drivingFor = (minutes: number): RoutesProvider => ({
       polyline: null,
     }),
   map: () => Promise.resolve({ ok: false, detail: "not drawn here" }),
+  areaMap: () => Promise.resolve({ ok: false, detail: "not drawn here" }),
 });
 
 beforeEach(async () => {
@@ -118,6 +119,7 @@ describe("GET /api/dispatch/day", () => {
     const failing: RoutesProvider = {
       route: () => Promise.resolve({ ok: false, detail: "HTTP 500" }),
       map: () => Promise.resolve({ ok: false, detail: "HTTP 500" }),
+      areaMap: () => Promise.resolve({ ok: false, detail: "not drawn here" }),
     };
 
     const body = await (await dayOf(opsWith(failing))).json<DayBody>();

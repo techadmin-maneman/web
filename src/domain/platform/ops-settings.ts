@@ -58,6 +58,8 @@ export interface OpsInputs {
   readonly sameDayBooking: Readonly<Record<VisitType, string>>;
   readonly workingHours: WorkingHours;
   readonly driveEstimate: DriveEstimate;
+  /** Minutes of driving from home a technician takes visits within, unless their own is set (src/policy/reach.ts). */
+  readonly technicianReachMin: number;
   readonly checkinRadiusM: number;
   readonly noShowWaitMin: Waits;
   readonly phoneClock: PhoneClock;
@@ -138,6 +140,7 @@ function shape(values: OpsValues): OpsInputs {
     sameDayBooking: values.same_day_booking,
     workingHours: values.working_hours,
     driveEstimate: values.drive_estimate,
+    technicianReachMin: values.technician_reach_min,
     checkinRadiusM: values.checkin_radius_m,
     noShowWaitMin: values.no_show_wait_min,
     phoneClock: values.phone_clock,

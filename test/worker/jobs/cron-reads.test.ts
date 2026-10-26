@@ -63,6 +63,9 @@ const IF_ERASED = `CASE WHEN i % 10 = 0 THEN '${AGO}' END`;
  * statements name has no row here.
  */
 const HISTORY = [
+  // A year of lookups, which housekeeping keeps once a day and the Tasks board never reads.
+  `INSERT INTO pincode_demand (pincode, day, checks)
+   SELECT printf('%06d', 400000 + i), '${AGO.slice(0, 10)}', 1 FROM n`,
   // Launches gone live long ago, each of the one pincode, which the launches job must not read again.
   `INSERT OR IGNORE INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122002', 'DLF Phase 1', 'Gurgaon', 1)`,
   `INSERT INTO pincode_launches (id, city, go_live_on, state, created_by, created_at, live_at, alerted)
@@ -176,6 +179,9 @@ const HISTORY = [
      fsm_write_state, updated_at)
    SELECT 'je-' || i, 'a-' || i, 'event-' || i, 't-history', 'outcome', '{}', '${AGO}', '${AGO}', 'written', '${AGO}'
    FROM n`,
+  // Shortfalls ops closed long ago, which the Tasks board's queue must not read again.
+  `INSERT INTO consumable_shortfalls (appointment_id, technician_id, reason, short, recorded_at, settled_at)
+   SELECT 'a-' || i, 't-history', 'ran_out', '[]', '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at)
    SELECT 'cu-' || i, 'a-' || i, 'je-' || i, 'Bond strip', 2, '${AGO}' FROM n`,
   `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at)

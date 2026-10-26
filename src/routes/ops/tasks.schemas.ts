@@ -1,5 +1,6 @@
 // What each task on the board turns on, by its group (src/domain/ops/task-facts.ts), as GET /api/tasks answers it.
 
+import { SHORT_REASONS } from "../../policy/consumable-shortfall.ts";
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
@@ -55,6 +56,14 @@ export const TaskFactsSchema = z
       kind,
       reason_code: z.string().nullable(),
       reason: z.string().nullable().openapi({ description: "In the words ops gave it, or the job sheet's." }),
+    }),
+    facts("consumables_short", {
+      kind,
+      reason: z.enum(SHORT_REASONS),
+      technician: z.string(),
+      short: z
+        .array(z.object({ name: z.string(), expected: z.number(), used: z.number() }).strict())
+        .openapi({ description: "Each consumable recorded below what was expected; empty where nothing was used." }),
     }),
     facts("at_risk_client", { last_visit_at: instant, due_on: day }),
     facts("first_fit_to_book", {

@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createLogger } from "../../../src/log.ts";
-import { createGoogleRoutes, staticMapQuery } from "../../../src/providers/routes/google.ts";
+import { areaMapQuery, createGoogleRoutes, staticMapQuery } from "../../../src/providers/routes/google.ts";
 
 const log = createLogger();
 beforeEach(() => {
@@ -91,6 +91,28 @@ describe("the day's map", () => {
     ]);
     // One stop has no road to draw.
     expect(query.getAll("path")).toEqual(["color:0x1f6febcc|weight:4|enc:abc~"]);
+    expect(query.has("key")).toBe(false);
+  });
+
+  // A city's map (ADR 0223): each group of pincodes as small markers, each home labelled, each reach a filled circle.
+  it("draws a city's pincodes by group, each home, and each reach as a closed circle", () => {
+    const query = areaMapQuery({
+      pincodes: [
+        { colour: "2e7d32", points: [NEXT, LAST] },
+        { colour: "c62828", points: [] },
+      ],
+      homes: [{ colour: "1b2a49", label: "I", point: HOME }],
+      reaches: [{ colour: "1b2a49", centre: HOME, km: 10 }],
+    });
+    expect(query.getAll("markers")).toEqual([
+      "size:tiny|color:0x2e7d32|28.40890,77.04180|28.42110,77.05990",
+      "color:0x1b2a49|label:I|28.45950,77.02660",
+    ]);
+    const [circle = ""] = query.getAll("path");
+    const corners = circle.split("|").slice(3);
+    expect(circle.startsWith("color:0x1b2a4966|weight:1|fillcolor:0x1b2a4922|")).toBe(true);
+    expect(corners).toHaveLength(25);
+    expect(corners[0]).toBe(corners[24]);
     expect(query.has("key")).toBe(false);
   });
 

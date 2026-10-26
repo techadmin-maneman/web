@@ -114,6 +114,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "checkins",
       "visit_outcomes",
       "consumables_used",
+      "consumable_shortfalls",
       "no_show_cases",
       "no_show_disputes",
       "no_show_refunds",
@@ -268,6 +269,12 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     tables: ["last_visits", "ops_settings_snapshot", "stock_balances", "stock_lot_balances"],
     leftAtT: "Nothing of their own: triggers keep each from the table it is worked out from",
     putBackBy: "Putting back that table",
+  },
+  {
+    what: "Demand looked up",
+    tables: ["pincode_demand"],
+    leftAtT: "Lookups since are not counted, so a pincode looked up since ranks a little lower to open next",
+    putBackBy: "Nothing: the counts rank, they decide nothing",
   },
   {
     what: "Launches scheduled",

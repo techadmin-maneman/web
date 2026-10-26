@@ -22,6 +22,7 @@ export const RULE_GROUPS = [
       "same_day_booking",
       "working_hours",
       "drive_estimate",
+      "technician_reach_min",
       "payment_hold",
       "booking_days",
       "payment_links",

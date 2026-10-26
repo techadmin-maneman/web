@@ -8,7 +8,7 @@
 // The daily ceilings (src/policy/rate-limits.ts) keep a month far inside the free allowance.
 
 import { z } from "zod";
-import type { Leg, MapResult, MapRoute, Point, RouteResult, RoutesProvider } from "./index.ts";
+import type { AreaMap, Leg, MapResult, MapRoute, Point, RouteResult, RoutesProvider } from "./index.ts";
 import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "../vendor-fetch.ts";
 
 const ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
@@ -51,6 +51,36 @@ const legOf = (leg: { duration: string; distanceMeters?: number }): Leg => ({
 });
 
 const at = (point: Point) => `${point.lat.toFixed(5)},${point.lng.toFixed(5)}`;
+
+/** A circle of `km` about a point, as the corners of a polygon a static map fills. */
+function circleOf(centre: Point, km: number): string {
+  const corners = 24;
+  const latKm = 111.32;
+  const lngKm = latKm * Math.cos((centre.lat * Math.PI) / 180);
+  return Array.from({ length: corners + 1 }, (_, index) => {
+    const angle = (2 * Math.PI * index) / corners;
+    return at({ lat: centre.lat + (km / latKm) * Math.sin(angle), lng: centre.lng + (km / lngKm) * Math.cos(angle) });
+  }).join("|");
+}
+
+/** The area picture's address, without the key: each group of pincodes, each home, and each reach. */
+export function areaMapQuery(area: AreaMap): URLSearchParams {
+  const query = new URLSearchParams({ size: "640x400", scale: "2", region: "in", format: "png" });
+  for (const reach of area.reaches) {
+    query.append(
+      "path",
+      `color:0x${reach.colour}66|weight:1|fillcolor:0x${reach.colour}22|${circleOf(reach.centre, reach.km)}`,
+    );
+  }
+  for (const group of area.pincodes) {
+    if (group.points.length > 0)
+      query.append("markers", `size:tiny|color:0x${group.colour}|${group.points.map(at).join("|")}`);
+  }
+  for (const home of area.homes) {
+    query.append("markers", `color:0x${home.colour}|label:${home.label}|${at(home.point)}`);
+  }
+  return query;
+}
 
 /** The picture's address, without the key: each stop a marker in its route's colour, numbered, and the road drawn. */
 export function staticMapQuery(routes: readonly MapRoute[]): URLSearchParams {
@@ -101,20 +131,23 @@ export function createGoogleRoutes(apiKey: string, deps: VendorFetchDependencies
       return { ok: true, legs: route.legs.map(legOf), polyline: route.polyline?.encodedPolyline ?? null };
     },
 
-    async map(routes): Promise<MapResult> {
-      const query = staticMapQuery(routes);
-      query.set("key", apiKey);
-      const response = await vendorFetch(
-        deps,
-        { vendor: "google", step: "static_map", timeoutMs: TIMEOUT_MS },
-        `${STATIC_MAP_URL}?${query.toString()}`,
-      );
-      if (response instanceof VendorUnreachable) return { ok: false, detail: response.message };
-      const contentType = response.headers.get("Content-Type") ?? "";
-      if (!response.ok || !contentType.startsWith("image/")) {
-        return { ok: false, detail: `HTTP ${String(response.status)}` };
-      }
-      return { ok: true, image: await response.arrayBuffer(), contentType };
-    },
+    map: (routes) => staticMap(deps, apiKey, staticMapQuery(routes)),
+    areaMap: (area) => staticMap(deps, apiKey, areaMapQuery(area)),
   };
+}
+
+/** A static map's picture, or why there is none. */
+async function staticMap(deps: VendorFetchDependencies, apiKey: string, query: URLSearchParams): Promise<MapResult> {
+  query.set("key", apiKey);
+  const response = await vendorFetch(
+    deps,
+    { vendor: "google", step: "static_map", timeoutMs: TIMEOUT_MS },
+    `${STATIC_MAP_URL}?${query.toString()}`,
+  );
+  if (response instanceof VendorUnreachable) return { ok: false, detail: response.message };
+  const contentType = response.headers.get("Content-Type") ?? "";
+  if (!response.ok || !contentType.startsWith("image/")) {
+    return { ok: false, detail: `HTTP ${String(response.status)}` };
+  }
+  return { ok: true, image: await response.arrayBuffer(), contentType };
 }

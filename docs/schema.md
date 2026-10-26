@@ -25,7 +25,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
-| Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visit_outcomes`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
+| Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visit_outcomes`, `consumables_used`, `consumable_shortfalls`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
@@ -40,6 +40,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Cycle counts | `count_tasks`, `count_lines` | A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning | Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought |
 | The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
+| Demand looked up | `pincode_demand` | Lookups since are not counted, so a pincode looked up since ranks a little lower to open next | Nothing: the counts rank, they decide nothing |
 | Launches scheduled | `pincode_launches`, `pincode_launch_pincodes` | A launch scheduled or cancelled since is gone or back, and one the cron served since is scheduled again, though its pincodes stay served and those waiting told | Scheduling or cancelling it again in Areas; one served since, marking it live is the cron's next run |
 | India Post's pincodes | `pincode_directory` | A quarter's refresh since is undone, so the console offers India Post's pincodes as they were | Loading the file again: `node scripts/ops/load-pincode-directory.ts <environment>` |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
@@ -68,6 +69,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [city_settings](#city_settings): A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
+- [consumable_shortfalls](#consumable_shortfalls): A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).
 - [consumable_usage](#consumable_usage): What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
 - [consumables](#consumables): The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 - [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
@@ -125,6 +127,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [piece_returns](#piece_returns): Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
 - [pieces](#pieces): Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
+- [pincode_demand](#pincode_demand): How often each pincode we do not serve is looked up on the site, a count a day, with nobody's data; Areas ranks the next to open by it (ADR 0224).
 - [pincode_directory](#pincode_directory): India Post's pincodes across India, one row each: its district, state, post offices and a point, refreshed each quarter from data.gov.in; ops open a city from it, and it holds nobody's data (ADR 0220).
 - [pincode_launch_pincodes](#pincode_launch_pincodes): The pincodes each launch serves, one row each (ADR 0221).
 - [pincode_launches](#pincode_launches): A launch ops schedule: pincodes of one city served from a later day, which the cron serves on the day; scheduled, then live or cancelled, never deleted (ADR 0221).
@@ -651,6 +654,25 @@ Indexes:
 - A `UNIQUE` constraint: unique on (`person_id`, `requested_date`, `requested_window`)
 
 Triggers: `consultation_requests_booked_asked`.
+
+## consumable_shortfalls
+
+A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).
+
+Made by `0198_consumable_shortfalls.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `appointment_id` | TEXT | no |  | primary key |  |
+| `technician_id` | TEXT | no |  |  |  |
+| `reason` | TEXT | no |  |  |  |
+| `short` | TEXT | no |  |  | Each consumable recorded below what was expected: [{"code", "expected", "used"}]; empty where nothing was used. |
+| `recorded_at` | TEXT | no |  |  |  |
+| `settled_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `consumable_shortfalls_open`: on (`recorded_at`), where `settled_at IS NULL`
 
 ## consumable_usage
 
@@ -2054,6 +2076,22 @@ Indexes:
 
 Triggers: `pieces_replacement_booked_added`, `pieces_replacement_booked_changed`.
 
+## pincode_demand
+
+How often each pincode we do not serve is looked up on the site, a count a day, with nobody's data; Areas ranks the next to open by it (ADR 0224).
+
+Made by `0200_pincode_demand.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `pincode` | TEXT | no |  | primary key |  |
+| `day` | TEXT | no |  | primary key | India's date. |
+| `checks` | INTEGER | no |  |  |  |
+
+Indexes:
+
+- `pincode_demand_by_day`: on (`day`)
+
 ## pincode_directory
 
 India Post's pincodes across India, one row each: its district, state, post offices and a point, refreshed each quarter from data.gov.in; ops open a city from it, and it holds nobody's data (ADR 0220).
@@ -3324,7 +3362,7 @@ Indexes:
 
 Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`, `0106_technician_test_record.sql`, `0107_city_blackouts_and_fitters.sql`, `0108_technician_pay.sql`, `0133_stock_places.sql`, `0187_technician_days.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`, `0106_technician_test_record.sql`, `0107_city_blackouts_and_fitters.sql`, `0108_technician_pay.sql`, `0133_stock_places.sql`, `0187_technician_days.sql`, `0199_technician_reach.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3346,6 +3384,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `home_place_id` | TEXT | yes |  |  |  |
 | `home_lat` | REAL | yes |  |  |  |
 | `home_lng` | REAL | yes |  |  |  |
+| `reach_min` | INTEGER | yes |  |  | How far a technician goes from home, in minutes of driving by the estimate booking plans with (docs/decisions/0223-reach-from-home.md). Null takes the ops setting's. |
 
 Indexes:
 

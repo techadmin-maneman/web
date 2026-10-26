@@ -4015,6 +4015,11 @@ export interface components {
                 name: string;
                 quantity: number;
             })[];
+            /**
+             * @description Why less was used than the service expects, or nothing on a visit that always uses something; refused, fields short_reason, when it is owed and left out (docs/decisions/0222-consumables-short-of-expected.md).
+             * @enum {string}
+             */
+            short_reason?: "client_supplies" | "ran_out" | "not_needed" | "other";
         };
         PieceRequest: components["schemas"]["PieceFitted"] | components["schemas"]["PieceDeclined"];
         /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */

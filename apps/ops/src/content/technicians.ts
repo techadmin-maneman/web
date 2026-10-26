@@ -66,6 +66,11 @@ export const technicians = {
     noHome: "Not set",
     setHome: "Set where their day starts",
     changeHome: "Change",
+    /** How far they go from home: their own, or the business's from Settings (docs/decisions/0223-reach-from-home.md). */
+    reach: "Reach from home",
+    reachValue: (minutes: number) => `${String(minutes)} min driving`,
+    /** No reach of their own: the business's, from Settings. An empty box returns them to it. */
+    businessReach: "The business’s",
     search: {
       label: "Search for a place",
       unavailable: "Search isn’t working right now. Try again shortly.",
@@ -77,6 +82,7 @@ export const technicians = {
       invalid_request: "Pick at least one time that ends after it starts.",
       no_days: "Pick at least one day.",
       ends: "The day ends after it starts.",
+      reach: "10 to 180 minutes, or empty for the business’s.",
       not_found: changed("No longer exists."),
       unavailable: "Google couldn’t place it. Try another search.",
       offline: OFFLINE,

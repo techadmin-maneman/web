@@ -189,8 +189,13 @@ export function JobCard({ job }: { job: Job }) {
         </ButtonLink>
         {client !== null && (
           <div className={shared.reach}>
-            <ButtonLink variant="outlineOnInk" size="control" href={callLink(client.mobile)}>
-              {copy.call(firstNameOf(client.name))}
+            <ButtonLink
+              variant="outlineOnInk"
+              size="control"
+              href={callLink(client.mobile)}
+              aria-label={copy.call(firstNameOf(client.name))}
+            >
+              {copy.callShort}
             </ButtonLink>
             <ButtonLink
               variant="outlineOnInk"
@@ -198,8 +203,9 @@ export function JobCard({ job }: { job: Job }) {
               href={whatsappChat(client.mobile)}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={copy.whatsApp(firstNameOf(client.name))}
             >
-              {copy.whatsApp(firstNameOf(client.name))}
+              {copy.whatsAppShort}
             </ButtonLink>
           </div>
         )}

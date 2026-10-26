@@ -112,7 +112,7 @@ export async function working(
     if (step === "piece" || step === "checklist") return;
     await post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-01");
     if (step === "consumables") return;
-    await post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
     if (type === "consultation") return;
     await post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
   };
