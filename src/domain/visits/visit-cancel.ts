@@ -177,7 +177,7 @@ async function writeCancel(db: D1Database, terms: ChangeTerms, change: CancelOf,
     message.statement,
     ...restoredCredit(db, terms, change, now),
     ...auditedCancel(db, change, now),
-    ...visitUpkeep(db, { visits: [visit.id] }),
+    ...visitUpkeep(db, { visits: [visit.id] }, now.toISOString()),
   ]);
   return claimed?.meta.changes === 1 ? message.id : null;
 }

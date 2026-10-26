@@ -1,6 +1,7 @@
 // What a client may book, and the days and windows still open to them, with who could take each.
 
 import { paidNotBooked } from "./hold-stages.ts";
+import { remakesOwed } from "./remakes.ts";
 import { windowsFitting, type BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
@@ -47,9 +48,14 @@ interface StageRow {
  * A consultation or a first fit is booked once at a time: not while one is still to happen (liveVisitOf).
  */
 export async function bookableTypes(db: D1Database, personId: string, now: Date): Promise<VisitType[]> {
-  const row = await db.prepare(STAGE).bind(personId, todayStartsOf(now)).first<StageRow>();
-  if (row?.fitted === 1) return ["service", "replacement"];
-  if (row?.consulted === 1) return row.first_fit_live === 1 ? [] : ["first_fit"];
+  // A fit or a replacement owed free is booked by ops, its payment kept with it: the client is sold no other meanwhile.
+  const [row, owed] = await Promise.all([
+    db.prepare(STAGE).bind(personId, todayStartsOf(now)).first<StageRow>(),
+    remakesOwed(db, personId),
+  ]);
+  const owes = (kind: "first_fit" | "replacement") => owed.some((remake) => remake.kind === kind);
+  if (row?.fitted === 1) return owes("replacement") ? ["service"] : ["service", "replacement"];
+  if (row?.consulted === 1) return row.first_fit_live === 1 || owes("first_fit") ? [] : ["first_fit"];
   return row?.consultation_live === 1 ? [] : ["consultation"];
 }
 

@@ -28,9 +28,9 @@ export async function jobRecordOf(db: D1Database, step: LandingStep): Promise<D1
   const at = step.now.toISOString();
   switch (step.kind) {
     case "check_in":
-      return [moveVisit(db, step.visit.id, "check_in", at), ...visitUpkeep(db, { visits: [step.visit.id] })];
+      return [moveVisit(db, step.visit.id, "check_in", at), ...visitUpkeep(db, { visits: [step.visit.id] }, at)];
     case "start":
-      return [moveVisit(db, step.visit.id, "start", at), ...visitUpkeep(db, { visits: [step.visit.id] })];
+      return [moveVisit(db, step.visit.id, "start", at), ...visitUpkeep(db, { visits: [step.visit.id] }, at)];
     case "outcome":
       return closingStatements(db, step);
     case "piece":
@@ -58,7 +58,7 @@ async function closingStatements(db: D1Database, step: LandingStep): Promise<D1P
   return [
     moveVisit(db, step.visit.id, outcome, at),
     closeVisit({ db, appointmentId: step.visit.id, outcome, times, partialReason: reason, lostReason, goingAhead, at }),
-    ...visitUpkeep(db, { visits: [step.visit.id] }),
+    ...visitUpkeep(db, { visits: [step.visit.id] }, at),
   ];
 }
 

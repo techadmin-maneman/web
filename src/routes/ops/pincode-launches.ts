@@ -14,7 +14,8 @@ import { opsRoute } from "../../http/session-routes.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { reachesCity } from "../../policy/access.ts";
 
-const PINCODE = z.string().regex(/^[1-9]\d{5}$/);
+/** One the service area can serve, as its own routes take it: 9 begins the Army Postal Service's, no address. */
+const PINCODE = z.string().regex(/^[1-8]\d{5}$/);
 const PINCODES = z.array(PINCODE).min(1).max(300);
 /** A query naming pincodes, one or several times. */
 const PINCODES_QUERY = z

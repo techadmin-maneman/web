@@ -363,7 +363,7 @@ async function writeNewBooking({
     ...(hold.one_visit === 1
       ? []
       : [onPackageBooked(db, { personId: hold.person_id, type: hold.type, tier: hold.tier })]),
-    ...visitUpkeep(db, { visits: [visit.id] }),
+    ...visitUpkeep(db, { visits: [visit.id] }, at),
   ]);
   const booked = await bookingHoldRow(db, hold.id);
   if (booked === null) return;

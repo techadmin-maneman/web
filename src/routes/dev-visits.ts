@@ -57,7 +57,7 @@ export function registerDevVisits(app: App): void {
     const [moved] = await db.batch([
       moveVisit(db, id, outcome, at),
       closeVisit({ db, appointmentId: id, outcome, times, partialReason: null, at }),
-      ...visitUpkeep(db, { visits: [id] }),
+      ...visitUpkeep(db, { visits: [id] }, at),
     ]);
     // The board version's trigger counts among the changes, so any change at all is the move.
     if ((moved?.meta.changes ?? 0) === 0) return refuse(c, "not_changeable");

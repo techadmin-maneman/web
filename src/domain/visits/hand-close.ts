@@ -99,7 +99,7 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
       byHand: close.byHand,
     }),
     auditStatementIfClosed(db, close.audit, now, close.appointmentId),
-    ...visitUpkeep(db, { visits: [close.appointmentId] }),
+    ...visitUpkeep(db, { visits: [close.appointmentId] }, at),
   ]);
   if (moved === undefined || moved.meta.changes === 0) return { kind: "refused", code: "already_closed" };
   if (close.outcome === "done" && visit.one_visit !== null) {
@@ -132,7 +132,7 @@ async function closeAsNoShow(db: D1Database, close: HandClose, visit: ClosingVis
       byHand: close.byHand,
     }),
     auditStatementIfClosed(db, close.audit, now, close.appointmentId),
-    ...visitUpkeep(db, { visits: [close.appointmentId] }),
+    ...visitUpkeep(db, { visits: [close.appointmentId] }, at),
   ]);
   if (moved === undefined || moved.meta.changes === 0) return { kind: "refused", code: "already_closed" };
   await openNoShowCase(db, {

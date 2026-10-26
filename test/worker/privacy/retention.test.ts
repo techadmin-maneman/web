@@ -67,6 +67,17 @@ describe("a person who never became a client", () => {
   });
 });
 
+describe("a person who becomes a client", () => {
+  it("is one from the time of the write that put their first visit on the books, by the app's clock", async () => {
+    await person("30001");
+    await aVisit({ id: "ap-3", person_id: "30001" });
+    const row = await env.DB.prepare("SELECT client_since FROM people WHERE id = '30001'").first<{
+      client_since: string;
+    }>();
+    expect(row?.client_since).toBe(NOW.toISOString());
+  });
+});
+
 describe("the hourly retention job", () => {
   it("erases a dormant person as any erasure does, in the system's name", async () => {
     await person("50001");

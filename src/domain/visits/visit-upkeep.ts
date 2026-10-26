@@ -21,9 +21,9 @@ export const boardMoved = (db: D1Database): D1PreparedStatement =>
 
 /**
  * The statements that keep up what a write to visits moves, to follow the write in its batch: the board's version,
- * and the figures of the people `whose` names, worked out again for them alone.
+ * and the figures of the people `whose` names, worked out again for them alone. `at` is the write's own time.
  */
-export function visitUpkeep(db: D1Database, whose: Whose): D1PreparedStatement[] {
+export function visitUpkeep(db: D1Database, whose: Whose, at: string): D1PreparedStatement[] {
   const named = "visits" in whose ? whose.visits : whose.people.filter((each): each is string => each !== null);
   const people = "visits" in whose ? WHOSE_VISITS : WHOSE_PEOPLE;
   const list = JSON.stringify([...new Set(named)]);
@@ -67,6 +67,6 @@ export function visitUpkeep(db: D1Database, whose: Whose): D1PreparedStatement[]
          WHERE person_id IN (${people}) AND replacement_due_at IS NOT NULL`,
       )
       .bind(list),
-    becameClients(db, people, list),
+    becameClients(db, people, list, at),
   ];
 }

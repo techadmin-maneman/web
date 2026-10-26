@@ -13,7 +13,7 @@
 import { packagesPastHorizon } from "../../domain/booking/packages.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
-import { setOpsSetting, settingStates } from "../../domain/platform/ops-settings.ts";
+import { forgetOpsInputs, setOpsSetting, settingStates } from "../../domain/platform/ops-settings.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -215,6 +215,8 @@ export function registerOpsSettings(app: App): void {
       });
     }
 
+    // The next call on this isolate reads the new value: an order approved straight after reads the rule just set.
+    forgetOpsInputs();
     const states = await settingStates(c.env.DB);
     const state = states.find((each) => each.setting.name === setting.name);
     if (state === undefined) throw new Error("the register lost a setting between writing and reading it");
