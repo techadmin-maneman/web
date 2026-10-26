@@ -214,13 +214,14 @@ export async function openCities(
         await drawer.getByRole("button", { name: areasCopy.served.save }).click();
         // A save that marks a pincode live goes through the launch panel, which says who it messages.
         const send = desk.page.getByRole("button", { name: /^(Mark live|Send to \d+|Save and send to \d+)$/ });
-        if (
-          await send
-            .first()
-            .isVisible()
-            .catch(() => false)
-        )
-          await send.first().click();
+        const asked = await send
+          .first()
+          .waitFor({ timeout: 3_000 })
+          .then(
+            () => true,
+            () => false,
+          );
+        if (asked) await send.first().click();
         await ops.must("POST", "/api/service-area", {
           changes: rest.map((each) => ({ pincode: each.pincode, served: true, launch_on: null })),
         });
