@@ -25,6 +25,7 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 | `local.ts`           | the cron, Razorpay's webhook, a technician's close and a client's WhatsApp message, locally              | `npm run tick`, `pay:local`, `close:local`, `message:local` | the local database |
 | `seed-local.ts`      | enough of the story to click through, with a supplier, an order and two chats (`seed-stock-and-care.ts`) | `npm run db:seed:local`                                     | the local database |
 | `serve-*.ts`         | serves a built site or app as its Worker does, `/api/*` passed to mm-api                                 | `dev:all`, and the browser tests                            | no                 |
+| `timelapse.ts`       | six months of the business on a fresh database, on ports of its own (`e2e/timelapse/`)                   | `node scripts/dev/timelapse.ts`                             | the local database |
 
 ## build/
 
