@@ -5,10 +5,10 @@ import { MICRO_PER_RUPEE, paiseOf } from "../config/currencies.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 
 /**
- * A rupee order worth more than this needs a second approver until ops set their own amount in the console. Nought:
- * every order needs two, so nothing goes out on one person's word before ops decide otherwise.
+ * A rupee order worth more than this needs a second approver until ops set their own amount in the console: an
+ * everyday order of stock goes out on one manager's word, a large one on two.
  */
-export const PO_SECOND_APPROVAL_ABOVE_RUPEES = 0;
+export const PO_SECOND_APPROVAL_ABOVE_RUPEES = 50_000;
 
 /**
  * Rupees to one unit of a supplier's currency, as ops set them for approvals, by currency code. Nought, or no rate,

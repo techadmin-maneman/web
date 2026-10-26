@@ -22,10 +22,16 @@ const recorded = (sql: string, values: readonly Value[] = []): Recorded => ({
 /** Stands in for D1, keeping each statement prepared and what it is bound to rather than running it. */
 const RECORDING = { prepare: (sql: string) => recorded(sql) } as unknown as D1Database;
 
+/** A seed's visits are on the books from when it runs, by the database's own clock. */
+const SEEDED_AT = "__seeded_at__";
+const DATABASE_NOW = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
+
 export function visitUpkeepSql(whose: Whose): string[] {
-  return visitUpkeep(RECORDING, whose).map((statement) => {
+  return visitUpkeep(RECORDING, whose, SEEDED_AT).map((statement) => {
     const { sql, values } = statement as unknown as Recorded;
-    const text = sql.replace(/\?(\d+)/g, (_, index: string) => sqlLiteral(values[Number(index) - 1] ?? null));
+    const text = sql
+      .replace(/\?(\d+)/g, (_, index: string) => sqlLiteral(values[Number(index) - 1] ?? null))
+      .replaceAll(sqlLiteral(SEEDED_AT), DATABASE_NOW);
     return `${text.replace(/\s+/g, " ").trim()};`;
   });
 }

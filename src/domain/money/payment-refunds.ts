@@ -65,6 +65,8 @@ export async function refundPayment(
     });
     return { kind: "left_to_ops" };
   }
+  // Razorpay answered the receipt with the refund it already made: a second press before its webhook landed.
+  if (outcome.refundId === null) return { kind: "nothing_left" };
   await auditStatement(
     db,
     {

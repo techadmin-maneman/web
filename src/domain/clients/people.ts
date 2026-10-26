@@ -35,15 +35,16 @@ export function personByMobile(db: D1Database, person: TypedPerson): D1PreparedS
 }
 
 /**
- * When each person `whose` selects became a client: stamped the first time a visit of theirs is on the books, and
- * never again. `whose` is SQL over ?1, which `list` binds, as a visit's write names the people it moved.
+ * When each person `whose` selects became a client: stamped `at`, the write's own time, the first time a visit of
+ * theirs is on the books, and never again. `whose` is SQL over ?1, which `list` binds, as a visit's write names the
+ * people it moved.
  */
-export function becameClients(db: D1Database, whose: string, list: string): D1PreparedStatement {
+export function becameClients(db: D1Database, whose: string, list: string, at: string): D1PreparedStatement {
   return db
     .prepare(
-      `UPDATE people SET client_since = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+      `UPDATE people SET client_since = ?2
        WHERE id IN (${whose}) AND client_since IS NULL
          AND EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = people.id)`,
     )
-    .bind(list);
+    .bind(list, at);
 }

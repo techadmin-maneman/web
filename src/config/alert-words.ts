@@ -91,6 +91,9 @@ export const ALERT_WORDS = {
   razorpay_catch_up_not_booked: (a: { readonly booking: string; readonly reason: string }) =>
     `Book the visit for the client, or refund the payment in Razorpay's dashboard: booking ${a.booking} is paid ` +
     `for, and could be neither booked nor refunded (${a.reason}).`,
+  razorpay_catch_up_refused: (a: { readonly about: string; readonly reason: string }) =>
+    `Look up ${a.about} in Razorpay's dashboard: Razorpay refused our question about it (${a.reason}), so the ` +
+    `hourly catch-up passes it by until it is put right.`,
   razorpay_payment_unheard: (a: {
     readonly next: string;
     readonly payment: string;

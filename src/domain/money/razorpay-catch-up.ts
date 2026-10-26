@@ -15,6 +15,7 @@ import type { CallBudget } from "../../lib/call-budget.ts";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
+import { ProviderError } from "../../providers/provider-error.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../../providers/payments/razorpay.ts";
 import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
 import { recordBookingConsents } from "../privacy/booking-consents.ts";
@@ -91,6 +92,8 @@ interface FoundPaid {
 
 /** One question for Razorpay: the calls it may take, and asking it, which answers whether a payment was found. */
 interface Question {
+  /** What is asked about, as ops are told of it: "hold <id>", "link <id>" or "custom order <id>". */
+  readonly about: string;
   readonly calls: number;
   readonly ask: () => Promise<boolean>;
 }
@@ -103,23 +106,45 @@ export async function catchUpWithRazorpay(
   now: Date,
 ): Promise<number> {
   const aboutHolds = (await holdsToAsk(db, now)).map((hold): Question => ({
+    about: `hold ${hold.id}`,
     calls: callsForHold(hold),
     ask: () => askAboutHold(db, deps, hold, now),
   }));
   const aboutLinks = (await linksToAsk(db, now)).map((link): Question => ({
+    about: `link ${link.id}`,
     calls: CALLS_PER_LINK,
     ask: () => askAboutLink(db, deps, link, now),
   }));
   const aboutCustomOrders = (await customOrdersToAsk(db, now)).map((order): Question => ({
+    about: `custom order ${order.id}`,
     calls: CALLS_PER_LINK,
     ask: () => askAboutCustomOrder(db, deps, order, now),
   }));
   let found = 0;
   for (const question of takingTurns(aboutHolds, aboutLinks, aboutCustomOrders)) {
     if (!budget.spend(question.calls)) return found;
-    if (await question.ask()) found += 1;
+    if (await askedAlone(deps, question)) found += 1;
   }
   return found;
+}
+
+/**
+ * One question asked on its own: each is marked asked before Razorpay is read, so one that fails waits its hour, and
+ * the pass goes on to the rest. Razorpay refusing one (a link it no longer knows) is told to ops once; a failure of
+ * Razorpay itself ends the pass, as the next questions would meet it too.
+ */
+async function askedAlone(deps: CatchUpDeps, question: Question): Promise<boolean> {
+  try {
+    return await question.ask();
+  } catch (error) {
+    if (!(error instanceof ProviderError) || !error.refusal) throw error;
+    deps.log.warn("razorpay_catch_up_refused", { about: question.about, status: error.status });
+    await deps.alertOnce({
+      key: `razorpay_catch_up:${question.about}`,
+      message: ALERT_WORDS.razorpay_catch_up_refused({ about: question.about, reason: error.said }),
+    });
+    return false;
+  }
 }
 
 /** A hold, then a link, then a custom order, and so on, so that no kind takes every call of a run while the rest wait. */

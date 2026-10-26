@@ -54,16 +54,28 @@ describe("what the routes that read them do", () => {
     expect((await read(env.DB, NOW)).checkinRadiusM).toBe(150);
   });
 
-  it("holds it for a minute and no longer, so a change lands without a deploy", async () => {
+  it("holds a change another isolate made for a minute and no longer, so it lands without a deploy", async () => {
     const read = createCachedOpsInputs();
     expect((await read(env.DB, NOW)).checkinRadiusM).toBe(COMMITTED.checkinRadiusM);
 
-    await post("/api/settings/checkin_radius_m", { value: 150 });
+    // Written as another isolate's request writes it: the store changes, this isolate is not told.
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('checkin_radius_m', '150', 'ops@maneman.test', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
     // Inside the window the isolate still answers what it read.
     expect((await read(env.DB, new Date(NOW.getTime() + SETTINGS_TTL_MS - 1))).checkinRadiusM).toBe(
       COMMITTED.checkinRadiusM,
     );
     expect((await read(env.DB, new Date(NOW.getTime() + SETTINGS_TTL_MS))).checkinRadiusM).toBe(150);
+  });
+
+  it("reads a change made through Settings at once, on the isolate that made it", async () => {
+    const read = createCachedOpsInputs();
+    expect((await read(env.DB, NOW)).checkinRadiusM).toBe(COMMITTED.checkinRadiusM);
+    await post("/api/settings/checkin_radius_m", { value: 150 });
+    expect((await read(env.DB, NOW)).checkinRadiusM).toBe(150);
   });
 
   it("falls back to the committed figures when the store cannot be read, and never to a nought", async () => {

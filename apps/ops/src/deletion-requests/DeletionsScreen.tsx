@@ -26,6 +26,7 @@ import styles from "./deletions-screen.module.css";
 import { ErasureLists } from "../components/ErasureLists.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { deletionRequestsApi } from "./deletion-requests-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Choice = "delete" | "reject";
 
@@ -266,7 +267,7 @@ function DeletionQueue() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const now = new Date();
+  const now = new Date(apiNow());
   return (
     <DecisionQueue
       titleId="deletions"

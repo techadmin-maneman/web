@@ -18,6 +18,7 @@ import { AccuracyPart } from "./Accuracy.tsx";
 import styles from "./forecast.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 import { supplyPlanApi } from "./supply-plan-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Forecast = Success<paths["/api/stock/forecast"]["get"]>;
 
@@ -40,7 +41,7 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
   }
   const ranOn = dayAfter(run.run_on, 0, true);
   // The periods not yet over: one past is no longer a plan.
-  const today = todayInIndia(Date.now());
+  const today = todayInIndia(apiNow());
   const periods = Array.from({ length: run.horizon_periods }, (_, period) => period).filter(
     (period) => addDays(run.run_on, (period + 1) * run.period_days) > today,
   );

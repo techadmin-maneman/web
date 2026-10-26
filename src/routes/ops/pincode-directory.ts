@@ -19,7 +19,8 @@ import { reachesCity } from "../../policy/access.ts";
 import { AREA_NAME } from "../../policy/area-names.ts";
 import { AreaSchema } from "../schemas/service-area.ts";
 
-const PINCODE = z.string().regex(/^[1-9]\d{5}$/);
+/** One the service area can serve, as its own routes take it: 9 begins the Army Postal Service's, no address. */
+const PINCODE = z.string().regex(/^[1-8]\d{5}$/);
 const NAME = z.string().trim().min(1).max(80);
 
 const statesRoute = opsRoute({

@@ -83,7 +83,7 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
         at,
       ),
     message.statement,
-    ...visitUpkeep(db, { visits: [visit.id] }),
+    ...visitUpkeep(db, { visits: [visit.id] }, at),
   ]);
   await options.notify?.(message.id);
   return "booked";
@@ -174,6 +174,6 @@ export async function retireReplaced(db: D1Database, hold: HoldRow, now: Date, o
         hold.id,
         at,
       ),
-    ...visitUpkeep(db, { visits: [old.id] }),
+    ...visitUpkeep(db, { visits: [old.id] }, at),
   ]);
 }

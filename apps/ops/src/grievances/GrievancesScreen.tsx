@@ -21,6 +21,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./grievances.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { grievancesApi } from "./grievances-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 /** Where a grievance is in its answer: open, sending, or refused by the API. */
 type Answering =
@@ -100,7 +101,7 @@ function GrievanceQueue() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const now = new Date();
+  const now = new Date(apiNow());
   return (
     <DecisionQueue
       titleId="grievances"

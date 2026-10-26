@@ -35,6 +35,7 @@ import styles from "./profile.module.css";
 import { isOneOf } from "@rules/lib/one-of.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { clientsApi } from "./clients-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = clients.profile;
 
@@ -308,7 +309,7 @@ function CorrectionForm({
 
   const save = () =>
     once(async () => {
-      const thisYear = yearInIndia(Date.now());
+      const thisYear = yearInIndia(apiNow());
       const fit = fitOf(draft.fit);
       const history = historyOf(draft.history, thisYear);
       if (fit === null || history === null) {

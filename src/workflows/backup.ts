@@ -38,13 +38,13 @@ export async function backUp(steps: Steps, run: WorkflowRun, date: string): Prom
       await writeManifest(env.BACKUPS, {
         prefix,
         environment: config.environment,
-        createdAt: new Date(),
+        createdAt: deps.now(),
         schema,
         written,
       });
       return true;
     });
-    await steps.do("prune", STEP_RETRIES, () => deleteOldBackups(env.BACKUPS, new Date()));
+    await steps.do("prune", STEP_RETRIES, () => deleteOldBackups(env.BACKUPS, deps.now()));
     await steps.do("tell", STEP_RETRIES, async () => {
       await deps.resolveAlert("backup_failed");
       await deps.resolveAlert("backup_not_configured");

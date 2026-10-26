@@ -52,6 +52,21 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
     expect(optional).toEqual([]);
   });
 
+  // A front end reads a refusal by the document's types, so one the document leaves out is one no screen can name.
+  it("documents invalid_request under 400 on every route that reads a body, a query, its path or a header", () => {
+    const generated = buildOpenApiDocument(surface);
+    const silent = Object.entries(generated.paths ?? {}).flatMap(([path, item]) =>
+      METHODS.filter((method) => {
+        const operation = item[method];
+        if (operation === undefined) return false;
+        if (operation.requestBody === undefined && (operation.parameters ?? []).length === 0) return false;
+        const refused: unknown = operation.responses?.["400"];
+        return refused === undefined || !codesNamedIn(readResponse(refused).description).includes("invalid_request");
+      }).map((method) => `${method.toUpperCase()} ${path}`),
+    );
+    expect(silent).toEqual([]);
+  });
+
   it("documents every GET response with a JSON schema, or as an image, a PDF, a page, a redirect or no content", () => {
     const generated = buildOpenApiDocument(surface);
     for (const [path, item] of Object.entries(generated.paths ?? {})) {

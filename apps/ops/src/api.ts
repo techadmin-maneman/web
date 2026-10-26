@@ -5,6 +5,7 @@
 
 import { dataChanged, forgetKept } from "@maneman/ui/useLoad";
 import { createClient, type Answer as Answered, type Sent, type Success } from "@maneman/web-kit/api";
+import { heardFromApi } from "@maneman/web-kit/clock";
 import type { components, paths } from "./api-schema.ts";
 import { markLapsed } from "./lib/session.ts";
 
@@ -223,6 +224,10 @@ export const client = createClient<paths, ErrorCode | "signed_out">({
   keyWrites: true,
   // Every page showing data reads it again once a write lands, so none shows what the write changed.
   onWrite: dataChanged,
+  // Today, a lapsed hold and an overdue task are the API's, whatever the desk's own clock says (packages/web-kit/clock.ts).
+  onFreshAnswer: (response) => {
+    if (response.ok) heardFromApi(response.headers.get("Date"));
+  },
 });
 // A session that ends forgets what its screens showed, so the next person on the device sees none of it.
 client.onSessionEnded(forgetKept);

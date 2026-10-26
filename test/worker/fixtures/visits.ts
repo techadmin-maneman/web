@@ -30,7 +30,7 @@ export async function aVisit(row: RowOf<"appointments"> = {}) {
     },
     row,
   );
-  await env.DB.batch(visitUpkeep(env.DB, { visits: [id] }));
+  await env.DB.batch(visitUpkeep(env.DB, { visits: [id] }, AT));
   return written;
 }
 
@@ -40,7 +40,7 @@ export async function aVisit(row: RowOf<"appointments"> = {}) {
  */
 export async function keepUpVisits(): Promise<void> {
   const { results } = await env.DB.prepare("SELECT id FROM people").all<{ id: string }>();
-  await env.DB.batch(visitUpkeep(env.DB, { people: results.map((row) => row.id) }));
+  await env.DB.batch(visitUpkeep(env.DB, { people: results.map((row) => row.id) }, AT));
 }
 
 /** A check-in at the visit's door that passed, unless the test says otherwise. */

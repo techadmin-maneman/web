@@ -14,6 +14,7 @@ import { go } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import frame from "../components/frame.module.css";
 import styles from "./mine.module.css";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const DAYS = 6;
 
@@ -34,7 +35,7 @@ async function readWeek(today: string) {
 
 export function WeekScreen() {
   const heading = useScreen(copy.title);
-  const today = todayInIndia(Date.now());
+  const today = todayInIndia(apiNow());
   const read = useCallback(() => readWeek(today), [today]);
   const [loaded, retry] = useLoad(read);
   return (

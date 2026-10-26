@@ -3,6 +3,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { api, type Answer, type Tasks } from "../api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const FRESH_MS = 60_000;
 
@@ -17,7 +18,7 @@ export function readTasks(): Promise<Answer<Tasks>> {
     reading = null;
     if (answer.ok) {
       board = answer.body;
-      readAt = Date.now();
+      readAt = apiNow();
       for (const listener of listeners) listener();
     }
     return answer;
@@ -26,7 +27,7 @@ export function readTasks(): Promise<Answer<Tasks>> {
 }
 
 function readIfStale(): void {
-  if (Date.now() - readAt < FRESH_MS) return;
+  if (apiNow() - readAt < FRESH_MS) return;
   void readTasks();
 }
 

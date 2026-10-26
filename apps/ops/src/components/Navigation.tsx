@@ -14,6 +14,7 @@ import { firstSetting, mayOpen, settingsPath, type NavKey, type Route, type Sect
 import { waitingIn, type Waiting } from "../tasks/decided.ts";
 import { navLines } from "./SectionGroups.tsx";
 import styles from "./navigation.module.css";
+import { apiNow } from "@maneman/web-kit/clock";
 
 /** The navigation's id, which the narrow window's Menu button names. */
 export const NAV_ID = "console-nav";
@@ -81,7 +82,7 @@ export function Navigation({ route, open }: { route: Route; open: boolean }) {
   const mayCall = useMayCall();
   const [folded, fold] = useFolded();
   const board = useTaskBoard(mayCall !== null && mayOpen(mayCall, "tasks"));
-  const waiting = board === null ? NOTHING_WAITING : waitingIn(board, new Date());
+  const waiting = board === null ? NOTHING_WAITING : waitingIn(board, new Date(apiNow()));
   const page = route.page === "settings" ? null : route.page;
   return (
     <SideNav

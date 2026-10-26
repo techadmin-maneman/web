@@ -165,7 +165,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `cycle_counts` | Cycle counts | days | `{"weekly":7,"monthly":30,"quarterly":90,"recount_above_percent":5}` |
 | `kit_check` | Tomorrow's kits | hour of the day, in India | `{"from_hour":17,"one_visit_range":5,"top_up_weekday":0}` |
 | `scorecard_days` | Supplier scorecard | days | `365` |
-| `po_second_approval_above_rupees` | Second approver for orders above | rupees | `0` |
+| `po_second_approval_above_rupees` | Second approver for orders above | rupees | `50000` |
 | `po_rupees_to_one` | Exchange rates, for approvals | rupees | `{"default":0}` |
 | `custom_order_grace_days` | A custom order is late, past its promised date, after | days | `7` |
 | `planning_period_days` | Planning period | days | `7` |

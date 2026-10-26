@@ -129,3 +129,58 @@ describe("POST /api/dev/messages, anywhere but locally", () => {
     expect((await threads()).results).toEqual([]);
   });
 });
+
+const clock = (environment: EnvironmentName, devRoutes = true, init: RequestInit = {}) =>
+  request(appFor(environment, fakeDependencies(), { devRoutes }), "/api/dev/clock", init);
+
+describe("/api/dev/clock, the local clock a timelapse moves", () => {
+  beforeEach(async () => {
+    await markDatabase();
+  });
+
+  it("sets the clock and says what it reads, and the Date header follows the API's clock", async () => {
+    const set = await clock("local", true, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ at: "2027-01-15T04:30:00.000Z" }),
+    });
+    expect(set.status).toBe(200);
+    expect(Date.parse((await set.json<{ at: string }>()).at)).toBeGreaterThanOrEqual(
+      Date.parse("2027-01-15T04:30:00.000Z"),
+    );
+    // The apps set their clocks by the Date header: here it is the injected clock's, as the moved clock's is locally.
+    expect((await clock("local")).headers.get("Date")).toBe(NOW.toUTCString());
+  });
+
+  it("is not there without DEV_ROUTES, even locally, and leaves the Date header the runtime's", async () => {
+    const answer = await clock("local", false);
+    expect(answer.status).toBe(404);
+    expect(answer.headers.get("Date")).not.toBe(NOW.toUTCString());
+  });
+});
+
+describe("/api/dev/clock, anywhere but locally", () => {
+  it("answers nothing on staging, even were the switch somehow on", async () => {
+    await markDatabase(EXPECTED_DATABASE_NAME.staging);
+    expect((await clock("staging")).status).toBe(404);
+  });
+});
+
+const whoami = (environment: EnvironmentName, devRoutes: boolean) =>
+  request(appFor(environment, fakeDependencies(), { devRoutes }, "ops"), "/api/whoami", {
+    headers: { "X-Dev-Staff": "care@maneman.test" },
+  }).then((answer) => answer.json<{ signed_in_as: string }>());
+
+describe("X-Dev-Staff, a local run signing a console call in as another member of staff", () => {
+  beforeEach(async () => {
+    await markDatabase();
+  });
+
+  it("is taken locally with DEV_ROUTES on, over the stub's own identity", async () => {
+    expect((await whoami("local", true)).signed_in_as).toBe("care@maneman.test");
+  });
+
+  it("is ignored without DEV_ROUTES", async () => {
+    expect((await whoami("local", false)).signed_in_as).toBe("ops@localhost");
+  });
+});

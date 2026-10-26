@@ -75,6 +75,10 @@ npm run e2e:videos       # the same, every test recorded: videos/ by client, tec
 
 The browser tests start their own servers on the same ports, and reuse ones already running, so stop `dev:all` first unless you mean them to share it. The ops and technician tests answer the API in the browser; every answer they fake is checked against `docs/openapi-ops.json` or `docs/openapi-tech.json` as it is sent (`e2e/contract.ts`), so after changing a route run `npm run openapi` and fix any fake the tests then name.
 
+### Six months in half an hour
+
+`node scripts/dev/timelapse.ts` plays 180 days of the business on a fresh local database, on ports a hundred above these (`e2e/timelapse/`): cities opened from India Post's pincodes, technicians, stock bought and moved, clients found on the site, booked in the app and visited, every month's pay and books, and the rest of the workflows at several points in the six months. One clock moves the API (`PUT /api/dev/clock`, where `DEV_ROUTES` is on), the cron and every browser, so nothing waits on a real hour; a failure is written down and the days go on. Run it once with `--baseline` first (migrations and the pincode directory), then plainly; `TIMELAPSE_DAYS=30` stops it early. What it found is written under test-results/timelapse: the steps, a summary, and, after `node e2e/timelapse/summarise.ts`, the coverage and the faults.
+
 ### A test run that stops
 
 If no test reports for three minutes while a file is still open, the run stops with _No test has reported for 3 minutes, and these files never said they had finished_, naming them (`test/stalled-files.ts`). Vitest has no timeout of its own for this. The one cause found so far was a queue consumer the test runtime ran after its test had ended, whose logs broke the pool's channel; the tests' queues now reach no consumer (`vitest.config.ts`). If it happens again, look in the named file for work a test starts and does not await: a queue send to a real binding, a `waitUntil`, a timer.

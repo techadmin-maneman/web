@@ -259,7 +259,7 @@ async function writeMove(db: D1Database, deps: MoveDeps, move: PlannedMove, now:
       ...(move.audit === null
         ? []
         : [auditStatement(db, { ...move.audit, detail: { move_id: move.id, reason: move.reason } }, now)]),
-      ...visitUpkeep(db, { visits: [move.job.id] }),
+      ...visitUpkeep(db, { visits: [move.job.id] }, at),
     ]);
   } catch (error) {
     if (failedUniqueOn(error, "slot_claims")) return { kind: "refused", reason: "clash" };

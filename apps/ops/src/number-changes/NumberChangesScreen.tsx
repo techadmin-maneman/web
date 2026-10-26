@@ -22,6 +22,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./number-changes.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { numberChangesApi } from "./number-changes-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Choice = "confirm" | "reject";
 
@@ -161,7 +162,7 @@ function NumberChangeQueue() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const now = new Date();
+  const now = new Date(apiNow());
   return (
     <DecisionQueue
       titleId="number-changes"

@@ -27,6 +27,7 @@
     "packages/web-kit/turnstile.ts",
     "playwright.config.ts",
     "playwright.staging.config.ts",
+    "playwright.timelapse.config.ts",
     "scripts/dev/seed-local.ts",
     "scripts/fidelity/*.ts",
     "scripts/lib/fidelity.ts",

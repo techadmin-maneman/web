@@ -31,6 +31,7 @@ import { DayBoard, firstView, shownDay, ViewChoice, type BoardView } from "./Day
 import { isBlackout, kmFrom, startsFrom, daysFrom } from "./rooms.ts";
 import { useAskedVisit, useClientCalls } from "./useBoardCalls.ts";
 import { useMove, type Move } from "./useMove.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Moving = ReturnType<typeof useMove>;
 
@@ -113,7 +114,7 @@ function BoardBody(props: {
   const { board, search, inHand, onOpen, onLand } = props;
   const [view, setView] = useState<BoardView>(() => firstView(props.asked));
   const [day, setDay] = useState<string | null>(null);
-  const dayShown = shownDay(board.dates, day, todayInIndia(Date.now()));
+  const dayShown = shownDay(board.dates, day, todayInIndia(apiNow()));
   const { rows } = search;
   return (
     <>
@@ -129,7 +130,7 @@ function BoardBody(props: {
             rows={rows}
             date={dayShown}
             inHand={inHand}
-            now={Date.now()}
+            now={apiNow()}
             onOpen={onOpen}
             onLand={onLand}
           />

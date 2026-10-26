@@ -26,6 +26,7 @@ import { LostReason } from "./LostReason.tsx";
 import { GivenAddressForm } from "./GivenAddress.tsx";
 import { VisitCode } from "./VisitCode.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type SavedAddress = NonNullable<ClientRecord["address"]>;
 
@@ -174,7 +175,7 @@ function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: str
   const [open, setOpen] = useState<Change | null>(null);
   const opener = useRef<HTMLButtonElement>(null);
   const access = useAccess();
-  const changes = changesOf(visit, Date.now()).filter((change) => access.mayCall(CALLS[change]));
+  const changes = changesOf(visit, apiNow()).filter((change) => access.mayCall(CALLS[change]));
   if (changes.length === 0) return null;
 
   const when = fullDate(visit.date);
@@ -406,7 +407,7 @@ export function VisitRecords({
   /** What a closed consultation's reason may be set to; null on a page where it is only shown. */
   lostReasons?: ClientRecord["lost_reasons"] | null;
 }) {
-  const today = todayInIndia(Date.now());
+  const today = todayInIndia(apiNow());
   const overdue = visits.upcoming.filter((visit) => visit.date < today);
   return (
     <>

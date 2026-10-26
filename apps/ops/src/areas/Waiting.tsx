@@ -28,6 +28,7 @@ import styles from "./waiting.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { areasApi } from "./areas-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = areas.launch;
 
@@ -232,8 +233,8 @@ export function Waiting() {
   const [adding, setAdding] = useState<Area | null>(null);
   /** An error code from asking what a launch would send, before there is a panel to hold it. */
   const [refused, setRefused] = useState<string | null>(null);
-  const thisYear = yearInIndia(Date.now());
-  const today = todayInIndia(Date.now());
+  const thisYear = yearInIndia(apiNow());
+  const today = todayInIndia(apiNow());
   const [launchOn, setLaunchOn] = useState(today);
   const access = useAccess();
   const mayLaunch = access.mayCall("POST /api/pincodes/{pin}/launch");

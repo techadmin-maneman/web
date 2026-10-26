@@ -55,6 +55,19 @@ describe("POST /api/payments/{id}/refund", () => {
     });
   });
 
+  it("says a second press before Razorpay's webhook is refunded already, and audits the refund once", async () => {
+    expect((await refund()).status).toBe(200);
+    // Razorpay answers the payment's receipt with the refund it made: nothing more goes back.
+    const again = await refund();
+    expect(again.status).toBe(409);
+    expect(await again.json()).toMatchObject({ error: { code: "refund_not_due" } });
+    expect(payments.made.refunds).toHaveLength(1);
+    const audited = await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log WHERE action = 'payment.refund'").first<{
+      n: number;
+    }>();
+    expect(audited?.n).toBe(1);
+  });
+
   it("refuses a payment whose refund is on its way, and one we do not have", async () => {
     await env.DB.prepare(
       `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, created_at, updated_at)

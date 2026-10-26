@@ -5,6 +5,7 @@
 import { createApp } from "./app.ts";
 import { SURFACE_HOSTS, type Surface } from "./config/environments.ts";
 import type { StaticConfig } from "./guard.ts";
+import { errorResponse } from "./http/errors.ts";
 
 /** Only the routes are read from this app, so its settings are placeholders. */
 const DOCUMENTATION_CONFIG: StaticConfig = {
@@ -113,8 +114,17 @@ const INFO: Readonly<Record<DocumentedSurface, { title: string; description: str
 
 export type OpenApiDocument = ReturnType<ReturnType<typeof createApp>["getOpenAPI31Document"]>;
 
+/** What src/app.ts's defaultHook answers a request its route's schema turns away. */
+const REFUSED = errorResponse("invalid_request");
+
 export function buildOpenApiDocument(surface: DocumentedSurface = "public"): OpenApiDocument {
   const app = createApp(DOCUMENTATION_CONFIG, undefined, surface);
+  // Any route that reads a body, a query, its path or a header can turn a request away, so each documents that 400
+  // unless it documents one of its own. Each definition is this app's own copy of its route, so the route is unchanged.
+  for (const definition of app.openAPIRegistry.definitions) {
+    if (definition.type !== "route" || definition.route.request === undefined) continue;
+    definition.route.responses = { 400: REFUSED, ...definition.route.responses };
+  }
   const document = app.getOpenAPI31Document({
     openapi: "3.1.0",
     info: { version: "1", ...INFO[surface] },

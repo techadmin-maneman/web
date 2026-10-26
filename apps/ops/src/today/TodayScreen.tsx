@@ -24,6 +24,7 @@ import { useTaskBoard } from "../lib/waiting.ts";
 import { mayOpen, type Page, sectionOf } from "../route.ts";
 import { Loading } from "../states/States.tsx";
 import { todayApi } from "./today-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Group = TaskGroup["group"];
 
@@ -61,7 +62,7 @@ function figureOf(tile: Tile, board: Tasks): number {
 
 /** How many visits today's routes hold, once they have loaded. */
 function VisitsToday() {
-  const date = indiaDate(new Date().toISOString());
+  const date = indiaDate(new Date(apiNow()).toISOString());
   const read = useCallback(() => todayApi.day(date), [date]);
   const [loaded] = useLoad(read);
   if (loaded.state !== "loaded") return null;
@@ -109,7 +110,7 @@ function needsOf(board: Tasks, me: string | null): Waiting[] {
 }
 
 function Needs({ board }: { board: Tasks }) {
-  const now = new Date();
+  const now = new Date(apiNow());
   const [signedIn] = useLoad(whoami);
   const needs = needsOf(board, signedIn.state === "loaded" ? signedIn.value.signed_in_as : null);
   return (
@@ -156,7 +157,7 @@ function Needs({ board }: { board: Tasks }) {
 
 export function TodayScreen() {
   const board = useTaskBoard(true);
-  useHeaderSub(copy.day(fullDate(todayInIndia(Date.now()))));
+  useHeaderSub(copy.day(fullDate(todayInIndia(apiNow()))));
   if (board === null) return <Loading />;
   return (
     <Stack gap="24">

@@ -6,7 +6,7 @@
 // which migration 0054's triggers rewrite from those rows in the same
 // transaction as every change to them. It is read once per isolate and held
 // for SETTINGS_TTL_MS, so a change reaches every request within that window
-// without a deploy, and a read costs one row however long the register grows
+// without a deploy, and at once on the isolate that made it, and a read costs one row however long the register grows
 // (docs/decisions/0088-every-policy-in-the-console.md, ADR 0009).
 //
 // A row that is not there, and a store that cannot be read at all, both mean
@@ -275,6 +275,9 @@ export const readOpsInputs: ReadOpsInputs = async (db, _now, log) => {
   }
 };
 
+/** Counts the rule changes this isolate made: each cached copy older than the latest is read again. */
+let changes = 0;
+
 /**
  * The store, remembered for a minute at a time within one isolate. A failure
  * is never remembered as a value: the last good read stands if there is one,
@@ -282,19 +285,24 @@ export const readOpsInputs: ReadOpsInputs = async (db, _now, log) => {
  * stale number and never a missing one.
  */
 export function createCachedOpsInputs(): ReadOpsInputs {
-  let held: { readonly at: number; readonly inputs: OpsInputs } | undefined;
+  let held: { readonly at: number; readonly change: number; readonly inputs: OpsInputs } | undefined;
   return async (db, now, log) => {
     const at = now.getTime();
-    if (held !== undefined && at - held.at < SETTINGS_TTL_MS) return held.inputs;
+    if (held?.change === changes && at - held.at < SETTINGS_TTL_MS) return held.inputs;
     try {
       const inputs = resolve(await snapshot(db), log);
-      held = { at, inputs };
+      held = { at, change: changes, inputs };
       return inputs;
     } catch (error) {
       log?.error("ops_settings_unreadable", { error });
       return held?.inputs ?? COMMITTED;
     }
   };
+}
+
+/** Has every copy this isolate holds read the store again: the request that changed a rule calls it. */
+export function forgetOpsInputs(): void {
+  changes += 1;
 }
 
 /** Every input with what it is now and who set it, for the console's Rules panel. */

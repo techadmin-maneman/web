@@ -4,6 +4,7 @@
 // visit with no rate at all still counts, at none, so the gap shows.
 
 import { indiaDateSql, indiaInstant } from "../../lib/india-time.ts";
+import { NO_PIECE } from "../../policy/in-job-steps.ts";
 import type { VISIT_PAY_KINDS } from "./technician-pay.ts";
 
 type VisitPayKind = (typeof VISIT_PAY_KINDS)[number];
@@ -22,13 +23,15 @@ export interface PayLine {
 }
 
 /**
- * Each visit closed in the month, as payroll counts it: a client not home is a no-show whatever was booked, and a
- * consultation and fit in one visit that ended in a fit is one visit; the rate is the grade's on the visit's day.
+ * Each visit closed in the month, as payroll counts it: a client not home is a no-show whatever was booked, a fit
+ * closed "Can't fit today" is paid as a consultation (its free refit pays the fit), and a consultation and fit in one
+ * visit that ended in a fit is one visit; the rate is the grade's on the visit's day.
  */
 const STATEMENT = `WITH closed AS (
   SELECT a.technician_id, t.name AS technician, t.pay_grade_id, a.service_city AS city,
     ${indiaDateSql("a.window_start")} AS day,
     CASE WHEN o.outcome = 'no_show' THEN 'no_show'
+         WHEN o.outcome = 'partial' AND o.partial_reason = '${NO_PIECE}' THEN 'consultation'
          WHEN a.one_visit IS NOT NULL AND a.type = 'first_fit' THEN 'one_visit'
          ELSE a.type END AS kind
   FROM appointments a JOIN visit_outcomes o ON o.appointment_id = a.id JOIN technicians t ON t.id = a.technician_id

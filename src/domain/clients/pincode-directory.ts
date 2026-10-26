@@ -27,10 +27,16 @@ export interface DirectoryPincode {
   readonly held: { readonly city: string; readonly area: string; readonly served: boolean } | null;
 }
 
+/**
+ * The directory's pincodes ops may add: India Post also lists the Army Postal Service's base offices, 9xxxxx, which are
+ * no client's address and which no route that serves a pincode takes.
+ */
+const SERVABLE = "d.pincode < '900000'";
+
 /** The states the directory lists, in order. */
 export async function directoryStates(db: D1Database): Promise<string[]> {
   const { results } = await db
-    .prepare("SELECT DISTINCT state FROM pincode_directory ORDER BY state")
+    .prepare(`SELECT DISTINCT state FROM pincode_directory d WHERE ${SERVABLE} ORDER BY state`)
     .all<{ state: string }>();
   return results.map((row) => row.state);
 }
@@ -41,7 +47,7 @@ export async function directoryDistricts(db: D1Database, state: string): Promise
     .prepare(
       `SELECT d.state, d.district, COUNT(*) AS pincodes, COUNT(s.pincode) AS held
        FROM pincode_directory d LEFT JOIN serviceable_pincodes s ON s.pincode = d.pincode
-       WHERE d.state = ?1 GROUP BY d.state, d.district ORDER BY d.district`,
+       WHERE d.state = ?1 AND ${SERVABLE} GROUP BY d.state, d.district ORDER BY d.district`,
     )
     .bind(state)
     .all<DirectoryDistrict>();
@@ -66,7 +72,7 @@ export async function directoryPincodes(
       `SELECT d.pincode, d.district, d.office_names, d.latitude, d.longitude,
          s.city AS held_city, s.area AS held_area, s.served AS held_served
        FROM pincode_directory d LEFT JOIN serviceable_pincodes s ON s.pincode = d.pincode
-       WHERE d.state = ?1 AND d.district IN (SELECT value FROM json_each(?2)) ORDER BY d.pincode`,
+       WHERE d.state = ?1 AND d.district IN (SELECT value FROM json_each(?2)) AND ${SERVABLE} ORDER BY d.pincode`,
     )
     .bind(state, JSON.stringify(districts))
     .all<{

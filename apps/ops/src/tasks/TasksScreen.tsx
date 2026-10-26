@@ -31,6 +31,7 @@ import { DecideLink, ownerName, TaskDetail, type Acting } from "./TaskDetail.tsx
 import { BookFromTask } from "./BookFromTask.tsx";
 import shared from "./tasks.module.css";
 import styles from "./tasks-screen.module.css";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Group = TaskGroup["group"];
 
@@ -232,7 +233,7 @@ function TaskQueue({ alerts, onOpen, filter }: QueueProps) {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const now = new Date();
+  const now = new Date(apiNow());
   const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as : null;
   const { overdue, truncated, staff, groups, open } = sinceRead(loaded.value, closed, now, { by: filter, me });
   const sections = sectionsOf(groups);
