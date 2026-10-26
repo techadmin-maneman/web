@@ -519,6 +519,24 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianJobDetail"];
                     };
                 };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
                 401: {
                     headers: {
@@ -592,6 +610,24 @@ export interface paths {
                     content: {
                         "image/jpeg": string;
                         "image/png": string;
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
                     };
                 };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
@@ -1136,6 +1172,24 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianPhotoTaken"];
                     };
                 };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
                 401: {
                     headers: {
@@ -1264,6 +1318,24 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
                 };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
                 401: {
@@ -1516,6 +1588,24 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianDoorPhotoUrl"];
                     };
                 };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
                 401: {
                     headers: {
@@ -1605,6 +1695,24 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["TechnicianDoorPhotoTaken"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
                     };
                 };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
@@ -2433,6 +2541,24 @@ export interface paths {
                         "application/json": components["schemas"]["PieceLookup"];
                     };
                 };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
                 401: {
                     headers: {
@@ -2511,6 +2637,24 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["TechnicianDiscountCodeApplied"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
                     };
                 };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
@@ -3072,6 +3216,24 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianOptions"];
                     };
                 };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
                 401: {
                     headers: {
@@ -3146,6 +3308,24 @@ export interface paths {
                     content: {
                         "image/jpeg": string;
                         "image/png": string;
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
                     };
                 };
                 /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
