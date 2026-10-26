@@ -21,6 +21,7 @@ import { OpsLink } from "../components/Shell.tsx";
 import { useAccess } from "../lib/access.ts";
 import shared from "./areas.module.css";
 import { areasApi } from "./areas-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = areas.launches;
 
@@ -149,7 +150,7 @@ function Readiness({ city, pincodes }: { city: string; pincodes: readonly string
 }
 
 /** A day after today, as the date box takes it. */
-const tomorrow = () => addDays(todayInIndia(Date.now()), 1);
+const tomorrow = () => addDays(todayInIndia(apiNow()), 1);
 
 /** The chosen pincodes, unserved, scheduled for a day after today. */
 function ScheduleForm(props: {

@@ -13,6 +13,7 @@ import { useAccess } from "../lib/access.ts";
 import { sectionOf } from "../route.ts";
 import { todayApi } from "./today-api.ts";
 import styles from "./today.module.css";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Block = Board["technicians"][number]["days"][number]["blocks"][number];
 
@@ -30,14 +31,14 @@ function roadOf(blocks: readonly Block[], now: number) {
 }
 
 function Road() {
-  const date = todayInIndia(Date.now());
+  const date = todayInIndia(apiNow());
   const read = useCallback(() => todayApi.board(date), [date]);
   const [loaded] = useLoad(read);
   if (loaded.state !== "loaded") return null;
   const blocks = loaded.value.technicians.flatMap(
     (technician) => technician.days.find((day) => day.date === date)?.blocks ?? [],
   );
-  const road = roadOf(blocks, Date.now());
+  const road = roadOf(blocks, apiNow());
   const board = sectionOf("dispatch").path;
   return (
     <Panel titleId="today-road" title={copy.road.title}>

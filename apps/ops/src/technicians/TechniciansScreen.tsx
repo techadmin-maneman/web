@@ -32,6 +32,7 @@ import { AddTechnician } from "./TechnicianForms.tsx";
 import shared from "./technicians.module.css";
 import styles from "./technicians-screen.module.css";
 import { techniciansApi } from "./technicians-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 /** The route's period ends the day after the last one counted; the note names that last day. */
 const lastDay = (exclusiveEnd: string) => addDays(exclusiveEnd, -1);
@@ -123,7 +124,7 @@ function PeriodChoice({ counted, onFrom }: { counted: { from: string; to: string
           value={String(days)}
           onChange={(event) => {
             // The route counts to tomorrow, so the last N days start N - 1 days before today.
-            onFrom(addDays(todayInIndia(Date.now()), 1 - Number(event.target.value)));
+            onFrom(addDays(todayInIndia(apiNow()), 1 - Number(event.target.value)));
           }}
         >
           {offered.map((each) => (
@@ -147,7 +148,7 @@ function RosterTable({
   figures: ReadonlyMap<string, TechnicianWork>;
   period: ReactNode;
 }) {
-  const today = todayInIndia(Date.now());
+  const today = todayInIndia(apiNow());
   const city = (row: Technician) => row.city ?? "";
   const [name, cityLabel, jobs, service, onTime, leave] = technicians.columns;
   const columns: readonly Column<Technician>[] = [

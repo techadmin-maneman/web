@@ -6,6 +6,7 @@ import type { Loaded } from "@maneman/ui/useLoad";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Board, type BoardQuery } from "../api.ts";
 import { dispatchApi } from "./dispatch-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 /** How often the open board asks whether anything on it has changed, while nothing is in hand. */
 export const POLL_MS = 60_000;
@@ -41,7 +42,7 @@ export function useBoard(query: BoardQuery, paused: boolean): BoardData {
   const read = useCallback(async (): Promise<Board | null> => {
     reads.current += 1;
     const mine = reads.current;
-    lastReadAt.current = Date.now();
+    lastReadAt.current = apiNow();
     lastLookAt.current = lastReadAt.current;
     const answer = await dispatchApi.board({ from, city });
     if (mine !== reads.current) return null;
@@ -59,7 +60,7 @@ export function useBoard(query: BoardQuery, paused: boolean): BoardData {
   /** Reads the board again if it has changed, or if it has gone ten minutes without a read. */
   const look = useCallback(async (): Promise<void> => {
     if (document.visibilityState !== "visible") return;
-    const now = Date.now();
+    const now = apiNow();
     if (now - lastLookAt.current < LOOK_GAP_MS) return;
     if (now - lastReadAt.current >= FULL_READ_MS) {
       await read();

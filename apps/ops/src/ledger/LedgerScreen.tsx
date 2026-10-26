@@ -23,6 +23,7 @@ import { saveFile } from "../lib/save-file.ts";
 import styles from "./ledger.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ledgerApi, type Ledger } from "./ledger-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Payment = Ledger["payments"][number];
 type Link = Ledger["unpaid_links"][number];
@@ -103,7 +104,7 @@ function linkState(link: Link, now: number): string {
 }
 
 function Links({ links }: { links: readonly Link[] }) {
-  const now = Date.now();
+  const now = apiNow();
   return (
     <Panel titleId="ledger-links" title={copy.links.title}>
       {links.length === 0 ? (
@@ -153,7 +154,7 @@ function exportCsv(ledger: Ledger) {
 }
 
 export function LedgerScreen() {
-  const today = todayInIndia(Date.now());
+  const today = todayInIndia(apiNow());
   const [from, setFrom] = useState(() => addDays(today, -29));
   const [to, setTo] = useState(today);
   const read = useCallback(() => ledgerApi.ledger(from, to <= from ? from : to), [from, to]);

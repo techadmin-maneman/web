@@ -7,6 +7,7 @@ import { dispatch } from "../content.ts";
 import { changeOf, idOf, nameOf, type BlockJob, type VisitChange } from "./job.ts";
 import type { Notice } from "./landing.ts";
 import { LetIn } from "./LetIn.tsx";
+import { apiNow } from "@maneman/web-kit/clock";
 
 /** A visit being changed in its own panel. */
 export interface Changing {
@@ -16,7 +17,7 @@ export interface Changing {
 
 /** The change a block's visit takes now, if the person's access reaches it. */
 export function changeFor(job: BlockJob, access: Access): VisitChange | null {
-  const change = changeOf(job.block, Date.now());
+  const change = changeOf(job.block, apiNow());
   if (change === "cancel" && access.mayCall("POST /api/visits/{id}/cancel")) return change;
   if (change === "close" && access.mayCall("POST /api/visits/{id}/close")) return change;
   return null;

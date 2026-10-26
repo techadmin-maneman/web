@@ -25,6 +25,7 @@ import shared from "./no-shows.module.css";
 import styles from "./disputes.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { paymentsApi } from "./payments-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = noShows.dispute;
 
@@ -186,7 +187,7 @@ export function Disputes({ onRuled }: { onRuled: () => void }) {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const now = new Date();
+  const now = new Date(apiNow());
   const uphold = access.mayCall("POST /api/no-shows/disputes/{id}/ruling");
   const may: MayRule = { uphold, refund: uphold && access.reaches(REFUNDING_A_DISPUTE) };
   return (

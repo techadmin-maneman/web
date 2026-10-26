@@ -19,6 +19,7 @@ import { StartCount } from "./StartCount.tsx";
 import { ListTools } from "../components/ListTools.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { countsApi } from "./counts-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const loadTasks = () => countsApi.countTasks();
 
@@ -51,7 +52,7 @@ function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpen
                 </RowHead>
                 <td>{whatOf(task)}</td>
                 <td>
-                  {task.state !== "done" && task.due_on < todayInIndia(Date.now())
+                  {task.state !== "done" && task.due_on < todayInIndia(apiNow())
                     ? copy.overdue(fullDate(task.due_on))
                     : fullDate(task.due_on)}
                 </td>

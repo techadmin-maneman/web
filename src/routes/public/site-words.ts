@@ -38,7 +38,7 @@ export function registerSiteWords(app: App): void {
   app.openapi(siteWordsRoute, async (c) => {
     const [publish, offered] = await Promise.all([
       latestPublish(c.env.DB),
-      offeredServices(c.env.DB, indiaDate(new Date())),
+      offeredServices(c.env.DB, indiaDate(c.var.deps.now())),
     ]);
     const lengthOf = (kind: (typeof VISIT_TYPES)[number]) => {
       const ofKind = offered.filter((service) => service.kind === kind);

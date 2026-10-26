@@ -14,6 +14,7 @@ import { Left } from "../lib/Left.tsx";
 import { decidedAt, taskClientPath, taskTabOf } from "../lib/task-links.ts";
 import styles from "./clients.module.css";
 import { clientsApi } from "./clients-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = clients.openTasks;
 
@@ -46,7 +47,7 @@ function OpenTaskRow({ group, task, clientId, now }: { group: Group; task: Task;
 }
 
 function List({ board, clientId }: { board: Tasks; clientId: string }) {
-  const now = new Date();
+  const now = new Date(apiNow());
   const rows = board.groups.flatMap((group) => group.tasks.map((task) => ({ group: group.group, task })));
   if (rows.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (

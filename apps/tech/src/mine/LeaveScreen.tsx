@@ -19,6 +19,7 @@ import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import frame from "../components/frame.module.css";
 import styles from "./mine.module.css";
+import { apiNow } from "@maneman/web-kit/clock";
 
 /** Why an ask did not go through; `requestId` is the API's, to quote to ops. */
 interface Problem {
@@ -27,7 +28,7 @@ interface Problem {
 }
 
 function Ask({ offline, onAsked }: { offline: boolean; onAsked: (asks: LeaveRequests) => void }) {
-  const today = todayInIndia(Date.now());
+  const today = todayInIndia(apiNow());
   const [from, setFrom] = useState(today);
   const [to, setTo] = useState(today);
   const [note, setNote] = useState("");

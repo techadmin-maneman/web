@@ -25,6 +25,7 @@ import { useTableView, type Column } from "../components/useTableView.ts";
 import styles from "./referrals.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { referralsApi } from "./referrals-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Choice = "approve" | "reject";
 
@@ -173,7 +174,7 @@ function ReviewQueue({ onDecided }: { onDecided: () => void }) {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const now = new Date();
+  const now = new Date(apiNow());
   return (
     <DecisionQueue titleId="held" title={copy.title} items={loaded.value.held} rowKind="held" empty={copy.empty}>
       {(grant, decided) => (

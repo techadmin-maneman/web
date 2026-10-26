@@ -23,6 +23,7 @@ import shared from "./care.module.css";
 import styles from "./messages-screen.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { SearchInput } from "@maneman/ui/SearchInput";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed", "all"];
 
@@ -107,11 +108,7 @@ const carePersonOf = ({ care_person: email, care_name: name, covered_by: cover }
 function ReplyBy({ at }: { at: string | null }) {
   if (at === null) return null;
   const when = whenOf(at);
-  return Date.parse(at) < Date.now() ? (
-    <span className={styles.overdue}>{copy.overdue(when)}</span>
-  ) : (
-    copy.replyBy(when)
-  );
+  return Date.parse(at) < apiNow() ? <span className={styles.overdue}>{copy.overdue(when)}</span> : copy.replyBy(when);
 }
 
 /** One chat in the list: who, what they last said, when our reply is due and the day it last moved; it opens beside. */

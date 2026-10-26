@@ -39,6 +39,7 @@ import { CityTabs, PincodeRow, SaveNotes, UploadFile } from "./ServedParts.tsx";
 import { AskingCheck, ChosenBar } from "./Chosen.tsx";
 import { useAreaSaves } from "./useAreaSaves.ts";
 import { areasApi } from "./areas-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = areas.served;
 
@@ -168,7 +169,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     const [change] = changesIn(pincodes, { [pincode]: next });
     if (change === undefined) return null;
     if (change.area !== undefined && !AREA_NAME.test(change.area)) return copy.badName(pincode);
-    if (servesLater(pincodes, change, todayInIndia(Date.now()))) return copy.later(pincode);
+    if (servesLater(pincodes, change, todayInIndia(apiNow()))) return copy.later(pincode);
     saves.commit([change]);
     return null;
   };

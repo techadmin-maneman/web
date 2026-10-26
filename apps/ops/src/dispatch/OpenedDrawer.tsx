@@ -6,6 +6,7 @@ import { BlockDrawer } from "./BlockDrawer.tsx";
 import { changeFor, type Changing } from "./ChangePanel.tsx";
 import { mayLetIn, nameOf, type Job } from "./job.ts";
 import { TrayDrawer } from "./TrayDrawer.tsx";
+import { apiNow } from "@maneman/web-kit/clock";
 
 export function OpenedDrawer({
   opened,
@@ -79,7 +80,7 @@ export function OpenedDrawer({
         onChange({ job: opened, change });
       }}
       onLetIn={
-        mayLetIn(opened.block, Date.now()) && access.mayCall("POST /api/visits/{id}/let-in")
+        mayLetIn(opened.block, apiNow()) && access.mayCall("POST /api/visits/{id}/let-in")
           ? () => {
               onChange({ job: opened, change: "let_in" });
             }

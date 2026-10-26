@@ -35,6 +35,7 @@ import { Payments } from "./Payments.tsx";
 import { Photos, usePhotos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
 import { BookOne, Visits } from "./Visits.tsx";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Credits = ClientRecord["credits"];
 type Address = ClientRecord["address"];
@@ -68,7 +69,7 @@ const paidToDate = (payments: ClientRecord["payments"]): number =>
 
 /** Their next visit booked, "25 Sep 2027, 9 am"; none while nothing is booked ahead. */
 function nextVisitWords(record: ClientRecord): string {
-  const today = todayInIndia(Date.now());
+  const today = todayInIndia(apiNow());
   const next = record.visits.upcoming.find((visit) => visit.date >= today);
   return next === undefined ? clients.list.noVisit : `${fullDate(next.date)}, ${indiaClock(next.starts_at)}`;
 }

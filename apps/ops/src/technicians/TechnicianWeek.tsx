@@ -11,6 +11,7 @@ import { dispatch, hoursAndMinutes, technicians } from "../content.ts";
 import { dispatchPath } from "../route.ts";
 import styles from "./technicians.module.css";
 import { techniciansApi } from "./technicians-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = technicians.week;
 
@@ -39,7 +40,7 @@ function WorkStrip({ technicianId }: { technicianId: string }) {
 
 /** Their visits these seven days, from today, a line each under its day. */
 function Visits({ technician }: { technician: TechnicianSummary }) {
-  const read = useCallback(() => techniciansApi.board(todayInIndia(Date.now())), []);
+  const read = useCallback(() => techniciansApi.board(todayInIndia(apiNow())), []);
   const [loaded] = useLoad(read);
   if (loaded.state === "loading") return null;
   if (loaded.state === "failed") return <p className={styles.none}>{copy.failed}</p>;

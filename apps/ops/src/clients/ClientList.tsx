@@ -20,6 +20,7 @@ import shared from "./clients.module.css";
 import styles from "./client-list.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 import { clientsApi } from "./clients-api.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = clients.list;
 const STATES = ["lead", "fitted", "nothing_booked"] as const;
@@ -136,7 +137,7 @@ function Rows({ listed }: { listed: Listed }) {
               <td>{phoneWords(client.mobile)}</td>
               <td>{clients.states[client.state]}</td>
               <td>{client.city ?? copy.noCity}</td>
-              <td>{nextVisitOf(client, todayInIndia(Date.now()))}</td>
+              <td>{nextVisitOf(client, todayInIndia(apiNow()))}</td>
             </tr>
           ))}
         </tbody>

@@ -27,6 +27,7 @@ import {
   type Target,
   windowWord,
 } from "./job.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 const AN_HOUR = 60 * 60 * 1000;
 
@@ -140,7 +141,7 @@ export function MovePicker({ job, to, starts, blackout, sending, clearingCheckIn
   const lands = landsWords(to, landsAt);
   const stood = stoodWords(job);
   const notice = noticeOf(job, to, landsAt);
-  const inside = noticeInside(job, new Date());
+  const inside = noticeInside(job, new Date(apiNow()));
   const typed = blackoutReason.trim();
   const ready = reason !== null && (!blackout || typed !== "");
   const asking = asksTheClientOf(job, to, reason);

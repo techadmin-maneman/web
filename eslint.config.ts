@@ -66,6 +66,18 @@ const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: n
   "src/policy/personal-data.ts": { lines: 534 },
 };
 
+/** The device's clock, which the console never reads: apiNow() from @maneman/web-kit/clock instead. */
+const DEVICE_CLOCK = [
+  {
+    selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+    message: "Read the API's clock: apiNow() from @maneman/web-kit/clock.",
+  },
+  {
+    selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+    message: "Read the API's clock: new Date(apiNow()), apiNow() from @maneman/web-kit/clock.",
+  },
+];
+
 export default defineConfig(
   {
     ignores: [
@@ -312,6 +324,11 @@ export default defineConfig(
   {
     files: ["apps/app/src/**/*.{ts,tsx}", "apps/tech/src/**/*.{ts,tsx}", "apps/ops/src/**/*.{ts,tsx}"],
     rules: { "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY, HAND_BUSY, RAW_BUTTON] },
+  },
+  {
+    // A desk's clock can be hours out: the console's today, overdue and lapsed are the API's (packages/web-kit/clock.ts).
+    files: ["apps/ops/src/**/*.{ts,tsx}"],
+    rules: { "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY, HAND_BUSY, RAW_BUTTON, ...DEVICE_CLOCK] },
   },
   {
     files: ["packages/ui/lazyScreen.ts"],

@@ -31,11 +31,12 @@ import styles from "./no-shows.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { paymentsApi } from "./payments-api.ts";
 import { DoorPhoto } from "./DoorPhoto.tsx";
+import { apiNow } from "@maneman/web-kit/clock";
 
 type Choice = "charged" | "waived";
 
 /** India's date today, by this computer's clock. */
-const indiaToday = () => todayInIndia(Date.now());
+const indiaToday = () => todayInIndia(apiNow());
 
 /** The card's heading, which names the day its figures are for, and the field that asks for another day. */
 function DayHead({ date, shown, onDay }: { date: string; shown: string; onDay: (date: string) => void }) {
@@ -375,7 +376,7 @@ function NoShowQueue({ onDecided }: { onDecided: () => void }) {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const now = new Date();
+  const now = new Date(apiNow());
   const charge = access.mayCall("POST /api/no-shows/{id}/decision");
   const may: MayRule = { charge, waive: charge && access.reaches(WAIVING_A_NO_SHOW) };
   return (
