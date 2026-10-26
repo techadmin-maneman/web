@@ -35,7 +35,12 @@ export function outsideContract(...routes: string[]): void {
   for (const route of routes) test.info().annotations.push({ type: OUTSIDE_CONTRACT, description: route });
 }
 
-export const test = base.extend<{ contentSecurityPolicy: undefined; appTurnstile: undefined; apiContract: undefined }>({
+export const test = base.extend<{
+  contentSecurityPolicy: undefined;
+  appTurnstile: undefined;
+  apiContract: undefined;
+  consoleClock: undefined;
+}>({
   // Every JSON answer the page had from /api/*, a fake's or the local mm-api's, held to the committed OpenAPI
   // document (e2e/contract.ts): a fake that drifts from the API, or a route that answers what it never documented,
   // fails the test it shows in.
@@ -95,6 +100,22 @@ export const test = base.extend<{ contentSecurityPolicy: undefined; appTurnstile
   appTurnstile: [
     async ({ page }, use, testInfo) => {
       if (testInfo.project.name === "app") await fakeTurnstile(page);
+      await use(undefined);
+    },
+    { auto: true },
+  ],
+  // The ops specs set the console's clock with page.clock. The console moves its clock to each answer's Date header
+  // (apps/ops/src/api.ts), and the local mm-api's says today, so the console here never reads one.
+  consoleClock: [
+    async ({ page }, use, testInfo) => {
+      if (testInfo.project.name === "ops") {
+        await page.addInitScript(() => {
+          const get = Reflect.get<Headers, "get">(Headers.prototype, "get");
+          Headers.prototype.get = function (this: Headers, name: string) {
+            return name.toLowerCase() === "date" ? null : get.call(this, name);
+          };
+        });
+      }
       await use(undefined);
     },
     { auto: true },

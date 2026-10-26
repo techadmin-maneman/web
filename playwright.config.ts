@@ -81,14 +81,14 @@ export default defineConfig({
   projects: [
     {
       name: "390",
-      // tech-staging/ is the proof against the deployed API, which has its own
-      // config and is never run by CI (playwright.staging.config.ts).
-      testIgnore: ["app/**", "ops/**", "tech/**", "tech-live/**", "tech-staging/**"],
+      // tech-staging/ is the proof against the deployed API, and timelapse/ the six months on a stack of its own:
+      // each has its own config and is never run by CI (playwright.staging.config.ts, playwright.timelapse.config.ts).
+      testIgnore: ["app/**", "ops/**", "tech/**", "tech-live/**", "tech-staging/**", "timelapse/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
     },
     {
       name: "1440",
-      testIgnore: ["app/**", "ops/**", "tech/**", "tech-live/**", "tech-staging/**"],
+      testIgnore: ["app/**", "ops/**", "tech/**", "tech-live/**", "tech-staging/**", "timelapse/**"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
     {
