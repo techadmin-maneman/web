@@ -17,6 +17,7 @@ import { createPaymentsProvider, type PaymentsProvider } from "./providers/payme
 import { BACKGROUND_TIMEOUT_MS, WAITED_TIMEOUT_MS } from "./providers/zoho-http.ts";
 import { createGeocodeProvider, type GeocodeProvider } from "./providers/geocode/index.ts";
 import { createRoutesProvider, type RoutesProvider } from "./providers/routes/index.ts";
+import { devNow } from "./lib/dev-clock.ts";
 
 export interface Dependencies {
   readonly fetch: typeof fetch;
@@ -83,7 +84,8 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
   const { settings, providers, environment } = config;
   // A bare reference to the global fetch throws "Illegal invocation" in Workers when called as a method.
   const httpFetch: typeof fetch = (input, init) => fetch(input, init);
-  const now = (): Date => new Date();
+  // Locally, with the dev routes on, a run can move the clock (src/lib/dev-clock.ts).
+  const now = settings.devRoutes ? devNow : (): Date => new Date();
   // Built once per isolate, so Access's signing keys are fetched once, not per request.
   const access = createAccessVerifier(settings.access, { fetch: httpFetch, now, log: createLogger() });
   // Each provider is made the first time it is used. Making every one on every invocation was half the CPU time of a

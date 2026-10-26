@@ -51,6 +51,8 @@ import { registerClientVisits } from "./routes/client/visits.ts";
 import { registerClientPhotos } from "./routes/client/photos.ts";
 import { registerDevVisits } from "./routes/dev-visits.ts";
 import { registerDevMessages } from "./routes/dev-messages.ts";
+import { registerDevClock } from "./routes/dev-clock.ts";
+import { DEV_CLOCK_HEADER, followDevClock } from "./lib/dev-clock.ts";
 import { registerEvolutionHook } from "./routes/hooks/evolution.ts";
 import { registerMsg91Hook } from "./routes/hooks/msg91.ts";
 import { registerRazorpayHook } from "./routes/hooks/razorpay.ts";
@@ -191,6 +193,7 @@ export function createApp(
   if (surface === "public" && config.environment === "local" && config.settings.devRoutes) {
     registerDevVisits(app);
     registerDevMessages(app);
+    registerDevClock(app);
   }
 
   app.notFound((c) => refuse(c, "not_found"));
@@ -245,6 +248,8 @@ function requestContext({
     c.set("requestId", requestId);
     c.set("log", log);
     c.set("config", config);
+    // Locally, a run that moves the clock says on every request how far ahead it is (src/lib/dev-clock.ts).
+    if (config.settings.devRoutes) followDevClock(c.req.header(DEV_CLOCK_HEADER));
     c.set("deps", makeDependencies(c.env, log, "request"));
     c.set("checkIdentity", checkIdentity);
     c.set("readOpsInputs", readOpsInputs);
@@ -253,6 +258,8 @@ function requestContext({
     await next();
 
     c.header(REQUEST_ID_HEADER, requestId);
+    // The apps set their clocks by this header (packages/web-kit/clock.ts), so it says the moved clock where it moves.
+    if (config.settings.devRoutes) c.header("Date", c.var.deps.now().toUTCString());
     c.header("X-Content-Type-Options", "nosniff");
     if (!c.res.headers.has("Cache-Control")) c.header("Cache-Control", "no-store");
     if (config.environment !== "production") c.header("X-Robots-Tag", "noindex, nofollow");
