@@ -60,7 +60,7 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
         const operation = item[method];
         if (operation === undefined) return false;
         if (operation.requestBody === undefined && (operation.parameters ?? []).length === 0) return false;
-        const refused = operation.responses?.["400"];
+        const refused: unknown = operation.responses?.["400"];
         return refused === undefined || !codesNamedIn(readResponse(refused).description).includes("invalid_request");
       }).map((method) => `${method.toUpperCase()} ${path}`),
     );
