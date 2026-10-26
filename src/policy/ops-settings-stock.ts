@@ -122,7 +122,7 @@ export const STOCK_SETTINGS = [
     // Purchase orders (docs/decisions/0166-purchase-orders.md).
     name: "po_second_approval_above_rupees",
     title: "Second approver for orders above",
-    note: "A purchase order worth more than this in rupees needs a second Operations manager to approve it; one in another currency is judged at its rate below. Nought means every order needs two.",
+    note: "A purchase order worth more than this in rupees needs a second Operations manager to approve it; one in another currency is judged at its rate below. Nought means every order needs two; until ops set it, Rs. 50,000.",
     unit: "rupees",
     min: 0,
     max: 100_000_000,

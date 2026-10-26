@@ -89,7 +89,14 @@ describe("drafting an order", () => {
 });
 
 describe("approving an order", () => {
-  it("needs two different approvers until ops set an amount, never the same one twice", async () => {
+  it("needs one approver for an order of Rs. 50,000 or less until ops set their own amount", async () => {
+    const id = (await firstOrder(await draft([{ consumable_code: "solvent", quantity: 48 }])))?.id ?? "";
+    const approved = await job.opsPost(`/api/purchase-orders/${id}/approve`);
+    expect(await firstOrder(approved)).toMatchObject({ state: "approved", needs_second_approval: false });
+  });
+
+  it("needs two different approvers for an order above the amount ops set, never the same one twice", async () => {
+    await job.opsPost("/api/settings/po_second_approval_above_rupees", { value: 1000 });
     const id = (await firstOrder(await draft([{ consumable_code: "solvent", quantity: 48 }])))?.id ?? "";
     const once = await job.opsPost(`/api/purchase-orders/${id}/approve`);
     expect(await firstOrder(once)).toMatchObject({ state: "drafted", approved_by: "ops@localhost" });

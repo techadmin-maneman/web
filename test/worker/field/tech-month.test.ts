@@ -48,6 +48,38 @@ describe("the technician's month", () => {
     ]);
   });
 
+  it('pays a fit closed "Can\'t fit today" at the consultation rate, its free refit paying the fit', async () => {
+    await env.DB.prepare("UPDATE appointments SET type = 'first_fit' WHERE id = ?1").bind(JOB).run();
+    await writeRow(
+      "visit_pay_rates",
+      {
+        id: crypto.randomUUID(),
+        grade_id: (
+          await env.DB.prepare("SELECT pay_grade_id AS id FROM technicians WHERE id = ?1")
+            .bind(IMRAN)
+            .first<{ id: string }>()
+        )?.id,
+        visit_kind: "consultation",
+        amount: 20_000,
+        effective_from: "2026-09-01",
+        set_by: "finance@maneman.in",
+        set_at: AT,
+      },
+      {},
+    );
+    await job.workTo("piece");
+    const closed = await job.post(
+      `/api/tech/jobs/${JOB}/outcome`,
+      { outcome: "partial", reason: "no_piece", cannot_fit: true },
+      "event-outcome-02",
+    );
+    expect(closed.status).toBe(202);
+    const month = await (await job.get("/api/tech/month")).json<Month>();
+    expect(month.lines).toEqual([
+      expect.objectContaining({ kind: "consultation", visits: 1, rate: 20_000, amount: 20_000 }),
+    ]);
+  });
+
   it("is empty before any is closed, and for a month asked for with none", async () => {
     expect((await (await job.get("/api/tech/month")).json<Month>()).lines).toEqual([]);
     expect((await (await job.get("/api/tech/month?month=2026-08")).json<Month>()).lines).toEqual([]);
