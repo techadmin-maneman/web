@@ -49,10 +49,12 @@ export const resultPairs = {
       caption: "Head held high again.",
     },
     {
-      before: { file: "result-4-before.jpg", alt: "A young man in a mirror, checking thinning hair" },
-      after: { file: "result-4-after.jpg", alt: "The same young man with full hair" },
+      before: {
+        file: "result-4-before.jpg",
+        alt: "A man bald on top, photographing himself in a salon mirror, before the fit",
+      },
+      after: { file: "result-4-after.jpg", alt: "The same man after the fit, hair swept up and back" },
       caption: "Love it.",
-      illustration: true,
     },
   ] satisfies ResultPair[],
 };
