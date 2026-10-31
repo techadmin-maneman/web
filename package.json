@@ -87,7 +87,7 @@
     "@babel/standalone": "7.29.0",
     "@cloudflare/vitest-plugin": "1.4.2",
     "@cloudflare/workers-types": "5.20261009.1",
-    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite": "0.5.13",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.0",
     "@types/node": "24.19.1",
