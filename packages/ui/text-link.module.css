@@ -82,6 +82,11 @@
     text-decoration-line: none;
   }
 
+  /* Its height is the row's, not a button's: a row with a name in it stands as high as one without. */
+  :where(table) .compact {
+    min-height: 0;
+  }
+
   @media (hover: hover) {
     :where(table tr:hover) .words:not(:disabled) {
       text-decoration-line: underline;

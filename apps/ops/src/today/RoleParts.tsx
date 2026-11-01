@@ -1,8 +1,8 @@
 // Today's parts for each kind of work (./TodayScreen.tsx), each shown to whoever's access reaches its page: the day on
 // the road, from today's column of the dispatch board; Care's last week of replies; and Growth's last 30 days.
 
-import { Columns } from "@maneman/ui/Layout";
 import { Panel } from "@maneman/ui/Panel";
+import { classes } from "@maneman/ui/classes";
 import { StatTile } from "@maneman/ui/StatTile";
 import { useLoad } from "@maneman/ui/useLoad";
 import { todayInIndia } from "@maneman/web-kit/dates";
@@ -42,13 +42,13 @@ function Road() {
   const board = sectionOf("dispatch").path;
   return (
     <Panel titleId="today-road" title={copy.road.title}>
-      <Columns className={styles.tiles}>
+      <div className={classes(styles.row, styles.tiles)}>
         <StatTile label={copy.tiles.visits} value={road.visits} to={board} />
         <StatTile label={copy.road.done} value={road.done} to={board} />
         <StatTile label={copy.road.underWay} value={road.underWay} to={board} />
         <StatTile label={copy.road.late} value={road.late} tone={road.late > 0 ? "warning" : "plain"} to={board} />
         <StatTile label={copy.road.toCome} value={road.toCome} to={board} />
-      </Columns>
+      </div>
     </Panel>
   );
 }
@@ -60,7 +60,7 @@ function Care() {
   const page = sectionOf("care-numbers").path;
   return (
     <Panel titleId="today-care" title={copy.care.title}>
-      <Columns className={styles.tiles}>
+      <div className={classes(styles.row, styles.tiles)}>
         <StatTile
           label={copy.care.median}
           value={replies.median_minutes === null ? copy.care.none : copy.care.minutes(replies.median_minutes)}
@@ -73,7 +73,7 @@ function Care() {
           }
           to={page}
         />
-      </Columns>
+      </div>
     </Panel>
   );
 }
@@ -84,10 +84,10 @@ function Growth() {
   const page = sectionOf("funnel").path;
   return (
     <Panel titleId="today-growth" title={copy.growth.title}>
-      <Columns className={styles.tiles}>
+      <div className={classes(styles.row, styles.tiles)}>
         <StatTile label={copy.growth.leads} value={loaded.value.steps.leads} to={page} />
         <StatTile label={copy.growth.fitted} value={loaded.value.steps.fitted} to={page} />
-      </Columns>
+      </div>
     </Panel>
   );
 }
@@ -98,8 +98,10 @@ export function RoleParts() {
   return (
     <>
       {access.mayCall("GET /api/dispatch") && <Road />}
-      {access.mayCall("GET /api/care-numbers") && <Care />}
-      {access.mayCall("GET /api/growth/funnel") && <Growth />}
+      <div className={styles.pair}>
+        {access.mayCall("GET /api/care-numbers") && <Care />}
+        {access.mayCall("GET /api/growth/funnel") && <Growth />}
+      </div>
     </>
   );
 }

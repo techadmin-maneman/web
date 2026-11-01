@@ -20,7 +20,9 @@
     color: var(--ui-text-muted);
   }
 
+  /* At the tile's foot: a row of tiles keeps its figures on one line, however their names wrap. */
   .value {
+    margin-top: auto;
     font-family: var(--font-serif);
     font-size: var(--fs-34);
     font-variant-numeric: tabular-nums;
