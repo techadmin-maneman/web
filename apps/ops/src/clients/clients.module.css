@@ -7,20 +7,9 @@
 
 /* ---- Finding a client ---------------------------------------------------- */
 
+/* The search's form, in the list's toolbar: its box stands in the toolbar's row; Enter finds. */
 .find {
-  max-width: var(--measure-form);
-  border: var(--hairline) solid var(--ui-line);
-  padding: var(--sp-24);
-}
-
-.findLabel {
-  display: block;
-}
-
-.findField {
-  display: block;
-  width: 100%;
-  margin-top: var(--sp-8);
+  display: contents;
 }
 
 .findHint {

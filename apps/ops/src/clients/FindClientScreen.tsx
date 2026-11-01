@@ -3,7 +3,7 @@
 // Back finds them; before a search, the clients opened this session (lib/client-search.ts), then every client
 // (./ClientList.tsx).
 
-import { Field, TextInput } from "@maneman/ui/Field";
+import { SearchInput } from "@maneman/ui/SearchInput";
 import { errorText } from "@maneman/web-kit/refusal";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -134,37 +134,28 @@ export function FindClientScreen() {
     };
   }, [text, find]);
 
+  const box = (
+    <form
+      className={styles.find}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (askable(text.trim())) void find(text.trim());
+        else setFinding({ step: "failed", code: "invalid_request" });
+      }}
+    >
+      <SearchInput label={copy.label} placeholder={copy.label} value={text} onChange={setText} />
+    </form>
+  );
   return (
     <>
-      <form
-        className={styles.find}
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (askable(text.trim())) void find(text.trim());
-          else setFinding({ step: "failed", code: "invalid_request" });
-        }}
-      >
-        <Field label={copy.label} look={{ label: styles.findLabel }}>
-          {(control) => (
-            <TextInput
-              {...control}
-              className={styles.findField}
-              type="search"
-              autoComplete="off"
-              value={text}
-              onChange={(event) => {
-                setText(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-        {finding.step === "failed" && (
-          <Refusal className={styles.error} said={errorText(copy.errors, { code: finding.code })} />
-        )}
-      </form>
-      {finding.step === "found" && <Found text={finding.text} found={finding.found} />}
       {finding.step === "idle" && <Recent />}
-      {finding.step !== "found" && <ClientList />}
+      <ClientList
+        search={box}
+        instead={finding.step === "found" ? <Found text={finding.text} found={finding.found} /> : null}
+      />
+      {finding.step === "failed" && (
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: finding.code })} />
+      )}
     </>
   );
 }

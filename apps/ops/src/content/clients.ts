@@ -38,6 +38,8 @@ export const clients = {
   /** Not drawn: every client, beneath the search, narrowed by where they stand and city. */
   list: {
     title: "All clients",
+    /** The toolbar above the list, as a screen reader names it. */
+    narrow: "Find and narrow clients",
     name: "Name",
     mobile: "Mobile",
     state: "Status",

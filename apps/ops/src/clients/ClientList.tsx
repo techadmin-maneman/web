@@ -3,12 +3,15 @@
 // can be kept as a bookmark and sent to a colleague: "/clients?state=lead&city=Gurgaon".
 
 import { Button } from "@maneman/ui/Button";
+import { Toolbar } from "@maneman/ui/Toolbar";
+import { Panel } from "@maneman/ui/Panel";
+import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { type ClientList as Listed, type ClientListQuery } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { clients, tables } from "../content.ts";
@@ -16,7 +19,6 @@ import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import form from "@maneman/ui/forms.module.css";
-import shared from "./clients.module.css";
 import styles from "./client-list.module.css";
 import { RowHead } from "@maneman/ui/RowHead";
 import { clientsApi } from "./clients-api.ts";
@@ -24,6 +26,13 @@ import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = clients.list;
 const STATES = ["lead", "fitted", "nothing_booked"] as const;
+
+/** Fitted is done; Booked is under way; nothing booked is a client to win back, said plainly. */
+const STATE_TONES: Readonly<Record<(typeof STATES)[number], BadgeTone>> = {
+  fitted: "done",
+  lead: "attention",
+  nothing_booked: "neutral",
+};
 
 /** The list as the address narrows it; anything it would refuse is left out. */
 function queryOf(search: string): ClientListQuery {
@@ -62,8 +71,8 @@ function Narrow({
     onQuery(queryOf(`?${new URLSearchParams({ state, city }).toString()}`));
   };
   return (
-    <div className={styles.listNarrow}>
-      <Field label={copy.state}>
+    <>
+      <Field label={copy.state} labelHidden>
         {(control) => (
           <Select
             {...control}
@@ -81,7 +90,7 @@ function Narrow({
           </Select>
         )}
       </Field>
-      <Field label={copy.city}>
+      <Field label={copy.city} labelHidden>
         {(control) => (
           <Select
             {...control}
@@ -99,7 +108,7 @@ function Narrow({
           </Select>
         )}
       </Field>
-    </div>
+    </>
   );
 }
 
@@ -135,7 +144,9 @@ function Rows({ listed }: { listed: Listed }) {
                 </OpsLink>
               </RowHead>
               <td>{phoneWords(client.mobile)}</td>
-              <td>{clients.states[client.state]}</td>
+              <td>
+                <Badge tone={STATE_TONES[client.state]}>{clients.states[client.state]}</Badge>
+              </td>
               <td>{client.city ?? copy.noCity}</td>
               <td>{nextVisitOf(client, todayInIndia(apiNow()))}</td>
             </tr>
@@ -146,7 +157,7 @@ function Rows({ listed }: { listed: Listed }) {
   );
 }
 
-export function ClientList() {
+export function ClientList({ search, instead }: { search: ReactNode; instead: ReactNode | null }) {
   const [query, setQuery] = useState(() => queryOf(location.search));
   // The pages before this one, by their cursors, for Previous: the first page's is undefined. A list opened at a page
   // from its address has none, and its Previous goes to the first.
@@ -164,15 +175,18 @@ export function ClientList() {
   const later = query.cursor !== undefined;
   const page = later && trail.length === 0 ? null : trail.length + 1;
   return (
-    <section className={styles.list} aria-labelledby="all-clients">
-      <h2 className={shared.foundTitle} id="all-clients">
-        {copy.title}
-      </h2>
-      {loaded.state === "loading" && <PanelLoading />}
-      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
-      {loaded.state === "loaded" && (
-        <>
+    <Panel titleId="all-clients" title={copy.title}>
+      <Toolbar label={copy.narrow} className={styles.listTools}>
+        {search}
+        {instead === null && loaded.state === "loaded" && (
           <Narrow query={query} cities={loaded.value.cities} onQuery={change} />
+        )}
+      </Toolbar>
+      {instead}
+      {instead === null && loaded.state === "loading" && <PanelLoading />}
+      {instead === null && loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
+      {instead === null && loaded.state === "loaded" && (
+        <>
           <Rows listed={loaded.value} />
           {(later || loaded.value.next_cursor !== null) && (
             <div className={styles.listPages}>
@@ -202,6 +216,6 @@ export function ClientList() {
           )}
         </>
       )}
-    </section>
+    </Panel>
   );
 }
