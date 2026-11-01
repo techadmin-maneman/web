@@ -51,7 +51,7 @@ export const resultPairs = {
     {
       before: {
         file: "result-4-before.jpg",
-        alt: "A man bald on top, photographing himself in a salon mirror, before the fit",
+        alt: "A man bald on top, taking a photo in a salon mirror, before the fit",
       },
       after: { file: "result-4-after.jpg", alt: "The same man after the fit, hair swept up and back" },
       caption: "Love it.",
