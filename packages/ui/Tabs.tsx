@@ -42,13 +42,14 @@ function useRunsOn() {
     };
     settle();
     shown.addEventListener("scroll", measure, { passive: true });
-    const resized = new ResizeObserver(settle);
-    resized.observe(shown);
+    // Where the browser has none, as a test's page has not, the row is measured as it scrolls and changes alone.
+    const resized = "ResizeObserver" in window ? new ResizeObserver(settle) : null;
+    resized?.observe(shown);
     const changed = new MutationObserver(settle);
     changed.observe(shown, { childList: true, subtree: true, attributeFilter: ["aria-current"] });
     return () => {
       shown.removeEventListener("scroll", measure);
-      resized.disconnect();
+      resized?.disconnect();
       changed.disconnect();
     };
   }, []);
