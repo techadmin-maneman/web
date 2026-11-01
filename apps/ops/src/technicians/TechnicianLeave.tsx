@@ -4,13 +4,14 @@
 // ops move it, and "Show on board" opens the board on that job's week, with their row in view and the job's drawer open.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Checkbox, DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
-import { dayClock, fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { dayClock, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type JobOnLeave, type StandingLeave, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
@@ -30,8 +31,8 @@ const copy = technicians.leave;
 /** "19 Sep 2026 to 23 Sep 2026", one date on its own, or one date and the hours of it away. */
 const periodOf = (leave: StandingLeave) =>
   leave.from_time !== null && leave.to_time !== null
-    ? copy.hours(fullDate(leave.from), dayClock(leave.from_time), dayClock(leave.to_time))
-    : copy.period(fullDate(leave.from), fullDate(leave.to));
+    ? copy.hours(plainDate(leave.from), dayClock(leave.from_time), dayClock(leave.to_time))
+    : copy.period(plainDate(leave.from), plainDate(leave.to));
 
 /** Why it was refused, in the console's words; nothing changed either way. */
 function refusal(code: string): string {

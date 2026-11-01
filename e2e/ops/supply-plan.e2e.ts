@@ -150,7 +150,7 @@ test("says a forecast every period of which is over is out of date", async ({ pa
   await page.clock.setFixedTime(new Date("2026-10-15T06:00:00.000Z"));
   await open(page);
   const forecast = page.getByRole("region", { name: copy.forecast.title });
-  await expect(forecast).toContainText(copy.forecast.stale("21 Sep 2026"));
+  await expect(forecast).toContainText(copy.forecast.stale("21 Sep"));
 });
 
 test("rejects a line with why", async ({ page }) => {
@@ -180,7 +180,7 @@ test("shows a city’s forecast, and adds an event to the calendar", async ({ pa
   await page.clock.setFixedTime(new Date("2026-09-29T06:00:00.000Z"));
   await open(page, { "POST /api/demand-events": json({ ...CALENDAR, events: [WEDDINGS, diwali] }) });
   const forecast = page.getByRole("region", { name: copy.forecast.title });
-  await expect(forecast).toContainText(copy.forecast.note(7, "21 Sep 2026"));
+  await expect(forecast).toContainText(copy.forecast.note(7, "21 Sep"));
   await expect(forecast.getByRole("columnheader", { name: "21 Sep" })).toHaveCount(0);
   await expect(forecast.getByRole("row").filter({ hasText: "Solvent" }).first()).toContainText(
     copy.forecast.high("15"),

@@ -139,7 +139,7 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
 
   const coming = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
-  await expect(coming).toContainText("25 Sep 2027");
+  await expect(coming).toContainText("25 Sep");
   await expect(coming).toContainText("9 am to 10:30 am");
   await expect(coming).toContainText(opsCopy.clients.visits.types.service);
   await expect(coming).toContainText("Imran Qureshi");
@@ -168,10 +168,10 @@ test("sets a visit past its day and not closed apart, as overdue, from those to 
   });
   const overdue = page.getByRole("region", { name: opsCopy.clients.visits.overdue });
   await expect(overdue.getByRole("row")).toHaveCount(2);
-  await expect(overdue).toContainText("20 Sep 2027");
+  await expect(overdue).toContainText("20 Sep");
   const toCome = page.getByRole("region", { name: opsCopy.clients.visits.upcoming });
-  await expect(toCome).toContainText("25 Sep 2027");
-  await expect(toCome).not.toContainText("20 Sep 2027");
+  await expect(toCome).toContainText("25 Sep");
+  await expect(toCome).not.toContainText("20 Sep");
 });
 
 test("says so when there is no address and no visit either way", async ({ page }) => {

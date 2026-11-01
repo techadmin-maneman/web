@@ -18,3 +18,8 @@
   list-style: none;
   font-size: var(--fs-14);
 }
+
+/* Those switched off, apart beneath the people let in. */
+.offTitle {
+  margin: var(--sp-24) var(--form-inset) var(--sp-8);
+}

@@ -105,6 +105,29 @@ describe("a reply", () => {
     expect(row).toEqual({ failure: "HTTP 400 not on WhatsApp" });
   });
 
+  // MSG91 holds a reply in our own words to WhatsApp's window: 24 hours from the client's last message.
+  it("is refused, and neither sent nor kept, once the provider's window from the client's last message has passed", async () => {
+    const { messaging, sent } = provider();
+    const held = { ...messaging, replyWindowHours: 24 };
+    const wroteAt = (hoursAgo: number) =>
+      env.DB.prepare("UPDATE conversations SET last_inbound_at = ?2 WHERE id = ?1")
+        .bind(THREAD, new Date(NOW.getTime() - hoursAgo * 60 * 60 * 1000).toISOString())
+        .run();
+
+    await wroteAt(25);
+    const late = await post(held, `/api/conversations/${THREAD}/replies`, { text: "Sorry for the wait." });
+    expect(late.status).toBe(409);
+    expect(await late.json()).toMatchObject({ error: { code: "window_closed" } });
+    expect(sent).toEqual([]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM chat_messages").first()).toEqual({ n: 0 });
+
+    await wroteAt(23);
+    expect((await post(held, `/api/conversations/${THREAD}/replies`, { text: "Sorry for the wait." })).status).toBe(
+      200,
+    );
+    expect(sent).toHaveLength(1);
+  });
+
   it("is kept unsent, with why, while messaging is off", async () => {
     const { messaging, sent } = provider();
     await post(messaging, `/api/conversations/${THREAD}/replies`, { text: "Hello" }, { enabled: false });

@@ -4,12 +4,13 @@
 // open the page it leads to.
 
 import { Columns, Stack } from "@maneman/ui/Layout";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { StatTile, type StatTone } from "@maneman/ui/StatTile";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { fullDate, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
+import { indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
@@ -72,11 +73,13 @@ function VisitsToday() {
 
 function Figures({ board }: { board: Tasks }) {
   const mayCall = useMayCall();
-  const mayRoute = useAccess().mayCall("GET /api/dispatch/day");
+  const access = useAccess();
+  // Where On the road today is drawn beneath, it counts today's visits first: not twice.
+  const visitsTile = access.mayCall("GET /api/dispatch/day") && !access.mayCall("GET /api/dispatch");
   const shown = TILES.filter((tile) => mayOpen(mayCall, tile.page));
   return (
     <Columns>
-      {mayRoute && <VisitsToday />}
+      {visitsTile && <VisitsToday />}
       {shown.map((tile) => {
         const figure = figureOf(tile, board);
         return (
@@ -157,7 +160,7 @@ function Needs({ board }: { board: Tasks }) {
 
 export function TodayScreen() {
   const board = useTaskBoard(true);
-  useHeaderSub(copy.day(fullDate(todayInIndia(apiNow()))));
+  useHeaderSub(copy.day(plainDate(todayInIndia(apiNow()))));
   if (board === null) return <PanelLoading />;
   return (
     <Stack gap="24">

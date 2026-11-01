@@ -10,6 +10,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
+import { typeLook } from "@maneman/ui/type";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -63,19 +64,20 @@ function Enforcement({ staff, onChanged }: PanelProps) {
   );
 }
 
-/** Each person by their sign-in email, the way their record opens, with their access and whether they are let in. */
-function PeopleTable({ staff, onOpen }: { staff: StaffList; onOpen: (email: string) => void }) {
+type Person = StaffList["people"][number];
+
+/** Each person by their sign-in email, the way their record opens, with their access. */
+function PeopleTable({ people, onOpen }: { people: readonly Person[]; onOpen: (email: string) => void }) {
   return (
     <Table>
       <thead>
         <tr>
           <th scope="col">{copy.columns.person}</th>
           <th scope="col">{copy.columns.access}</th>
-          <th scope="col">{copy.columns.state}</th>
         </tr>
       </thead>
       <tbody>
-        {staff.people.map((each) => (
+        {people.map((each) => (
           <tr key={each.email}>
             <th scope="row">
               <TextButton
@@ -97,7 +99,6 @@ function PeopleTable({ staff, onOpen }: { staff: StaffList; onOpen: (email: stri
                     </span>
                   ))}
             </td>
-            <td>{each.active ? copy.active : copy.inactive}</td>
           </tr>
         ))}
       </tbody>
@@ -113,6 +114,10 @@ function People({ staff, onChanged }: PanelProps) {
   const mayGrant = access.mayCall("POST /api/staff");
   const [me] = useLoad(whoami);
   const person = staff.people.find((each) => each.email === open) ?? null;
+  const opening = (email: string) => {
+    setSaid(null);
+    setOpen(email);
+  };
   // Nobody removes themselves: they would be locked out by their own hand.
   const mayRemove =
     person !== null &&
@@ -140,13 +145,15 @@ function People({ staff, onChanged }: PanelProps) {
         )}
       </PageActions>
       <Panel titleId="staff-people" title={copy.title}>
-        <PeopleTable
-          staff={staff}
-          onOpen={(email) => {
-            setSaid(null);
-            setOpen(email);
-          }}
-        />
+        <PeopleTable people={staff.people.filter((each) => each.active)} onOpen={opening} />
+        {staff.people.some((each) => !each.active) && (
+          <section aria-labelledby="staff-switched-off">
+            <h3 className={typeLook("title-4", styles.offTitle)} id="staff-switched-off">
+              {copy.switchedOff}
+            </h3>
+            <PeopleTable people={staff.people.filter((each) => !each.active)} onOpen={opening} />
+          </section>
+        )}
         {said !== null && <Toast>{said}</Toast>}
         {person !== null && (
           <FormDrawer

@@ -746,8 +746,11 @@ export const settings = {
     cities: "Cities",
     columns: { person: "Person", access: "Access", state: "Status" },
     noAccess: "No access",
+    /** A record's Status: let in, or kept with their grants but let in nowhere. */
     active: "Active",
-    inactive: "Off",
+    inactive: "Switched off",
+    /** Those let in nowhere, listed apart beneath those who are. */
+    switchedOff: "Switched off",
     add: "Add a person",
     /** A row's name, read as what pressing it does. */
     open: (email: string) => `Open ${email}`,

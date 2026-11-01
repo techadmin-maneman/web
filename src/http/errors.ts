@@ -28,6 +28,8 @@ export const ERROR_CODES = [
   // gate's claim, and no try-on runs while WhatsApp cannot send its look.
   "claim_required",
   "whatsapp_unavailable",
+  // A Care reply past WhatsApp's 24-hour window from the client's last message.
+  "window_closed",
   // A site form that acts on a number only once its WhatsApp code was entered: the one visit, and the try-on's gate.
   "number_not_proved",
   // A webhook whose token or signature does not match.
@@ -246,6 +248,7 @@ export const ERROR_STATUS = {
   idempotency_key_reused: 422,
   environment_mismatch: 503,
   unavailable: 503,
+  window_closed: 409,
   internal_error: 500,
   busy: 503,
   photo_invalid_file: 422,

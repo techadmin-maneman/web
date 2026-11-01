@@ -4,11 +4,12 @@
 // piece's replacement date is in brass.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { classes } from "@maneman/ui/classes";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { fullDate, longDate } from "@maneman/web-kit/dates";
+import { longDate } from "@maneman/web-kit/dates";
 import { Suspense, useCallback } from "react";
 import { type Piece } from "../api.ts";
 import { clients } from "../content.ts";
@@ -28,7 +29,7 @@ const copy = clients.pieces;
 /** The table's columns, in the board's order. */
 const COLUMNS = ["code", "base", "fitted", "lot", "due", "failure"] as const;
 
-const dateOf = (isoDate: string | null) => (isoDate === null ? clients.unknown : fullDate(isoDate));
+const dateOf = (isoDate: string | null) => (isoDate === null ? clients.unknown : plainDate(isoDate));
 
 function cameOff(piece: Piece): string {
   if (piece.failed_at !== null) return copy.failed(longDate(piece.failed_at), piece.failure_reason);

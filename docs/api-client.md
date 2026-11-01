@@ -6214,6 +6214,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "window_closed",
             "number_not_proved",
             "unauthorized",
             "visit_booked",

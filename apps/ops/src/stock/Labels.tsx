@@ -4,11 +4,12 @@
 // (docs/decisions/0162-scanning-labels.md).
 
 import { Panel } from "@maneman/ui/Panel";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, ChoiceGroup, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
-import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Stock, type StockUnits } from "../api.ts";
 import { stockLabels as copy } from "../content/stock-labels.ts";
@@ -32,7 +33,7 @@ export interface LabelsFor {
 
 const lotLine = (lotCode: string | null, expiresOn: string | null): string | null => {
   if (lotCode === null) return null;
-  return expiresOn === null ? lotCode : `${lotCode} · ${copy.expires(fullDate(expiresOn))}`;
+  return expiresOn === null ? lotCode : `${lotCode} · ${copy.expires(plainDate(expiresOn))}`;
 };
 
 type Unit = StockUnits["units"][number];

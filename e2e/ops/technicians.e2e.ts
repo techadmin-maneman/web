@@ -135,7 +135,7 @@ test("puts Leave where the board draws Skill, with no design note beneath the ta
   await expect(page.getByRole("columnheader", { name: "Skill" })).toBeHidden();
   await expect(page.getByRole("columnheader", { name: opsCopy.technicians.tabs.leave })).toBeVisible();
   await expect(page.getByText("Nothing records what a technician is trained for")).toBeHidden();
-  await expect(page.getByText(opsCopy.technicians.work.period("24 Jun 2027", "22 Sep 2027"))).toBeVisible();
+  await expect(page.getByText(opsCopy.technicians.work.period("24 Jun", "22 Sep"))).toBeVisible();
 });
 
 // "AWAY" never said until when.

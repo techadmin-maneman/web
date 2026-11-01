@@ -20,13 +20,13 @@ export const stock = {
   /** A hub or a stockroom closed while it still holds stock. */
   closed: (name: string) => `${name} (closed)`,
   consumable: "Item",
-  // Not drawn: past a handful of places, the one shown beside the warehouse, and a place low on anything.
   place: "Place",
   placeLow: " · low",
   /** A place holding less than nothing of something: a movement went unrecorded, and a count puts it right. */
   placeBelow: " · below zero",
   totalsBy: "Show",
-  byPlace: "Each place",
+  /** With a handful of places, every one side by side. */
+  allPlaces: "All places",
   byZone: "Totals by zone",
   byCity: "Totals by city",
   /** "12 strips", and a mark for a place at or below its level. */
@@ -37,8 +37,13 @@ export const stock = {
   belowZero: "Below zero · count it",
   none: "No consumables yet. Add them in",
   retired: "retired",
-  counted: (when: string) => `Counted ${when}`,
-  /** The soonest a lot held there expires. */
+  /** One place's columns: what it holds, the soonest of its lots to expire, and when it was last counted. */
+  columns: { held: "On hand", expires: "Soonest expiry", counted: "Last counted" },
+  noExpiry: "—",
+  neverCounted: "Not yet",
+  expired: "Expired",
+  expiresSoon: "Expires soon",
+  /** A lot or a piece's label: "Expires 30 Nov 2027". */
   expires: (when: string) => `Expires ${when}`,
   record: {
     title: "Record a movement",

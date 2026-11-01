@@ -29,6 +29,7 @@
     "./service-area": "./service-area.ts",
     "./pwa": "./pwa.ts",
     "./sw-update": "./sw-update.ts",
-    "./load-or-reload": "./load-or-reload.ts"
+    "./load-or-reload": "./load-or-reload.ts",
+    "./plain-date": "./plain-date.ts"
   }
 }

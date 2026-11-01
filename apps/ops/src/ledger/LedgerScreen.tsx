@@ -3,13 +3,14 @@
 // (src/domain/money/payment-ledger.ts).
 
 import { Button } from "@maneman/ui/Button";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { DateInput, Field } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
-import { addDays, fullDate, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
+import { addDays, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { useHeaderSub } from "../frame/PageHead.tsx";
@@ -36,7 +37,7 @@ const wordOf = (words: Readonly<Record<string, string | undefined>>, key: string
 
 /** A payment's cells, as the table shows them and the CSV keeps them. */
 const cellsOf = (row: Payment): string[] => [
-  fullDate(dayOf(row.created_at)),
+  plainDate(dayOf(row.created_at)),
   row.reference ?? copy.noClient,
   nameOf(row),
   wordOf(copy.kinds, row.kind),
@@ -129,7 +130,7 @@ function Links({ links }: { links: readonly Link[] }) {
             <tbody>
               {links.map((link) => (
                 <tr key={link.id}>
-                  <RowHead>{fullDate(dayOf(link.created_at))}</RowHead>
+                  <RowHead>{plainDate(dayOf(link.created_at))}</RowHead>
                   <td>{link.reference ?? copy.noClient}</td>
                   <td>{nameOf(link)}</td>
                   <td className={styles.figure}>{rupees(link.amount)}</td>
@@ -145,7 +146,7 @@ function Links({ links }: { links: readonly Link[] }) {
 }
 
 function Counted({ ledger }: { ledger: Ledger }) {
-  useHeaderSub(copy.counted(fullDate(ledger.from), fullDate(ledger.to)));
+  useHeaderSub(copy.counted(plainDate(ledger.from), plainDate(ledger.to)));
   return null;
 }
 

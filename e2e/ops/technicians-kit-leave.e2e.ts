@@ -68,7 +68,7 @@ test("says so when their kit holds nothing on record", async ({ page }) => {
 test("lists the leave a technician is down for, and says when there is none", async ({ page }) => {
   await open(page);
   const sandeep = await pageOf(page, "Sandeep Yadav", "Leave");
-  await expect(sandeep.getByText("2 Oct 2027 to 6 Oct 2027")).toBeVisible();
+  await expect(sandeep.getByText("2 Oct to 6 Oct")).toBeVisible();
   await expect(sandeep.getByText("Family wedding")).toBeVisible();
   await backToRoster(page);
   const imran = await pageOf(page, "Imran Qureshi", "Leave");
@@ -81,7 +81,7 @@ test("lists the jobs still booked on a leave each time the tab opens, each with 
 }) => {
   await open(page);
   const main = await pageOf(page, "Sandeep Yadav", "Leave");
-  const stranded = () => main.getByRole("listitem").filter({ hasText: "2 Oct 2027 to 6 Oct 2027" });
+  const stranded = () => main.getByRole("listitem").filter({ hasText: "2 Oct to 6 Oct" });
   await expect(stranded()).toContainText("1 visit is still booked on these days. Move it on the dispatch board.");
   await expect(stranded()).toContainText("Mon 4 Oct, 10:30 am · Rohit Malhotra");
   await expect(
@@ -141,7 +141,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
     opsCopy.technicians.leave.recorded,
   );
   expect(records).toBe(1);
-  const period = main.getByRole("listitem").filter({ hasText: "12 Oct 2027 to 14 Oct 2027" });
+  const period = main.getByRole("listitem").filter({ hasText: "12 Oct to 14 Oct" });
   await expect(period).toContainText("1 visit is still booked on these days. Move it on the dispatch board.");
   await expect(period).toContainText("Wed 13 Oct, 10:30 am · Rohit Malhotra");
 });
@@ -166,14 +166,14 @@ test("takes leave back only once asked, saying they can be booked on those days 
     if (request.method() === "POST") posted.push(request.url());
   });
 
-  await main.getByRole("button", { name: "Cancel Sandeep Yadav’s leave, 2 Oct 2027 to 6 Oct 2027" }).click();
-  const check = main.getByRole("group", { name: "Cancel leave, 2 Oct 2027 to 6 Oct 2027?" });
+  await main.getByRole("button", { name: "Cancel Sandeep Yadav’s leave, 2 Oct to 6 Oct" }).click();
+  const check = main.getByRole("group", { name: "Cancel leave, 2 Oct to 6 Oct?" });
   await expect(check).toContainText(opsCopy.technicians.leave.check.line);
   await check.getByRole("button", { name: DISMISS.cancel }).click();
   await expect(check).toBeHidden();
   expect(posted).toEqual([]);
 
-  await main.getByRole("button", { name: "Cancel Sandeep Yadav’s leave, 2 Oct 2027 to 6 Oct 2027" }).click();
+  await main.getByRole("button", { name: "Cancel Sandeep Yadav’s leave, 2 Oct to 6 Oct" }).click();
   await answer(page, answersWith({ [SANDEEPS_LEAVE]: json(NO_LEAVE) }));
   const sent = page.waitForRequest((request) => request.url().endsWith(CANCEL) && request.method() === "POST");
   await main.getByRole("button", { name: review.send }).click();
@@ -198,6 +198,6 @@ test("meets WCAG 2.2 AA, a box to a line, on the roster and the page, with a rev
 
   await backToRoster(page);
   const sandeep = await pageOf(page, "Sandeep Yadav", "Leave");
-  await sandeep.getByRole("button", { name: "Cancel Sandeep Yadav’s leave, 2 Oct 2027 to 6 Oct 2027" }).click();
+  await sandeep.getByRole("button", { name: "Cancel Sandeep Yadav’s leave, 2 Oct to 6 Oct" }).click();
   expect(await axeViolations(page)).toEqual([]);
 });

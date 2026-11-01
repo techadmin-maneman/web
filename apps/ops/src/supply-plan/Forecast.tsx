@@ -2,7 +2,8 @@
 // use in each period of the latest run, with its high case; and beneath, how right the forecasts before it were.
 
 import type { Success } from "@maneman/web-kit/api";
-import { addDays, dayMonth, fullDate, todayInIndia } from "@maneman/web-kit/dates";
+import { plainDate } from "@maneman/web-kit/plain-date";
+import { addDays, dayMonth, todayInIndia } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
@@ -26,7 +27,7 @@ const copy = supplyPlan.forecast;
 /** "21 Sep", or with its year, of the day `days` after an ISO date. */
 export function dayAfter(date: string, days: number, year = false): string {
   const day = addDays(date, days);
-  return year ? fullDate(day) : dayMonth(day);
+  return year ? plainDate(day) : dayMonth(day);
 }
 
 function Periods({ forecast, city }: { forecast: Forecast; city: string }) {

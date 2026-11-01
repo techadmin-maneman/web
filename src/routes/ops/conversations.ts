@@ -144,6 +144,9 @@ const replyRoute = opsRoute({
   responses: {
     200: answered,
     404: errorResponse("not_found: no such thread, or its client's record is erased"),
+    409: errorResponse(
+      "window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours)",
+    ),
     503: errorResponse("unavailable: the WhatsApp provider sends no free text yet"),
   },
 });
@@ -198,6 +201,7 @@ function registerAnswers(app: App): void {
     });
     if (replied === "not_found" || replied === "erased") return refuse(c, "not_found");
     if (replied === "unavailable") return refuse(c, "unavailable");
+    if (replied === "window_closed") return refuse(c, "window_closed");
     const thread = await conversationThread(c.env.DB, c.env.BACKUPS, id, await inboxContext(c));
     return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
   });

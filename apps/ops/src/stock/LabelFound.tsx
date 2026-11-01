@@ -2,9 +2,10 @@
 // where it is now, and every change to it, oldest first.
 
 import type { Success } from "@maneman/web-kit/api";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Note } from "@maneman/ui/Note";
 import { ScanField } from "@maneman/ui/ScanField";
-import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { type Stock } from "../api.ts";
 import type { paths } from "../api-schema.ts";
@@ -38,7 +39,7 @@ function Found(props: {
       <Note>
         <strong>{unit.code}</strong> · {named(unit.consumable_code)}
         {unit.lot_code !== null && ` · ${unit.lot_code}`}
-        {unit.expires_on !== null && ` · ${copy.expires(fullDate(unit.expires_on))}`}
+        {unit.expires_on !== null && ` · ${copy.expires(plainDate(unit.expires_on))}`}
       </Note>
       <Note>{copy.where(state(unit.state), place(unit.place_id))}</Note>
       <ul className={styles.history} aria-label={copy.history}>

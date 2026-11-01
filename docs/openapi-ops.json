@@ -44,6 +44,7 @@
                   "look_limit_reached",
                   "claim_required",
                   "whatsapp_unavailable",
+                  "window_closed",
                   "number_not_proved",
                   "unauthorized",
                   "visit_booked",
@@ -3689,6 +3690,7 @@
                   "look_limit_reached",
                   "claim_required",
                   "whatsapp_unavailable",
+                  "window_closed",
                   "number_not_proved",
                   "unauthorized",
                   "visit_booked",
@@ -33010,6 +33012,44 @@
                               "type": "string",
                               "enum": [
                                 "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "window_closed"
                               ]
                             }
                           },

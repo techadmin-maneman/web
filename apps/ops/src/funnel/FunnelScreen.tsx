@@ -3,6 +3,7 @@
 // channel; and the Zoho Analytics dashboards beyond it (src/domain/analytics/funnel.ts).
 
 import { BarChart } from "@maneman/ui/BarChart";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
@@ -10,7 +11,6 @@ import { Table, TableScroll } from "@maneman/ui/Table";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
-import { fullDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -97,7 +97,7 @@ function Dashboards() {
 }
 
 function Counted({ funnel }: { funnel: Funnel }) {
-  useHeaderSub(copy.counted(fullDate(funnel.from), fullDate(funnel.to)));
+  useHeaderSub(copy.counted(plainDate(funnel.from), plainDate(funnel.to)));
   return null;
 }
 

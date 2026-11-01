@@ -300,6 +300,8 @@ export const care = {
   errors: {
     text: "Write something first.",
     unavailable: "Replies can’t go from the console yet. Reply on the office WhatsApp.",
+    /** WhatsApp lets our own words through only within 24 hours of the client's last message. */
+    window_closed: "It’s been over 24 hours since they last wrote, so WhatsApp won’t take a reply. Call them instead.",
     not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

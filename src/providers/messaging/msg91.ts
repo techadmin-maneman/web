@@ -116,6 +116,9 @@ export function createMsg91Messaging(settings: Msg91Settings, deps: VendorFetchD
       return resultOf(response);
     },
 
+    // WhatsApp lets a reply in the team's own words through only within 24 hours of the client's last message.
+    replyWindowHours: 24,
+
     // Nothing to hold open: a template goes from MSG91's servers, not from a phone kept signed in.
     connection: (): Promise<Connection> => Promise.resolve({ open: true }),
   };

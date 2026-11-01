@@ -8,7 +8,8 @@ import { today as copy } from "../../apps/ops/src/content/today.ts";
 const CARE = {
   from: "2025-09-12",
   to: "2025-09-19",
-  replies: { chats: 12, median_minutes: 42, within_target: 75 },
+  // The share answered in time, as the API gives it: a fraction of one.
+  replies: { chats: 12, median_minutes: 42, within_target: 0.75 },
   same_day: 50,
   backlog: { waiting_on_us: 3, overdue: 1, waiting_on_client: 2 },
   reasons: [],
@@ -38,10 +39,12 @@ test("dates the day, and gives the road, Care and Growth a part each for those w
     "GET /api/growth/funnel": json(FUNNEL),
   });
   await page.goto("/today");
-  await expect(page.getByText("19 Sep 2025", { exact: true })).toBeVisible();
+  await expect(page.getByText("19 Sep", { exact: true })).toBeVisible();
 
   const road = page.getByRole("region", { name: copy.road.title });
   await expect(road.getByRole("link")).toHaveCount(5);
   await expect(page.getByRole("region", { name: copy.care.title })).toContainText(copy.care.minutes(42));
+  // It read "1%" for every chat answered in time.
+  await expect(page.getByRole("region", { name: copy.care.title })).toContainText("75%");
   await expect(page.getByRole("region", { name: copy.growth.title })).toContainText(copy.growth.fitted);
 });

@@ -3,10 +3,11 @@
 // before. The newest visits come first, earlier ones when asked for.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
-import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
+import { indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Photo, type PhotoView, type PhotoVisit } from "../api.ts";
 import { clients } from "../content.ts";
@@ -126,7 +127,7 @@ export function usePhotos(clientId: string) {
 function captionOf(visit: PhotoVisit): string {
   const type = visit.type === null ? clients.unknown : copy.types[visit.type];
   const technician = visit.technician?.name ?? clients.unknown;
-  return copy.caption(fullDate(visit.date), type, technician);
+  return copy.caption(plainDate(visit.date), type, technician);
 }
 
 function Tile({ shown, visit }: { shown: Shown; visit: PhotoVisit }) {
@@ -142,7 +143,7 @@ function Tile({ shown, visit }: { shown: Shown; visit: PhotoVisit }) {
     <img
       className={styles.tile}
       src={shown.url}
-      alt={copy.alt(angle, copy.phases[shown.photo.phase], fullDate(visit.date))}
+      alt={copy.alt(angle, copy.phases[shown.photo.phase], plainDate(visit.date))}
     />
   );
 }
