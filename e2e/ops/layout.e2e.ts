@@ -33,6 +33,27 @@ test("draws where the keyboard is on the navigation and the Tasks board, in the 
   expect(seen).toBeGreaterThan(20);
 });
 
+// A record named by a member of staff's e-mail runs to a second line rather than past the table.
+test("keeps a long e-mail in Activity's Record column inside its cell", async ({ page }) => {
+  const email = "gurgaon.operations.head@maneman.in";
+  const entry = {
+    id: 1,
+    at: "2026-10-30T05:00:00.000Z",
+    surface: "ops",
+    actor: { kind: "staff", id: "owner@maneman.in", name: null },
+    action: "staff.set",
+    subject: { kind: "staff", id: email, label: null },
+    detail: null,
+  } as const;
+  await answer(page, { "GET /api/activity": json({ entries: [entry], next_cursor: null }) });
+  await page.goto("/activity");
+  const cell = page.getByRole("cell").filter({ hasText: email });
+  await expect(cell).toBeVisible();
+  const rightEdge = (element: Element) => element.getBoundingClientRect().right;
+  const [cellEnds, textEnds] = await Promise.all([cell.evaluate(rightEdge), cell.locator("span").evaluate(rightEdge)]);
+  expect(textEnds).toBeLessThanOrEqual(cellEnds);
+});
+
 // Only the section scrolls: a long page, its rules' legends hidden for a screen reader, never scrolls the console's
 // frame, so the navigation stays where it is.
 test("keeps the navigation in place while a long section scrolls", async ({ page }) => {

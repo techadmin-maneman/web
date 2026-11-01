@@ -41,6 +41,18 @@ export function hasLaterDays(availability: Availability): boolean {
   return lastShown !== undefined && lastShown < availability.last;
 }
 
+/**
+ * The days with each start the API refused in this sheet shut: one offered on the plan's estimate of the drives, then
+ * found by the drives themselves not to fit, is offered again on the next read, and would only be refused again.
+ */
+export function withoutRefused(days: readonly Day[], refused: ReadonlySet<string>): Day[] {
+  if (refused.size === 0) return [...days];
+  return days.map((day) => ({
+    ...day,
+    starts: day.starts.map((start) => (refused.has(start.starts_at) ? { ...start, open: false } : start)),
+  }));
+}
+
 /** The days shown with `fresh` among them, in date order: a day in both is taken from `fresh`. */
 export function withDays(shown: readonly Day[], fresh: readonly Day[]): Day[] {
   const byDate = new Map(shown.map((day) => [day.date, day]));

@@ -4,7 +4,7 @@
 //
 //   <DayTimeline label="Thursday's visits" labelledBy="day-title" steps={steps} rows={rows} />
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { classes } from "./classes.ts";
 import { TableScroll } from "./Table.tsx";
 import styles from "./day-timeline.module.css";
@@ -35,6 +35,7 @@ export function DayTimeline({
   labelledBy,
   steps,
   rows,
+  at = null,
 }: {
   readonly label: string;
   /** The heading the scrolling region is named by. */
@@ -42,15 +43,38 @@ export function DayTimeline({
   /** Each step of the day, with the words its column heads with; an empty one heads with none. */
   readonly steps: readonly { readonly key: string; readonly label: string }[];
   readonly rows: readonly TimelineRow[];
+  /** The step to bring into view along the day, as the start chosen; the chosen cell's own where none is given. */
+  readonly at?: string | null;
 }) {
+  const table = useRef<HTMLTableElement>(null);
+  const chosen =
+    at ??
+    rows.flatMap((row) =>
+      row.cells.filter((cell) => cell.look === "chosen").map((cell) => `${row.key}:${cell.key}`),
+    )[0] ??
+    null;
+  useEffect(() => {
+    const box = table.current;
+    const scroller = box?.parentElement;
+    if (!box || !scroller || chosen === null) return;
+    const target =
+      at === null
+        ? box.querySelector<HTMLElement>(`.${styles.chosen ?? "chosen"}`)
+        : box.querySelector<HTMLElement>(`th[data-step="${CSS.escape(at)}"]`);
+    if (!target) return;
+    // Along the hours alone, past the names that stay put on the left, the step in the middle of what shows.
+    const names = box.querySelector<HTMLElement>(`.${styles.head ?? "head"}`)?.offsetWidth ?? 0;
+    const room = scroller.clientWidth - names;
+    scroller.scrollLeft = Math.max(0, target.offsetLeft - names - (room - target.offsetWidth) / 2);
+  }, [at, chosen]);
   return (
     <TableScroll labelledBy={labelledBy}>
-      <table className={styles.timeline} aria-label={label}>
+      <table ref={table} className={styles.timeline} aria-label={label}>
         <thead>
           <tr>
             <td className={styles.corner} />
             {steps.map((step) => (
-              <th key={step.key} scope="col" className={styles.step}>
+              <th key={step.key} scope="col" className={styles.step} data-step={step.key}>
                 {step.label}
               </th>
             ))}

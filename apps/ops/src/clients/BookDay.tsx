@@ -104,6 +104,7 @@ function Timeline({
         labelledBy="book-day"
         steps={steps.map((minute) => ({ key: String(minute), label: hourLabel(minute) }))}
         rows={rows}
+        at={picked.start === undefined ? null : String(minuteOfDay(picked.start))}
       />
     </>
   );

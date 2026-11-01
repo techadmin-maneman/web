@@ -41,6 +41,9 @@ test.describe("the piece (board B3, step 4)", () => {
   test("closes as partly done with no piece fitted, Can’t fit today, once asked", async ({ page }) => {
     const fake = await onThePiece(page);
     const words = techCopy.steps.piece.cannotFit;
+    // Inside the step's gutter, as every other control on it is, never against the screen's edge.
+    const wayOut = await page.getByRole("button", { name: words.action }).boundingBox();
+    expect(wayOut?.x).toBeGreaterThanOrEqual(16);
     await page.getByRole("button", { name: words.action }).click();
     const asked = page.getByRole("dialog", { name: words.title });
     await expect(asked).toContainText(words.body);
@@ -108,7 +111,8 @@ test.describe("the piece (board B3, step 4)", () => {
 
     const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
     const choices = kit.getByRole("button");
-    await expect(choices.first()).toContainText(`120% density · 2 in kit · ${techCopy.steps.piece.kit.matches}`);
+    await expect(choices.first()).toContainText(`${techCopy.steps.piece.kit.matches} · `);
+    await expect(choices.first()).toContainText("120% density · 2 in kit");
     await choices.first().click();
     await expect(choices.first()).toHaveAttribute("aria-pressed", "true");
     expect(await axeViolations(page)).toEqual([]);

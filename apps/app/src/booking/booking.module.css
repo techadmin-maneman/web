@@ -348,14 +348,16 @@
 
 .pair {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-8);
   margin-top: var(--sp-16);
 }
 
-/* Side by side, both 48 px (size="control"). */
+/* Side by side, both 48 px (size="control"), each its words on one line: one above the other where they don't fit. */
 .pair .primary,
 .pair .secondary {
   flex: 1;
+  min-width: max-content;
   margin-top: 0;
 }
 

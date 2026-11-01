@@ -4,4 +4,6 @@
 .wayOut {
   align-self: flex-start;
   margin-top: var(--sp-24);
+  /* The step's own gutter, as its sections keep: the button never sits against the screen's edge. */
+  margin-inline: var(--sp-20);
 }

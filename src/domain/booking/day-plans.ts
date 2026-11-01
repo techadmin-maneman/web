@@ -12,7 +12,7 @@ import type { Pin } from "../../lib/geo.ts";
 import { minuteOf, type PlanDay, type Stop } from "../../policy/day-plan.ts";
 import { hoursOfCity, type WorkingHours } from "../../policy/start-times.ts";
 import { keepingItsTime, ownAtCheckout, ownUnpaid } from "./hold-stages.ts";
-import { bookedMinutes } from "./occupancy.ts";
+import { bookedMinutes, bookingCity } from "./occupancy.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { heldMinutes } from "../visits/visit-times.ts";
 
@@ -75,28 +75,58 @@ interface LeaveRow {
   readonly to_time: string | null;
 }
 
+/** The technicians of a visit's city, where it is booked or else its client lives, and the one a move stays with. */
+export interface CityOf {
+  readonly pincode: string | null;
+  readonly personId: string | null;
+  readonly keeping: string | null;
+}
+
+/** Whose days are read: every technician's, those named, or those of a visit's city. */
+type Whose = { readonly ids: readonly string[] } | { readonly cityOf: CityOf } | null;
+
+/**
+ * Whose rows `column` names, from ?1: a plain IN, so a visit's or a hold's index by its technician is used, rather than
+ * every technician's rows over the days being read and then left out.
+ */
+function whoseRows(column: string, whose: Whose): string {
+  if (whose === null) return "?1 IS NULL";
+  if ("ids" in whose) return `${column} IN (SELECT value FROM json_each(?1))`;
+  const city = bookingCity("json_extract(?1, '$.pincode')", "json_extract(?1, '$.personId')");
+  return `${column} IN (SELECT id FROM technicians WHERE city = ${city} OR id = json_extract(?1, '$.keeping'))`;
+}
+
+function whoseOf(ids: readonly string[] | null, cityOf: CityOf | null): Whose {
+  if (ids !== null) return { ids };
+  return cityOf === null ? null : { cityOf };
+}
+
+const whoseBound = (whose: Whose): string | null => {
+  if (whose === null) return null;
+  return JSON.stringify("ids" in whose ? whose.ids : whose.cityOf);
+};
+
 function statements(
   db: D1Database,
-  ids: string | null,
+  whose: Whose,
   read: { readonly from: string; readonly to: string; readonly now: Date; readonly leaving: Leaving },
 ) {
   const { from, to, now, leaving } = read;
   const own = leaving.ownCheckoutOf ?? null;
+  const ids = whoseBound(whose);
   return [
     db
       .prepare(
-        `SELECT technician_id, weekday, starts, ends FROM technician_hours WHERE (?1 IS NULL OR technician_id IN (SELECT value FROM json_each(?1)))`,
+        `SELECT technician_id, weekday, starts, ends FROM technician_hours WHERE ${whoseRows("technician_id", whose)}`,
       )
       .bind(ids),
     db
-      .prepare(
-        `SELECT id, home_lat AS lat, home_lng AS lng FROM technicians WHERE ?1 IS NULL OR id IN (SELECT value FROM json_each(?1))`,
-      )
+      .prepare(`SELECT id, home_lat AS lat, home_lng AS lng FROM technicians WHERE ${whoseRows("id", whose)}`)
       .bind(ids),
     db
       .prepare(
         `SELECT technician_id, from_date, to_date, from_time, to_time FROM technician_leave
-         WHERE cancelled_at IS NULL AND from_date <= ?3 AND to_date >= ?2 AND (?1 IS NULL OR technician_id IN (SELECT value FROM json_each(?1)))`,
+         WHERE cancelled_at IS NULL AND from_date <= ?3 AND to_date >= ?2 AND ${whoseRows("technician_id", whose)}`,
       )
       .bind(ids, from, to),
     // A visit is the standard tier's where it names no other (migration 0050).
@@ -105,7 +135,7 @@ function statements(
         `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes, ${PIN}
          FROM appointments a
          LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")} ${VISIT_PLACE}
-         WHERE a.deleted_at IS NULL AND (?1 IS NULL OR a.technician_id IN (SELECT value FROM json_each(?1)))
+         WHERE a.deleted_at IS NULL AND ${whoseRows("a.technician_id", whose)}
            AND ${statusIn("a.status", VISIT_LIVE)} AND a.window_start >= ?2 AND a.window_start < ?3 AND a.id IS NOT ?4`,
       )
       .bind(
@@ -118,7 +148,7 @@ function statements(
       .prepare(
         `SELECT h.technician_id, h.date, h.type, h.minutes, h.start_unit, h.starts_at, ${PIN}
          FROM slot_holds h ${HOLD_PLACE}
-         WHERE h.date BETWEEN ?2 AND ?3 AND (?1 IS NULL OR h.technician_id IN (SELECT value FROM json_each(?1)))
+         WHERE h.date BETWEEN ?2 AND ?3 AND ${whoseRows("h.technician_id", whose)}
            AND ${keepingItsTime("h", "?4")} AND h.id IS NOT ?5 AND NOT (?6 IS NOT NULL AND ${ownUnpaid("h", "?6")})
            AND NOT (?7 IS NOT NULL AND ${ownAtCheckout("h", { person: "?7", type: "?8", tier: "?9", now: "?4" })})`,
       )
@@ -136,7 +166,7 @@ function statements(
     db
       .prepare(
         `SELECT technician_id, date, MAX(CAST(substr(claim, 5) AS INTEGER)) AS revision FROM slot_claims
-         WHERE claim LIKE 'rev:%' AND date BETWEEN ?2 AND ?3 AND (?1 IS NULL OR technician_id IN (SELECT value FROM json_each(?1)))
+         WHERE claim LIKE 'rev:%' AND date BETWEEN ?2 AND ?3 AND ${whoseRows("technician_id", whose)}
          GROUP BY technician_id, date`,
       )
       .bind(ids, from, to),
@@ -148,6 +178,8 @@ export async function loadDayPlans(input: {
   readonly db: D1Database;
   /** Whose days; null for every technician's, read alongside who may take the visit rather than after it. */
   readonly technicianIds: readonly string[] | null;
+  /** With no IDs, only the days of the technicians of this visit's city, in the same read. */
+  readonly cityOf?: CityOf | null;
   readonly from: string;
   readonly to: string;
   readonly now: Date;
@@ -156,9 +188,9 @@ export async function loadDayPlans(input: {
   readonly leaving?: Leaving;
 }): Promise<DayPlans> {
   const { db, from, to, now } = input;
-  const ids = input.technicianIds === null ? null : JSON.stringify(input.technicianIds);
+  const whose = whoseOf(input.technicianIds, input.cityOf ?? null);
   const [[weeks, homes, leave, visits, holds, revisions], schedule, hours] = await Promise.all([
-    db.batch([...statements(db, ids, { from, to, now, leaving: input.leaving ?? {} })]),
+    db.batch([...statements(db, whose, { from, to, now, leaving: input.leaving ?? {} })]),
     loadSlotSchedule(db),
     input.hours,
   ]);

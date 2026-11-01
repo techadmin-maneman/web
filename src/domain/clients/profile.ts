@@ -36,6 +36,8 @@ export interface Address {
 export interface SavedAddress extends Address {
   /** The member of staff's Access e-mail, and when; null for an address the client saved themselves. */
   readonly givenToOps: { readonly staff: string; readonly at: string } | null;
+  /** Whether it has a place on the map, a building picked or Google placing the words, so check-ins are measured. */
+  readonly pinned: boolean;
 }
 
 /**
@@ -48,7 +50,7 @@ export interface GivenToOps {
 }
 
 const ADDRESS_COLUMNS = `line1, line2, locality, city, pincode, access_notes,
-       building, flat, floor, tower, landmark, place_id, given_to_staff, created_at`;
+       building, flat, floor, tower, landmark, place_id, given_to_staff, created_at, lat IS NOT NULL AS pinned`;
 
 interface AddressRow {
   line1: string;
@@ -65,6 +67,8 @@ interface AddressRow {
   place_id: string | null;
   given_to_staff: string | null;
   created_at: string;
+  /** 1 where the address has a coordinate. */
+  pinned: number;
 }
 
 /** The parts of an address's street; one saved before migration 0028 has no flat, floor or tower. */
@@ -108,12 +112,20 @@ export function streetOf(address: StreetParts): { street1: string; street2: stri
 
 /** An address saved before migration 0028 has nulls in the new columns and reads unchanged. */
 function fromRow(row: AddressRow): SavedAddress {
-  const { access_notes: accessNotes, place_id: placeId, given_to_staff: givenTo, created_at: savedAt, ...rest } = row;
+  const {
+    access_notes: accessNotes,
+    place_id: placeId,
+    given_to_staff: givenTo,
+    created_at: savedAt,
+    pinned,
+    ...rest
+  } = row;
   return {
     ...rest,
     accessNotes,
     placeId,
     givenToOps: givenTo === null ? null : { staff: givenTo, at: savedAt },
+    pinned: pinned === 1,
   };
 }
 

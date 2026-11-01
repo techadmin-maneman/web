@@ -44,6 +44,7 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
         care_person: null,
         care_hours: { opens: 9, closes: 21, first_reply: 60 },
         address_given_to_ops: null,
+        address_pinned: true,
         grievances: [
           {
             id: "6f1c2a4e-8b3d-4f5a-9c7e-1d2b3a4c5e6f",
@@ -94,6 +95,7 @@ test("says when ops kept the account, and why, and still lets the client ask aga
         care_person: null,
         care_hours: { opens: 9, closes: 21, first_reply: 60 },
         address_given_to_ops: null,
+        address_pinned: true,
         grievances: [],
       },
     });

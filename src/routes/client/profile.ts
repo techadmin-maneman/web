@@ -47,6 +47,10 @@ const ProfileSchema = z
       description:
         "When the client gave this address to ops on the phone, who saved it for them; null for one they saved themselves.",
     }),
+    address_pinned: z.boolean().openapi({
+      description:
+        "Whether the address has a place on the map, so a technician's check-in is measured against it; false with none.",
+    }),
     consents: z
       .array(
         z
@@ -193,6 +197,7 @@ export function registerClientProfile(app: App): void {
                 place_id: address.placeId,
               },
         address_given_to_ops: address?.givenToOps?.at ?? null,
+        address_pinned: address?.pinned ?? false,
         consents,
         number_change: change === null ? null : numberChangeBody(change),
         number_change_decided:

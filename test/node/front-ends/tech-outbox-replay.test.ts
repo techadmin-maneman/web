@@ -215,6 +215,57 @@ describe("sending what the phone holds", () => {
     ]);
   });
 
+  // A link lives a quarter of an hour; a phone that slept between asking for it and sending ran past it.
+  it("asks for a fresh link when the photograph's ran out, and the set lands", async () => {
+    await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
+    await queue("before_photos", "a", { phase: "before" });
+    let lapsed = 1;
+    const sent = api((method, url) => {
+      if (method === "PUT" && lapsed > 0) {
+        lapsed -= 1;
+        return { status: 404, json: { error: { code: "not_found", request_id: "t" } } };
+      }
+      return answerPhotos(() => ({ status: 204 }))(method, url);
+    });
+    expect(await replay()).toMatchObject({ sent: 1, superseded: 0, stopped: null });
+    expect(sent.map((call) => `${call.method} ${call.url}`)).toEqual([
+      "POST /api/tech/jobs/a/photos/upload-url",
+      "PUT /api/tech/photos/t",
+      "POST /api/tech/jobs/a/photos/upload-url",
+      "PUT /api/tech/photos/t",
+      "POST /api/tech/jobs/a/photos",
+    ]);
+    expect(await frames()).toEqual([]);
+  });
+
+  it("asks for a fresh link when the thumbnail's ran out, and never reads it as the job having changed", async () => {
+    await keepFrame({
+      jobId: "a",
+      angle: "front",
+      phase: "before",
+      frame: new Blob(["front"]),
+      small: new Blob(["small"]),
+    });
+    await queue("before_photos", "a", { phase: "before" });
+    let lapsed = 1;
+    const sent = api(
+      answerPhotos(() => {
+        if (lapsed === 0) return { status: 204 };
+        lapsed -= 1;
+        return { status: 404, json: { error: { code: "not_found", request_id: "t" } } };
+      }),
+    );
+    expect(await replay()).toMatchObject({ sent: 1, superseded: 0, stopped: null });
+    expect(sent.map((call) => `${call.method} ${call.url}`)).toEqual([
+      "POST /api/tech/jobs/a/photos/upload-url",
+      "PUT /api/tech/photos/t",
+      `PUT /api/tech/photos/t/small?take=${TAKE}`,
+      "POST /api/tech/jobs/a/photos/upload-url",
+      `PUT /api/tech/photos/t/small?take=${TAKE}`,
+      "POST /api/tech/jobs/a/photos",
+    ]);
+  });
+
   it("lets a thumbnail the API refuses go, and the set lands: the client app shows the photograph itself", async () => {
     await keepFrame({
       jobId: "a",

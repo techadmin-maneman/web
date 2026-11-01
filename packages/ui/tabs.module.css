@@ -12,6 +12,25 @@
     scrollbar-width: thin;
   }
 
+  /* Where the row runs on past its edge, it fades there, so a tab cut off reads as more to come. */
+  .tabs[data-more="end"] {
+    mask-image: linear-gradient(to right, currentcolor calc(100% - var(--sp-32)), transparent);
+  }
+
+  .tabs[data-more="start"] {
+    mask-image: linear-gradient(to left, currentcolor calc(100% - var(--sp-32)), transparent);
+  }
+
+  .tabs[data-more="both"] {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      currentcolor var(--sp-32),
+      currentcolor calc(100% - var(--sp-32)),
+      transparent
+    );
+  }
+
   /* A tab as short as Kit still gives a 24 px target. */
   .tab {
     flex: none;

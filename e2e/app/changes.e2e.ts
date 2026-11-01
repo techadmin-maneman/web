@@ -13,6 +13,7 @@ import { logIn } from "./signed-in.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 import { PRICE } from "../prices.ts";
 import { PAY_SERVICE } from "./booking-fixtures.ts";
+import { wrappedButtons } from "../wrapped-buttons.ts";
 
 // Each client's visit is moved, then cancelled, so these run one after another, in order. One failing leaves the
 // rest to run.
@@ -106,10 +107,14 @@ test("C8 inside 24 hours shows the charge before anything is cancelled, and Keep
   page,
 }) => {
   const sheet = await reschedule(page, changingClients().late.mobile);
+  // A charge's longer words keep to one line: the pair goes one above the other where they would not fit beside.
+  await expect(sheet.getByRole("button", { name: appCopy.change.move.accept })).toBeVisible();
+  expect(await wrappedButtons(page)).toEqual([]);
   await sheet.getByRole("button", { name: appCopy.change.move.cancelInstead }).click();
   const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
   await expect(cancel.getByText(appCopy.change.cancel.charged(PRICE.service))).toBeVisible();
   await expect(cancel.getByRole("button", { name: appCopy.change.cancel.accept })).toBeVisible();
+  expect(await wrappedButtons(page)).toEqual([]);
   await cancel.getByRole("button", { name: appCopy.change.cancel.keep }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();

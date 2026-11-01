@@ -7898,6 +7898,10 @@ Request body:
       ],
       "description": "When the client gave this address to ops on the phone, who saved it for them; null for one they saved themselves."
     },
+    "address_pinned": {
+      "type": "boolean",
+      "description": "Whether the address has a place on the map, so a technician's check-in is measured against it; false with none."
+    },
     "consents": {
       "type": "array",
       "items": {
@@ -8111,6 +8115,7 @@ Request body:
     "care_hours",
     "address",
     "address_given_to_ops",
+    "address_pinned",
     "consents",
     "number_change",
     "number_change_decided",

@@ -127,6 +127,7 @@ export function profileOf({ reminders = false, undecided = [], address = true }:
     care_person: null,
     care_hours: { opens: 9, closes: 21, first_reply: 60 },
     address_given_to_ops: null,
+    address_pinned: true,
     number_change: null,
     number_change_decided: null,
     deletion: null,

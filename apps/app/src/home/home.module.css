@@ -131,13 +131,18 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-8);
   margin-top: var(--sp-20);
 }
 
-/* Reschedule and Add a note (packages/ui/Button.tsx, outlined on ink, 48 px), side by side. */
+/*
+ * Reschedule and Add a note (packages/ui/Button.tsx, outlined on ink, 48 px), side by side, each its words on one
+ * line: one above the other where they don't fit, as "Pick another time" beside a proposed move.
+ */
 .action {
   flex: 1;
+  min-width: max-content;
   text-align: center;
 }
 

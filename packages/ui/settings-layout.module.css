@@ -163,4 +163,14 @@
       border-bottom-color: var(--ui-strong);
     }
   }
+
+  /* On a phone, each name in the menu a finger's height. */
+  @media (max-width: 600px) {
+    .groupName,
+    .item {
+      display: flex;
+      align-items: center;
+      min-height: var(--tap);
+    }
+  }
 }

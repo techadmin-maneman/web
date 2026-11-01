@@ -211,13 +211,17 @@ test("picks another window when one has just gone, and pays for that one", async
   });
   await toWindows(page);
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
+  const open = windows.getByRole("radio").and(page.locator(":enabled"));
+  const offered = await open.count();
+  await open.first().click();
   const redrawn = windowsAskedAgain(page);
   await windows.getByRole("button", { name: appCopy.booking.window.continue }).click();
   await expect(windows.getByRole("alert")).toHaveText(TAKEN);
   // Nothing is chosen any more: the day's windows have been asked for again, and the client picks from those.
   await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toBeDisabled();
   await redrawn();
+  // The start refused is not offered again in this sheet, though the API, planning on its estimate, offers it.
+  await expect(open).toHaveCount(offered - 1);
 
   await continueToPayment(page);
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
@@ -316,6 +320,20 @@ test("lets a lapsed hold go the moment the phone sees it lapse, and picks again"
   await released;
   await expired.getByRole("button", { name: appCopy.booking.expired.pickAgain }).click();
   await expect(page.getByRole("dialog", { name: appCopy.booking.date.title })).toBeVisible();
+});
+
+// A phone that slept wakes with its timers behind: the clock moves on without firing them, and the sheet must still
+// say the time is up rather than sit at 0:00 with Pay off.
+test("says the time is up when a phone that slept comes back past its hold", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await page.clock.install();
+  await toPayment(page);
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.setSystemTime(now + 20 * 60_000);
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  const expired = page.getByRole("dialog", { name: appCopy.booking.expired.title });
+  await expect(expired).toBeVisible();
+  await expect(expired.getByRole("button", { name: appCopy.booking.expired.pickAgain })).toBeVisible();
 });
 
 // A payment Razorpay took in time keeps the hold (ADR 0068): when the phone sees the time end, it asks, and says

@@ -113,8 +113,19 @@
   padding: var(--sp-24) var(--sp-32) var(--sp-12);
 }
 
-/* A phone keeps its width for the page: the frame's room at the sides is a finger's, not a desk's. */
+/*
+ * A phone keeps its width for the page: the frame's room at the sides is a finger's, not a desk's. The bar has no room
+ * for where the page sits beside its controls, which the page's heading and its tabs or menu say beneath.
+ */
 @media (max-width: 600px) {
+  .bar {
+    padding: 0 var(--sp-16);
+  }
+
+  .crumbs > * {
+    display: none;
+  }
+
   .page {
     padding: var(--sp-16) var(--sp-16) var(--sp-32);
   }

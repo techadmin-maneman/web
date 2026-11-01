@@ -313,7 +313,7 @@ export function Consultation(props: ConsultationProps) {
         // A code entered more than 30 minutes ago no longer proves the number: the next press sends a new one.
         if (!answer.ok && answer.code === "number_not_proved") numberCode.forget();
         if (!answer.ok && outOfDate(answer.code)) {
-          void open.refresh();
+          void open.refresh(answer.code === "taken" ? slot.start : null);
           if (stage === "address") props.onBackToVisit();
         }
         return answer;
