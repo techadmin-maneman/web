@@ -25,7 +25,10 @@
       display var(--duration-travel) var(--ease-house) allow-discrete;
   }
 
+  /* The head and what follows it fill the window's height, so a foot stays at its foot. */
   .drawer[open] {
+    display: flex;
+    flex-direction: column;
     transform: none;
   }
 
@@ -84,5 +87,47 @@
     --setting-label-width: 40%;
 
     padding: var(--sp-8) var(--sp-20) var(--sp-20);
+  }
+
+  /* A body with a foot: the body takes the room, the foot stays in view at the window's foot as the body scrolls. */
+  .footed {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .footed > .body {
+    flex: 1;
+  }
+
+  .foot {
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-raised);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-8);
+    padding: var(--sp-12) var(--sp-20);
+    padding-bottom: calc(var(--sp-12) + env(safe-area-inset-bottom));
+    border-top: var(--hairline) solid var(--border-subtle);
+    background: var(--surface);
+  }
+
+  /* A phone: the drawer is the whole window, risen from its foot as a sheet is. */
+  @media (max-width: 600px) {
+    .drawer {
+      inset: 0;
+      width: 100%;
+      height: 100dvh;
+      border: 0;
+      transform: translateY(100%);
+    }
+
+    @starting-style {
+      .drawer[open] {
+        transform: translateY(100%);
+      }
+    }
   }
 }

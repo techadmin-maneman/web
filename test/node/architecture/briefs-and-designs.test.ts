@@ -60,3 +60,15 @@ describe("the Phase 2 designs", () => {
     }
   });
 });
+
+describe("the ops console redesign", () => {
+  it("is all present", () => {
+    const files = readdirSync("design/ops-redesign");
+    for (const design of ["Ops Console.dc.html", "Ops Console Mobile.dc.html", "README.md", "COPY-TODO.md"])
+      expect(files).toContain(design);
+  });
+
+  it("runs on the same prototype runtime as the Phase 1 design", () => {
+    expect(sha256("design/ops-redesign/support.js")).toBe(sha256("design/support.js"));
+  });
+});

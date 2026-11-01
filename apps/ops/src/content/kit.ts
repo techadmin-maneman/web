@@ -98,11 +98,20 @@ export const kit = {
   signOut: "Sign out",
   remove: "Remove",
   nav: "Console",
+  navGroups: ["First group", "Second group"] as const,
   navItems: [
     { name: "Today", count: 0 },
     { name: "Tasks", count: 8, urgent: true },
-    { name: "Dispatch", count: 0 },
+    { name: "Dispatch", count: 3 },
     { name: "Clients", count: 0 },
+  ] as const,
+  picker: (city: string) => `City: ${city}`,
+  pickerGroups: ["Stores", "Kits"] as const,
+  pickerDetails: ["2 low", "1 below zero"] as const,
+  rows: [
+    { title: "Replacement order", meta: "Meera Iyer · Gurgaon", end: "3 days late", tone: "warning" },
+    { title: "Address to confirm", meta: "Kunal Shah · Mumbai", end: "Today", tone: "attention" },
+    { title: "Service visit", meta: "Arif Khan · Gurgaon", end: "Tomorrow" },
   ] as const,
   fold: "Fold",
 } as const;

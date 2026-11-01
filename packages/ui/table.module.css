@@ -88,6 +88,23 @@
     z-index: var(--z-raised);
   }
 
+  /* A row's rule (Table.tsx's rowRule): a line down its first cell's edge in the tone of how pressing it is. */
+  .table tbody tr:is(.ruleAttention, .ruleWarning, .ruleError) > :first-child {
+    box-shadow: inset var(--rule-strong) 0 0 0 var(--rule);
+  }
+
+  .ruleAttention {
+    --rule: var(--ui-accent);
+  }
+
+  .ruleWarning {
+    --rule: var(--status-warning);
+  }
+
+  .ruleError {
+    --rule: var(--status-error);
+  }
+
   /* A figure never breaks across lines: one that wraps reads as two. A table too wide for its figures scrolls. */
   .table .figure {
     font-variant-numeric: tabular-nums;

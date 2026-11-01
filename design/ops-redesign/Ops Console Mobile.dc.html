@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#DED7C8;font-family:'Instrument Sans',system-ui,sans-serif;color:#1A1714;-webkit-font-smoothing:antialiased}*{box-sizing:border-box}a{color:#16233A}a:hover{color:#A9813E}</style>
+</helmet>
+<section style="padding:48px;display:flex;flex-direction:column;gap:24px">
+  <div>
+    <h1 style="font-family:'EB Garamond',serif;font-weight:500;font-size:40px;margin:0">Mane Man ops console · phone</h1>
+    <p style="font-size:15px;color:#3A352E;margin:6px 0 0;max-width:780px">Same screens as the desktop prototype at 390 px, in the console's own tokens. An ink tab bar replaces the hidden menu, lists stay as rows rather than stacks of label/value pairs, and drawers open as full-height sheets with the main action pinned to the bottom.</p>
+  </div>
+  <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ screens }}" as="sc" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:500;color:#3A352E">{{ sc.label }}</div>
+        <div style="width:390px;height:844px;background:#E9E4D8;overflow:hidden;display:flex;flex-direction:column;border:1px solid #CEC6B4;position:relative">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:500"><span>9:41</span><span style="font-size:11px">●●● ▮</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 16px 10px">
+            <sc-if value="{{ sc.back }}" hint-placeholder-val="{{ false }}"><span style="font-size:22px;color:#16233A;width:28px">‹</span></sc-if>
+            <span style="flex:1;font-family:'EB Garamond',serif;font-size:26px">{{ sc.title }}</span>
+            <span style="width:44px;height:44px;border:1px solid #8A8173;background:#FFFFFF;display:grid;place-items:center;font-size:16px">⌕</span>
+            <span style="width:36px;height:36px;background:#DED7C8;display:grid;place-items:center;font-size:12px;font-weight:500">OP</span>
+          </div>
+          <sc-if value="{{ sc.hasChips }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:6px;padding:0 16px 12px;overflow:hidden">
+              <sc-for list="{{ sc.chips }}" as="c" hint-placeholder-count="3">
+                <span style="white-space:nowrap;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }};padding:7px 12px;font-size:13px">{{ c.t }}</span>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:12px">
+            <sc-if value="{{ sc.hasBanner }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+                <span style="font-weight:500;font-size:14px;color:#8A3A2E">{{ sc.banner }}</span>
+                <span style="font-size:13px;color:#3A352E">{{ sc.bannerSub }}</span>
+                <span style="align-self:flex-start;background:#16233A;color:#E9E4D8;padding:10px 14px;font-size:14px;font-weight:500">{{ sc.bannerCta }}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ sc.hasKpis }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <sc-for list="{{ sc.kpis }}" as="k" hint-placeholder-count="4">
+                  <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:10px 12px"><div style="font-size:12px;color:#5F5851">{{ k.l }}</div><div style="font-family:'EB Garamond',serif;font-size:26px;line-height:1.1;color:{{ k.fg }}">{{ k.v }}</div></div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ sc.hasSection }}" hint-placeholder-val="{{ true }}"><div style="font-size:12px;color:#5F5851;letter-spacing:.04em;text-transform:uppercase;margin-top:4px">{{ sc.section }}</div></sc-if>
+            <div style="background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+              <sc-for list="{{ sc.rows }}" as="r" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #CEC6B4;border-left:2px solid {{ r.dot }};min-height:64px">
+                  
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                    <span style="font-weight:500;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.t }}</span>
+                    <span style="font-size:12px;color:#5F5851;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.s }}</span>
+                  </div>
+                  <span style="font-size:12px;color:{{ r.rfg }};white-space:nowrap;text-align:right">{{ r.r }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ sc.hasCta }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:12px 16px;background:#FFFFFF;border-top:1px solid #CEC6B4;display:flex;align-items:center;gap:12px">
+              <div style="flex:1;display:flex;flex-direction:column"><span style="font-size:14px;font-weight:500">{{ sc.ctaTitle }}</span><span style="font-size:12px;color:#5F5851">{{ sc.ctaSub }}</span></div>
+              <span style="background:#16233A;color:#E9E4D8;padding:13px 16px;font-size:14px;font-weight:500">{{ sc.cta }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ sc.hasTabs }}" hint-placeholder-val="{{ true }}">
+            <div style="height:78px;background:#16233A;border-top:1px solid #1E2E49;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 4px 20px">
+              <sc-for list="{{ sc.tabs }}" as="t" hint-placeholder-count="5">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:{{ t.fg }};font-weight:{{ t.fw }};position:relative">
+                  <span style="width:22px;height:22px;border:1.6px solid {{ t.fg }}"></span>{{ t.l }}
+                  <sc-if value="{{ t.n }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;right:18px;background:#E0917F;color:#16233A;font-size:11px;padding:0 5px">{{ t.n }}</span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+        <div style="font-size:12px;color:#3A352E;max-width:390px">{{ sc.note }}</div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const TONES = { bad: '#8A3A2E', warn: '#B98B45', ok: 'transparent', neutral: 'transparent', info: 'transparent' };
+const TAB_IDS = ['Today', 'Tasks', 'Board', 'Messages', 'More'];
+const tabs = (on, n = { Tasks: '12', Messages: '4' }) => TAB_IDS.map(l => ({ l, fg: l === on ? '#E9E4D8' : '#8C96A8', fw: l === on ? 600 : 400, n: n[l] || '' }));
+const chips = (list, on) => list.map(t => ({ t, bg: t === on ? '#16233A' : '#FFFFFF', fg: t === on ? '#E9E4D8' : '#1A1714', bd: t === on ? '#16233A' : '#8A8173' }));
+const R = (t, s, r, tn) => ({ t, s, r, dot: TONES[tn || 'neutral'], rfg: tn === 'bad' ? '#8A3A2E' : tn === 'warn' ? '#7A5B24' : '#5F5851' });
+const SCREENS = [
+  { label: 'Today · Dispatch', title: 'Today', tab: 'Today', chips: ['All cities', 'Gurgaon', 'Delhi', 'Noida'], chipOn: 'All cities',
+    kpis: [{ l: 'Visits today', v: '23' }, { l: 'No technician', v: '2', fg: '#8A3A2E' }, { l: 'Running late', v: '1', fg: '#7A5B24' }, { l: 'Kits short', v: '3', fg: '#7A5B24' }],
+    section: 'Needs you', rows: [R('Give a visit a technician', 'Kabir Mehta · 2 pm · Sector 56', 'In 3 h', 'bad'), R('Ravi Kumar is 25 min late', 'Arjun Sethi · 11:30 am', 'Now', 'bad'), R('Client asked to move', 'Rohit Malhotra · Tue', 'Today', 'warn'), R('Confirm an address', 'Nikhil Bansal · tomorrow', '6 pm', 'warn')],
+    note: 'Four numbers, then one list of things to act on. Role decides what fills both.' },
+  { label: 'Tasks', title: 'Tasks', tab: 'Tasks', chips: ['All 10', 'Mine 3', 'No owner 4', 'Overdue 2'], chipOn: 'All 10',
+    section: '', rows: [R('Replacement order', 'Rohit Malhotra · MM-STD-4417-D', '26 d late', 'bad'), R('No technician', 'Kabir Mehta · today 2 pm', 'In 3 h', 'bad'), R('Move requested', 'Rohit Malhotra · Tue evening', 'Today', 'warn'), R('Address to confirm', 'Nikhil Bansal', '6 pm', 'warn'), R('UPI to record', 'Sameer Khanna · Rs. 2,000', 'Today', 'warn'), R('Remedy to approve', 'Rahul Jain · 2 free visits', 'Today', 'warn'), R('Leave asked for', 'Sunil Rawat · Fri 6 Nov', 'Tomorrow'), R('First fit to book', 'Harsh Vardhan', 'Wed')],
+    note: 'One row per task: what, who, when. Swipe right to take, left to snooze; tap for the sheet.' },
+  { label: 'Board · day', title: 'Mon 2 Nov', tab: 'Board', chips: ['Imran', 'Sunil', 'Ravi', 'Deepak', 'Aman'], chipOn: 'Imran',
+    banner: '2 visits have no technician', bannerSub: 'Kabir Mehta 2 pm · Nitin Arora 4 pm', bannerCta: 'Assign',
+    section: 'Imran Qureshi · 4 visits', rows: [R('9:00 · Anil Kapoor', 'Service visit · DLF Phase 2', 'Done', 'ok'), R('11:00 · Ritesh Gupta', 'Consultation · Sector 49', 'Under way', 'info'), R('1:00 · Karan Malik', 'First fit · Sohna Road', '18 min drive'), R('4:00 · Vikram Singh', 'Service visit · Sector 56', 'Booked')],
+    note: 'On a phone the board shows one technician at a time; swipe the chips to switch. Unassigned visits stay pinned on top.' },
+  { label: 'Messages', title: 'Messages', tab: 'Messages', chips: ['Waiting on us 4', 'Mine 6', 'All'], chipOn: 'Waiting on us 4',
+    section: '', rows: [R('Kabir Mehta', 'Hi, the front is lifting, can someone help?', '38 min', 'bad'), R('Nikhil Bansal', 'What does the first fit cost in total?', '12 min', 'warn'), R('Varun Chopra', 'Can I move to the evening?', '9 min', 'warn'), R('Sameer Khanna', 'Paid by UPI, screenshot attached', '2 min', 'warn'), R('Anil Kapoor', 'You: See you at 12', '1 h'), R('Rohit Malhotra', 'You: Your replacement is on order.', 'Sat')],
+    note: 'Waiting time sits where the eye lands. Automatic messages collapse into one line inside the thread.' },
+  { label: 'Book a visit · sheet', title: 'Book a visit', back: true, noTabs: true, chips: ['Consultation', 'First fit', 'Service visit', 'Replacement'], chipOn: 'Service visit',
+    section: 'Tue 3 Nov · afternoon', rows: [R('12:00 pm', 'Imran Qureshi · 14 min away', 'Free', 'ok'), R('1:00 pm', 'Imran Qureshi, Vikas Rana', 'Free', 'ok'), R('2:00 pm', 'Vikas Rana · 26 min away', 'Free', 'ok'), R('3:00 pm', 'Imran Qureshi', 'Free', 'ok'), R('3:30 pm', 'Vikas Rana', 'Free', 'ok')],
+    cta: 'Book 2 pm', ctaTitle: 'Service visit · Rs. 2,000', ctaSub: 'Rohit Malhotra · link by WhatsApp',
+    note: 'Visit type, then day strip, then times as tappable rows. The price and the action are always at the bottom.' },
+  { label: 'More · Settings', title: 'Settings', back: true, tab: 'More', chips: [], 
+    section: '', rows: [R('Cities', '3 served · 2 with no technician', '›', 'warn'), R('Booking', 'Slots every 30 min', '›'), R('Moves and no-shows', 'Free to move until 24 h before', '›'), R('Field', 'Check-in within 200 m', '›'), R('Prices', 'Packages, services, discount codes', '›'), R('Care', 'Hours, team, remedies, quick replies', '›'), R('Inventory', 'Alerts, counts, purchasing', '›'), R('Team', '4 staff · 1 pay grade', '›')],
+    note: 'Settings open as a plain list with a one-line summary each. The 9-group chevron grid is gone.' }
+];
+class Component extends DCLogic {
+  renderVals() {
+    return { screens: SCREENS.map(s => ({ ...s, back: !!s.back, chips: chips(s.chips, s.chipOn), hasChips: s.chips.length > 0, hasBanner: !!s.banner, hasKpis: !!s.kpis, kpis: (s.kpis || []).map(k => ({ ...k, fg: k.fg || '#1A1714' })), hasSection: !!s.section, hasCta: !!s.cta, hasTabs: !s.noTabs, tabs: tabs(s.tab) })) };
+  }
+}
+</script>
+</body>
+</html>

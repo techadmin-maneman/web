@@ -104,6 +104,22 @@ export function TableScroll({ labelledBy, children }: { readonly labelledBy: str
 /** A column of figures, right aligned, as every board sets a count or an amount. */
 export const FIGURE = styles.figure;
 
+/**
+ * How pressing a row is, as a rule down its first edge: attention for what is due today, warning for what is overdue
+ * or late, error for what failed. A row with none has no rule. ListRow draws the same rule on a phone.
+ */
+export type RuleTone = "attention" | "warning" | "error";
+
+const RULES: Readonly<Record<RuleTone, string | undefined>> = {
+  attention: styles.ruleAttention,
+  warning: styles.ruleWarning,
+  error: styles.ruleError,
+};
+
+/** A body row's class for its rule: `<tr className={rowRule(tone)}>`. */
+export const rowRule = (tone: RuleTone | undefined): string | undefined =>
+  tone === undefined ? undefined : RULES[tone];
+
 const ARROWS = { ascending: "↑", descending: "↓" } as const;
 
 /**

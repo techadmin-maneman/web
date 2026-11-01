@@ -1,0 +1,113 @@
+/* A list's rows on a phone (./ListRow.tsx), on a raised panel: two lines at the left, one figure at the right, a rule
+   down the first edge in the tone of how pressing the row is. */
+
+@layer base, ui;
+
+@layer ui {
+  .list {
+    margin: 0;
+    padding: 0;
+    border: var(--hairline) solid var(--ui-line);
+    background: var(--ui-raised);
+    list-style: none;
+  }
+
+  .list > li + li {
+    border-top: var(--hairline) solid var(--ui-line);
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-12);
+    width: 100%;
+    min-height: var(--sp-64);
+    padding: var(--sp-12) var(--sp-16);
+    border: 0;
+    background: none;
+    color: var(--ui-text);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    box-shadow: inset var(--rule-strong) 0 0 0 var(--rule, transparent);
+  }
+
+  .opens {
+    cursor: pointer;
+  }
+
+  .opens:focus-visible {
+    outline-offset: var(--focus-inset);
+  }
+
+  .attention {
+    --rule: var(--ui-accent);
+  }
+
+  .warning {
+    --rule: var(--status-warning);
+  }
+
+  .error {
+    --rule: var(--status-error);
+  }
+
+  .words {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+
+  .title,
+  .meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .title {
+    font-size: var(--fs-14);
+    font-weight: var(--weight-medium);
+  }
+
+  .meta {
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  .end {
+    flex-shrink: 0;
+    font-size: var(--fs-13);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .endMuted {
+    color: var(--ui-text-muted);
+  }
+
+  .endPlain {
+    color: var(--ui-text);
+  }
+
+  .endAttention {
+    color: var(--status-attention);
+  }
+
+  .endWarning {
+    color: var(--status-warning);
+  }
+
+  .endError {
+    color: var(--status-error);
+  }
+
+  @media (hover: hover) {
+    .opens:hover {
+      background: var(--ui-ground);
+    }
+  }
+}

@@ -39,6 +39,29 @@
     list-style: none;
   }
 
+  /* A group of entries under its name; the groups stand apart from each other. */
+  .group + .group {
+    margin-top: var(--sp-16);
+  }
+
+  .groupLabel {
+    display: block;
+    padding: 0 var(--sp-12) var(--sp-4);
+    font-size: var(--fs-14);
+    line-height: var(--lh-130);
+    color: var(--nav-label);
+    white-space: nowrap;
+  }
+
+  .groupItems {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
   .foot {
     display: flex;
     flex-direction: column;
@@ -137,6 +160,7 @@
     }
 
     .nav[data-folded="true"] .name,
+    .nav[data-folded="true"] .groupLabel,
     .nav[data-folded="true"] .folds,
     .nav[data-folded="true"] .count {
       position: absolute;

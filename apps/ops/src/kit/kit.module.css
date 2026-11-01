@@ -56,5 +56,15 @@
 .navs {
   display: flex;
   gap: var(--sp-16);
-  height: var(--skeleton-card);
+  height: calc(var(--skeleton-card) * 2);
+}
+
+/* The phone's tab bar, drawn where it stands in the kit rather than at the window's foot. */
+.tabBar {
+  position: static;
+  max-width: var(--app-column);
+}
+
+.picker {
+  width: var(--ops-date);
 }

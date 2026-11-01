@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0225. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0226. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -257,6 +257,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0220](0220-opening-a-city-from-india-posts-pincodes.md) Opening a city from India Post's pincodes
 - [0221](0221-launches-scheduled-paused-and-checked.md) Launches scheduled, paused and checked first
 - [0224](0224-demand-and-the-next-to-open.md) Demand, and the next pincodes to open
+- [0225](0225-the-console-on-a-desk-and-a-phone.md) The console on a desk and a phone, to the November redesign
 
 ## Every decision, oldest first
 
@@ -467,7 +468,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0205](0205-the-pipeline-as-it-runs.md) | The pipeline as it runs | 2026-10-15 | accepted |  |
 | [0206](0206-trusted-types-and-a-nonce-per-page.md) | Trusted Types enforced, and a nonce on every page | 2026-10-15 | accepted |  |
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
-| [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted |  |
+| [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted | [0225](0225-the-console-on-a-desk-and-a-phone.md) |
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted |  |
 | [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
@@ -484,3 +485,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0222](0222-consumables-short-of-expected.md) | Consumables short of what a visit expects are said why, and checked | 2026-10-25 | accepted |  |
 | [0223](0223-reach-from-home.md) | Reach from home, drawn on the city's map and checked at the address | 2026-10-26 | accepted |  |
 | [0224](0224-demand-and-the-next-to-open.md) | Demand, and the next pincodes to open | 2026-10-26 | accepted |  |
+| [0225](0225-the-console-on-a-desk-and-a-phone.md) | The console on a desk and a phone, to the November redesign | 2026-11-02 | accepted |  |

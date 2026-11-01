@@ -29,6 +29,31 @@
     background: var(--ui-shade);
   }
 
+  /* A picker's button: a box as a select is, showing what is chosen, its arrow at the end. */
+  .field {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-8);
+    width: 100%;
+    height: var(--field-height);
+    padding: 0 var(--sp-12);
+    border: var(--hairline) solid var(--ui-line-control);
+    background: var(--ui-box);
+    color: var(--ui-text);
+    font: inherit;
+    font-size: var(--fs-14);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .chosen {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .panel {
     position: absolute;
     top: calc(100% + var(--sp-4));
@@ -98,6 +123,42 @@
     outline-offset: var(--focus-inset);
   }
 
+  .heading {
+    margin: 0;
+    padding: var(--sp-8) var(--sp-12) var(--sp-4);
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  /* A picker's choice: a tick's room, its name, and a figure about it at the right. */
+  .choice {
+    gap: var(--sp-8);
+  }
+
+  .choice[aria-current="true"] {
+    background: var(--ui-ground);
+  }
+
+  .tick {
+    display: flex;
+    flex-shrink: 0;
+    width: var(--sp-16);
+  }
+
+  .choiceName {
+    flex: 1;
+  }
+
+  .detail {
+    padding-left: var(--sp-12);
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  .detailWarning {
+    color: var(--status-warning);
+  }
+
   .danger {
     color: var(--ui-error);
   }
@@ -105,6 +166,10 @@
   @media (hover: hover) {
     .trigger:hover {
       border-color: var(--ui-line-control);
+    }
+
+    .field:hover {
+      border-color: var(--ui-strong);
     }
 
     .item:hover {
