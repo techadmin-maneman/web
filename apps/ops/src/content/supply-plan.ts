@@ -12,9 +12,9 @@ export const supplyPlan = {
   orderColumns: ["Item", "Supplier", "For", "Quantity", "Status"],
   find: "Find an item, place or supplier",
   openLine: (name: string) => `Decide ${name}`,
-  /** "Needs 13, with 4 spare. 3 in stock.": the need, rounded up, with the spare it holds. */
+  /** "13 for visits + 4 buffer · 3 there now": the need, rounded up, the spare it keeps, and what the place holds. */
   why: (line: { need: number; safety: number; usable: number }) =>
-    `Needs ${String(Math.ceil(line.need))}, with ${String(Math.ceil(line.safety))} spare. ${String(line.usable)} in stock.`,
+    `${String(Math.ceil(line.need))} for visits + ${String(Math.ceil(line.safety))} buffer · ${String(line.usable)} there now`,
   everyCity: "Every city",
   quantity: (name: string) => `Quantity of ${name}`,
   approve: "Approve",

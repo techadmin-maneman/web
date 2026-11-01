@@ -19,9 +19,10 @@ export const usage = {
   noPlaces: "Nothing left any place in these weeks.",
   placeColumns: ["Place", "Left", "Lost", "Shrinkage", "Write-offs", "Counts right first time"],
   flagged: "Flagged",
-  /** "+30%", "−20%", or a dash */
+  /** "+30%", "−20%", "0%" where it was just as expected, or a dash */
   over: (percent: number | null) => {
     if (percent === null) return "—";
+    if (percent === 0) return "0%";
     return percent < 0 ? `−${String(-percent)}%` : `+${String(percent)}%`;
   },
   percent: (percent: number | null) => (percent === null ? "—" : `${String(percent)}%`),

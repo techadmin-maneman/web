@@ -105,7 +105,8 @@
     "./target": "./target.ts",
     "./refresh": "./refresh.ts",
     "./WordsField": "./WordsField.tsx",
-    "./CancelButton": "./CancelButton.tsx"
+    "./CancelButton": "./CancelButton.tsx",
+    "./Apart": "./Apart.tsx"
   },
   "dependencies": {
     "@maneman/brand": "0.0.0",

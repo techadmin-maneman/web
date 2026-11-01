@@ -3,6 +3,7 @@
 // where it reads (docs/decisions/0212-editing-in-place.md).
 
 import { Toast } from "@maneman/ui/Toast";
+import { Apart } from "@maneman/ui/Apart";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
@@ -24,9 +25,9 @@ const copy = settings.suppliers;
 
 const loadSuppliers = () => suppliersApi.suppliers();
 
-function SupplierTable(props: { suppliers: SupplierList; onOpen: (id: string) => void }) {
-  const { suppliers } = props;
-  if (suppliers.suppliers.length === 0) return <Note>{copy.none}</Note>;
+type Supplier = SupplierList["suppliers"][number];
+
+function SupplierTable(props: { rows: readonly Supplier[]; onOpen: (id: string) => void }) {
   return (
     <Table>
       <thead>
@@ -39,7 +40,7 @@ function SupplierTable(props: { suppliers: SupplierList; onOpen: (id: string) =>
         </tr>
       </thead>
       <tbody>
-        {suppliers.suppliers.map((supplier) => (
+        {props.rows.map((supplier) => (
           <tr key={supplier.id}>
             <RowHead>
               <TextButton
@@ -57,7 +58,6 @@ function SupplierTable(props: { suppliers: SupplierList; onOpen: (id: string) =>
             </td>
             <td>{copy.terms(supplier.payment_terms_days)}</td>
             <td>{copy.warranty(supplier.warranty_days)}</td>
-            <td>{supplier.retired_at === null ? copy.active : copy.retired}</td>
           </tr>
         ))}
       </tbody>
@@ -76,6 +76,10 @@ export function Suppliers() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = suppliers ?? loaded.value;
   const opened = current.suppliers.find((each) => each.id === open);
+  const opening = (id: string) => {
+    setOpen(id);
+    setSaid(null);
+  };
 
   return (
     <>
@@ -96,13 +100,15 @@ export function Suppliers() {
         )}
       </PageActions>
       <Panel titleId="suppliers" title={copy.title}>
-        <SupplierTable
-          suppliers={current}
-          onOpen={(id) => {
-            setOpen(id);
-            setSaid(null);
-          }}
-        />
+        {current.suppliers.length === 0 && <Note>{copy.none}</Note>}
+        {current.suppliers.some((each) => each.retired_at === null) && (
+          <SupplierTable rows={current.suppliers.filter((each) => each.retired_at === null)} onOpen={opening} />
+        )}
+        {current.suppliers.some((each) => each.retired_at !== null) && (
+          <Apart id="suppliers-retired" title={copy.retiredTitle}>
+            <SupplierTable rows={current.suppliers.filter((each) => each.retired_at !== null)} onOpen={opening} />
+          </Apart>
+        )}
         {said !== null && <Toast>{said}</Toast>}
         {opened !== undefined && (
           <FormDrawer

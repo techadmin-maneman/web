@@ -3,6 +3,8 @@
 
 export const ledger = {
   title: "Payments",
+  /** No payment came in the dates shown, before any search. */
+  noneInRange: "No payments between these dates.",
   from: "From",
   to: "To",
   narrow: "Filter payments",

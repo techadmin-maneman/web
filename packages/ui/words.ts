@@ -66,6 +66,8 @@ export const tables = {
   clear: "Clear",
   count: (matching: number, total: number) => `${String(matching)} of ${String(total)}`,
   none: "Nothing matches.",
+  /** A table with no rows at all, before any search: nothing has come yet. */
+  empty: "Nothing here yet.",
   more: "Show more",
 } as const;
 

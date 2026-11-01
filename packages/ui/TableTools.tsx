@@ -97,8 +97,20 @@ export function Narrowing<Row>({
   );
 }
 
-/** Beneath the table: that nothing matches, or the button that shows the next page. */
-export function TableEnd<Row>({ view, className }: { view: TableView<Row>; className?: string }) {
+/**
+ * Beneath a long table: what is empty, where it has no rows at all (`empty`, the page's own words, else the shared
+ * ones); Nothing matches, where a search or a choice left none; else the way to the next rows.
+ */
+export function TableEnd<Row>({
+  view,
+  empty,
+  className,
+}: {
+  view: TableView<Row>;
+  empty?: string;
+  className?: string;
+}) {
+  if (view.total === 0) return <p className={classes(styles.end, className)}>{empty ?? copy.empty}</p>;
   if (view.matching === 0) return <p className={classes(styles.end, className)}>{copy.none}</p>;
   if (view.more === null) return null;
   return (

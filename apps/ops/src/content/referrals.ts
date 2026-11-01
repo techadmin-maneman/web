@@ -9,7 +9,8 @@ export const referrals = {
     /** The design writes "Rohit Malhotra → Vikram Sethi"; each name is a way to that client's page. */
     arrow: "→",
     /** How long the grant has waited, as the design writes it: "3 days held", "1 day held", "5 hours held". */
-    held: (count: number, unit: "hour" | "day") => `${String(count)} ${unit}${count === 1 ? "" : "s"} held`,
+    held: (count: number, unit: "hour" | "day") =>
+      count === 0 ? "Held under an hour" : `${String(count)} ${unit}${count === 1 ? "" : "s"} held`,
     /** The rule the grant met, in the order docs/prompts/phase2-backend.md states them. */
     signals: {
       shared_address: "Same address",

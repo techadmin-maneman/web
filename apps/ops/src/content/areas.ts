@@ -2,6 +2,14 @@
 
 import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
+/** India Post's names come in capitals: "MUMBAI SUBURBAN" reads "Mumbai Suburban". A name already cased is kept. */
+const titled = (name: string): string =>
+  name === name.toUpperCase()
+    ? name
+        .toLowerCase()
+        .replace(/(^|[\s(-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toUpperCase())
+    : name;
+
 /**
  * Areas, under Growth: who waits in each pincode, and every pincode we hold. Both tabs mark a pincode live through
  * one panel, which says who it messages before anything is sent.
@@ -169,11 +177,15 @@ export const areas = {
   demand: {
     nextTitle: "Next to open",
     nextNone: "Nobody is waiting or looking anywhere we don’t serve.",
-    /** "Gurgaon · Sector 99", or India Post's "Mumbai, Maharashtra", or nothing known. */
+    /** "Gurgaon · Sector 99", or India Post's "Mumbai Suburban, Maharashtra", in its capitals no longer. */
     place: (city: string | null, area: string | null, district: string | null, state: string | null) =>
       [city, area].filter((each) => each !== null).join(" · ") ||
-      [district, state].filter((each) => each !== null).join(", "),
-    figures: (waiting: number, looked: number) => `${String(waiting)} waiting · ${String(looked)} looked in 90 days`,
+      [district, state]
+        .filter((each) => each !== null)
+        .map(titled)
+        .join(", "),
+    /** Those waiting, and those who checked on the site whether we come there. */
+    figures: (waiting: number, looked: number) => `${String(waiting)} waiting · ${String(looked)} checked in 90 days`,
     recentTitle: "Last 30 days",
     recentNone: "Nothing launched in the last 30 days.",
     recent: (pincode: string, area: string, city: string, day: string) => `${pincode} ${area} · ${city} · ${day}`,

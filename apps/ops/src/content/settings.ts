@@ -489,7 +489,9 @@ export const settings = {
   /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
   suppliers: {
     title: "Suppliers",
-    columns: ["Supplier", "Country · currency", "Terms", "Warranty", "Status"],
+    columns: ["Supplier", "Country · currency", "Terms", "Warranty"],
+    /** Those no longer bought from, apart beneath those who are. */
+    retiredTitle: "Retired",
     none: "No suppliers yet.",
     terms: (days: number) => (days === 0 ? "On delivery" : `${String(days)} days`),
     warranty: (days: number) => (days === 0 ? "None" : `${String(days)} days`),
@@ -616,9 +618,11 @@ export const settings = {
       const words = parts.join(" · ");
       return words === "" ? "No level" : words.charAt(0).toUpperCase() + words.slice(1);
     },
+    /** Items no longer offered, apart beneath those in use. */
+    retiredTitle: "Retired",
     states: {
-      offered: "Offered",
-      retiring: (from: string) => `Offered until ${from}`,
+      offered: "In use",
+      retiring: (from: string) => `In use until ${from}`,
       retired: (from: string) => `Retired from ${from}`,
     },
     /** A row's name, read as what pressing it does. */

@@ -4,13 +4,13 @@
 // refuses a change beyond their own.
 
 import { Toast } from "@maneman/ui/Toast";
+import { Apart } from "@maneman/ui/Apart";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
-import { typeLook } from "@maneman/ui/type";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -147,12 +147,9 @@ function People({ staff, onChanged }: PanelProps) {
       <Panel titleId="staff-people" title={copy.title}>
         <PeopleTable people={staff.people.filter((each) => each.active)} onOpen={opening} />
         {staff.people.some((each) => !each.active) && (
-          <section aria-labelledby="staff-switched-off">
-            <h3 className={typeLook("title-4", styles.offTitle)} id="staff-switched-off">
-              {copy.switchedOff}
-            </h3>
+          <Apart id="staff-switched-off" title={copy.switchedOff}>
             <PeopleTable people={staff.people.filter((each) => !each.active)} onOpen={opening} />
-          </section>
+          </Apart>
         )}
         {said !== null && <Toast>{said}</Toast>}
         {person !== null && (
