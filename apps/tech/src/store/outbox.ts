@@ -40,7 +40,7 @@ import {
   type Queued,
 } from "./replay.ts";
 import { uuidv7 } from "./uuidv7.ts";
-import { classify, type Verdict } from "./verdict.ts";
+import { classify, type Refused, type Verdict } from "./verdict.ts";
 
 export type { EventKind, Frame, JobAccount, Queued };
 export { account, checkInRefusedAsEarly, refusedAsEarly } from "./replay.ts";
@@ -397,23 +397,44 @@ async function uploadFrames(event: Queued, phase: Phase): Promise<Verdict | null
  * the client app then shows the photograph itself.
  */
 async function uploadFrame(frame: SetFrame): Promise<Verdict | null> {
-  const link = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
+  let link = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
   if (!link.ok) return classify(link);
+  // A link lives a quarter of an hour: one that ran out on the way, while the phone slept or the signal went, is asked
+  // for again and the PUT sent once more. It never reads as the job having changed.
+  const relinked = async () => {
+    const again = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
+    if (again.ok) link = again;
+    return again;
+  };
   let take = frame.take;
   if (take === undefined) {
-    const sent = await api.upload(link.body.upload_url, frame.frame);
-    if (!sent.ok) return markIfRefused(frame, classify(sent));
+    let sent = await api.upload(link.body.upload_url, frame.frame);
+    if (!sent.ok && linkLapsed(sent)) {
+      const again = await relinked();
+      if (!again.ok) return classify(again);
+      sent = await api.upload(again.body.upload_url, frame.frame);
+    }
+    if (!sent.ok) return linkLapsed(sent) ? { kind: "retry_later" } : markIfRefused(frame, classify(sent));
     // An API from before thumbnails names no take: the photograph goes alone.
     take = sent.body?.take;
     if (take === undefined) return null;
     await put("frames", { ...frame, take } satisfies Frame);
   }
   if (frame.small === undefined) return null;
-  const sent = await api.uploadThumbnail(link.body.small_upload_url, take, frame.small);
+  let sent = await api.uploadThumbnail(link.body.small_upload_url, take, frame.small);
+  if (!sent.ok && linkLapsed(sent)) {
+    const again = await relinked();
+    if (!again.ok) return classify(again);
+    sent = await api.uploadThumbnail(again.body.small_upload_url, take, frame.small);
+  }
   if (sent.ok) return null;
+  if (linkLapsed(sent)) return { kind: "retry_later" };
   const verdict = classify(sent);
   return verdict.kind === "refused" ? null : verdict;
 }
+
+/** An upload link that ran out: the API knows no slot by it, and answers 404. */
+const linkLapsed = (answer: Refused) => answer.status === 404;
 
 /** A photograph the API would not take is marked, so the capture screen asks for its angle again. */
 async function markIfRefused(frame: Frame, verdict: Verdict): Promise<Verdict> {
