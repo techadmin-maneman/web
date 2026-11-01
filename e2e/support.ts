@@ -35,12 +35,34 @@ export function outsideContract(...routes: string[]): void {
   for (const route of routes) test.info().annotations.push({ type: OUTSIDE_CONTRACT, description: route });
 }
 
+/** Where the site keeps the visitor's answer to the cookie bar (site/src/lib/analytics.ts). */
+const CONSENT_KEY = "mm-ad-consent";
+
 export const test = base.extend<{
   contentSecurityPolicy: undefined;
   appTurnstile: undefined;
   apiContract: undefined;
   consoleClock: undefined;
+  /** Whether the site's pages open with the cookie bar asking. Off, a decline is kept already, so it covers nothing. */
+  consentBarAsks: boolean;
+  consentAnswered: undefined;
 }>({
+  consentBarAsks: [false, { option: true }],
+  consentAnswered: [
+    async ({ page, consentBarAsks }, use, testInfo) => {
+      if (!consentBarAsks && SURFACES[testInfo.project.name] === "public") {
+        await page.addInitScript((key) => {
+          try {
+            localStorage.setItem(key, "denied");
+          } catch {
+            // Storage refused: the bar asks.
+          }
+        }, CONSENT_KEY);
+      }
+      await use(undefined);
+    },
+    { auto: true },
+  ],
   // Every JSON answer the page had from /api/*, a fake's or the local mm-api's, held to the committed OpenAPI
   // document (e2e/contract.ts): a fake that drifts from the API, or a route that answers what it never documented,
   // fails the test it shows in.

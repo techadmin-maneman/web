@@ -2992,11 +2992,19 @@
     "reviewed": false
   },
   {
+    "key": "site:contact/consentBar.label",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "Cookies",
+    "reviewed": true
+  },
+  {
     "key": "site:contact/consentBar.text",
     "surface": "site",
     "group": "Contact",
     "where": "consentBar",
-    "text": "We’d like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them.",
+    "text": "We use cookies to analyse site traffic and measure our advertising. You can accept or decline them.",
     "reviewed": true
   },
   {
@@ -3004,7 +3012,7 @@
     "surface": "site",
     "group": "Contact",
     "where": "consentBar",
-    "text": "How we use your details",
+    "text": "Privacy Policy",
     "reviewed": true
   },
   {
@@ -3012,7 +3020,7 @@
     "surface": "site",
     "group": "Contact",
     "where": "consentBar",
-    "text": "Allow",
+    "text": "Accept",
     "reviewed": true
   },
   {
@@ -3020,7 +3028,7 @@
     "surface": "site",
     "group": "Contact",
     "where": "consentBar",
-    "text": "No thanks",
+    "text": "Decline",
     "reviewed": true
   },
   {

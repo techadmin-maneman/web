@@ -43,6 +43,7 @@
   --header-gap: clamp(16px, 2.5vw, 34px);
   --bar-h: var(--sp-64);
   --bar-reserve: 72px; /* the space the home page keeps for the sticky bar */
+  --foot-bar-h: 0px; /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
   --section-gap: clamp(56px, 8vw, 112px);
   --band-pad: clamp(48px, 7vw, 96px);
   --split-min: 300px;
