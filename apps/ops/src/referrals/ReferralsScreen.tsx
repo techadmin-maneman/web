@@ -3,6 +3,7 @@
 // refer on their own code are Settings' (./Partners.tsx). Approving a grant releases its credits.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -293,7 +294,10 @@ function ReferrersTable({ version }: { version: number }) {
                 {view.shown.map((referrer) => (
                   <tr key={referrer.code}>
                     <th scope="row" className={styles.name}>
-                      <OpsLink className={styles.person} to={clientPath(referrer.person_id, "referrals")}>
+                      <OpsLink
+                        className={textLinkLook({ compact: true })}
+                        to={clientPath(referrer.person_id, "referrals")}
+                      >
                         {referrer.name}
                       </OpsLink>
                     </th>

@@ -1,25 +1,8 @@
 /*
- * The roster, across the page's width: one 34 px row a technician, in
- * the board's own columns, with Leave where it draws Skill. A technician's own
- * page puts their details over their tabs, as a client's page does. A revoke stays
- * quiet until it is asked for, since it ends a session and makes the phone drop
- * its cached jobs.
+ * The roster, across the page's width: one 34 px row a technician, with Leave where the board draws Skill (its columns
+ * in ./technicians-screen.module.css). A technician's own page puts their details over their tabs, as a client's page
+ * does. A revoke stays quiet until it is asked for, since it ends a session and makes the phone drop its cached jobs.
  */
-
-.head {
-  font-size: var(--fs-13);
-  font-weight: var(--weight-regular);
-  color: var(--ui-text-muted);
-  text-align: left;
-}
-
-.name,
-.city,
-.jobs,
-.service,
-.leaveCell {
-  padding-block: 0; /* the board's row height, its words centred in it */
-}
 
 .name,
 .city {
@@ -27,7 +10,6 @@
   text-align: left;
 }
 
-/* The board's columns, at the widths it draws them; the name takes the slack, as its 1fr does. */
 .city {
   width: var(--ops-column);
   color: var(--ui-text-muted);
@@ -45,40 +27,6 @@
 .city.noCity {
   color: var(--status-warning);
   white-space: nowrap;
-}
-
-.jobs {
-  width: var(--sp-64);
-  font-variant-numeric: lining-nums tabular-nums;
-}
-
-.service {
-  width: var(--ops-cell);
-  font-variant-numeric: lining-nums tabular-nums;
-}
-
-.leaveCell {
-  width: var(--ops-figure);
-  white-space: nowrap;
-}
-
-/*
- * The name is the control: the board draws the row with no button, and its
- * five columns leave no room for one. Its underline is the only sign, quiet
- * enough to leave the table reading as a table, as Areas' pincodes are.
- */
-.choose {
-  padding: var(--sp-8) 0;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-14);
-  color: var(--ui-text);
-  text-align: left;
-  text-decoration: underline;
-  text-decoration-color: var(--ui-line);
-  text-underline-offset: var(--sp-4);
-  cursor: pointer;
 }
 
 /* A technician who runs over the length their visits were planned for, in the oxblood the board letters it in. */
@@ -130,20 +78,6 @@
 .tabPanel {
   align-self: stretch;
   padding-top: var(--sp-16);
-}
-
-/* ---- Those switched off, beneath the table ------------------------------- */
-
-/* Those switched off, set in from the panel's edge as its table's rows are. */
-.offList {
-  margin: 0;
-  padding: 0 var(--form-inset);
-  list-style: none;
-}
-
-.offZone {
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
 }
 
 /* ---- Their details, in the panel ----------------------------------------- */

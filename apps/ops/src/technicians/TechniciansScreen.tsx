@@ -3,6 +3,7 @@
 // their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
 import { plainDate } from "@maneman/web-kit/plain-date";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { Panel } from "@maneman/ui/Panel";
 import { Apart } from "@maneman/ui/Apart";
 import { Toast } from "@maneman/ui/Toast";
@@ -131,7 +132,7 @@ function TechnicianTable({
         {view.shown.map((technician) => (
           <tr key={technician.id}>
             <th scope="row" className={shared.name}>
-              <OpsLink className={shared.choose} to={technicianPath(technician.id)}>
+              <OpsLink className={textLinkLook({ compact: true })} to={technicianPath(technician.id)}>
                 {technician.name}
               </OpsLink>
             </th>

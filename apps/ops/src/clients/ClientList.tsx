@@ -3,6 +3,7 @@
 // can be kept as a bookmark and sent to a colleague: "/clients?state=lead&city=Gurgaon".
 
 import { Button } from "@maneman/ui/Button";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { Panel } from "@maneman/ui/Panel";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
@@ -18,7 +19,6 @@ import { clients, tables } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
-import form from "@maneman/ui/forms.module.css";
 import styles from "./client-list.module.css";
 import { RowHead } from "@maneman/ui/RowHead";
 import { clientsApi } from "./clients-api.ts";
@@ -139,7 +139,7 @@ function Rows({ listed }: { listed: Listed }) {
           {listed.clients.map((client) => (
             <tr key={client.id}>
               <RowHead>
-                <OpsLink className={form.link} to={clientPath(client.id, "visits")}>
+                <OpsLink className={textLinkLook({ compact: true })} to={clientPath(client.id, "visits")}>
                   {client.name}
                 </OpsLink>
               </RowHead>
