@@ -4,6 +4,7 @@
 // box.
 
 import { Field, TextInput } from "@maneman/ui/Field";
+import { NoValue } from "@maneman/ui/NoValue";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Refusal } from "@maneman/ui/Refusal";
 import { CancelButton } from "@maneman/ui/CancelButton";
@@ -26,7 +27,7 @@ const copy = clients.visits.code;
 type Step = "showing" | "entering" | "applying" | "removing";
 
 function Shown({ code }: { code: VisitDiscountCode | null }) {
-  if (code === null) return <>{copy.none}</>;
+  if (code === null) return <NoValue />;
   const off = code.amount_off === null ? null : rupees(code.amount_off);
   return (
     <>

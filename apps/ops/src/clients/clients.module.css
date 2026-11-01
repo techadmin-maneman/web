@@ -484,3 +484,28 @@
   align-self: flex-start;
   margin-top: var(--sp-16);
 }
+
+/* Every list of a client's visits at the same widths, so overdue, to come and done line up one under another. */
+.visitTable th:nth-child(1) {
+  width: 14%;
+}
+
+.visitTable th:nth-child(2) {
+  width: 16%;
+}
+
+.visitTable th:nth-child(3) {
+  width: 22%;
+}
+
+.visitTable th:nth-child(4) {
+  width: 16%;
+}
+
+.visitTable th:nth-child(5) {
+  width: 18%;
+}
+
+.visitTable th:nth-child(6) {
+  width: 14%;
+}
