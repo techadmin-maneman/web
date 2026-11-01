@@ -104,6 +104,15 @@
   padding: var(--sp-24) var(--sp-32) var(--sp-48);
 }
 
+/*
+ * The page scrolls, so what stands in it keeps its own height. A flex item with its own overflow, as a row of tabs
+ * that scrolls sideways is, may otherwise shrink to nothing once the page runs taller than the window: Stock's views
+ * did, on Movements, leaving a line where their tabs were.
+ */
+.page > * {
+  flex-shrink: 0;
+}
+
 .head {
   max-width: var(--ops-list);
 }

@@ -288,6 +288,21 @@ test("lists the latest movements, a job’s use under the technician who recorde
   await expect(movements.getByRole("row").filter({ hasText: stock.movements.reasons.received })).toContainText("+100");
 });
 
+// On Movements, taller than the window, the views' row shrank to a line, its tabs out of reach: the page scrolls, so
+// what stands in it keeps its height.
+test("keeps its views' tabs whole on a view taller than the window", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 480 });
+  await open(page);
+  const views = page.getByRole("navigation", { name: stock.views.label });
+  for (const view of [stock.views.names.movements, stock.views.names.places]) {
+    await views.getByRole("button", { name: view }).click();
+    await expect(views.getByRole("button", { name: view })).toHaveAttribute("aria-current", "true");
+    expect((await views.boundingBox())?.height ?? 0).toBeGreaterThan(30);
+  }
+  await views.getByRole("button", { name: stock.views.names.onHand }).click();
+  await expect(onHand(page)).toBeVisible();
+});
+
 test("sorts the movements by a column, and narrows them by a list or a search", async ({ page }) => {
   await open(page);
   await showView(page, stock.views.names.movements);

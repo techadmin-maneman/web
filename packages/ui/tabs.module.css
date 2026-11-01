@@ -4,8 +4,10 @@
 
 @layer ui {
   /* One line of tabs, however many: past the room it scrolls sideways rather than wrap a tab onto two lines. */
+  /* Never squeezed by a column it stands in: scrolling sideways, it would otherwise shrink to nothing. */
   .tabs {
     display: flex;
+    flex-shrink: 0;
     gap: var(--sp-24);
     overflow-x: auto;
     border-bottom: var(--hairline) solid var(--ui-line);
