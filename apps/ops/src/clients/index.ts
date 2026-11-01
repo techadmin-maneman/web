@@ -3,3 +3,4 @@
 export { BookVisit, type Prefill } from "./BookVisit.tsx";
 export { CancelVisit } from "./CancelVisit.tsx";
 export { CloseVisit } from "./CloseVisit.tsx";
+export { RefundPayment } from "./RefundPayment.tsx";

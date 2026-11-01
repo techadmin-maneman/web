@@ -339,6 +339,7 @@ export function ChoiceGroup({
   legend,
   legendLook = "label",
   hint,
+  box,
   disabled,
   ruled = false,
   inline = false,
@@ -352,22 +353,34 @@ export function ChoiceGroup({
   /** The choices side by side, wrapping, where they are few and short. */
   readonly inline?: boolean;
   readonly hint?: ReactNode;
+  /** The name the API refuses the choice by, under a form that sets RefusedBoxes, as a Field's `box`. */
+  readonly box?: string;
   readonly disabled?: boolean;
   readonly className?: string | undefined;
   readonly children: ReactNode;
 }) {
   const id = useId();
+  const refusedOf = useContext(RefusedBoxes);
+  const error = box === undefined ? null : refusedOf(box);
+  const hintId = hint === undefined ? null : `${id}-hint`;
+  const errorId = error === null ? null : `${id}-error`;
   return (
     <fieldset
       className={classes(styles.group, className)}
       disabled={disabled}
-      aria-describedby={hint === undefined ? undefined : id}
+      aria-describedby={describedBy(hintId, errorId)}
+      aria-invalid={errorId === null ? undefined : true}
     >
       <LegendOf look={legendLook}>{legend}</LegendOf>
       <div className={classes(styles.choices, ruled && list.ruled, inline && styles.inline)}>{children}</div>
-      {hint !== undefined && (
-        <p className={styles.hint} id={id}>
+      {hintId !== null && (
+        <p className={styles.hint} id={hintId}>
           {hint}
+        </p>
+      )}
+      {errorId !== null && (
+        <p className={styles.error} id={errorId}>
+          {error}
         </p>
       )}
     </fieldset>

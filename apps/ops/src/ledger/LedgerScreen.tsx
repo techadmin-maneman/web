@@ -14,6 +14,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { useHeaderSub } from "../components/PageHead.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { RefundPayment } from "../clients/index.ts";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import form from "../components/forms.module.css";
@@ -62,6 +63,9 @@ const COLUMNS: readonly Column<Payment>[] = copy.payments.columns.map((label, at
   ...(at === 7 || at === 8 ? { choice: (row: Payment) => cellsOf(row)[at] ?? "" } : {}),
 }));
 
+/** The Refunded column, where Finance give back what is left of a payment without opening the client's page. */
+const REFUNDED = 6;
+
 function Payments({ ledger }: { ledger: Ledger }) {
   const view = useTableView(ledger.payments, COLUMNS, { search: (row) => `${nameOf(row)} ${row.reference ?? ""}` });
   return (
@@ -84,6 +88,7 @@ function Payments({ ledger }: { ledger: Ledger }) {
                   {rest.map((cell, at) => (
                     <td key={copy.payments.columns[at + 1]} className={FIGURES.has(at + 1) ? styles.figure : undefined}>
                       {cell}
+                      {at + 1 === REFUNDED && <RefundPayment entry={row} />}
                     </td>
                   ))}
                 </tr>
