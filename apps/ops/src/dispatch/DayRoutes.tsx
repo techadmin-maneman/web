@@ -2,6 +2,7 @@
 // beneath it each one's visits in order with the drive between each two, a drive longer than the gap called out.
 
 import { Drawer } from "@maneman/ui/Drawer";
+import { PanelFailed } from "@maneman/ui/States";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useEffect, useState } from "react";
 import { type DispatchDay } from "../api.ts";
@@ -79,6 +80,7 @@ function TechnicianRoute({ technician }: { technician: Technician }) {
 export function DayRoutes({ date, city, onClose }: { date: string; city: string | null; onClose: () => void }) {
   const copy = dispatch.routes;
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
+  const [attempt, setAttempt] = useState(0);
   const map = useDayMap(
     date,
     city,
@@ -94,13 +96,21 @@ export function DayRoutes({ date, city, onClose }: { date: string; city: string 
     return () => {
       current = false;
     };
-  }, [date, city]);
+  }, [date, city, attempt]);
 
   return (
     <Drawer titleId="day-routes-title" title={copy.title(day)} close={CLOSE} onDismiss={onClose}>
       {map !== null && <img className={styles.routeMap} src={map} alt={copy.mapAlt(day)} width={640} height={400} />}
       {loaded.state === "loading" && <p className={shared.untoldLine}>{copy.loading}</p>}
-      {loaded.state === "failed" && <p className={shared.untoldLine}>{copy.failed}</p>}
+      {loaded.state === "failed" && (
+        <PanelFailed
+          onRetry={() => {
+            setLoaded({ state: "loading" });
+            setAttempt((was) => was + 1);
+          }}
+          requestId={null}
+        />
+      )}
       {loaded.state === "loaded" && (
         <>
           {loaded.day.drive_times !== "shown" && (

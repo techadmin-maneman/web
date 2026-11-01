@@ -112,7 +112,6 @@ export const clients = {
   openTasks: {
     title: "Open tasks",
     none: "Nothing open.",
-    failed: "Couldn’t load open tasks.",
     /** A task done on a tab of the client's page: "Open Payments". */
     toTab: (tab: string) => `Open ${tab}`,
   },
@@ -120,7 +119,6 @@ export const clients = {
   notes: {
     title: "Notes",
     none: "No notes.",
-    failed: "Couldn’t load notes.",
     add: "Add a note",
     label: "Note",
     change: "Change",

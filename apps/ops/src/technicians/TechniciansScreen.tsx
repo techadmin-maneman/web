@@ -3,6 +3,7 @@
 // their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
 import { typeLook } from "@maneman/ui/type";
+import { Toast } from "@maneman/ui/Toast";
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
@@ -266,11 +267,7 @@ function Roster() {
         </PageActions>
       )}
       <Period from={work.value.from} to={work.value.to} />
-      {added !== null && (
-        <p className={shared.notice} role="status">
-          {technicians.add.added(added)}
-        </p>
-      )}
+      {added !== null && <Toast>{technicians.add.added(added)}</Toast>}
       {roster.technicians.length === 0 ? (
         <EmptyState look="panel" line={technicians.empty} />
       ) : (

@@ -2,6 +2,7 @@
 // called. The task leaves the board once the call is recorded, as it does from the dispatch board's drawer.
 
 import { TextButton } from "@maneman/ui/TextLink";
+import { Refusal } from "@maneman/ui/Refusal";
 import { TextLink } from "@maneman/ui/TextLink";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -54,11 +55,7 @@ export function CallAboutMove({
           <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
         </TextButton>
       )}
-      {failed && (
-        <span className={styles.error} role="alert">
-          {copy.failed}
-        </span>
-      )}
+      {failed && <Refusal inline said={copy.failed} />}
     </span>
   );
 }

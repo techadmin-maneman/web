@@ -3,6 +3,7 @@
 // (docs/decisions/0089-an-invite-is-not-lost.md).
 
 import { typeLook } from "@maneman/ui/type";
+import { Toast } from "@maneman/ui/Toast";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -48,11 +49,7 @@ function Details({ invite, news }: { invite: ClientInvite; news: InviteNews | nu
           </div>
         ))}
       </dl>
-      {news !== null && (
-        <p className={shared.done} role="status">
-          {copy.news[news]}
-        </p>
-      )}
+      {news !== null && <Toast>{copy.news[news]}</Toast>}
     </>
   );
 }

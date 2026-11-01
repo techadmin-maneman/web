@@ -3,6 +3,8 @@
 // dashboard, so it offers neither.
 
 import { TextButton } from "@maneman/ui/TextLink";
+import { Toast } from "@maneman/ui/Toast";
+import { Refusal } from "@maneman/ui/Refusal";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -11,7 +13,6 @@ import { type Task } from "../api.ts";
 import { tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import shared from "./tasks.module.css";
-import styles from "./payment-link-actions.module.css";
 import { tasksApi } from "./tasks-api.ts";
 
 const copy = tasks.link;
@@ -64,14 +65,8 @@ export function PaymentLinkActions({ task, subject }: { task: Task; subject: str
           </TextButton>
         )}
       </span>
-      <span className={styles.said} role="status">
-        {done}
-      </span>
-      {failed !== null && (
-        <span className={shared.error} role="alert">
-          {failed}
-        </span>
-      )}
+      {done !== "" && <Toast>{done}</Toast>}
+      {failed !== null && <Refusal inline said={failed} />}
     </>
   );
 }

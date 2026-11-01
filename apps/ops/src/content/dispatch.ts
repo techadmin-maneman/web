@@ -137,7 +137,6 @@ export const dispatch = {
     story: {
       title: "What happened",
       none: "Nothing yet. The technician hasn’t arrived.",
-      failed: "Couldn’t load what happened.",
       steps: {
         check_in: "Arrived",
         start: "Started",
@@ -287,7 +286,6 @@ export const dispatch = {
     title: (day: string) => `Routes · ${day}`,
     mapAlt: (day: string) => `Map of each technician’s route on ${day}`,
     loading: "Loading…",
-    failed: "Couldn’t load the routes.",
     none: "No visits this day.",
     driveTimes: { off: "Drive times are off.", unavailable: "Some drive times are unavailable." },
     noPin: "no pin",

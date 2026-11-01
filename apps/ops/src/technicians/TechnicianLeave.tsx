@@ -4,6 +4,7 @@
 // ops move it, and "Show on board" opens the board on that job's week, with their row in view and the job's drawer open.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Checkbox, DateInput, Field, TextInput } from "@maneman/ui/Field";
@@ -304,11 +305,7 @@ export function Leave({ technician }: { technician: TechnicianSummary }) {
           ))}
         </ul>
       )}
-      {recorded && (
-        <p className={shared.notice} role="status">
-          {copy.recorded}
-        </p>
-      )}
+      {recorded && <Toast>{copy.recorded}</Toast>}
       {!recording && mayRecord && (
         <div className={shared.actions}>
           <Button

@@ -2,6 +2,7 @@
 // by whom, how it ended, and a way to the client's photographs. Read when the drawer opens.
 
 import { useLoad } from "@maneman/ui/useLoad";
+import { PanelFailed } from "@maneman/ui/States";
 import { indiaClock } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import { OpsLink } from "../frame/Shell.tsx";
@@ -16,10 +17,10 @@ const copy = dispatch.drawer.story;
 
 export function VisitStory({ visitId, clientId }: { visitId: string; clientId: string | null }) {
   const read = useCallback(() => dispatchApi.story(visitId), [visitId]);
-  const [loaded] = useLoad(read);
+  const [loaded, retry] = useLoad(read);
   const mayRead = useAccess().mayCall("GET /api/visits/{id}/story");
   if (!mayRead || loaded.state === "loading") return null;
-  if (loaded.state === "failed") return <p className={styles.storyNone}>{copy.failed}</p>;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { steps } = loaded.value;
   return (
     <section className={styles.story} aria-labelledby={`story-${visitId}`}>

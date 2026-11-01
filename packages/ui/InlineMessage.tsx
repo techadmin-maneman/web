@@ -18,6 +18,7 @@ export function InlineMessage({
   ground = "paper",
   className,
   id,
+  inline = false,
   children,
 }: {
   readonly tone: Tone;
@@ -26,10 +27,20 @@ export function InlineMessage({
   readonly className?: string | undefined;
   /** For a box whose error it is, by aria-describedby. */
   readonly id?: string;
+  /** Inside a row, beside its actions: a span, with no margin of its own. */
+  readonly inline?: boolean;
   readonly children: ReactNode;
 }) {
+  const look = messageLook({ tone, ground, className: classes(inline && styles.inline, className) });
+  if (inline) {
+    return (
+      <span className={look} role={ROLES[tone]} id={id}>
+        {children}
+      </span>
+    );
+  }
   return (
-    <p className={messageLook({ tone, ground, className })} role={ROLES[tone]} id={id}>
+    <p className={look} role={ROLES[tone]} id={id}>
       {children}
     </p>
   );

@@ -21,16 +21,19 @@ export function useRereadOnChange(said: string | null): void {
 export function Refusal({
   said,
   className,
+  inline = false,
   children,
 }: {
   readonly said: string;
   readonly className?: string | undefined;
+  /** Inside a row, beside its actions. */
+  readonly inline?: boolean;
   /** What follows the words: a link to where the refusal is settled, say. */
   readonly children?: ReactNode;
 }) {
   useRereadOnChange(said);
   return (
-    <InlineMessage tone="error" className={className}>
+    <InlineMessage tone="error" className={className} inline={inline}>
       {said}
       {children}
     </InlineMessage>

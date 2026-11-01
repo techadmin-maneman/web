@@ -4,6 +4,7 @@
 // does their number using up its login codes for the day.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -131,11 +132,7 @@ function SignInStopped({ technician, why }: { technician: Technician; why: strin
   };
 
   if (allowing.step === "allowed") {
-    return (
-      <p className={shared.signedIn} role="status">
-        {copy.allowed}
-      </p>
-    );
+    return <Toast>{copy.allowed}</Toast>;
   }
   return (
     <div className={styles.phone}>

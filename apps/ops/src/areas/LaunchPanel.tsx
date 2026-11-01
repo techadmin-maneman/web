@@ -3,6 +3,7 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
+import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -58,11 +59,7 @@ export function LaunchPanel(props: Props) {
       )}
       {props.children}
       <p className={shared.message}>{copy.message(area ?? copy.eachArea, bookingUrl)}</p>
-      {done !== null && (
-        <p className={shared.done} role="status">
-          {done}
-        </p>
-      )}
+      {done !== null && <Toast>{done}</Toast>}
       {done === null && (
         <div className={shared.actions}>
           {sendLabel !== null && (

@@ -93,7 +93,6 @@ export const technicians = {
     open: "Open on the board",
     /** Their visits this week, a day at a time, as the board has them. */
     none: "No visits this week.",
-    failed: "Couldn’t load the week.",
     visit: (time: string, client: string, kind: string) => `${time} · ${client} · ${kind}`,
     /** Beside the week: what they have done over the roster's period. */
     jobs: (count: number, days: number) =>

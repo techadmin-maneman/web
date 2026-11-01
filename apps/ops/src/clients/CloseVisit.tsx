@@ -3,6 +3,7 @@
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
@@ -159,9 +160,7 @@ export function CloseVisit({
       {closed === null ? (
         <ClosingForm visitId={visitId} date={date} onClosed={setClosed} />
       ) : (
-        <p className={shared.done} role="status">
-          {copy.done[closed]}
-        </p>
+        <InlineMessage tone="saved">{copy.done[closed]}</InlineMessage>
       )}
     </Drawer>
   );

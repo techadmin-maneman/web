@@ -4,6 +4,7 @@
 // is their details alone.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { Toast } from "@maneman/ui/Toast";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
@@ -115,11 +116,7 @@ function TechnicianPage({
         }}
       />
       {switched?.to === "off" && <Returned visits={switched.visits} />}
-      {switched?.to === "on" && (
-        <p className={styles.notice} role="status">
-          {technicians.switchOn.done(summary.name)}
-        </p>
-      )}
+      {switched?.to === "on" && <Toast>{technicians.switchOn.done(summary.name)}</Toast>}
       {active !== null && <TechnicianTabs technician={active} tab={tab} onChange={onChange} />}
     </div>
   );

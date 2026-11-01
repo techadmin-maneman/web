@@ -3,6 +3,7 @@
 // Offered beside each payment on a client's Payments tab and on the Ledger, which Finance reach without a client's page.
 
 import { Button } from "@maneman/ui/Button";
+import { Refusal } from "@maneman/ui/Refusal";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
@@ -91,7 +92,7 @@ function RefundForm({ entry, left }: { entry: Refundable; left: number }) {
       <Button variant="destructive" size="small" type="submit" busy={busy} disabled={reason.trim() === ""}>
         {copy.refundConfirm(rupees(left))}
       </Button>
-      {failed !== null && <p role="alert">{failed}</p>}
+      {failed !== null && <Refusal said={failed} />}
     </form>
   );
 }

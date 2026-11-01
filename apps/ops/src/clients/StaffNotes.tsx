@@ -3,6 +3,7 @@
 // (src/routes/ops/staff-notes.ts).
 
 import { STAFF_NOTE_MAX_CHARS } from "@rules/policy/staff-notes.ts";
+import { PanelFailed } from "@maneman/ui/States";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -140,7 +141,7 @@ function NoteList({ clientId, initial }: { clientId: string; initial: readonly N
 
 function Strip({ clientId }: { clientId: string }) {
   const load = useCallback(() => clientsApi.staffNotes(clientId), [clientId]);
-  const [loaded] = useLoad(load);
+  const [loaded, retry] = useLoad(load);
   return (
     <section className={styles.notesStrip} aria-labelledby="staff-notes">
       <h3 className={typeLook("title-4", styles.sectionTitle)} id="staff-notes">
@@ -148,7 +149,7 @@ function Strip({ clientId }: { clientId: string }) {
       </h3>
       {whenLoaded(loaded, {
         loading: null,
-        failed: <p className={styles.openNone}>{copy.failed}</p>,
+        failed: <PanelFailed onRetry={retry} requestId={loaded.state === "failed" ? loaded.requestId : null} />,
         loaded: (read) => <NoteList clientId={clientId} initial={read.notes} />,
       })}
     </section>

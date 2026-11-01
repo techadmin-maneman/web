@@ -4,6 +4,7 @@
 // box.
 
 import { Field, TextInput } from "@maneman/ui/Field";
+import { Refusal } from "@maneman/ui/Refusal";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -73,11 +74,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
     setCode(null);
   };
 
-  const problem = failure !== null && (
-    <p className={styles.codeError} role="alert">
-      {failure}
-    </p>
-  );
+  const problem = failure !== null && <Refusal said={failure} />;
 
   const stopEntering = () => {
     setStep("showing");

@@ -4,6 +4,7 @@
 // why.
 
 import { typeLook } from "@maneman/ui/type";
+import { Toast } from "@maneman/ui/Toast";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -107,11 +108,7 @@ function Address({
         </FormDrawer>
       )}
       {address === null ? <p className={styles.note}>{copy.noAddress}</p> : <AddressRows address={address} />}
-      {saved && (
-        <p className={styles.done} role="status">
-          {copy.given.saved}
-        </p>
-      )}
+      {saved && <Toast>{copy.given.saved}</Toast>}
       {mayRecord && (
         <Button
           variant="outline"

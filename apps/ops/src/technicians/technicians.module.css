@@ -12,13 +12,6 @@
   background: var(--ui-raised);
 }
 
-/* What a change just did: a technician added, or switched back on. */
-.notice {
-  margin: 0 0 var(--sp-16);
-  font-size: var(--fs-14);
-  line-height: var(--lh-145);
-}
-
 .head {
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);

@@ -2,6 +2,7 @@
 // their visits these seven days, a day at a time, as the dispatch board has them, with the way onto the board.
 
 import { buttonLook } from "@maneman/ui/Button";
+import { PanelFailed } from "@maneman/ui/States";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
@@ -41,9 +42,9 @@ function WorkStrip({ technicianId }: { technicianId: string }) {
 /** Their visits these seven days, from today, a line each under its day. */
 function Visits({ technician }: { technician: TechnicianSummary }) {
   const read = useCallback(() => techniciansApi.board(todayInIndia(apiNow())), []);
-  const [loaded] = useLoad(read);
+  const [loaded, retry] = useLoad(read);
   if (loaded.state === "loading") return null;
-  if (loaded.state === "failed") return <p className={styles.none}>{copy.failed}</p>;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const row = loaded.value.technicians.find((each) => each.technician_id === technician.id);
   const days = (row?.days ?? []).filter((day) => day.blocks.length > 0);
   if (days.length === 0) return <p className={styles.none}>{copy.none}</p>;

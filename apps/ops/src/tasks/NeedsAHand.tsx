@@ -3,6 +3,7 @@
 // mark one done, or send again the message, lead or CRM erasure it gave up on. Each person sees their departments' kinds.
 
 import { Disclosure } from "@maneman/ui/Disclosure";
+import { Refusal } from "@maneman/ui/Refusal";
 import { TextButton } from "@maneman/ui/TextLink";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
@@ -86,11 +87,7 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
             </TextButton>
           )}
         </span>
-        {failed !== null && (
-          <span className={shared.error} role="alert">
-            {errorText(copy.errors, { code: failed })}
-          </span>
-        )}
+        {failed !== null && <Refusal inline said={errorText(copy.errors, { code: failed })} />}
       </div>
       <span className={styles.sla}>{copy.seen(alert.count, shortDate(indiaDate(alert.told_at)))}</span>
     </li>
