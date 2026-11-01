@@ -2,8 +2,9 @@
  * The ops console's base: the brand tokens, the apps' layer and the fonts
  * (packages/brand), and the page every app starts from (packages/ui).
  * Components style themselves in their own .module.css, with tokens only. The
- * console is a desk tool, drawn at 1440 and never narrower than the navigation
- * column and one panel.
+ * console is drawn for a desk at 1440 and for a phone at 390 (ADR 0225): from
+ * 1024 the navigation stands beside the page, below it the navigation waits
+ * off the page, and from 600 down a tab bar takes its place.
  */
 
 @import "@maneman/brand/tokens.css";

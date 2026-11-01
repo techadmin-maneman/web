@@ -223,6 +223,7 @@ const signedInAs = (email: string) =>
   json({
     signed_in_as: email,
     sign_out: null,
+    cities: [],
     staff: {
       enforced: false,
       listed: true,

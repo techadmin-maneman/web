@@ -116,6 +116,7 @@ test("does not offer the second approval to the manager who gave the first", asy
     "GET /api/whoami": json({
       signed_in_as: "ops@maneman.in",
       sign_out: null,
+      cities: [],
       staff: {
         enforced: false,
         listed: true,

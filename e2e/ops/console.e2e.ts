@@ -15,6 +15,7 @@ const signedIn = (who: string, listed: boolean, mayCall: readonly string[]) =>
     signed_in_as: who,
     sign_out: "/cdn-cgi/access/logout",
     staff: { enforced: true, listed, grants: [], may_call: mayCall },
+    cities: [],
   });
 
 const ONLY_SIGNED_IN = ["GET /api/health", "GET /api/whoami"];
@@ -29,7 +30,7 @@ async function expectNames(links: Locator, names: readonly string[]): Promise<vo
   }
 }
 
-test("opens on Today, the work an entry a job, Settings at the foot, and what waits in each", async ({ page }) => {
+test("opens on Today, the work an entry a job by kind, Settings last, and what waits in each", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/");
@@ -40,8 +41,8 @@ test("opens on Today, the work an entry a job, Settings at the foot, and what wa
     nav.today,
     waiting(nav.tasks, 8, true),
     nav.dispatch,
-    nav.clients,
     nav.messages,
+    nav.clients,
     nav.technicians,
     nav.inventory,
     waiting(nav.requests, 2, true),
@@ -160,24 +161,21 @@ test("titles each page by what it is, and says where it sits", async ({ page }) 
   await expect(page).toHaveTitle("Services and fees · Settings · Mane Man Ops");
 });
 
-test("says who is signed in, in the account's panel", async ({ page }) => {
+test("says who is signed in, at the navigation's foot and in the account's panel", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: opsCopy.shell.account.label }).click();
-  const header = page.getByRole("banner");
-  await expect(header).toContainText("ops@localhost");
+  await expect(navigation(page)).toContainText("ops@localhost");
   // No Access stands in front of a laptop, so there is no session to leave.
-  await expect(header.getByRole("link", { name: opsCopy.shell.account.signOut })).toHaveCount(0);
+  await expect(navigation(page).getByRole("link", { name: opsCopy.shell.account.signOut })).toHaveCount(0);
 });
 
 test("signs out through Access, where Access stands in front", async ({ page }) => {
   await answer(page, { "GET /api/whoami": signedIn("aditya.kumar@maneman.in", true, ONLY_SIGNED_IN) });
   await page.goto("/");
-  const account = page.getByRole("button", { name: opsCopy.shell.account.label });
-  await expect(account).toHaveText("AK");
+  const account = page.getByRole("button", { name: opsCopy.shell.account.named("Aditya Kumar") });
+  await expect(account).toHaveText("AKAditya Kumaraditya.kumar@maneman.in");
   await account.click();
-  const header = page.getByRole("banner");
-  await expect(header).toContainText("aditya.kumar@maneman.in");
-  await expect(header.getByRole("link", { name: opsCopy.shell.account.signOut })).toHaveAttribute(
+  await expect(navigation(page).getByRole("link", { name: opsCopy.shell.account.signOut })).toHaveAttribute(
     "href",
     "/cdn-cgi/access/logout",
   );
@@ -343,7 +341,7 @@ test("heads each page of an entry with the entry's pages as tabs, and marks the 
   );
 });
 
-test("goes to a page by its name from anywhere, with Ctrl K or Search", async ({ page }) => {
+test("goes to a page by its name from anywhere, with / or the header's search", async ({ page }) => {
   // Where it goes is answered here, refused, so the page it opens reads nothing the other specs left behind.
   await answer(page, {
     "GET /api/tasks": json(TASKS),
@@ -352,21 +350,16 @@ test("goes to a page by its name from anywhere, with Ctrl K or Search", async ({
   });
   await page.goto("/tasks");
   await expect(heading(page, opsCopy.shell.sections.tasks)).toBeVisible();
-  await page.keyboard.press("Control+k");
-  const palette = page.getByRole("dialog", { name: opsCopy.shell.palette.title });
-  // Typed straight away, as a person does: the box has the keyboard once the palette opens.
-  await expect(palette.getByLabel(opsCopy.shell.palette.label)).toBeFocused();
+  const search = page.getByRole("combobox", { name: opsCopy.shell.palette.label });
+  await page.keyboard.press("/");
+  await expect(search).toBeFocused();
   await page.keyboard.type("disp");
-  await palette.getByRole("link", { name: opsCopy.dispatch.title }).click();
+  await page.getByRole("option", { name: opsCopy.dispatch.title }).click();
   await expect(page).toHaveURL(/\/dispatch$/);
-  await expect(palette).toBeHidden();
+  await expect(page.getByRole("listbox")).toBeHidden();
 
-  await page
-    .getByRole("banner")
-    .getByRole("button", { name: new RegExp(opsCopy.shell.search) })
-    .click();
-  await palette.getByLabel(opsCopy.shell.palette.label).fill("packages");
-  await palette.getByRole("link", { name: opsCopy.shell.palette.setting(opsCopy.settingsPageNames.packages) }).click();
+  await search.fill("packages");
+  await page.getByRole("option", { name: opsCopy.shell.palette.setting(opsCopy.settingsPageNames.packages) }).click();
   await expect(page).toHaveURL(/\/settings\/packages$/);
 });
 
@@ -374,14 +367,16 @@ test("goes to a page by its name from anywhere, with Ctrl K or Search", async ({
 test("finds a technician by name, and moves through what it found with the arrow keys", async ({ page }) => {
   await answer(page, { "GET /api/tasks": json(TASKS), "GET /api/technicians": json(TECHNICIANS) });
   await page.goto("/tasks");
-  await page.keyboard.press("Control+k");
-  const palette = page.getByRole("dialog", { name: opsCopy.shell.palette.title });
-  await page.keyboard.type("imran");
-  await expect(
-    palette.getByRole("link", { name: opsCopy.shell.palette.technician("Imran Qureshi"), exact: true }),
-  ).toBeVisible();
+  await expect(heading(page, opsCopy.shell.sections.tasks)).toBeVisible();
+  const search = page.getByRole("combobox", { name: opsCopy.shell.palette.label });
+  await search.fill("imran");
+  const found = page.getByRole("group", { name: opsCopy.shell.palette.technicians });
+  await expect(found.getByRole("option", { name: "Imran Qureshi", exact: true })).toBeVisible();
   await page.keyboard.press("ArrowDown");
-  await expect(palette.getByRole("link").first()).toBeFocused();
-  await page.keyboard.press("ArrowUp");
-  await expect(palette.getByLabel(opsCopy.shell.palette.label)).toBeFocused();
+  await expect(found.getByRole("option", { name: "Imran Qureshi", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/technicians\/[0-9a-f-]{36}$/);
 });

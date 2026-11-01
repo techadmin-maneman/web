@@ -1,6 +1,6 @@
-// Every client in the caller's cities, beneath the search: the soonest next visit first, then those with none, newest
-// first (GET /api/clients). Where they stand, the city and the page are kept in the address, so a list narrowed one way
-// can be kept as a bookmark and sent to a colleague: "/clients?state=lead&city=Gurgaon".
+// Every client in the caller's cities, or the city chosen in the header (ADR 0225), beneath the search: the soonest
+// next visit first, then those with none, newest first (GET /api/clients). Where they stand and the page are kept in
+// the address, so a list narrowed one way can be kept as a bookmark and sent to a colleague: "/clients?state=lead".
 
 import { Button } from "@maneman/ui/Button";
 import { NoValue } from "@maneman/ui/NoValue";
@@ -13,10 +13,11 @@ import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { type ClientList as Listed, type ClientListQuery } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
-import { clients, tables } from "../content.ts";
+import { clients } from "../content.ts";
+import { useCity } from "../lib/city.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
@@ -35,16 +36,14 @@ const STATE_TONES: Readonly<Record<(typeof STATES)[number], BadgeTone>> = {
   nothing_booked: "neutral",
 };
 
-/** The list as the address narrows it; anything it would refuse is left out. */
-function queryOf(search: string): ClientListQuery {
+/** The list as the address narrows it, from its first page or the page it names; anything it would refuse is left out. */
+function queryOf(search: string, paged = true): ClientListQuery {
   const asked = new URLSearchParams(search);
   const state = STATES.find((each) => each === asked.get("state"));
-  const city = asked.get("city")?.trim() ?? "";
   const cursor = asked.get("cursor") ?? "";
   return {
     ...(state === undefined ? {} : { state }),
-    ...(city === "" ? {} : { city }),
-    ...(/^[\w-]{1,200}$/.test(cursor) ? { cursor } : {}),
+    ...(paged && /^[\w-]{1,200}$/.test(cursor) ? { cursor } : {}),
   };
 }
 
@@ -56,60 +55,30 @@ function keep(query: ClientListQuery): void {
   history.replaceState(history.state, "", search === "" ? location.pathname : `${location.pathname}?${search}`);
 }
 
-function Narrow({
-  query,
-  cities,
-  onQuery,
-}: {
-  query: ClientListQuery;
-  cities: readonly string[];
-  onQuery: (query: ClientListQuery) => void;
-}) {
+function Narrow({ query, onQuery }: { query: ClientListQuery; onQuery: (query: ClientListQuery) => void }) {
   // A narrowing changed starts the list again from its first page.
-  const choose = (name: "state" | "city") => (value: string) => {
-    const state = name === "state" ? value : (query.state ?? "");
-    const city = name === "city" ? value : (query.city ?? "");
-    onQuery(queryOf(`?${new URLSearchParams({ state, city }).toString()}`));
+  const choose = (value: string) => {
+    onQuery(queryOf(`?${new URLSearchParams({ state: value }).toString()}`));
   };
   return (
-    <>
-      <Field label={copy.state} labelHidden>
-        {(control) => (
-          <Select
-            {...control}
-            value={query.state ?? ""}
-            onChange={(event) => {
-              choose("state")(event.target.value);
-            }}
-          >
-            <option value="">{copy.anyState}</option>
-            {STATES.map((state) => (
-              <option key={state} value={state}>
-                {clients.states[state]}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-      <Field label={copy.city} labelHidden>
-        {(control) => (
-          <Select
-            {...control}
-            value={query.city ?? ""}
-            onChange={(event) => {
-              choose("city")(event.target.value);
-            }}
-          >
-            <option value="">{tables.allCities}</option>
-            {cities.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-    </>
+    <Field label={copy.state} labelHidden>
+      {(control) => (
+        <Select
+          {...control}
+          value={query.state ?? ""}
+          onChange={(event) => {
+            choose(event.target.value);
+          }}
+        >
+          <option value="">{copy.anyState}</option>
+          {STATES.map((state) => (
+            <option key={state} value={state}>
+              {clients.states[state]}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
   );
 }
 
@@ -158,12 +127,39 @@ function Rows({ listed }: { listed: Listed }) {
   );
 }
 
-export function ClientList({ search, instead }: { search: ReactNode; instead: ReactNode | null }) {
-  const [query, setQuery] = useState(() => queryOf(location.search));
+/** The list asked for in a city: its status, the city, then its page, as the address once had them. */
+function inCity(query: ClientListQuery, city: string | null): ClientListQuery {
+  if (city === null) return query;
+  const { cursor, ...narrowed } = query;
+  return { ...narrowed, city, ...(cursor === undefined ? {} : { cursor }) };
+}
+
+interface ListProps {
+  readonly search: ReactNode;
+  readonly instead: ReactNode | null;
+}
+
+/**
+ * The list for the city chosen in the header, drawn afresh when another is chosen: from the page the address names
+ * the first time, and from the first page after that.
+ */
+export function ClientList(props: ListProps) {
+  const { city } = useCity();
+  const first = useRef(city);
+  return <CityList key={city ?? ""} city={city} paged={city === first.current} {...props} />;
+}
+
+function CityList({ search, instead, city, paged }: ListProps & { city: string | null; paged: boolean }) {
+  const [query, setQuery] = useState(() => {
+    const opening = queryOf(location.search, paged);
+    // Another city's list starts at its first page, and the address says so.
+    if (!paged) keep(opening);
+    return opening;
+  });
   // The pages before this one, by their cursors, for Previous: the first page's is undefined. A list opened at a page
   // from its address has none, and its Previous goes to the first.
   const [trail, setTrail] = useState<readonly (string | undefined)[]>([]);
-  const [loaded, retry] = useLoad(useCallback(() => clientsApi.clientList(query), [query]));
+  const [loaded, retry] = useLoad(useCallback(() => clientsApi.clientList(inCity(query, city)), [query, city]));
   const change = (next: ClientListQuery, earlier: readonly (string | undefined)[] = []) => {
     keep(next);
     setQuery(next);
@@ -179,9 +175,7 @@ export function ClientList({ search, instead }: { search: ReactNode; instead: Re
     <Panel titleId="all-clients" title={copy.title}>
       <Toolbar label={copy.narrow} className={styles.listTools}>
         {search}
-        {instead === null && loaded.state === "loaded" && (
-          <Narrow query={query} cities={loaded.value.cities} onQuery={change} />
-        )}
+        {instead === null && loaded.state === "loaded" && <Narrow query={query} onQuery={change} />}
       </Toolbar>
       {instead}
       {instead === null && loaded.state === "loading" && <PanelLoading />}

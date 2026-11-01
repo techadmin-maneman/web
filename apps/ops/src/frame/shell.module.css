@@ -15,13 +15,13 @@
   min-width: 0;
 }
 
-/* The bar: where the page sits, the search, and who is signed in. */
+/* The bar: where the page sits, the search and the city. */
 .bar {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   gap: var(--sp-12);
-  min-height: var(--sp-48);
+  min-height: var(--header-h);
   padding: 0 var(--sp-24);
   border-bottom: var(--hairline) solid var(--ui-line);
 }
@@ -32,15 +32,13 @@
 }
 
 .search {
-  gap: var(--sp-8);
+  flex: 0 1 var(--search-width);
+  min-width: 0;
 }
 
-.keys {
-  padding: 0 var(--sp-4);
-  border: var(--hairline) solid var(--ui-line);
-  font-family: inherit;
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
+.city {
+  flex-shrink: 0;
+  width: var(--ops-filter);
 }
 
 /* The bar's Menu, for a narrow window alone. */
@@ -53,10 +51,13 @@
     display: inline-flex;
     flex-shrink: 0;
   }
+}
 
-  .keys {
-    display: none;
-  }
+/* What a phone alone has: the search and the person in the page's head, the city's chips, the tab bar. */
+.phoneTools,
+.chips,
+.tabs {
+  display: none;
 }
 
 /* A spent Access session, said once under the bar and over whichever page is open. */
@@ -123,16 +124,37 @@
 }
 
 /*
- * A phone keeps its width for the page: the frame's room at the sides is a finger's, not a desk's. The bar has no room
- * for where the page sits beside its controls, which the page's heading and its tabs or menu say beneath.
+ * A phone keeps its width for the page: the frame's room at the sides is a finger's, not a desk's. The bar gives way
+ * to the tab bar at the foot, and the page's head carries the search and the person signed in.
  */
 @media (max-width: 600px) {
+  .nav,
   .bar {
-    padding: 0 var(--sp-16);
+    display: none;
   }
 
-  .crumbs > * {
-    display: none;
+  /* The search and the person signed in at the top right, on the title's line; the head keeps clear of them. */
+  .phoneTools {
+    position: absolute;
+    top: var(--sp-16);
+    right: var(--sp-16);
+    display: flex;
+    gap: var(--sp-8);
+  }
+
+  .head {
+    padding-right: calc(var(--tap) * 2 + var(--sp-8) * 2);
+  }
+
+  .chips {
+    display: block;
+  }
+
+  /* The tab bar stands at the foot of the frame's column, beneath the page that scrolls. */
+  .tabs {
+    position: static;
+    display: block;
+    flex-shrink: 0;
   }
 
   .page {
@@ -140,7 +162,7 @@
   }
 
   .flushHead {
-    padding: var(--sp-16) var(--sp-16) var(--sp-12);
+    padding: var(--sp-16) calc(var(--sp-16) + var(--tap) * 2 + var(--sp-8) * 2) var(--sp-12) var(--sp-16);
   }
 }
 

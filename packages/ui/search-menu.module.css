@@ -1,0 +1,105 @@
+/* A search box and the panel of results beneath it (./SearchMenu.tsx), in the look of a button's panel
+   (./popover.module.css). */
+
+@layer base, ui;
+
+@layer ui {
+  .root {
+    position: relative;
+  }
+
+  /* Room at the box's end for the key that takes the keyboard to it. */
+  .hinted {
+    padding-right: var(--sp-32);
+  }
+
+  .key {
+    position: absolute;
+    top: 50%;
+    right: var(--sp-8);
+    transform: translateY(-50%);
+    padding: 0 var(--sp-4);
+    border: var(--hairline) solid var(--ui-line);
+    font-family: inherit;
+    font-size: var(--fs-13);
+    line-height: var(--lh-145);
+    color: var(--ui-text-muted);
+    pointer-events: none;
+  }
+
+  .panel {
+    position: absolute;
+    top: calc(100% + var(--sp-4));
+    right: 0;
+    left: 0;
+    z-index: var(--z-header);
+    max-height: calc(100dvh - var(--header-h) - var(--sp-32));
+    overflow-y: auto;
+    padding: var(--sp-4) 0;
+    border: var(--hairline) solid var(--ui-line-control);
+    background: var(--ui-raised);
+    color: var(--ui-text);
+  }
+
+  /* Open beneath the box where the results are the page, as on a phone's search sheet. */
+  .inPlace {
+    position: static;
+    max-height: none;
+    margin-top: var(--sp-12);
+  }
+
+  .heading {
+    margin: 0;
+    padding: var(--sp-8) var(--sp-12) var(--sp-4);
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-12);
+    width: 100%;
+    min-height: var(--small-height);
+    padding: 0 var(--sp-12);
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: var(--fs-14);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .option[aria-selected="true"] {
+    background: var(--ui-shade);
+  }
+
+  .label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .detail {
+    flex-shrink: 0;
+    font-size: var(--fs-13);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text-muted);
+  }
+
+  .none {
+    margin: 0;
+    padding: var(--sp-8) var(--sp-12);
+    font-size: var(--fs-14);
+    color: var(--ui-text-muted);
+  }
+
+  @media (hover: hover) {
+    .option:hover {
+      background: var(--ui-ground);
+    }
+  }
+}

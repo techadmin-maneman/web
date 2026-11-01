@@ -55,6 +55,7 @@
     "./ScanField": "./ScanField.tsx",
     "./scanned": "./scanned.ts",
     "./SearchInput": "./SearchInput.tsx",
+    "./SearchMenu": "./SearchMenu.tsx",
     "./SelectCard": "./SelectCard.tsx",
     "./SettingRow": "./SettingRow.tsx",
     "./SettingsLayout": "./SettingsLayout.tsx",

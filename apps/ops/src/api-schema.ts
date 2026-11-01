@@ -30027,6 +30027,14 @@ export interface components {
                  */
                 may_call: string[];
             };
+            /**
+             * @description Each city ops serve, or with a technician at work, in the console's order: what the header's picker offers.
+             * @example [
+             *       "Gurgaon",
+             *       "Delhi"
+             *     ]
+             */
+            cities: string[];
         };
         StaffGrant: {
             /** @enum {string} */

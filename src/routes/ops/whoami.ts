@@ -3,10 +3,13 @@
 // The console holds no session of its own (docs/decisions/0031-access-and-audit.md),
 // so it cannot know who is working unless it asks. The design draws them at the
 // header's right; the way out is Access's own logout, which ends the only
-// session there is.
+// session there is. With them come the cities the header's picker narrows every
+// page to (ADR 0225): names alone, which each page's own call keeps to the
+// caller's places.
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
+import { boardCities } from "../../domain/cities/cities.ts";
 import type { App } from "../../http/context.ts";
 import { callerAccess } from "../../http/staff-access.ts";
 import { routesOpenTo } from "../../policy/console-routes.ts";
@@ -45,6 +48,11 @@ const whoamiRoute = opsRoute({
                   }),
                 })
                 .strict(),
+              cities: z.array(z.string()).openapi({
+                description:
+                  "Each city ops serve, or with a technician at work, in the console's order: what the header's picker offers.",
+                example: ["Gurgaon", "Delhi"],
+              }),
             })
             .strict()
             .openapi("Whoami"),
@@ -66,6 +74,6 @@ export function registerOpsWhoami(app: App): void {
       caller.kind === "person"
         ? { enforced, listed: caller.active, grants: caller.grants.map(grantJson), may_call: mayCall }
         : { enforced, listed: caller.allowed, grants: [], may_call: mayCall };
-    return c.json({ signed_in_as: signedInAs, sign_out: signOut, staff }, 200);
+    return c.json({ signed_in_as: signedInAs, sign_out: signOut, staff, cities: await boardCities(c.env.DB) }, 200);
   });
 }

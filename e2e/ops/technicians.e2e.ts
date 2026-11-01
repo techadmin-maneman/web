@@ -1,6 +1,6 @@
 import { expect, test } from "../support.ts";
 import { DISMISS } from "../../packages/ui/words.ts";
-import { answer, BOARD, fails, json, TECHNICIAN_WORK, TECHNICIANS } from "./fixtures.ts";
+import { answer, BOARD, chooseCity, fails, json, signedInLocally, TECHNICIAN_WORK, TECHNICIANS } from "./fixtures.ts";
 import {
   IMRAN,
   SANDEEP,
@@ -23,8 +23,8 @@ test("lists every active technician with the city they take visits in", async ({
   await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText(opsCopy.technicians.noCity);
 });
 
-test("sorts the roster by a column, and narrows it by city or a search", async ({ page }) => {
-  await open(page);
+test("sorts the roster by a column, and narrows it by the header's city or a search", async ({ page }) => {
+  await open(page, { "GET /api/whoami": signedInLocally(["Gurgaon", "Delhi"]) });
   const rows = page.getByRole("table").getByRole("row");
   const byName = page.getByRole("button", { name: opsCopy.clients.visits.book.technician, exact: true });
   await byName.click();
@@ -36,10 +36,10 @@ test("sorts the roster by a column, and narrows it by city or a search", async (
   await byName.click();
   await expect(rows.nth(1)).toContainText("Sandeep Yadav");
 
-  await page.getByLabel(opsCopy.technicians.details.city).selectOption("Gurgaon");
+  await chooseCity(page, "Gurgaon");
   await expect(rows).toHaveCount(3);
   await expect(page.getByRole("table")).not.toContainText("Faizan Ali");
-  await page.getByRole("button", { name: opsCopy.tables.clear, exact: true }).click();
+  await chooseCity(page, opsCopy.tables.allCities);
   await page.getByLabel(opsCopy.tables.search).fill("sandeep");
   await expect(rows).toHaveCount(2);
 });

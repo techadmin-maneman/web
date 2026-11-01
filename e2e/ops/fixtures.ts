@@ -26,6 +26,7 @@ export {
   inkPhoto,
 } from "./fixtures/clients.ts";
 export { BOARD, MOVED, PROPOSED, ROHIT, ROOM, VIKRAM } from "./fixtures/dispatch.ts";
+export { chooseCity, signedInLocally } from "./fixtures/whoami.ts";
 export {
   CHARGE_PREVIEW,
   DAY_MONEY,

@@ -46,6 +46,31 @@
     cursor: pointer;
   }
 
+  /* Words on the navigation's ink, a row of the column's width, as the account in its foot. */
+  .ink {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-12);
+    width: 100%;
+    min-height: var(--tap);
+    padding: var(--sp-8) var(--sp-12);
+    border: 0;
+    background: none;
+    color: var(--nav-text-current);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ink:focus-visible {
+    outline: var(--focus-width) solid var(--nav-text-current);
+    outline-offset: var(--focus-inset);
+  }
+
+  .ink[aria-expanded="true"] {
+    background: var(--nav-current);
+  }
+
   .chosen {
     flex: 1;
     min-width: 0;
@@ -65,6 +90,11 @@
     border: var(--hairline) solid var(--ui-line-control);
     background: var(--ui-raised);
     color: var(--ui-text);
+  }
+
+  .above {
+    top: auto;
+    bottom: calc(100% + var(--sp-4));
   }
 
   .start {

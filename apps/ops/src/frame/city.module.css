@@ -1,0 +1,12 @@
+/* The city chips on a phone (./City.tsx): one row, scrolled sideways where the cities run past its end. */
+
+.chips {
+  display: flex;
+  gap: var(--sp-8);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chips > * {
+  flex-shrink: 0;
+}

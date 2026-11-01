@@ -44,6 +44,7 @@ const change = (scope: Locator, label: string) =>
 const VIEW_ONLY = json({
   signed_in_as: "viewer@maneman.in",
   sign_out: "/cdn-cgi/access/logout",
+  cities: [],
   staff: {
     enforced: true,
     listed: true,

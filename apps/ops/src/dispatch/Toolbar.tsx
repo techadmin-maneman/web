@@ -1,13 +1,12 @@
-// Above the grid: the week, the city, and a search for one row among many, in a row of their own since the design draws
-// no control for them (docs/fidelity-method.md). The search narrows the rows only: each day's figures stay the day's
-// own.
+// Above the grid: the week, and a search for one row among many, in a row of their own since the design draws no
+// control for them (docs/fidelity-method.md); the city is the header's (ADR 0225). The search narrows the rows only:
+// each day's figures stay the day's own.
 
-import { Field, Select } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { SearchInput } from "@maneman/ui/SearchInput";
 import { Toolbar as SharedToolbar } from "@maneman/ui/Toolbar";
 import type { Board, BoardQuery } from "../api.ts";
-import { dispatch, tables } from "../content.ts";
+import { dispatch } from "../content.ts";
 import styles from "./toolbar.module.css";
 import { addDays } from "@maneman/web-kit/dates";
 
@@ -58,25 +57,6 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
       >
         {copy.next}
       </Button>
-      <Field label={copy.city} labelHidden>
-        {(control) => (
-          <Select
-            {...control}
-            width="choice"
-            value={query.city ?? ""}
-            onChange={(event) => {
-              onQuery({ ...query, city: event.currentTarget.value === "" ? null : event.currentTarget.value });
-            }}
-          >
-            <option value="">{tables.allCities}</option>
-            {(board?.cities ?? []).map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
       <SearchInput label={copy.find} value={find} onChange={onFind} />
     </SharedToolbar>
   );

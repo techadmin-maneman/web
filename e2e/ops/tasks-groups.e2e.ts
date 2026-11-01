@@ -468,6 +468,7 @@ test("narrows the board to my own tasks, one kind, or a client found by name", a
     "GET /api/whoami": json({
       signed_in_as: "priya@maneman.in",
       sign_out: "/cdn-cgi/access/logout",
+      cities: [],
       staff: {
         enforced: false,
         listed: true,
@@ -515,6 +516,7 @@ test("counts in the header the tasks given to me that I have not seen, and lists
     "GET /api/whoami": json({
       signed_in_as: "priya@maneman.in",
       sign_out: "/cdn-cgi/access/logout",
+      cities: [],
       staff: { enforced: false, listed: true, grants, may_call: ["GET /api/tasks", "GET /api/alerts"] },
     }),
   });
@@ -536,6 +538,7 @@ test("names a client as plain text, and offers no way to a section, where the pe
     "GET /api/whoami": json({
       signed_in_as: "dispatch@maneman.in",
       sign_out: "/cdn-cgi/access/logout",
+      cities: [],
       staff: {
         enforced: true,
         listed: true,

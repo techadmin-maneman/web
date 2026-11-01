@@ -10,6 +10,7 @@
 import { useId, type ReactNode } from "react";
 import { capsLook } from "./Caps.tsx";
 import { Icon } from "./Icon.tsx";
+import { Popover } from "./Popover.tsx";
 import { Link } from "./router.tsx";
 import { classes } from "./classes.ts";
 import styles from "./side-nav.module.css";
@@ -47,15 +48,20 @@ export function SideNav({
   );
 }
 
-/** Entries for one kind of work under its name in small capitals, which folds away with the entries' names. */
-export function NavGroup({ label, children }: { readonly label: string; readonly children: ReactNode }) {
+/**
+ * Entries for one kind of work under its name in small capitals, which folds away with the entries' names; set apart
+ * from the group before it, named or not.
+ */
+export function NavGroup({ label, children }: { readonly label?: string | undefined; readonly children: ReactNode }) {
   const id = useId();
   return (
     <li className={styles.group}>
-      <span className={capsLook(styles.groupLabel)} id={id}>
-        {label}
-      </span>
-      <ul className={styles.groupItems} aria-labelledby={id}>
+      {label !== undefined && (
+        <span className={capsLook(styles.groupLabel)} id={id}>
+          {label}
+        </span>
+      )}
+      <ul className={styles.groupItems} aria-labelledby={label === undefined ? undefined : id}>
         {children}
       </ul>
     </li>
@@ -119,5 +125,48 @@ export function NavButton({
       <Icon className={styles.icon} d={icon} size="sm" />
       <span className={styles.name}>{name}</span>
     </button>
+  );
+}
+
+/**
+ * Who is signed in, in the navigation's foot: their initials, name and e-mail, the button that opens what is theirs
+ * (the theme, the way out). Folded, the initials alone.
+ */
+export function NavAccount({
+  label,
+  initials,
+  name,
+  detail,
+  children,
+}: {
+  /** Read out, holding the name it shows: "Account, Priya Sharma". */
+  readonly label: string;
+  readonly initials: string;
+  readonly name: string;
+  /** Beneath the name: their e-mail. */
+  readonly detail?: string | undefined;
+  readonly children: (close: () => void) => ReactNode;
+}) {
+  return (
+    <Popover
+      look="ink"
+      side="above"
+      align="start"
+      className={styles.account}
+      label={label}
+      button={
+        <>
+          <span className={styles.initials} aria-hidden="true">
+            {initials}
+          </span>
+          <span className={styles.person}>
+            <span className={styles.personName}>{name}</span>
+            {detail !== undefined && <span className={styles.personDetail}>{detail}</span>}
+          </span>
+        </>
+      }
+    >
+      {children}
+    </Popover>
   );
 }

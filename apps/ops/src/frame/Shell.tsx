@@ -1,20 +1,20 @@
-// The console's frame, which App draws once round whichever page is open: the navigation on the ink down the left,
-// an entry for each job with how many tasks wait in it and Settings at its foot; a bar across the top with where the
-// page sits, the search and the person signed in; and the page's head, its title, figures, actions and tabs.
+// The console's frame round whichever page is open (ADR 0226): the navigation on the ink, by kind of work, the person
+// signed in at its foot; a bar across the top with where the page sits, the search and the city; and the page's head,
+// its title, figures, actions and tabs. On a phone a tab bar at the foot stands in for the navigation, and the page's
+// head carries the search and the person signed in.
 
-import { GLYPHS } from "@maneman/brand/icons";
 import { Breadcrumbs, type Crumb } from "@maneman/ui/Breadcrumbs";
 import { Button } from "@maneman/ui/Button";
-import { Icon } from "@maneman/ui/Icon";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { PageHeader, PageTitle } from "@maneman/ui/PageHeader";
 import { Link, usePath, wasRedirected } from "@maneman/ui/router";
 import { SkipLink } from "@maneman/ui/SkipLink";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
-import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from "react";
 import { shell } from "../content.ts";
 import { useMayCall, whoami } from "../lib/access.ts";
+import { useIsPhone } from "../lib/media.ts";
 import { useLapsed } from "../lib/session.ts";
 import {
   mayFollow,
@@ -28,9 +28,11 @@ import {
   type Route,
 } from "../route.ts";
 import { Account } from "./Account.tsx";
+import { CityChips, CityPicker } from "./City.tsx";
 import { Mine } from "./Mine.tsx";
-import { CommandPalette } from "./CommandPalette.tsx";
 import { Navigation, NAV_ID } from "./Navigation.tsx";
+import { PhoneTabs } from "./PhoneTabs.tsx";
+import { HeaderSearch, PhoneSearch } from "./Search.tsx";
 import { PageHead } from "./PageHead.tsx";
 import { GroupTabs } from "./SectionGroups.tsx";
 import styles from "./shell.module.css";
@@ -127,6 +129,7 @@ function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: 
 
 /** Where the page sits: its entry above a page of several, its section above a record, Settings' group above its page. */
 function crumbsOf(route: Route, record: string | undefined): Crumb[] {
+  if (route.page === "more") return [];
   if (route.page === "settings") {
     const page = settingsPageOf(route.tab);
     return [{ label: shell.settings }, { label: SETTINGS_GROUP_NAMES[page.group] }];
@@ -140,8 +143,12 @@ function crumbsOf(route: Route, record: string | undefined): Crumb[] {
 /** The page's title: a record's own name, Settings' page, or the page's. */
 function pageTitleOf(route: Route, record: string | undefined): string {
   if (record !== undefined) return record;
+  if (route.page === "more") return shell.more;
   return route.page === "settings" ? SETTINGS_PAGE_NAMES[route.tab] : SECTION_NAMES[route.page];
 }
+
+/** The pages whose head, on a phone, carries the city as chips; elsewhere it is on More. */
+const CHIPS_ON: readonly Route["page"][] = ["today", "dispatch"];
 
 interface Props {
   readonly route: Route;
@@ -159,14 +166,8 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
   const [sub, setSub] = useState<string | undefined>();
   const [record, setRecord] = useState<string | undefined>();
   const [actions, setActions] = useState<HTMLElement | null>(null);
-  const [searching, setSearching] = useState(false);
-  const search = useCallback(() => {
-    setSearching(true);
-  }, []);
-  const stopSearching = useCallback(() => {
-    setSearching(false);
-  }, []);
   const menu = useMenu();
+  const phone = useIsPhone();
   useFocusOnArrival(heading, main);
   const crumbs = crumbsOf(route, record);
   const title = pageTitleOf(route, record);
@@ -179,8 +180,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
       >
         {shell.skip}
       </SkipLink>
-      <Navigation route={route} open={menu.open} />
-      <CommandPalette open={searching} onOpen={search} onClose={stopSearching} />
+      <Navigation route={route} open={menu.open} className={styles.nav} />
       <div className={styles.body}>
         <header className={styles.bar}>
           <Button
@@ -196,13 +196,9 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
           <div className={styles.crumbs}>
             {crumbs.length > 0 && <Breadcrumbs label={shell.crumbs} crumbs={[...crumbs, { label: title }]} />}
           </div>
-          <Button variant="quiet" size="small" className={styles.search} onClick={search}>
-            <Icon d={GLYPHS.search} size="xs" />
-            {shell.search}
-            <kbd className={styles.keys}>{shell.searchKeys}</kbd>
-          </Button>
+          <HeaderSearch className={styles.search} />
+          <CityPicker className={styles.city} />
           <Mine />
-          <Account />
         </header>
         {lapsed && <Lapsed />}
         <NotListed />
@@ -213,8 +209,19 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
             titleRef={heading}
             meta={sub}
             actions={<div className={styles.actions} ref={setActions} />}
-            tabs={route.page === "settings" || record !== undefined ? undefined : <GroupTabs page={route.page} />}
+            tabs={
+              route.page === "settings" || route.page === "more" || record !== undefined ? undefined : (
+                <GroupTabs page={route.page} />
+              )
+            }
           />
+          {phone && (
+            <div className={styles.phoneTools}>
+              <PhoneSearch />
+              <Account />
+            </div>
+          )}
+          {phone && CHIPS_ON.includes(route.page) && <CityChips className={styles.chips} />}
           <div aria-live="polite">
             {note !== null && (
               <InlineMessage tone="note" className={styles.note}>
@@ -226,6 +233,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
             <PageTitle value={title}>{children}</PageTitle>
           </PageHead>
         </main>
+        {phone && <PhoneTabs route={route} className={styles.tabs} />}
       </div>
     </div>
   );

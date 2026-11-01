@@ -2,11 +2,13 @@
 // a visit, with the visit's drawer open, and the address keeps the week, the city, the search and the open visit as
 // ops change them. Links from Tasks landed on this week's bare board, and Back from a client reset it.
 
-import { act, createElement } from "react";
+import { act, createElement, Fragment } from "react";
 import { CLOSE } from "../../apps/ops/src/content/common.ts";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DispatchScreen } from "../../apps/ops/src/dispatch/DispatchScreen.tsx";
+import { CityPicker } from "../../apps/ops/src/frame/City.tsx";
+import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { BOARD } from "../../e2e/ops/fixtures/dispatch.ts";
 import { answered } from "./render-hook.ts";
@@ -37,7 +39,18 @@ beforeEach(() => {
       const address = new URL(typeof input === "string" ? input : input.url, "https://ops.maneman.test");
       reads.push(`${address.pathname}${address.search}`);
       if (address.pathname === "/api/dispatch") return Promise.resolve(Response.json(BOARD));
-      // Who is signed in: unknown, so every action is shown and the API refuses what it must.
+      // Who is signed in: on a laptop, the Staff list not enforced, so every action is shown; and the cities served,
+      // which the header's picker offers.
+      if (address.pathname === "/api/whoami") {
+        return Promise.resolve(
+          Response.json({
+            signed_in_as: "ops@localhost",
+            sign_out: null,
+            staff: { enforced: false, listed: false, grants: [], may_call: Object.keys(ROUTE_NEEDS) },
+            cities: ["Gurgaon", "Delhi"],
+          }),
+        );
+      }
       return Promise.resolve(Response.json({ error: { code: "internal_error", request_id: "r" } }, { status: 500 }));
     }),
   );
@@ -62,7 +75,8 @@ async function settle() {
 async function openAt(path: string) {
   window.history.replaceState(null, "", path);
   act(() => {
-    root.render(createElement(DispatchScreen));
+    // The board beside the header's city picker, which narrows it (ADR 0225).
+    root.render(createElement(Fragment, null, createElement(CityPicker), createElement(DispatchScreen)));
   });
   await settle();
   await settle();
@@ -107,10 +121,10 @@ describe("the dispatch board’s place in the address", () => {
       const label = [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === words);
       return label === undefined ? null : document.getElementById(label.htmlFor);
     };
-    const city = boxFor(opsCopy.dispatch.tools.city) as HTMLSelectElement | null;
     const find = boxFor(opsCopy.dispatch.tools.find) as HTMLInputElement | null;
-    if (city === null || find === null) throw new Error(`No city or search in: ${page.textContent}`);
-    choose(city, "Delhi");
+    if (find === null) throw new Error(`No search in: ${page.textContent}`);
+    press(opsCopy.shell.city.label(opsCopy.tables.allCities));
+    press("Delhi");
     choose(find, "Rohit");
     expect(asked()).toEqual({ from: "2025-09-19", city: "Delhi", find: "Rohit" });
 
@@ -128,6 +142,10 @@ describe("the dispatch board’s place in the address", () => {
     if (open === null) throw new Error("The drawer did not open");
     press(CLOSE, open);
     expect(asked()).toEqual({ from: "2025-09-26", city: "Delhi", find: "Rohit" });
+
+    // Every city again, for the tests after this one.
+    press(opsCopy.shell.city.label("Delhi"));
+    press(opsCopy.tables.allCities);
   });
 
   it("opens the drawer of a visit still in the tray, and gives it back the keyboard when it closes", async () => {

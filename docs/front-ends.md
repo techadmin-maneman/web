@@ -68,7 +68,7 @@ What a client does after booking: Home, Visits, Photos, Payments, Refer and Prof
 
 ## The ops console
 
-Ops' desk tool, drawn at 1440 px: 32 sections under five departments, each a folder of its own, which `apps/ops/README.md` maps to its path and its calls (`apps/ops/src/route.ts`). Every call is audited under the Access identity behind it (ADR 0031). Prices are set in Finance › Prices, the rules in Admin › Settings and the service area in Growth › Areas, not in a release (ADR 0061), and a setting says what it will change before it is saved (ADR 0071). The console registers no service worker.
+Ops' console, drawn at 1440 px for a desk and at 390 for a phone (ADR 0225): 32 sections under five departments, each a folder of its own, which `apps/ops/README.md` maps to its path and its calls (`apps/ops/src/route.ts`). Every call is audited under the Access identity behind it (ADR 0031). Prices are set in Finance › Prices, the rules in Admin › Settings and the service area in Growth › Areas, not in a release (ADR 0061), and a setting says what it will change before it is saved (ADR 0071). The console registers no service worker.
 
 ## The technician app
 

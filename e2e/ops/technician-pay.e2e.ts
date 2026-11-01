@@ -5,6 +5,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
+import { chooseCity, signedInLocally } from "./fixtures/whoami.ts";
 import { deleting, EDITING } from "../../apps/ops/src/content/common.ts";
 import { technicianPay as copy } from "../../apps/ops/src/content/technician-pay.ts";
 import { settingsPageNames, shell } from "../../apps/ops/src/content.ts";
@@ -90,8 +91,8 @@ async function recordOf(page: Page, name: string) {
   return page.getByRole("dialog", { name });
 }
 
-test("lists the grades and each one’s rates, every city’s first, then a city’s own", async ({ page }) => {
-  await open(page);
+test("lists the grades and each one’s rates, every city’s first, then the header city’s own", async ({ page }) => {
+  await open(page, { "GET /api/whoami": signedInLocally(["Gurgaon", "Delhi"]) });
   await expect(cellsOf(page, "Senior")).toHaveText([
     "1",
     "—",
@@ -101,7 +102,7 @@ test("lists the grades and each one’s rates, every city’s first, then a city
     "—",
     "—",
   ]);
-  await page.getByLabel(copy.rates.city, { exact: true }).selectOption("Delhi");
+  await chooseCity(page, "Delhi");
   await expect(cellsOf(page, "Senior").nth(3)).toHaveText("Rs. 1,000 (every city)");
   await expect(cellsOf(page, "Senior").nth(4)).toHaveText("Rs. 400");
 });

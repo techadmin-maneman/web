@@ -4,7 +4,7 @@
 import type { Request } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, json, type OpsReply } from "./fixtures.ts";
+import { answer, chooseCity, json, signedInLocally, type OpsReply } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const ROHIT = {
@@ -33,14 +33,14 @@ const LISTED = {
 
 const listed = (request: Request) => new URL(request.url()).pathname === "/api/clients";
 
-test("lists every client beneath the search, narrowed by status and city, the narrowing kept in the address", async ({
+test("lists every client beneath the search, narrowed by status and the header's city, the status in the address", async ({
   page,
 }) => {
   const asked: string[] = [];
   page.on("request", (request) => {
     if (listed(request)) asked.push(new URL(request.url()).search);
   });
-  await answer(page, { "GET /api/clients": json(LISTED) });
+  await answer(page, { "GET /api/clients": json(LISTED), "GET /api/whoami": signedInLocally(["Gurgaon", "Noida"]) });
   await page.goto("/clients");
 
   const list = page.getByRole("region", { name: opsCopy.clients.list.title });
@@ -54,9 +54,10 @@ test("lists every client beneath the search, narrowed by status and city, the na
 
   await list.getByLabel(opsCopy.clients.list.state).selectOption({ label: "Booked" });
   await expect.poll(() => asked.at(-1)).toBe("?state=lead");
-  await list.getByLabel(opsCopy.clients.list.city).selectOption("Noida");
+  // The city is the header's, for every page (ADR 0225): the list starts again from its first page.
+  await chooseCity(page, "Noida");
   await expect.poll(() => asked.at(-1)).toBe("?state=lead&city=Noida");
-  expect(new URL(page.url()).search).toBe("?state=lead&city=Noida");
+  expect(new URL(page.url()).search).toBe("?state=lead");
 
   await list.getByRole("button", { name: opsCopy.clients.list.next }).click();
   await expect.poll(() => asked.at(-1)).toBe("?state=lead&city=Noida&cursor=MQ");
@@ -65,5 +66,5 @@ test("lists every client beneath the search, narrowed by status and city, the na
   // The address opens the list narrowed as it was: a bookmark, or a link sent to a colleague.
   await page.reload();
   await expect(list.getByLabel(opsCopy.clients.list.state)).toHaveValue("lead");
-  await expect(list.getByLabel(opsCopy.clients.list.city)).toHaveValue("Noida");
+  await expect(page.getByRole("banner").getByRole("button", { name: opsCopy.shell.city.label("Noida") })).toBeVisible();
 });

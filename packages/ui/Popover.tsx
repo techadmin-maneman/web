@@ -17,11 +17,14 @@ import { classes } from "./classes.ts";
 import { Icon } from "./Icon.tsx";
 import styles from "./popover.module.css";
 
+const TRIGGERS = { plain: styles.trigger, field: styles.field, ink: styles.ink } as const;
+
 export function Popover({
   label,
   button,
   align = "end",
   look = "plain",
+  side = "below",
   icon,
   className,
   children,
@@ -35,8 +38,13 @@ export function Popover({
   readonly button: ReactNode;
   /** Which edge of the button the panel lines up with. */
   readonly align?: "start" | "end";
-  /** `field` draws the button as a box showing what is chosen, with the arrow a select has: a picker. */
-  readonly look?: "plain" | "field";
+  /**
+   * `field` draws the button as a box showing what is chosen, with the arrow a select has: a picker. `ink` draws it
+   * as words on the navigation's ink, as the account in its foot.
+   */
+  readonly look?: "plain" | "field" | "ink";
+  /** Whether the panel opens beneath the button or above it, as from the foot of the window. */
+  readonly side?: "below" | "above";
   /** A field's icon, before its words. */
   readonly icon?: string | undefined;
   readonly className?: string | undefined;
@@ -72,7 +80,7 @@ export function Popover({
       <button
         ref={trigger}
         type="button"
-        className={look === "field" ? styles.field : styles.trigger}
+        className={TRIGGERS[look]}
         aria-label={label}
         aria-expanded={open}
         aria-controls={id}
@@ -90,7 +98,7 @@ export function Popover({
           button
         )}
       </button>
-      <div id={id} className={classes(styles.panel, styles[align])} hidden={!open}>
+      <div id={id} className={classes(styles.panel, styles[align], side === "above" && styles.above)} hidden={!open}>
         {open && children(close)}
       </div>
     </div>
