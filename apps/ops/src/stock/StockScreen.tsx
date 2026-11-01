@@ -5,15 +5,12 @@
 
 import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
-import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Table, TableScroll } from "@maneman/ui/Table";
-import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { type Stock } from "../api.ts";
-import { OpsLink } from "../frame/Shell.tsx";
-import { shell } from "../content/shell.ts";
 import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
@@ -23,10 +20,9 @@ import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import type { LabelsFor } from "./Labels.tsx";
-import { holdingOf, unitOf } from "./holdings.ts";
+import { firstShowing, Grouping, OnHand, type Showing } from "./OnHand.tsx";
 import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
-import { RowHead } from "@maneman/ui/RowHead";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { PageActions } from "../frame/PageHead.tsx";
 
@@ -49,59 +45,6 @@ function anyExpiring(stock: Stock): boolean {
   );
 }
 
-/** Past this many places, a column each grows too wide to read: the table shows the warehouse and one place. */
-const PLACES_SIDE_BY_SIDE = 6;
-
-/** What the table shows: each place, or past a handful the warehouse and one, or totals by zone or city. */
-type Showing = { readonly by: "place"; readonly beside: string | null } | { readonly by: "zone" | "city" };
-
-/** The places that may stand beside the warehouse, each marked where anything is low there or below nought. */
-function besideOptions(stock: Stock): { readonly id: string; readonly label: string }[] {
-  const held = (id: string) => stock.holdings.filter((holding) => holding.place_id === id);
-  /** Below zero says more than low: a movement went unrecorded there. */
-  const markOf = (id: string) => {
-    if (held(id).some((holding) => holding.quantity < 0)) return copy.placeBelow;
-    return held(id).some((holding) => holding.low) ? copy.placeLow : "";
-  };
-  return stock.places.flatMap((each) =>
-    each.kind === "warehouse" ? [] : [{ id: each.id, label: `${placeName(stock, each.id)}${markOf(each.id)}` }],
-  );
-}
-
-/** The one control over the table: how it adds up its places, and which one stands beside the warehouse. */
-function Grouping({ stock, showing, onShow }: { stock: Stock; showing: Showing; onShow: (showing: Showing) => void }) {
-  const many = stock.places.length > PLACES_SIDE_BY_SIDE;
-  const value = showing.by === "place" ? `place:${showing.beside ?? ""}` : showing.by;
-  return (
-    <Field label={copy.totalsBy} labelHidden>
-      {(control) => (
-        <Select
-          {...control}
-          width="choice"
-          value={many || showing.by !== "place" ? value : "place:"}
-          onChange={(event) => {
-            const picked = event.target.value;
-            if (picked === "zone" || picked === "city") onShow({ by: picked });
-            else onShow({ by: "place", beside: picked.slice("place:".length) || null });
-          }}
-        >
-          {many ? (
-            besideOptions(stock).map((each) => (
-              <option key={each.id} value={`place:${each.id}`}>
-                {each.label}
-              </option>
-            ))
-          ) : (
-            <option value="place:">{copy.byPlace}</option>
-          )}
-          <option value="zone">{copy.byZone}</option>
-          <option value="city">{copy.byCity}</option>
-        </Select>
-      )}
-    </Field>
-  );
-}
-
 /** What is on its way, which loads only while something is. */
 const InTransit = lazyScreen(() => import("./InTransit.tsx").then((module) => module.InTransit));
 
@@ -112,84 +55,6 @@ const RECORDING: Readonly<Record<Kind, OpsCall>> = {
   count: "POST /api/stock/counts",
   write_off: "POST /api/stock/write-offs",
 };
-
-/** One place's figure: what it holds, marked Low at or below its level and Out at none, and when it was last counted. */
-function Held({ stock, code, place }: { stock: Stock; code: string; place: string }) {
-  const holding = holdingOf(stock, code, place);
-  const unit = unitOf(stock, code);
-  const quantity = holding?.quantity ?? 0;
-  // The lots come soonest to expire first.
-  const soonest = holding?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? null;
-  return (
-    <td className={styles.held}>
-      <span className={quantity < 0 ? styles.below : undefined}>{copy.held(quantity, unit)}</span>
-      {quantity < 0 && <span className={styles.low}>{copy.belowZero}</span>}
-      {holding?.low === true && quantity >= 0 && (
-        <span className={styles.low}>{quantity === 0 ? copy.out : copy.low}</span>
-      )}
-      {holding?.counted_at !== null && holding?.counted_at !== undefined && (
-        <span className={styles.counted}>{copy.counted(shortDate(indiaDate(holding.counted_at)))}</span>
-      )}
-      {soonest !== null && <span className={styles.counted}>{copy.expires(fullDate(soonest))}</span>}
-    </td>
-  );
-}
-
-/** Items, where each consumable and its low level is set. The sentence before it ends with it. */
-function ToItems() {
-  return (
-    <>
-      <OpsLink className={form.link} to="/items">
-        {shell.sections.items}
-      </OpsLink>
-      .
-    </>
-  );
-}
-
-function OnHand({ stock, picked }: { stock: Stock; picked: string | null }) {
-  const many = stock.places.length > PLACES_SIDE_BY_SIDE;
-  const beside = picked ?? stock.places.find((place) => place.kind !== "warehouse")?.id ?? "";
-  const places = many
-    ? stock.places.filter((place) => place.kind === "warehouse" || place.id === beside)
-    : stock.places;
-  if (stock.consumables.length === 0) {
-    return (
-      <Note>
-        {copy.none} <ToItems />
-      </Note>
-    );
-  }
-  return (
-    <TableScroll labelledBy="stock-on-hand">
-      <Table controls>
-        <thead>
-          <tr>
-            <th scope="col">{copy.consumable}</th>
-            {places.map((place) => (
-              <th scope="col" key={place.id}>
-                {placeName(stock, place.id)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {stock.consumables.map((consumable) => (
-            <tr key={consumable.code}>
-              <RowHead>
-                {consumable.name}
-                {consumable.retired && <span className={styles.retired}>{copy.retired}</span>}
-              </RowHead>
-              {places.map((place) => (
-                <Held key={place.id} stock={stock} code={consumable.code} place={place.id} />
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </TableScroll>
-  );
-}
 
 type Movement = Stock["movements"][number];
 
@@ -267,7 +132,7 @@ function viewsOf(stock: Stock, access: ReturnType<typeof useAccess>): readonly V
 
 /** What each place holds, by place or in totals, and what is wanted and on its way. */
 function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stock) => void }) {
-  const [showing, setShowing] = useState<Showing>({ by: "place", beside: null });
+  const [showing, setShowing] = useState<Showing>(() => firstShowing(stock));
   return (
     <>
       <Panel
@@ -276,7 +141,7 @@ function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stoc
         actions={<Grouping stock={stock} showing={showing} onShow={setShowing} />}
       >
         {showing.by === "place" ? (
-          <OnHand stock={stock} picked={showing.beside} />
+          <OnHand stock={stock} place={showing.place} />
         ) : (
           <Suspense fallback={<PanelLoading />}>
             <Totals stock={stock} by={showing.by} />

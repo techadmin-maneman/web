@@ -61,12 +61,21 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
 
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
   await expect(tape.getByRole("cell").nth(0)).toContainText("120 strips");
-  await expect(tape.getByRole("cell").nth(0)).toContainText("Counted Mon 20 Sep");
   await expect(tape.getByRole("cell").nth(1)).toContainText("3 strips");
   await expect(tape.getByRole("cell").nth(1)).toContainText(stock.low);
   await expect(tape.getByRole("cell").nth(2)).not.toContainText(stock.low);
   const solvent = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Solvent" }) });
   await expect(solvent.getByRole("cell").nth(0)).toHaveText(`-20 ml${stock.belowZero}`);
+
+  // One place picked: only its figures, and when each was last counted in a column of its own.
+  await page.getByLabel(stock.totalsBy).selectOption("place:central");
+  await expect(table.getByRole("columnheader")).toHaveText([
+    stock.consumable,
+    stock.columns.held,
+    stock.columns.expires,
+    stock.columns.counted,
+  ]);
+  await expect(tape.getByRole("cell").nth(2)).toHaveText("20 Sep");
 });
 
 // A kit with none left read Low.
@@ -103,17 +112,20 @@ test("past six places, shows the warehouse and one place, picked, marking each p
   await answer(page, { "GET /api/stock/demand": json(NO_DEMAND), "GET /api/stock": json(many) });
   await page.goto("/stock");
   const table = onHand(page);
-  await expect(table.getByRole("columnheader")).toHaveText([stock.record.consumable, WAREHOUSE, "Technician 1"]);
+  // Past a handful of places, one at a time: the warehouse first, and only its figures.
+  const onePlace = [stock.consumable, stock.columns.held, stock.columns.expires, stock.columns.counted];
+  await expect(table.getByRole("columnheader")).toHaveText(onePlace);
+  await expect(page.getByLabel(stock.totalsBy)).toHaveValue("place:central");
 
-  // One control: past a handful of places, it names the one beside the warehouse, among the totals.
+  // One control: each place, marked where something is low, among the totals.
   const show = page.getByLabel(stock.totalsBy);
   await expect(show.getByRole("option", { name: "Technician 5 · low" })).toHaveCount(1);
   await expect(table.getByLabel(stockLabels.place)).toHaveCount(0);
   await show.selectOption({ label: "Technician 5 · low" });
-  await expect(table.getByRole("columnheader")).toHaveText([stock.record.consumable, WAREHOUSE, "Technician 5"]);
+  await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(1)).toContainText("5 strips");
-  await expect(tape.getByRole("cell").nth(1)).toContainText(stock.low);
+  await expect(tape.getByRole("cell").nth(0)).toContainText("5 strips");
+  await expect(tape.getByRole("cell").nth(0)).toContainText(stock.low);
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -168,10 +180,11 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
     "POST /api/stock/write-offs": json(withLot),
   });
   await page.goto("/stock");
+  await page.getByLabel(stock.totalsBy).selectOption("place:central");
   const tape = onHand(page)
     .getByRole("row")
     .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(0)).toContainText("Expires 31 Oct 2027");
+  await expect(tape.getByRole("cell").nth(1)).toContainText("31 Oct");
 
   const form = await recording(page);
   await form.getByLabel(stock.record.kinds.write_off).check();

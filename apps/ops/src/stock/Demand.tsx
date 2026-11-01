@@ -3,6 +3,7 @@
 // each a link to its visit's day on the board. Nothing here blocks a booking.
 
 import { Note } from "@maneman/ui/Note";
+import { Badge } from "@maneman/ui/Badge";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -55,7 +56,9 @@ export function Demand({ stock }: { stock: Stock }) {
                       <td className={form.figure}>
                         {amountOf(row.held, unit(row.consumable_code))}
                         {row.held < row.expected && (
-                          <span className={shared.low}>{words.short(row.expected - row.held)}</span>
+                          <Badge tone="warning" className={shared.state}>
+                            {words.short(row.expected - row.held)}
+                          </Badge>
                         )}
                       </td>
                     </tr>

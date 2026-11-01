@@ -15,29 +15,15 @@
   min-width: 0;
 }
 
-/* A place's figure, and beneath it when it was last counted. */
+/* A place's figure, its state beside it. */
 .held {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-/* At or below its level: said in words, and in oxblood, never by colour alone. */
-.low {
+/* A figure's or a date's state (@maneman/ui/Badge), set off from it. */
+.state {
   margin-left: var(--sp-8);
-  font-size: var(--fs-13);
-  font-weight: var(--weight-medium);
-  color: var(--status-warning);
-}
-
-/* Less than nothing: a delivery or a count is missing, and the figure says so in the same oxblood. */
-.below {
-  color: var(--status-warning);
-}
-
-.counted {
-  display: block;
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
 }
 
 /* A consumable no longer offered, still held somewhere. */

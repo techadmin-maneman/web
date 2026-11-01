@@ -3,9 +3,10 @@
 // in the chat; here ops act on it, moving the stock or writing it off by its lot.
 
 import { Note } from "@maneman/ui/Note";
+import { Badge } from "@maneman/ui/Badge";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
-import { fullDate } from "@maneman/web-kit/dates";
+import { listDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "@maneman/ui/forms.module.css";
@@ -55,8 +56,12 @@ export function Expiring({ stock }: { stock: Stock }) {
                     {lot.quantity} {consumable?.unit ?? ""}
                   </td>
                   <td>
-                    {fullDate(lot.expires_on ?? stock.today)}
-                    {expired && <span className={styles.low}>{words.expired}</span>}
+                    {listDate(lot.expires_on ?? stock.today, Number(stock.today.slice(0, 4)))}
+                    {expired && (
+                      <Badge tone="error" className={styles.state}>
+                        {words.expired}
+                      </Badge>
+                    )}
                   </td>
                 </tr>
               );
