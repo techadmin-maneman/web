@@ -44,7 +44,12 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
         failed: <PageFailed onRetry={retry} />,
         loaded: (now) => (
           <div className={styles.page}>
-            <AddressSection address={now.address} givenToOps={now.address_given_to_ops} onSaved={changed} />
+            <AddressSection
+              address={now.address}
+              givenToOps={now.address_given_to_ops}
+              pinned={now.address_pinned}
+              onSaved={changed}
+            />
             <ConsentList
               consents={now.consents.map((each) => switched.find((one) => one.purpose === each.purpose) ?? each)}
               onSwitched={(consent) => {

@@ -17,11 +17,14 @@ import styles from "./profile.module.css";
 export function AddressSection({
   address,
   givenToOps,
+  pinned,
   onSaved,
 }: {
   address: Address | null;
   /** When the client gave the address to ops on the phone; null for one they saved themselves. */
   givenToOps: string | null;
+  /** Whether the address has a place on the map; one without is asked for its building. */
+  pinned: boolean;
   onSaved: () => void;
 }) {
   const copy = profile;
@@ -67,6 +70,19 @@ export function AddressSection({
               )}
               {address.access_notes !== null && <p className={styles.muted}>{address.access_notes}</p>}
               {givenToOps !== null && <p className={styles.muted}>{copy.givenToOps(longDate(givenToOps))}</p>}
+              {!pinned && (
+                <p className={styles.muted}>
+                  {copy.unpinned}{" "}
+                  <TextButton
+                    className={styles.link}
+                    onClick={() => {
+                      setEditing(true);
+                    }}
+                  >
+                    {copy.findBuilding}
+                  </TextButton>
+                </p>
+              )}
             </>
           )}
           <TextButton

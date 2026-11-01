@@ -81,6 +81,7 @@ describe("GET /api/profile", () => {
       care_hours: { opens: 9, closes: 21, first_reply: 60 },
       address: null,
       address_given_to_ops: null,
+      address_pinned: false,
       consents: [
         { purpose: "photos_own_record", granted: false, since: null },
         { purpose: "photos_referral_cards", granted: false, since: null },

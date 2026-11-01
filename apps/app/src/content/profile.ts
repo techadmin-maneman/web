@@ -13,6 +13,9 @@ export const profile = {
   editAddress: "Edit address and access notes",
   noAddress: "No address yet. Add it so your technician can find you.",
   addAddress: "Add your address and access notes",
+  // A typed address Google could not place: the technician's arrival is not checked against it.
+  unpinned: "We couldn’t place this address on the map.",
+  findBuilding: "Search for your building",
   // The client types the landmark as they like, so it shows as typed.
   landmark: "Landmark",
   // An address the client gave ops on the phone, which ops saved for them (ADR 0092).

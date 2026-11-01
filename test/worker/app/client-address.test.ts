@@ -317,6 +317,15 @@ describe("the address pin", () => {
     const typed = { ...chosen, building: null, place_id: null, line1: "House 4417, Tower C" };
     expect((await send(client, "PATCH", "/api/profile/address", typed)).status).toBe(200);
     expect(await pinOf()).toMatchObject({ lat: null, lng: null, geocode_source: null, place_id: null });
+    // The profile says so, so the app can ask for the building.
+    const profile = await (await send(client, "GET", "/api/profile")).json<{ address_pinned: boolean }>();
+    expect(profile.address_pinned).toBe(false);
+  });
+
+  it("says the address is on the map once a building is chosen", async () => {
+    await send(client, "PATCH", "/api/profile/address", chosen);
+    const profile = await (await send(client, "GET", "/api/profile")).json<{ address_pinned: boolean }>();
+    expect(profile.address_pinned).toBe(true);
   });
 
   // A typed address saved no pin, so every check-in there passed unmeasured.

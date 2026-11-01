@@ -208,6 +208,7 @@ test("says an address was given to us on the phone, so the client can check it",
         care_person: null,
         care_hours: { opens: 9, closes: 21, first_reply: 60 },
         address_given_to_ops: "2026-09-21T06:30:00.000Z",
+        address_pinned: true,
       },
     });
   });
@@ -215,6 +216,48 @@ test("says an address was given to us on the phone, so the client can check it",
   await expect(page.getByText("Flat 1203, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("You gave us this address by phone on 21 Sep 2026.")).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.profile.editAddress })).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+});
+
+// A typed address Google could not place has no pin: the technician's arrival is not checked against it.
+test("asks for the building when the address is not on the map", async ({ page }) => {
+  await signIn(page);
+  await page.route("**/api/profile", async (route) => {
+    await route.fulfill({
+      json: {
+        name: "Rohit Malhotra",
+        mobile: "+91 98xxx x4417",
+        consents: [],
+        number_change: null,
+        number_change_decided: null,
+        deletion: null,
+        deletion_rejected: null,
+        grievances: [],
+        address: {
+          line1: "House 22, Block D",
+          line2: null,
+          locality: "Sector 15",
+          city: "Gurgaon",
+          pincode: "122001",
+          access_notes: null,
+          building: null,
+          flat: "22",
+          floor: null,
+          tower: null,
+          landmark: null,
+          place_id: null,
+        },
+        care_person: null,
+        care_hours: { opens: 9, closes: 21, first_reply: 60 },
+        address_given_to_ops: null,
+        address_pinned: false,
+      },
+    });
+  });
+  await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await expect(page.getByText(appCopy.profile.unpinned)).toBeVisible();
+  await page.getByRole("button", { name: appCopy.profile.findBuilding }).click();
+  await expect(page.getByRole("combobox", { name: appCopy.profile.form.building.label })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
 
