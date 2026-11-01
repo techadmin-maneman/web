@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createMsg91Messaging, SEND_URL } from "../../../src/providers/messaging/msg91.ts";
+import { createMsg91Messaging, REPLY_URL, SEND_URL } from "../../../src/providers/messaging/msg91.ts";
 import type { MessagingProvider } from "../../../src/providers/messaging/index.ts";
 import { captureLogs, fakeFetch, json, markDatabase } from "../helpers.ts";
 import { log } from "./messaging-fixtures.ts";
@@ -133,6 +133,37 @@ describe("MSG91", () => {
       ok: false,
       transient: false,
       detail: "HTTP 200 Template not approved for ############",
+    });
+  });
+
+  it("sends a Care reply in the team's own words, as MSG91's session message from the business number", async () => {
+    const http = fakeFetch({ [REPLY_URL]: accepted });
+    const msg91 = createMsg91Messaging(settings, { fetch: http.fetch, log });
+    const result = await msg91.reply?.("+919810000001", "Your technician is on the way. Ten minutes & a bit.");
+    expect(result).toEqual({ ok: true, providerMessageId: "req-1" });
+    const call = http.calls[0];
+    expect(call?.method).toBe("POST");
+    expect(call?.headers.get("authkey")).toBe("msg91-key");
+    const asked = new URL(call?.url ?? "").searchParams;
+    expect(Object.fromEntries(asked)).toEqual({
+      integrated_number: "919800000000",
+      recipient_number: "919810000001",
+      content_type: "text",
+      text: "Your technician is on the way. Ten minutes & a bit.",
+    });
+  });
+
+  it("says why a reply did not go, as a send does", async () => {
+    const reply = (answer: () => Response) =>
+      createMsg91Messaging(settings, { fetch: fakeFetch({ [REPLY_URL]: answer }).fetch, log }).reply?.(
+        "+919810000001",
+        "On the way.",
+      );
+    expect(await reply(() => json({ message: "Unauthorized" }, 401))).toMatchObject({ ok: false, bridgeDown: true });
+    expect(await reply(() => json({ hasError: true, errors: "Session expired" }))).toEqual({
+      ok: false,
+      transient: false,
+      detail: "HTTP 200 Session expired",
     });
   });
 
