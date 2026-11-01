@@ -141,10 +141,6 @@
 
 /* ---- Those switched off, beneath the table ------------------------------- */
 
-.off {
-  margin-top: var(--sp-20);
-}
-
 .offList {
   margin: 0;
   padding: 0;
