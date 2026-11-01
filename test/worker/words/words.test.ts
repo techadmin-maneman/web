@@ -74,6 +74,23 @@ describe("the Words page", () => {
     ]);
   });
 
+  it("records nothing when a line is saved with the wording already in force", async () => {
+    const reworded = "Hi {{1}}, see you tomorrow.\n{{2}}: {{3}}, {{4}}, with {{5}}. To move it, open the Mane Man app.";
+    const first = await (await set(REMINDER, reworded)).json<{ word: Word }>();
+    const again = await set(REMINDER, reworded);
+    expect(again.status).toBe(200);
+    expect((await again.json<{ word: Word }>()).word.changed).toEqual(first.word.changed);
+    const code = await set("message:visit_reminder_v1", TEMPLATES.visit_reminder_v1);
+    expect(code.status).toBe(200);
+    await set(REMINDER, null);
+    await set(REMINDER, null);
+    const history = await request(ops, `/api/words/history?key=${encodeURIComponent(REMINDER)}`);
+    expect((await history.json<{ versions: { text: string | null }[] }>()).versions.map((each) => each.text)).toEqual([
+      null,
+      reworded,
+    ]);
+  });
+
   it("refuses words that drop a detail, name the visit on the lock screen, or type a price", async () => {
     const dropped = await set(REMINDER, "Hi {{1}}, see you tomorrow.\nYour visit is tomorrow. Open the Mane Man app.");
     expect(await dropped.json()).toMatchObject({ error: { code: "invalid_request", fields: ["text.holes"] } });

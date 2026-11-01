@@ -103,7 +103,7 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
             <td className={styles.figureCell}>{rupees(entry.amount)}</td>
             <td className={styles.quietCell}>
               {stateOf(entry)}
-              <RefundPayment entry={entry} />
+              {entry.kind === "payment" && <RefundPayment entry={entry} />}
             </td>
           </tr>
         ))}

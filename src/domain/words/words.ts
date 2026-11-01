@@ -1,6 +1,7 @@
 // The Words page's lines (docs/decisions/0126-the-words-page.md): each with the wording in force, and every wording it
 // has had. A change is checked (src/policy/word-checks.ts) and written with its audit entry, which keeps the line's
-// key, never its words. Going back to an earlier wording, or to the code's, is a change like any other.
+// key, never its words. Going back to an earlier wording, or to the code's, is a change like any other; saving the
+// wording already in force is not.
 
 import { longestOf, wordRefusal, type WordRefusal } from "../../policy/word-checks.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
@@ -95,6 +96,11 @@ export async function setWord(
   if (text !== null) {
     const refused = wordRefusal(text, line.text, line.surface);
     if (refused !== null) return { outcome: refused };
+  }
+  // A save that leaves the wording in force as it is changes nothing: no version, no audit entry, no new date.
+  const current = await wordAt(db, line);
+  if (current.now === (text ?? line.text) && (current.changed === null) === (text === null)) {
+    return { outcome: "set", word: current };
   }
   const at = change.now.toISOString();
   await db.batch([

@@ -24,15 +24,16 @@ export const socialLinks = {
 };
 
 /**
- * The bar that asks for consent to the ad and measurement tags (site/src/components/ConsentBar.astro). Counsel has
- * still to see its words, so the bar is switched off until they approve (CONSENT_BAR_SHOWN).
+ * The bar that asks for consent to the ad and measurement tags (site/src/components/ConsentBar.astro). The Privacy
+ * Policy's Cookies section says the rest.
  */
 export const consentBar = {
   publish: true,
-  text: "We’d like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them.",
-  privacy: "How we use your details",
-  accept: "Allow",
-  decline: "No thanks",
+  label: "Cookies",
+  text: "We use cookies to analyse site traffic and measure our advertising. You can accept or decline them.",
+  privacy: "Privacy Policy",
+  accept: "Accept",
+  decline: "Decline",
 };
 
 /** The booking form or the try-on, when it failed to draw: the way to us instead. */

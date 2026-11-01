@@ -1874,7 +1874,7 @@ Indexes:
 
 The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 
-Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0096_payments_to_refund.sql`, `0099_retention.sql`.
+Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0096_payments_to_refund.sql`, `0099_retention.sql`, `0201_trigger_clocks.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3362,7 +3362,7 @@ Indexes:
 
 Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`, `0106_technician_test_record.sql`, `0107_city_blackouts_and_fitters.sql`, `0108_technician_pay.sql`, `0133_stock_places.sql`, `0187_technician_days.sql`, `0199_technician_reach.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`, `0106_technician_test_record.sql`, `0107_city_blackouts_and_fitters.sql`, `0108_technician_pay.sql`, `0133_stock_places.sql`, `0187_technician_days.sql`, `0199_technician_reach.sql`, `0201_trigger_clocks.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |

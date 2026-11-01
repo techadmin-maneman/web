@@ -3,6 +3,10 @@
 //
 //   send   POST https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/   header `authkey`
 //          { integrated_number, content_type: "template", payload: { messaging_product, type, template } }
+//   reply  POST https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/   header `authkey`
+//          ?integrated_number&recipient_number&content_type=text&text, no body, as MSG91 documents its
+//          "Send Message (once Session Started)": a Care reply in the team's own words, which WhatsApp lets through
+//          within 24 hours of the client's last message (docs/decisions/0130-replies-from-the-care-inbox.md).
 //
 // A template's variables go as body_1, body_2, …; the try-on's look as header_1; its buttons as button_1, button_2,
 // each value added to the address the template was approved with.
@@ -19,6 +23,7 @@ import type { Connection, MessagingProvider, OutboundMessage, SendResult } from 
 import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "../vendor-fetch.ts";
 
 export const SEND_URL = "https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/";
+export const REPLY_URL = "https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/";
 const SEND_TIMEOUT_MS = 15_000;
 
 type Component = { readonly type: string; readonly value: string; readonly subtype?: string };
@@ -91,21 +96,43 @@ export function createMsg91Messaging(settings: Msg91Settings, deps: VendorFetchD
           body: JSON.stringify(body),
         },
       );
-      // No answer in time: MSG91 may have taken it, and sending again would send it twice.
-      if (response instanceof VendorUnreachable && response.timedOut) {
-        return { ok: false, transient: false, detail: "no reply in time: delivery unconfirmed" };
-      }
-      if (response instanceof VendorUnreachable) {
-        return { ok: false, transient: true, detail: `unreachable: ${response.reason}` };
-      }
-      const reply = jsonOf(await response.text());
-      if (response.ok && Accepted.safeParse(reply).success) return { ok: true, providerMessageId: requestIdOf(reply) };
-      return refusal(response.status, reply);
+      return resultOf(response);
+    },
+
+    // The words go in the address, as MSG91 documents it; vendorFetch never writes an address to the log.
+    async reply(to, text): Promise<SendResult> {
+      const asked = new URLSearchParams({
+        integrated_number: settings.integratedNumber,
+        recipient_number: to.replace(/\D/g, ""),
+        content_type: "text",
+        text,
+      });
+      const response = await vendorFetch(
+        deps,
+        { vendor: "msg91", step: "send_reply", timeoutMs: SEND_TIMEOUT_MS, codeOf: errorCodeIn },
+        `${REPLY_URL}?${asked.toString()}`,
+        { method: "POST", headers: { authkey: settings.authKey, accept: "application/json" } },
+      );
+      return resultOf(response);
     },
 
     // Nothing to hold open: a template goes from MSG91's servers, not from a phone kept signed in.
     connection: (): Promise<Connection> => Promise.resolve({ open: true }),
   };
+}
+
+/** What MSG91's answer to a send means. */
+async function resultOf(response: Response | VendorUnreachable): Promise<SendResult> {
+  // No answer in time: MSG91 may have taken it, and sending again would send it twice.
+  if (response instanceof VendorUnreachable && response.timedOut) {
+    return { ok: false, transient: false, detail: "no reply in time: delivery unconfirmed" };
+  }
+  if (response instanceof VendorUnreachable) {
+    return { ok: false, transient: true, detail: `unreachable: ${response.reason}` };
+  }
+  const reply = jsonOf(await response.text());
+  if (response.ok && Accepted.safeParse(reply).success) return { ok: true, providerMessageId: requestIdOf(reply) };
+  return refusal(response.status, reply);
 }
 
 /**

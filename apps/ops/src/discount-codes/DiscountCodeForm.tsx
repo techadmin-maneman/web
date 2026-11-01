@@ -147,7 +147,7 @@ function Covers({ draft, edit }: { draft: Draft; edit: Edit }) {
     edit({ covers: covered ? draft.covers.filter((each) => each !== kind) : [...draft.covers, kind] });
   };
   return (
-    <ChoiceGroup className={form.choices} legend={copy.covers}>
+    <ChoiceGroup className={form.choices} legend={copy.covers} box="covers">
       {COVERS.map((kind) => (
         <Checkbox
           key={kind}
@@ -238,7 +238,7 @@ export function DiscountCodeForm({
         title={copy.make}
         words={{ add: copy.makeButton }}
         errors={copy.errors}
-        boxes={["code", "count", "kind", "value", "cap", "expires_on", "max_uses"]}
+        boxes={["code", "count", "kind", "value", "cap", "covers", "expires_on", "max_uses"]}
         send={() => discountCodesApi.makeDiscountCodes(requestOf(draft))}
         onAdded={(body) => {
           setDraft(EMPTY);

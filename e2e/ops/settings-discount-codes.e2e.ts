@@ -31,6 +31,23 @@ test.describe("the discount codes", () => {
     return page.getByRole("group", { name: settingsCopy.discountCodes.make });
   };
 
+  // Made with nothing ticked under Applies to, the refusal is said at Applies to, where the fix is.
+  test("says at Applies to that a code must apply to something", async ({ page }) => {
+    await open(page, "/settings/discount-codes", {
+      "POST /api/discount-codes": json(
+        { error: { code: "invalid_request", request_id: "r", fields: ["covers"] } },
+        400,
+      ),
+    });
+    const form = await makeForm(page);
+    await form.getByLabel(settingsCopy.discountCodes.code, { exact: true }).fill("diwali");
+    await form.getByLabel(settingsCopy.discountCodes.value).fill("10");
+    await form.getByRole("button", { name: copy.makeButton, exact: true }).click();
+    const covers = form.getByRole("group", { name: copy.covers });
+    await expect(covers.getByText(copy.errors.covers)).toBeVisible();
+    await expect(covers.getByText(copy.errors.covers)).toBeInViewport();
+  });
+
   test("heads the page with what every code has come to", async ({ page }) => {
     await open(page, "/settings/discount-codes");
     const figures = page.getByRole("definition");

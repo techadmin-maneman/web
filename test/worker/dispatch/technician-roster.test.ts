@@ -128,6 +128,12 @@ describe("adding a technician", () => {
       mobile_e164: "+919810000007",
       hand_written: 1,
     });
+    // Their kit is made with them, at the time the Worker wrote them, whatever SQLite's own clock says.
+    const added = await one("SELECT updated_at FROM technicians WHERE id = ?1", id);
+    expect(await one("SELECT kind, created_at FROM stock_places WHERE id = ?1", id)).toEqual({
+      kind: "kit",
+      created_at: (added as { updated_at: string }).updated_at,
+    });
     const audit = await auditOf("technician.add");
     expect(audit.results).toEqual([{ subject_kind: "technician", subject_id: id, detail: null }]);
 
