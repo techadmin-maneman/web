@@ -22,7 +22,7 @@ export const spend = {
   add: "Add",
   addOne: "Add spend",
   adding: "Adding…",
-  none: "Nothing yet.",
+  none: "No spend recorded yet.",
   columns: { month: "Month", city: "City", channel: "Channel", amount: "Amount", note: "Note", by: "Added by" },
   remove: "Remove",
   /** "Remove: October 2026 · Gurgaon · Rs. 12,345" */
