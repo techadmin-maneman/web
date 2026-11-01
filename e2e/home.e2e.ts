@@ -252,11 +252,11 @@ test.describe("home sections", () => {
     await expect(results.getByText(second?.caption ?? "")).toBeVisible();
     await expect(results.getByText("2 of 4")).toBeVisible();
 
-    // Round from the first to the last, the one made by AI, which says so.
+    // Round from the first to the last. Every pair is a client's own, so none is tagged as an illustration.
     await results.getByRole("button", { name: siteCopy.results.previous }).click();
     await results.getByRole("button", { name: siteCopy.results.previous }).click();
     await expect(results.getByText(last?.caption ?? "")).toBeVisible();
-    await expect(results.getByText(siteCopy.illustrationTag, { exact: true })).toBeVisible();
+    await expect(results.getByText(siteCopy.illustrationTag, { exact: true })).toHaveCount(0);
   });
 
   test("Norwood: the five stages we fit, a hairline restored, then Book a free consultation", async ({ page }) => {

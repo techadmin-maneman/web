@@ -4,7 +4,7 @@
 // addresses.
 import { getImage } from "astro:assets";
 import ResultsGallery, { type ShownPair } from "../../islands/ResultsGallery.tsx";
-import { resultPairs, results } from "../../content/site.ts";
+import { resultPairs, results, type ResultPair } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 import { designImage } from "../../lib/images.ts";
 
@@ -17,7 +17,7 @@ const shown = async (file: string, alt: string) => {
   return { src: image.src, srcset: image.srcSet.attribute, sizes: PICTURE_SIZES, alt };
 };
 const pairs: ShownPair[] = await Promise.all(
-  resultPairs.pairs.map(async (pair) => ({
+  resultPairs.pairs.map(async (pair: ResultPair) => ({
     before: await shown(pair.before.file, pair.before.alt),
     after: await shown(pair.after.file, pair.after.alt),
     caption: pair.caption,
