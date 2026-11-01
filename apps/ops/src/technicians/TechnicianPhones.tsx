@@ -4,6 +4,7 @@
 // does their number using up its login codes for the day.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
@@ -77,17 +78,12 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
             >
               {sending ? copy.revoking : copy.confirm}
             </Button>
-            <Button
-              variant="outline"
-              size="small"
-              className={shared.quiet}
+            <CancelButton
               disabled={sending}
               onClick={() => {
                 setRevoking({ step: "listed" });
               }}
-            >
-              {copy.cancel}
-            </Button>
+            />
           </div>
         </div>
       )}

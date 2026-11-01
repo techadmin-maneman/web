@@ -4,6 +4,7 @@
 // own works their city's hours every day.
 
 import { typeLook } from "@maneman/ui/type";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { AddressSearch } from "@maneman/ui/AddressSearch";
 import { Button } from "@maneman/ui/Button";
 import { EditableRow } from "@maneman/ui/EditableRow";
@@ -253,9 +254,7 @@ function HomeForm(props: { technician: Technician; onDone: () => void; onCancel:
         words={{ ...copy.search, hint: null }}
       />
       <FormActions>
-        <Button variant="outline" size="small" narrow disabled={busy} onClick={props.onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
       <Refused failed={failure} errors={copy.errors} />
     </div>

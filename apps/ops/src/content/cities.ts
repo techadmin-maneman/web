@@ -36,7 +36,6 @@ export const cities = {
     active: "Offered",
     added: "City added.",
     add: "Add",
-    cancel: "Cancel",
     yes: "Yes",
     no: "No",
     renames: (name: string) => `A new name moves every client, technician, pincode and price named ${name}.`,
@@ -83,7 +82,6 @@ export const cities = {
     amount: "Before GST, Rs.",
     gst: "GST %",
     from: "From",
-    cancel: "Cancel",
     added: "Price set.",
     withdrawn: "Price withdrawn.",
     withdrawing: {
@@ -92,7 +90,6 @@ export const cities = {
       warning: (item: string, city: string, from: string) => `Withdraw ${item} in ${city} from ${from}?`,
       confirm: "Withdraw",
       sending: "Withdrawing…",
-      cancel: "Cancel",
     },
     errors: {
       ...common,
@@ -113,7 +110,6 @@ export const cities = {
     gstin: "GSTIN",
     branch: "Books branch",
     noBranch: "None",
-    cancel: "Cancel",
     added: "Registration set.",
     removed: "Registration removed.",
     removing: {
@@ -122,7 +118,6 @@ export const cities = {
       warning: (state: string) => `Remove ${state}’s registration?`,
       confirm: "Remove",
       sending: "Removing…",
-      cancel: "Cancel",
     },
     errors: {
       ...common,

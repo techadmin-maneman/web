@@ -4,6 +4,7 @@
 // which.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -75,9 +76,7 @@ function ConfirmDelete({
         <Button variant="destructive" size="small" disabled={sending || !checked} onClick={onDelete}>
           {sending ? copy.deleting : copy.confirm(request.name)}
         </Button>
-        <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={sending} onClick={onCancel} />
       </div>
     </div>
   );
@@ -121,9 +120,7 @@ function RejectReason(props: {
         <Button variant="outline" size="small" disabled={sending || reason.trim() === ""} onClick={props.onReject}>
           {sending ? copy.rejecting : copy.reason.confirm}
         </Button>
-        <Button variant="outline" size="small" disabled={sending} onClick={props.onCancel}>
-          {copy.reason.cancel}
-        </Button>
+        <CancelButton disabled={sending} onClick={props.onCancel} />
       </div>
     </div>
   );

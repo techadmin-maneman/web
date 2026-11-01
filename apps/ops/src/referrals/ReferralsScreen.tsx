@@ -3,6 +3,7 @@
 // refer on their own code are Settings' (./Partners.tsx). Approving a grant releases its credits.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -122,16 +123,12 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             >
               {sending ? copy.deciding : copy.reason.confirm[asking.choice]}
             </Button>
-            <Button
-              variant="outline"
-              size="small"
+            <CancelButton
               disabled={sending}
               onClick={() => {
                 keepHeld(asking.choice);
               }}
-            >
-              {copy.reason.cancel}
-            </Button>
+            />
           </div>
         </div>
       )}

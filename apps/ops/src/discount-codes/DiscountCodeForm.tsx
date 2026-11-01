@@ -236,7 +236,7 @@ export function DiscountCodeForm({
       )}
       <AddForm
         title={copy.make}
-        words={{ add: copy.makeButton, cancel: copy.close }}
+        words={{ add: copy.makeButton }}
         errors={copy.errors}
         boxes={["code", "count", "kind", "value", "cap", "expires_on", "max_uses"]}
         send={() => discountCodesApi.makeDiscountCodes(requestOf(draft))}

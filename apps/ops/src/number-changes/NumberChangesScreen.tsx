@@ -3,6 +3,7 @@
 // someone else holds is refused, and each change says how long it has left, as Tasks counts it.
 
 import { Field, TextArea } from "@maneman/ui/Field";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -114,18 +115,14 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
             >
               {sending ? copy.deciding : copy.reason.confirm}
             </Button>
-            <Button
-              variant="outline"
-              size="small"
+            <CancelButton
               disabled={sending}
               onClick={() => {
                 setDeciding({ step: "open" });
                 // Back to the button that asked, rather than to the top of the page.
                 requestAnimationFrame(() => rejectButton.current?.focus());
               }}
-            >
-              {copy.reason.cancel}
-            </Button>
+            />
           </div>
         </div>
       )}

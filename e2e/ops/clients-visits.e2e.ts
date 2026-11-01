@@ -5,6 +5,7 @@
 // since no route seeds a client's pieces or photographs.
 
 import type { Page } from "@playwright/test";
+import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { CLIENT, fails, HAIR_PROFILE, json, NEW_RECORD, RECORD, type Call, type OpsReply } from "./fixtures.ts";
@@ -256,7 +257,7 @@ test("asks for what an address cannot do without before it sends one", async ({ 
   await expect(building).toHaveAttribute("aria-invalid", "true");
   await expect(form.getByLabel(opsCopy.clients.visits.given.flat)).toHaveAttribute("required", "");
   expect(sent).toBe(0);
-  await form.getByRole("button", { name: opsCopy.clients.visits.given.cancel }).click();
+  await form.getByRole("button", { name: DISMISS.cancel }).click();
   await expect(page.getByRole("button", { name: opsCopy.clients.visits.given.open })).toBeFocused();
 });
 

@@ -4,6 +4,7 @@
 // more; the server never charges by itself (src/policy/no-show.ts).
 
 import { typeLook } from "@maneman/ui/type";
+import { BackButton } from "@maneman/ui/CancelButton";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, DateInput, TextArea } from "@maneman/ui/Field";
@@ -256,9 +257,7 @@ function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge:
         <Button variant="primary" size="small" disabled={preview.state !== "loaded"} onClick={onCharge}>
           {keepsNothing(preview) ? copy.closeNoShow : copy.confirmCharge}
         </Button>
-        <Button variant="outline" size="small" onClick={onBack}>
-          {copy.back}
-        </Button>
+        <BackButton onClick={onBack} />
       </div>
     </div>
   );

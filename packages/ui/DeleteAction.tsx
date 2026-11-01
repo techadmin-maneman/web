@@ -5,6 +5,7 @@
 
 import { useOneAtATime } from "./useOneAtATime.ts";
 import { Button } from "./Button.tsx";
+import { CancelButton } from "./CancelButton.tsx";
 import { Field, TextInput } from "./Field.tsx";
 import { useState } from "react";
 import { deleting } from "./words.ts";
@@ -18,7 +19,8 @@ interface DeleteWords {
   readonly warning: (name: string) => string;
   readonly confirm: string;
   readonly sending: string;
-  readonly cancel: string;
+  /** Keep it, rather than Cancel, where what is asked is itself a cancelling or a withdrawal. */
+  readonly keep?: boolean;
 }
 
 type Tone = "destructive" | "danger" | "primary";
@@ -66,15 +68,7 @@ function Asking(props: {
         >
           {props.sending ? props.words.sending : props.words.confirm}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
-          disabled={props.sending}
-          onClick={props.onCancel}
-        >
-          {props.words.cancel}
-        </Button>
+        <CancelButton keep={props.words.keep === true} disabled={props.sending} onClick={props.onCancel} />
       </div>
     </div>
   );

@@ -9,6 +9,7 @@
 // confirmation not usable until ops say they have checked the request.
 
 import type { Page } from "@playwright/test";
+import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, DELETION_REQUESTS, fails, json, TASKS_READ_ON, type Call, type OpsReply } from "./fixtures.ts";
@@ -129,7 +130,7 @@ test("deletes the account once it is confirmed, and the request leaves the queue
 test("keeps the account when the confirmation is called off", async ({ page }) => {
   await open(page);
   await ask(page);
-  await page.getByRole("button", { name: opsCopy.deletions.queue.cancel }).click();
+  await page.getByRole("button", { name: DISMISS.cancel }).click();
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeVisible();
   // The keyboard goes back to the button that asked, not to the top of the page.
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeFocused();

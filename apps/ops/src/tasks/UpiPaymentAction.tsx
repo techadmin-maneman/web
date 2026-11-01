@@ -3,6 +3,7 @@
 // task offers it too, for a one visit whose link was never paid.
 
 import { Button } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -68,9 +69,7 @@ function UpiDrawer(props: {
           <Button type="submit" variant="primary" size="small" disabled={props.busy || props.utr.trim() === ""}>
             {props.busy ? copy.recording : copy.record}
           </Button>
-          <Button type="button" variant="outline" size="small" disabled={props.busy} onClick={props.onClose}>
-            {copy.cancel}
-          </Button>
+          <CancelButton disabled={props.busy} onClick={props.onClose} />
         </span>
       </form>
     </Drawer>

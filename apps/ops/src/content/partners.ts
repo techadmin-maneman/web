@@ -51,7 +51,6 @@ export const partners = {
     warning: (name: string) => `Pause ${name}? Their link stops working until resumed.`,
     confirm: "Pause",
     sending: "Pausing…",
-    cancel: "Cancel",
   },
   resume: "Resume",
   resumeLabel: (name: string) => `Resume ${name}`,
@@ -63,7 +62,6 @@ export const partners = {
     commission: "Commission per fit, Rs.",
     discountCode: "Discount code, if any",
     add: "Add",
-    cancel: "Cancel",
   },
   added: "Partner added.",
   errors: {

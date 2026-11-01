@@ -4,6 +4,7 @@
 // board.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
@@ -180,9 +181,7 @@ export function AddTechnician({
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} disabled={sending} onClick={onClose}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={sending} onClick={onClose} />
       </div>
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </Drawer>

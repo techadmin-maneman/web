@@ -2,6 +2,7 @@
 // opened to approve, mark sent, cancel with why, or print; and a new order drafted from a supplier's list.
 
 import type { Page } from "@playwright/test";
+import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
@@ -141,7 +142,7 @@ test("cancels an order, with why", async ({ page }) => {
   expect((await sent).postDataJSON()).toEqual({ reason: "Out of stock" });
   await expect(panel).toContainText(copy.order.cancelledWhy("Out of stock"));
   // Cancelled, nothing is left to cancel or keep.
-  await expect(panel.getByRole("button", { name: copy.order.keep })).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: DISMISS.keep })).toHaveCount(0);
   await expect(panel.getByLabel(copy.order.reason)).toHaveCount(0);
 });
 

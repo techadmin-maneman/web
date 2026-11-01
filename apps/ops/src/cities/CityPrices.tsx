@@ -191,7 +191,7 @@ function PriceForm(props: { cities: Cities; onAdded: () => Promise<void>; onCanc
   return (
     <AddForm
       title={copy.add}
-      words={{ add: cities.form.add, cancel: copy.cancel }}
+      words={{ add: cities.form.add }}
       errors={copy.errors}
       boxes={["item", "tier", "amount_ex_gst", "gst_percent", "valid_from"]}
       send={() =>

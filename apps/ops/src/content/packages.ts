@@ -9,7 +9,6 @@ export const packagesCopy = {
   name: "Name",
   code: "Code",
   create: "Add",
-  cancel: "Cancel",
   none: "No packages yet.",
   /** The list's columns: each part's price, what a first fit comes to for the client, and what it leaves us. */
   columns: {

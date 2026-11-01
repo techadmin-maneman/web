@@ -76,7 +76,6 @@ export const deleting = {
   warning: (name: string) => `Delete ${name}? This can’t be undone.`,
   confirm: "Delete",
   sending: "Deleting…",
-  cancel: "Cancel",
   /** A switch that reaches everyone asks for a word typed before it goes. */
   typeToConfirm: (word: string) => `Type ${word} to confirm`,
 } as const;
@@ -91,11 +90,16 @@ export const review = {
   title: "Review the change",
   send: "Confirm",
   sending: "Saving…",
-  edit: "Edit",
-  cancel: "Cancel",
   nothing: "No changes.",
 } as const;
 
 /** Beneath a box for someone's own words, how much room is left (./WordsField.tsx). */
 export const charactersLeft = (count: number) =>
   count === 1 ? "1 character left" : `${String(count)} characters left`;
+
+/**
+ * The ways out of a form or a question, said the same everywhere (./CancelButton.tsx): Cancel; Keep it, where what is
+ * asked is itself a cancelling or a withdrawal, so "Cancel" would read as going ahead; and Back, a step to what came
+ * before.
+ */
+export const DISMISS = { cancel: "Cancel", keep: "Keep it", back: "Back" } as const;

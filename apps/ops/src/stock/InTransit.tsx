@@ -4,6 +4,7 @@
 // went missing on the way (docs/decisions/0162-scanning-labels.md).
 
 import { Panel } from "@maneman/ui/Panel";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
@@ -90,15 +91,11 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void record()}>
           {copy.confirm}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
+        <CancelButton
           onClick={() => {
             props.onDone(null);
           }}
-        >
-          {copy.cancel}
-        </Button>
+        />
       </FormActions>
       <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={["received", "note"]} />
     </div>

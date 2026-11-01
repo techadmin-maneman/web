@@ -39,7 +39,6 @@ export const partnerCommission = {
     paidOn: "Paid on",
     reference: "Reference",
     add: "Record",
-    cancel: "Cancel",
   },
   /** Said beneath the boxes before a payment is recorded. */
   check: {

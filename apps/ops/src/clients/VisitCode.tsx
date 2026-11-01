@@ -4,6 +4,7 @@
 // box.
 
 import { Field, TextInput } from "@maneman/ui/Field";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -108,9 +109,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
         <Button type="submit" variant="primary" size="small" disabled={typed.trim() === "" || step === "applying"}>
           {step === "applying" ? copy.applying : copy.apply}
         </Button>
-        <Button variant="outline" size="small" disabled={step === "applying"} onClick={stopEntering}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={step === "applying"} onClick={stopEntering} />
       </form>
     </FormDrawer>
   );

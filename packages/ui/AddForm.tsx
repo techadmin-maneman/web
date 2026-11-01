@@ -2,6 +2,7 @@
 // it away. A refusal is said on the box it names, else under the form, and nothing typed is lost.
 
 import { Button } from "./Button.tsx";
+import { CancelButton } from "./CancelButton.tsx";
 import { Fieldset, RefusedBoxes } from "./Field.tsx";
 import { useOneAtATime } from "./useOneAtATime.ts";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
@@ -16,7 +17,7 @@ type Answer<Body> = { readonly ok: true; readonly body: Body } | ({ readonly ok:
 export function AddForm<Body>(props: {
   /** What it adds: "Add a consumable". */
   readonly title: string;
-  readonly words: { readonly add: string; readonly cancel: string };
+  readonly words: { readonly add: string };
   readonly errors: Readonly<Record<string, string>>;
   /** The names the API refuses the boxes by, each a Field's `box`, which says its own refusal. */
   readonly boxes: readonly string[];
@@ -59,11 +60,7 @@ export function AddForm<Body>(props: {
           <Button variant="primary" size="small" type="submit" busy={busy}>
             {props.words.add}
           </Button>
-          {props.onCancel !== null && (
-            <Button variant="outline" size="small" narrow onClick={props.onCancel}>
-              {props.words.cancel}
-            </Button>
-          )}
+          {props.onCancel !== null && <CancelButton onClick={props.onCancel} />}
         </FormActions>
         <FormRefusal className={form.error} errors={props.errors} failure={failed} boxes={props.boxes} />
       </Fieldset>

@@ -2,6 +2,7 @@
 // done with it now: approved, by a second manager where it needs one; marked sent; cancelled with why; printed.
 
 import { fullDate } from "@maneman/web-kit/dates";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -77,9 +78,7 @@ function CancelOrder({
         >
           {copy.order.confirmCancel}
         </Button>
-        <Button variant="outline" size="small" onClick={onKeep}>
-          {copy.order.keep}
-        </Button>
+        <CancelButton keep onClick={onKeep} />
       </FormActions>
     </div>
   );

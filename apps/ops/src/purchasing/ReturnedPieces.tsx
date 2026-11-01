@@ -2,6 +2,7 @@
 // claimed while inside it, or written off with why.
 
 import { Button } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
@@ -76,15 +77,11 @@ function WriteOff({
         >
           {copy.returns.confirmWriteOff}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
+        <CancelButton
           onClick={() => {
             setOpen(false);
           }}
-        >
-          {copy.returns.keep}
-        </Button>
+        />
       </FormActions>
     </div>
   );

@@ -61,7 +61,7 @@ function RegistrationForm({ onAdded, onCancel }: { onAdded: () => Promise<void>;
   return (
     <AddForm
       title={copy.add}
-      words={{ add: cities.form.add, cancel: copy.cancel }}
+      words={{ add: cities.form.add }}
       errors={copy.errors}
       boxes={["state_code", "gstin", "books_branch_id"]}
       send={() =>

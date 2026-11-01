@@ -3,6 +3,7 @@
 // one raised.
 
 import { Toast } from "@maneman/ui/Toast";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
@@ -108,7 +109,7 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
           setAsking(true);
         }}
       >
-        {copy.cancel}
+        {copy.cancelOrder}
       </Button>
     );
   }
@@ -127,15 +128,12 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
         >
           {copy.cancelYes}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
+        <CancelButton
+          keep
           onClick={() => {
             setAsking(false);
           }}
-        >
-          {copy.cancelKeep}
-        </Button>
+        />
       </FormActions>
     </div>
   );

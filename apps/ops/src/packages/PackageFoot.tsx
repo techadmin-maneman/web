@@ -96,7 +96,6 @@ const asked = (open: string, name: string, warning: (name: string) => string) =>
   warning,
   confirm: open,
   sending: open,
-  cancel: copy.cancel,
 });
 
 export function PackageFoot(props: {

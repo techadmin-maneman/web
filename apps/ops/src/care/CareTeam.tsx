@@ -4,6 +4,7 @@
 // leave, and moves every client to another member (docs/decisions/0212-editing-in-place.md).
 
 import { Button, RowButton } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Checkbox, DateInput, Field, Select } from "@maneman/ui/Field";
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { Note } from "@maneman/ui/Note";
@@ -232,16 +233,11 @@ function MoveAll(props: { member: CareMember; team: readonly CareMember[]; onDon
         >
           {copy.move}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
-          narrow
+        <CancelButton
           onClick={() => {
             setAsking(false);
           }}
-        >
-          {copy.cancel}
-        </Button>
+        />
       </div>
       <Refused failed={failure} errors={copy.errors} />
     </div>

@@ -4,6 +4,7 @@
 // fixture's holds are read against, so "3 days held" reads the same on every run.
 
 import type { Page } from "@playwright/test";
+import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, HELD, json, REFERRERS, TASKS_READ_ON, type Call } from "./fixtures.ts";
@@ -87,7 +88,7 @@ test("hands the keyboard back to the button that asked when the reason is not gi
   await open(page);
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
   await grant.getByRole("button", { name: opsCopy.referrals.queue.reject, exact: true }).click();
-  await grant.getByRole("button", { name: opsCopy.referrals.queue.reason.cancel }).click();
+  await grant.getByRole("button", { name: DISMISS.cancel }).click();
   await expect(grant.getByRole("button", { name: opsCopy.referrals.queue.reject, exact: true })).toBeFocused();
 });
 

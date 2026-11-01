@@ -2,6 +2,7 @@
 // price, with what the client pays and when the supplier promised it. Raising it sends the client the payment link.
 
 import type { Success } from "@maneman/web-kit/api";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
@@ -172,9 +173,7 @@ export function RaiseCustomOrder({
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void raise()}>
           {copy.raise.send}
         </Button>
-        <Button variant="outline" size="small" onClick={onClose}>
-          {copy.raise.keep}
-        </Button>
+        <CancelButton onClick={onClose} />
       </FormActions>
       <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={ORDER_BOXES} />
     </div>

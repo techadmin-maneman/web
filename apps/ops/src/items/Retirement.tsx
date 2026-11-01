@@ -3,6 +3,7 @@
 // offering it from that day; nothing already recorded moves, and neither does its stock.
 
 import { Button } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { DateInput, Field } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
@@ -121,16 +122,11 @@ export function Retiring({ consumable, today, onSaved }: Props & { readonly toda
         <Button variant="danger" size="small" type="submit" busy={busy}>
           {copy.retire}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
-          narrow
+        <CancelButton
           onClick={() => {
             setAsking(false);
           }}
-        >
-          {copy.form.cancel}
-        </Button>
+        />
       </FormActions>
       {refused !== null && <Refusal said={refused} />}
     </form>

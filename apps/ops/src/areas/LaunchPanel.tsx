@@ -3,6 +3,7 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { type ReactNode } from "react";
@@ -69,9 +70,7 @@ export function LaunchPanel(props: Props) {
               {sending ? copy.sending : sendLabel}
             </Button>
           )}
-          <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
-            {copy.cancel}
-          </Button>
+          <CancelButton disabled={sending} onClick={onCancel} />
         </div>
       )}
       {error !== null && <Refusal className={shared.error} said={error} />}

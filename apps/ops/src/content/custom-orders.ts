@@ -30,11 +30,10 @@ export const customOrders = {
   },
   link: "Payment link",
   sendAgain: "Send link again",
-  cancel: "Cancel",
   /** Asked before an order with its link out is cancelled: the link stops working. */
+  cancelOrder: "Cancel order",
   cancelAsk: "Cancel this order? Its payment link stops working.",
   cancelYes: "Cancel the order",
-  cancelKeep: "Keep it",
   cancelled: "Cancelled.",
   refund: "Refund in full",
   refunded: "Refunded in full.",
@@ -57,7 +56,6 @@ export const customOrders = {
     noWave: "As the profile says",
     note: "Note (optional)",
     send: "Raise and send the link",
-    keep: "Cancel",
     raised: "Raised. The payment link is on its way to them.",
   },
   errors: {

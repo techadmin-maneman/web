@@ -158,7 +158,7 @@ function AddItem(props: {
   return (
     <AddForm
       title={editor.addLabel}
-      words={{ add: copy.addButton, cancel: copy.cancel }}
+      words={{ add: copy.addButton }}
       errors={copy.errors}
       boxes={["label", "client"]}
       send={() => props.add(words)}

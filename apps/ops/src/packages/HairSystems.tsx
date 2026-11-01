@@ -3,6 +3,7 @@
 // stocked may be deleted, any other retired. A new one is added to the package with its spec and its cost.
 
 import { Badge } from "@maneman/ui/Badge";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
@@ -152,9 +153,7 @@ function AddHairSystem(props: {
         <Button variant="primary" size="small" type="submit" busy={busy}>
           {copy.create}
         </Button>
-        <Button variant="quiet" size="small" narrow onClick={props.onCancel}>
-          {packagesCopy.cancel}
-        </Button>
+        <CancelButton onClick={props.onCancel} />
       </div>
       {refused !== null && <Refusal said={refused} />}
     </form>
@@ -185,7 +184,6 @@ const asked = (open: string, name: string, warning: string) => ({
   warning: () => warning,
   confirm: open,
   sending: open,
-  cancel: packagesCopy.cancel,
 });
 
 /** Retiring one, selling it again, and deleting one never stocked. */

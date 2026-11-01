@@ -51,7 +51,6 @@ export const technicianPay = {
     ratesIn: (city: string | null) => (city === null ? "Rates in every city" : `Rates in ${city}`),
     from: "Starts",
     add: "Add",
-    cancel: "Cancel",
   },
   /** The month's pay at the rates per visit, with its CSV. */
   statement: {

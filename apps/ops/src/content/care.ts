@@ -156,7 +156,6 @@ export const care = {
     insertName: "Insert the client’s first name",
     insertNextVisit: "Insert their next visit",
     add: "Add",
-    cancel: "Cancel",
     addOne: "Add a quick reply",
     retiring: {
       open: "Retire",
@@ -164,7 +163,6 @@ export const care = {
       warning: (title: string) => `Retire ${title}? Care can’t pick it again.`,
       confirm: "Retire",
       sending: "Retiring…",
-      cancel: "Cancel",
     },
     errors: { not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },
   },
@@ -275,7 +273,6 @@ export const care = {
     from: "From",
     to: "To",
     add: "Add",
-    cancel: "Cancel",
     takeBack: "Cancel leave",
     takeBackLabel: (period: string) => `Cancel leave ${period}`,
     errors: {

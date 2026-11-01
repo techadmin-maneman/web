@@ -4,6 +4,7 @@
 
 import { useFocusOnMount } from "./useFocusOnMount.ts";
 import { Button } from "./Button.tsx";
+import { BackButton, CancelButton } from "./CancelButton.tsx";
 import { useId, type ReactNode } from "react";
 import { classes } from "./classes.ts";
 import { review } from "./words.ts";
@@ -65,9 +66,11 @@ export function CheckPanel({
         <Button variant="primary" size="small" disabled={busy || !ready} onClick={onSend}>
           {busy ? review.sending : review.send}
         </Button>
-        <Button variant="outline" size="small" narrow disabled={busy} onClick={onBack}>
-          {question === undefined ? review.edit : review.cancel}
-        </Button>
+        {question === undefined ? (
+          <BackButton disabled={busy} onClick={onBack} />
+        ) : (
+          <CancelButton disabled={busy} onClick={onBack} />
+        )}
       </FormActions>
     </div>
   );

@@ -3,6 +3,7 @@
 // their city still needs; and served ones paused, taking no new clients till a day, or resumed.
 
 import { Badge } from "@maneman/ui/Badge";
+import { BackButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
 import { DateInput, Field, Fieldset } from "@maneman/ui/Field";
 import { Toast } from "@maneman/ui/Toast";
@@ -56,7 +57,7 @@ function LaunchRow({ launch, onCancel }: { launch: PincodeLaunch; onCancel: (() 
           aria-label={copy.cancelLabel(launch.city, day)}
           onClick={onCancel}
         >
-          {copy.cancel}
+          {copy.cancelLaunch}
         </Button>
       )}
     </li>
@@ -188,9 +189,7 @@ function ScheduleForm(props: {
         <Button variant="primary" size="small" disabled={busy || day === ""} onClick={() => void schedule()}>
           {busy ? copy.scheduling : copy.schedule}
         </Button>
-        <Button variant="outline" size="small" narrow onClick={props.onBack}>
-          {copy.back}
-        </Button>
+        <BackButton onClick={props.onBack} />
       </FormActions>
       {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
     </Fieldset>
@@ -242,9 +241,7 @@ function PauseForm(props: {
             {words.resume}
           </Button>
         )}
-        <Button variant="outline" size="small" narrow onClick={props.onBack}>
-          {words.back}
-        </Button>
+        <BackButton onClick={props.onBack} />
       </FormActions>
       {code !== null && <Refusal className={shared.error} said={errorText(words.errors, { code })} />}
     </Fieldset>

@@ -3,6 +3,7 @@
 // with. A correction is the whole profile sent as a new version, so the form starts from the latest.
 
 import { typeLook } from "@maneman/ui/type";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
@@ -355,9 +356,7 @@ function CorrectionForm({
         <Button variant="primary" size="small" type="submit" busy={busy}>
           {busy ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" disabled={busy} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={busy} onClick={onCancel} />
       </div>
     </form>
   );

@@ -4,6 +4,7 @@
 // (docs/decisions/0054-address-capture.md); an address typed without the search saves with no pin.
 
 import { errorText } from "@maneman/web-kit/refusal";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { hiddenLook } from "@maneman/ui/VisuallyHidden";
 import { Button } from "@maneman/ui/Button";
@@ -238,9 +239,7 @@ export function GivenAddressForm({ clientId, address, onSaved, onCancel }: Given
         <Button variant="primary" size="small" type="submit" busy={busy}>
           {busy ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" disabled={busy} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={busy} onClick={onCancel} />
       </div>
     </form>
   );

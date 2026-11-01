@@ -278,7 +278,6 @@ export const dispatch = {
     /** The same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
     sending: "Moving…",
-    cancel: "Cancel",
   },
   /** A day on the road, opened from a column's head (ADR 0120). */
   routes: {

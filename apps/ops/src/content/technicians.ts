@@ -61,7 +61,6 @@ export const technicians = {
     starts: "Starts",
     ends: "Ends",
     useCity: "Their city’s hours",
-    cancel: "Cancel",
     home: "Day starts from",
     noHome: "Not set",
     setHome: "Set where their day starts",
@@ -125,7 +124,6 @@ export const technicians = {
     /** The button's whole name, since a roster holds many phones and each button says "Revoke". */
     revokeLabel: (phone: string, technician: string) => `Revoke ${technician}’s phone (${phone})`,
     confirm: "Revoke this phone",
-    cancel: "Cancel",
     revoking: "Revoking…",
     revoked: (date: string) => `Revoked ${date}`,
     /** The board draws no revoke, so nothing writes what one does. */
@@ -164,7 +162,6 @@ export const technicians = {
     note: "Note (optional)",
     save: "Record",
     saving: "Recording…",
-    cancel: "Cancel",
     /** Taking leave back, which lets those days be worked again, asked once more before it is sent. */
     take: "Cancel leave",
     takeLabel: (period: string, technician: string) => `Cancel ${technician}’s leave, ${period}`,
@@ -214,7 +211,6 @@ export const technicians = {
     title: "Add a technician",
     save: "Add technician",
     saving: "Adding…",
-    cancel: "Cancel",
     added: (name: string) => `${name} added. They can sign in now.`,
   },
   details: {
@@ -231,7 +227,6 @@ export const technicians = {
     changeLabel: (name: string) => `Edit ${name}’s details`,
     save: "Save",
     saving: "Saving…",
-    cancel: "Cancel",
   },
   /** A technician added by mistake; one with work on record is switched off instead. */
   inUse: "They have work on record. Switch them off instead.",
@@ -245,7 +240,6 @@ export const technicians = {
         : `Signs them out. ${String(visits)} upcoming ${visits === 1 ? "visit goes" : "visits go"} back to the dispatch board with nobody, each on Tasks until someone is sent.`,
     confirm: "Switch off",
     sending: "Switching off…",
-    cancel: "Cancel",
     returned: (count: number) =>
       count === 0
         ? "No upcoming visits."

@@ -3,6 +3,7 @@
 // (src/routes/ops/staff-notes.ts).
 
 import { STAFF_NOTE_MAX_CHARS } from "@rules/policy/staff-notes.ts";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { typeLook } from "@maneman/ui/type";
@@ -64,9 +65,7 @@ function NoteForm({
         <Button variant="primary" size="small" disabled={busy || body.trim() === ""} onClick={() => void save()}>
           {busy ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" disabled={busy} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={busy} onClick={onCancel} />
       </div>
     </div>
   );

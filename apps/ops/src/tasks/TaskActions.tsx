@@ -4,6 +4,7 @@
 // task's own lines, as the way to where it is decided does.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { staffName } from "../lib/who.ts";
@@ -101,9 +102,7 @@ function GiveForm({
         >
           {busy ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" disabled={busy} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={busy} onClick={onCancel} />
       </div>
     </div>
   );
@@ -153,9 +152,7 @@ function CloseForm({
         >
           {busy ? copy.closing : copy.confirm}
         </Button>
-        <Button variant="outline" size="small" disabled={busy} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={busy} onClick={onCancel} />
       </div>
     </div>
   );

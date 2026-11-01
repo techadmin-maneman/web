@@ -4,6 +4,7 @@
 // it by hand today.
 
 import { typeLook } from "@maneman/ui/type";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -80,9 +81,7 @@ function Confirm({
         <Button variant="destructive" size="small" disabled={sending || !checked} onClick={onErase}>
           {sending ? copy.erasing : action}
         </Button>
-        <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={sending} onClick={onCancel} />
       </div>
     </div>
   );

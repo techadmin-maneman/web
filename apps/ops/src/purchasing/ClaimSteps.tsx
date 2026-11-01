@@ -2,6 +2,7 @@
 // withdrawn with why; a sent claim settled by the supplier's answer, a credit of so much, a replacement or a refusal.
 
 import { Button } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
@@ -59,15 +60,12 @@ function Withdraw({
       >
         {copy.claims.confirmWithdraw}
       </Button>
-      <Button
-        variant="outline"
-        size="small"
+      <CancelButton
+        keep
         onClick={() => {
           onWithdrawing(false);
         }}
-      >
-        {copy.claims.keep}
-      </Button>
+      />
     </>
   );
 }

@@ -29,7 +29,6 @@ export const referrals = {
     reason: {
       label: { approve: "Reason for approving", reject: "Reason for rejecting" },
       confirm: { approve: "Approve reward", reject: "Reject reward" },
-      cancel: "Cancel",
     },
     /** The board draws no empty queue. */
     empty: "Nothing held for review.",

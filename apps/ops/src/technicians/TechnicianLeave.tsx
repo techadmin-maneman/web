@@ -4,6 +4,7 @@
 // ops move it, and "Show on board" opens the board on that job's week, with their row in view and the job's drawer open.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Checkbox, DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -267,9 +268,7 @@ function LeaveForm({
         <Button variant="primary" size="small" className={shared.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" className={shared.quiet} disabled={sending} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={sending} onClick={onCancel} />
       </div>
       {failed !== null && <Refusal className={shared.error} said={failed} />}
     </form>

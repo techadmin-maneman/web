@@ -3,6 +3,7 @@
 // place (docs/decisions/0212-editing-in-place.md). Every write answers every package as it stands, so the page follows.
 
 import { Button } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Label, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
@@ -148,9 +149,7 @@ function AddPackage(props: {
       <Button variant="primary" size="small" type="submit" busy={busy}>
         {copy.create}
       </Button>
-      <Button variant="quiet" size="small" narrow onClick={props.onCancel}>
-        {copy.cancel}
-      </Button>
+      <CancelButton onClick={props.onCancel} />
       {refused !== null && <Refusal className={styles.addRefusal} said={refused} />}
     </form>
   );
