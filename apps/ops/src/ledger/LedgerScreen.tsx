@@ -98,7 +98,7 @@ function Payments({ ledger }: { ledger: Ledger }) {
           </tbody>
         </Table>
       </TableScroll>
-      <TableEnd view={view} />
+      <TableEnd view={view} empty={copy.noneInRange} />
     </Panel>
   );
 }
