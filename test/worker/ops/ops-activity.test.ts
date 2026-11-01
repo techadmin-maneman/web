@@ -263,6 +263,54 @@ describe("the activity log", () => {
     expect(labels).toEqual(["Free to move or cancel until", "Solvent"]);
   });
 
+  it("names a partner, a discount code, a job sheet's list, a service, a hair system's price and a late fee", async () => {
+    const admin = staff("admin@maneman.in");
+    const at = NOW.toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO referral_channels (id, name, code, friend_visits, valid_days, commission, created_by, created_at)
+         VALUES ('rc-1', 'Looks Salon', 'LOOKS', 2, 365, 150000, 'admin@maneman.in', ?1)`,
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO discount_codes (id, code, kind, value, covers_first_fit, covers_service, covers_replacement,
+           once_per_client, batch_id, created_by, created_at)
+         VALUES ('dc-1', 'WELCOME', 'amount', 10000, 0, 1, 0, 0, NULL, 'admin@maneman.in', ?1),
+           ('dc-2', 'K7M2P9', 'amount', 10000, 0, 1, 0, 1, 'batch-1', 'admin@maneman.in', ?1),
+           ('dc-3', 'K7M2PA', 'amount', 10000, 0, 1, 0, 1, 'batch-1', 'admin@maneman.in', ?1)`,
+      ).bind(at),
+      env.DB.prepare(
+        "INSERT INTO consumables (code, name, unit, unit_cost, created_at, updated_at) VALUES ('hs-1', 'Classic 7x9', 'piece', 1200000, ?1, ?1)",
+      ).bind(at),
+    ]);
+    const made = (kind: string, id: string) => ({
+      surface: "ops" as const,
+      actor: admin,
+      action: "price.set" as const,
+      subject: { kind, id },
+    });
+    await logged([
+      { ...made("referral_channel", "rc-1"), action: "channel.change" },
+      { ...made("discount_code", "dc-1"), action: "discount_code.make" },
+      { ...made("discount_code", "batch-1"), action: "discount_code.make" },
+      { ...made("job_sheet", "checklist/first_fit"), action: "job_sheet.set" },
+      { ...made("job_sheet", "partial_reasons"), action: "job_sheet.set" },
+      { ...made("service", "service/standard"), action: "standard_cost.set" },
+      made("price", "hair_system/hs-1"),
+      made("price", "late_fee_replacement/standard"),
+    ]);
+    const labels = (await read()).entries.map((entry) => entry.subject?.label);
+    expect(labels).toEqual([
+      "Late fee on a replacement",
+      "Classic 7x9",
+      "Service visit",
+      "Partial reasons",
+      "First fit checklist",
+      "K7M2P9 and 1 more",
+      "WELCOME",
+      "Looks Salon",
+    ]);
+  });
+
   it("leaves out the links a technician's phone asks for to upload photographs to", async () => {
     await logged([
       {

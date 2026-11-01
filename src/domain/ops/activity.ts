@@ -8,6 +8,7 @@ import type { AuditAction, AuditActor } from "../platform/audit.ts";
 import { z } from "zod";
 import { storedJson } from "../../lib/stored-json.ts";
 import { OPS_SETTINGS } from "../../policy/ops-settings.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
 
 /** How many entries a page holds. */
 const ACTIVITY_PAGE = 50;
@@ -73,6 +74,12 @@ const theirs = CLIENTS_OWN.map(([kind, ids]) => `(a.subject_kind = '${kind}' AND
   "\n         OR ",
 );
 
+/** A service or a price, "first_fit/classic" or "hair_system/hs-1": the service's name, else the hair system's. */
+const SERVICE_NAME = `COALESCE(
+        (SELECT name FROM services WHERE kind = substr(a.subject_id, 1, instr(a.subject_id, '/') - 1)
+                                     AND tier = substr(a.subject_id, instr(a.subject_id, '/') + 1)),
+        (SELECT name FROM consumables WHERE a.subject_id GLOB 'hair_system/*' AND code = substr(a.subject_id, 13)))`;
+
 const ACTIVITY_SQL = `
   SELECT a.id, a.at, a.surface, a.actor_kind, a.actor, a.action, a.subject_kind, a.subject_id, a.detail,
     (SELECT r.detail FROM audit_log r INDEXED BY audit_log_by_request
@@ -93,6 +100,24 @@ const ACTIVITY_SQL = `
       WHEN 'supplier' THEN (SELECT name FROM suppliers WHERE id = a.subject_id)
       WHEN 'technician' THEN (SELECT name FROM technicians WHERE id = a.subject_id)
       WHEN 'stock_place' THEN (SELECT name FROM stock_places WHERE id = a.subject_id)
+      WHEN 'referral_channel' THEN (SELECT name FROM referral_channels WHERE id = a.subject_id)
+      WHEN 'discount_code' THEN COALESCE(
+        (SELECT code FROM discount_codes WHERE id = a.subject_id),
+        (SELECT min(code) || ' and ' || (count(*) - 1) || ' more' FROM discount_codes WHERE batch_id = a.subject_id
+          HAVING count(*) > 1))
+      WHEN 'service' THEN ${SERVICE_NAME}
+      WHEN 'price' THEN ${SERVICE_NAME}
+      WHEN 'pay_grade' THEN (SELECT name FROM pay_grades WHERE id = a.subject_id)
+      WHEN 'quick_reply' THEN (SELECT title FROM quick_replies WHERE id = a.subject_id)
+      WHEN 'recall' THEN (SELECT 'RC-' || printf('%04d', number) FROM recalls WHERE id = a.subject_id)
+      WHEN 'supplier_claim' THEN (SELECT 'CL-' || printf('%04d', number) FROM supplier_claims WHERE id = a.subject_id)
+      WHEN 'custom_order' THEN (SELECT 'CU-' || printf('%04d', number) FROM custom_orders WHERE id = a.subject_id)
+      WHEN 'leave_request' THEN (SELECT t.name FROM leave_requests l JOIN technicians t ON t.id = l.technician_id
+                                  WHERE l.id = a.subject_id)
+      WHEN 'conversation' THEN (SELECT p.name FROM conversations c JOIN people p ON p.id = c.person_id
+                                 WHERE c.id = a.subject_id AND p.erased_at IS NULL)
+      WHEN 'grievance' THEN (SELECT p.name FROM grievances g JOIN people p ON p.id = g.person_id
+                              WHERE g.id = a.subject_id AND p.erased_at IS NULL)
     END AS subject_label
   FROM audit_log a
   WHERE (?1 IS NULL OR a.actor_kind = ?1)
@@ -145,9 +170,33 @@ interface Row {
   subject_label: string | null;
 }
 
-/** A record's name as Activity says it: a setting by its title, the rest as the log's read gave it. */
+/** The job sheet's lists other than a checklist, as the console heads them. */
+const REASON_LISTS: Readonly<Partial<Record<string, string>>> = {
+  partial_reasons: "Partial reasons",
+  lost_reasons: "Reasons not going ahead",
+};
+
+/** The late fees the price book keeps beside the services, as the console names them. */
+const LATE_FEES: Readonly<Partial<Record<string, string>>> = {
+  late_fee_first_fit: "Late fee on a first fit",
+  late_fee_replacement: "Late fee on a replacement",
+};
+
+/** A job sheet's list by its heading: "First fit checklist", "Partial reasons". */
+function jobSheetList(id: string): string | null {
+  const [list = "", type = ""] = id.split("/");
+  if (list !== "checklist") return REASON_LISTS[list] ?? null;
+  return Object.hasOwn(VISIT_TYPE_NAMES, type) ? `${VISIT_TYPE_NAMES[type as VisitType]} checklist` : null;
+}
+
+/**
+ * A record's name as Activity says it: a setting by its title, a job sheet's list by its heading, a late fee by what
+ * it is, the rest as the log's read gave it.
+ */
 function labelOf(kind: string, id: string, read: string | null): string | null {
   if (kind === "setting") return OPS_SETTINGS.find((setting) => setting.name === id)?.title ?? null;
+  if (kind === "job_sheet") return jobSheetList(id);
+  if (kind === "price") return read ?? LATE_FEES[id.split("/")[0] ?? ""] ?? null;
   return read;
 }
 
