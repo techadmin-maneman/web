@@ -617,8 +617,8 @@ export const settings = {
       return words === "" ? "No level" : words.charAt(0).toUpperCase() + words.slice(1);
     },
     states: {
-      offered: "Offered",
-      retiring: (from: string) => `Offered until ${from}`,
+      offered: "In use",
+      retiring: (from: string) => `In use until ${from}`,
       retired: (from: string) => `Retired from ${from}`,
     },
     /** A row's name, read as what pressing it does. */
