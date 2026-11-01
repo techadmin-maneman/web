@@ -4,9 +4,10 @@
 //   send   POST https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/   header `authkey`
 //          { integrated_number, content_type: "template", payload: { messaging_product, type, template } }
 //   reply  POST https://control.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/   header `authkey`
-//          ?integrated_number&recipient_number&content_type=text&text, no body, as MSG91 documents its
-//          "Send Message (once Session Started)": a Care reply in the team's own words, which WhatsApp lets through
-//          within 24 hours of the client's last message (docs/decisions/0130-replies-from-the-care-inbox.md).
+//          { integrated_number, recipient_number, content_type: "text", text }: MSG91's "Send Message (once Session
+//          Started)", a Care reply in the team's own words, which WhatsApp lets through within 24 hours of the
+//          client's last message (docs/decisions/0130-replies-from-the-care-inbox.md). The same fields in the address
+//          instead, as one of MSG91's pages shows them, come back HTTP 400.
 //
 // A template's variables go as body_1, body_2, …; the try-on's look as header_1; its buttons as button_1, button_2,
 // each value added to the address the template was approved with.
@@ -99,19 +100,22 @@ export function createMsg91Messaging(settings: Msg91Settings, deps: VendorFetchD
       return resultOf(response);
     },
 
-    // The words go in the address, as MSG91 documents it; vendorFetch never writes an address to the log.
     async reply(to, text): Promise<SendResult> {
-      const asked = new URLSearchParams({
+      const body = {
         integrated_number: settings.integratedNumber,
         recipient_number: to.replace(/\D/g, ""),
         content_type: "text",
         text,
-      });
+      };
       const response = await vendorFetch(
         deps,
         { vendor: "msg91", step: "send_reply", timeoutMs: SEND_TIMEOUT_MS, codeOf: errorCodeIn },
-        `${REPLY_URL}?${asked.toString()}`,
-        { method: "POST", headers: { authkey: settings.authKey, accept: "application/json" } },
+        REPLY_URL,
+        {
+          method: "POST",
+          headers: { authkey: settings.authKey, accept: "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
       );
       return resultOf(response);
     },
@@ -150,7 +154,9 @@ function refusal(status: number, reply: unknown): SendResult {
 
 /** MSG91 answers HTTP 200 with `hasError` or `status: "fail"` when it refuses a send. */
 const Accepted = z.looseObject({ hasError: z.literal(false).optional(), status: z.literal("success").optional() });
+/** A template send's answer names its request; a reply's, its message. */
 const RequestId = z.looseObject({ request_id: z.string() });
+const MessageId = z.looseObject({ data: z.looseObject({ message_uuid: z.string() }) });
 const Refused = z.looseObject({ errors: z.unknown().optional(), message: z.string().optional() });
 
 function jsonOf(reply: string): unknown {
@@ -161,7 +167,8 @@ function jsonOf(reply: string): unknown {
   }
 }
 
-const requestIdOf = (reply: unknown): string | null => RequestId.safeParse(reply).data?.request_id ?? null;
+const requestIdOf = (reply: unknown): string | null =>
+  RequestId.safeParse(reply).data?.request_id ?? MessageId.safeParse(reply).data?.data.message_uuid ?? null;
 
 /** A short code for the log; numbers are masked, since a refusal may echo the recipient. */
 function errorCodeIn(reply: unknown): string {

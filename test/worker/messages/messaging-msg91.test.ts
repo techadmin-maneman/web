@@ -137,15 +137,25 @@ describe("MSG91", () => {
   });
 
   it("sends a Care reply in the team's own words, as MSG91's session message from the business number", async () => {
-    const http = fakeFetch({ [REPLY_URL]: accepted });
+    // MSG91's answer to a session message, as it gave one: the message's ID under data.
+    const taken = () =>
+      json({
+        status: "success",
+        hasError: false,
+        data: { message_uuid: "f568ff04", message: "In process" },
+        errors: null,
+      });
+    const http = fakeFetch({ [REPLY_URL]: taken });
     const msg91 = createMsg91Messaging(settings, { fetch: http.fetch, log });
     const result = await msg91.reply?.("+919810000001", "Your technician is on the way. Ten minutes & a bit.");
-    expect(result).toEqual({ ok: true, providerMessageId: "req-1" });
+    expect(result).toEqual({ ok: true, providerMessageId: "f568ff04" });
     const call = http.calls[0];
     expect(call?.method).toBe("POST");
     expect(call?.headers.get("authkey")).toBe("msg91-key");
-    const asked = new URL(call?.url ?? "").searchParams;
-    expect(Object.fromEntries(asked)).toEqual({
+    // In the body, as JSON: the same fields in the address come back HTTP 400.
+    expect(call?.url).toBe(REPLY_URL);
+    expect(call?.headers.get("content-type")).toBe("application/json");
+    expect(JSON.parse(call?.body ?? "")).toEqual({
       integrated_number: "919800000000",
       recipient_number: "919810000001",
       content_type: "text",
