@@ -21,8 +21,10 @@
 }
 
 .record {
-  --local-activity-record: 128px; /* "Client", "Visit", or a kind and the start of an ID */
-  width: var(--local-activity-record);
+  --local-activity-record: 128px; /* the least it takes: "Client", "Visit", or a kind and the start of an ID */
+  --local-activity-record-share: 24%; /* a kind and a name, or a member of staff's e-mail, on a line or two */
+  width: max(var(--local-activity-record), var(--local-activity-record-share));
+  overflow-wrap: anywhere;
 }
 
 /* A name, then what they are and where they did it, a line beneath. */
