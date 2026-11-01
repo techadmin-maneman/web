@@ -130,3 +130,28 @@ test("says so when a chat new to the list comes in as it reads itself again", as
   await page.clock.runFor(21_000);
   await expect(page.getByRole("status").filter({ hasText: copy.newChat("Neha Kapoor") })).toBeVisible();
 });
+
+// A reply left the chat waiting on the client, so the list of those waiting on us, read again, no longer held it:
+// the chat closed under Care's hands.
+test("keeps a chat open when, read again, the list it was opened from no longer holds it", async ({ page }) => {
+  await page.clock.install();
+  let conversations = [ARJUN];
+  await answer(page, {
+    "GET /api/conversations": (route) => json({ conversations, next_cursor: null })(route),
+    "GET /api/care-team": json({ team: [], me: null }),
+    "GET /api/conversations/{id}": json({
+      conversation: ARJUN,
+      items: [{ kind: "in", at: ARJUN.last_message_at, author: "client", text: ARJUN.last_line, delivery: null }],
+    }),
+  });
+  await page.goto("/messages");
+  await page.getByRole("button", { name: copy.openLabel("Arjun Mehta") }).click();
+  const chat = page.getByRole("region", { name: copy.thread.title("Arjun Mehta") });
+  const line = ARJUN.last_line ?? "";
+  await expect(chat.getByText(line)).toBeVisible();
+
+  conversations = [];
+  await page.clock.runFor(21_000);
+  await expect(page.getByText(copy.none)).toBeVisible();
+  await expect(chat.getByText(line)).toBeVisible();
+});
