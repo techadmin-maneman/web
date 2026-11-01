@@ -1,15 +1,15 @@
 ---
 // The bar that asks for consent to the ad and measurement tags (site/src/lib/analytics.ts), at the foot of every page
-// until the visitor answers. Switched off until counsel approves its words (CONSENT_BAR_SHOWN); hidden until the
-// page's script finds no answer kept, so a visitor who answered never sees it flash.
+// until the visitor answers. Switched on and off by CONSENT_BAR_SHOWN; hidden until the page's script finds no answer
+// kept, so a visitor who answered never sees it flash.
 import { buttonLook } from "@maneman/ui/Button";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { consentBar as words } from "../content/site.ts";
 ---
 
-<div class="bar on-ink" data-consent-bar role="region" aria-label={words.privacy} hidden>
+<div class="bar on-ink" data-consent-bar role="region" aria-label={words.label} hidden>
   <p class="text">
-    {words.text}
+    {words.text}{" "}
     <a class={textLinkLook({ tone: "ink", inline: true })} href="/privacy">
       {words.privacy}
     </a>
@@ -42,7 +42,8 @@ import { consentBar as words } from "../content/site.ts";
 <style>
   .bar {
     position: fixed;
-    inset: auto var(--gutter) var(--sp-16);
+    /* Above the home page's foot bar on a phone, which would cover its buttons. */
+    inset: auto var(--gutter) calc(var(--foot-bar-h) + var(--sp-16));
     z-index: var(--z-consent);
     display: flex;
     flex-wrap: wrap;
