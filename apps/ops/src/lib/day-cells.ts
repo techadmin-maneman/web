@@ -2,7 +2,7 @@
 // the day's first to its last, a visit spanning the half hours it holds, each start a job in hand could take a step of
 // its own, and the time between run together.
 
-import { indiaTimeOf } from "@maneman/web-kit/dates";
+import { dayClock, indiaTimeOf } from "@maneman/web-kit/dates";
 
 /** A step of the day, in minutes: the starts clients pick from are this far apart. */
 const STEP_MINUTES = 30;
@@ -16,6 +16,10 @@ export function minuteOfDay(iso: string): number {
   const [hours = 0, minutes = 0] = indiaTimeOf(iso).split(":").map(Number);
   return hours * 60 + minutes;
 }
+
+/** A step's label: the hour where one begins it, else nothing. A day run past midnight goes on to 12 am, 1 am. */
+export const hourLabel = (minute: number): string =>
+  minute % 60 === 0 ? dayClock(`${String((minute / 60) % 24).padStart(2, "0")}:00`) : "";
 
 const down = (minute: number) => Math.floor(minute / STEP_MINUTES) * STEP_MINUTES;
 const up = (minute: number) => Math.ceil(minute / STEP_MINUTES) * STEP_MINUTES;

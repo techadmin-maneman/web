@@ -91,5 +91,5 @@ export async function pageOf(page: Page, name: string, tab?: string) {
 /** Back to the roster from a technician's page. */
 export async function backToRoster(page: Page) {
   await page.getByRole("navigation", { name: shell.crumbs }).getByRole("link", { name: technicians.title }).click();
-  await expect(page.getByRole("table")).toBeVisible();
+  await expect(page.getByRole("table").first()).toBeVisible();
 }

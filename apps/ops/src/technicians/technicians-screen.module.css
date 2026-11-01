@@ -1,17 +1,38 @@
 /* What ./TechniciansScreen.tsx alone draws; what it shares is in ./technicians.module.css. */
 
-/* The third column is Jobs and the fifth On time: figures, so they and their heads read from the right, as the board
-   sets them. */
-.table th:nth-child(3),
-.table td:nth-child(3),
-.table th:nth-child(5),
-.table td:nth-child(5) {
-  text-align: right;
+/* Both lists' columns, the one switched off beneath at the same widths: the name and the city room for a long one, the
+   three figures room for their heads, Leave room for "Away to 12 Nov". */
+.table th:nth-child(1) {
+  width: 26%;
 }
 
-.offRow {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-12);
-  border-bottom: var(--hairline) solid var(--ui-line);
+.table th:nth-child(2) {
+  width: 20%;
+}
+
+.table th:nth-child(3) {
+  width: 10%;
+}
+
+.table th:nth-child(4) {
+  width: 16%;
+}
+
+.table th:nth-child(5) {
+  width: 12%;
+}
+
+.table th:nth-child(6) {
+  width: 16%;
+}
+
+/* A row keeps the board's height, an average and what it is of on two close lines inside it. */
+.table tbody :is(th, td) {
+  padding-block: 0;
+}
+
+/* Leave sits in from the last figure. */
+.table th:nth-child(6),
+.table td:nth-child(6) {
+  padding-left: var(--sp-24);
 }

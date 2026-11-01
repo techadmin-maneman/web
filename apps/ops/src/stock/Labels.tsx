@@ -31,9 +31,11 @@ export interface LabelsFor {
   readonly place: string;
 }
 
-const lotLine = (lotCode: string | null, expiresOn: string | null): string | null => {
+/** A lot by its code and expiry: written out on screen, shortened on the printed label. */
+const lotLine = (lotCode: string | null, expiresOn: string | null, printed = false): string | null => {
   if (lotCode === null) return null;
-  return expiresOn === null ? lotCode : `${lotCode} · ${copy.expires(plainDate(expiresOn))}`;
+  if (expiresOn === null) return lotCode;
+  return `${lotCode} · ${(printed ? copy.printedExpires : copy.expires)(plainDate(expiresOn))}`;
 };
 
 type Unit = StockUnits["units"][number];
@@ -83,7 +85,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
             disabled={printing !== null}
             onClick={() => {
               setPrinting(
-                toPrint.map((unit) => ({ code: unit.code, name, lot: lotLine(unit.lot_code, unit.expires_on) })),
+                toPrint.map((unit) => ({ code: unit.code, name, lot: lotLine(unit.lot_code, unit.expires_on, true) })),
               );
             }}
           >
@@ -168,7 +170,7 @@ function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: Labels
       setFailed(true);
       return;
     }
-    const printed = { code: answer.body.label, name, lot: lotLine(lot.lot_code, lot.expires_on) };
+    const printed = { code: answer.body.label, name, lot: lotLine(lot.lot_code, lot.expires_on, true) };
     setPrinting(Array.from({ length: count }, () => printed));
   };
 

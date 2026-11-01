@@ -6,8 +6,9 @@ import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { TextButton } from "@maneman/ui/TextLink";
 import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
+import { Panel } from "@maneman/ui/Panel";
 import { RowHead } from "@maneman/ui/RowHead";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { addDays, indiaDate, listDate } from "@maneman/web-kit/dates";
 import { type Stock } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
@@ -31,44 +32,6 @@ export function firstShowing(stock: Stock): Showing {
   if (fewPlaces(stock)) return { by: "place", place: null };
   const warehouse = stock.places.find((place) => place.kind === "warehouse") ?? stock.places[0];
   return { by: "place", place: warehouse?.id ?? null };
-}
-
-/** The places holding less than nothing of something, and those low or out of something. */
-function needing(stock: Stock): { readonly below: readonly string[]; readonly low: readonly string[] } {
-  const held = (id: string) => stock.holdings.filter((holding) => holding.place_id === id);
-  const below = stock.places.filter((place) => held(place.id).some((holding) => holding.quantity < 0));
-  const low = stock.places.filter((place) => !below.includes(place) && held(place.id).some((holding) => holding.low));
-  return { below: below.map((place) => place.id), low: low.map((place) => place.id) };
-}
-
-/** Above the table, the places to look at, by name, each a way to show it: never a mark added to a place's name. */
-export function Needs({ stock, onShow }: { stock: Stock; onShow: (showing: Showing) => void }) {
-  const { below, low } = needing(stock);
-  const line = (words: string, ids: readonly string[]) =>
-    ids.length === 0 ? null : (
-      <Note>
-        {words}{" "}
-        {ids.map((id, index) => (
-          <span key={id}>
-            {index > 0 && ", "}
-            <TextButton
-              inline
-              onClick={() => {
-                onShow({ by: "place", place: id });
-              }}
-            >
-              {placeName(stock, id)}
-            </TextButton>
-          </span>
-        ))}
-      </Note>
-    );
-  return (
-    <>
-      {line(copy.needs.below, below)}
-      {line(copy.needs.low, low)}
-    </>
-  );
 }
 
 /** The one control over the table: which place it shows, or how it adds its places up. */
@@ -102,27 +65,95 @@ export function Grouping(props: { stock: Stock; showing: Showing; onShow: (showi
 
 type Holding = Stock["holdings"][number];
 
-/** Low, out, or below nought, which says a movement went unrecorded: in words, never by colour alone. */
-function stateOf(holding: Holding | undefined): { readonly tone: BadgeTone; readonly word: string } | null {
-  const quantity = holding?.quantity ?? 0;
-  if (quantity < 0) return { tone: "error", word: copy.belowZero };
-  if (holding?.low !== true) return null;
-  return quantity === 0 ? { tone: "error", word: copy.out } : { tone: "warning", word: copy.low };
+type Consumable = Stock["consumables"][number];
+
+interface State {
+  readonly tone: BadgeTone;
+  readonly word: string;
+  readonly need: "below" | "out" | "low";
 }
 
-/** What a place holds of an item, and its state beside it. */
-function Held({ stock, code, place }: { stock: Stock; code: string; place: string }) {
-  const holding = holdingOf(stock, code, place);
-  const state = stateOf(holding);
+/**
+ * One rule for every place and item, in words, never by colour alone: below zero, which says a movement went
+ * unrecorded; out, with none left; low, at or under the item's level for that kind of place. A retired item, or a
+ * place no longer in use, is only ever below zero.
+ */
+function stateOf(stock: Stock, consumable: Consumable, placeId: string): State | null {
+  const holding = holdingOf(stock, consumable.code, placeId);
+  const quantity = holding?.quantity ?? 0;
+  if (quantity < 0) return { tone: "error", word: copy.belowZero, need: "below" };
+  const place = stock.places.find((each) => each.id === placeId);
+  if (consumable.retired || place?.active === false) return null;
+  if (quantity === 0) return { tone: "error", word: copy.out, need: "out" };
+  return holding?.low === true ? { tone: "warning", word: copy.low, need: "low" } : null;
+}
+
+const StateBadge = ({ state }: { state: State | null }) =>
+  state === null ? null : <Badge tone={state.tone}>{state.word}</Badge>;
+
+/** What a place holds of an item, its state beneath: every place side by side has no room for a column of states. */
+function Held({ stock, consumable, place }: { stock: Stock; consumable: Consumable; place: string }) {
+  const holding = holdingOf(stock, consumable.code, place);
+  const state = stateOf(stock, consumable, place);
   return (
     <td className={styles.held}>
-      {copy.held(holding?.quantity ?? 0, unitOf(stock, code))}
+      {copy.held(holding?.quantity ?? 0, unitOf(stock, consumable.code))}
       {state !== null && (
-        <Badge tone={state.tone} className={styles.state}>
-          {state.word}
-        </Badge>
+        <span className={styles.state}>
+          <StateBadge state={state} />
+        </span>
       )}
     </td>
+  );
+}
+
+/** The places with something below zero, out or low, the worst first, and how many items each: a name shows it. */
+export function Attention({ stock, onShow }: { stock: Stock; onShow: (showing: Showing) => void }) {
+  const rows = stock.places
+    .map((place) => {
+      const needs = stock.consumables.map((consumable) => stateOf(stock, consumable, place.id)?.need);
+      const count = (need: State["need"]) => needs.filter((each) => each === need).length;
+      return { place, below: count("below"), out: count("out"), low: count("low") };
+    })
+    .filter((row) => row.below + row.out + row.low > 0)
+    .sort((one, other) => other.below - one.below || other.out - one.out || other.low - one.low);
+  if (rows.length === 0) return null;
+  const figure = (count: number) => (count === 0 ? <span className={styles.none}>{copy.noExpiry}</span> : count);
+  return (
+    <Panel titleId="stock-attention" title={copy.attention.title}>
+      <Table fixed className={styles.attention}>
+        <thead>
+          <tr>
+            <th scope="col">{copy.place}</th>
+            {copy.attention.columns.map((column) => (
+              <th scope="col" key={column} className={FIGURE}>
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.place.id}>
+              <th scope="row">
+                <TextButton
+                  compact
+                  onClick={() => {
+                    onShow({ by: "place", place: row.place.id });
+                    document.getElementById("stock-on-hand")?.scrollIntoView({ block: "start" });
+                  }}
+                >
+                  {placeName(stock, row.place.id)}
+                </TextButton>
+              </th>
+              <td className={FIGURE}>{figure(row.below)}</td>
+              <td className={FIGURE}>{figure(row.out)}</td>
+              <td className={FIGURE}>{figure(row.low)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </Panel>
   );
 }
 
@@ -175,11 +206,14 @@ function ItemName({ consumable }: { consumable: Stock["consumables"][number] }) 
 function OnePlace({ stock, place }: { stock: Stock; place: string }) {
   const year = Number(stock.today.slice(0, 4));
   return (
-    <Table controls>
+    <Table controls fixed className={styles.onePlace}>
       <thead>
         <tr>
           <th scope="col">{copy.consumable}</th>
-          <th scope="col">{copy.columns.held}</th>
+          <th scope="col" className={FIGURE}>
+            {copy.columns.held}
+          </th>
+          <th scope="col">{copy.columns.status}</th>
           <th scope="col">{copy.columns.expires}</th>
           <th scope="col">{copy.columns.counted}</th>
         </tr>
@@ -191,7 +225,10 @@ function OnePlace({ stock, place }: { stock: Stock; place: string }) {
           return (
             <tr key={consumable.code}>
               <ItemName consumable={consumable} />
-              <Held stock={stock} code={consumable.code} place={place} />
+              <td className={FIGURE}>{copy.held(holding?.quantity ?? 0, unitOf(stock, consumable.code))}</td>
+              <td>
+                <StateBadge state={stateOf(stock, consumable, place)} />
+              </td>
               <Expires stock={stock} holding={holding} />
               <td>{counted === null ? copy.neverCounted : listDate(indiaDate(counted), year)}</td>
             </tr>
@@ -221,7 +258,7 @@ function EveryPlace({ stock }: { stock: Stock }) {
           <tr key={consumable.code}>
             <ItemName consumable={consumable} />
             {stock.places.map((place) => (
-              <Held key={place.id} stock={stock} code={consumable.code} place={place.id} />
+              <Held key={place.id} stock={stock} consumable={consumable} place={place.id} />
             ))}
           </tr>
         ))}

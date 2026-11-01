@@ -3,6 +3,7 @@
 // for itself, each the national rule's until it sets its own, and the national rule's again once emptied.
 
 import type { Sent } from "@maneman/web-kit/api";
+import { dayClock } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import type { paths } from "../api-schema.ts";
 import { ChoiceRow, figureOrNone, FigureRow, TextRow } from "@maneman/ui/RecordRows";
@@ -36,6 +37,12 @@ interface Props {
   readonly onRenamed: (name: string) => void;
 }
 
+/** A rule's figure as it reads: "200 metres", "6 pm". */
+const figureOf = (rule: CityRuleName, figure: number) =>
+  rule === "reminder_hour"
+    ? dayClock(`${String(figure).padStart(2, "0")}:00`)
+    : `${String(figure)} ${rules.units[rule]}`;
+
 /** A rule the city sets for itself: its figure, or the national rule's while it sets none. */
 function OwnRule({ city, cities, reread, rule }: Omit<Props, "onRenamed"> & { readonly rule: CityRuleName }) {
   const access = useAccess();
@@ -46,7 +53,7 @@ function OwnRule({ city, cities, reread, rule }: Omit<Props, "onRenamed"> & { re
     <FigureRow
       label={rules.names[rule]}
       value={own}
-      shown={own === null ? rules.national : `${String(own)} ${unit}`}
+      shown={own === null ? rules.national(figureOf(rule, cities.national[rule])) : figureOf(rule, own)}
       unit={unit}
       mayChange={access.mayCall("PATCH /api/cities/{name}/rules/{rule}")}
       save={async (typed) => {

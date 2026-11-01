@@ -6,12 +6,12 @@ import { DayTimeline, type TimelineCell } from "@maneman/ui/DayTimeline";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { dayClock, indiaClock, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { MINUTES_PER_UNIT } from "@rules/policy/visit-length.ts";
 import { useCallback } from "react";
 import type { Board, VisitAvailability } from "../api.ts";
 import { useAccess } from "../lib/access.ts";
-import { cellsOf, minuteOfDay, stepsOf } from "../lib/day-cells.ts";
+import { cellsOf, hourLabel, minuteOfDay, stepsOf } from "../lib/day-cells.ts";
 import type { Picked } from "./book-slot.ts";
 import { copy } from "./book-slot.ts";
 import { clientsApi } from "./clients-api.ts";
@@ -39,8 +39,6 @@ function visitsOf(board: Board | null, technician: string, date: string) {
     return { from, to: from + block.slots * 2 * MINUTES_PER_UNIT, client: block.client };
   });
 }
-
-const hourLabel = (minute: number) => (minute % 60 === 0 ? dayClock(`${String(minute / 60).padStart(2, "0")}:00`) : "");
 
 function Timeline({
   day,

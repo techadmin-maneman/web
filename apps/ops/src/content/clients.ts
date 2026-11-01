@@ -43,7 +43,7 @@ export const clients = {
     name: "Name",
     mobile: "Mobile",
     state: "Status",
-    anyState: "Any status",
+    anyState: "Status: All",
     city: "City",
     noCity: "Not known",
     nextVisit: "Next visit",

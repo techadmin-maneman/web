@@ -21,6 +21,11 @@
     border-collapse: collapse;
   }
 
+  /* Columns at the widths the head's cells are given, not at what the rows hold (Table's `fixed`). */
+  .fixed {
+    table-layout: fixed;
+  }
+
   .table th,
   .table td {
     height: var(--table-row-height);
@@ -125,9 +130,10 @@
    panel's own ground covers once that edge is reached. */
 .scroll {
   overflow-x: auto;
+  /* Each edge's cover is solid over the shade's whole width, so with nothing past an edge no shade shows at all. */
   background:
-    linear-gradient(to right, var(--ui-raised), transparent) left / var(--sp-24) 100% no-repeat local,
-    linear-gradient(to left, var(--ui-raised), transparent) right / var(--sp-24) 100% no-repeat local,
+    linear-gradient(to right, var(--ui-raised) 50%, transparent) left / var(--sp-24) 100% no-repeat local,
+    linear-gradient(to left, var(--ui-raised) 50%, transparent) right / var(--sp-24) 100% no-repeat local,
     radial-gradient(farthest-side at 0 50%, var(--ui-line-control), transparent) left / var(--sp-12) 100% no-repeat
       scroll,
     radial-gradient(farthest-side at 100% 50%, var(--ui-line-control), transparent) right / var(--sp-12) 100% no-repeat
@@ -148,8 +154,9 @@
 
 /*
  * On a phone a row is a card: its first cell its title, every other value on a line of its own beside its column's
- * name (Table's data-label), and the heads a line of their own above, which still sort. Outside the layer and named
- * closely, so a screen's column widths, room and unbroken lines give way to the card's.
+ * name (Table's data-label), and the heads a line of their own above where they sort or tick every row; heads that
+ * do neither are read aloud only, since each card names its values. Outside the layer and named closely, so a
+ * screen's column widths, room and unbroken lines give way to the card's.
  */
 @media (max-width: 600px) {
   .table[data-cards],
@@ -172,6 +179,15 @@
     height: auto;
     padding: 0;
     border: 0;
+  }
+
+  .table[data-cards] thead:not(:has(button, input)) {
+    position: absolute;
+    width: var(--sr-only-size);
+    height: var(--sr-only-size);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .table[data-cards] tbody tr {

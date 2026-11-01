@@ -37,6 +37,7 @@ const BOOK = {
   registrations: [],
   rules: [{ city: "Mumbai", rule: "checkin_radius_m", value: 400 }],
   rule_names: ["checkin_radius_m", "reminder_hour"],
+  national: { checkin_radius_m: 200, reminder_hour: 18 },
   prices: [
     {
       city: "Mumbai",
@@ -142,7 +143,7 @@ test("shows a city’s own rule beside the national one, and gives it back to th
   await expect(radius).toContainText("400 metres");
   await expect(
     record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.reminder_hour}` }),
-  ).toContainText(copy.rules.national);
+  ).toContainText(copy.rules.national("6 pm"));
 
   await radius.click();
   const box = record.getByRole("textbox", { name: copy.rules.names.checkin_radius_m });

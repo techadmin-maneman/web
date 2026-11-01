@@ -3,10 +3,9 @@
 // sold before it was retired is still done. Each figure changes where it reads (docs/decisions/0212-editing-in-place.md),
 // and the service's list goes whole with it. An empty box is none.
 
-import { Field, Select } from "@maneman/ui/Field";
+import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { longDate } from "@maneman/web-kit/dates";
 import { amountOf } from "@maneman/web-kit/figures";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -22,8 +21,6 @@ const copy = settings.consumables;
 const words = copy.usage;
 
 const keyOf = (service: ServiceUse) => `${service.visit_type}/${service.tier}`;
-const serviceName = (service: ServiceUse) =>
-  words.serviceName(service.name, service.retired_date === null ? null : longDate(service.retired_date));
 
 /**
  * Every consumable offered, and any retired one this service still expects, so a save never drops it unseen. Never a
@@ -46,17 +43,16 @@ function ServiceChoice(props: { consumables: Consumables; chosen: string; onChoo
             props.onChoose(event.target.value);
           }}
         >
-          {[...new Set(services.map((each) => each.visit_type))].map((kind) => (
-            <optgroup key={kind} label={dispatch.typeNames[kind]}>
-              {services
-                .filter((each) => each.visit_type === kind)
-                .map((each) => (
-                  <option key={keyOf(each)} value={keyOf(each)}>
-                    {serviceName(each)}
-                  </option>
-                ))}
-            </optgroup>
-          ))}
+          <ChoiceOptions
+            choices={[
+              ...services
+                .filter((each) => each.retired_date === null)
+                .map((each) => [keyOf(each), each.name, dispatch.typeNames[each.visit_type]] as const),
+              ...services
+                .filter((each) => each.retired_date !== null)
+                .map((each) => [keyOf(each), each.name, words.retired] as const),
+            ]}
+          />
         </Select>
       )}
     </Field>

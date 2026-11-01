@@ -7,10 +7,10 @@ import { Field, Select } from "@maneman/ui/Field";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { TextButton } from "@maneman/ui/TextLink";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { dayClock, indiaClock, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import type { Block, Board, BoardRow } from "../api.ts";
 import { dispatch } from "../content.ts";
-import { cellsOf, minuteOfDay, stepsOf } from "../lib/day-cells.ts";
+import { cellsOf, hourLabel, minuteOfDay, stepsOf } from "../lib/day-cells.ts";
 import type { Job, Target } from "./job.ts";
 import { minutesOf } from "./job.ts";
 import type { InHand } from "./MoveBar.tsx";
@@ -43,8 +43,6 @@ function lastAt(blocks: readonly Block[]): string | null {
   if (latest?.begun === undefined || latest.begun === null) return null;
   return copy.at[latest.begun](latest.client ?? dispatch.unknown);
 }
-
-const hourLabel = (minute: number) => (minute % 60 === 0 ? dayClock(`${String(minute / 60).padStart(2, "0")}:00`) : "");
 
 interface Props {
   readonly board: Board;

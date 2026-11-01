@@ -67,7 +67,7 @@ test.describe("the discount codes", () => {
     await open(page, "/settings/discount-codes");
     await expect(row(page, "WEDDNG25").getByRole("cell")).toHaveText([
       "25% (max Rs. 5,000)",
-      "First fit, Service",
+      "First fit, Service visit",
       "Fri 31 Dec",
       settingsCopy.discountCodes.states.live,
       "3 of 50",
@@ -102,7 +102,7 @@ test.describe("the discount codes", () => {
     await expect(rows.nth(1)).toContainText("TYPO10");
     await page.getByRole("button", { name: settingsCopy.discountCodes.figures.paid, exact: true }).click();
     await expect(rows.nth(1)).toContainText("WEDDNG25");
-    await page.getByLabel(settingsCopy.discountCodes.covers).selectOption("Service");
+    await page.getByLabel(settingsCopy.discountCodes.covers).selectOption("Service visit");
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(1)).toContainText("TYPO10");
   });

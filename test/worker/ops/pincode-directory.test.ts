@@ -34,13 +34,15 @@ beforeEach(async () => {
   await listed("400051", "MUMBAI", "MAHARASHTRA", "Bandra East SO;Kherwadi SO");
   await listed("411001", "PUNE", "MAHARASHTRA", "Pune HO");
   await listed("110001", "CENTRAL DELHI", "DELHI", "Connaught Place SO");
+  // A delivery centre, which India Post lists under no state.
+  await listed("122999", "NA", "NA", "NDC GURGAON");
   await env.DB.prepare(
     "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('110001', 'Connaught Place', 'Delhi', 1)",
   ).run();
 });
 
 describe("reading the directory", () => {
-  it("lists its states, and a state's districts with how many of each we hold", async () => {
+  it("lists its states, never India Post's \"NA\", and a state's districts with how many of each we hold", async () => {
     expect(await (await get(ops, "/api/pincode-directory/states")).json()).toEqual({
       states: ["DELHI", "MAHARASHTRA"],
     });

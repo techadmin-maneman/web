@@ -4,10 +4,10 @@
 // (./Claims.tsx); and each supplier's scorecard.
 
 import { Toast } from "@maneman/ui/Toast";
+import { TextButton } from "@maneman/ui/TextLink";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { longDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
-import { RowButton } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -49,9 +49,9 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
         {orders.orders.map((order) => (
           <tr key={order.id}>
             <RowHead>
-              <RowButton beside aria-label={copy.open(copy.number(order.number))} {...opener(order.id)}>
+              <TextButton compact aria-label={copy.open(copy.number(order.number))} {...opener(order.id)}>
                 {copy.number(order.number)}
-              </RowButton>
+              </TextButton>
             </RowHead>
             <td>{longDate(order.drafted_at)}</td>
             <td>{supplierOf(order.supplier_id)}</td>

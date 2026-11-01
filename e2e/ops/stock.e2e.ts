@@ -67,15 +67,16 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
   const solvent = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Solvent" }) });
   await expect(solvent.getByRole("cell").nth(0)).toHaveText(`-20 ml${stock.belowZero}`);
 
-  // One place picked: only its figures, and when each was last counted in a column of its own.
+  // One place picked: only its figures, each state in a column of its own, and when each was last counted.
   await page.getByLabel(stock.totalsBy).selectOption("place:central");
   await expect(table.getByRole("columnheader")).toHaveText([
     stock.consumable,
     stock.columns.held,
+    stock.columns.status,
     stock.columns.expires,
     stock.columns.counted,
   ]);
-  await expect(tape.getByRole("cell").nth(2)).toHaveText("20 Sep");
+  await expect(tape.getByRole("cell").nth(3)).toHaveText("20 Sep");
 });
 
 // A kit with none left read Low.
@@ -113,23 +114,31 @@ test("past six places, shows the warehouse and one place, picked, saying above w
   await page.goto("/stock");
   const table = onHand(page);
   // Past a handful of places, one at a time: the warehouse first, and only its figures.
-  const onePlace = [stock.consumable, stock.columns.held, stock.columns.expires, stock.columns.counted];
+  const onePlace = [
+    stock.consumable,
+    stock.columns.held,
+    stock.columns.status,
+    stock.columns.expires,
+    stock.columns.counted,
+  ];
   await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   await expect(page.getByLabel(stock.totalsBy)).toHaveValue("place:central");
 
-  // One control: each place by its name alone, among the totals; where something is low is said above the table.
+  // One control: each place by its name alone, among the totals; what needs attention is a table of its own above.
   const show = page.getByLabel(stock.totalsBy);
   await expect(show.getByRole("option", { name: "Technician 5", exact: true })).toHaveCount(1);
   await expect(show.getByRole("option", { name: /low|below|zero|·/i })).toHaveCount(0);
   await expect(table.getByLabel(stockLabels.place)).toHaveCount(0);
-  const needs = table.getByText(stock.needs.low);
-  await expect(needs).toBeVisible();
-  await needs.getByRole("button", { name: "Technician 5" }).click();
+  const attention = page.getByRole("region", { name: stock.attention.title });
+  const five = attention.getByRole("row").filter({ hasText: "Technician 5" });
+  await expect(five.getByRole("cell").nth(0)).toHaveText("—");
+  await expect(five.getByRole("cell").nth(2)).toHaveText("1");
+  await five.getByRole("button", { name: "Technician 5" }).click();
   await expect(show).toHaveValue(`place:${kits[4]?.id ?? ""}`);
   await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(0)).toContainText("5 strips");
-  await expect(tape.getByRole("cell").nth(0)).toContainText(stock.low);
+  await expect(tape.getByRole("cell").nth(0)).toHaveText("5 strips");
+  await expect(tape.getByRole("cell").nth(1)).toHaveText(stock.low);
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -188,7 +197,7 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
   const tape = onHand(page)
     .getByRole("row")
     .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(1)).toContainText("31 Oct");
+  await expect(tape.getByRole("cell").nth(2)).toContainText("31 Oct");
 
   const form = await recording(page);
   await form.getByLabel(stock.record.kinds.write_off).check();
@@ -638,7 +647,7 @@ test("finds the piece a label names, where it is and its history", async ({ page
   await find.fill("MM-ESS-0000001-B");
   await find.press("Enter");
   const status = labels.getByRole("status");
-  await expect(status).toContainText(`MM-ESS-0000001-B · ${HAIR.name} · HS-1 · Exp 31 Mar 2028`);
+  await expect(status).toContainText(`MM-ESS-0000001-B · ${HAIR.name} · HS-1 · Expires 31 Mar 2028`);
   await expect(status).toContainText(stockLabels.where("Held", "Imran Qureshi"));
   await expect(labels.getByRole("list", { name: stockLabels.history }).getByRole("listitem")).toHaveCount(2);
   expect(await axeViolations(page)).toEqual([]);

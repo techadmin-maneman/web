@@ -3,12 +3,13 @@
 // their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
 import { plainDate } from "@maneman/web-kit/plain-date";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { Panel } from "@maneman/ui/Panel";
 import { Apart } from "@maneman/ui/Apart";
 import { Toast } from "@maneman/ui/Toast";
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
@@ -29,7 +30,7 @@ import { useAccess } from "../lib/access.ts";
 import { technicianPath } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
-import { useTableView, type Column } from "@maneman/ui/useTableView";
+import { useTableView, type Column, type TableView } from "@maneman/ui/useTableView";
 import { AddTechnician } from "./TechnicianForms.tsx";
 import shared from "./technicians.module.css";
 import styles from "./technicians-screen.module.css";
@@ -54,7 +55,7 @@ function Service({ figures }: { figures: TechnicianWork | undefined }) {
   const planned = figures?.average_planned_minutes ?? null;
   // Under a minute is a job closed as it was started, not a visit's length.
   if (figures === undefined || average === null || planned === null || average < 1) {
-    return <span className={shared.none}>{technicians.unknown}</span>;
+    return <None />;
   }
 
   return (
@@ -75,37 +76,98 @@ const onTimeShare = (figures: TechnicianWork | undefined): number | null =>
   figures === undefined || figures.jobs === 0 ? null : figures.on_time_jobs / figures.jobs;
 
 function OnTime({ figures }: { figures: TechnicianWork | undefined }) {
-  if (figures === undefined || figures.jobs === 0) return <span className={shared.none}>{technicians.unknown}</span>;
+  if (figures === undefined || figures.jobs === 0) return <None />;
   return <>{technicians.work.onTime(figures.on_time_jobs, figures.jobs)}</>;
 }
 
 /** The Leave column: away today and until when, the first day of leave still to come, or a gap. */
 function LeaveCell({ leave, today }: { leave: readonly Leave[]; today: string }) {
   const next = leave[0];
-  if (next === undefined) return <span className={shared.none}>{technicians.unknown}</span>;
+  if (next === undefined) return <None />;
   const year = Number(today.slice(0, 4));
   if (next.from <= today)
     return <span className={capsLook(shared.away)}>{technicians.away(listDate(next.to, year))}</span>;
   return <span>{technicians.from(listDate(next.from, year))}</span>;
 }
 
-/** The technicians switched off, beneath the table: they cannot sign in, and nothing is booked on them. */
-function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
+/** A row of either list: those switched off carry no leave. */
+type Listed = TechnicianSummary & { readonly leave?: readonly Leave[] };
+
+/** The columns both lists share, each sorting its own. */
+function columnsOf(figures: ReadonlyMap<string, TechnicianWork>): readonly Column<Listed>[] {
+  const city = (row: Listed) => row.city ?? "";
+  const [name, cityLabel, jobs, service, onTime, leave] = technicians.columns;
+  return [
+    { label: name, sort: (row) => row.name },
+    { label: cityLabel, sort: city, choice: city, all: tables.allCities },
+    { label: jobs, sort: (row) => figures.get(row.id)?.jobs ?? -1, figure: true },
+    { label: service, sort: (row) => figures.get(row.id)?.average_minutes ?? -1, figure: true },
+    { label: onTime, sort: (row) => onTimeShare(figures.get(row.id)) ?? -1, figure: true },
+    { label: leave, sort: (row) => row.leave?.[0]?.from ?? "" },
+  ];
+}
+
+/**
+ * One list's table, at the widths both lists share, so the one switched off lines up beneath the one at work. No city
+ * is a warning only for those at work: it is why nothing can be booked on them.
+ */
+function TechnicianTable({
+  view,
+  figures,
+  off = false,
+}: {
+  view: TableView<Listed>;
+  figures: ReadonlyMap<string, TechnicianWork>;
+  off?: boolean;
+}) {
+  const today = todayInIndia(apiNow());
+  return (
+    <Table fixed className={styles.table}>
+      <thead>
+        <tr>
+          <SortHeads view={view} />
+        </tr>
+      </thead>
+      <tbody>
+        {view.shown.map((technician) => (
+          <tr key={technician.id}>
+            <th scope="row" className={shared.name}>
+              <OpsLink className={textLinkLook({ compact: true })} to={technicianPath(technician.id)}>
+                {technician.name}
+              </OpsLink>
+            </th>
+            <td className={classes(shared.city, technician.city === null && !off && shared.noCity)}>
+              {technician.city ?? (off ? <None /> : technicians.noCity)}
+            </td>
+            <td className={FIGURE}>{figures.get(technician.id)?.jobs ?? <None />}</td>
+            <td className={FIGURE}>
+              <Service figures={figures.get(technician.id)} />
+            </td>
+            <td className={FIGURE}>
+              <OnTime figures={figures.get(technician.id)} />
+            </td>
+            <td>
+              <LeaveCell leave={technician.leave ?? []} today={today} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
+
+/** Those switched off, beneath the table in its columns: they cannot sign in, and nothing is booked on them. */
+function SwitchedOff(props: { list: readonly TechnicianSummary[]; figures: ReadonlyMap<string, TechnicianWork> }) {
+  const view = useTableView<Listed>(props.list, columnsOf(props.figures));
   return (
     <Apart id="switched-off" title={technicians.switchedOff}>
-      <ul className={shared.offList}>
-        {list.map((technician) => (
-          <li className={styles.offRow} key={technician.id}>
-            <OpsLink className={shared.choose} to={technicianPath(technician.id)}>
-              {technician.name}
-            </OpsLink>
-            <span className={shared.offZone}>{technician.city ?? technicians.unknown}</span>
-          </li>
-        ))}
-      </ul>
+      <TechnicianTable off view={view} figures={props.figures} />
     </Apart>
   );
 }
+
+/** A figure or a date not there to give. */
+const None = () => <span className={shared.none}>{technicians.unknown}</span>;
 
 /** The periods offered beside the one shown: a month, a quarter and a year. */
 const PERIODS = [30, 90, 365];
@@ -147,54 +209,15 @@ function RosterTable({
   figures: ReadonlyMap<string, TechnicianWork>;
   period: ReactNode;
 }) {
-  const today = todayInIndia(apiNow());
-  const city = (row: Technician) => row.city ?? "";
-  const [name, cityLabel, jobs, service, onTime, leave] = technicians.columns;
-  const columns: readonly Column<Technician>[] = [
-    { label: name, sort: (row) => row.name },
-    { label: cityLabel, sort: city, choice: city, all: tables.allCities },
-    { label: jobs, sort: (row) => figures.get(row.id)?.jobs ?? -1 },
-    { label: service, sort: (row) => figures.get(row.id)?.average_minutes ?? -1 },
-    { label: onTime, sort: (row) => onTimeShare(figures.get(row.id)) ?? -1 },
-    { label: leave, sort: (row) => row.leave[0]?.from ?? "" },
-  ];
-  const view = useTableView(active, columns, { search: (row) => `${row.name} ${city(row)}` });
+  const view = useTableView<Listed>(active, columnsOf(figures), {
+    search: (row) => `${row.name} ${row.city ?? ""}`,
+  });
   return (
     <>
       <Narrowing view={view} label={technicians.narrow}>
         {period}
       </Narrowing>
-      <Table className={styles.table}>
-        <thead>
-          <tr>
-            <SortHeads view={view} className={shared.head} />
-          </tr>
-        </thead>
-        <tbody>
-          {view.shown.map((technician) => (
-            <tr key={technician.id}>
-              <th scope="row" className={shared.name}>
-                <OpsLink className={shared.choose} to={technicianPath(technician.id)}>
-                  {technician.name}
-                </OpsLink>
-              </th>
-              <td className={classes(shared.city, technician.city === null && shared.noCity)}>
-                {technician.city ?? technicians.noCity}
-              </td>
-              <td className={shared.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
-              <td className={shared.service}>
-                <Service figures={figures.get(technician.id)} />
-              </td>
-              <td className={shared.jobs}>
-                <OnTime figures={figures.get(technician.id)} />
-              </td>
-              <td className={shared.leaveCell}>
-                <LeaveCell leave={technician.leave} today={today} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      <TechnicianTable view={view} figures={figures} />
       <TableEnd view={view} />
     </>
   );
@@ -272,7 +295,7 @@ function Roster() {
           period={<PeriodChoice counted={work.value} onFrom={setFrom} />}
         />
       )}
-      {roster.switched_off.length > 0 && <SwitchedOff list={roster.switched_off} />}
+      {roster.switched_off.length > 0 && <SwitchedOff list={roster.switched_off} figures={figures} />}
       {adding && (
         <AddTechnician
           cities={roster.cities}

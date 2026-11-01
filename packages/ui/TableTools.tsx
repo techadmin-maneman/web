@@ -5,7 +5,7 @@ import { TextButton } from "./TextLink.tsx";
 import { Field, Select } from "./Field.tsx";
 import { SearchInput } from "./SearchInput.tsx";
 import { Toolbar } from "./Toolbar.tsx";
-import { SortButton } from "./Table.tsx";
+import { FIGURE, SortButton } from "./Table.tsx";
 import { classes } from "./classes.ts";
 import type { ReactNode } from "react";
 import { tables as copy } from "./words.ts";
@@ -15,7 +15,7 @@ import styles from "./table-tools.module.css";
 /** The table's column heads, each that sorts a button. The caller puts them in its row, with any of its own. */
 export function SortHeads<Row>({ view, className }: { view: TableView<Row>; className?: string }) {
   return view.columns.map((column, at) => {
-    const head = classes(className, column.className, column.figure === true ? styles.figure : undefined);
+    const head = classes(className, column.className, column.figure === true ? FIGURE : undefined);
     if (column.sort === undefined) {
       return (
         <th key={column.label} scope="col" className={head}>

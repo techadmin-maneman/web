@@ -196,7 +196,7 @@ export const technicians = {
     mobile: "Mobile",
     zone: "Zone (optional)",
     city: "City",
-    noCity: "No city · no bookings",
+    noCity: "No city yet",
     /** A first fit or a replacement goes only to a technician trained to fit (ADR 0119). */
     fitsTrained: "Trained to fit",
   },

@@ -12,6 +12,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { DirectoryDistrict, DirectoryPincode, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
+import { titled } from "../content/areas.ts";
 import form from "@maneman/ui/forms.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import shared from "./areas.module.css";
@@ -24,9 +25,6 @@ const copy = areas.directory;
 const MOST_DISTRICTS = 10;
 /** The API adds this many a call, so each stays one short batch; ten districts can hold four times as many. */
 const PER_CALL = 300;
-
-/** A name the directory spells in capitals, as ops read it: "GAUTAM BUDDHA NAGAR" → "Gautam Buddha Nagar". */
-const titled = (name: string) => name.toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
 
 const toggled = (set: ReadonlySet<string>, values: readonly string[], on: boolean) => {
   const next = new Set(set);

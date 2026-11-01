@@ -54,7 +54,8 @@ export const cities = {
     panel: "Its own rules",
     names: { checkin_radius_m: "Check-in radius", reminder_hour: "Reminder time" },
     units: { checkin_radius_m: "metres", reminder_hour: "hour of the day" },
-    national: "National",
+    /** A rule the city follows from the national one: "National: 200 metres". */
+    national: (figure: string) => `National: ${figure}`,
     errors: {
       ...common,
       value: "A whole number the national rule takes, or blank for the national rule.",

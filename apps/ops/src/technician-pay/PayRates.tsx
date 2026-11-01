@@ -17,7 +17,7 @@ import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { technicianPay } from "../content/technician-pay.ts";
 import { tables } from "../content.ts";
 import { AddGrade, GradeRecord } from "./PayForms.tsx";
-import { rateNow, ratesLater } from "./pay-rates.ts";
+import { rateLines } from "./pay-rates.ts";
 import shared from "./technician-pay.module.css";
 import styles from "./pay-rates.module.css";
 
@@ -37,12 +37,15 @@ function GradeRow(props: { pay: TechnicianPay; city: string | null; grade: Grade
       <td className={shared.figure}>{grade.technicians}</td>
       {pay.kinds.map((kind) => (
         <td key={kind} className={shared.figure}>
-          {rateNow(pay, { grade: grade.id, kind, city })}
-          {ratesLater(pay, { grade: grade.id, kind, city }).map((line) => (
-            <span key={line} className={styles.later}>
-              {line}
-            </span>
-          ))}
+          {rateLines(pay, { grade: grade.id, kind, city }).map((line, index) =>
+            index === 0 ? (
+              line
+            ) : (
+              <span key={line} className={styles.later}>
+                {line}
+              </span>
+            ),
+          )}
         </td>
       ))}
     </tr>

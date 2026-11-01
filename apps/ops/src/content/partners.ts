@@ -8,7 +8,7 @@ export const partners = {
   commissionUpTo: (most: string) => `Enter whole rupees, up to ${most} a fit.`,
   title: "Partners",
   none: "No partners yet.",
-  add: "Add partner",
+  add: "Add a partner",
   columns: {
     name: "Partner",
     link: "Link",
@@ -55,7 +55,7 @@ export const partners = {
   resume: "Resume",
   resumeLabel: (name: string) => `Resume ${name}`,
   form: {
-    addTitle: "New partner",
+    addTitle: "Add a partner",
     name: "Partner",
     friendVisits: "Free service visits for the friend",
     validDays: "Days to use them",

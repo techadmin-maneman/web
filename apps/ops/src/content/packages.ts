@@ -4,8 +4,8 @@ import { FAILED, NOT_PERMITTED, OFFLINE } from "./common.ts";
 
 export const packagesCopy = {
   title: "Packages",
-  add: "Add package",
-  addTitle: "New package",
+  add: "Add a package",
+  addTitle: "Add a package",
   name: "Name",
   code: "Code",
   create: "Add",
@@ -62,8 +62,8 @@ export const packagesCopy = {
   /** A hair system's table and its record. */
   hairSystems: {
     columns: { spec: "Hair system", price: "Price", cost: "Cost", status: "Status" },
-    add: "Add hair system",
-    addTitle: "New hair system",
+    add: "Add a hair system",
+    addTitle: "Add a hair system",
     width: "Base width, in",
     length: "Base length, in",
     colour: "Colour",

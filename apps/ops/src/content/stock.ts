@@ -24,9 +24,12 @@ export const stock = {
   /** In a list of places, the kits of technicians who left and the places closed, still holding stock. */
   noLongerInUse: "No longer in use",
   /** A place whose name another shares, told apart by its city. */
-  inCity: (name: string, city: string) => `${name}, ${city}`,
-  /** Above the table, the places to look at, each a way to show it. */
-  needs: { low: "Low or out at", below: "Below zero, to count, at" },
+  inCity: (name: string, city: string) => `${name} (${city})`,
+  /** Above On hand, each place with something below zero, out or low, and how many items; its name shows it. */
+  attention: {
+    title: "Needs attention",
+    columns: ["Items below zero", "Items out", "Items low"],
+  },
   totalsBy: "Show",
   /** With a handful of places, every one side by side. */
   allPlaces: "All places",
@@ -34,14 +37,16 @@ export const stock = {
   byCity: "Totals by city",
   /** "12 strips", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => amountOf(quantity, unit),
+  /** At or under the item's level for that kind of place. */
   low: "Low",
-  /** None left where a level is set: past Low. */
+  /** None left. */
   out: "Out",
-  belowZero: "Below zero · count it",
+  /** Less than nothing: a movement went unrecorded, and a count puts it right. */
+  belowZero: "Below zero",
   none: "No consumables yet. Add them in",
   retired: "retired",
-  /** One place's columns: what it holds, the soonest of its lots to expire, and when it was last counted. */
-  columns: { held: "On hand", expires: "Soonest expiry", counted: "Last counted" },
+  /** One place's columns: what it holds and its state, the soonest of its lots to expire, and when last counted. */
+  columns: { held: "On hand", status: "Status", expires: "Soonest expiry", counted: "Last counted" },
   noExpiry: "—",
   neverCounted: "Not yet",
   expired: "Expired",

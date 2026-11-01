@@ -3,8 +3,7 @@
 
 import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
-import { TextLink } from "@maneman/ui/TextLink";
-import { RowButton } from "@maneman/ui/Button";
+import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -51,15 +50,15 @@ function ClaimsTable({
         {claims.claims.map((claim) => (
           <tr key={claim.id}>
             <RowHead>
-              <RowButton
-                beside
+              <TextButton
+                compact
                 aria-label={copy.claims.open(copy.claims.number(claim.number))}
                 onClick={() => {
                   onOpen(claim.id);
                 }}
               >
                 {copy.claims.number(claim.number)}
-              </RowButton>
+              </TextButton>
             </RowHead>
             <td>{supplierOf(claim.supplier_id)}</td>
             <td>{copy.claims.item(claim.name, claim.quantity, claim.piece_code)}</td>

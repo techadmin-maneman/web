@@ -2,11 +2,24 @@
 // half hours it holds, a free start its own, and the time between run together.
 
 import { describe, expect, it } from "vitest";
-import { cellsOf, minuteOfDay, stepsOf } from "../../../../apps/ops/src/lib/day-cells.ts";
+import { cellsOf, hourLabel, minuteOfDay, stepsOf } from "../../../../apps/ops/src/lib/day-cells.ts";
 
 describe("a technician's day on the board", () => {
   it("reads an instant as its minute of India's day", () => {
     expect(minuteOfDay("2026-09-22T06:00:00.000Z")).toBe(11 * 60 + 30);
+  });
+
+  it("labels each hour, and a day run past midnight with the next day's hours", () => {
+    expect(hourLabel(9 * 60)).toBe("9 am");
+    expect(hourLabel(9 * 60 + 30)).toBe("");
+    const late = stepsOf([{ from: 23 * 60 + 35, to: 25 * 60 + 35 }]);
+    expect(late.at(-1)).toBe(25 * 60 + 30);
+    expect(
+      late
+        .map(hourLabel)
+        .filter((label) => label !== "")
+        .slice(-3),
+    ).toEqual(["11 pm", "12 am", "1 am"]);
   });
 
   it("runs from 8 am to 8 pm, wider where a visit falls outside", () => {

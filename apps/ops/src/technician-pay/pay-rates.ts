@@ -23,7 +23,7 @@ const ownRate = (rates: readonly PayRate[], cell: RateCell, today: string) =>
   rates.find((rate) => isCell(rate, cell) && rate.effective_from <= today);
 
 /** What the cell pays today, in words: its own rate, every city's standing in for a city, or none. */
-export function rateNow(pay: TechnicianPay, cell: RateCell): string {
+function rateNow(pay: TechnicianPay, cell: RateCell): string {
   const own = ownRate(pay.rates, cell, pay.today);
   if (own?.amount !== undefined && own.amount !== null) return rupees(own.amount);
   if (cell.city === null) return copy.empty;
@@ -31,8 +31,15 @@ export function rateNow(pay: TechnicianPay, cell: RateCell): string {
   return every?.amount !== undefined && every.amount !== null ? copy.inherited(rupees(every.amount)) : copy.empty;
 }
 
+/** The cell in words: what it pays now, then each rate to come; only those to come where it pays none yet. */
+export function rateLines(pay: TechnicianPay, cell: RateCell): string[] {
+  const now = rateNow(pay, cell);
+  const later = ratesLater(pay, cell);
+  return now === copy.empty && later.length > 0 ? later : [now, ...later];
+}
+
 /** Each rate the cell's own city has set to start later, in words. */
-export function ratesLater(pay: TechnicianPay, cell: RateCell): string[] {
+function ratesLater(pay: TechnicianPay, cell: RateCell): string[] {
   return pay.rates
     .filter((rate) => isCell(rate, cell) && rate.effective_from > pay.today)
     .map((rate) =>
