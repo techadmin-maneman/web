@@ -37,6 +37,27 @@ afterEach(async () => {
 const kept = (): JobSummary =>
   ({ id: "a", date: "2030-09-19", progress: { started_at: null, outcome: null } }) as JobSummary;
 
+// Photographs a phone kept for weeks of a job closed meanwhile are refused at once, and hold back no other job's writes.
+describe("a closed job's photographs left on the phone", () => {
+  it("are refused as closed while the next job's writes land in the same round", async () => {
+    await keepFrame({ jobId: "old", angle: "front", phase: "before", frame: new Blob(["front"]) });
+    await queue("before_photos", "old", { phase: "before" });
+    await queue("checklist", "new", { done: [] });
+    const sent = api((method, url) =>
+      url.includes("/jobs/old/")
+        ? { status: 409, json: { error: { code: "already_closed", request_id: "t" } } }
+        : accepted,
+    );
+
+    expect(await replay()).toMatchObject({ sent: 1, superseded: 1, stopped: null });
+    expect(sent.map((call) => `${call.method} ${call.url}`)).toEqual([
+      "POST /api/tech/jobs/old/photos/upload-url",
+      "POST /api/tech/jobs/new/checklist",
+    ]);
+    expect(await events()).toMatchObject([{ job_id: "old", state: "superseded", note: "already_closed" }]);
+  });
+});
+
 describe("a write the job has moved under", () => {
   it("carries the job’s start as the phone held it when it was queued", async () => {
     await queue("start", "a", null, "2030-09-19T04:00:00.000Z");
