@@ -1,5 +1,6 @@
 // A payment refunded by ops, with why: one the client made twice, as when they paid again for a fit owed to them
 // (src/routes/ops/payment-refunds.ts). What is left of it goes back; the refund's row shows once Razorpay processes it.
+// Offered beside each payment on a client's Payments tab and on the Ledger, which Finance reach without a client's page.
 
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -7,7 +8,6 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { type ClientPayment } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
@@ -15,12 +15,21 @@ import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.payments;
 
-type Paid = Extract<ClientPayment, { kind: "payment" }>;
+/** A payment as both lists carry it: what was paid, what has gone back, and whether it is captured yet. */
+export interface Refundable {
+  readonly id: string;
+  readonly amount: number;
+  readonly refunded_amount: number;
+  readonly status: string;
+}
 
-export function RefundPayment({ entry }: { entry: ClientPayment }) {
+/** Captured and not yet given back in full: the only payments a refund can be asked of. */
+const refundable = (payment: Refundable) => payment.status !== "authorized" && payment.status !== "failed";
+
+export function RefundPayment({ entry }: { entry: Refundable }) {
   const mayRefund = useAccess().mayCall("POST /api/payments/{id}/refund");
   const [open, setOpen] = useState(false);
-  if (entry.kind !== "payment" || entry.status === "authorized" || !mayRefund) return null;
+  if (!refundable(entry) || !mayRefund) return null;
   const left = entry.amount - entry.refunded_amount;
   if (left <= 0) return null;
   if (!open) {
@@ -40,7 +49,7 @@ export function RefundPayment({ entry }: { entry: ClientPayment }) {
   return <RefundForm entry={entry} left={left} />;
 }
 
-function RefundForm({ entry, left }: { entry: Paid; left: number }) {
+function RefundForm({ entry, left }: { entry: Refundable; left: number }) {
   const [reason, setReason] = useState("");
   const [asked, setAsked] = useState<number | null>(null);
   const [failed, setFailed] = useState<string | null>(null);

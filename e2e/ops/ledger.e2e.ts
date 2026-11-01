@@ -3,11 +3,12 @@
 // reference, says where Books stands, exports the list, and shows the links still unpaid.
 
 import { readFile } from "node:fs/promises";
+import type { Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { ledger as copy } from "../../apps/ops/src/content/ledger.ts";
-import { tables } from "../../apps/ops/src/content.ts";
+import { clients, tables } from "../../apps/ops/src/content.ts";
 
 const LEDGER = {
   from: "2026-08-23",
@@ -82,4 +83,25 @@ test("lists the days' payments, finds one by client, exports them, and shows the
   expect(file.suggestedFilename()).toBe(copy.fileName(LEDGER.from, LEDGER.to));
   const text = await readFile(await file.path(), "utf8");
   expect(text.split("\n")).toHaveLength(3);
+});
+
+// Finance own refunds but reach a client's page only with Customer Care's access: the refund is on the ledger's row.
+test("refunds what is left of a payment from its ledger row, with why", async ({ page }) => {
+  const paid = LEDGER.payments[1];
+  const sent: unknown[] = [];
+  await answer(page, {
+    "GET /api/payments/ledger": json(LEDGER),
+    [`POST /api/payments/${paid?.id ?? ""}/refund`]: (route: Route) => {
+      sent.push(route.request().postDataJSON());
+      return json({ amount: 200_000 })(route);
+    },
+  });
+  await page.goto("/ledger");
+  const payments = page.getByRole("region", { name: copy.payments.title, exact: true });
+  const row = payments.getByRole("row").filter({ hasText: "Rohit Malhotra" });
+  await row.getByRole("button", { name: clients.payments.refundLabel("Rs. 2,000") }).click();
+  await row.getByRole("textbox", { name: clients.payments.refundReason }).fill("Paid twice through the app");
+  await row.getByRole("button", { name: clients.payments.refundConfirm("Rs. 2,000") }).click();
+  await expect(row.getByRole("status")).toHaveText(clients.payments.refundAsked("Rs. 2,000"));
+  expect(sent).toEqual([{ reason: "Paid twice through the app" }]);
 });
