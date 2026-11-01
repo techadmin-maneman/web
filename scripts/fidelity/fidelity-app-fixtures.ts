@@ -28,3 +28,19 @@ export const SERVICE_PRICE = { amount_ex_gst: 200000, amount: 236000, gst_percen
 export const NOT_DRAWN: Readonly<Record<string, (route: Route) => Promise<void>>> = {
   "/api/me/custom-orders": (route) => route.fulfill({ json: { orders: [] } }),
 };
+
+/**
+ * Where the client is signed in: this phone alone, as on the boards' one handset. No board draws the card
+ * (docs/decisions/0029-sessions.md); Profile shows it beneath the change of number, a departure the pairs record.
+ */
+export const SESSIONS = {
+  sessions: [
+    {
+      id: "0123456789abcdef",
+      device: "Safari on iOS",
+      signed_in_at: "2026-09-12T05:30:00.000Z",
+      last_used_at: "2026-09-21T06:30:00.000Z",
+      this_device: true,
+    },
+  ],
+};

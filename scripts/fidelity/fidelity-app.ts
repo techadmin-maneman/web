@@ -22,7 +22,7 @@ import { chromium, type Browser, type Page, type Route } from "@playwright/test"
 import sharp from "sharp";
 import { pair, rest, routeDesignLibraries, STILL } from "../lib/fidelity.ts";
 import { serveDirectory } from "../lib/static-server.ts";
-import { BOOKS_NOTHING, CHALLENGE, NOT_DRAWN, SERVICE_PRICE, VISIT_KINDS } from "./fidelity-app-fixtures.ts";
+import { BOOKS_NOTHING, CHALLENGE, NOT_DRAWN, SERVICE_PRICE, SESSIONS, VISIT_KINDS } from "./fidelity-app-fixtures.ts";
 import type { components } from "../../apps/app/src/api-schema.ts";
 
 type Schemas = components["schemas"];
@@ -405,22 +405,6 @@ function fakeCheckout(outcome: "paid" | "failed") {
       };`,
     });
 }
-
-/**
- * Where the client is signed in: this phone alone, as on the boards' one handset. No board draws the card
- * (docs/decisions/0029-sessions.md); Profile shows it beneath the change of number, a departure the pairs record.
- */
-const SESSIONS = {
-  sessions: [
-    {
-      id: "0123456789abcdef",
-      device: "Safari on iOS",
-      signed_in_at: "2026-09-12T05:30:00.000Z",
-      last_used_at: "2026-09-21T06:30:00.000Z",
-      this_device: true,
-    },
-  ],
-};
 
 const PROFILE = {
   name: "Rohit Malhotra",
