@@ -2,7 +2,7 @@
 // latest made.
 
 import { Button } from "@maneman/ui/Button";
-import { Field, TextInput } from "@maneman/ui/Field";
+import { SearchInput } from "@maneman/ui/SearchInput";
 import { useEffect, useState } from "react";
 import { settings } from "../content/settings.ts";
 import styles from "./find-code.module.css";
@@ -34,18 +34,7 @@ export function FindForm({ finding, onFind }: { finding: string | null; onFind: 
         onFind(text.trim() === "" ? null : text.trim());
       }}
     >
-      <Field label={copy.find}>
-        {(control) => (
-          <TextInput
-            {...control}
-            type="search"
-            value={text}
-            onChange={(event) => {
-              setText(event.currentTarget.value);
-            }}
-          />
-        )}
-      </Field>
+      <SearchInput label={copy.find} placeholder={copy.find} value={text} onChange={setText} />
       {finding !== null && (
         <Button
           variant="outline"

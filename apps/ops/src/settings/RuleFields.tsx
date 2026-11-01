@@ -169,6 +169,7 @@ function AddKey({ rule, onSaved }: { readonly rule: NumberRule; readonly onSaved
       />
       <NumberInput
         aria-label={copy.keyValue}
+        placeholder={copy.keyValue}
         width="figure"
         inputMode="numeric"
         step={1}

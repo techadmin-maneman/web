@@ -2,6 +2,12 @@
 // the panel on the Messages page where a Customer Care manager approves or declines those above the limit.
 
 import { Toast } from "@maneman/ui/Toast";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { Note } from "@maneman/ui/Note";
+import { NoValue } from "@maneman/ui/NoValue";
+import { RowHead } from "@maneman/ui/RowHead";
+import { FIGURE, Table } from "@maneman/ui/Table";
+import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
@@ -133,7 +139,12 @@ export function RemedyForm({ personId }: { readonly personId: string }) {
   );
 }
 
-/** Those awaiting a manager first, then the last 30 days' given and declined. */
+/** Given is done; awaiting a manager is to act on; declined is quiet. */
+const STATE_TONES = { given: "done", awaiting: "attention", declined: "neutral" } as const satisfies Readonly<
+  Record<string, BadgeTone>
+>;
+
+/** Those awaiting a manager first, then the last 30 days' given and declined, a row each. */
 export function RemediesPanel() {
   const load = useCallback(() => careApi.remedies(), []);
   const [loaded, retry] = useLoad(load);
@@ -141,35 +152,53 @@ export function RemediesPanel() {
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { remedies } = loaded.value;
-  if (remedies.length === 0) return <p className={styles.quick}>{copy.none}</p>;
+  if (remedies.length === 0) return <Note>{copy.none}</Note>;
   return (
-    <ul className={`${styles.leave} ${styles.quick}`}>
-      {remedies.map((remedy) => (
-        <li key={remedy.id}>
-          <span className={styles.who}>{remedy.person.name}</span> ·{" "}
-          {copy.line(remedy.visits, copy.reasons[remedy.reason], shortDate(indiaDate(remedy.given_at)))} ·{" "}
-          {copy.states[remedy.state]}
-          {remedy.note === null ? "" : ` · ${remedy.note}`}{" "}
-          {mayDecide && remedy.state === "awaiting" && (
-            <>
-              <RowButton
-                beside
-                aria-label={copy.approveLabel(remedy.person.name)}
-                onClick={() => void careApi.decideRemedy(remedy.id, true).then(retry)}
-              >
-                {copy.approve}
-              </RowButton>{" "}
-              <RowButton
-                beside
-                aria-label={copy.declineLabel(remedy.person.name)}
-                onClick={() => void careApi.decideRemedy(remedy.id, false).then(retry)}
-              >
-                {copy.decline}
-              </RowButton>
-            </>
-          )}
-        </li>
-      ))}
-    </ul>
+    <Table>
+      <thead>
+        <tr>
+          {copy.columns.map((column, at) => (
+            <th key={column} scope="col" className={at === 1 ? FIGURE : undefined}>
+              {column}
+            </th>
+          ))}
+          <th scope="col">
+            <VisuallyHidden>{copy.decide}</VisuallyHidden>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {remedies.map((remedy) => (
+          <tr key={remedy.id}>
+            <RowHead>{remedy.person.name}</RowHead>
+            <td className={FIGURE}>{remedy.visits}</td>
+            <td>{copy.reasons[remedy.reason]}</td>
+            <td>{shortDate(indiaDate(remedy.given_at))}</td>
+            <td>
+              <Badge tone={STATE_TONES[remedy.state]}>{copy.states[remedy.state]}</Badge>
+            </td>
+            <td>{remedy.note ?? <NoValue />}</td>
+            <td>
+              {mayDecide && remedy.state === "awaiting" && (
+                <span className={styles.decide}>
+                  <RowButton
+                    aria-label={copy.approveLabel(remedy.person.name)}
+                    onClick={() => void careApi.decideRemedy(remedy.id, true).then(retry)}
+                  >
+                    {copy.approve}
+                  </RowButton>
+                  <RowButton
+                    aria-label={copy.declineLabel(remedy.person.name)}
+                    onClick={() => void careApi.decideRemedy(remedy.id, false).then(retry)}
+                  >
+                    {copy.decline}
+                  </RowButton>
+                </span>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
   );
 }

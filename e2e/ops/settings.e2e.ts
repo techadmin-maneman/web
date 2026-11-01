@@ -72,7 +72,7 @@ test("says what photos and referral cards hold, and the database, under The cons
   });
   await open(page, "/settings/console", { "GET /api/storage": storage });
   const theConsole = page.getByRole("region", { name: settingsCopy.rules.groups.console, exact: true });
-  await expect(theConsole.getByText("Photos and referral cards: 1.24 GB of 4 GB", { exact: true })).toBeVisible();
+  await expect(theConsole.getByText("Photos and referral cards: 1.2 GB of 4 GB", { exact: true })).toBeVisible();
   await expect(theConsole.getByText("Database: 212 MB of 10 GB", { exact: true })).toBeVisible();
 
   await open(page, "/settings/closed-days", { "GET /api/storage": storage });

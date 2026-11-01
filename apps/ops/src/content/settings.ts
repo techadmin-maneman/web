@@ -23,6 +23,10 @@ function figureWords(value: number, unit: string): string {
   return `${quantity(value)} ${noun}`;
 }
 
+/** Bytes as Cloudflare counts them, a thousand to the next: under a gigabyte in whole megabytes, else to one place. */
+const size = (bytes: number): string =>
+  bytes < 1e9 ? `${String(Math.round(bytes / 1e6))} MB` : `${String(Math.round(bytes / 1e8) / 10)} GB`;
+
 /** A window's parts after its first, in words. */
 const PARTS: Readonly<Record<number, string>> = { 2: "second", 3: "third", 4: "fourth" };
 
@@ -37,11 +41,9 @@ export const settings = {
   title: "Settings",
   find: "Find a setting",
   noneFound: "No setting matches.",
-  /** Gigabytes as Cloudflare bills them, a thousand million bytes. */
-  storage: (held: number, share: number) =>
-    `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
-  /** Megabytes as Cloudflare counts them, a million bytes. */
-  database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e9)} GB`,
+  /** What is held of what may be, each in the unit that reads best: "17 MB of 10 GB", "1.2 GB of 4 GB". */
+  storage: (held: number, share: number) => `Photos and referral cards: ${size(held)} of ${size(share)}`,
+  database: (held: number, limit: number) => `Database: ${size(held)} of ${size(limit)}`,
   /** No board draws discount codes (docs/decisions/0108-discount-codes.md). */
   discountCodes: {
     title: "Discount codes",
@@ -197,7 +199,7 @@ export const settings = {
     viewOnly: "View only",
     /** The open-keyed rule's extra row: a currency, and its rate. */
     keyName: "Currency code, as USD",
-    keyValue: "Rupees",
+    keyValue: "Rate, Rs.",
     add: "Add",
     defaultKey: "Every other currency",
     /**

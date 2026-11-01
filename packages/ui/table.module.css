@@ -50,6 +50,7 @@
 
   /* The head stays in view as a long table scrolls under it. */
   .table thead th {
+    vertical-align: bottom;
     position: sticky;
     top: 0;
     z-index: var(--z-sticky);

@@ -116,3 +116,9 @@
   gap: var(--sp-8) var(--sp-16);
   margin-top: var(--sp-16);
 }
+
+/* A remedy's approve and decline, side by side in its row. */
+.decide {
+  display: inline-flex;
+  gap: var(--sp-8);
+}

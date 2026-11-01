@@ -4,6 +4,8 @@
 // beside the table (docs/decisions/0212-editing-in-place.md).
 
 import { Panel } from "@maneman/ui/Panel";
+import { NoValue } from "@maneman/ui/NoValue";
+import { Badge } from "@maneman/ui/Badge";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { classes } from "@maneman/ui/classes";
@@ -58,8 +60,9 @@ function GradeOf({
 function PayTechnicians({ pay, onChanged }: { pay: Pay; onChanged: (pay: Pay) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const opened = pay.technicians.find((technician) => technician.id === open);
+  /** A technician's grade; with none, a warning: nothing they do is paid until they have one. */
   const gradeOf = (technician: PayTechnician) =>
-    pay.grades.find((each) => each.id === technician.grade_id)?.name ?? copy.noGrade;
+    pay.grades.find((each) => each.id === technician.grade_id)?.name ?? <Badge tone="warning">{copy.noGrade}</Badge>;
   return (
     <Panel titleId="pay-technicians" title={copy.title}>
       {pay.technicians.length === 0 ? (
@@ -88,7 +91,7 @@ function PayTechnicians({ pay, onChanged }: { pay: Pay; onChanged: (pay: Pay) =>
                       {technician.name}
                     </TextButton>
                   </th>
-                  <td>{technician.city ?? copy.noCity}</td>
+                  <td>{technician.city ?? <NoValue />}</td>
                   <td>{gradeOf(technician)}</td>
                 </tr>
               ))}
