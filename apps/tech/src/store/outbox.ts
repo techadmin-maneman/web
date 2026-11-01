@@ -399,13 +399,8 @@ async function uploadFrames(event: Queued, phase: Phase): Promise<Verdict | null
 async function uploadFrame(frame: SetFrame): Promise<Verdict | null> {
   let link = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
   if (!link.ok) return classify(link);
-  // A link lives a quarter of an hour: one that ran out on the way, while the phone slept or the signal went, is asked
-  // for again and the PUT sent once more. It never reads as the job having changed.
-  const relinked = async () => {
-    const again = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
-    if (again.ok) link = again;
-    return again;
-  };
+  // A link lives a quarter of an hour: one that lapsed on the way is asked for again, never read as the job changing.
+  const relinked = async () => (link = await api.uploadLink(frame.job_id, frame.phase, frame.angle));
   let take = frame.take;
   if (take === undefined) {
     let sent = await api.upload(link.body.upload_url, frame.frame);
