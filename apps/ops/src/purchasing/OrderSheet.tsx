@@ -3,7 +3,8 @@
 // code with its quantity in units and packs and its price, the total, the payment terms and who approved it. It
 // prints as soon as it is drawn, alone.
 
-import { fullDate, indiaDate } from "@maneman/web-kit/dates";
+import { indiaDate } from "@maneman/web-kit/dates";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Mark } from "@maneman/ui/Mark";
 import { Table } from "@maneman/ui/Table";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -67,8 +68,8 @@ export function OrderSheet({ orders, order, onPrinted }: { orders: Orders; order
         {sheet.title} {copy.number(order.number)}
       </h1>
       <p>
-        {sheet.date}: {fullDate(indiaDate(order.drafted_at))}
-        {order.expected_on !== null && ` · ${copy.order.expected(fullDate(order.expected_on))}`}
+        {sheet.date}: {plainDate(indiaDate(order.drafted_at))}
+        {order.expected_on !== null && ` · ${copy.order.expected(plainDate(order.expected_on))}`}
       </p>
       <FromUs letterhead={orders.letterhead} />
       <p>

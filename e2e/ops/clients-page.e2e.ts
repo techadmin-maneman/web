@@ -24,7 +24,7 @@ test("counts the client’s visits and replacements, and the day their piece fal
       .getByRole("term")
       .filter({ hasText: new RegExp(`^${label}$`) })
       .locator("+ dd");
-  await expect(fact("First fit")).toHaveText("14 Nov 2026");
+  await expect(fact("First fit")).toHaveText("14 Nov");
   await expect(fact("Visits")).toHaveText("6");
   await expect(fact("Service visits")).toHaveText("4");
   await expect(fact("Replacements")).toHaveText("1");

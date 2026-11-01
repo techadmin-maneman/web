@@ -3,6 +3,7 @@
 // (src/routes/ops/staff-notes.ts).
 
 import { STAFF_NOTE_MAX_CHARS } from "@rules/policy/staff-notes.ts";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { PanelFailed } from "@maneman/ui/States";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, RowButton } from "@maneman/ui/Button";
@@ -10,7 +11,7 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { typeLook } from "@maneman/ui/type";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { fullDate, todayInIndia } from "@maneman/web-kit/dates";
+import { todayInIndia } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import { Refusal } from "@maneman/ui/Refusal";
@@ -105,7 +106,7 @@ function NoteList({ clientId, initial }: { clientId: string; initial: readonly N
             <li key={note.id} className={styles.note}>
               <p className={styles.noteBody}>{note.body}</p>
               <span className={styles.noteBy}>
-                {copy.by(staffName(note.written_by), fullDate(todayInIndia(Date.parse(note.written_at))))}
+                {copy.by(staffName(note.written_by), plainDate(todayInIndia(Date.parse(note.written_at))))}
               </span>
               {mayWrite && (
                 <span className={styles.noteActions}>

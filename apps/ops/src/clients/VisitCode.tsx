@@ -4,13 +4,13 @@
 // box.
 
 import { Field, TextInput } from "@maneman/ui/Field";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Refusal } from "@maneman/ui/Refusal";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { TextButton } from "@maneman/ui/TextLink";
 
-import { fullDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type ClientVisit, type VisitDiscountCode } from "../api.ts";
@@ -45,7 +45,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
   const [typed, setTyped] = useState("");
   const [failure, setFailure] = useState<string | null>(null);
   const access = useAccess();
-  const when = fullDate(visit.date);
+  const when = plainDate(visit.date);
   const takesACode = visit.price_open && visit.type !== null && visit.type !== "consultation";
   const mayEnter = takesACode && access.mayCall("POST /api/visits/{id}/discount-code");
   const mayRemove = visit.price_open && access.mayCall("POST /api/visits/{id}/discount-code/remove");

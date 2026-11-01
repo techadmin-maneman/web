@@ -2,6 +2,7 @@
 // all be used before it expires at its place's pace, valued at its landed cost, with what to do about it.
 
 import type { Success } from "@maneman/web-kit/api";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -11,7 +12,6 @@ import type { paths } from "../api-schema.ts";
 import form from "@maneman/ui/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
-import { fullDate } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { ListTools } from "@maneman/ui/ListTools";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -48,7 +48,7 @@ function Lots({ risk }: { risk: Risk }) {
                   <RowHead>{lot.place}</RowHead>
                   <td>{lot.name}</td>
                   <td>{lot.lot_code}</td>
-                  <td>{fullDate(lot.expires_on)}</td>
+                  <td>{plainDate(lot.expires_on)}</td>
                   <td className={form.figure}>{quantity(lot.quantity)}</td>
                   <td className={form.figure}>{roundRupees(lot.value)}</td>
                   <td>{todo(lot)}</td>

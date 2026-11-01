@@ -301,7 +301,7 @@ test("lists the pieces in the board’s columns", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/pieces`);
   const piece = page.getByRole("row").filter({ hasText: "MM-STD-4417-B" });
   await expect(piece).toContainText("Mono");
-  await expect(piece).toContainText("14 Nov 2026");
+  await expect(piece).toContainText("14 Nov");
   await expect(piece).toContainText("L-1109");
   await expect(piece).toContainText("1 Jun 2027");
   await expect(piece).toContainText("24 Jun 2027 · base split at crown");

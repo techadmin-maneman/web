@@ -133,7 +133,7 @@ test("logs the opening once, before any photograph, and letters the time the API
   expect(asked.filter((each) => each === "view")).toHaveLength(1);
   await expect(page.getByText(opsCopy.clients.photos.phases.before, { exact: true })).toBeVisible();
   await expect(page.getByText(opsCopy.clients.photos.phases.after, { exact: true })).toBeVisible();
-  await expect(page.getByText("22 Aug 2027 · service visit · Imran Qureshi")).toBeVisible();
+  await expect(page.getByText("22 Aug · service visit · Imran Qureshi")).toBeVisible();
 });
 
 // The locked state promises a log the city head can see; it is here, beside the photographs.
@@ -182,8 +182,8 @@ test("fetches the newest visits' photographs first, and earlier ones when asked"
   await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
 
   await expect(page.getByText("27 Jun 2027 · service visit · Imran Qureshi")).toBeVisible();
-  await expect(page.getByText("14 Nov 2026 · service visit · Imran Qureshi")).toBeHidden();
+  await expect(page.getByText("14 Nov · service visit · Imran Qureshi")).toBeHidden();
   await page.getByRole("button", { name: "Show 1 earlier visit" }).click();
-  await expect(page.getByText("14 Nov 2026 · service visit · Imran Qureshi")).toBeVisible();
+  await expect(page.getByText("14 Nov · service visit · Imran Qureshi")).toBeVisible();
   await expect(page.getByRole("button", { name: /earlier/ })).toBeHidden();
 });

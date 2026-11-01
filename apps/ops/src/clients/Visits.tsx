@@ -4,11 +4,12 @@
 // why.
 
 import { typeLook } from "@maneman/ui/type";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Toast } from "@maneman/ui/Toast";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
-import { fullDate, indiaClock, longDate, todayInIndia } from "@maneman/web-kit/dates";
+import { indiaClock, longDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
 import { addressLine } from "@maneman/web-kit/address";
@@ -175,7 +176,7 @@ function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: str
   const changes = changesOf(visit, apiNow()).filter((change) => access.mayCall(CALLS[change]));
   if (changes.length === 0) return null;
 
-  const when = fullDate(visit.date);
+  const when = plainDate(visit.date);
   const closed = (changed: boolean) => {
     setOpen(null);
     if (changed) onChanged();
@@ -212,7 +213,7 @@ function ShowOnBoard({ visit }: { visit: ClientVisit }) {
     <OpsLink
       className={styles.boardLink}
       to={dispatchPath({ from: visit.date, visit: visit.id })}
-      label={copy.onBoardLabel(fullDate(visit.date))}
+      label={copy.onBoardLabel(plainDate(visit.date))}
     >
       {copy.onBoard}
     </OpsLink>
@@ -262,7 +263,7 @@ function VisitTable({
             {visits.map((visit) => (
               <tr key={visit.id}>
                 <td>
-                  {fullDate(visit.date)}
+                  {plainDate(visit.date)}
                   {onBoard && <ShowOnBoard visit={visit} />}
                 </td>
                 <td>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
@@ -310,7 +311,7 @@ function AutoRefunds({ refunds }: { refunds: readonly AutoRefund[] }) {
             <p className={styles.refundWhat}>
               {words.what(
                 copy.types[refund.type],
-                fullDate(refund.date),
+                plainDate(refund.date),
                 refund.amount === null ? null : rupees(refund.amount),
               )}
             </p>

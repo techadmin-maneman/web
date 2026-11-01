@@ -1,8 +1,8 @@
 // One purchase order beneath the list (docs/decisions/0166-purchase-orders.md): its lines and total, and what can be
 // done with it now: approved, by a second manager where it needs one; marked sent; cancelled with why; printed.
 
-import { fullDate } from "@maneman/web-kit/dates";
 import { CancelButton } from "@maneman/ui/CancelButton";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -196,7 +196,7 @@ export function OrderPanel({
       <Note>
         {copy.states[order.state]}
         {order.state === "drafted" && order.approved_by !== null && ` · ${copy.awaitingSecond}`}
-        {order.expected_on !== null && ` · ${copy.order.expected(fullDate(order.expected_on))}`}
+        {order.expected_on !== null && ` · ${copy.order.expected(plainDate(order.expected_on))}`}
         {order.cancel_reason !== null && ` · ${copy.order.cancelledWhy(order.cancel_reason)}`}
       </Note>
       <LinesTable order={order} named={named} />

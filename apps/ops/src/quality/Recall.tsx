@@ -2,7 +2,7 @@
 // with; and a lot recalled, with why.
 
 import type { Success } from "@maneman/web-kit/api";
-import { fullDate } from "@maneman/web-kit/dates";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -101,7 +101,7 @@ function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }
           <tr key={each.piece_id}>
             <RowHead>{each.person}</RowHead>
             <td>{each.piece_code}</td>
-            <td>{each.due_on === null ? "" : fullDate(each.due_on)}</td>
+            <td>{each.due_on === null ? "" : plainDate(each.due_on)}</td>
             <td>{mayBook && <BookFree worn={each} />}</td>
           </tr>
         ))}

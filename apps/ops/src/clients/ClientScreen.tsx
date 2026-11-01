@@ -3,6 +3,7 @@
 // costs no request; an erased client's page keeps only their visits and money (Erase.tsx).
 
 import { Stack } from "@maneman/ui/Layout";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { ClientPackage } from "./ClientPackage.tsx";
 import { TextLink } from "@maneman/ui/TextLink";
 import { ButtonLink } from "@maneman/ui/Button";
@@ -11,7 +12,7 @@ import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { fullDate, indiaClock, longDate, todayInIndia } from "@maneman/web-kit/dates";
+import { indiaClock, longDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useEffect, useState } from "react";
@@ -71,7 +72,7 @@ const paidToDate = (payments: ClientRecord["payments"]): number =>
 function nextVisitWords(record: ClientRecord): string {
   const today = todayInIndia(apiNow());
   const next = record.visits.upcoming.find((visit) => visit.date >= today);
-  return next === undefined ? clients.list.noVisit : `${fullDate(next.date)}, ${indiaClock(next.starts_at)}`;
+  return next === undefined ? clients.list.noVisit : `${plainDate(next.date)}, ${indiaClock(next.starts_at)}`;
 }
 
 /** The client's name as the page's title, the way to message them at its right, and their standing beneath. */

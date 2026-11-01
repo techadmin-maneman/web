@@ -44,7 +44,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
     ],
   });
   await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.consultation_request]);
-  await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon");
+  await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep, afternoon");
 });
 
 // The next visit (docs/decisions/0086-the-next-visit-is-offered.md): the design's own At-risk client, a client consulted
@@ -122,7 +122,7 @@ test("names an At-risk client’s weeks since the last visit, a first fit to boo
     opsCopy.tasks.groups.first_fit_to_book,
     opsCopy.tasks.groups.at_risk_client,
   ]);
-  await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon + first fit, morning");
+  await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep, afternoon + first fit, morning");
   await expect(row(page, "Sanjay Arora")).toContainText("Consultation Fri 10 Sep, afternoon · not fitted");
   await expect(row(page, "Deepak Rao")).toContainText("9 weeks since last visit · due Fri 20 Aug");
   await expect(row(page, "Deepak Rao")).toContainText("24 days overdue");

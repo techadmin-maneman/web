@@ -4,12 +4,13 @@
 // open the page it leads to.
 
 import { Columns, Stack } from "@maneman/ui/Layout";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { StatTile, type StatTone } from "@maneman/ui/StatTile";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { fullDate, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
+import { indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
@@ -159,7 +160,7 @@ function Needs({ board }: { board: Tasks }) {
 
 export function TodayScreen() {
   const board = useTaskBoard(true);
-  useHeaderSub(copy.day(fullDate(todayInIndia(apiNow()))));
+  useHeaderSub(copy.day(plainDate(todayInIndia(apiNow()))));
   if (board === null) return <PanelLoading />;
   return (
     <Stack gap="24">

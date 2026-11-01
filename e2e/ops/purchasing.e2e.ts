@@ -286,7 +286,7 @@ test("a manager sets the letterhead, and a printed order carries it with what th
   await expect(sheet).toContainText("48 ml (4 packs of 12)");
   await expect(sheet).toContainText("Payment: 30 days");
   await expect(sheet).toContainText("Approved by Ops desk");
-  await expect(sheet).toContainText("Date: 21 Sep 2026");
+  await expect(sheet).toContainText("Date: 21 Sep");
 });
 
 test("changes a line of the letterhead where it reads, the rest sent as they stand", async ({ page }) => {

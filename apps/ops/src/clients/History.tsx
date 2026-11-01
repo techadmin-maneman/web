@@ -2,7 +2,8 @@
 // page already holds, so the tab asks for nothing. For whoever may read the audit log, it links to everything done on
 // the record, in Activity.
 
-import { fullDate, shortMonth } from "@maneman/web-kit/dates";
+import { shortMonth } from "@maneman/web-kit/dates";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { rupees } from "@maneman/web-kit/money";
 import type { ClientRecord } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
@@ -30,18 +31,18 @@ export function History({ clientId, history }: { clientId: string; history: Clie
       <dl className={styles.historyList}>
         <HistoryRow
           label={copy.rows.firstFit}
-          value={history.first_fit_on === null ? copy.noFirstFit : fullDate(history.first_fit_on)}
+          value={history.first_fit_on === null ? copy.noFirstFit : plainDate(history.first_fit_on)}
         />
         <HistoryRow label={copy.rows.visits} value={String(history.visits)} />
         <HistoryRow label={copy.rows.services} value={String(history.services)} />
         <HistoryRow label={copy.rows.replacements} value={String(history.replacements)} />
         <HistoryRow
           label={copy.rows.lastVisit}
-          value={history.last_visit_on === null ? copy.noVisit : fullDate(history.last_visit_on)}
+          value={history.last_visit_on === null ? copy.noVisit : plainDate(history.last_visit_on)}
         />
         <HistoryRow
           label={copy.rows.replacement}
-          value={due === null ? copy.noPiece : copy.due(fullDate(due.on), due.piece_code)}
+          value={due === null ? copy.noPiece : copy.due(plainDate(due.on), due.piece_code)}
         />
         <HistoryRow label={copy.rows.spend} value={rupees(history.spend)} />
       </dl>

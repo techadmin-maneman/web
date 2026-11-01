@@ -39,7 +39,7 @@ test("dates the day, and gives the road, Care and Growth a part each for those w
     "GET /api/growth/funnel": json(FUNNEL),
   });
   await page.goto("/today");
-  await expect(page.getByText("19 Sep 2025", { exact: true })).toBeVisible();
+  await expect(page.getByText("19 Sep", { exact: true })).toBeVisible();
 
   const road = page.getByRole("region", { name: copy.road.title });
   await expect(road.getByRole("link")).toHaveCount(5);

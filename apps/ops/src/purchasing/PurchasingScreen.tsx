@@ -4,7 +4,8 @@
 // (./Claims.tsx); and each supplier's scorecard.
 
 import { Toast } from "@maneman/ui/Toast";
-import { fullDate, longDate } from "@maneman/web-kit/dates";
+import { plainDate } from "@maneman/web-kit/plain-date";
+import { longDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
@@ -56,7 +57,7 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
             <td>{supplierOf(order.supplier_id)}</td>
             <td>{copy.states[order.state]}</td>
             <td className={form.figure}>{inCurrency(order.total, order.currency)}</td>
-            <td>{order.expected_on === null ? "" : fullDate(order.expected_on)}</td>
+            <td>{order.expected_on === null ? "" : plainDate(order.expected_on)}</td>
           </tr>
         ))}
       </tbody>

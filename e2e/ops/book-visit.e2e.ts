@@ -400,7 +400,7 @@ test("lists a booking that refunded its payment by itself beneath the visits, an
   } satisfies Extract<OpsReply<"/api/clients/{id}">, { auto_refunds: unknown }>["auto_refunds"][number];
   await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json({ ...RECORD, auto_refunds: [refunded] }) });
   const item = page.getByRole("region", { name: opsCopy.clients.visits.autoRefunds.title }).getByRole("listitem");
-  await expect(item).toContainText("Service visit, 24 Sep 2027 · Rs. 2,000");
+  await expect(item).toContainText("Service visit, 24 Sep · Rs. 2,000");
   await expect(item).toContainText("Auto-refunded on 22 Sep 2027: paid after the hold expired.");
   expect(await axeViolations(page)).toEqual([]);
 });

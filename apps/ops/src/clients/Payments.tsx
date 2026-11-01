@@ -3,6 +3,7 @@
 // entries together (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { typeLook } from "@maneman/ui/type";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Toast } from "@maneman/ui/Toast";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, ChoiceGroup, Radio, TextInput } from "@maneman/ui/Field";
@@ -10,7 +11,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { fullDate, longDate } from "@maneman/web-kit/dates";
+import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import {
@@ -46,7 +47,7 @@ function whatOf(entry: ClientPayment): string {
   const paidFor = entry.visit ?? entry.booking;
   const type = paidFor?.type ?? null;
   if (paidFor === null || type === null) return copy.unlinked;
-  return copy.visit(clients.visits.types[type], fullDate(paidFor.date));
+  return copy.visit(clients.visits.types[type], plainDate(paidFor.date));
 }
 
 /** The discount code a visit's payment was made with, and what it took off before GST; null for none. */
@@ -96,7 +97,7 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
       <tbody>
         {payments.map((entry) => (
           <tr key={entry.id}>
-            <td>{fullDate(entry.date)}</td>
+            <td>{plainDate(entry.date)}</td>
             <td>
               {whatOf(entry)}
               <CodeLine entry={entry} />
@@ -115,7 +116,7 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
 
 /** "Natural hair system, visit of 25 Sep 2027". */
 const linkWhatOf = (link: ClientPaymentLink): string =>
-  linkCopy.what(link.product, link.visit_date === null ? null : fullDate(link.visit_date));
+  linkCopy.what(link.product, link.visit_date === null ? null : plainDate(link.visit_date));
 
 function linkStateOf(link: ClientPaymentLink): string {
   const state = link.paid_at === null ? linkCopy.states[link.state] : linkCopy.paidOn(longDate(link.paid_at));
@@ -198,7 +199,7 @@ function InvoiceTable({ invoices }: { invoices: readonly ClientInvoice[] }) {
       <tbody>
         {invoices.map((invoice) => (
           <tr key={invoice.visit_id}>
-            <td>{copy.visit(clients.visits.types[invoice.type], fullDate(invoice.date))}</td>
+            <td>{copy.visit(clients.visits.types[invoice.type], plainDate(invoice.date))}</td>
             <td className={styles.quietCell}>{invoiceStateOf(invoice)}</td>
           </tr>
         ))}

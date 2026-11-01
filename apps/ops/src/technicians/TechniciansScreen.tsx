@@ -3,6 +3,7 @@
 // their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
 import { typeLook } from "@maneman/ui/type";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { Toast } from "@maneman/ui/Toast";
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -11,7 +12,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { addDays, fullDate, listDate, todayInIndia } from "@maneman/web-kit/dates";
+import { addDays, listDate, todayInIndia } from "@maneman/web-kit/dates";
 import { Field, Select } from "@maneman/ui/Field";
 import { useCallback, useState, type ReactNode } from "react";
 import {
@@ -204,7 +205,7 @@ function RosterTable({
 
 /** The days the figures count, beside the page's title. */
 function Period({ from, to }: { from: string; to: string }) {
-  useHeaderSub(technicians.work.period(fullDate(from), fullDate(lastDay(to))));
+  useHeaderSub(technicians.work.period(plainDate(from), plainDate(lastDay(to))));
   return null;
 }
 

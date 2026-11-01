@@ -1,7 +1,8 @@
 // A task's second line: the one fact its group turns on, in ops' words, from the facts the API gives each task by its
 // group. The table is keyed by every group the API names, so the console builds only once each has its line.
 
-import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { rupees } from "@maneman/web-kit/money";
 import type { Task } from "../api.ts";
 import { dispatch, referrals, tasks } from "../content.ts";
@@ -33,7 +34,7 @@ const dayAndTime = (instant: string) => `${shortDate(indiaDate(instant))}, ${ind
 
 /** A consultation asked for: its day and window, then the one visit and its code, or the first fit asked with it. */
 const consultationAsked: Sub<"consultation_request"> = (facts) => {
-  const asked = copy.consultation_request(fullDate(facts.date), dispatch.windows[facts.window]);
+  const asked = copy.consultation_request(plainDate(facts.date), dispatch.windows[facts.window]);
   if (facts.one_visit) {
     return `${asked} ${copy.withOneVisit}${facts.discount_code === null ? "" : copy.withCode(facts.discount_code)}`;
   }
@@ -52,7 +53,7 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   consultation_request: consultationAsked,
   // The piece's label, and the day it falls due; the order goes in by the task's own day.
   replacement_order: (facts, task) =>
-    copy.replacement_order(facts.piece_code, fullDate(indiaDate(task.due)), fullDate(facts.due_on)),
+    copy.replacement_order(facts.piece_code, plainDate(indiaDate(task.due)), plainDate(facts.due_on)),
   recall_call: (facts) => copy.recall_call(facts.piece_codes.join(" ")),
   stock_at_risk: (facts) => copy.stock_at_risk(facts.name ?? facts.consumable_code ?? ""),
   referral_review: (facts) => SIGNALS[facts.signal ?? ""] ?? copy.unknown,
