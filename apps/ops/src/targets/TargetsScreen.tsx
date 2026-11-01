@@ -15,11 +15,11 @@ import { quantity } from "@maneman/web-kit/figures";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import type { paths } from "../api-schema.ts";
-import { FigureRow } from "../components/RecordRows.tsx";
+import { FigureRow } from "@maneman/ui/RecordRows";
 import { targets as copy } from "../content/targets.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import form from "../components/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import form from "@maneman/ui/forms.module.css";
 import { targetsApi } from "./targets-api.ts";
 
 type Targets = Success<paths["/api/targets"]["get"]>;
@@ -135,7 +135,7 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
   const [loaded, retry] = useLoad(load);
   const [saved, setSaved] = useState<Targets | null>(null);
   const [city, setCity] = useState<string | null>(null);
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const list = saved ?? loaded.value;
   return (

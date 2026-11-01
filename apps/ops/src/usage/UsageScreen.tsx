@@ -12,10 +12,10 @@ import { BarChart } from "@maneman/ui/BarChart";
 import { roundRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { usage as copy } from "../content/usage.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { RowHead } from "@maneman/ui/RowHead";
 import { usageApi } from "./usage-api.ts";
 
 type Usage = Success<paths["/api/stock/usage"]["get"]>;
@@ -153,7 +153,7 @@ export function UsageScreen() {
   const [loaded, retry] = useLoad(loadUsage);
   return (
     <>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <div className={form.screen}>

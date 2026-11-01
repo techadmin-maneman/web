@@ -1,12 +1,12 @@
-// Each app's features import only the shared layers: the files at the top of src/, components/, lib/,
-// states/, styles/ and content/, the technician app's store/, and another feature only through its index.ts, which
+// Each app's features import only the shared layers: the files at the top of src/, frame/, lib/,
+// styles/ and content/, the technician app's store/, and another feature only through its index.ts, which
 // says what the feature offers. A feature that reaches into another's files is how moving one broke the next.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, normalize, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const SHARED = new Set(["components", "lib", "states", "styles", "content", "store"]);
+const SHARED = new Set(["frame", "lib", "styles", "content", "store"]);
 
 function filesUnder(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {

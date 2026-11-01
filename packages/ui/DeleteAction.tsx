@@ -3,11 +3,11 @@
 // primary tone, before a page's main switch. Anything but the primary tone looks dangerous before it is pressed, and a
 // switch that reaches everyone can ask for a word typed first.
 
-import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { Button } from "@maneman/ui/Button";
-import { Field, TextInput } from "@maneman/ui/Field";
+import { useOneAtATime } from "./useOneAtATime.ts";
+import { Button } from "./Button.tsx";
+import { Field, TextInput } from "./Field.tsx";
 import { useState } from "react";
-import { deleting } from "../content.ts";
+import { deleting } from "./words.ts";
 import styles from "./delete-action.module.css";
 import { Refusal } from "./Refusal.tsx";
 

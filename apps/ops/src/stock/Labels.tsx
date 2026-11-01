@@ -13,15 +13,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { type Stock, type StockUnits } from "../api.ts";
 import { stockLabels as copy } from "../content/stock-labels.ts";
 import { useAccess } from "../lib/access.ts";
-import form from "../components/forms.module.css";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import form from "@maneman/ui/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { LabelFound } from "./LabelFound.tsx";
 import { LabelSheet, type PrintedLabel } from "./LabelSheet.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./labels.module.css";
 import { holdingOf } from "./holdings.ts";
-import { Refusal } from "../components/Refusal.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
+import { FormActions } from "@maneman/ui/FormActions";
 import { stockApi } from "./stock-api.ts";
 
 /** The item and place whose labels the panel shows. */
@@ -109,7 +109,7 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
   const [after, setAfter] = useState<{ readonly units: StockUnits; readonly times: number } | null>(null);
   const [labelling, setLabelling] = useState<"idle" | "busy" | "failed">("idle");
   const access = useAccess();
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const units = after?.units ?? loaded.value;
   const toLabel = Math.min(units.unlabelled, units.max_labelled);

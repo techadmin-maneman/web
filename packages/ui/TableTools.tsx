@@ -1,14 +1,14 @@
 // A long table's heads that sort, the bar above it that narrows it, and the button beneath it that shows the next
 // page (./useTableView.ts). A head sorts on a press and reverses on the next; aria-sort says which way it runs.
 
-import { TextButton } from "@maneman/ui/TextLink";
-import { Field, Select } from "@maneman/ui/Field";
-import { SearchInput } from "@maneman/ui/SearchInput";
-import { Toolbar } from "@maneman/ui/Toolbar";
-import { SortButton } from "@maneman/ui/Table";
-import { classes } from "@maneman/ui/classes";
+import { TextButton } from "./TextLink.tsx";
+import { Field, Select } from "./Field.tsx";
+import { SearchInput } from "./SearchInput.tsx";
+import { Toolbar } from "./Toolbar.tsx";
+import { SortButton } from "./Table.tsx";
+import { classes } from "./classes.ts";
 import type { ReactNode } from "react";
-import { tables as copy } from "../content.ts";
+import { tables as copy } from "./words.ts";
 import type { TableView } from "./useTableView.ts";
 import styles from "./table-tools.module.css";
 

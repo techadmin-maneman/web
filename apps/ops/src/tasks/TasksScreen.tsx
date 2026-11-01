@@ -20,8 +20,8 @@ import { daysUntil } from "../lib/due.ts";
 import { Left } from "../lib/Left.tsx";
 import { readTasks } from "../lib/waiting.ts";
 import { api } from "../api.ts";
-import { rowId } from "../lib/target.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { rowId } from "@maneman/ui/target";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { subjectOf, taskClientPath } from "../lib/task-links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { narrowed, NO_FILTER, TaskFilters, type TaskFilter } from "./TaskFilters.tsx";
@@ -230,7 +230,7 @@ function TaskQueue({ alerts, onOpen, filter }: QueueProps) {
   const [marked, setMarked] = useState<string | null>(null);
   const heading = useRef<HTMLElement>(null);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date(apiNow());

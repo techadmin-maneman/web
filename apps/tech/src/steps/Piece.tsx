@@ -8,8 +8,8 @@ import { useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { steps as copy } from "../content.ts";
-import { JobFailed } from "../states/JobFailed.tsx";
-import { Loading } from "../states/States.tsx";
+import { JobFailed } from "../frame/JobFailed.tsx";
+import { Loading } from "../frame/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import {
   choiceSent,

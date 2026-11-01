@@ -13,11 +13,11 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { useHeaderSub } from "../frame/PageHead.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import form from "../components/forms.module.css";
+import { RowHead } from "@maneman/ui/RowHead";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./funnel.module.css";
 import { funnel as copy } from "../content/funnel.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { funnelApi, type Funnel, type FunnelDays } from "./funnel-api.ts";
 
 const PERIODS: readonly FunnelDays[] = ["30", "90"];
@@ -128,7 +128,7 @@ export function FunnelScreen() {
           )}
         </Field>
       </Toolbar>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <>

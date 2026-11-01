@@ -12,18 +12,18 @@ import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-k
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type DisputeRuling, type NoShowDispute } from "../api.ts";
-import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { Reach } from "../clients/Reach.tsx";
+import { DecisionQueue } from "@maneman/ui/DecisionQueue";
+import { Reach } from "../clients/index.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { noShows } from "../content.ts";
 import { REFUNDING_A_DISPUTE, useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { clientPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Distance } from "./Distance.tsx";
 import shared from "./no-shows.module.css";
 import styles from "./disputes.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { paymentsApi } from "./payments-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -184,7 +184,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
 export function Disputes({ onRuled }: { onRuled: () => void }) {
   const [loaded, retry] = useLoad(paymentsApi.disputes);
   const access = useAccess();
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date(apiNow());

@@ -17,8 +17,8 @@ import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useEffect, useState, type Ref } from "react";
 import type { JobSummary } from "../api.ts";
-import { Offline } from "../components/Banners.tsx";
-import { ReachOps } from "../components/ReachOps.tsx";
+import { Offline } from "../frame/Banners.tsx";
+import { ReachOps } from "../frame/ReachOps.tsx";
 import {
   atRisk as atRiskCopy,
   job as jobCopy,
@@ -38,7 +38,7 @@ import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { apiDate, clock, dayAfter, dayBefore, runsOver, todayInIndia, where } from "../lib/when.ts";
 import { useSession } from "../session.ts";
-import { Failed, Loading } from "../states/States.tsx";
+import { Failed, Loading } from "../frame/States.tsx";
 import { type Heard, keptStates } from "../store/jobs.ts";
 import { replay, type Queued } from "../store/outbox.ts";
 import { photoSets } from "../lib/sets.ts";

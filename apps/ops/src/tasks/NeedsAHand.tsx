@@ -15,7 +15,7 @@ import { type OpenAlert } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { needsAHand as copy } from "../content.ts";
 import { alertNeed, markDoneNeed, useAccess, type Access } from "../lib/access.ts";
-import { PanelFailed } from "../states/States.tsx";
+import { PanelFailed } from "@maneman/ui/States";
 import shared from "./tasks.module.css";
 import styles from "./needs-ahand.module.css";
 import { headlineOf } from "./alert-headline.ts";

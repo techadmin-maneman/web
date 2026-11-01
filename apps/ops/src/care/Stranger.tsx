@@ -8,9 +8,9 @@ import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { care } from "../content/care.ts";
-import { Refused } from "../components/Refusal.tsx";
+import { Refused } from "@maneman/ui/Refusal";
 import { careApi, type FoundUs } from "./care-api.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./care.module.css";
 
 const copy = care.stranger;

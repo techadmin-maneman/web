@@ -22,7 +22,7 @@ import { clients } from "../content.ts";
 import { rememberClient } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath, type ClientTab } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./clients.module.css";
 import styles from "./client-screen.module.css";
 import { Consents } from "./Consents.tsx";
@@ -212,7 +212,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   return (
     <>
       {whenLoaded(loaded, {
-        loading: <Loading />,
+        loading: <PanelLoading />,
         failed:
           loaded.state === "failed" && loaded.notFound ? (
             <NoClient />

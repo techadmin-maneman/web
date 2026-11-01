@@ -11,12 +11,12 @@ import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useState } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { AccuracyPart } from "./Accuracy.tsx";
 import styles from "./forecast.module.css";
-import { RowHead } from "../components/RowHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
 import { supplyPlanApi } from "./supply-plan-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -114,7 +114,7 @@ export function ForecastPanel({ cities }: { cities: readonly string[] }) {
         </Field>
       }
     >
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Periods forecast={loaded.value} city={city} />}
       <AccuracyPart city={city} />

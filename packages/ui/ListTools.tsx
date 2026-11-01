@@ -2,12 +2,12 @@
 // enough to read whole has neither. The rows it hands to its children are the page's, as the search left them:
 //   <ListTools rows={lots} textOf={(lot) => lot.name} label={copy.find}>{(shown) => <Table>…</Table>}</ListTools>
 
-import { Note } from "@maneman/ui/Note";
-import { Pager, usePages } from "@maneman/ui/Pager";
-import { SearchInput } from "@maneman/ui/SearchInput";
-import { Toolbar } from "@maneman/ui/Toolbar";
+import { Note } from "./Note.tsx";
+import { Pager, usePages } from "./Pager.tsx";
+import { SearchInput } from "./SearchInput.tsx";
+import { Toolbar } from "./Toolbar.tsx";
 import { useState, type ReactNode } from "react";
-import { LIST_TOOLS as copy } from "../content.ts";
+import { LIST_TOOLS as copy } from "./words.ts";
 import styles from "./list-tools.module.css";
 
 /** A list longer than this takes a search; one longer than a page takes pages too. */

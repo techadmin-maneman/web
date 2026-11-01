@@ -12,7 +12,7 @@ import { OpsLink } from "../frame/Shell.tsx";
 import { useRecordTitle } from "../frame/PageHead.tsx";
 import { technicians } from "../content.ts";
 import { go, TECHNICIAN_TAB_NAMES, TECHNICIAN_TABS, technicianPath, type TechnicianTab } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Details } from "./TechnicianForms.tsx";
 import { Returned } from "./TechnicianSwitch.tsx";
 import { Kit } from "./TechnicianKit.tsx";
@@ -147,7 +147,7 @@ export function TechnicianScreen({ technicianId, tab }: { technicianId: string; 
   };
 
   const page = () => {
-    if (loaded.state === "loading") return <Loading />;
+    if (loaded.state === "loading") return <PanelLoading />;
     if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />;
     const roster = fresh ?? loaded.value;
     const entry = entryOf(roster, technicianId);

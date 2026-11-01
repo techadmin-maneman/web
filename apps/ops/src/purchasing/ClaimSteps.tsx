@@ -5,12 +5,12 @@ import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { StockPhoto } from "./StockPhoto.tsx";
 import type { Claim } from "./types.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormActions } from "@maneman/ui/FormActions";
 import { purchasingApi } from "./purchasing-api.ts";
 
 export type ClaimAnswer = Awaited<ReturnType<typeof purchasingApi.sendClaim>>;

@@ -1,12 +1,12 @@
-// A form's refusal (apps/ops/src/components/Refusal.tsx): said under the form, or at the box it names and told to a
+// A form's refusal (packages/ui/Refusal.tsx): said under the form, or at the box it names and told to a
 // screen reader, and one that says what was acted on had changed reads the page again either way.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FormRefusal } from "../../apps/ops/src/components/Refusal.tsx";
+import { FormRefusal } from "../../packages/ui/Refusal.tsx";
 import { changed, LATEST } from "../../apps/ops/src/content/common.ts";
-import { PageRefresh } from "../../apps/ops/src/lib/refresh.ts";
+import { PageRefresh } from "../../packages/ui/refresh.ts";
 
 const ERRORS = { place_id: changed("Unknown place."), note: "Say what happened.", failed: "That didn’t save." };
 

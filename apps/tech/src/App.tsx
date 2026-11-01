@@ -4,7 +4,7 @@
 
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
-import { Stopped, StorageFull } from "./components/Banners.tsx";
+import { Stopped, StorageFull } from "./frame/Banners.tsx";
 import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { OptionsScreen } from "./job/OptionsScreen.tsx";
@@ -18,8 +18,8 @@ import { useSessionLifecycle } from "./lib/useSessionLifecycle.ts";
 import { SignIn } from "./login/SignIn.tsx";
 import { routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext, useOnline, type Session } from "./session.ts";
-import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
-import { Loading } from "./states/States.tsx";
+import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
+import { Loading } from "./frame/States.tsx";
 import { Checklist } from "./steps/Checklist.tsx";
 import { CloseOut } from "./steps/CloseOut.tsx";
 import { Consumables } from "./steps/Consumables.tsx";

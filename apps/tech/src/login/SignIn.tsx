@@ -20,8 +20,8 @@ import { session, signIn as copy } from "../content.ts";
 import { installed } from "../lib/installed.ts";
 import type { Out } from "../session.ts";
 import { deviceId, enrolled } from "../store/device.ts";
-import { ReachOps } from "../components/ReachOps.tsx";
-import frame from "../components/frame.module.css";
+import { ReachOps } from "../frame/ReachOps.tsx";
+import frame from "../frame/frame.module.css";
 import styles from "./login.module.css";
 
 /** What the sign-in says before the code is asked for: what ops did, or why an installed app is out. */

@@ -17,7 +17,7 @@ import { indiaClock, indiaDate, minutesBetween, shortDate, todayInIndia } from "
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
-import { DecisionQueue } from "../components/DecisionQueue.tsx";
+import { DecisionQueue } from "@maneman/ui/DecisionQueue";
 import { OpsLink } from "../frame/Shell.tsx";
 import { firstShown, noShows } from "../content.ts";
 import { useAccess, WAIVING_A_NO_SHOW } from "../lib/access.ts";
@@ -26,9 +26,9 @@ import { clientPath } from "../route.ts";
 import { Charges } from "./Charges.tsx";
 import { Disputes } from "./Disputes.tsx";
 import { Distance } from "./Distance.tsx";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./no-shows.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { paymentsApi } from "./payments-api.ts";
 import { DoorPhoto } from "./DoorPhoto.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -71,7 +71,7 @@ function Money() {
   const [loaded, retry] = useLoad(load);
   const copy = noShows.money;
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const day = loaded.value;
@@ -373,7 +373,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
 function NoShowQueue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(paymentsApi.noShows);
   const access = useAccess();
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date(apiNow());
@@ -416,7 +416,7 @@ function rulingOf(each: DecidedNoShow): string {
 function DecidedToday() {
   const [loaded, retry] = useLoad(paymentsApi.decidedNoShows);
   const decided = noShows.decided;
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const { cases, more } = loaded.value;

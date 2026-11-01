@@ -22,8 +22,8 @@ import {
 import { type AddressGiven, type ClientRecord } from "../api.ts";
 import { clients, NOT_PERMITTED, OFFLINE } from "../content.ts";
 import styles from "./address.module.css";
-import { Refusal } from "../components/Refusal.tsx";
-import { InDrawer } from "../components/FormDrawer.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
+import { InDrawer } from "@maneman/ui/FormDrawer";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.given;

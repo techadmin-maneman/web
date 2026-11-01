@@ -8,10 +8,10 @@ import { Table, TableScroll } from "@maneman/ui/Table";
 import { fullDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
-import { RowHead } from "../components/RowHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
 
 /** The lots that expire by the warning's end, soonest first, each where it is held. */
 export function expiringLots(stock: Stock) {

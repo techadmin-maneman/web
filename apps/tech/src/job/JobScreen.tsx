@@ -22,13 +22,13 @@ import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { apiDate, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
-import { JobFailed } from "../states/JobFailed.tsx";
-import { Loading } from "../states/States.tsx";
+import { JobFailed } from "../frame/JobFailed.tsx";
+import { Loading } from "../frame/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import { CardFrame } from "./CardFrame.tsx";
 import { JobCard } from "./JobCard.tsx";
 import { NotHome } from "./NotHome.tsx";
-import frame from "../components/frame.module.css";
+import frame from "../frame/frame.module.css";
 import shared from "./job.module.css";
 import styles from "./job-screen.module.css";
 

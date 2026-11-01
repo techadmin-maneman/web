@@ -15,11 +15,11 @@ import { OpsLink } from "../frame/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { dispatchPath } from "../route.ts";
-import { CheckPanel } from "../components/CheckPanel.tsx";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { CheckPanel } from "@maneman/ui/CheckPanel";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./technicians.module.css";
 import styles from "./technician-leave.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 import { TimeField } from "./TechnicianHours.tsx";
 
@@ -285,7 +285,7 @@ export function Leave({ technician }: { technician: TechnicianSummary }) {
   const [recorded, setRecorded] = useState(false);
   const mayRecord = useAccess().mayCall("POST /api/technicians/{id}/leave");
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />;
 
   const leave = fresh ?? loaded.value.leave;

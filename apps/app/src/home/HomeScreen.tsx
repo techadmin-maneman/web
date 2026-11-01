@@ -22,7 +22,7 @@ import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText
 import { apiNow } from "@maneman/web-kit/clock";
 import { bookingName, oneVisitOf, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
-import { AppLink, Shell } from "../components/Shell.tsx";
+import { AppLink, Shell } from "../frame/Shell.tsx";
 import { nextVisitWords, replacementLine } from "./next-visit-words.ts";
 import {
   Actions,

@@ -7,11 +7,11 @@ import { roundRupees } from "@maneman/web-kit/money";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { ReceiveForm } from "./ReceiveForm.tsx";
 import type { Order, Orders } from "./types.ts";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormActions } from "@maneman/ui/FormActions";
 import { purchasingApi } from "./purchasing-api.ts";
 
 function ReceiptList({ orders, order }: { orders: Orders; order: Order }) {

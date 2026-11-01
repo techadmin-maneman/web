@@ -10,7 +10,7 @@ import { api, type Stock, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { technicians } from "../content.ts";
 import { stock } from "../content/stock.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./technicians.module.css";
 import styles from "./technician-kit.module.css";
 
@@ -38,7 +38,7 @@ function KitRow({ kitStock, holding }: { kitStock: Stock; holding: Holding }) {
 export function Kit({ technician }: { technician: TechnicianSummary }) {
   const [loaded, retry] = useLoad(api.stock);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />;
 
   const kitStock = loaded.value;

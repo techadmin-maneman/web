@@ -12,16 +12,16 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { type Word } from "../api.ts";
-import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
-import { useTableView, type Column, type TableView } from "../components/useTableView.ts";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column, type TableView } from "@maneman/ui/useTableView";
 import { words as copy } from "../content/words.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { placeOf, WordRecord } from "./WordForm.tsx";
 import { LastPublished, PublishCheck } from "./WordsPublish.tsx";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./words-screen.module.css";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { wordsApi } from "./words-api.ts";
 
 function WordRow({ word, onOpen }: { word: Word; onOpen: (key: string) => void }) {
@@ -98,7 +98,7 @@ function Words() {
   const access = useAccess();
   const rows = loaded.state === "loaded" ? loaded.value.words.map((word) => changed.get(word.key) ?? word) : [];
   const view = useTableView(rows, TABLE_COLUMNS, { search: searchedFor });
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const opened = rows.find((word) => word.key === open);
   const keep = (word: Word) => {

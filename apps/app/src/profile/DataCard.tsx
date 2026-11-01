@@ -11,7 +11,7 @@ import { useState, type ReactNode } from "react";
 import { api, EXPORT_URL, type Profile } from "../api.ts";
 import { profile } from "../content.ts";
 import styles from "./profile.module.css";
-import { WordsField } from "../components/WordsField.tsx";
+import { WordsField } from "@maneman/ui/WordsField";
 
 type Grievance = Profile["grievances"][number];
 

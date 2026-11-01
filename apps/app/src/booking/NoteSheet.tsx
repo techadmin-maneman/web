@@ -13,7 +13,7 @@ import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import styles from "./booking.module.css";
-import { WordsField } from "../components/WordsField.tsx";
+import { WordsField } from "@maneman/ui/WordsField";
 
 type Step =
   | { readonly kind: "writing" }

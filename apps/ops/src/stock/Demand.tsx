@@ -10,12 +10,12 @@ import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { amountOf } from "@maneman/web-kit/figures";
 import { type Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
-import form from "../components/forms.module.css";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import form from "@maneman/ui/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./stock.module.css";
 import styles from "./demand.module.css";
 import { unitOf } from "./holdings.ts";
-import { RowHead } from "../components/RowHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
 import { stockApi } from "./stock-api.ts";
 
 const loadDemand = () => stockApi.demand();
@@ -28,7 +28,7 @@ export function Demand({ stock }: { stock: Stock }) {
   const unit = (code: string) => unitOf(stock, code);
   return (
     <Panel titleId="stock-demand" title={words.title}>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <>

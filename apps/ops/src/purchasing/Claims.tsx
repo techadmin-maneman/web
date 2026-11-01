@@ -12,13 +12,13 @@ import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import form from "@maneman/ui/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { ClaimSteps, type ClaimAnswer } from "./ClaimSteps.tsx";
 import { ReturnedPieces } from "./ReturnedPieces.tsx";
 import type { Claim, SupplierClaims, Orders } from "./types.ts";
-import { Refusal } from "../components/Refusal.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
+import { RowHead } from "@maneman/ui/RowHead";
 import { purchasingApi } from "./purchasing-api.ts";
 
 const loadClaims = () => purchasingApi.claims();
@@ -89,7 +89,7 @@ export function Claims({ orders }: { orders: Orders }) {
     } else setFailure({ code: answer.code, fields: answer.fields });
   };
   const opened = current?.claims.find((each) => each.id === open) ?? null;
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   if (current === null) return null;
   return (

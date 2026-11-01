@@ -10,14 +10,14 @@ import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { type Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
-import { CheckPanel } from "../components/CheckPanel.tsx";
-import form from "../components/forms.module.css";
+import { CheckPanel } from "@maneman/ui/CheckPanel";
+import form from "@maneman/ui/forms.module.css";
 import { LotFields } from "./LotFields.tsx";
 import { PieceScans } from "./PieceScans.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock-form.module.css";
-import { FormRefusal } from "../components/Refusal.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormRefusal } from "@maneman/ui/Refusal";
+import { FormActions } from "@maneman/ui/FormActions";
 import { NoteBox, Quantity, StockChoice, stockBoxes, type Refused } from "./StockBoxes.tsx";
 import { stockApi } from "./stock-api.ts";
 

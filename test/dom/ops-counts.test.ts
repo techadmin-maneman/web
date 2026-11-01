@@ -67,7 +67,7 @@ const labelled = (label: string) => {
 };
 
 beforeEach(() => {
-  // The drawers open beside the page, as modal dialogs (../../apps/ops/src/components/FormDrawer.tsx).
+  // The drawers open beside the page, as modal dialogs (../../packages/ui/FormDrawer.tsx).
   openDialogsAsJsdomCan();
   posted = [];
   answers = [];

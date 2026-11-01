@@ -8,11 +8,11 @@ import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { microRupeesFromRupees, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import type { Order, Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
-import { FormRefusal } from "../components/Refusal.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormRefusal } from "@maneman/ui/Refusal";
+import { FormActions } from "@maneman/ui/FormActions";
 import { purchasingApi } from "./purchasing-api.ts";
 
 interface LineDraft {

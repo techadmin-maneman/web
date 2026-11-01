@@ -30,10 +30,10 @@ import { useCallback, useId, useState, type Dispatch, type SetStateAction } from
 import { type ClientHairProfile, type HairProfileVersion, type HairProfileView } from "../api.ts";
 import { clients, dispatch, NOT_PERMITTED, OFFLINE } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./profile.module.css";
 import { isOneOf } from "@rules/lib/one-of.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -381,7 +381,7 @@ export function HairProfile({ clientId }: { clientId: string }) {
   const [moved, setMoved] = useState(false);
   const mayCorrect = useAccess().mayCall("POST /api/clients/{id}/hair-profile");
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const page = saved ?? loaded.value;

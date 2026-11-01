@@ -25,7 +25,7 @@ import { CloseVisit } from "./CloseVisit.tsx";
 import { LostReason } from "./LostReason.tsx";
 import { GivenAddressForm } from "./GivenAddress.tsx";
 import { VisitCode } from "./VisitCode.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { apiNow } from "@maneman/web-kit/clock";
 
 type SavedAddress = NonNullable<ClientRecord["address"]>;

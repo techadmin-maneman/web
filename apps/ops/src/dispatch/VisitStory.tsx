@@ -7,7 +7,7 @@ import { useCallback } from "react";
 import { OpsLink } from "../frame/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { rowPath } from "../lib/target.ts";
+import { rowPath } from "@maneman/ui/target";
 import { clientPath, sectionOf } from "../route.ts";
 import styles from "./dispatch.module.css";
 import { dispatchApi } from "./dispatch-api.ts";

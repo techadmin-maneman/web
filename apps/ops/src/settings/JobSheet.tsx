@@ -11,9 +11,9 @@ import { type JobSheet as Sheet, type VisitType } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { ListEditor, ListRead } from "./ListEditor.tsx";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.jobSheet;
@@ -43,7 +43,7 @@ export function JobSheet() {
   const mayChangeReasons = access.mayCall("POST /api/job-sheet/partial-reasons");
   const mayChangeLost = access.mayCall("POST /api/job-sheet/lost-reasons");
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = sheet ?? loaded.value;
   const checklist = current.checklists.find((each) => each.visit_type === kind);

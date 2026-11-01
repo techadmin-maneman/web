@@ -47,12 +47,14 @@ The three apps are laid out alike:
 | `src/route.ts`                    | Every page by path; the router itself is `@maneman/ui/router`                                                       |
 | `src/api.ts`, `src/api-schema.ts` | The calls, and the types `npm run openapi` writes; a console section's own calls are its folder's `<folder>-api.ts` |
 | `src/content.ts`                  | Every word the app shows. A line the owner has not given yet is marked `PLACEHOLDER`                                |
-| `src/<screen>/`                   | A folder per screen or section, named as its path is: its components and its CSS modules (apps/ops/README.md)       |
-| `src/states/`, `src/styles/`      | Loading, failure and not-found; the app's own global styles                                                         |
+| `src/<screen>/`                   | A folder per screen or section, named as its path is: its screens and its CSS modules (apps/ops/README.md)          |
+| `src/frame/`, `src/styles/`       | The app's frame round every screen, with its failure and not-found pages; the app's own global styles               |
 | `headers.ts`                      | The app's content security policy and permissions, which the build writes into `_headers`                           |
 | `vite.config.ts`                  | The build, one per environment into `dist/<env>`, and the dev server's `/api` proxy                                 |
 | `wrangler.jsonc`                  | The Worker: static assets, every path that is not a file answered with the app, and its route in each environment   |
 | `sw/`, with `pwa.ts`              | The service worker, and the app's identity on a home screen (client and technician apps)                            |
+
+Every shared part, from a button to a drawer, a confirm step, a refusal, a loading or failed state, a table's tools and the words they say, comes from the one library, `packages/ui`; no app keeps parts of its own beside it (`test/node/architecture/one-library.test.ts`).
 
 A screen that chooses between several things says so in a function that returns early, not in nested ternaries; ESLint holds `apps/`, `packages/` and `site/src/` to it.
 

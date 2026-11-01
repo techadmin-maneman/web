@@ -15,7 +15,7 @@ import { type ClosableGroup, type Task, type TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
 import shared from "./tasks.module.css";
 import styles from "./task-actions.module.css";
-import { useRereadOnChange } from "../components/Refusal.tsx";
+import { useRereadOnChange } from "@maneman/ui/Refusal";
 import { tasksApi } from "./tasks-api.ts";
 
 type Group = TaskGroup["group"];

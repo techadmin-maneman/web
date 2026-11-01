@@ -2,11 +2,11 @@
 // docs/decisions/0212-editing-in-place.md): a line of words, a figure, an amount, or one of a few choices. Each saves
 // its own value; `save` answers null once kept, else the words of why not.
 
-import { EditableRow } from "@maneman/ui/EditableRow";
-import { NumberInput, Select, TextArea, TextInput } from "@maneman/ui/Field";
+import { EditableRow } from "./EditableRow.tsx";
+import { NumberInput, Select, TextArea, TextInput } from "./Field.tsx";
 import { rupees, rupeesTyped } from "@maneman/web-kit/money";
 import type { ReactNode } from "react";
-import { EDITING } from "../content/common.ts";
+import { EDITING } from "./words.ts";
 import rows from "./record-rows.module.css";
 
 interface RowProps {

@@ -22,7 +22,7 @@ import { Left } from "../lib/Left.tsx";
 import { decidedAt, subjectOf, taskClientPath } from "../lib/task-links.ts";
 import { useTaskBoard } from "../lib/waiting.ts";
 import { mayOpen, type Page, sectionOf } from "../route.ts";
-import { Loading } from "../states/States.tsx";
+import { PanelLoading } from "@maneman/ui/States";
 import { todayApi } from "./today-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -158,7 +158,7 @@ function Needs({ board }: { board: Tasks }) {
 export function TodayScreen() {
   const board = useTaskBoard(true);
   useHeaderSub(copy.day(fullDate(todayInIndia(apiNow()))));
-  if (board === null) return <Loading />;
+  if (board === null) return <PanelLoading />;
   return (
     <Stack gap="24">
       <Figures board={board} />

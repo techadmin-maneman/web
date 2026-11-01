@@ -3,8 +3,8 @@
 
 import { Field, TextInput, type BoxWidth } from "@maneman/ui/Field";
 import { useState } from "react";
-import { AddForm } from "../components/AddForm.tsx";
-import form from "../components/forms.module.css";
+import { AddForm } from "@maneman/ui/AddForm";
+import form from "@maneman/ui/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { suppliersApi, type Suppliers } from "./suppliers-api.ts";
 

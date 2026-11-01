@@ -25,9 +25,9 @@ import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 import { tables, technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { technicianPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
-import { useTableView, type Column } from "../components/useTableView.ts";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { AddTechnician } from "./TechnicianForms.tsx";
 import shared from "./technicians.module.css";
 import styles from "./technicians-screen.module.css";
@@ -226,7 +226,7 @@ function Roster() {
   const [added, setAdded] = useState<string | null>(null);
   const mayAdd = useAccess().mayCall("POST /api/technicians");
 
-  if (loaded.state === "loading" || work.state === "loading") return <Loading />;
+  if (loaded.state === "loading" || work.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed" || work.state === "failed") {
     return (
       <PanelFailed

@@ -23,9 +23,9 @@ import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { RefundPayment } from "./RefundPayment.tsx";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
-import { DrawerButton } from "../components/DrawerButton.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
 
 type Credits = ClientRecord["credits"];
 type Reason = CreditAdjustment["reason"];

@@ -14,11 +14,11 @@ import { OpsLink } from "../frame/Shell.tsx";
 import { clients, tables } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import form from "../components/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import form from "@maneman/ui/forms.module.css";
 import shared from "./clients.module.css";
 import styles from "./client-list.module.css";
-import { RowHead } from "../components/RowHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
 import { clientsApi } from "./clients-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -168,7 +168,7 @@ export function ClientList() {
       <h2 className={shared.foundTitle} id="all-clients">
         {copy.title}
       </h2>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <>

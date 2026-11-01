@@ -9,9 +9,9 @@ import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import { type Word } from "../api.ts";
 import { words as copy } from "../content/words.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { placeOf } from "./WordForm.tsx";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./word-history.module.css";
 import { wordsApi } from "./words-api.ts";
 
@@ -33,7 +33,7 @@ export function WordHistory(props: {
   const { word } = props;
   const load = useCallback(() => wordsApi.wordHistory(word.key), [word.key]);
   const [loaded, retry] = useLoad(load);
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const kept = loaded.value.versions;
   return (

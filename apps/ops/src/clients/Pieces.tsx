@@ -12,7 +12,7 @@ import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { Suspense, useCallback } from "react";
 import { type Piece } from "../api.ts";
 import { clients } from "../content.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./clients.module.css";
 import styles from "./pieces.module.css";
 import { clientsApi } from "./clients-api.ts";
@@ -54,7 +54,7 @@ function PieceRow({ piece }: { piece: Piece }) {
 export function Pieces({ clientId }: { clientId: string }) {
   return (
     <>
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<PanelLoading />}>
         <HairProfile clientId={clientId} />
         <StockMatch clientId={clientId} />
         <CustomOrders clientId={clientId} />
@@ -68,7 +68,7 @@ function PieceTable({ clientId }: { clientId: string }) {
   const load = useCallback(() => clientsApi.clientPieces(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const { pieces } = loaded.value;

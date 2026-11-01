@@ -18,7 +18,7 @@ import { EDITING } from "../content/common.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { rulePath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { pricesApi } from "./prices-api.ts";
 
 const copy = settings.services;
@@ -120,7 +120,7 @@ export function Services() {
   const mayPrice = access.mayCall("POST /api/prices");
   const mayOpenRules = access.mayCall("GET /api/settings");
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = shown ?? loaded.value;
   const refresh = async () => {

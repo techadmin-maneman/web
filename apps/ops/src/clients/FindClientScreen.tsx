@@ -15,7 +15,7 @@ import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { ClientList } from "./ClientList.tsx";
 import styles from "./clients.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 
 const copy = clients.find;
 

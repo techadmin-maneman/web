@@ -10,13 +10,13 @@ import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { BookVisit } from "../clients/index.ts";
 import { quality as copy } from "../content/quality.ts";
 import { stock } from "../content/stock.ts";
 import { useAccess } from "../lib/access.ts";
-import { FormActions } from "../components/FormActions.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "@maneman/ui/FormActions";
+import { RowHead } from "@maneman/ui/RowHead";
 import { qualityApi } from "./quality-api.ts";
 
 export type Quality = Success<paths["/api/recalls"]["get"]>;

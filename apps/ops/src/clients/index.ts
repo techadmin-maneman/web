@@ -3,3 +3,5 @@
 export { BookVisit, type Prefill } from "./BookVisit.tsx";
 export { CancelVisit } from "./CancelVisit.tsx";
 export { CloseVisit } from "./CloseVisit.tsx";
+export { Reach } from "./Reach.tsx";
+export { default as visitDialogStyles } from "./visit-dialog.module.css";

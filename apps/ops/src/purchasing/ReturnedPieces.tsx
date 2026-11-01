@@ -8,13 +8,13 @@ import { Table } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import type { ClaimAnswer } from "./ClaimSteps.tsx";
 import { StockPhoto } from "./StockPhoto.tsx";
 import type { ReturnedPiece } from "./types.ts";
-import { RowHead } from "../components/RowHead.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
+import { FormActions } from "@maneman/ui/FormActions";
 import { purchasingApi } from "./purchasing-api.ts";
 
 function warrantyOf(piece: ReturnedPiece): string {

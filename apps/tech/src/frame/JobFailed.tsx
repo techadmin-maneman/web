@@ -4,10 +4,10 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { IconButton } from "@maneman/ui/IconButton";
-import { ReachOps } from "../components/ReachOps.tsx";
+import { ReachOps } from "./ReachOps.tsx";
 import { job as copy } from "../content.ts";
 import { go } from "../route.ts";
-import frame from "../components/frame.module.css";
+import frame from "./frame.module.css";
 import { Failed } from "./States.tsx";
 import styles from "./job-failed.module.css";
 

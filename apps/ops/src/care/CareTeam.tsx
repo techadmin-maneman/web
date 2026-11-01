@@ -14,17 +14,17 @@ import { useWrite } from "../lib/write.ts";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
-import { AddForm } from "../components/AddForm.tsx";
-import { ReadRow, TextRow } from "../components/RecordRows.tsx";
+import { AddForm } from "@maneman/ui/AddForm";
+import { ReadRow, TextRow } from "@maneman/ui/RecordRows";
 import { EDITING } from "../content/common.ts";
 import { care } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
-import { Refused } from "../components/Refusal.tsx";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { Refused } from "@maneman/ui/Refusal";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { careApi, type CareMember } from "./care-api.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./care.module.css";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 
 const copy = care.team;
 
@@ -341,7 +341,7 @@ export function CareTeam() {
   const { loaded, reread, retry } = useLiveLoad(load, EVERY_MS);
   const [open, setOpen] = useState<string | null>(null);
   const mayManage = useAccess().mayCall("POST /api/care-team/days-off");
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { team } = loaded.value;
   if (team.length === 0) return <Note>{care.carePerson.noTeam}</Note>;

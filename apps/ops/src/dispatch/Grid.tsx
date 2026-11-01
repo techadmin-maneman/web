@@ -16,7 +16,7 @@ import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { memo, useMemo } from "react";
 import type { Block, Board, BoardRow } from "../api.ts";
 import { dispatch } from "../content.ts";
-import label from "../components/label.module.css";
+import label from "@maneman/ui/label.module.css";
 import styles from "./grid.module.css";
 import { begunWord, isMovable, nameOf, windowWord, type Job } from "./job.ts";
 

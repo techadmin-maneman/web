@@ -1,0 +1,210 @@
+/*
+ * Where the console's forms set their parts, as most screens lay them out: a rule and its fields, the group they make,
+ * where a form's actions and what it says once sent stand, and a table's figures. The parts themselves, a box's width,
+ * a note, a table of controls, are the shared package's (@maneman/ui). A class one screen alone draws is in that
+ * screen's own sheet.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .screen {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-20);
+    max-width: var(--screen-max);
+  }
+
+  .link {
+    color: var(--ui-text);
+    text-decoration: underline;
+    text-decoration-color: var(--ui-line);
+    text-underline-offset: var(--sp-4);
+  }
+
+  /* ---- One rule ------------------------------------------------------------ */
+
+  .rules {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rule {
+    padding: var(--sp-16) var(--sp-20);
+    border-bottom: var(--hairline) solid var(--ui-line);
+  }
+
+  /* A rule a link led to takes focus, its ring inside the rule so the panel's edge never cuts it. */
+  .rule:focus-visible {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-inset);
+  }
+
+  /* A rule's fields are one question, so they are grouped and the rule names the group. */
+  .group {
+    --note-inset: 0; /* its notes (@maneman/ui/Note) sit at its edge, which is in from the panel's already */
+    min-width: 0;
+    margin: var(--sp-20) var(--form-inset) 0;
+    padding: var(--sp-16) 0 0;
+    border: 0;
+    border-top: var(--hairline) solid var(--ui-line);
+  }
+
+  /* A form in a drawer: the drawer's own title and room are its, so it adds neither. */
+  .inDrawer {
+    --note-inset: 0;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .inDrawer .actions,
+  .inDrawer .check,
+  .inDrawer .saved,
+  .inDrawer .error {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .rule .group {
+    margin: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .ruleTitle {
+    padding: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-18);
+  }
+
+  /* A form's fields, one to a line, no wider than a form runs. */
+  .fields {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-16);
+    max-width: var(--measure-form);
+    margin-top: var(--sp-16);
+  }
+
+  .field {
+    min-width: var(--box-figure);
+  }
+
+  /* A field or a sub-heading set straight in a panel takes the panel's inset, as its rows and actions do. */
+  section > .field,
+  section > .ruleTitle,
+  section > .recordFoot {
+    margin: var(--sp-16) var(--form-inset) 0;
+  }
+
+  .fieldLabel {
+    display: block;
+    font-size: var(--fs-14);
+    color: var(--ui-text-muted);
+  }
+
+  .set {
+    margin: var(--sp-12) 0 0;
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  /* ---- Doing it ------------------------------------------------------------ */
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8);
+    margin: var(--sp-12) var(--form-inset) 0;
+  }
+
+  /* Where the check before a change stands on a form (./CheckPanel.tsx draws it). */
+  .check {
+    margin: var(--sp-16) var(--form-inset) 0;
+  }
+
+  .rule .actions,
+  .group .actions,
+  .check .actions {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .saved {
+    margin: var(--sp-8) var(--form-inset) 0;
+  }
+
+  .error {
+    margin: var(--sp-8) var(--form-inset) 0;
+  }
+
+  .rule .saved,
+  .rule .error,
+  .group .saved,
+  .group .error {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .group .check,
+  .rule .check {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  /* ---- In a table ----------------------------------------------------------- */
+
+  .rowHead,
+  .figure {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .file {
+    display: block;
+    margin-top: var(--sp-8);
+  }
+
+  .file::file-selector-button {
+    margin-right: var(--sp-12);
+  }
+
+  /* ---- A period ------------------------------------------------------------ */
+
+  /* A period laid out as a rule is: days blacked out, or a member of staff's time on the list. */
+  .period {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-18);
+  }
+
+  /* ---- Choices under a question -------------------------------------------- */
+
+  /* One square box a choice, each on its own line under the question: what a discount code covers, say. */
+  .choices {
+    margin-top: var(--sp-16);
+  }
+
+  .once {
+    margin-top: var(--sp-16);
+  }
+
+  /* A record's values, a line each, changed where they read (components/RecordRows.tsx). */
+  .record {
+    margin-top: var(--sp-8);
+    border-top: var(--hairline) solid var(--ui-line);
+  }
+
+  /* Retiring, restoring and deleting, on one line beneath a record's values, each asking in place. */
+  .recordFoot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--sp-8);
+    margin-top: var(--sp-16);
+  }
+}

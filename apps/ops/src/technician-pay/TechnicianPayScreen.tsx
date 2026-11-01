@@ -1,7 +1,7 @@
 // Money › Technician pay: each technician's statement for a month. Their grades and rates are Settings'.
 
 import { TechnicianPay } from "./TechnicianPay.tsx";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 
 export function TechnicianPayScreen() {
   return (

@@ -30,9 +30,9 @@ import { Login } from "./login/Login.tsx";
 import type { LinkedLogin } from "./login/linked-mobile.ts";
 import { go, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext } from "./session.ts";
-import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
-import { LoadFailed } from "./states/LoadFailed.tsx";
-import { Loading } from "./states/Loading.tsx";
+import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
+import { LoadFailed } from "./frame/LoadFailed.tsx";
+import { Loading } from "@maneman/ui/States";
 import styles from "./app.module.css";
 
 // The pages opened least, and the heaviest, load when first opened; the service worker keeps them, so they open

@@ -5,9 +5,9 @@
 import { errorText } from "@maneman/web-kit/refusal";
 import { rupees } from "@maneman/web-kit/money";
 import { type DiscountCode } from "../api.ts";
-import { DeleteAction } from "../components/DeleteAction.tsx";
-import { ReadRow } from "../components/RecordRows.tsx";
-import form from "../components/forms.module.css";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
+import { ReadRow } from "@maneman/ui/RecordRows";
+import form from "@maneman/ui/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { discountCodesApi } from "./discount-codes-api.ts";

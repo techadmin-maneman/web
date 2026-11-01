@@ -1,10 +1,10 @@
 // A form in a drawer at the page's right: what a row's action opens, titled for its row, or a list's way to make
 // something. It is drawn in the page's body, so a table keeps to its rows and no box stands in one.
 
-import { Drawer } from "@maneman/ui/Drawer";
+import { Drawer } from "./Drawer.tsx";
 import { createContext, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { CLOSE } from "../content.ts";
+import { CLOSE } from "./words.ts";
 
 /** Whether a form stands in a drawer, whose title names it already: its own name is read, not shown. */
 export const InDrawer = createContext(false);

@@ -8,13 +8,13 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { roundRupees } from "@maneman/web-kit/money";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { fullDate } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
-import { ListTools } from "../components/ListTools.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { ListTools } from "@maneman/ui/ListTools";
+import { RowHead } from "@maneman/ui/RowHead";
 import { qualityApi } from "./quality-api.ts";
 
 type Risk = Success<paths["/api/stock/expiry-risk"]["get"]>;
@@ -66,7 +66,7 @@ export function ExpiryRiskPanel() {
   const [loaded, retry] = useLoad(loadRisk);
   return (
     <Panel titleId="quality-risk" title={copy.risk}>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Lots risk={loaded.value} />}
     </Panel>

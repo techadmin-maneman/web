@@ -7,10 +7,10 @@ import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type WordsPublish } from "../api.ts";
-import { CheckPanel } from "../components/CheckPanel.tsx";
+import { CheckPanel } from "@maneman/ui/CheckPanel";
 import { words as copy } from "../content/words.ts";
-import form from "../components/forms.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import form from "@maneman/ui/forms.module.css";
+import { Refusal } from "@maneman/ui/Refusal";
 import { wordsApi } from "./words-api.ts";
 
 const { publish } = copy;

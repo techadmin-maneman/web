@@ -2,12 +2,12 @@
 // (content/common.ts's `changed`) has the page read again in place, so the latest is on screen rather than a request
 // to reload it.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { InlineMessage } from "./InlineMessage.tsx";
+import { VisuallyHidden } from "./VisuallyHidden.tsx";
 import { errorText, formError, type Failure } from "@maneman/web-kit/refusal";
 import { useEffect, type ReactNode } from "react";
-import { isChanged, LATEST } from "../content/common.ts";
-import { useRefreshPage } from "../lib/refresh.ts";
+import { isChanged, LATEST } from "./words.ts";
+import { useRefreshPage } from "./refresh.ts";
 import form from "./forms.module.css";
 
 /** Reads the page again when the refusal shown, if any, is one `changed` named. */

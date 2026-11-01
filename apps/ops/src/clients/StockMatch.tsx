@@ -9,7 +9,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
 import type { paths } from "../api-schema.ts";
 import { stockMatch as copy } from "../content/stock-match.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { clientsApi } from "./clients-api.ts";
 
 type Match = Success<paths["/api/clients/{id}/stock-match"]["get"]>;
@@ -35,7 +35,7 @@ export function StockMatch({ clientId }: { clientId: string }) {
   const [loaded, retry] = useLoad(load);
   return (
     <Panel titleId="stock-match" title={copy.title}>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Lines match={loaded.value} />}
     </Panel>

@@ -4,8 +4,8 @@
 // after it.
 
 import { useLiveLoad } from "@maneman/ui/useLoad";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import form from "../components/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import form from "@maneman/ui/forms.module.css";
 import { CityList } from "./CityList.tsx";
 import { CityPrices } from "./CityPrices.tsx";
 import { Registrations } from "./Registrations.tsx";
@@ -20,7 +20,7 @@ export function CitiesScreen() {
   const { loaded, reread, retry } = useLiveLoad(loadCities, EVERY_MS);
   return (
     <div className={form.screen}>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <>

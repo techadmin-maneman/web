@@ -13,15 +13,15 @@ import { addDays, fullDate, indiaDate, todayInIndia } from "@maneman/web-kit/dat
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { useHeaderSub } from "../frame/PageHead.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
-import { useTableView, type Column } from "../components/useTableView.ts";
-import form from "../components/forms.module.css";
+import { RowHead } from "@maneman/ui/RowHead";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
+import form from "@maneman/ui/forms.module.css";
 import { ledger as copy } from "../content/ledger.ts";
 import { csvText } from "../lib/csv.ts";
 import { saveFile } from "../lib/save-file.ts";
 import styles from "./ledger.module.css";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { ledgerApi, type Ledger } from "./ledger-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -198,7 +198,7 @@ export function LedgerScreen() {
           </Button>
         )}
       </Toolbar>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <>

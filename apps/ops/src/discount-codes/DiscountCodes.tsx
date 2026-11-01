@@ -15,16 +15,16 @@ import { useCallback, useState, type ReactNode } from "react";
 import { type DiscountCode, type DiscountCodes as DiscountCodeList } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
-import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
-import { useTableView, type Column } from "../components/useTableView.ts";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { CodeRecord } from "./CodeRecord.tsx";
 import { DiscountCodeForm } from "./DiscountCodeForm.tsx";
 import { FindForm } from "./FindCode.tsx";
 import styles from "./discount-codes.module.css";
 import { discountCodesApi } from "./discount-codes-api.ts";
-import { DrawerButton } from "../components/DrawerButton.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
 
 const copy = settings.discountCodes;
 const columns = copy.columns;
@@ -215,7 +215,7 @@ export function DiscountCodes() {
     setOpen(id);
   };
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const codes = refreshed ?? loaded.value;
   const findForm = (

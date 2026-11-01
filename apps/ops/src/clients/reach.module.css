@@ -1,4 +1,4 @@
-/* What ./Reach.tsx alone draws; what it shares is in ./queue.module.css. */ /* A row's WhatsApp and call links, side by side under its first line. */
+/* A row's WhatsApp and call links, side by side under its first line. */
 .reach {
   display: flex;
   flex-wrap: wrap;

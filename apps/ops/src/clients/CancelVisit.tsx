@@ -12,8 +12,8 @@ import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { type CancelOutcome, type CancelTerms } from "../api.ts";
 import { clients, CLOSE } from "../content.ts";
-import styles from "../components/visit-dialog.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import styles from "./visit-dialog.module.css";
+import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.cancel;

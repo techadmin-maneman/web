@@ -13,7 +13,7 @@ import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import shared from "./technicians.module.css";
 import styles from "./technician-phones.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 
 const copy = technicians.phones;

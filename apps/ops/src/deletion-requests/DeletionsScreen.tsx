@@ -12,19 +12,19 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import { type DeletionRequest } from "../api.ts";
-import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { Reach } from "../clients/Reach.tsx";
+import { DecisionQueue } from "@maneman/ui/DecisionQueue";
+import { Reach } from "../clients/index.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { deletions } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./erasure.module.css";
 import styles from "./deletions-screen.module.css";
 import { ErasureLists } from "./ErasureLists.tsx";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { deletionRequestsApi } from "./deletion-requests-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -264,7 +264,7 @@ function DeletionQueue() {
   const [loaded, retry] = useLoad(deletionRequestsApi.deletionRequests);
   const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
   const [done, setDone] = useState<string | null>(null);
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date(apiNow());

@@ -5,7 +5,7 @@ import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
 import { ScanField } from "@maneman/ui/ScanField";
 import { stockLabels as copy } from "../content/stock-labels.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./piece-scans.module.css";
 
 export function PieceScans({

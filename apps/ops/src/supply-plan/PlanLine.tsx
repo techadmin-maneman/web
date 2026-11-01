@@ -8,10 +8,10 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { supplyPlanApi } from "./supply-plan-api.ts";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormActions } from "@maneman/ui/FormActions";
 
 export type Plan = Success<paths["/api/supply-plan"]["get"]>;
 export type Line = Plan["lines"][number];

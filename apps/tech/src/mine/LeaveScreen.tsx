@@ -11,13 +11,13 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { dayMonth, todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type LeaveRequests } from "../api.ts";
-import { Offline } from "../components/Banners.tsx";
+import { Offline } from "../frame/Banners.tsx";
 import { leave as copy, reference } from "../content.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
-import { Failed, Loading } from "../states/States.tsx";
-import frame from "../components/frame.module.css";
+import { Failed, Loading } from "../frame/States.tsx";
+import frame from "../frame/frame.module.css";
 import styles from "./mine.module.css";
 import { apiNow } from "@maneman/web-kit/clock";
 

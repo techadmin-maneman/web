@@ -11,7 +11,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { fullDate, todayInIndia } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { staffName } from "../lib/who.ts";

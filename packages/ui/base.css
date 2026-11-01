@@ -76,6 +76,8 @@
     /* The widest a line of words and a note may run, which the console caps: elsewhere they fill their room. */
     --box-text-max: none;
     --box-note-max: none;
+    /* A screen's widest (./forms.module.css): its room, unless the app caps it. */
+    --screen-max: none;
     /* A note's distance from the edge of what holds it (./Note.tsx): nothing on the page, a panel's own inset inside
        one (./panel.module.css), and nothing again in a group of fields the panel's edge already sets in. */
     --note-inset: 0;

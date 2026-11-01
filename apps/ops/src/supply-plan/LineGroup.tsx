@@ -4,7 +4,7 @@
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState, type ReactNode } from "react";
-import { CheckPanel } from "../components/CheckPanel.tsx";
+import { CheckPanel } from "@maneman/ui/CheckPanel";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import type { Answer, Line } from "./PlanLine.tsx";

@@ -9,7 +9,7 @@ import { type ReactNode } from "react";
 import { areas, BOOKING_URL } from "../content.ts";
 import shared from "./areas.module.css";
 import styles from "./launch-panel.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 
 const copy = areas.launch;
 const bookingUrl = BOOKING_URL[import.meta.env.MM_ENV];

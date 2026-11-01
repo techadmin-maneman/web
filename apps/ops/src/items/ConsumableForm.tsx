@@ -6,9 +6,9 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type Consumables } from "../api.ts";
-import { AddForm } from "../components/AddForm.tsx";
-import { figureOrNone } from "../components/RecordRows.tsx";
-import form from "../components/forms.module.css";
+import { AddForm } from "@maneman/ui/AddForm";
+import { figureOrNone } from "@maneman/ui/RecordRows";
+import form from "@maneman/ui/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { itemsApi } from "./items-api.ts";
 

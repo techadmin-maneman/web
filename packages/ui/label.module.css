@@ -8,7 +8,11 @@
  *   <span className={classes(styles.awayMark, label.caps)}>
  */
 
-.caps {
-  letter-spacing: var(--tracking-12);
-  color: var(--ui-text-muted);
+@layer base, ui;
+
+@layer ui {
+  .caps {
+    letter-spacing: var(--tracking-12);
+    color: var(--ui-text-muted);
+  }
 }

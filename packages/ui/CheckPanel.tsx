@@ -2,11 +2,11 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). Every write but a deletion goes through it, in the
 // words of `review` (../content/common.ts). It takes the focus as it opens, so it is read at once.
 
-import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
-import { Button } from "@maneman/ui/Button";
+import { useFocusOnMount } from "./useFocusOnMount.ts";
+import { Button } from "./Button.tsx";
 import { useId, type ReactNode } from "react";
-import { classes } from "@maneman/ui/classes";
-import { review } from "../content/common.ts";
+import { classes } from "./classes.ts";
+import { review } from "./words.ts";
 import look from "./check-panel.module.css";
 import form from "./forms.module.css";
 import { FormActions } from "./FormActions.tsx";

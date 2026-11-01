@@ -6,7 +6,7 @@ import { NumberedSteps } from "@maneman/ui/NumberedSteps";
 import { BookButton } from "../booking/index.ts";
 import { replacement, messages } from "../content.ts";
 import { useSession } from "../session.ts";
-import { Shell } from "../components/Shell.tsx";
+import { Shell } from "../frame/Shell.tsx";
 import styles from "./home.module.css";
 
 export function ReplacementScreen() {

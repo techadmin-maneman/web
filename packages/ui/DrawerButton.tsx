@@ -3,12 +3,12 @@
 //
 //   <Panel title={copy.title} actions={<DrawerButton label={copy.add}>{(close) => <XForm onSaved={close} />}</DrawerButton>}>
 
-import { Button } from "@maneman/ui/Button";
-import { Drawer } from "@maneman/ui/Drawer";
+import { Button } from "./Button.tsx";
+import { Drawer } from "./Drawer.tsx";
 import { useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { InDrawer } from "./FormDrawer.tsx";
-import { CLOSE } from "../content.ts";
+import { CLOSE } from "./words.ts";
 
 export function DrawerButton({
   label,

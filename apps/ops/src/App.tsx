@@ -9,7 +9,7 @@ import { Fragment, Suspense, useCallback, useEffect, useState, type ComponentTyp
 import { ClosedScreen } from "./frame/ClosedScreen.tsx";
 import { Shell } from "./frame/Shell.tsx";
 import { useMayCall } from "./lib/access.ts";
-import { PageRefresh } from "./lib/refresh.ts";
+import { PageRefresh } from "@maneman/ui/refresh";
 import {
   keyOf,
   mayOpenRoute,
@@ -21,8 +21,8 @@ import {
   type PlainPage,
   type Route,
 } from "./route.ts";
-import { PageBoundary } from "./states/ErrorBoundary.tsx";
-import { Loading } from "./states/States.tsx";
+import { PageBoundary } from "./frame/ErrorBoundary.tsx";
+import { PanelLoading } from "@maneman/ui/States";
 
 const DispatchScreen = lazyScreen(() =>
   import("./dispatch/DispatchScreen.tsx").then((module) => module.DispatchScreen),
@@ -160,7 +160,7 @@ export function App() {
       <PageRefresh value={refresh}>
         <Fragment key={`${keyOf(route)} ${String(shown.round)}`}>
           <PageBoundary>
-            <Suspense fallback={<Loading />}>
+            <Suspense fallback={<PanelLoading />}>
               <Page route={route} />
             </Suspense>
           </PageBoundary>

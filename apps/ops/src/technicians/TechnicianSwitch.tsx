@@ -9,7 +9,7 @@ import { type ReturnedVisit, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { technicians } from "../content.ts";
 import styles from "./technicians.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 import { refusal } from "./refusal.ts";
 

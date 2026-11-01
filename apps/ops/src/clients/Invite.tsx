@@ -15,7 +15,7 @@ import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import shared from "./clients.module.css";
 import styles from "./invite.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.invite;

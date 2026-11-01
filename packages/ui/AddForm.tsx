@@ -1,9 +1,9 @@
 // A new record's few boxes and its Add (docs/decisions/0212-editing-in-place.md): Enter or Add sends it, Cancel puts
 // it away. A refusal is said on the box it names, else under the form, and nothing typed is lost.
 
-import { Button } from "@maneman/ui/Button";
-import { Fieldset, RefusedBoxes } from "@maneman/ui/Field";
-import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { Button } from "./Button.tsx";
+import { Fieldset, RefusedBoxes } from "./Field.tsx";
+import { useOneAtATime } from "./useOneAtATime.ts";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useContext, useState, type ReactNode } from "react";
 import { FormActions } from "./FormActions.tsx";

@@ -1,8 +1,8 @@
 // A box for the client's own words, up to a limit, which says beneath it how much is left: a note, a dispute, a
 // problem, a concern about their data.
 
-import { Field, TextArea } from "@maneman/ui/Field";
-import { fields } from "../content.ts";
+import { Field, TextArea } from "./Field.tsx";
+import { charactersLeft } from "./words.ts";
 
 export function WordsField(props: {
   label: string;
@@ -12,7 +12,7 @@ export function WordsField(props: {
   onText: (text: string) => void;
 }) {
   return (
-    <Field className={props.className} label={props.label} hint={fields.left(props.max - props.text.length)}>
+    <Field className={props.className} label={props.label} hint={charactersLeft(props.max - props.text.length)}>
       {(control) => (
         <TextArea
           {...control}

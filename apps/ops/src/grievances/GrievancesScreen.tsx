@@ -9,17 +9,17 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { type Grievance } from "../api.ts";
-import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { Reach } from "../clients/Reach.tsx";
+import { DecisionQueue } from "@maneman/ui/DecisionQueue";
+import { Reach } from "../clients/index.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { grievances } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./grievances.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { grievancesApi } from "./grievances-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -98,7 +98,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
 function GrievanceQueue() {
   const [loaded, retry] = useLoad(grievancesApi.grievances);
   const mayAnswer = useAccess().mayCall("POST /api/grievances/{id}/resolve");
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date(apiNow());

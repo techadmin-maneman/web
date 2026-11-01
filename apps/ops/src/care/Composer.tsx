@@ -9,11 +9,11 @@ import { useState } from "react";
 import type { Answer } from "../api.ts";
 import { careApi, type ChatThread, type CloseReason } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
-import { Refused } from "../components/Refusal.tsx";
+import { Refused } from "@maneman/ui/Refusal";
 import { QuickReplyPick } from "./QuickReplies.tsx";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./care.module.css";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormActions } from "@maneman/ui/FormActions";
 
 const { compose } = copy;
 

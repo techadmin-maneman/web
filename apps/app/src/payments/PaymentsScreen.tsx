@@ -18,12 +18,12 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type CreditLine, type Entry, type Me, type OwedPayment } from "../api.ts";
 import { empty, payments } from "../content.ts";
-import { AppLink, Shell } from "../components/Shell.tsx";
+import { AppLink, Shell } from "../frame/Shell.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { oneVisitOf } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
-import { Loading } from "../states/Loading.tsx";
-import { PageFailed } from "../states/PageFailed.tsx";
+import { Loading } from "@maneman/ui/States";
+import { PageFailed } from "../frame/PageFailed.tsx";
 import {
   creditAmount,
   creditMeta,

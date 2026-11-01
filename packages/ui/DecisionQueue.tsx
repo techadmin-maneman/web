@@ -2,12 +2,12 @@
 // a panel saying how many wait, a row each with its decision. A decided row leaves at once and the keyboard goes to the
 // heading; a row the address names, as a task links to it, is scrolled to, focused and marked.
 
-import { EmptyState } from "@maneman/ui/EmptyState";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Panel } from "@maneman/ui/Panel";
+import { EmptyState } from "./EmptyState.tsx";
+import { InlineMessage } from "./InlineMessage.tsx";
+import { Panel } from "./Panel.tsx";
 import { useRef, useState, type ReactNode } from "react";
-import { firstShown } from "../content.ts";
-import { rowId, useTargetRow } from "../lib/target.ts";
+import { firstShown } from "./words.ts";
+import { rowId, useTargetRow } from "./target.ts";
 import styles from "./decision-queue.module.css";
 
 export function DecisionQueue<T extends { readonly id: string }>({

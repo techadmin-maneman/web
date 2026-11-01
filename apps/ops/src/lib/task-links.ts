@@ -4,7 +4,7 @@
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import type { Task, TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
-import { rowPath } from "./target.ts";
+import { rowPath } from "@maneman/ui/target";
 import { clientPath, dispatchPath, type ClientTab } from "../route.ts";
 import { DECIDED_IN } from "../tasks/decided.ts";
 

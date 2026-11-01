@@ -11,8 +11,8 @@ import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import { care } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
-import { Refused } from "../components/Refusal.tsx";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { Refused } from "@maneman/ui/Refusal";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { careApi, type RemedyReason } from "./care-api.ts";
 import styles from "./care.module.css";
 
@@ -138,7 +138,7 @@ export function RemediesPanel() {
   const load = useCallback(() => careApi.remedies(), []);
   const [loaded, retry] = useLoad(load);
   const mayDecide = useAccess().mayCall("POST /api/remedies/{id}/approve");
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { remedies } = loaded.value;
   if (remedies.length === 0) return <p className={styles.quick}>{copy.none}</p>;

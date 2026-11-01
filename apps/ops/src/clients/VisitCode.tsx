@@ -13,7 +13,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type ClientVisit, type VisitDiscountCode } from "../api.ts";
 import { clients } from "../content.ts";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { useAccess } from "../lib/access.ts";
 import shared from "./clients.module.css";
 import styles from "./visit-code.module.css";

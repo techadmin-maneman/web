@@ -185,11 +185,6 @@ export const states = {
   },
 } as const;
 
-/** A box with a limit, said beneath it: how much is left. */
-export const fields = {
-  left: (count: number) => (count === 1 ? "1 character left" : `${String(count)} characters left`),
-} as const;
-
 export const errors = {
   load: "This page didn’t load.",
   retry: "Try again",

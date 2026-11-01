@@ -10,7 +10,7 @@ import type { Board, BoardQuery } from "../api.ts";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { useAddressKeeps } from "./address.ts";
 import styles from "./dispatch-screen.module.css";
 import { Grid } from "./Grid.tsx";
@@ -234,7 +234,7 @@ export function DispatchScreen() {
             />
           )}
           {notice !== null && <NoticeLine notice={notice} onTold={told} />}
-          {loaded.state === "loading" && <Loading />}
+          {loaded.state === "loading" && <PanelLoading />}
           {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
           {board !== null && (
             <BoardBody

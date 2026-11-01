@@ -9,9 +9,9 @@ import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
-import styles from "../components/visit-dialog.module.css";
+import { visitDialogStyles as styles } from "../clients/index.ts";
 import { dispatch, CLOSE } from "../content.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { dispatchApi } from "./dispatch-api.ts";
 
 const copy = dispatch.letIn;

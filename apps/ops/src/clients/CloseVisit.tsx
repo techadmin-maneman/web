@@ -11,9 +11,9 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useId, useState } from "react";
 import { type HandClose } from "../api.ts";
 import { clients, CLOSE } from "../content.ts";
-import shared from "../components/visit-dialog.module.css";
+import shared from "./visit-dialog.module.css";
 import styles from "./close-visit.module.css";
-import { FormRefusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.handClose;

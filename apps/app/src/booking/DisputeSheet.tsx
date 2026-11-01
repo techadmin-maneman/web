@@ -10,7 +10,7 @@ import { api } from "../api.ts";
 import { booking, dispute as copy } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import styles from "./booking.module.css";
-import { WordsField } from "../components/WordsField.tsx";
+import { WordsField } from "@maneman/ui/WordsField";
 
 type Step = "writing" | "sent" | "already" | "closed" | "failed";
 

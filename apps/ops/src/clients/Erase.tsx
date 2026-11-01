@@ -15,14 +15,13 @@ import { useRef, useState } from "react";
 import { type ErasedClientRecord } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { clients } from "../content.ts";
-import { ErasureLists } from "../deletion-requests/ErasureLists.tsx";
-import deletionStyles from "../deletion-requests/erasure.module.css";
+import { ErasureLists, erasureStyles as deletionStyles } from "../deletion-requests/index.ts";
 import { useAccess } from "../lib/access.ts";
 import shared from "./clients.module.css";
 import styles from "./erase.module.css";
 import { MoneyRecords } from "./Payments.tsx";
 import { VisitRecords } from "./Visits.tsx";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.erasure;

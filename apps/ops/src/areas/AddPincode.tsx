@@ -11,7 +11,7 @@ import { areas } from "../content.ts";
 import shared from "./areas.module.css";
 import styles from "./add-pincode.module.css";
 import { AREA_NAME, PINCODE } from "./rules.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { areasApi } from "./areas-api.ts";
 
 const copy = areas.add;

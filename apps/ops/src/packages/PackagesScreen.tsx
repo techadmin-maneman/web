@@ -15,13 +15,13 @@ import { shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { Badge } from "@maneman/ui/Badge";
-import { RowHead } from "../components/RowHead.tsx";
-import { Refusal } from "../components/Refusal.tsx";
-import { priceText } from "../prices/PriceRow.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
+import { Refusal } from "@maneman/ui/Refusal";
+import { priceText } from "../prices/index.ts";
 import { packagesCopy as copy } from "../content/packages.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import form from "../components/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import form from "@maneman/ui/forms.module.css";
 import { PackageRecord } from "./PackageRecord.tsx";
 import { packagesApi, type Package, type Packages, type ProductCost } from "./packages-api.ts";
 import { pricesApi } from "../prices/index.ts";
@@ -172,7 +172,7 @@ export function PackagesScreen() {
     if (answer.ok) setShown(answer.body);
   };
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   if (current === null) return null;
   const opened = current.packages.find((each) => each.code === open);

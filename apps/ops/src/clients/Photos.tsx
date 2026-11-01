@@ -11,10 +11,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { type Photo, type PhotoView, type PhotoVisit } from "../api.ts";
 import { clients } from "../content.ts";
 import { whoWords } from "../lib/who.ts";
-import { Loading } from "../states/States.tsx";
+import { PanelLoading } from "@maneman/ui/States";
 import styles from "./clients.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.photos;
@@ -194,7 +194,7 @@ function Before({ view }: { view: PhotoView }) {
 /** The earlier visits, fetched a few at a time, while any are left. */
 function Earlier({ waiting, fetching, onMore }: { waiting: number; fetching: boolean; onMore: () => void }) {
   if (waiting === 0) return null;
-  if (fetching) return <Loading />;
+  if (fetching) return <PanelLoading />;
   return (
     <Button variant="outline" size="small" className={styles.secondary} onClick={onMore}>
       {copy.earlier(Math.min(waiting, VISITS_AT_ONCE))}
@@ -232,7 +232,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
       <h3 className={styles.photosTitle}>{copy.title(name)}</h3>
       <p className={styles.warning}>{copy.warning(firstNameOf(name))}</p>
       {state.step === "opening" ? (
-        <Loading />
+        <PanelLoading />
       ) : (
         <Button variant="primary" size="small" className={styles.primary} onClick={() => void open()}>
           {copy.open}

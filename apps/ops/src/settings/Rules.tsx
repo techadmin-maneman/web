@@ -11,14 +11,14 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState, type ReactNode } from "react";
 import { type OpsSetting } from "../api.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { OpsLink } from "../frame/Shell.tsx";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
-import { useTargetRow } from "../lib/target.ts";
+import { useTargetRow } from "@maneman/ui/target";
 import { settingsPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { RuleRows, saveRule } from "./RuleFields.tsx";
 import { CHARGES_A_LATE_FEE, CONSOLE_GROUP, sectionsOf, type RuleGroupId, type RuleSection } from "./rule-groups.ts";
 import { settingsApi } from "./settings-api.ts";
@@ -157,7 +157,7 @@ export function Rules({ groups }: { readonly groups: readonly RuleGroupId[] }) {
   useTargetRow(loaded.state === "loaded", "start");
   useHeaderSub(allowed.mayChange ? undefined : copy.viewOnly);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const current = loaded.value.settings.map((rule) => saved[rule.name] ?? rule);
