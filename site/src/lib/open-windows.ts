@@ -17,6 +17,18 @@ export interface Slot {
 
 type Start = OpenDays[number]["starts"][number];
 
+/**
+ * The days with each start a booking was refused at on this page shut: offered on the plan's estimate of the drives,
+ * then found by the drives themselves not to fit, it is offered again on the next read and would be refused again.
+ */
+export function withoutRefused(days: OpenDays | null, refused: ReadonlySet<string>): OpenDays | null {
+  if (days === null || refused.size === 0) return days;
+  return days.map((day) => ({
+    ...day,
+    starts: day.starts.map((start) => (refused.has(start.starts_at) ? { ...start, open: false } : start)),
+  }));
+}
+
 /** A day's starts inside a window, open or taken; none before the answer. */
 export function startsIn(days: OpenDays | null, date: string, window: BookingWindow): Start[] {
   const day = days?.find((each) => each.date === date);

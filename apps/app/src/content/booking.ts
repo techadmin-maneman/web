@@ -82,7 +82,8 @@ export const booking = {
     continue: "Continue to payment",
     // A visit that costs nothing has no payment to continue to.
     continueFree: "Continue",
-    gone: "That time has just gone. Pick another.",
+    // Taken by another booking, or no longer fitting the technician's day once the drives are checked.
+    gone: "That time isn’t free any more. Pick another.",
   },
   pay: {
     title: "Pay and confirm",

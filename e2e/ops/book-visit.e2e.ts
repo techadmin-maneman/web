@@ -203,8 +203,12 @@ test("says why a booking was refused, and books nothing", async ({ page }) => {
     [BOOK]: json({ error: { code: "taken", request_id: "r-1" } }, 409),
   });
   await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  const start = panel(page).getByLabel(opsCopy.clients.visits.book.start, { exact: true });
+  const refused = await start.inputValue();
   await panel(page).getByRole("button", { name: opsCopy.clients.visits.book.book }).click();
   await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.taken);
+  // The start refused is not offered again in the panel, though the days read afresh still list it.
+  await expect(start.locator(`option[value="${refused}"]`)).toHaveCount(0);
 });
 
 test("books a consultation asked for from its Tasks row, at the first start in the window asked, and the task goes", async ({

@@ -329,7 +329,7 @@ export const clients = {
       unreadable: "Couldn’t load free times.",
       retry: "Try again",
       errors: {
-        taken: "That time was just taken. Choose another.",
+        taken: "That time isn’t free any more. Choose another.",
         already_booked: "Already booked, or a payment link is open for one.",
         not_bookable: "That day or service can’t be booked.",
         no_product: "No hair system on sale that day.",

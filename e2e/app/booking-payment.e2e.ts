@@ -211,13 +211,17 @@ test("picks another window when one has just gone, and pays for that one", async
   });
   await toWindows(page);
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
+  const open = windows.getByRole("radio").and(page.locator(":enabled"));
+  const offered = await open.count();
+  await open.first().click();
   const redrawn = windowsAskedAgain(page);
   await windows.getByRole("button", { name: appCopy.booking.window.continue }).click();
   await expect(windows.getByRole("alert")).toHaveText(TAKEN);
   // Nothing is chosen any more: the day's windows have been asked for again, and the client picks from those.
   await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toBeDisabled();
   await redrawn();
+  // The start refused is not offered again in this sheet, though the API, planning on its estimate, offers it.
+  await expect(open).toHaveCount(offered - 1);
 
   await continueToPayment(page);
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();

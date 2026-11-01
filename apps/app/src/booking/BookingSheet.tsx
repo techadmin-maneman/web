@@ -231,7 +231,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
       if (answer.ok) dispatch({ kind: "held", hold: answer.body });
       else if (answer.code === "taken") {
         setProblem(booking.window.gone);
-        await days.askAgainFrom(wanted, date);
+        await days.askAgainFrom(wanted, date, chosenStart);
       } else if (answer.code === "address_required") askForAddress(true);
       else if (answer.code === "not_served") showNotServed();
       else setProblem(booking.failedToStart);

@@ -123,6 +123,31 @@ function visitOf(chosen: {
   };
 }
 
+/**
+ * The days without each start a booking was refused at in this panel: offered on the plan's
+ * estimate of the drives, then found by the drives themselves not to fit, it would only be refused again.
+ */
+function withoutRefused(offered: VisitAvailability, refused: ReadonlySet<string>): VisitAvailability {
+  if (refused.size === 0) return offered;
+  return {
+    ...offered,
+    days: offered.days.map((day) => ({
+      ...day,
+      starts: day.starts.filter((start) => !refused.has(start.starts_at)),
+    })),
+  };
+}
+
+/** The starts a booking was refused at in this panel; `refuse` shuts one and reads the days afresh. */
+function useRefusedStarts(retry: () => void) {
+  const [refused, setRefused] = useState<ReadonlySet<string>>(new Set());
+  const refuse = (startsAt: string) => {
+    setRefused((was) => new Set([...was, startsAt]));
+    retry();
+  };
+  return [refused, refuse] as const;
+}
+
 /** The fortnight's windows for what is being booked, read again as any of it changes. */
 function useAvailability(clientId: string, choice: Choice, tier: string | undefined, from: string | undefined) {
   const load = useCallback(
@@ -136,6 +161,28 @@ function useAvailability(clientId: string, choice: Choice, tier: string | undefi
     [clientId, choice, tier, from],
   );
   return useLoad(load);
+}
+
+/** A discount code for the visit, where it takes one. */
+function CodeBox({ code, busy, onCode }: { code: string; busy: boolean; onCode: (code: string) => void }) {
+  return (
+    <Field className={shared.field} label={copy.code}>
+      {(control) => (
+        <TextInput
+          {...control}
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          maxLength={40}
+          value={code}
+          disabled={busy}
+          onChange={(event) => {
+            onCode(event.target.value);
+          }}
+        />
+      )}
+    </Field>
+  );
 }
 
 function BookingForm({
@@ -156,6 +203,7 @@ function BookingForm({
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
   const [loaded, retry] = useAvailability(clientId, choice, picked.tier, from);
+  const [refusedStarts, refuseStart] = useRefusedStarts(retry);
 
   const choose = (next: Partial<Picked>) => {
     setFailed(null);
@@ -165,7 +213,7 @@ function BookingForm({
   if (loaded.state === "loading") return <p className={shared.note}>{copy.loading}</p>;
   if (loaded.state === "failed") return <Unreadable onRetry={retry} />;
 
-  const offered = loaded.value;
+  const offered = withoutRefused(loaded.value, refusedStarts);
   const slot = slotOf(offered, picked);
   const { day, start, window, technician } = slot;
   const firstDay = offered.days[0]?.date;
@@ -191,7 +239,12 @@ function BookingForm({
         }),
       );
       if (answer.ok) onBooked(answer.body);
-      else setFailed(answer.code);
+      // A start refused as taken is not offered again here, and the days are read afresh for what is free now.
+      else if (answer.code === "taken") {
+        refuseStart(start.starts_at);
+        setPicked((was) => ({ ...was, start: undefined, technician: "" }));
+      }
+      setFailed(answer.ok ? null : answer.code);
     });
 
   return (
@@ -216,24 +269,7 @@ function BookingForm({
       <WhenAndWho slot={slot} busy={busy} onPick={choose} />
       <StripButtons busy={busy} from={from} firstDay={firstDay} onFrom={setFrom} />
       <CoverChoice owed={offered.owed} value={cover} busy={busy} onChoose={setCovers} />
-      {takesCode && (
-        <Field className={shared.field} label={copy.code}>
-          {(control) => (
-            <TextInput
-              {...control}
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              maxLength={40}
-              value={code}
-              disabled={busy}
-              onChange={(event) => {
-                setCode(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-      )}
+      {takesCode && <CodeBox code={code} busy={busy} onCode={setCode} />}
       <p className={shared.pays}>{replacesLine(choice, prefill) + payLine(choice, offered, cover !== "")}</p>
       <div className={shared.actions}>
         <Button

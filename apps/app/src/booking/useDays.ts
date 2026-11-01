@@ -5,7 +5,7 @@
 import { useState, type Dispatch } from "react";
 import { api, type Availability, type BookingWindow, type Wanted } from "../api.ts";
 import { addDays } from "@maneman/web-kit/dates";
-import { firstOpenFrom, firstOpenIn, stillOpen, withDays } from "./days.ts";
+import { firstOpenFrom, firstOpenIn, stillOpen, withDays, withoutRefused } from "./days.ts";
 import type { BookingEvent } from "./flow.ts";
 
 /** Asking for the days after those shown: not yet, under way, or failed. */
@@ -27,6 +27,8 @@ export function useDays(asked: DaysAsked) {
   const [laterAsk, setLaterAsk] = useState<LaterAsk>("idle");
   const [date, setDate] = useState<string | null>(null);
   const [chosenStart, setChosenStart] = useState<string | null>(null);
+  // The starts a hold was refused at in this sheet, shut on every read after.
+  const [refused, setRefused] = useState<ReadonlySet<string>>(new Set());
 
   /** The days of the visit wanted, and the step after them: the address if there is none yet, else the date. */
   const showDays = (days: Availability) => {
@@ -69,19 +71,23 @@ export function useDays(asked: DaysAsked) {
       return;
     }
     setLaterAsk("idle");
-    addDaysFrom(answer.body);
+    addDaysFrom({ ...answer.body, days: withoutRefused(answer.body.days, refused) });
   };
 
   /**
-   * The start chosen was taken: the days again from the day chosen, which may be among the later days. A start the
-   * client picks while this is asked for stays picked where it is still open.
+   * The start chosen was taken, by another booking or by the drives either side of it: the days again from the day
+   * chosen, which may be among the later days, with that start shut. A start the client picks while this is asked for
+   * stays picked where it is still open.
    */
-  const askAgainFrom = async (wanted: Wanted, from: string) => {
+  const askAgainFrom = async (wanted: Wanted, from: string, taken: string | null = null) => {
     setChosenStart(null);
+    const shut = taken === null ? refused : new Set([...refused, taken]);
+    setRefused(shut);
     const fresh = await api.availability(wanted, movingId, from);
     if (!fresh.ok) return;
-    addDaysFrom(fresh.body);
-    const day = fresh.body.days.find((each) => each.date === from);
+    const days = withoutRefused(fresh.body.days, shut);
+    addDaysFrom({ ...fresh.body, days });
+    const day = days.find((each) => each.date === from);
     setChosenStart((picked) => stillOpen(day, picked));
   };
 
