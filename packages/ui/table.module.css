@@ -21,6 +21,11 @@
     border-collapse: collapse;
   }
 
+  /* Columns at the widths the head's cells are given, not at what the rows hold (Table's `fixed`). */
+  .fixed {
+    table-layout: fixed;
+  }
+
   .table th,
   .table td {
     height: var(--table-row-height);
@@ -177,8 +182,8 @@
 
   .table[data-cards] thead:not(:has(button, input)) {
     position: absolute;
-    width: 1px;
-    height: 1px;
+    width: var(--sr-only-size);
+    height: var(--sr-only-size);
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;

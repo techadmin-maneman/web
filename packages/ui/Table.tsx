@@ -36,16 +36,20 @@ function nameCells(table: HTMLTableElement): void {
  * `plain` keeps a table's meaning and none of the console's look, for a table that is a drawing of its own: the
  * dispatch board's week, or a sheet printed for a supplier. `controls` is for rows that hold boxes and buttons, which
  * make the row's height: its cells have no room above or below, and the first and last sit in from the panel's edge.
+ * `fixed` keeps the widths the caller's class gives the head's cells, whatever the rows hold: a list and the one set
+ * apart beneath it (./Apart.tsx), given the same class, line up column for column.
  */
 export function Table({
   className,
   plain = false,
   controls = false,
+  fixed = false,
   children,
 }: {
   className?: string | undefined;
   plain?: boolean;
   controls?: boolean;
+  fixed?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLTableElement>(null);
@@ -66,7 +70,12 @@ export function Table({
     <table
       ref={ref}
       data-cards={plain ? undefined : ""}
-      className={classes(plain ? styles.plain : styles.table, controls && styles.controls, className)}
+      className={classes(
+        plain ? styles.plain : styles.table,
+        controls && styles.controls,
+        fixed && styles.fixed,
+        className,
+      )}
     >
       {children}
     </table>

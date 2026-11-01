@@ -86,8 +86,7 @@
   color: var(--status-warning);
 }
 
-/* What the average is of, when the phone timed fewer jobs than were finished. */
-/* What the average is of, on one line beneath it, so the row keeps the board's height. */
+/* What the average is of, when the phone timed fewer jobs than were finished: on a line beneath it, within the row. */
 .base {
   display: block;
   white-space: nowrap;

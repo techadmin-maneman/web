@@ -193,18 +193,20 @@ test("switches a technician off only once asked, and lists the visits they no lo
   await expect(main.getByRole("navigation", { name: /^Imran Qureshi:/ })).toBeHidden();
   expect(await axeViolations(page)).toEqual([]);
 
-  // They are off the roster's table, and listed apart.
+  // They are off the roster's table, and listed apart beneath it in the same columns.
   await backToRoster(page);
-  await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
-  await expect(page.getByRole("region", { name: settings.staff.inactive })).toContainText("Imran Qureshi");
+  await expect(page.getByRole("table").first().getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
+  const off = page.getByRole("region", { name: settings.staff.inactive });
+  await expect(off.getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(1);
 });
 
 test("lists the technicians switched off apart, and switches one back on", async ({ page }) => {
   const { roster, reply } = rosterOf({ ...TECHNICIANS, switched_off: [RAVI] });
   await openWith(page, { [SWITCH_ON]: json({ active: true }) }, reply);
   const off = page.getByRole("region", { name: settings.staff.inactive });
-  await expect(off).toContainText("Ravi Kumar");
-  await expect(page.getByRole("row").filter({ hasText: "Ravi Kumar" })).toHaveCount(0);
+  // Apart beneath, in the same columns: never among those at work.
+  await expect(off.getByRole("row").filter({ hasText: "Ravi Kumar" })).toHaveCount(1);
+  await expect(page.getByRole("table").first().getByRole("row").filter({ hasText: "Ravi Kumar" })).toHaveCount(0);
 
   const main = await pageOf(page, "Ravi Kumar");
   await expect(main.getByRole("navigation", { name: /^Ravi Kumar:/ })).toBeHidden();
