@@ -39,7 +39,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/tech/src/steps/Piece.tsx": { fn: 91 },
   "apps/tech/src/steps/Profile.tsx": { fn: 86 },
   "apps/tech/src/waiting/WaitingScreen.tsx": { fn: 93 },
-  "scripts/fidelity/fidelity-app.ts": { lines: 1085, fn: 167 },
+  "scripts/fidelity/fidelity-app.ts": { lines: 1087, fn: 167 },
   "scripts/fidelity/fidelity-tech.ts": { lines: 445, fn: 107 },
   "scripts/lib/wrangler-config-check.ts": { lines: 419 },
   "site/src/islands/invite/Consultation.tsx": { fn: 143 },

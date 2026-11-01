@@ -973,6 +973,7 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
     checkout: fakeCheckout("failed"),
   });
   await throughTheSheet(failed, false);
+  await failed.getByRole("checkbox", { name: /^I agree to the / }).check();
   await failed.getByRole("button", { name: /^Pay/ }).click();
   await failed.getByText("The payment didn’t go through.").waitFor();
   await pair({
@@ -1006,6 +1007,7 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
     checkout: fakeCheckout("paid"),
   });
   await throughTheSheet(confirmed, false);
+  await confirmed.getByRole("checkbox", { name: /^I agree to the / }).check();
   await confirmed.getByRole("button", { name: /^Pay/ }).click();
   await confirmed.clock.fastForward("00:03");
   await confirmed.getByText("We’ll remind you on WhatsApp the day before.").waitFor();
