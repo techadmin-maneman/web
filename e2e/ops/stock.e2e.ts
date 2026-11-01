@@ -92,7 +92,7 @@ test("says a place with none left of something it keeps is out, not low", async 
 });
 
 // A column a kit was unreadable past eight or ten.
-test("past six places, shows the warehouse and one place, picked, marking each place low on anything", async ({
+test("past six places, shows the warehouse and one place, picked, saying above which are low on anything", async ({
   page,
 }) => {
   const kits = Array.from({ length: 6 }, (_, index) => ({
@@ -117,11 +117,15 @@ test("past six places, shows the warehouse and one place, picked, marking each p
   await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   await expect(page.getByLabel(stock.totalsBy)).toHaveValue("place:central");
 
-  // One control: each place, marked where something is low, among the totals.
+  // One control: each place by its name alone, among the totals; where something is low is said above the table.
   const show = page.getByLabel(stock.totalsBy);
-  await expect(show.getByRole("option", { name: "Technician 5 · low" })).toHaveCount(1);
+  await expect(show.getByRole("option", { name: "Technician 5", exact: true })).toHaveCount(1);
+  await expect(show.getByRole("option", { name: /low|below|zero|·/i })).toHaveCount(0);
   await expect(table.getByLabel(stockLabels.place)).toHaveCount(0);
-  await show.selectOption({ label: "Technician 5 · low" });
+  const needs = table.getByText(stock.needs.low);
+  await expect(needs).toBeVisible();
+  await needs.getByRole("button", { name: "Technician 5" }).click();
+  await expect(show).toHaveValue(`place:${kits[4]?.id ?? ""}`);
   await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
   await expect(tape.getByRole("cell").nth(0)).toContainText("5 strips");

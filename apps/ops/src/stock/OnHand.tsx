@@ -3,7 +3,8 @@
 // last counted, each in a column of its own. With a handful of places, every place side by side as well.
 
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
-import { Field, Select } from "@maneman/ui/Field";
+import { TextButton } from "@maneman/ui/TextLink";
+import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { RowHead } from "@maneman/ui/RowHead";
 import { Table, TableScroll } from "@maneman/ui/Table";
@@ -13,7 +14,7 @@ import { OpsLink } from "../frame/Shell.tsx";
 import { shell } from "../content/shell.ts";
 import { stock as copy } from "../content/stock.ts";
 import form from "@maneman/ui/forms.module.css";
-import { placeName } from "./StockForm.tsx";
+import { placeChoices, placeName } from "./StockForm.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 
@@ -32,11 +33,42 @@ export function firstShowing(stock: Stock): Showing {
   return { by: "place", place: warehouse?.id ?? null };
 }
 
-/** A place in the list, marked where anything there is below nought or low. */
-function placeOption(stock: Stock, id: string): string {
-  const held = stock.holdings.filter((holding) => holding.place_id === id);
-  if (held.some((holding) => holding.quantity < 0)) return `${placeName(stock, id)}${copy.placeBelow}`;
-  return `${placeName(stock, id)}${held.some((holding) => holding.low) ? copy.placeLow : ""}`;
+/** The places holding less than nothing of something, and those low or out of something. */
+function needing(stock: Stock): { readonly below: readonly string[]; readonly low: readonly string[] } {
+  const held = (id: string) => stock.holdings.filter((holding) => holding.place_id === id);
+  const below = stock.places.filter((place) => held(place.id).some((holding) => holding.quantity < 0));
+  const low = stock.places.filter((place) => !below.includes(place) && held(place.id).some((holding) => holding.low));
+  return { below: below.map((place) => place.id), low: low.map((place) => place.id) };
+}
+
+/** Above the table, the places to look at, by name, each a way to show it: never a mark added to a place's name. */
+export function Needs({ stock, onShow }: { stock: Stock; onShow: (showing: Showing) => void }) {
+  const { below, low } = needing(stock);
+  const line = (words: string, ids: readonly string[]) =>
+    ids.length === 0 ? null : (
+      <Note>
+        {words}{" "}
+        {ids.map((id, index) => (
+          <span key={id}>
+            {index > 0 && ", "}
+            <TextButton
+              inline
+              onClick={() => {
+                onShow({ by: "place", place: id });
+              }}
+            >
+              {placeName(stock, id)}
+            </TextButton>
+          </span>
+        ))}
+      </Note>
+    );
+  return (
+    <>
+      {line(copy.needs.below, below)}
+      {line(copy.needs.low, low)}
+    </>
+  );
 }
 
 /** The one control over the table: which place it shows, or how it adds its places up. */
@@ -57,11 +89,9 @@ export function Grouping(props: { stock: Stock; showing: Showing; onShow: (showi
           }}
         >
           {fewPlaces(stock) && <option value="place:">{copy.allPlaces}</option>}
-          {stock.places.map((place) => (
-            <option key={place.id} value={`place:${place.id}`}>
-              {placeOption(stock, place.id)}
-            </option>
-          ))}
+          <ChoiceOptions
+            choices={placeChoices(stock).map(([id, name, group]) => [`place:${id}`, name, group] as const)}
+          />
           <option value="zone">{copy.byZone}</option>
           <option value="city">{copy.byCity}</option>
         </Select>

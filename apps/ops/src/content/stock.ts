@@ -21,9 +21,12 @@ export const stock = {
   closed: (name: string) => `${name} (closed)`,
   consumable: "Item",
   place: "Place",
-  placeLow: " · low",
-  /** A place holding less than nothing of something: a movement went unrecorded, and a count puts it right. */
-  placeBelow: " · below zero",
+  /** In a list of places, the kits of technicians who left and the places closed, still holding stock. */
+  noLongerInUse: "No longer in use",
+  /** A place whose name another shares, told apart by its city. */
+  inCity: (name: string, city: string) => `${name}, ${city}`,
+  /** Above the table, the places to look at, each a way to show it. */
+  needs: { low: "Low or out at", below: "Below zero, to count, at" },
   totalsBy: "Show",
   /** With a handful of places, every one side by side. */
   allPlaces: "All places",

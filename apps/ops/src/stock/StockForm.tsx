@@ -4,6 +4,7 @@
 // in (docs/decisions/0164-the-kit-screen.md).
 
 import { Toast } from "@maneman/ui/Toast";
+import { type Choice } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { Checkbox, ChoiceGroup, Radio } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -46,12 +47,29 @@ type Step = { readonly step: "editing" | "checking" | "saving" | "recorded" } | 
 
 const WHOLE = /^\d{1,6}$/;
 
+/**
+ * The places a list offers, each by its name alone: a kit whose technician left, or a place closed, under its own
+ * heading, after those in use.
+ */
+export const placeChoices = (stock: Stock): Choice[] =>
+  stock.places.map((place) =>
+    place.active ? [place.id, named(stock, place)] : [place.id, named(stock, place), copy.noLongerInUse],
+  );
+
+type Place = Stock["places"][number];
+
+/** A place's name, with its city where another place has the same name: two technicians can share one. */
+function named(stock: Stock, place: Place): string {
+  const same = [...stock.places, ...stock.other_places].filter((each) => each.name === place.name);
+  return same.length > 1 && place.city !== null ? copy.inCity(place.name, place.city) : place.name;
+}
+
 /** A place by name: a kit by its technician's, marked once they left, and a hub or a stockroom marked once closed. */
 export function placeName(stock: Stock, id: string): string {
   const place = [...stock.places, ...stock.other_places].find((each) => each.id === id);
   if (place === undefined) return id;
-  if (place.active) return place.name;
-  return place.kind === "kit" ? copy.left(place.name) : copy.closed(place.name);
+  if (place.active) return named(stock, place);
+  return place.kind === "kit" ? copy.left(named(stock, place)) : copy.closed(named(stock, place));
 }
 
 /** The warehouse a delivery goes into, which is "central" in the ledger. */
@@ -215,7 +233,7 @@ function WhatMoved(props: {
   stock: Stock;
   draft: Draft;
   kinds: readonly Kind[];
-  places: readonly (readonly [string, string])[];
+  places: readonly Choice[];
   onEdit: (field: Exclude<keyof Draft, "units" | "waitForScan">) => (value: string) => void;
   refused: Refused;
 }) {
@@ -291,7 +309,7 @@ export function StockForm({
   kinds: readonly [Kind, ...Kind[]];
   onRecorded: (stock: Stock, recorded: { readonly kind: Kind; readonly code: string }) => void;
 }) {
-  const places = stock.places.map((place) => [place.id, placeName(stock, place.id)] as const);
+  const places = placeChoices(stock);
   // The warehouse first where the caller's grants reach it, else their first place.
   const [first = "", second] = places.map(([value]) => value);
   const offered = stock.consumables.filter((each) => !each.retired);

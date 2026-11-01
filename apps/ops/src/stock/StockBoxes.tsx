@@ -1,7 +1,7 @@
 // The boxes of a stock movement (./StockForm.tsx): an item or a place chosen by name, how many, and its note, each
 // saying the words of a refusal from the API that names it.
 
-import { Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
+import { type Choice, ChoiceOptions, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { stock as copy } from "../content/stock.ts";
 import form from "@maneman/ui/forms.module.css";
 
@@ -25,7 +25,7 @@ export function stockBoxes(kind: string, scanned: boolean, lots: boolean): strin
 export function StockChoice(props: {
   label: string;
   value: string;
-  options: readonly (readonly [string, string])[];
+  options: readonly Choice[];
   onChange: (value: string) => void;
   error: string | null;
 }) {
@@ -40,11 +40,7 @@ export function StockChoice(props: {
             props.onChange(event.target.value);
           }}
         >
-          {props.options.map(([value, name]) => (
-            <option key={value} value={value}>
-              {name}
-            </option>
-          ))}
+          <ChoiceOptions choices={props.options} />
         </Select>
       )}
     </Field>
