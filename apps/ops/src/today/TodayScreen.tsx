@@ -72,11 +72,13 @@ function VisitsToday() {
 
 function Figures({ board }: { board: Tasks }) {
   const mayCall = useMayCall();
-  const mayRoute = useAccess().mayCall("GET /api/dispatch/day");
+  const access = useAccess();
+  // Where On the road today is drawn beneath, it counts today's visits first: not twice.
+  const visitsTile = access.mayCall("GET /api/dispatch/day") && !access.mayCall("GET /api/dispatch");
   const shown = TILES.filter((tile) => mayOpen(mayCall, tile.page));
   return (
     <Columns>
-      {mayRoute && <VisitsToday />}
+      {visitsTile && <VisitsToday />}
       {shown.map((tile) => {
         const figure = figureOf(tile, board);
         return (

@@ -68,7 +68,9 @@ function Care() {
         />
         <StatTile
           label={copy.care.onTime}
-          value={replies.within_target === null ? copy.care.none : copy.care.percent(replies.within_target)}
+          value={
+            replies.within_target === null ? copy.care.none : copy.care.percent(Math.round(replies.within_target * 100))
+          }
           to={page}
         />
       </Columns>

@@ -38,9 +38,9 @@ test("sets Today's figures two to a row", async ({ page }) => {
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/today");
   const tile = (name: string) => page.locator("main a[href]").filter({ hasText: name }).first();
-  await expect(tile(today.tiles.visits)).toBeVisible();
-  const first = await tile(today.tiles.visits).boundingBox();
-  const second = await tile(today.tiles.unassigned).boundingBox();
+  await expect(tile(today.tiles.unassigned)).toBeVisible();
+  const first = await tile(today.tiles.unassigned).boundingBox();
+  const second = await tile(today.tiles.overdue).boundingBox();
   if (first === null || second === null) throw new Error("the tiles are not drawn");
   expect(second.y).toBeCloseTo(first.y, 0);
   expect(second.x).toBeGreaterThan(first.x);
