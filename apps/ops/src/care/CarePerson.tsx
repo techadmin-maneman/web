@@ -60,7 +60,7 @@ function MoveTo(props: {
           >
             {props.team.map((member) => (
               <option key={member.email} value={member.email}>
-                {words.member(member.name ?? member.email, member.clients)}
+                {words.member(member.name ?? member.email)}
               </option>
             ))}
           </Select>

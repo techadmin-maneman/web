@@ -73,8 +73,8 @@ export const care = {
     label: "Care person",
     none: "Not given yet",
     moveTo: "Move to",
-    /** "Asha · 12 clients", by e-mail until a manager sets the name clients know them by. */
-    member: (who: string, clients: number) => `${who} · ${String(clients)} ${clients === 1 ? "client" : "clients"}`,
+    /** A Care person in the list by their name alone, by e-mail until a manager sets the name clients know them by. */
+    member: (who: string) => who,
     move: "Move",
     moving: "Moving…",
     moved: (who: string) => `Moved to ${who}.`,

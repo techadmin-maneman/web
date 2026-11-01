@@ -117,6 +117,13 @@
   background: var(--ui-raised);
 }
 
+/* The chat open in it starts at its top: its group draws no rule of its own, the pane's edge being one. */
+.pane > section:first-child {
+  margin: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
 @media (min-width: 1024px) {
   .pane {
     margin-left: 0;

@@ -34,7 +34,7 @@ const isView = (value: string): value is ConversationView => VIEWS.some((view) =
 
 function ViewChoice({ view, onView }: { view: ConversationView; onView: (view: ConversationView) => void }) {
   return (
-    <Field label={copy.show}>
+    <Field label={copy.show} labelHidden>
       {(control) => (
         <Select
           {...control}
