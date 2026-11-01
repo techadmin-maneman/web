@@ -13,7 +13,7 @@ import { createLogger } from "../../../src/log.ts";
 import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { fakeDependencies, fakeQueue, LOCAL_CONFIG, markDatabase, NOW } from "../helpers.ts";
-import { aVisit } from "../fixtures/index.ts";
+import { aPayment, aVisit } from "../fixtures/index.ts";
 
 const LONG_AGO = "2025-08-01T06:30:00.000Z";
 const LAST_MONTH = "2026-08-21T06:30:00.000Z";
@@ -79,12 +79,7 @@ describe("a person who becomes a client", () => {
 
   it("is one from their first payment's own time, not the database's clock", async () => {
     await person("30002");
-    await env.DB.prepare(
-      `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status, captured_at,
-         created_at, updated_at) VALUES ('pay-30002', '30002', NULL, 'pay_30002', 236000, 'INR', 'captured', ?1, ?1, ?1)`,
-    )
-      .bind(LONG_AGO)
-      .run();
+    await aPayment({ person_id: "30002", captured_at: LONG_AGO, created_at: LONG_AGO, updated_at: LONG_AGO });
     const row = await env.DB.prepare("SELECT client_since FROM people WHERE id = '30002'").first<{
       client_since: string;
     }>();
