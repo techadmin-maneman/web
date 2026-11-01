@@ -7,7 +7,7 @@ import { FIGURE, Table } from "@maneman/ui/Table";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { api, type Stock, type TechnicianSummary } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { technicians } from "../content.ts";
 import { stock } from "../content/stock.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";

@@ -11,7 +11,7 @@ import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { dayClock, fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type JobOnLeave, type StandingLeave, type TechnicianSummary } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { dispatchPath } from "../route.ts";

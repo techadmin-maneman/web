@@ -10,7 +10,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type ClientList as Listed, type ClientListQuery } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { clients, tables } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";

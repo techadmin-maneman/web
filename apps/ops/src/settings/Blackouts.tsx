@@ -14,7 +14,7 @@ import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useEffect, useState } from "react";
 import { type Blackout } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
@@ -26,7 +26,7 @@ import { DeleteAction } from "../components/DeleteAction.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { settingsApi } from "./settings-api.ts";
 import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/PageHead.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 
 const copy = settings.blackouts;
 

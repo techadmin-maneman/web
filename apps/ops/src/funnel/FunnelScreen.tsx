@@ -12,7 +12,7 @@ import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { useHeaderSub } from "../components/PageHead.tsx";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import form from "../components/forms.module.css";
 import styles from "./funnel.module.css";

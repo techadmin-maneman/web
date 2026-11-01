@@ -13,7 +13,7 @@ import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { DeleteAction } from "../components/DeleteAction.tsx";
-import { PriceRow, priceText } from "../components/PriceRow.tsx";
+import { PriceRow, priceText } from "../prices/PriceRow.tsx";
 import { MoneyRow } from "../components/RecordRows.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";

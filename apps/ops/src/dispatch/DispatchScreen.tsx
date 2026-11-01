@@ -7,7 +7,7 @@ import { EmptyState } from "@maneman/ui/EmptyState";
 import { todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Board, BoardQuery } from "../api.ts";
-import { useHeaderSub } from "../components/PageHead.tsx";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";

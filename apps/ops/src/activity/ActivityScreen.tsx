@@ -14,7 +14,7 @@ import { indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type ActivityEntry } from "../api.ts";
 import { DrawerButton } from "../components/DrawerButton.tsx";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { activity } from "../content/activity.ts";
 import { activityPath, clientPath, dispatchPath, technicianPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";

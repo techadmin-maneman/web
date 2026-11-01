@@ -16,7 +16,7 @@ import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
 import shared from "./care.module.css";
 import { Columns, Stack } from "@maneman/ui/Layout";
 import { StatTile } from "@maneman/ui/StatTile";
-import { useHeaderSub } from "../components/PageHead.tsx";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toolbar } from "@maneman/ui/Toolbar";
 

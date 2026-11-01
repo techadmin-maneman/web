@@ -12,7 +12,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useEffect, useRef, useState } from "react";
 import { type OpenAlert } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { needsAHand as copy } from "../content.ts";
 import { alertNeed, markDoneNeed, useAccess, type Access } from "../lib/access.ts";
 import { PanelFailed } from "../states/States.tsx";

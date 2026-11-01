@@ -14,7 +14,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState } from "react";
 import { type Held, type Referrer } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { referrals } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";

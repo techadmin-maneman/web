@@ -6,8 +6,8 @@
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Fragment, Suspense, useCallback, useEffect, useState, type ComponentType } from "react";
-import { ClosedScreen } from "./components/ClosedScreen.tsx";
-import { Shell } from "./components/Shell.tsx";
+import { ClosedScreen } from "./frame/ClosedScreen.tsx";
+import { Shell } from "./frame/Shell.tsx";
 import { useMayCall } from "./lib/access.ts";
 import { PageRefresh } from "./lib/refresh.ts";
 import {

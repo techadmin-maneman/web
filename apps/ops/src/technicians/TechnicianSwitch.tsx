@@ -6,7 +6,7 @@ import { Button, buttonLook } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { type ReturnedVisit, type TechnicianSummary } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { technicians } from "../content.ts";
 import styles from "./technicians.module.css";
 import { Refusal } from "../components/Refusal.tsx";

@@ -17,7 +17,7 @@ import { useState } from "react";
 import { Badge } from "@maneman/ui/Badge";
 import { RowHead } from "../components/RowHead.tsx";
 import { Refusal } from "../components/Refusal.tsx";
-import { priceText } from "../components/PriceRow.tsx";
+import { priceText } from "../prices/PriceRow.tsx";
 import { packagesCopy as copy } from "../content/packages.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";

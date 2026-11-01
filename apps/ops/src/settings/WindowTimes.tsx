@@ -4,7 +4,7 @@
 // page, each window's hours read beneath its boxes as they are typed, before it is set.
 
 import { Toast } from "@maneman/ui/Toast";
-import { PageActions } from "../components/PageHead.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";

@@ -17,7 +17,7 @@ import form from "../components/forms.module.css";
 import { CheckPanel, CheckWarning } from "../components/CheckPanel.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { Refusal } from "../components/Refusal.tsx";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { useAccess } from "../lib/access.ts";
 import shared from "./areas.module.css";
 import { areasApi } from "./areas-api.ts";

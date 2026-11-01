@@ -2,7 +2,7 @@
 // and our automatic messages to them with how far each got, in order.
 
 import { Toast } from "@maneman/ui/Toast";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";

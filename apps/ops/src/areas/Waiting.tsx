@@ -15,7 +15,7 @@ import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate, todayInIndia, yearInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type Area, type Launch, type ServedPincode } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { areas, waitlist } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { settingsPath } from "../route.ts";

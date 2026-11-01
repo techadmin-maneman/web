@@ -12,7 +12,7 @@ import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dat
 import { Suspense, useState } from "react";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { type Stock } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { shell } from "../content/shell.ts";
 import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
@@ -28,7 +28,7 @@ import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
 import { RowHead } from "../components/RowHead.tsx";
 import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/PageHead.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
 const PlacesPanel = lazyScreen(() => import("./PlacesPanel.tsx").then((module) => module.PlacesPanel));

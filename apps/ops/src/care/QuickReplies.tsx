@@ -16,7 +16,7 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi } from "./care-api.ts";
 import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/PageHead.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
 

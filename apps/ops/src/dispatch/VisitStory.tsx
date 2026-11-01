@@ -4,7 +4,7 @@
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { rowPath } from "../lib/target.ts";

@@ -7,7 +7,7 @@ import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useCallback } from "react";
 import { type Task, type TaskGroup, type Tasks } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { clients, tasks as taskCopy } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";

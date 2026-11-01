@@ -13,7 +13,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import type { Price } from "../api.ts";
 import { EDITING } from "../content/common.ts";
 import { packagesCopy } from "../content/packages.ts";
-import { pricesApi } from "../prices/index.ts";
+import { pricesApi } from "./index.ts";
 import styles from "./price-row.module.css";
 
 const copy = packagesCopy.price;

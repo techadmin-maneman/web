@@ -8,7 +8,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { clients } from "../content.ts";
 import { keepSearch, keptSearch, recentClients, type KeptSearch } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";

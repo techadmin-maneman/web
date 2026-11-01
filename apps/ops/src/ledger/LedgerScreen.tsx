@@ -12,7 +12,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, fullDate, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
-import { useHeaderSub } from "../components/PageHead.tsx";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";

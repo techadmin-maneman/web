@@ -6,7 +6,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import type { TechnicianSummary } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { dispatch, hoursAndMinutes, technicians } from "../content.ts";
 import { dispatchPath } from "../route.ts";
 import styles from "./technicians.module.css";

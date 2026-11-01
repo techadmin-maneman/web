@@ -7,7 +7,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import { api, isErased, type ClientVisit } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { care } from "../content/care.ts";
 import { dispatch } from "../content/dispatch.ts";
 import { clientPath, type ClientTab } from "../route.ts";
