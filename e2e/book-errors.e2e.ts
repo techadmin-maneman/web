@@ -233,7 +233,7 @@ test("a fortnight with nothing open says so, and offers WhatsApp", async ({ page
   await expect(page.getByText(referralCopy.referral.consultation.noneOpen)).toBeVisible();
   await expect(page.getByRole("link", { name: referralCopy.referral.consultation.noneOpenAction })).toHaveAttribute(
     "href",
-    /^https:\/\/wa\.me\/91\d{10}$/,
+    "https://wa.me/17116660760",
   );
   const days = page.getByRole("group", { name: referralCopy.referral.consultation.date }).getByRole("radio");
   await expect(days).toHaveCount(14);
