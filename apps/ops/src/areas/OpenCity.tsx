@@ -26,8 +26,6 @@ const MOST_DISTRICTS = 10;
 /** The API adds this many a call, so each stays one short batch; ten districts can hold four times as many. */
 const PER_CALL = 300;
 
-/** A name the directory spells in capitals, as ops read it: "GAUTAM BUDDHA NAGAR" → "Gautam Buddha Nagar". */
-
 const toggled = (set: ReadonlySet<string>, values: readonly string[], on: boolean) => {
   const next = new Set(set);
   for (const each of values) {

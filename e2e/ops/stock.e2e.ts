@@ -638,7 +638,7 @@ test("finds the piece a label names, where it is and its history", async ({ page
   await find.fill("MM-ESS-0000001-B");
   await find.press("Enter");
   const status = labels.getByRole("status");
-  await expect(status).toContainText(`MM-ESS-0000001-B · ${HAIR.name} · HS-1 · Exp 31 Mar 2028`);
+  await expect(status).toContainText(`MM-ESS-0000001-B · ${HAIR.name} · HS-1 · Expires 31 Mar 2028`);
   await expect(status).toContainText(stockLabels.where("Held", "Imran Qureshi"));
   await expect(labels.getByRole("list", { name: stockLabels.history }).getByRole("listitem")).toHaveCount(2);
   expect(await axeViolations(page)).toEqual([]);

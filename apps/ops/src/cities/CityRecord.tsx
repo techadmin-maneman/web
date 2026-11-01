@@ -39,7 +39,9 @@ interface Props {
 
 /** A rule's figure as it reads: "200 metres", "6 pm". */
 const figureOf = (rule: CityRuleName, figure: number) =>
-  rule === "reminder_hour" ? dayClock(`${String(figure).padStart(2, "0")}:00`) : `${String(figure)} ${rules.units[rule]}`;
+  rule === "reminder_hour"
+    ? dayClock(`${String(figure).padStart(2, "0")}:00`)
+    : `${String(figure)} ${rules.units[rule]}`;
 
 /** A rule the city sets for itself: its figure, or the national rule's while it sets none. */
 function OwnRule({ city, cities, reread, rule }: Omit<Props, "onRenamed"> & { readonly rule: CityRuleName }) {

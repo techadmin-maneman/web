@@ -206,8 +206,10 @@ test.describe("what each service uses", () => {
     await open(page, { "POST /api/service-usage": json(CONSUMABLES) });
     const uses = page.getByRole("region", { name: copy.usage.title });
     const service = uses.getByLabel(copy.usage.service);
-    // Each service by its name, a kind at a time; a retired one is still there, marked, for a visit sold before.
-    await expect(service.locator("optgroup")).toHaveCount(4);
+    // Each service by its name alone, a kind at a time; a retired one apart beneath, for a visit sold before.
+    await expect(service.locator("optgroup")).toHaveCount(5);
+    await expect(service.locator(`optgroup[label="${copy.usage.retired}"] option`)).toHaveText(["Premium first fit"]);
+    await expect(service.getByRole("option", { name: /retired/i })).toHaveCount(0);
     await service.selectOption({ label: "Service visit" });
 
     await expect(change(uses, "Tape strips")).toContainText("4 strips");

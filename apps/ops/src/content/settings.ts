@@ -23,6 +23,9 @@ function figureWords(value: number, unit: string): string {
   return `${quantity(value)} ${noun}`;
 }
 
+/** A window's parts after its first, in words. */
+const PARTS: Readonly<Record<number, string>> = { 2: "second", 3: "third", 4: "fourth" };
+
 /**
  * Settings: the business inputs ops set for themselves. The design draws this
  * section and letters nothing inside it (docs/decisions/0061-ops-editable-inputs.md,
@@ -30,9 +33,6 @@ function figureWords(value: number, unit: string): string {
  * bounds before it is typed, and a change is shown before it is made
  * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
  */
-/** A window's parts after its first, in words. */
-const PARTS: Readonly<Record<number, string>> = { 2: "second", 3: "third", 4: "fourth" };
-
 export const settings = {
   title: "Settings",
   find: "Find a setting",

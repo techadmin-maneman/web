@@ -14,7 +14,12 @@ describe("a technician's day on the board", () => {
     expect(hourLabel(9 * 60 + 30)).toBe("");
     const late = stepsOf([{ from: 23 * 60 + 35, to: 25 * 60 + 35 }]);
     expect(late.at(-1)).toBe(25 * 60 + 30);
-    expect(late.map(hourLabel).filter((label) => label !== "").slice(-3)).toEqual(["11 pm", "12 am", "1 am"]);
+    expect(
+      late
+        .map(hourLabel)
+        .filter((label) => label !== "")
+        .slice(-3),
+    ).toEqual(["11 pm", "12 am", "1 am"]);
   });
 
   it("runs from 8 am to 8 pm, wider where a visit falls outside", () => {
