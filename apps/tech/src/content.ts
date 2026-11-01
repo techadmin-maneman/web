@@ -788,7 +788,7 @@ export const profile = {
   yearRange: (first: number, last: number) => `${String(first)}–${String(last)}`,
   checkFigures: "Check the figures to continue",
   /** Next, held back until the Norwood stage is chosen. */
-  chooseStage: "Choose the Norwood stage to continue",
+  chooseStage: "Choose the stage to continue",
   /** Next, held back by a figure outside its range: which one. */
   checkFigure: (figure: string) => `${figure.replace(/ \(.*\)$/, "")} is out of range`,
   // The fit spec's second page: what the hair system is matched to.

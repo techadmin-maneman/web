@@ -104,8 +104,9 @@ export function KitPieces({
               onStock(stock === hairSystem.code ? null : hairSystem.code);
             }}
           >
+            {/* The one made to the client's profile says so first, before the strings of figures that set it apart. */}
+            {matches && <span className={shared.note}>{copy.piece.kit.matches} · </span>}
             {hairSystem.name} · {copy.piece.kit.held(hairSystem.held)}
-            {matches && <span className={shared.note}> · {copy.piece.kit.matches}</span>}
           </ToggleButton>
         ))}
       </div>
