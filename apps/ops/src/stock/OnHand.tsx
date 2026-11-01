@@ -16,6 +16,7 @@ import { stock as copy } from "../content/stock.ts";
 import form from "@maneman/ui/forms.module.css";
 import { placeChoices, placeName } from "./StockForm.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
+import { Fragment } from "react";
 import styles from "./stock.module.css";
 
 /** Past this many places, every place side by side grows too wide to read: one place at a time, then. */
@@ -49,17 +50,20 @@ export function Needs({ stock, onShow }: { stock: Stock; onShow: (showing: Showi
       <Note>
         {words}{" "}
         {ids.map((id, index) => (
-          <span key={id}>
-            {index > 0 && ", "}
-            <TextButton
-              inline
-              onClick={() => {
-                onShow({ by: "place", place: id });
-              }}
-            >
-              {placeName(stock, id)}
-            </TextButton>
-          </span>
+          <Fragment key={id}>
+            {index > 0 && " "}
+            <span className={styles.needed}>
+              <TextButton
+                inline
+                onClick={() => {
+                  onShow({ by: "place", place: id });
+                }}
+              >
+                {placeName(stock, id)}
+              </TextButton>
+              {index < ids.length - 1 && ","}
+            </span>
+          </Fragment>
         ))}
       </Note>
     );

@@ -24,7 +24,7 @@ export const stock = {
   /** In a list of places, the kits of technicians who left and the places closed, still holding stock. */
   noLongerInUse: "No longer in use",
   /** A place whose name another shares, told apart by its city. */
-  inCity: (name: string, city: string) => `${name}, ${city}`,
+  inCity: (name: string, city: string) => `${name} (${city})`,
   /** Above the table, the places to look at, each a way to show it. */
   needs: { low: "Low or out at", below: "Below zero, to count, at" },
   totalsBy: "Show",

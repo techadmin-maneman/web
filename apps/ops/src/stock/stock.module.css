@@ -38,3 +38,8 @@
 .views {
   margin-bottom: var(--sp-20);
 }
+
+/* A place named in the line above On hand, kept whole with its comma: the line breaks only between places. */
+.needed {
+  white-space: nowrap;
+}

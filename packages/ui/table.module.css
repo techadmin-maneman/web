@@ -148,8 +148,9 @@
 
 /*
  * On a phone a row is a card: its first cell its title, every other value on a line of its own beside its column's
- * name (Table's data-label), and the heads a line of their own above, which still sort. Outside the layer and named
- * closely, so a screen's column widths, room and unbroken lines give way to the card's.
+ * name (Table's data-label), and the heads a line of their own above where they sort or tick every row; heads that
+ * do neither are read aloud only, since each card names its values. Outside the layer and named closely, so a
+ * screen's column widths, room and unbroken lines give way to the card's.
  */
 @media (max-width: 600px) {
   .table[data-cards],
@@ -172,6 +173,15 @@
     height: auto;
     padding: 0;
     border: 0;
+  }
+
+  .table[data-cards] thead:not(:has(button, input)) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .table[data-cards] tbody tr {
