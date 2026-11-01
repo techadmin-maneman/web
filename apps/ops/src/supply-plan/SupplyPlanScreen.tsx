@@ -7,7 +7,7 @@ import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -49,7 +49,7 @@ function LineRow({ line, kind, onOpen }: { line: Line; kind: "transfer" | "order
         <td>{line.supplier ?? ""}</td>
       )}
       <td>{line.city ?? copy.everyCity}</td>
-      <td className={form.figure}>{stock.held(line.quantity ?? line.proposed, line.unit)}</td>
+      <td className={FIGURE}>{stock.held(line.quantity ?? line.proposed, line.unit)}</td>
       <td>
         <LineState line={line} />
       </td>
@@ -87,7 +87,7 @@ function Lines({
             <thead>
               <tr>
                 {columns.map((column) => (
-                  <th key={column} scope="col">
+                  <th key={column} scope="col" className={column === copy.quantityColumn ? FIGURE : undefined}>
                     {column}
                   </th>
                 ))}

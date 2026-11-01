@@ -3,6 +3,7 @@
 // refer on their own code are Settings' (./Partners.tsx). Approving a grant releases its credits.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { Panel } from "@maneman/ui/Panel";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
@@ -10,9 +11,8 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState } from "react";
 import { type Held, type Referrer } from "../api.ts";
 import { DecisionQueue } from "@maneman/ui/DecisionQueue";
@@ -273,55 +273,49 @@ function ReferrersTable({ version }: { version: number }) {
   if (pages.state === "failed") return <PanelFailed onRetry={retry} requestId={pages.requestId} />;
 
   return (
-    <section className={styles.panel} aria-labelledby="referrers">
-      <div className={styles.panelBody}>
-        {/* The design draws no heading here, so the section's name is said, not shown. */}
-        <VisuallyHidden as="h2" id="referrers">
-          {copy.title}
-        </VisuallyHidden>
-        {pages.referrers.length === 0 ? (
-          <EmptyState look="panel" line={copy.empty} />
-        ) : (
-          <>
-            <Narrowing view={view} label={copy.narrow} className={styles.narrow} />
-            <Table className={styles.table}>
-              <thead>
-                <tr>
-                  <SortHeads view={view} />
+    <Panel titleId="referrers" title={copy.title}>
+      {pages.referrers.length === 0 ? (
+        <EmptyState look="panel" line={copy.empty} />
+      ) : (
+        <>
+          <Narrowing view={view} label={copy.narrow} />
+          <Table className={styles.table}>
+            <thead>
+              <tr>
+                <SortHeads view={view} />
+              </tr>
+            </thead>
+            <tbody>
+              {view.shown.map((referrer) => (
+                <tr key={referrer.code}>
+                  <th scope="row" className={styles.name}>
+                    <OpsLink
+                      className={textLinkLook({ compact: true })}
+                      to={clientPath(referrer.person_id, "referrals")}
+                    >
+                      {referrer.name}
+                    </OpsLink>
+                  </th>
+                  <td className={FIGURE}>{referrer.opens}</td>
+                  <td className={FIGURE}>{referrer.consultations}</td>
+                  <td className={FIGURE}>{referrer.fits}</td>
+                  <td className={FIGURE}>{referrer.granted}</td>
+                  <td className={FIGURE}>{referrer.redeemed}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {view.shown.map((referrer) => (
-                  <tr key={referrer.code}>
-                    <th scope="row" className={styles.name}>
-                      <OpsLink
-                        className={textLinkLook({ compact: true })}
-                        to={clientPath(referrer.person_id, "referrals")}
-                      >
-                        {referrer.name}
-                      </OpsLink>
-                    </th>
-                    <td className={styles.quietFigure}>{referrer.opens}</td>
-                    <td className={styles.quietFigure}>{referrer.consultations}</td>
-                    <td className={styles.figure}>{referrer.fits}</td>
-                    <td className={styles.figure}>{referrer.granted}</td>
-                    <td className={styles.quietFigure}>{referrer.redeemed}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-            <TableEnd view={view} />
-          </>
-        )}
-        {pages.next !== null && (
-          <div className={styles.actions}>
-            <Button variant="outline" size="small" disabled={pages.fetching} onClick={() => void more(pages)}>
-              {pages.fetching ? copy.loading : copy.more}
-            </Button>
-          </div>
-        )}
-      </div>
-    </section>
+              ))}
+            </tbody>
+          </Table>
+          <TableEnd view={view} />
+        </>
+      )}
+      {pages.next !== null && (
+        <div className={styles.actions}>
+          <Button variant="outline" size="small" disabled={pages.fetching} onClick={() => void more(pages)}>
+            {pages.fetching ? copy.loading : copy.more}
+          </Button>
+        </div>
+      )}
+    </Panel>
   );
 }
 

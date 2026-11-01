@@ -23,3 +23,25 @@
   margin: 0;
   color: var(--ui-text-muted);
 }
+
+/* Every list on Items at the same widths, the hair systems' long names room to breathe. */
+.table th:nth-child(1) {
+  width: 44%;
+}
+
+.table th:nth-child(2) {
+  width: 14%;
+}
+
+.table th:nth-child(3) {
+  width: 26%;
+}
+
+.table th:nth-child(4) {
+  width: 16%;
+}
+
+/* The levels sit in from the cost they follow. */
+.table :is(th, td):nth-child(3) {
+  padding-left: var(--sp-24);
+}

@@ -7,7 +7,7 @@ import { CancelButton } from "@maneman/ui/CancelButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Label, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -57,14 +57,14 @@ function PackageFigures({ each, costs }: { readonly each: Package; readonly cost
   const margin = firstFitMargin(each, cost);
   return (
     <>
-      <td className={form.figure}>{priceOrGap(cheapestHairSystem(each)?.price)}</td>
-      <td className={form.figure}>{priceOrGap(each.service.price)}</td>
-      <td className={form.figure}>{copy.days(each.service.every_days)}</td>
-      <td className={form.figure}>{priceOrGap(each.first_fit.from)}</td>
-      <td className={form.figure}>{priceOrGap(each.replacement.price)}</td>
-      <td className={form.figure}>{copy.months(each.replacement.after_months)}</td>
-      <td className={form.figure}>{cost === null ? copy.gap : rupees(cost)}</td>
-      <td className={form.figure}>{margin === null ? copy.gap : rupees(margin)}</td>
+      <td className={FIGURE}>{priceOrGap(cheapestHairSystem(each)?.price)}</td>
+      <td className={FIGURE}>{priceOrGap(each.service.price)}</td>
+      <td className={FIGURE}>{copy.days(each.service.every_days)}</td>
+      <td className={FIGURE}>{priceOrGap(each.first_fit.from)}</td>
+      <td className={FIGURE}>{priceOrGap(each.replacement.price)}</td>
+      <td className={FIGURE}>{copy.months(each.replacement.after_months)}</td>
+      <td className={FIGURE}>{cost === null ? copy.gap : rupees(cost)}</td>
+      <td className={FIGURE}>{margin === null ? copy.gap : rupees(margin)}</td>
     </>
   );
 }

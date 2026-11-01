@@ -7,7 +7,7 @@ import type { Success } from "@maneman/web-kit/api";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
@@ -132,9 +132,9 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
           {loaded.value.lines.map((line) => (
             <tr key={line.consumable_code}>
               <RowHead>{line.name}</RowHead>
-              <td className={form.figure}>{stock.held(line.held, line.unit)}</td>
-              <td className={form.figure}>{stock.held(line.counted, line.unit)}</td>
-              <td className={form.figure}>{line.recounted === null ? "" : stock.held(line.recounted, line.unit)}</td>
+              <td className={FIGURE}>{stock.held(line.held, line.unit)}</td>
+              <td className={FIGURE}>{stock.held(line.counted, line.unit)}</td>
+              <td className={FIGURE}>{line.recounted === null ? "" : stock.held(line.recounted, line.unit)}</td>
             </tr>
           ))}
         </tbody>
@@ -198,7 +198,7 @@ function Step({
 }
 
 /** What a task counts: its one item, or its class. */
-export const whatOf = (task: Task["task"]): string => task.item?.name ?? copy.classes[task.count_class];
+export const whatOf = (task: Task["task"]): string => task.item?.name ?? copy.classItems[task.count_class];
 
 export function CountTaskPanel({
   id,

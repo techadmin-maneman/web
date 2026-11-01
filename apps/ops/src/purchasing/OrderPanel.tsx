@@ -7,7 +7,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -160,9 +160,9 @@ function LinesTable({ order, named }: { order: Order; named: (code: string) => s
         {order.lines.map((line) => (
           <tr key={line.id}>
             <RowHead>{named(line.consumable_code)}</RowHead>
-            <td className={form.figure}>{line.quantity}</td>
-            <td className={form.figure}>{inCurrency(line.unit_price, order.currency)}</td>
-            <td className={form.figure}>{inCurrency(line.unit_price * line.quantity, order.currency)}</td>
+            <td className={FIGURE}>{line.quantity}</td>
+            <td className={FIGURE}>{inCurrency(line.unit_price, order.currency)}</td>
+            <td className={FIGURE}>{inCurrency(line.unit_price * line.quantity, order.currency)}</td>
           </tr>
         ))}
       </tbody>

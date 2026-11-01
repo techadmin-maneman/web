@@ -1,0 +1,18 @@
+/* A value not there to give (./NoValue.tsx): a muted dash, its word for a screen reader alone. */
+
+@layer base, ui;
+
+@layer ui {
+  .gap {
+    color: var(--ui-text-muted);
+  }
+
+  .spoken {
+    position: absolute;
+    width: var(--sr-only-size);
+    height: var(--sr-only-size);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

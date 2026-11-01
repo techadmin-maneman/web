@@ -7,13 +7,12 @@ export const quality = {
   title: "Quality",
   recalls: "Recalls",
   none: "No recalls.",
-  columns: ["Recall", "Item", "Lot", "Raised", "Status", ""],
+  columns: ["Recall", "Item", "Lot", "Raised", "Status"],
   /** "RC-0003" */
   number: (number: number) => `RC-${String(number).padStart(4, "0")}`,
   open: "Open",
   closed: "Closed",
   view: (number: string) => `Open ${number}`,
-  viewShort: "Open",
   raise: "Recall a lot",
   lot: "Lot",
   /** "Essential 8x10 · BAD-0921" */

@@ -50,6 +50,8 @@ export const broken = {
 } as const;
 
 export const states = {
+  /** A value not there to give (./NoValue.tsx), said aloud in place of its dash. */
+  none: "None",
   loading: "Loading…",
   failed: "Couldn’t load this.",
   retry: "Try again",

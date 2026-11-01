@@ -5,7 +5,7 @@
 import { Note } from "@maneman/ui/Note";
 import { Badge } from "@maneman/ui/Badge";
 import { Panel } from "@maneman/ui/Panel";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { amountOf } from "@maneman/web-kit/figures";
@@ -52,8 +52,8 @@ export function Demand({ stock }: { stock: Stock }) {
                     <tr key={`${row.consumable_code}/${row.city ?? ""}`}>
                       <RowHead>{named(row.consumable_code)}</RowHead>
                       <td>{row.city ?? words.noCity}</td>
-                      <td className={form.figure}>{amountOf(row.expected, unit(row.consumable_code))}</td>
-                      <td className={form.figure}>
+                      <td className={FIGURE}>{amountOf(row.expected, unit(row.consumable_code))}</td>
+                      <td className={FIGURE}>
                         {amountOf(row.held, unit(row.consumable_code))}
                         {row.held < row.expected && (
                           <Badge tone="warning" className={shared.state}>

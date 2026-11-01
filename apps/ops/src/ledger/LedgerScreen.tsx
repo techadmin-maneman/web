@@ -3,6 +3,9 @@
 // (src/domain/money/payment-ledger.ts).
 
 import { Button } from "@maneman/ui/Button";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { NoValue } from "@maneman/ui/NoValue";
+import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { DateInput, Field } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
@@ -12,7 +15,7 @@ import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { useCallback, useState } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { RowHead } from "@maneman/ui/RowHead";
 import { RefundPayment } from "../clients/index.ts";
@@ -64,8 +67,27 @@ const COLUMNS: readonly Column<Payment>[] = copy.payments.columns.map((label, at
   ...(at === 7 || at === 8 ? { choice: (row: Payment) => cellsOf(row)[at] ?? "" } : {}),
 }));
 
-/** The Refunded column, where Finance give back what is left of a payment without opening the client's page. */
-const REFUNDED = 6;
+/** The Status and Books columns, each a state in its tone; the CSV keeps their words. */
+const STATUS = 7;
+const BOOKS = 8;
+
+const STATUS_TONES: Readonly<Record<string, BadgeTone | undefined>> = {
+  authorized: "attention",
+  captured: "done",
+  failed: "error",
+  refunded: "neutral",
+  partially_refunded: "neutral",
+};
+
+/** A cell as the table shows it: a state as a badge, a gap as a dash, the rest as the CSV words it. */
+function shown(row: Payment, at: number, words: string): ReactNode {
+  if (words === copy.noClient) return <NoValue />;
+  if (at === STATUS) return <Badge tone={STATUS_TONES[row.status] ?? "neutral"}>{words}</Badge>;
+  if (at === BOOKS && row.books !== "none") {
+    return <Badge tone={row.books === "applied" ? "done" : "attention"}>{words}</Badge>;
+  }
+  return words;
+}
 
 function Payments({ ledger }: { ledger: Ledger }) {
   const view = useTableView(ledger.payments, COLUMNS, { search: (row) => `${nameOf(row)} ${row.reference ?? ""}` });
@@ -78,6 +100,9 @@ function Payments({ ledger }: { ledger: Ledger }) {
           <thead>
             <tr>
               <SortHeads view={view} />
+              <th scope="col">
+                <VisuallyHidden>{copy.payments.refund}</VisuallyHidden>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -88,10 +113,13 @@ function Payments({ ledger }: { ledger: Ledger }) {
                   <RowHead>{date}</RowHead>
                   {rest.map((cell, at) => (
                     <td key={copy.payments.columns[at + 1]} className={FIGURES.has(at + 1) ? styles.figure : undefined}>
-                      {cell}
-                      {at + 1 === REFUNDED && <RefundPayment entry={row} />}
+                      {shown(row, at + 1, cell)}
                     </td>
                   ))}
+                  {/* Finance give back what is left of a payment here, without opening the client's page. */}
+                  <td>
+                    <RefundPayment entry={row} />
+                  </td>
                 </tr>
               );
             })}

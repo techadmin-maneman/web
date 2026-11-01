@@ -7,9 +7,11 @@ export const counts = {
   title: "Counts",
   tasks: "Count tasks",
   none: "Nothing to count today.",
-  columns: ["Place", "Class", "Due", "Status"],
+  columns: ["Place", "What", "Due", "Status"],
   find: "Find a place",
   classes: { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" },
+  /** What a count covers: every item of its class, "Weekly items", or the one item it was started for. */
+  classItems: { weekly: "Weekly items", monthly: "Monthly items", quarterly: "Quarterly items" },
   states: {
     open: "To count",
     recount: "To count again",

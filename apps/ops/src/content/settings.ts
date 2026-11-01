@@ -609,7 +609,12 @@ export const settings = {
     /** A cost of nothing, which no stock costs us: not entered yet. */
     noCost: "Not set",
     add: "Add a consumable",
-    columns: ["Consumable", "Cost each", "Low at", "Status"],
+    consumableColumn: "Consumable",
+    hairSystemColumn: "Hair system",
+    costColumn: "Cost each",
+    levelsColumn: "Low at",
+    /** The column a retirement shows in, named aloud only: in use, it is empty. */
+    stateColumn: "Retirement",
     none: "No consumables yet.",
     /** "Kit 5 · hub or stockroom 20 · warehouse 50", the levels each kind of place is low at. */
     levels: (at: { kit: number | null; store: number | null; central: number | null }) => {

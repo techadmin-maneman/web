@@ -51,6 +51,18 @@
     border-top: var(--hairline) solid var(--ui-line);
   }
 
+  /* A panel form's fields one under another, with the room a drawer's have between them. */
+  .group > .field + .field,
+  .group > .field + .group {
+    margin-top: var(--sp-16);
+  }
+
+  /* The first group in a panel stands under the panel's own rule: it draws none of its own. */
+  :where([data-panel-head]) + .group {
+    padding-top: 0;
+    border-top: 0;
+  }
+
   /* A form in a drawer: the drawer's own title and room are its, so it adds neither. */
   .inDrawer {
     --note-inset: 0;
@@ -158,8 +170,7 @@
 
   /* ---- In a table ----------------------------------------------------------- */
 
-  .rowHead,
-  .figure {
+  .rowHead {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }

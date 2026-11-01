@@ -1,5 +1,6 @@
-/* A state, in its tone, on the page's own ground (./Badge.tsx): a pill, never edged like a button. Every status colour
-   reads at 4.5:1 on --ui-ground in both of the console's themes (test/node/apps/ops/ops-theme-contrast.test.ts). */
+/* A state, in its tone, on a tint of that tone (./Badge.tsx): a pill, never edged like a button, each tone told apart
+   by its ground as well as its words. Every status colour reads at 4.5:1 on --ui-ground in both of the console's
+   themes (test/node/apps/ops/ops-theme-contrast.test.ts), and its tint is lighter than that ground. */
 
 @layer base, ui;
 
@@ -13,7 +14,7 @@
     font-weight: var(--weight-medium);
     line-height: var(--lh-130);
     white-space: nowrap;
-    background: var(--ui-ground);
+    background: color-mix(in srgb, currentcolor 12%, var(--ui-raised));
   }
 
   .neutral {

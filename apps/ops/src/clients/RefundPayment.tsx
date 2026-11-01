@@ -2,7 +2,7 @@
 // (src/routes/ops/payment-refunds.ts). What is left of it goes back; the refund's row shows once Razorpay processes it.
 // Offered beside each payment on a client's Payments tab and on the Ledger, which Finance reach without a client's page.
 
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Refusal } from "@maneman/ui/Refusal";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -35,16 +35,14 @@ export function RefundPayment({ entry }: { entry: Refundable }) {
   if (left <= 0) return null;
   if (!open) {
     return (
-      <Button
-        variant="outline"
-        size="small"
+      <RowButton
         aria-label={copy.refundLabel(rupees(left))}
         onClick={() => {
           setOpen(true);
         }}
       >
         {copy.refundOpen}
-      </Button>
+      </RowButton>
     );
   }
   return <RefundForm entry={entry} left={left} />;

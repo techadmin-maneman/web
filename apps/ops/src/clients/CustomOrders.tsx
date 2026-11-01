@@ -9,7 +9,7 @@ import { TextLink } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -163,7 +163,7 @@ function OrdersTable({
           <tr key={order.id}>
             <RowHead>{copy.number(order.number)}</RowHead>
             <td>{copy.spec(order)}</td>
-            <td className={form.figure}>{rupees(order.amount)}</td>
+            <td className={FIGURE}>{rupees(order.amount)}</td>
             <td>
               {copy.statuses[order.status]}
               {order.status === "awaiting_payment" && order.short_url !== null && (

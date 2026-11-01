@@ -5,9 +5,8 @@
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { Badge } from "@maneman/ui/Badge";
-import form from "@maneman/ui/forms.module.css";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useState } from "react";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
@@ -54,7 +53,7 @@ function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) 
             </RowHead>
             <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
             <td>{city.zone ?? copy.noZone}</td>
-            <td className={form.figure}>{city.technicians}</td>
+            <td className={FIGURE}>{city.technicians}</td>
             <td>
               {city.active && city.served && city.technicians === 0 ? (
                 <Badge tone="attention">{copy.noTechnician}</Badge>

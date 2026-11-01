@@ -17,6 +17,8 @@ export const ledger = {
   payments: {
     title: "Payments",
     columns: ["Date", "Reference", "Client", "For", "Method", "Amount", "Refunded", "Status", "Books"],
+    /** The last column, named aloud only: a refund given from the row. */
+    refund: "Refund",
     more: (cap: number) => `Showing the latest ${String(cap)}. Choose fewer days to see the rest.`,
   },
   kinds: { visit: "Visit", late_fee: "Late fee" } as Readonly<Record<string, string | undefined>>,

@@ -11,9 +11,8 @@ export const usage = {
   /** Above the table: each technician's use over what their visits expected, the furthest over first. */
   chart: "Used over expected",
   noTechnicians: "No visits done in these weeks.",
-  technicianColumns: ["Technician", "Visits", "Expected", "Used", "Over by", ""],
+  technicianColumns: ["Technician", "Visits", "Expected", "Used", "Over by"],
   items: (name: string) => `Items of ${name}`,
-  itemsShort: "Items",
   itemColumns: ["Item", "Expected", "Used", "Over by"],
   places: "Losses",
   noPlaces: "Nothing left any place in these weeks.",

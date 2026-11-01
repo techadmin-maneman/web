@@ -3,9 +3,10 @@
 
 import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
-import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { quantity } from "@maneman/web-kit/figures";
 import { BarChart } from "@maneman/ui/BarChart";
@@ -28,7 +29,7 @@ function Head({ columns }: { columns: readonly string[] }) {
     <thead>
       <tr>
         {columns.map((column, index) => (
-          <th key={column} scope="col" className={index === 0 ? undefined : form.figure}>
+          <th key={column} scope="col" className={index === 0 ? undefined : FIGURE}>
             {column}
           </th>
         ))}
@@ -45,9 +46,9 @@ function Items({ technician }: { technician: Technician }) {
         {technician.items.map((item) => (
           <tr key={item.consumable_code}>
             <RowHead>{item.name}</RowHead>
-            <td className={form.figure}>{quantity(item.expected)}</td>
-            <td className={form.figure}>{quantity(item.used)}</td>
-            <td className={form.figure}>{copy.over(item.over_percent)}</td>
+            <td className={FIGURE}>{quantity(item.expected)}</td>
+            <td className={FIGURE}>{quantity(item.used)}</td>
+            <td className={FIGURE}>{copy.over(item.over_percent)}</td>
           </tr>
         ))}
       </tbody>
@@ -85,25 +86,21 @@ function Technicians({ usage }: { usage: Usage }) {
               {usage.technicians.map((technician) => (
                 <tr key={technician.technician_id}>
                   <RowHead>
-                    {technician.name}
-                    {technician.flagged && <Note>{copy.flagged}</Note>}
-                  </RowHead>
-                  <td className={form.figure}>{technician.visits}</td>
-                  <td className={form.figure}>{roundRupees(technician.expected_value)}</td>
-                  <td className={form.figure}>{roundRupees(technician.used_value)}</td>
-                  <td className={form.figure}>{copy.over(technician.over_percent)}</td>
-                  <td>
-                    <Button
-                      variant="outline"
-                      size="small"
+                    <TextButton
+                      compact
                       aria-label={copy.items(technician.name)}
                       onClick={() => {
                         setOpen(technician.technician_id);
                       }}
                     >
-                      {copy.itemsShort}
-                    </Button>
-                  </td>
+                      {technician.name}
+                    </TextButton>
+                    {technician.flagged && <Note>{copy.flagged}</Note>}
+                  </RowHead>
+                  <td className={FIGURE}>{technician.visits}</td>
+                  <td className={FIGURE}>{roundRupees(technician.expected_value)}</td>
+                  <td className={FIGURE}>{roundRupees(technician.used_value)}</td>
+                  <td className={FIGURE}>{copy.over(technician.over_percent)}</td>
                 </tr>
               ))}
             </tbody>
@@ -135,11 +132,11 @@ function Places({ usage }: { usage: Usage }) {
                   {place.place}
                   {place.flagged && <Note>{copy.flagged}</Note>}
                 </RowHead>
-                <td className={form.figure}>{roundRupees(place.left_value)}</td>
-                <td className={form.figure}>{roundRupees(place.lost_value)}</td>
-                <td className={form.figure}>{copy.percent(place.shrinkage_percent)}</td>
-                <td className={form.figure}>{place.write_offs}</td>
-                <td className={form.figure}>{copy.percent(place.count_accuracy_percent)}</td>
+                <td className={FIGURE}>{roundRupees(place.left_value)}</td>
+                <td className={FIGURE}>{roundRupees(place.lost_value)}</td>
+                <td className={FIGURE}>{copy.percent(place.shrinkage_percent)}</td>
+                <td className={FIGURE}>{place.write_offs}</td>
+                <td className={FIGURE}>{copy.percent(place.count_accuracy_percent)}</td>
               </tr>
             ))}
           </tbody>
@@ -151,13 +148,13 @@ function Places({ usage }: { usage: Usage }) {
 
 export function UsageScreen() {
   const [loaded, retry] = useLoad(loadUsage);
+  useHeaderSub(loaded.state === "loaded" ? copy.since(loaded.value.since) : undefined);
   return (
     <>
       {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <div className={form.screen}>
-          <Note>{copy.since(loaded.value.since)}</Note>
           <Technicians usage={loaded.value} />
           <Places usage={loaded.value} />
         </div>

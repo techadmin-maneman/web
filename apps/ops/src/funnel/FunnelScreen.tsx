@@ -7,7 +7,7 @@ import { plainDate } from "@maneman/web-kit/plain-date";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -55,7 +55,7 @@ function Channels({ funnel }: { funnel: Funnel }) {
             <thead>
               <tr>
                 {copy.channels.columns.map((column, at) => (
-                  <th key={column} scope="col" className={at === 0 ? undefined : form.figure}>
+                  <th key={column} scope="col" className={at === 0 ? undefined : FIGURE}>
                     {column}
                   </th>
                 ))}
@@ -65,10 +65,10 @@ function Channels({ funnel }: { funnel: Funnel }) {
               {shown.map((each) => (
                 <tr key={each.channel}>
                   <RowHead>{each.channel}</RowHead>
-                  <td className={form.figure}>{each.leads}</td>
-                  <td className={form.figure}>{copy.share(each.booked, each.leads)}</td>
-                  <td className={form.figure}>{copy.share(each.consulted, each.leads)}</td>
-                  <td className={form.figure}>{copy.share(each.fitted, each.leads)}</td>
+                  <td className={FIGURE}>{each.leads}</td>
+                  <td className={FIGURE}>{copy.share(each.booked, each.leads)}</td>
+                  <td className={FIGURE}>{copy.share(each.consulted, each.leads)}</td>
+                  <td className={FIGURE}>{copy.share(each.fitted, each.leads)}</td>
                 </tr>
               ))}
             </tbody>
