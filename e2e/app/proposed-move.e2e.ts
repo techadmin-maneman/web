@@ -9,6 +9,7 @@ import { axeViolations } from "../a11y.ts";
 import { passedThrough } from "./booking-fixtures.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
+import { wrappedButtons } from "../wrapped-buttons.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
 const PROPOSED = "2099-01-06";
@@ -54,6 +55,7 @@ test("Home asks the client to confirm a move ops proposed, beside another time o
   await expect(page.getByRole("button", { name: appCopy.home.proposal.pick })).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
+  expect(await wrappedButtons(page)).toEqual([]);
 
   await page.getByRole("button", { name: `Accept ${shortDate(PROPOSED)}` }).click();
   await expect.poll(() => accepted).toEqual([`/api/visits/${fittedClient().next.id}/proposed-move/accept`]);
