@@ -2,7 +2,8 @@
 // client who came with none may have one attached, for a friend who booked away from the invite's page
 // (docs/decisions/0089-an-invite-is-not-lost.md).
 
-import { typeLook } from "@maneman/ui/type";
+import { Panel } from "@maneman/ui/Panel";
+import form from "@maneman/ui/forms.module.css";
 import { Toast } from "@maneman/ui/Toast";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -149,13 +150,12 @@ export function Invite({
 }) {
   const mayAttach = useAccess().mayCall("POST /api/clients/{id}/referral");
   return (
-    <section className={shared.invite} aria-labelledby="invite">
-      <h3 className={typeLook("title-4", shared.sectionTitle)} id="invite">
-        {copy.title}
-      </h3>
-      {invite !== null && <Details invite={invite} news={news} />}
-      {invite === null && mayAttach && <AttachForm clientId={clientId} onInvite={onInvite} />}
-      {invite === null && !mayAttach && <p className={shared.findHint}>{copy.noInvite}</p>}
-    </section>
+    <Panel titleId="invite" title={copy.title}>
+      <div className={form.group}>
+        {invite !== null && <Details invite={invite} news={news} />}
+        {invite === null && mayAttach && <AttachForm clientId={clientId} onInvite={onInvite} />}
+        {invite === null && !mayAttach && <p className={shared.findHint}>{copy.noInvite}</p>}
+      </div>
+    </Panel>
   );
 }

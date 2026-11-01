@@ -1,14 +1,8 @@
 /* What ./History.tsx alone draws; what it shares is in ./clients.module.css. */
 
-.history {
-  max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--ui-line);
-  padding: var(--sp-24);
-}
-
+/* The client's history, its lines in from the panel's edges, under the panel's own rule. */
 .historyList {
-  margin: 0;
-  border-top: var(--hairline) solid var(--ui-text);
+  margin: 0 var(--note-inset);
 }
 
 .historyRow {
@@ -33,6 +27,6 @@
 }
 
 .historyActivity {
-  margin: var(--sp-16) 0 0;
+  margin: var(--sp-16) var(--note-inset);
   font-size: var(--fs-14);
 }

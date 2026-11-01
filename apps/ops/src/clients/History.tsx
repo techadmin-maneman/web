@@ -3,6 +3,7 @@
 // the record, in Activity.
 
 import { shortMonth } from "@maneman/web-kit/dates";
+import { Panel } from "@maneman/ui/Panel";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { rupees } from "@maneman/web-kit/money";
 import type { ClientRecord } from "../api.ts";
@@ -27,7 +28,7 @@ export function History({ clientId, history }: { clientId: string; history: Clie
   const due = history.replacement_due;
   const mayReadLog = useAccess().mayCall("GET /api/activity");
   return (
-    <section className={styles.history} aria-label={copy.title}>
+    <Panel titleId="client-history" title={copy.title}>
       <dl className={styles.historyList}>
         <HistoryRow
           label={copy.rows.firstFit}
@@ -51,7 +52,7 @@ export function History({ clientId, history }: { clientId: string; history: Clie
           <OpsLink to={activityPath({ person: clientId })}>{copy.activity}</OpsLink>
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 

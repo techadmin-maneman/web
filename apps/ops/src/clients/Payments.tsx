@@ -2,7 +2,8 @@
 // page holds; and their service-visit credits, which ops correct by hand, the server writing the ledger and audit
 // entries together (docs/decisions/0068-a-paid-hold-is-kept.md).
 
-import { typeLook } from "@maneman/ui/type";
+import { Panel } from "@maneman/ui/Panel";
+import form from "@maneman/ui/forms.module.css";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Toast } from "@maneman/ui/Toast";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -253,28 +254,32 @@ function CreditSection({
   // What the last change left them with, said beside the balance once its drawer closes.
   const [saved, setSaved] = useState<number | null>(null);
   return (
-    <section className={styles.credits} aria-labelledby="credits">
-      <h3 className={typeLook("title-4", styles.sectionTitle)} id="credits">
-        {creditCopy.title}
-      </h3>
-      <Balance credits={credits} />
-      {mayAdjust && (
-        <DrawerButton label={creditCopy.adjust} title={creditCopy.title}>
-          {(close) => (
-            <CreditForm
-              clientId={clientId}
-              credits={credits}
-              onCredits={(changed) => {
-                onCredits(changed);
-                setSaved(changed?.visits ?? 0);
-                close();
-              }}
-            />
-          )}
-        </DrawerButton>
-      )}
+    <Panel
+      titleId="credits"
+      title={creditCopy.title}
+      actions={
+        mayAdjust && (
+          <DrawerButton label={creditCopy.adjust} title={creditCopy.title}>
+            {(close) => (
+              <CreditForm
+                clientId={clientId}
+                credits={credits}
+                onCredits={(changed) => {
+                  onCredits(changed);
+                  setSaved(changed?.visits ?? 0);
+                  close();
+                }}
+              />
+            )}
+          </DrawerButton>
+        )
+      }
+    >
+      <div className={form.group}>
+        <Balance credits={credits} />
+      </div>
       {saved !== null && <Toast>{creditCopy.saved(saved)}</Toast>}
-    </section>
+    </Panel>
   );
 }
 
@@ -391,18 +396,15 @@ export function MoneyRecords({
 }) {
   return (
     <>
-      <section className={styles.visitList} aria-label={copy.title}>
-        <h3 className={typeLook("title-4", styles.sectionTitle)}>{copy.title}</h3>
+      <Panel titleId="client-payments" title={copy.title}>
         <PaymentTable payments={payments} />
-      </section>
-      <section className={styles.visitList} aria-label={linkCopy.title}>
-        <h3 className={typeLook("title-4", styles.sectionTitle)}>{linkCopy.title}</h3>
+      </Panel>
+      <Panel titleId="client-links" title={linkCopy.title}>
         <LinkTable links={links} />
-      </section>
-      <section className={styles.visitList} aria-label={invoiceCopy.title}>
-        <h3 className={typeLook("title-4", styles.sectionTitle)}>{invoiceCopy.title}</h3>
+      </Panel>
+      <Panel titleId="client-invoices" title={invoiceCopy.title}>
         <InvoiceTable invoices={invoices} />
-      </section>
+      </Panel>
     </>
   );
 }
