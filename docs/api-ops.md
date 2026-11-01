@@ -9859,6 +9859,42 @@ Request body:
 }
 ```
 
+**409**: window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours)
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "window_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 **503**: unavailable: the WhatsApp provider sends no free text yet
 
 ```json
@@ -34249,6 +34285,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "window_closed",
             "number_not_proved",
             "unauthorized",
             "visit_booked",
@@ -38134,6 +38171,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "window_closed",
             "number_not_proved",
             "unauthorized",
             "visit_booked",

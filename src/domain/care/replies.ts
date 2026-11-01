@@ -29,20 +29,33 @@ interface Change {
   readonly now: Date;
 }
 
-/** The thread's number and whether its client is a test record, or why nothing can be sent to it. */
-async function numberOf(
-  db: D1Database,
-  conversationId: string,
-): Promise<{ readonly to: string; readonly testRecord: boolean } | "not_found" | "erased"> {
+interface Recipient {
+  readonly to: string;
+  readonly testRecord: boolean;
+  /** When the client last wrote; null where they never have. */
+  readonly lastInbound: string | null;
+}
+
+/** The thread's number, whether its client is a test record and when they last wrote, or why nothing can be sent. */
+async function numberOf(db: D1Database, conversationId: string): Promise<Recipient | "not_found" | "erased"> {
   const row = await db
     .prepare(
-      `SELECT c.mobile_e164, COALESCE(p.test_record, 0) AS test_record
+      `SELECT c.mobile_e164, COALESCE(p.test_record, 0) AS test_record, c.last_inbound_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id WHERE c.id = ?1`,
     )
     .bind(conversationId)
-    .first<{ mobile_e164: string; test_record: number }>();
+    .first<{ mobile_e164: string; test_record: number; last_inbound_at: string | null }>();
   if (row === null) return "not_found";
-  return hasNumber(row.mobile_e164) ? { to: row.mobile_e164, testRecord: row.test_record === 1 } : "erased";
+  if (!hasNumber(row.mobile_e164)) return "erased";
+  return { to: row.mobile_e164, testRecord: row.test_record === 1, lastInbound: row.last_inbound_at };
+}
+
+/** Whether a reply may still go: inside the provider's window from the client's last message, where it has one. */
+function insideWindow(messaging: MessagingProvider, number: Recipient, now: Date): boolean {
+  const hours = messaging.replyWindowHours;
+  if (hours === undefined) return true;
+  if (number.lastInbound === null) return false;
+  return now.getTime() - Date.parse(number.lastInbound) <= hours * 60 * 60 * 1000;
 }
 
 /** Why a reply is kept unsent: messaging is off, or it is to a test record the allowlist holds back. */
@@ -52,7 +65,7 @@ function heldBecause(settings: MessagingSettings, number: { readonly to: string;
   return held ? "Not sent: a test record, held back." : null;
 }
 
-export type Replied = "sent" | "failed" | "not_found" | "erased" | "unavailable";
+export type Replied = "sent" | "failed" | "not_found" | "erased" | "unavailable" | "window_closed";
 
 /**
  * Sends a reply from our number and keeps it in the thread, sent or failed with why. A sent reply leaves the thread
@@ -67,6 +80,8 @@ export async function replyTo(
   const number = await numberOf(db, change.conversationId);
   if (number === "not_found" || number === "erased") return number;
   if (messaging.reply === undefined) return "unavailable";
+  // Past WhatsApp's window the reply would only come back refused: nothing is sent or kept.
+  if (!insideWindow(messaging, number, change.now)) return "window_closed";
   const held = heldBecause(settings, number);
   const result: SendResult =
     held === null ? await messaging.reply(number.to, change.text) : { ok: false, transient: false, detail: held };

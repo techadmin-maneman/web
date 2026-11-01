@@ -56,10 +56,14 @@ export interface MessagingProvider {
   send(message: OutboundMessage): Promise<SendResult>;
   /**
    * A Care reply in the team's own words, to a client who wrote to us (docs/decisions/0130-replies-from-the-care-inbox.md).
-   * The bridge sends it as plain text. MSG91 sends free text only inside WhatsApp's 24-hour window, which support
-   * phase 1 brings; until then it has none.
+   * The bridge sends it as plain text; MSG91 as its session message.
    */
   reply?(to: string, text: string): Promise<SendResult>;
+  /**
+   * How long after the client's last message a reply may still go, in hours: WhatsApp's own window, where the provider
+   * is held to it. Left out, any time.
+   */
+  readonly replyWindowHours?: number;
   /** Read only: nothing is sent. Every login code goes this way, so the cron asks (src/scheduled/whatsapp-bridge.ts). */
   connection(): Promise<Connection>;
 }
