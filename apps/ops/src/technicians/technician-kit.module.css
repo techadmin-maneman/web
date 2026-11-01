@@ -1,19 +1,20 @@
 /* What ./TechnicianKit.tsx alone draws; what it shares is in ./technicians.module.css. */
 
-.kit {
-  margin-top: var(--sp-12);
+/* The kit's columns, as Stock's one place sets them: the item room for a long hair system name, the rest even. */
+.kit th:nth-child(1) {
+  width: 44%;
 }
 
-/* At or below its level: said in words, and in oxblood, never by colour alone. */
-.low {
-  margin-left: var(--sp-8);
-  font-size: var(--fs-13);
-  font-weight: var(--weight-medium);
-  color: var(--status-warning);
+.kit th:nth-child(2) {
+  width: 16%;
 }
 
-.counted {
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
-  white-space: nowrap;
+.kit th:nth-child(3),
+.kit th:nth-child(4) {
+  width: 20%;
+}
+
+/* The state sits in from the figure it follows. */
+.kit :is(th, td):nth-child(3) {
+  padding-left: var(--sp-24);
 }

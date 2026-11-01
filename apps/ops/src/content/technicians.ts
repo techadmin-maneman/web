@@ -102,7 +102,8 @@ export const technicians = {
     runsOver: "Runs over the planned length",
   },
   kit: {
-    columns: ["Item", "Held", "Last counted"],
+    title: "Kit",
+    columns: { item: "Item", held: "On hand", status: "Status", counted: "Last counted" },
     none: "Kit is empty.",
     stock: "Record a movement in Stock",
   },

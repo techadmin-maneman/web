@@ -4,6 +4,7 @@
 // own works their city's hours every day.
 
 import { typeLook } from "@maneman/ui/type";
+import { classes } from "@maneman/ui/classes";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { AddressSearch } from "@maneman/ui/AddressSearch";
 import { Button } from "@maneman/ui/Button";
@@ -286,7 +287,7 @@ export function Hours({ technician, onChange }: { technician: Technician; onChan
           onChange={onChange}
         />
       </section>
-      <section className={styles.part} aria-label={copy.home}>
+      <section className={classes(styles.part, form.group)} aria-label={copy.home}>
         <h3 className={typeLook("title-4", shared.sectionTitle)}>{copy.home}</h3>
         <p className={styles.home}>{technician.home?.label ?? copy.noHome}</p>
         {home && <HomeForm technician={technician} onDone={done} onCancel={close} />}

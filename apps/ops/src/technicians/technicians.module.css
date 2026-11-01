@@ -56,12 +56,12 @@
 
 /* ---- A technician's page: their details, then a tab at a time ------------ */
 
+/* A technician's page: their details, their tabs, then the tab's panel, each the page's width. */
 .page {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--sp-8);
-  max-width: var(--ops-list);
+  align-items: stretch;
+  gap: var(--sp-16);
 }
 
 .back {
@@ -75,19 +75,7 @@
   margin-top: var(--sp-20);
 }
 
-.tabPanel {
-  align-self: stretch;
-  padding-top: var(--sp-16);
-}
-
 /* ---- Their details, in the panel ----------------------------------------- */
-
-.offNote {
-  margin: 0 0 var(--sp-8);
-  font-size: var(--fs-13);
-  line-height: var(--lh-145);
-  color: var(--ui-text-muted);
-}
 
 /* Their details, a value a row, each changed where it reads. */
 .rows {
@@ -101,7 +89,7 @@
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 0 var(--sp-8);
-  margin-top: var(--sp-8);
+  margin: var(--sp-12) var(--form-inset) var(--sp-16);
 }
 
 .formField {
