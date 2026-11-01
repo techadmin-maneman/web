@@ -87,9 +87,11 @@
     z-index: var(--z-raised);
   }
 
+  /* A figure never breaks across lines: one that wraps reads as two. A table too wide for its figures scrolls. */
   .table .figure {
     font-variant-numeric: tabular-nums;
     text-align: right;
+    white-space: nowrap;
   }
 
   /* Rows of controls (./Table.tsx's `controls`): the boxes and buttons in them make each row's height. */

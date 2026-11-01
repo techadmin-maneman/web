@@ -20,10 +20,13 @@ import type { Cities, City } from "./types.ts";
 
 const copy = words.list;
 
-const statusOf = (city: City): string => {
-  if (!city.active) return copy.hidden;
-  return city.served ? copy.served : copy.notServed;
-};
+/** A city's standing in its tone: served is done; served with nobody to send is to act on; the rest are quiet. */
+function Status({ city }: { city: City }) {
+  if (!city.active) return <Badge tone="neutral">{copy.hidden}</Badge>;
+  if (!city.served) return <Badge tone="neutral">{copy.notServed}</Badge>;
+  if (city.technicians === 0) return <Badge tone="warning">{copy.noTechnician}</Badge>;
+  return <Badge tone="done">{copy.served}</Badge>;
+}
 
 function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) => void }) {
   return (
@@ -55,11 +58,7 @@ function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) 
             <td>{city.zone ?? copy.noZone}</td>
             <td className={FIGURE}>{city.technicians}</td>
             <td>
-              {city.active && city.served && city.technicians === 0 ? (
-                <Badge tone="attention">{copy.noTechnician}</Badge>
-              ) : (
-                statusOf(city)
-              )}
+              <Status city={city} />
             </td>
           </tr>
         ))}

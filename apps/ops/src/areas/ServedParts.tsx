@@ -128,7 +128,7 @@ export function PincodeRow({ pincode, chosen, onChoose, onSave }: PincodeRowProp
           <Badge tone="attention">{areas.pause.chip(shortDate(pincode.paused_until))}</Badge>
         )}
         {pincode.served && pincode.paused_until === null && <Badge tone="done">{copy.yes}</Badge>}
-        {!pincode.served && copy.no}
+        {!pincode.served && <Badge tone="neutral">{copy.no}</Badge>}
       </td>
       <td>{pincode.launch_on === null ? "" : shortDate(pincode.launch_on)}</td>
       <td className={FIGURE}>{pincode.waiting}</td>

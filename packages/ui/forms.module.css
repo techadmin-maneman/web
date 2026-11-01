@@ -113,6 +113,12 @@
     margin: var(--sp-16) var(--form-inset) 0;
   }
 
+  /* A group is in from the panel's edges already: its own heading and fields sit at its edge, as its rows do. */
+  .group > .field,
+  .group > .ruleTitle {
+    margin-inline: 0;
+  }
+
   .fieldLabel {
     display: block;
     font-size: var(--fs-14);

@@ -58,11 +58,17 @@ function PackageFigures({ each, costs }: { readonly each: Package; readonly cost
   return (
     <>
       <td className={FIGURE}>{priceOrGap(cheapestHairSystem(each)?.price)}</td>
-      <td className={FIGURE}>{priceOrGap(each.service.price)}</td>
-      <td className={FIGURE}>{copy.days(each.service.every_days)}</td>
+      <td className={FIGURE}>
+        {each.service.price === null
+          ? copy.gap
+          : copy.serviceEvery(priceText(each.service.price), each.service.every_days)}
+      </td>
       <td className={FIGURE}>{priceOrGap(each.first_fit.from)}</td>
-      <td className={FIGURE}>{priceOrGap(each.replacement.price)}</td>
-      <td className={FIGURE}>{copy.months(each.replacement.after_months)}</td>
+      <td className={FIGURE}>
+        {each.replacement.price === null
+          ? copy.gap
+          : copy.replacementAfter(priceText(each.replacement.price), each.replacement.after_months)}
+      </td>
       <td className={FIGURE}>{cost === null ? copy.gap : rupees(cost)}</td>
       <td className={FIGURE}>{margin === null ? copy.gap : rupees(margin)}</td>
     </>
@@ -81,8 +87,12 @@ function PackageList(props: {
       <Table>
         <thead>
           <tr>
-            {Object.values(copy.columns).map((column) => (
-              <th key={column} scope="col">
+            {Object.entries(copy.columns).map(([key, column]) => (
+              <th
+                key={key}
+                scope="col"
+                className={(copy.figureColumns as readonly string[]).includes(key) ? FIGURE : undefined}
+              >
                 {column}
               </th>
             ))}

@@ -2,6 +2,7 @@
 // may be withdrawn, asked once in its row; the one in force and the spent ones stay, as an invoice may stand on them.
 
 import { Toast } from "@maneman/ui/Toast";
+import { plainDate } from "@maneman/web-kit/plain-date";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
@@ -32,7 +33,7 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => Promise<v
       words={{
         ...copy.withdrawing,
         label: (city: string) => copy.withdrawing.label(item, city),
-        warning: (city: string) => copy.withdrawing.warning(item, city, price.valid_from),
+        warning: (city: string) => copy.withdrawing.warning(item, city, plainDate(price.valid_from)),
       }}
       send={() => citiesApi.removePrice(price.city, price.item, price.tier, price.valid_from)}
       refusal={(code) => errorText(copy.errors, { code })}
@@ -64,7 +65,7 @@ function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => Promise<
             </td>
             <td>{rupees(price.amount_ex_gst)}</td>
             <td>{price.gst_percent}%</td>
-            <td>{price.in_force ? copy.inForce : price.valid_from}</td>
+            <td>{price.in_force ? copy.inForce : plainDate(price.valid_from)}</td>
             <td>{mayWithdraw && price.valid_from > cities.today && <Withdraw price={price} onDone={onDone} />}</td>
           </tr>
         ))}

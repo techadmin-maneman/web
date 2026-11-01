@@ -48,7 +48,8 @@ export function Panel({
   const hasActions = actions !== undefined && actions !== null && actions !== false && actions !== "";
   return (
     <section className={classes(styles.panel, className)} id={id} aria-labelledby={titleId} ref={ref}>
-      <div className={repeats && count === undefined && !hasActions ? undefined : styles.head} data-panel-head="">
+      {/* A panel titled as its page draws a head only for its actions; its count goes with the title it hides. */}
+      <div className={repeats && !hasActions ? undefined : styles.head} data-panel-head="">
         <h2
           className={repeats ? hiddenLook : typeLook("title-4", styles.title)}
           id={titleId}
@@ -58,7 +59,7 @@ export function Panel({
           {title}
         </h2>
         {repeats && <span className={styles.title} />}
-        {count !== undefined && <span className={styles.count}>{count}</span>}
+        {count !== undefined && !(repeats && !hasActions) && <span className={styles.count}>{count}</span>}
         {actions}
       </div>
       {children}
