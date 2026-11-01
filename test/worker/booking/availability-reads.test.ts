@@ -2,12 +2,12 @@
 // its reads that need nothing from each other go together, and the days it plans are its own city's technicians' only,
 // so another city's visits cost it nothing. NOW is Monday 21 September 2026, 12 noon in India.
 
-import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, countRowsRead, d1TripsOf, fakeDependencies, markDatabase, request } from "../helpers.ts";
 import { aPerson } from "../fixtures/index.ts";
-import { client, IMRAN, SANA, SANDEEP, technician } from "./client-booking-fixtures.ts";
+import { DAY_MS, MINUTE_MS } from "../../../src/lib/durations.ts";
+import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 
 /**
  * The most round trips to D1 availability may wait on in turn, the first in an isolate, which reads the inputs ops set
@@ -25,22 +25,14 @@ let app: App;
 const availability = (who: { cookie: string }) =>
   request(app, "/api/availability?type=service", { headers: { Cookie: who.cookie } });
 
-/** A Delhi technician's two weeks ahead, DELHI_VISITS of them, for a Delhi client. */
+/** A Delhi technician's two weeks ahead, DELHI_VISITS of them, four a day, for a Delhi client. */
 async function busyInDelhi(): Promise<void> {
   const { id } = await aPerson({ name: "Kabir Sood" });
-  await env.DB.prepare(
-    `WITH RECURSIVE d(o) AS (SELECT 0 UNION ALL SELECT o + 1 FROM d WHERE o < 13),
-       k(s) AS (SELECT 0 UNION ALL SELECT s + 1 FROM k WHERE s < 3)
-     INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
-       fsm_modified_at, synced_at)
-     SELECT 'dv-' || o || '-' || s, 'fsm-dv-' || o || '-' || s, ?2, 'service', 'scheduled', 'scheduled',
-       strftime('%Y-%m-%dT%H:%M:%fZ', '2026-09-22T03:30:00Z', o || ' days', (s * 150) || ' minutes'),
-       strftime('%Y-%m-%dT%H:%M:%fZ', '2026-09-22T05:00:00Z', o || ' days', (s * 150) || ' minutes'), ?1,
-       '2026-09-21T06:30:00Z', '2026-09-21T06:30:00Z'
-     FROM d, k`,
-  )
-    .bind(DELHI, id)
-    .run();
+  const starts = Array.from({ length: DELHI_VISITS }, (_, index) => {
+    const day = Date.parse("2026-09-22T03:30:00.000Z") + Math.floor(index / 4) * DAY_MS;
+    return new Date(day + (index % 4) * 150 * MINUTE_MS).toISOString();
+  });
+  await Promise.all(starts.map((start) => visit(id, "service", "scheduled", start, DELHI)));
 }
 
 beforeEach(async () => {
