@@ -318,6 +318,20 @@ test("lets a lapsed hold go the moment the phone sees it lapse, and picks again"
   await expect(page.getByRole("dialog", { name: appCopy.booking.date.title })).toBeVisible();
 });
 
+// A phone that slept wakes with its timers behind: the clock moves on without firing them, and the sheet must still
+// say the time is up rather than sit at 0:00 with Pay off.
+test("says the time is up when a phone that slept comes back past its hold", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await page.clock.install();
+  await toPayment(page);
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.setSystemTime(now + 20 * 60_000);
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  const expired = page.getByRole("dialog", { name: appCopy.booking.expired.title });
+  await expect(expired).toBeVisible();
+  await expect(expired.getByRole("button", { name: appCopy.booking.expired.pickAgain })).toBeVisible();
+});
+
 // A payment Razorpay took in time keeps the hold (ADR 0068): when the phone sees the time end, it asks, and says
 // the payment is in rather than that the slot has gone, and lets nothing go.
 test("says the payment is in, and lets nothing go, when the time ends on a paid hold", async ({ page }) => {

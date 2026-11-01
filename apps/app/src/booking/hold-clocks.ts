@@ -11,20 +11,33 @@ import { paysNothing } from "./pay.ts";
 const POLL_MS = 2_000;
 const POLL_FOR_MS = 60_000;
 
-/** Calls `lapse` when the hold's countdown ends, by the API's clock (packages/web-kit/clock.ts); nothing while there is no hold. */
+/** How often the hold's deadline is read again, so a phone that slept, whose timers fall behind, lapses on waking. */
+const LAPSE_CHECK_MS = 1_000;
+
+/**
+ * Calls `lapse` once the hold's deadline has passed, by the API's clock (packages/web-kit/clock.ts); nothing while there
+ * is no hold. The deadline itself is read, each second and as the app comes back to the front, as the countdown reads
+ * it: a timer set for the time left runs late on a phone that slept, and the sheet would sit at 0:00 meanwhile.
+ */
 export function useHoldLapse(hold: Hold | null, lapse: (hold: Hold) => void): void {
   // The newest lapse the sheet drew, without starting the clock again each time it draws one.
   const onLapse = useEffectEvent(lapse);
   useEffect(() => {
     if (hold === null) return;
-    const timer = window.setTimeout(
-      () => {
-        onLapse(hold);
-      },
-      Math.max(0, Date.parse(hold.expires_at) - apiNow()),
-    );
+    const deadline = Date.parse(hold.expires_at);
+    let lapsed = false;
+    const check = () => {
+      if (lapsed || apiNow() < deadline) return;
+      lapsed = true;
+      onLapse(hold);
+    };
+    const timer = window.setTimeout(check, Math.max(0, deadline - apiNow()));
+    const every = window.setInterval(check, LAPSE_CHECK_MS);
+    document.addEventListener("visibilitychange", check);
     return () => {
       window.clearTimeout(timer);
+      window.clearInterval(every);
+      document.removeEventListener("visibilitychange", check);
     };
   }, [hold]);
 }
