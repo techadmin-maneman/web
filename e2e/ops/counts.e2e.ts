@@ -62,6 +62,35 @@ test("opens a task and counts it blind", async ({ page }) => {
   expect(await axeViolations(page)).toEqual([]);
 });
 
+// A count that differs is counted again in the same panel: the recount waits for its own figure, and asks no reason;
+// why it differs is the manager's, at sign-off.
+test("counts again what differed, in the same panel, once the recount's figure is typed", async ({ page }) => {
+  const task = { task: KIT, items: [{ ...PIECE, state: "to_count" as const }] };
+  const again = { task: { ...KIT, state: "recount" as const }, items: [{ ...PIECE, state: "recount" as const }] };
+  const waiting = { task: { ...KIT, state: "sign_off" as const }, items: [{ ...PIECE, state: "sign_off" as const }] };
+  await open(page, {
+    "GET /api/count-tasks/{id}": json(task),
+    "POST /api/count-tasks/{id}/counts": json(again),
+    "POST /api/count-tasks/{id}/recounts": json(waiting),
+  });
+  await page.getByRole("button", { name: opener("Imran Qureshi") }).click();
+  const panel = page.getByRole("dialog", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
+  await panel.getByLabel(copy.counted(PIECE.name)).fill("1");
+  await panel.getByRole("button", { name: copy.saveCount }).click();
+
+  await expect(panel).toContainText(copy.recountNote);
+  const recount = panel.getByRole("button", { name: copy.saveRecount });
+  await expect(panel.getByLabel(copy.counted(PIECE.name))).toHaveValue("");
+  await expect(panel.getByLabel(copy.why)).toHaveCount(0);
+  await expect(recount).toBeDisabled();
+  await panel.getByLabel(copy.counted(PIECE.name)).fill("1");
+  await expect(recount).toBeEnabled();
+  const request = posted(page, "/api/count-tasks/ct-1/recounts");
+  await recount.click();
+  expect((await request).postDataJSON()).toEqual({ lines: [{ consumable_code: "hs-1", counted: 1 }] });
+  await expect(page.getByRole("status").filter({ hasText: copy.recountSaid(1) })).toHaveText(copy.recountSaid(1));
+});
+
 // A weekly count of a place that had since run out offered "Save count" over nothing, and the panel no way out.
 test("closes as counted a task whose place holds nothing of it now, and closes the panel", async ({ page }) => {
   const task = { task: KIT, items: [] } satisfies OpsReply<"/api/count-tasks/{id}">;
