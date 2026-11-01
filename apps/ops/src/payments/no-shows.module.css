@@ -17,42 +17,11 @@
   max-width: var(--ops-list);
 }
 
-/* Drawn as the console's panel is, so what it holds sets itself in as a panel's does. */
-.panel {
-  --note-inset: var(--sp-20);
-  --form-inset: var(--sp-20);
-
-  border: var(--hairline) solid var(--ui-line);
-  background: var(--ui-raised);
-}
-
 /* ---- The day's money, and the charges beneath it --------------------------- */
-
-/* The day the figures are for, and the field that asks for another, across from it. */
-.dayHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  padding: var(--sp-16) var(--sp-20) 0;
-}
-
-.dayTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-18);
-}
-
-.dayLabel {
-  display: block;
-}
 
 .dayField {
   display: block;
   width: var(--ops-date);
-  margin-top: var(--sp-8);
   font-variant-numeric: tabular-nums;
 }
 
@@ -63,7 +32,7 @@
   gap: var(--sp-32);
   margin: 0;
   padding: var(--sp-20) var(--sp-20) var(--sp-16);
-  border-bottom: var(--hairline) solid var(--ui-text);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 /* The amount over its name, as the board draws it; the pair is read in its own order. */

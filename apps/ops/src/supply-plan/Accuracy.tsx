@@ -5,7 +5,7 @@ import type { Success } from "@maneman/web-kit/api";
 import { quantity } from "@maneman/web-kit/figures";
 import { Note } from "@maneman/ui/Note";
 import { BarChart } from "@maneman/ui/BarChart";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
 import type { paths } from "../api-schema.ts";
@@ -25,7 +25,7 @@ function Head({ columns }: { columns: readonly string[] }) {
     <thead>
       <tr>
         {columns.map((column, index) => (
-          <th key={column} scope="col" className={index === 0 ? undefined : form.figure}>
+          <th key={column} scope="col" className={index === 0 ? undefined : FIGURE}>
             {column}
           </th>
         ))}
@@ -54,11 +54,11 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
             {accuracy.periods.map((period) => (
               <tr key={period.period_start}>
                 <RowHead>{dayAfter(period.period_start, 0, true)}</RowHead>
-                <td className={form.figure}>{quantity(period.expected)}</td>
-                <td className={form.figure}>{quantity(period.actual)}</td>
-                <td className={form.figure}>{copy.percent(period.error_percent)}</td>
-                <td className={form.figure}>{copy.bias(period.bias_percent)}</td>
-                <td className={form.figure}>{copy.percent(period.within_high_percent)}</td>
+                <td className={FIGURE}>{quantity(period.expected)}</td>
+                <td className={FIGURE}>{quantity(period.actual)}</td>
+                <td className={FIGURE}>{copy.percent(period.error_percent)}</td>
+                <td className={FIGURE}>{copy.bias(period.bias_percent)}</td>
+                <td className={FIGURE}>{copy.percent(period.within_high_percent)}</td>
               </tr>
             ))}
           </tbody>
@@ -69,10 +69,10 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
             {accuracy.items.map((item) => (
               <tr key={item.consumable_code}>
                 <RowHead>{item.name}</RowHead>
-                <td className={form.figure}>{quantity(item.expected)}</td>
-                <td className={form.figure}>{quantity(item.actual)}</td>
-                <td className={form.figure}>{copy.percent(item.error_percent)}</td>
-                <td className={form.figure}>{copy.bias(item.bias_percent)}</td>
+                <td className={FIGURE}>{quantity(item.expected)}</td>
+                <td className={FIGURE}>{quantity(item.actual)}</td>
+                <td className={FIGURE}>{copy.percent(item.error_percent)}</td>
+                <td className={FIGURE}>{copy.bias(item.bias_percent)}</td>
               </tr>
             ))}
           </tbody>

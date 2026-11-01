@@ -9,7 +9,7 @@ import { PageActions } from "../frame/PageHead.tsx";
 import { Badge } from "@maneman/ui/Badge";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
@@ -18,8 +18,8 @@ import { type Consumable, type Consumables as ConsumableList } from "../api.ts";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { ListTools } from "@maneman/ui/ListTools";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { RowHead } from "@maneman/ui/RowHead";
-import form from "@maneman/ui/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
@@ -41,7 +41,7 @@ function ConsumableRow({ consumable, onOpen }: { consumable: Consumable; onOpen:
         </TextButton>{" "}
         <span className={styles.unit}>{consumable.unit}</span>
       </RowHead>
-      <td className={form.figure}>{consumable.unit_cost === 0 ? copy.noCost : rupees(consumable.unit_cost)}</td>
+      <td className={FIGURE}>{consumable.unit_cost === 0 ? copy.noCost : rupees(consumable.unit_cost)}</td>
       <td>
         {copy.levels({
           kit: consumable.reorder_kit,
@@ -50,25 +50,37 @@ function ConsumableRow({ consumable, onOpen }: { consumable: Consumable; onOpen:
         })}
       </td>
       <td>
-        <Badge tone={consumable.retired_from === null ? "done" : "neutral"}>{stateWords(consumable)}</Badge>
+        {/* In use says nothing: only a retirement, still to come or past, is a state worth a word. */}
+        {consumable.retired_from !== null && (
+          <Badge tone={consumable.offered ? "attention" : "neutral"}>{stateWords(consumable)}</Badge>
+        )}
       </td>
     </tr>
   );
 }
 
-function ConsumableTable(props: { rows: readonly Consumable[]; none: string; onOpen: (code: string) => void }) {
+function ConsumableTable(props: {
+  rows: readonly Consumable[];
+  /** The first column's name: "Consumable", "Hair system". */
+  first: string;
+  none: string;
+  onOpen: (code: string) => void;
+}) {
   if (props.rows.length === 0) return <Note>{props.none}</Note>;
   return (
     <ListTools rows={props.rows} textOf={(each) => each.name} label={copy.find}>
       {(shown) => (
-        <Table>
+        <Table fixed className={styles.table}>
           <thead>
             <tr>
-              {copy.columns.map((column) => (
-                <th key={column} scope="col">
-                  {column}
-                </th>
-              ))}
+              <th scope="col">{props.first}</th>
+              <th scope="col" className={FIGURE}>
+                {copy.costColumn}
+              </th>
+              <th scope="col">{copy.levelsColumn}</th>
+              <th scope="col">
+                <VisuallyHidden>{copy.stateColumn}</VisuallyHidden>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -88,10 +100,14 @@ function ConsumableTable(props: { rows: readonly Consumable[]; none: string; onO
   );
 }
 
-/** What is in use, and apart beneath it what is retired: an item retiring later is still in use until then. */
+/**
+ * What is in use, and apart beneath it what is retired: an item retiring later is still in use until then. Every list
+ * on the page is one table at the same widths, so the consumables, the hair systems and those retired line up.
+ */
 function InUseAndRetired(props: {
   id: string;
   rows: readonly Consumable[];
+  first: string;
   none: string;
   onOpen: (code: string) => void;
 }) {
@@ -100,11 +116,11 @@ function InUseAndRetired(props: {
   return (
     <>
       {(inUse.length > 0 || retired.length === 0) && (
-        <ConsumableTable rows={inUse} none={props.none} onOpen={props.onOpen} />
+        <ConsumableTable rows={inUse} first={props.first} none={props.none} onOpen={props.onOpen} />
       )}
       {retired.length > 0 && (
         <Apart id={props.id} title={copy.retiredTitle}>
-          <ConsumableTable rows={retired} none="" onOpen={props.onOpen} />
+          <ConsumableTable rows={retired} first={props.first} none="" onOpen={props.onOpen} />
         </Apart>
       )}
     </>
@@ -154,6 +170,7 @@ export function Consumables() {
         <InUseAndRetired
           id="consumables-retired"
           rows={current.consumables.filter((each) => each.hair_system === null)}
+          first={copy.consumableColumn}
           none={copy.none}
           onOpen={opening}
         />
@@ -177,6 +194,7 @@ export function Consumables() {
         <InUseAndRetired
           id="hair-systems-retired"
           rows={current.consumables.filter((each) => each.hair_system !== null)}
+          first={copy.hairSystemColumn}
           none={copy.noHairSystems}
           onOpen={opening}
         />

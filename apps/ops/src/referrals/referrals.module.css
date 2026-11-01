@@ -11,15 +11,6 @@
   max-width: var(--ops-list);
 }
 
-.panel {
-  border: var(--hairline) solid var(--ui-line);
-  background: var(--ui-raised);
-}
-
-.panelBody {
-  padding: var(--sp-20);
-}
-
 /* ---- One held grant ------------------------------------------------------ */
 
 .grantHead {
@@ -110,17 +101,7 @@
   text-align: left;
 }
 
-.figure,
-.quietFigure {
+.figure {
   width: var(--ops-figure);
   text-align: right;
-}
-
-.quietFigure {
-  color: var(--ui-text-muted);
-}
-
-/* The table's search, flush with the table beneath. */
-.narrow {
-  margin-inline: 0;
 }

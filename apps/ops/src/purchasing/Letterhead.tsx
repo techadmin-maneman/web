@@ -95,6 +95,7 @@ function SetLetterhead({ onSaved }: { onSaved: (next: Orders, said: string) => v
   return (
     <AddForm
       title={copy.title}
+      titledByPanel
       words={{ add: copy.save }}
       errors={copy.errors}
       boxes={ENTRIES.map((entry) => entry.field)}

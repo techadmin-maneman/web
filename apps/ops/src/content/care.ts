@@ -73,8 +73,8 @@ export const care = {
     label: "Care person",
     none: "Not given yet",
     moveTo: "Move to",
-    /** "Asha · 12 clients", by e-mail until a manager sets the name clients know them by. */
-    member: (who: string, clients: number) => `${who} · ${String(clients)} ${clients === 1 ? "client" : "clients"}`,
+    /** A Care person in the list by their name alone, by e-mail until a manager sets the name clients know them by. */
+    member: (who: string) => who,
     move: "Move",
     moving: "Moving…",
     moved: (who: string) => `Moved to ${who}.`,
@@ -128,9 +128,9 @@ export const care = {
       `Given: ${String(visits)} free service ${visits === 1 ? "visit" : "visits"}, on their account now.`,
     awaiting: "Above your limit, so a manager approves it first.",
     none: "No remedies in the last 30 days.",
-    /** "2 free service visits · Fit problem · Mon 21 Sep" */
-    line: (visits: number, reason: string, date: string) =>
-      `${String(visits)} free service ${visits === 1 ? "visit" : "visits"} · ${reason} · ${date}`,
+    columns: ["Client", "Free visits", "Why", "Given", "Status", "Note"],
+    /** The last column, named aloud only: a manager's approve or decline. */
+    decide: "Decide",
     states: { given: "Given", awaiting: "Awaiting approval", declined: "Declined" },
     reasons: {
       fit_problem: "Fit problem",

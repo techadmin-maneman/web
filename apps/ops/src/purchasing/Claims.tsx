@@ -5,7 +5,7 @@ import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -64,7 +64,7 @@ function ClaimsTable({
             <td>{copy.claims.item(claim.name, claim.quantity, claim.piece_code)}</td>
             <td>{copy.claims.reasons[claim.reason]}</td>
             <td>{claim.outcome === null ? copy.claims.states[claim.state] : copy.claims.outcomes[claim.outcome]}</td>
-            <td className={form.figure}>{valueOf(claim)}</td>
+            <td className={FIGURE}>{valueOf(claim)}</td>
           </tr>
         ))}
       </tbody>

@@ -8,7 +8,7 @@ import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { boxError, errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -113,12 +113,12 @@ function TransferRow(props: { stock: Stock; transfer: Transfer; onReceive: () =>
   return (
     <tr>
       <RowHead>{what}</RowHead>
-      <td className={form.figure}>
+      <td className={FIGURE}>
         {transfer.quantity} {unit}
       </td>
       <td>{from}</td>
       <td>{to}</td>
-      <td className={form.figure}>{shortDate(indiaDate(transfer.sent_at))}</td>
+      <td className={FIGURE}>{shortDate(indiaDate(transfer.sent_at))}</td>
       <td className={styles.held}>
         {access.mayCall("POST /api/stock/transfers/{id}/receive") && (
           <RowButton beside aria-label={copy.receiveLabel(what, to)} onClick={props.onReceive}>

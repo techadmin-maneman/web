@@ -6,7 +6,7 @@ export const today = {
     unassigned: "Unassigned",
     overdue: "Overdue",
     open: "Open tasks",
-    chats: "Unanswered chats",
+    chats: "Chats to answer",
     lowStock: "Low stock",
     charges: "Charges to decide",
     upi: "UPI to record",

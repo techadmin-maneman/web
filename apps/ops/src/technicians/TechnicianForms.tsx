@@ -4,6 +4,8 @@
 // board.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { Note } from "@maneman/ui/Note";
+import { Panel } from "@maneman/ui/Panel";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
@@ -292,8 +294,8 @@ export function Details({
   const mayDelete = access.mayCall("POST /api/technicians/{id}/delete");
 
   return (
-    <section aria-label={copy.title}>
-      {!active && <p className={styles.offNote}>{technicians.switchOn.note}</p>}
+    <Panel titleId="technician-details" title={copy.title}>
+      {!active && <Note>{technicians.switchOn.note}</Note>}
       <DetailRows technician={technician} cities={cities} onChange={onChange} />
       <div className={styles.recordActions}>
         {maySwitchOff && <SwitchOff technician={technician} onSwitchedOff={onSwitchedOff} />}
@@ -307,6 +309,6 @@ export function Details({
           />
         )}
       </div>
-    </section>
+    </Panel>
   );
 }

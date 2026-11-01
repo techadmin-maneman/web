@@ -8,11 +8,10 @@ import { quantity } from "@maneman/web-kit/figures";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useState } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "@maneman/ui/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { AccuracyPart } from "./Accuracy.tsx";
@@ -56,7 +55,7 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
             <tr>
               <th scope="col">{copy.item}</th>
               {periods.map((period) => (
-                <th key={period} scope="col" className={form.figure}>
+                <th key={period} scope="col" className={FIGURE}>
                   {dayAfter(run.run_on, period * run.period_days)}
                 </th>
               ))}
@@ -69,7 +68,7 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
                 {periods.map((period) => {
                   const line = item.periods.get(period);
                   return (
-                    <td key={period} className={form.figure}>
+                    <td key={period} className={FIGURE}>
                       {quantity(line?.expected ?? 0)}
                       {line !== undefined && line.high > line.expected && (
                         <span className={styles.high}>{copy.high(quantity(line.high))}</span>

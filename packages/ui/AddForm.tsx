@@ -17,6 +17,8 @@ type Answer<Body> = { readonly ok: true; readonly body: Body } | ({ readonly ok:
 export function AddForm<Body>(props: {
   /** What it adds: "Add a consumable". */
   readonly title: string;
+  /** Its panel's title already says what it adds, so the form's own is read aloud only. */
+  readonly titledByPanel?: boolean;
   readonly words: { readonly add: string };
   readonly errors: Readonly<Record<string, string>>;
   /** The names the API refuses the boxes by, each a Field's `box`, which says its own refusal. */
@@ -51,7 +53,7 @@ export function AddForm<Body>(props: {
       <Fieldset
         className={inDrawer ? form.inDrawer : form.group}
         legend={props.title}
-        legendLook={inDrawer ? "hidden" : "title"}
+        legendLook={inDrawer || props.titledByPanel === true ? "hidden" : "title"}
       >
         <RefusedBoxes.Provider value={(box) => boxError(props.errors, failed, box)}>
           {props.children}

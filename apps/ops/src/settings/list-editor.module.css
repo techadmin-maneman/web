@@ -1,7 +1,9 @@
 /* ---- A list ops edit: its items in order, each changed where it reads, with its own buttons ---- */
+/* At the group's edge, as its heading and its other lines are: each item names its place in words ("Item 2"). */
 .items {
   margin: var(--sp-16) 0 0;
-  padding: 0 0 0 var(--sp-24);
+  padding: 0;
+  list-style: none;
 }
 
 .item {

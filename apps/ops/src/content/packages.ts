@@ -15,14 +15,18 @@ export const packagesCopy = {
     name: "Package",
     hairSystem: "Hair system from",
     service: "Service visit",
-    every: "Every",
     firstFit: "First fit, client pays",
     replacement: "Replacement",
-    after: "After",
     cost: "Cost to us",
     margin: "Margin",
     status: "Status",
   },
+  /** Which of the columns are figures, set right with their heads. */
+  figureColumns: ["hairSystem", "service", "firstFit", "replacement", "cost", "margin"],
+  /** A service visit's price and how often it comes: "Rs. 2,000 every 30 days". */
+  serviceEvery: (price: string, days: number) => `${price} every ${String(days)} days`,
+  /** A replacement's price and when it falls due: "Rs. 15,000 after 6 months". */
+  replacementAfter: (price: string, months: number) => `${price} after ${String(months)} months`,
   /** A figure not set yet, in a column of figures. */
   gap: "—",
   open: (name: string) => `Open ${name}`,

@@ -2,6 +2,7 @@
 // counted, counted again or signed off; and each item's count class.
 
 import { todayInIndia } from "@maneman/web-kit/dates";
+import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Panel } from "@maneman/ui/Panel";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -57,7 +58,9 @@ function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpen
                     ? copy.overdue(plainDate(task.due_on))
                     : plainDate(task.due_on)}
                 </td>
-                <td>{copy.states[task.state]}</td>
+                <td>
+                  <Badge tone={STATE_TONES[task.state]}>{copy.states[task.state]}</Badge>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -66,6 +69,14 @@ function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpen
     </ListTools>
   );
 }
+
+/** To count is the work; waiting for a manager is to look at; done is calm. */
+const STATE_TONES: Readonly<Record<CountTasks["tasks"][number]["state"], BadgeTone>> = {
+  open: "attention",
+  recount: "warning",
+  sign_off: "attention",
+  done: "done",
+};
 
 export function CountsScreen() {
   const [loaded, retry] = useLoad(loadTasks);

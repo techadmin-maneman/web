@@ -44,9 +44,12 @@ export function Panel({
   const heading = headingRef ?? (opened ? arrived : undefined);
   // A panel titled as its page is has its heading read, not shown: the page's own title says it already.
   const repeats = useContext(PageTitle) === title;
+  // A caller may pass `cond && <Button />`: false, null or "" is no action, and draws no empty head.
+  const hasActions = actions !== undefined && actions !== null && actions !== false && actions !== "";
   return (
     <section className={classes(styles.panel, className)} id={id} aria-labelledby={titleId} ref={ref}>
-      <div className={repeats && count === undefined && actions === undefined ? undefined : styles.head}>
+      {/* A panel titled as its page draws a head only for its actions; its count goes with the title it hides. */}
+      <div className={repeats && !hasActions ? undefined : styles.head} data-panel-head="">
         <h2
           className={repeats ? hiddenLook : typeLook("title-4", styles.title)}
           id={titleId}
@@ -56,7 +59,7 @@ export function Panel({
           {title}
         </h2>
         {repeats && <span className={styles.title} />}
-        {count !== undefined && <span className={styles.count}>{count}</span>}
+        {count !== undefined && !(repeats && !hasActions) && <span className={styles.count}>{count}</span>}
         {actions}
       </div>
       {children}

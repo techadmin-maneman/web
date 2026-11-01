@@ -1,7 +1,10 @@
-// A technician's Kit tab: what their kit holds of each consumable, as the stock ledger counts it, with the same Low
-// mark the Stock section gives it. Movements are recorded in Stock, which the tab links to.
+// A technician's Kit tab: what their kit holds of each consumable, as the stock ledger counts it, each with the state
+// Stock gives it by the same rule (../stock/stock-state.tsx). Movements are recorded in Stock, which the tab links to.
 
-import { EmptyState } from "@maneman/ui/EmptyState";
+import { Note } from "@maneman/ui/Note";
+import { NoValue } from "@maneman/ui/NoValue";
+import { Panel } from "@maneman/ui/Panel";
+import { StateBadge, stateOf } from "../stock/index.ts";
 import { buttonLook } from "@maneman/ui/Button";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
@@ -11,26 +14,20 @@ import { OpsLink } from "../frame/Shell.tsx";
 import { technicians } from "../content.ts";
 import { stock } from "../content/stock.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
-import shared from "./technicians.module.css";
 import styles from "./technician-kit.module.css";
 
 const copy = technicians.kit;
 
 type Holding = Stock["holdings"][number];
 
-function KitRow({ kitStock, holding }: { kitStock: Stock; holding: Holding }) {
+function KitRow({ kitStock, holding, place }: { kitStock: Stock; holding: Holding; place: string }) {
   const consumable = kitStock.consumables.find((each) => each.code === holding.consumable_code);
-  const counted = holding.counted_at === null ? technicians.unknown : shortDate(indiaDate(holding.counted_at));
   return (
     <tr>
       <th scope="row">{consumable?.name ?? holding.consumable_code}</th>
-      <td className={FIGURE}>
-        <span className={holding.quantity < 0 ? shared.over : undefined}>
-          {stock.held(holding.quantity, consumable?.unit ?? "")}
-        </span>
-        {holding.low && <span className={styles.low}>{stock.low}</span>}
-      </td>
-      <td className={styles.counted}>{counted}</td>
+      <td className={FIGURE}>{stock.held(holding.quantity, consumable?.unit ?? "")}</td>
+      <td>{consumable !== undefined && <StateBadge state={stateOf(kitStock, consumable, place)} />}</td>
+      <td>{holding.counted_at === null ? <NoValue /> : shortDate(indiaDate(holding.counted_at))}</td>
     </tr>
   );
 }
@@ -44,32 +41,36 @@ export function Kit({ technician }: { technician: TechnicianSummary }) {
   const kitStock = loaded.value;
   const held = kitStock.holdings.filter((holding) => holding.place_id === technician.id);
   return (
-    <>
+    <Panel
+      titleId="technician-kit"
+      title={copy.title}
+      actions={
+        <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to="/stock">
+          {copy.stock}
+        </OpsLink>
+      }
+    >
       {held.length === 0 ? (
-        <EmptyState look="panel" line={copy.none} />
+        <Note>{copy.none}</Note>
       ) : (
-        <Table className={styles.kit}>
+        <Table fixed className={styles.kit}>
           <thead>
             <tr>
-              {copy.columns.map((column) => (
-                <th scope="col" key={column}>
-                  {column}
-                </th>
-              ))}
+              <th scope="col">{copy.columns.item}</th>
+              <th scope="col" className={FIGURE}>
+                {copy.columns.held}
+              </th>
+              <th scope="col">{copy.columns.status}</th>
+              <th scope="col">{copy.columns.counted}</th>
             </tr>
           </thead>
           <tbody>
             {held.map((holding) => (
-              <KitRow key={holding.consumable_code} kitStock={kitStock} holding={holding} />
+              <KitRow key={holding.consumable_code} kitStock={kitStock} holding={holding} place={technician.id} />
             ))}
           </tbody>
         </Table>
       )}
-      <div className={shared.actions}>
-        <OpsLink className={buttonLook({ variant: "outline", size: "small", className: shared.quiet })} to="/stock">
-          {copy.stock}
-        </OpsLink>
-      </div>
-    </>
+    </Panel>
   );
 }

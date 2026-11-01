@@ -4,6 +4,7 @@
 // open the page it leads to.
 
 import { Columns, Stack } from "@maneman/ui/Layout";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
@@ -78,7 +79,7 @@ function Figures({ board }: { board: Tasks }) {
   const visitsTile = access.mayCall("GET /api/dispatch/day") && !access.mayCall("GET /api/dispatch");
   const shown = TILES.filter((tile) => mayOpen(mayCall, tile.page));
   return (
-    <Columns>
+    <Columns row>
       {visitsTile && <VisitsToday />}
       {shown.map((tile) => {
         const figure = figureOf(tile, board);
@@ -135,15 +136,23 @@ function Needs({ board }: { board: Tasks }) {
               const where = decidedAt(group, task);
               return (
                 <tr key={`${group} ${task.id}`}>
-                  <td>
+                  <th scope="row">
                     {task.person === null ? (
                       subject
                     ) : (
-                      <OpsLink to={taskClientPath(group, task.person.id)}>{subject}</OpsLink>
+                      <OpsLink className={textLinkLook({ compact: true })} to={taskClientPath(group, task.person.id)}>
+                        {subject}
+                      </OpsLink>
                     )}
-                  </td>
+                  </th>
                   <td>
-                    {where === null ? taskWords.groups[group] : <OpsLink to={where}>{taskWords.groups[group]}</OpsLink>}
+                    {where === null ? (
+                      taskWords.groups[group]
+                    ) : (
+                      <OpsLink className={textLinkLook({ compact: true, tone: "muted" })} to={where}>
+                        {taskWords.groups[group]}
+                      </OpsLink>
+                    )}
                   </td>
                   <td>
                     <Left due={task.due} now={now} />

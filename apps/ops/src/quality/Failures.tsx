@@ -5,7 +5,7 @@ import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
@@ -52,7 +52,7 @@ function Groups({ rates }: { rates: Rates }) {
         <thead>
           <tr>
             {columns.map((column, index) => (
-              <th key={column} scope="col" className={index === 0 ? undefined : form.figure}>
+              <th key={column} scope="col" className={index === 0 ? undefined : FIGURE}>
                 {column}
               </th>
             ))}
@@ -62,9 +62,9 @@ function Groups({ rates }: { rates: Rates }) {
           {groupsOf(rates, way).map((group) => (
             <tr key={group.name}>
               <RowHead>{group.name}</RowHead>
-              <td className={form.figure}>{group.fitted}</td>
-              <td className={form.figure}>{group.failed}</td>
-              <td className={form.figure}>{copy.rate(group.rate_percent)}</td>
+              <td className={FIGURE}>{group.fitted}</td>
+              <td className={FIGURE}>{group.failed}</td>
+              <td className={FIGURE}>{copy.rate(group.rate_percent)}</td>
             </tr>
           ))}
         </tbody>

@@ -33,6 +33,8 @@
     border-bottom: var(--hairline) solid var(--ui-line);
     font-weight: var(--weight-regular);
     text-align: left;
+    /* A row whose cells run to two lines reads along its first: a time beside a name and what they did. */
+    vertical-align: baseline;
   }
 
   /* The first and last columns sit in from the panel's edge, as its title does. */
@@ -48,6 +50,7 @@
 
   /* The head stays in view as a long table scrolls under it. */
   .table thead th {
+    vertical-align: bottom;
     position: sticky;
     top: 0;
     z-index: var(--z-sticky);
@@ -85,9 +88,11 @@
     z-index: var(--z-raised);
   }
 
+  /* A figure never breaks across lines: one that wraps reads as two. A table too wide for its figures scrolls. */
   .table .figure {
     font-variant-numeric: tabular-nums;
     text-align: right;
+    white-space: nowrap;
   }
 
   /* Rows of controls (./Table.tsx's `controls`): the boxes and buttons in them make each row's height. */

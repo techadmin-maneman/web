@@ -6,10 +6,12 @@
 import { Toast } from "@maneman/ui/Toast";
 import { TextButton } from "@maneman/ui/TextLink";
 import { plainDate } from "@maneman/web-kit/plain-date";
-import { longDate } from "@maneman/web-kit/dates";
+import { indiaDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
+import { Badge, type BadgeTone } from "@maneman/ui/Badge";
+import { NoValue } from "@maneman/ui/NoValue";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -31,6 +33,20 @@ import { DrawerButton } from "@maneman/ui/DrawerButton";
 
 const loadOrders = () => purchasingApi.orders();
 
+/** The column of totals, set right as figures are. */
+const TOTAL = 4;
+
+/** Drafted or approved is ours to move on; sent or part received is on its way; received and closed are done. */
+const STATE_TONES: Readonly<Record<Orders["orders"][number]["state"], BadgeTone>> = {
+  drafted: "attention",
+  approved: "attention",
+  sent: "neutral",
+  part_received: "warning",
+  received: "done",
+  closed: "done",
+  cancelled: "neutral",
+};
+
 function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) {
   const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;
   if (orders.orders.length === 0) return <Note>{copy.none}</Note>;
@@ -38,8 +54,8 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
     <Table controls>
       <thead>
         <tr>
-          {copy.columns.map((column) => (
-            <th key={column} scope="col">
+          {copy.columns.map((column, at) => (
+            <th key={column} scope="col" className={at === TOTAL ? FIGURE : undefined}>
               {column}
             </th>
           ))}
@@ -53,11 +69,13 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
                 {copy.number(order.number)}
               </TextButton>
             </RowHead>
-            <td>{longDate(order.drafted_at)}</td>
+            <td>{plainDate(indiaDate(order.drafted_at))}</td>
             <td>{supplierOf(order.supplier_id)}</td>
-            <td>{copy.states[order.state]}</td>
-            <td className={form.figure}>{inCurrency(order.total, order.currency)}</td>
-            <td>{order.expected_on === null ? "" : plainDate(order.expected_on)}</td>
+            <td>
+              <Badge tone={STATE_TONES[order.state]}>{copy.states[order.state]}</Badge>
+            </td>
+            <td className={FIGURE}>{inCurrency(order.total, order.currency)}</td>
+            <td>{order.expected_on === null ? <NoValue /> : plainDate(order.expected_on)}</td>
           </tr>
         ))}
       </tbody>

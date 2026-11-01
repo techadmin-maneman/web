@@ -3,11 +3,10 @@
 
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { inCurrency } from "@maneman/web-kit/money";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "@maneman/ui/forms.module.css";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { RowHead } from "@maneman/ui/RowHead";
 import { purchasingApi } from "./purchasing-api.ts";
@@ -37,13 +36,13 @@ export function SupplierScores() {
             {loaded.value.suppliers.map((score) => (
               <tr key={score.supplier_id}>
                 <RowHead>{score.name}</RowHead>
-                <td className={form.figure}>{score.orders}</td>
-                <td className={form.figure}>{copy.scorecard.percent(score.on_time_in_full_percent)}</td>
-                <td className={form.figure}>{copy.scorecard.days(score.lead_days, score.promised_days)}</td>
-                <td className={form.figure}>{copy.scorecard.percent(score.failed_check_percent)}</td>
-                <td className={form.figure}>{copy.scorecard.percent(score.damaged_percent)}</td>
-                <td className={form.figure}>{copy.scorecard.claims(score.claims_accepted, score.claims_settled)}</td>
-                <td className={form.figure}>{score.credited > 0 ? inCurrency(score.credited, score.currency) : ""}</td>
+                <td className={FIGURE}>{score.orders}</td>
+                <td className={FIGURE}>{copy.scorecard.percent(score.on_time_in_full_percent)}</td>
+                <td className={FIGURE}>{copy.scorecard.days(score.lead_days, score.promised_days)}</td>
+                <td className={FIGURE}>{copy.scorecard.percent(score.failed_check_percent)}</td>
+                <td className={FIGURE}>{copy.scorecard.percent(score.damaged_percent)}</td>
+                <td className={FIGURE}>{copy.scorecard.claims(score.claims_accepted, score.claims_settled)}</td>
+                <td className={FIGURE}>{score.credited > 0 ? inCurrency(score.credited, score.currency) : ""}</td>
               </tr>
             ))}
           </tbody>

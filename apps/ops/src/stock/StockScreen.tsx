@@ -6,7 +6,7 @@
 import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Note } from "@maneman/ui/Note";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
@@ -14,7 +14,6 @@ import { type Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
-import form from "@maneman/ui/forms.module.css";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
@@ -96,12 +95,12 @@ function Movements({ stock }: { stock: Stock }) {
               <tbody>
                 {view.shown.map((movement, index) => (
                   <tr key={`${movement.at}-${String(index)}`}>
-                    <td className={form.figure}>
+                    <td className={FIGURE}>
                       {shortDate(indiaDate(movement.at))}, {indiaClock(movement.at)}
                     </td>
                     <td>{consumable(movement)}</td>
                     <td>{place(movement)}</td>
-                    <td className={form.figure}>{words.change(movement.quantity)}</td>
+                    <td className={FIGURE}>{words.change(movement.quantity)}</td>
                     <td>{why(movement)}</td>
                     <td>{who(movement)}</td>
                   </tr>

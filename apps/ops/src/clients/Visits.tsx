@@ -4,10 +4,13 @@
 // why.
 
 import { typeLook } from "@maneman/ui/type";
+import { Note } from "@maneman/ui/Note";
+import { Panel } from "@maneman/ui/Panel";
+import { NoValue } from "@maneman/ui/NoValue";
+import { Badge } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Toast } from "@maneman/ui/Toast";
-import { EmptyState } from "@maneman/ui/EmptyState";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { indiaClock, longDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -41,6 +44,14 @@ function stateOf(visit: ClientVisit): string {
   if (visit.outcome !== null) return copy.outcomes[visit.outcome];
   if (visit.status === "cancelled" || visit.status === "terminated") return copy.statuses[visit.status];
   return clients.unknown;
+}
+
+/** Booked or under way is still to happen; done is done; cancelled is quiet; a visit with no standing, a gap. */
+function StateBadge({ visit }: { visit: ClientVisit }) {
+  const words = stateOf(visit);
+  if (words === clients.unknown) return <NoValue />;
+  if (visit.stage !== null) return <Badge tone="attention">{words}</Badge>;
+  return <Badge tone={visit.outcome === null ? "neutral" : "done"}>{words}</Badge>;
 }
 
 function whatOf(visit: ClientVisit): string {
@@ -93,7 +104,25 @@ function Address({
     requestAnimationFrame(() => opener.current?.focus());
   };
   return (
-    <div>
+    <Panel
+      titleId="visit-address"
+      title={copy.address}
+      actions={
+        mayRecord && (
+          <Button
+            variant="outline"
+            size="small"
+            ref={opener}
+            onClick={() => {
+              setSaved(false);
+              setRecording(true);
+            }}
+          >
+            {address === null ? copy.given.open : copy.given.change}
+          </Button>
+        )
+      }
+    >
       {recording && (
         <FormDrawer title={copy.given.title} onClose={stopRecording}>
           <GivenAddressForm
@@ -108,23 +137,9 @@ function Address({
           />
         </FormDrawer>
       )}
-      {address === null ? <p className={styles.note}>{copy.noAddress}</p> : <AddressRows address={address} />}
+      {address === null ? <Note>{copy.noAddress}</Note> : <AddressRows address={address} />}
       {saved && <Toast>{copy.given.saved}</Toast>}
-      {mayRecord && (
-        <Button
-          variant="outline"
-          size="small"
-          ref={opener}
-          className={styles.secondary}
-          onClick={() => {
-            setSaved(false);
-            setRecording(true);
-          }}
-        >
-          {address === null ? copy.given.open : copy.given.change}
-        </Button>
-      )}
-    </div>
+    </Panel>
   );
 }
 
@@ -185,19 +200,17 @@ function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: str
   return (
     <>
       {changes.map((change) => (
-        <Button
+        <RowButton
           key={change}
-          variant="outline"
-          size="small"
+          beside
           ref={change === open ? opener : undefined}
-          className={styles.rowAction}
           aria-label={change === "cancel" ? copy.cancel.openLabel(when) : copy.handClose.openLabel(when)}
           onClick={() => {
             setOpen(change);
           }}
         >
           {change === "cancel" ? copy.cancel.open : copy.handClose.open}
-        </Button>
+        </RowButton>
       ))}
       {open === "cancel" && <CancelVisit visitId={visit.id} name={name} onClose={closed} />}
       {open === "close" && <CloseVisit visitId={visit.id} name={name} date={visit.date} onClose={closed} />}
@@ -244,12 +257,11 @@ function VisitTable({
   onBoard?: boolean;
 }) {
   return (
-    <section className={styles.visitList} aria-label={title}>
-      <h3 className={typeLook("title-4", styles.sectionTitle)}>{title}</h3>
+    <Panel titleId={`visits-${title.toLowerCase().replace(/\W+/g, "-")}`} title={title}>
       {visits.length === 0 ? (
-        <EmptyState look="panel" line={empty} />
+        <Note>{empty}</Note>
       ) : (
-        <Table className={styles.table}>
+        <Table fixed className={styles.visitTable}>
           <thead>
             <tr>
               {copy.columns.map((column) => (
@@ -271,9 +283,9 @@ function VisitTable({
                   {whatOf(visit)}
                   {visit.client_note !== null && <p className={styles.note}>{copy.clientNote(visit.client_note)}</p>}
                 </td>
-                <td className={styles.quietCell}>{visit.technician?.name ?? clients.unknown}</td>
+                <td>{visit.technician?.name ?? <NoValue />}</td>
                 <td>
-                  {stateOf(visit)}
+                  <StateBadge visit={visit} />
                   <ClosedWithoutFollowUp visit={visit} />
                   <LostReason
                     visit={visit}
@@ -292,7 +304,7 @@ function VisitTable({
           </tbody>
         </Table>
       )}
-    </section>
+    </Panel>
   );
 }
 

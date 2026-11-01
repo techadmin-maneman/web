@@ -328,13 +328,6 @@
 
 /* ---- Credits, put right by hand ------------------------------------------ */
 
-.credits,
-.invite {
-  max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--ui-line);
-  padding: var(--sp-24);
-}
-
 /* The reason an invite is attached for, as tall as the reason for a held grant. */
 .inviteReason {
   margin-top: var(--sp-16);
@@ -447,18 +440,6 @@
   table-layout: fixed;
 }
 
-/* The client's tables stand on the page's column, or in a box that sets them in already: their first and last
-   columns meet that edge, and between them is the table's own room. */
-.table th:first-child,
-.table td:first-child {
-  padding-left: 0;
-}
-
-.table th:last-child,
-.table td:last-child {
-  padding-right: 0;
-}
-
 .note {
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-14);
@@ -483,4 +464,29 @@
   display: inline-flex;
   align-self: flex-start;
   margin-top: var(--sp-16);
+}
+
+/* Every list of a client's visits at the same widths, so overdue, to come and done line up one under another. */
+.visitTable th:nth-child(1) {
+  width: 14%;
+}
+
+.visitTable th:nth-child(2) {
+  width: 16%;
+}
+
+.visitTable th:nth-child(3) {
+  width: 22%;
+}
+
+.visitTable th:nth-child(4) {
+  width: 16%;
+}
+
+.visitTable th:nth-child(5) {
+  width: 18%;
+}
+
+.visitTable th:nth-child(6) {
+  width: 14%;
 }

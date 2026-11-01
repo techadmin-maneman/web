@@ -35,12 +35,15 @@ export function Stack({
 /** Side by side, as many to a row as fit at their narrowest (--columns-tile, ./base.css), each row filled. */
 export function Columns({
   gap = "16",
+  row = false,
   className,
   children,
 }: {
   readonly gap?: Gap;
+  /** One even row, however many tiles, so none is left alone on a row of its own; rows of two on a phone. */
+  readonly row?: boolean;
   readonly className?: string | undefined;
   readonly children: ReactNode;
 }) {
-  return <div className={classes(styles.columns, GAPS[gap], className)}>{children}</div>;
+  return <div className={classes(styles.columns, row && styles.row, GAPS[gap], className)}>{children}</div>;
 }

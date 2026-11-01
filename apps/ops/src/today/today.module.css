@@ -1,5 +1,13 @@
-/* What ./RoleParts.tsx alone draws: each part's tiles, set in from its panel's edges as its note is. */
+/* What Today draws: Care and Growth side by side, each part's tiles in from its panel's edges. */
 
+/* A part's tiles, set in from its panel's edges as its note is. */
 .tiles {
   margin: var(--sp-16) var(--note-inset) 0;
+}
+
+/* Care and Growth: two parts of two tiles each, a half of the page apiece. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--ops-pair)), 1fr));
+  gap: var(--sp-24);
 }

@@ -160,7 +160,7 @@ test("withdraws a city’s price still to come, asked first", async ({ page }) =
     .getByRole("button", { name: copy.prices.withdrawing.label(copy.prices.items.service, "Mumbai") })
     .click();
   await expect(prices).toContainText(
-    copy.prices.withdrawing.warning(copy.prices.items.service, "Mumbai", "2027-10-01"),
+    copy.prices.withdrawing.warning(copy.prices.items.service, "Mumbai", "1 Oct 2027"),
   );
   await prices.getByRole("button", { name: copy.prices.withdrawing.confirm, exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: copy.prices.withdrawn })).toBeVisible();

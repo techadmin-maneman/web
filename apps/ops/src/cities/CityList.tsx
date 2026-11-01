@@ -5,9 +5,8 @@
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { Badge } from "@maneman/ui/Badge";
-import form from "@maneman/ui/forms.module.css";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useState } from "react";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
@@ -21,10 +20,13 @@ import type { Cities, City } from "./types.ts";
 
 const copy = words.list;
 
-const statusOf = (city: City): string => {
-  if (!city.active) return copy.hidden;
-  return city.served ? copy.served : copy.notServed;
-};
+/** A city's standing in its tone: served is done; served with nobody to send is to act on; the rest are quiet. */
+function Status({ city }: { city: City }) {
+  if (!city.active) return <Badge tone="neutral">{copy.hidden}</Badge>;
+  if (!city.served) return <Badge tone="neutral">{copy.notServed}</Badge>;
+  if (city.technicians === 0) return <Badge tone="warning">{copy.noTechnician}</Badge>;
+  return <Badge tone="done">{copy.served}</Badge>;
+}
 
 function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) => void }) {
   return (
@@ -54,13 +56,9 @@ function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) 
             </RowHead>
             <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
             <td>{city.zone ?? copy.noZone}</td>
-            <td className={form.figure}>{city.technicians}</td>
+            <td className={FIGURE}>{city.technicians}</td>
             <td>
-              {city.active && city.served && city.technicians === 0 ? (
-                <Badge tone="attention">{copy.noTechnician}</Badge>
-              ) : (
-                statusOf(city)
-              )}
+              <Status city={city} />
             </td>
           </tr>
         ))}

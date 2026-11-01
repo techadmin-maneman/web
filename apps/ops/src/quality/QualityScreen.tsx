@@ -2,9 +2,11 @@
 // opened to where its lot is and who wears it, and a lot recalled with why; failure rates; and the value at risk.
 
 import { Toast } from "@maneman/ui/Toast";
-import { longDate } from "@maneman/web-kit/dates";
+import { indiaDate } from "@maneman/web-kit/dates";
+import { plainDate } from "@maneman/web-kit/plain-date";
+import { Badge } from "@maneman/ui/Badge";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Panel } from "@maneman/ui/Panel";
-import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -40,22 +42,26 @@ function Recalls({ quality, opener, onOpen }: { quality: Quality; opener: RowOpe
       <tbody>
         {quality.recalls.map((recall) => (
           <tr key={recall.id}>
-            <RowHead>{copy.number(recall.number)}</RowHead>
-            <td>{recall.name}</td>
-            <td>{recall.lot_code}</td>
-            <td>{longDate(recall.raised_at)}</td>
-            <td>{recall.closed_at === null ? copy.open : copy.closed}</td>
-            <td>
-              <Button
-                variant="outline"
-                size="small"
+            <RowHead>
+              <TextButton
+                compact
                 aria-label={copy.view(copy.number(recall.number))}
                 {...opener(recall.id, () => {
                   onOpen(recall.id);
                 })}
               >
-                {copy.viewShort}
-              </Button>
+                {copy.number(recall.number)}
+              </TextButton>
+            </RowHead>
+            <td>{recall.name}</td>
+            <td>{recall.lot_code}</td>
+            <td>{plainDate(indiaDate(recall.raised_at))}</td>
+            <td>
+              {recall.closed_at === null ? (
+                <Badge tone="attention">{copy.open}</Badge>
+              ) : (
+                <Badge tone="done">{copy.closed}</Badge>
+              )}
             </td>
           </tr>
         ))}

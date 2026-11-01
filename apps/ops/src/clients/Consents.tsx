@@ -3,6 +3,8 @@
 // request made outside the app.
 
 import { classes } from "@maneman/ui/classes";
+import form from "@maneman/ui/forms.module.css";
+import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -71,7 +73,7 @@ export function Consents({ clientId, name, onErased }: { clientId: string; name:
 
   const { consents, deletion } = loaded.value;
   return (
-    <section className={styles.consents} aria-label={copy.title}>
+    <Panel titleId="client-consents" title={copy.title}>
       <Table className={shared.table}>
         <thead>
           <tr>
@@ -90,11 +92,13 @@ export function Consents({ clientId, name, onErased }: { clientId: string; name:
             ))}
         </tbody>
       </Table>
-      {deletion !== null && (
-        <p className={styles.deletion}>{copy.deletion[deletion.state](longDate(deletion.requested_at))}</p>
-      )}
-      <ExportData clientId={clientId} />
-      <Erase clientId={clientId} name={name} requested={deletion?.state === "requested"} onErased={onErased} />
-    </section>
+      <div className={form.group}>
+        {deletion !== null && (
+          <p className={styles.deletion}>{copy.deletion[deletion.state](longDate(deletion.requested_at))}</p>
+        )}
+        <ExportData clientId={clientId} />
+        <Erase clientId={clientId} name={name} requested={deletion?.state === "requested"} onErased={onErased} />
+      </div>
+    </Panel>
   );
 }

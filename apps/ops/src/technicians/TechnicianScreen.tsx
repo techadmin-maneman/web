@@ -4,6 +4,8 @@
 // is their details alone.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import form from "@maneman/ui/forms.module.css";
+import { Panel } from "@maneman/ui/Panel";
 import { Toast } from "@maneman/ui/Toast";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
@@ -75,9 +77,15 @@ function TechnicianTabs({
           </OpsLink>
         ))}
       </Tabs>
-      <section className={styles.tabPanel} aria-label={TECHNICIAN_TAB_NAMES[tab]}>
+      {tab === "kit" ? (
         <TabPanel tab={tab} technician={technician} onChange={onChange} />
-      </section>
+      ) : (
+        <Panel titleId="technician-tab" title={TECHNICIAN_TAB_NAMES[tab]}>
+          <div className={tab === "hours" ? undefined : form.group}>
+            <TabPanel tab={tab} technician={technician} onChange={onChange} />
+          </div>
+        </Panel>
+      )}
     </>
   );
 }

@@ -15,7 +15,14 @@
   text-align: left;
 }
 
+/* Where the group goes, and on its line, to the right, the one button that approves it all. */
+.groupLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+}
+
 .groupTitle {
-  margin-right: var(--sp-12);
   font-weight: var(--weight-medium);
 }

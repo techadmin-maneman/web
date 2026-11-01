@@ -2,6 +2,8 @@
 // those waiting and those who looked them up on the site, and how the last thirty days' launches went.
 
 import { Fieldset } from "@maneman/ui/Field";
+import { Panel } from "@maneman/ui/Panel";
+import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { areas } from "../content.ts";
@@ -17,9 +19,9 @@ export function NextToOpen() {
   if (loaded.state !== "loaded") return null;
   const { pincodes } = loaded.value;
   return (
-    <Fieldset className={form.group} legend={copy.nextTitle} legendLook="title">
-      {pincodes.length === 0 && <p className={shared.note}>{copy.nextNone}</p>}
-      <ul className={shared.launchList}>
+    <Panel titleId="next-to-open" title={copy.nextTitle}>
+      {pincodes.length === 0 && <Note>{copy.nextNone}</Note>}
+      <ul className={shared.panelList}>
         {pincodes.map((each) => (
           <li key={each.pincode} className={shared.launchItem}>
             <p className={shared.launchLine}>
@@ -29,7 +31,7 @@ export function NextToOpen() {
           </li>
         ))}
       </ul>
-    </Fieldset>
+    </Panel>
   );
 }
 

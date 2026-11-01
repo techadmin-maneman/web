@@ -5,11 +5,10 @@
 import { Note } from "@maneman/ui/Note";
 import { Badge } from "@maneman/ui/Badge";
 import { Panel } from "@maneman/ui/Panel";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { listDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
-import form from "@maneman/ui/forms.module.css";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -52,7 +51,7 @@ export function Expiring({ stock }: { stock: Stock }) {
                   <RowHead>{consumable?.name ?? lot.code}</RowHead>
                   <td>{lot.lot_code}</td>
                   <td>{placeName(stock, lot.place)}</td>
-                  <td className={form.figure}>
+                  <td className={FIGURE}>
                     {lot.quantity} {consumable?.unit ?? ""}
                   </td>
                   <td>

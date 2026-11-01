@@ -298,7 +298,10 @@ describe("the Messages page", () => {
     const choice = [...document.body.querySelectorAll("select")].find((each) =>
       [...each.options].some((option) => option.value === "ravi@maneman.test"),
     );
-    expect(choice?.textContent).toContain(copy.carePerson.member("ravi@maneman.test", 3));
+    // Each by name alone, never a figure added to it.
+    expect([...(choice?.options ?? [])].map((option) => option.textContent)).toContain(
+      copy.carePerson.member("ravi@maneman.test"),
+    );
     await act(async () => {
       if (choice !== undefined) {
         choice.value = "ravi@maneman.test";

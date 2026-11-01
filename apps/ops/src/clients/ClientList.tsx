@@ -3,6 +3,7 @@
 // can be kept as a bookmark and sent to a colleague: "/clients?state=lead&city=Gurgaon".
 
 import { Button } from "@maneman/ui/Button";
+import { NoValue } from "@maneman/ui/NoValue";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { Panel } from "@maneman/ui/Panel";
@@ -113,9 +114,9 @@ function Narrow({
 }
 
 /** Their next visit, "Thu 24 Sep, 10:30 am"; under way, once one has begun; overdue, past its day; or none booked. */
-function nextVisitOf(client: Listed["clients"][number], today: string): string {
+function nextVisitOf(client: Listed["clients"][number], today: string): ReactNode {
   if (client.under_way) return copy.underWay;
-  if (client.next_visit === null) return copy.noVisit;
+  if (client.next_visit === null) return <NoValue />;
   const day = indiaDate(client.next_visit);
   if (day < today) return copy.overdue(shortDate(day));
   return `${shortDate(day)}, ${indiaClock(client.next_visit)}`;
@@ -147,7 +148,7 @@ function Rows({ listed }: { listed: Listed }) {
               <td>
                 <Badge tone={STATE_TONES[client.state]}>{clients.states[client.state]}</Badge>
               </td>
-              <td>{client.city ?? copy.noCity}</td>
+              <td>{client.city ?? <NoValue />}</td>
               <td>{nextVisitOf(client, todayInIndia(apiNow()))}</td>
             </tr>
           ))}

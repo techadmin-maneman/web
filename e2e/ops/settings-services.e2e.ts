@@ -98,11 +98,9 @@ test.describe("the packages", () => {
     const essential = list.getByRole("row").filter({ hasText: "Mane Man Essential" });
     await expect(essential.getByRole("cell")).toHaveText([
       "Rs. 29,800",
-      "Rs. 2,200",
-      "30 days",
+      "Rs. 2,200 every 30 days",
       "Rs. 32,000",
-      "Rs. 12,800",
-      "6 months",
+      "Rs. 12,800 after 6 months",
       "Rs. 8,000",
       "Rs. 24,000",
       packagesCopy.status.sold,

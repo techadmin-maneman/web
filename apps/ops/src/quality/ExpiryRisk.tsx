@@ -5,11 +5,10 @@ import type { Success } from "@maneman/web-kit/api";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { roundRupees } from "@maneman/web-kit/money";
 import type { paths } from "../api-schema.ts";
-import form from "@maneman/ui/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { quantity } from "@maneman/web-kit/figures";
@@ -49,8 +48,8 @@ function Lots({ risk }: { risk: Risk }) {
                   <td>{lot.name}</td>
                   <td>{lot.lot_code}</td>
                   <td>{plainDate(lot.expires_on)}</td>
-                  <td className={form.figure}>{quantity(lot.quantity)}</td>
-                  <td className={form.figure}>{roundRupees(lot.value)}</td>
+                  <td className={FIGURE}>{quantity(lot.quantity)}</td>
+                  <td className={FIGURE}>{roundRupees(lot.value)}</td>
                   <td>{todo(lot)}</td>
                 </tr>
               ))}

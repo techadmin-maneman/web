@@ -225,6 +225,19 @@
   list-style: none;
 }
 
+/* The same list straight in a panel: in from its edges, its first line under the panel's own rule. */
+.panelList {
+  display: flex;
+  flex-direction: column;
+  margin: 0 var(--note-inset) var(--sp-8);
+  padding: 0;
+  list-style: none;
+}
+
+.panelList > :first-child {
+  border-top: 0;
+}
+
 .launchItem {
   display: flex;
   flex-direction: column;

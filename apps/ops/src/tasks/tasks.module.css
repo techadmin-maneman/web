@@ -106,7 +106,7 @@
   align-items: center;
   gap: var(--sp-12);
   min-height: var(--ops-row);
-  padding: var(--sp-12) var(--sp-20);
+  padding: var(--sp-8) var(--sp-20);
   border-top: var(--hairline) solid var(--ui-line);
 }
 
@@ -138,14 +138,22 @@
   min-width: 0;
 }
 
-/* On a desk's width a task reads on one line: who, what it is, then its actions, before whose it is and when it is due. */
+/*
+ * On a desk's width a task reads on one line: who, what it is, then its actions, before whose it is and when it is due.
+ * The actions' column is one width in every group, Details last and set right, so every group's columns line up.
+ */
 @media (min-width: 1024px) {
   .task .what,
   .marked .what {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) var(--ops-task-actions);
     align-items: baseline;
     column-gap: var(--sp-16);
+  }
+
+  .task .cardActions,
+  .marked .cardActions {
+    justify-content: flex-end;
   }
 }
 
@@ -164,12 +172,23 @@
 
 /* The client's name, which reaches their page: the board draws it as plain text. */
 .subject {
-  font-size: var(--fs-15);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-medium);
   color: var(--ui-text);
 }
 
+/* As a table reads a row's name: no line until the pointer is on it. */
 a.subject {
-  text-decoration: underline;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .task:hover a.subject,
+  .marked:hover a.subject {
+    text-decoration: underline;
+    text-decoration-color: var(--ui-line);
+    text-underline-offset: var(--sp-4);
+  }
 }
 
 .sub {

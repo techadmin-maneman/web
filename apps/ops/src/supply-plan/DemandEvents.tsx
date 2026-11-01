@@ -7,7 +7,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
@@ -169,7 +169,7 @@ function EventRow({
       <RowHead>{event.name}</RowHead>
       <td>{event.city ?? supplyPlan.everyCity}</td>
       <td>{copy.days(dayAfter(event.starts_on, 0), dayAfter(event.ends_on, 0, true))}</td>
-      <td className={form.figure}>{copy.change(event.uplift_percent)}</td>
+      <td className={FIGURE}>{copy.change(event.uplift_percent)}</td>
       <td>
         {mayRemove && (
           <Button

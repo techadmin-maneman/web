@@ -42,19 +42,21 @@ export function LineGroup(props: {
     <tbody>
       <tr className={styles.groupHead}>
         <th scope="colgroup" colSpan={props.columns}>
-          <span className={styles.groupTitle}>{copy.group.title(props.where, props.lines.length)}</span>
-          {mayApprove && open.length > 1 && !asking && (
-            <Button
-              variant="outline"
-              size="small"
-              narrow
-              onClick={() => {
-                setAsking(true);
-              }}
-            >
-              {copy.group.approveAll(open.length)}
-            </Button>
-          )}
+          <div className={styles.groupLine}>
+            <span className={styles.groupTitle}>{copy.group.title(props.where, props.lines.length)}</span>
+            {mayApprove && open.length > 1 && !asking && (
+              <Button
+                variant="outline"
+                size="small"
+                narrow
+                onClick={() => {
+                  setAsking(true);
+                }}
+              >
+                {copy.group.approveAll(open.length)}
+              </Button>
+            )}
+          </div>
         </th>
       </tr>
       {asking && (

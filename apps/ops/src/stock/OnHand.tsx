@@ -2,7 +2,7 @@
 // time, as it is picked: its figure, marked when it is low or out, the soonest of its lots to expire and when it was
 // last counted, each in a column of its own. With a handful of places, every place side by side as well.
 
-import { Badge, type BadgeTone } from "@maneman/ui/Badge";
+import { Badge } from "@maneman/ui/Badge";
 import { TextButton } from "@maneman/ui/TextLink";
 import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
@@ -17,6 +17,7 @@ import { stock as copy } from "../content/stock.ts";
 import form from "@maneman/ui/forms.module.css";
 import { placeChoices, placeName } from "./StockForm.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
+import { StateBadge, stateOf, type Consumable, type State } from "./stock-state.tsx";
 import styles from "./stock.module.css";
 
 /** Past this many places, every place side by side grows too wide to read: one place at a time, then. */
@@ -64,32 +65,6 @@ export function Grouping(props: { stock: Stock; showing: Showing; onShow: (showi
 }
 
 type Holding = Stock["holdings"][number];
-
-type Consumable = Stock["consumables"][number];
-
-interface State {
-  readonly tone: BadgeTone;
-  readonly word: string;
-  readonly need: "below" | "out" | "low";
-}
-
-/**
- * One rule for every place and item, in words, never by colour alone: below zero, which says a movement went
- * unrecorded; out, with none left; low, at or under the item's level for that kind of place. A retired item, or a
- * place no longer in use, is only ever below zero.
- */
-function stateOf(stock: Stock, consumable: Consumable, placeId: string): State | null {
-  const holding = holdingOf(stock, consumable.code, placeId);
-  const quantity = holding?.quantity ?? 0;
-  if (quantity < 0) return { tone: "error", word: copy.belowZero, need: "below" };
-  const place = stock.places.find((each) => each.id === placeId);
-  if (consumable.retired || place?.active === false) return null;
-  if (quantity === 0) return { tone: "error", word: copy.out, need: "out" };
-  return holding?.low === true ? { tone: "warning", word: copy.low, need: "low" } : null;
-}
-
-const StateBadge = ({ state }: { state: State | null }) =>
-  state === null ? null : <Badge tone={state.tone}>{state.word}</Badge>;
 
 /** What a place holds of an item, its state beneath: every place side by side has no room for a column of states. */
 function Held({ stock, consumable, place }: { stock: Stock; consumable: Consumable; place: string }) {

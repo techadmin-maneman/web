@@ -47,8 +47,9 @@ test("lists every client beneath the search, narrowed by status and city, the na
   await expect(list.getByRole("row")).toHaveCount(3);
   await expect(list.getByRole("row").nth(1)).toContainText("Rohit Malhotra");
   await expect(list.getByRole("row").nth(1)).toContainText("Sat 25 Sep");
-  await expect(list.getByRole("row").nth(2)).toContainText(opsCopy.clients.list.noCity);
-  await expect(list.getByRole("row").nth(2)).toContainText(opsCopy.clients.list.noVisit);
+  // No city and no visit booked: each a gap, said aloud as None, never words of the list's own.
+  await expect(list.getByRole("row").nth(2).getByRole("cell").nth(2)).toHaveText("—None");
+  await expect(list.getByRole("row").nth(2).getByRole("cell").nth(3)).toHaveText("—None");
   expect(await axeViolations(page)).toEqual([]);
 
   await list.getByLabel(opsCopy.clients.list.state).selectOption({ label: "Booked" });

@@ -124,7 +124,7 @@ async function show() {
 }
 
 const opener = (place: string) =>
-  document.body.querySelector(`button[aria-label="${copy.open} ${copy.heading(place, copy.classes.weekly)}"]`);
+  document.body.querySelector(`button[aria-label="${copy.open} ${copy.heading(place, copy.classItems.weekly)}"]`);
 
 describe("the Counts page", () => {
   it("counts a task blind, then counts again what differed", async () => {

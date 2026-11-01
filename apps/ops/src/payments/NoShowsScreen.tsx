@@ -39,29 +39,22 @@ type Choice = "charged" | "waived";
 /** India's date today, by this computer's clock. */
 const indiaToday = () => todayInIndia(apiNow());
 
-/** The card's heading, which names the day its figures are for, and the field that asks for another day. */
-function DayHead({ date, shown, onDay }: { date: string; shown: string; onDay: (date: string) => void }) {
-  const copy = noShows.money;
-  const today = indiaToday();
+/** The field that asks for another day, in the panel's head beside the day it names. */
+function DayPick({ shown, onDay }: { shown: string; onDay: (date: string) => void }) {
   return (
-    <div className={styles.dayHead}>
-      <h2 className={styles.dayTitle} id="day-money">
-        {copy.title(shortDate(date), date === today)}
-      </h2>
-      <Field label={copy.pick} look={{ label: styles.dayLabel }}>
-        {(control) => (
-          <DateInput
-            {...control}
-            className={styles.dayField}
-            max={today}
-            value={shown}
-            onChange={(event) => {
-              if (event.target.value !== "") onDay(event.target.value);
-            }}
-          />
-        )}
-      </Field>
-    </div>
+    <Field label={noShows.money.pick} labelHidden>
+      {(control) => (
+        <DateInput
+          {...control}
+          className={styles.dayField}
+          max={indiaToday()}
+          value={shown}
+          onChange={(event) => {
+            if (event.target.value !== "") onDay(event.target.value);
+          }}
+        />
+      )}
+    </Field>
   );
 }
 
@@ -78,8 +71,11 @@ function Money() {
   const day = loaded.value;
   const isToday = day.date === indiaToday();
   return (
-    <section className={styles.panel} aria-labelledby="day-money">
-      <DayHead date={day.date} shown={asked ?? day.date} onDay={setAsked} />
+    <Panel
+      titleId="day-money"
+      title={copy.title(shortDate(day.date), isToday)}
+      actions={<DayPick shown={asked ?? day.date} onDay={setAsked} />}
+    >
       <dl className={styles.figures}>
         <div className={styles.figure}>
           <dt className={styles.figureName}>{copy.figures.collected(isToday)}</dt>
@@ -99,7 +95,7 @@ function Money() {
       </dl>
       <h3 className={typeLook("title-4", styles.chargesTitle)}>{copy.charges.title}</h3>
       <Charges charges={day.charges} today={isToday} more={day.more} />
-    </section>
+    </Panel>
   );
 }
 

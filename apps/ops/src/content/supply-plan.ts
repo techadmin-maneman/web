@@ -10,11 +10,13 @@ export const supplyPlan = {
   none: "Nothing to approve.",
   transferColumns: ["Item", "From", "To", "For", "Quantity", "Status"],
   orderColumns: ["Item", "Supplier", "For", "Quantity", "Status"],
+  /** The column of quantities, set right as figures are. */
+  quantityColumn: "Quantity",
   find: "Find an item, place or supplier",
   openLine: (name: string) => `Decide ${name}`,
-  /** "13 for visits + 4 buffer · 3 there now": the need, rounded up, the spare it keeps, and what the place holds. */
+  /** "Needs 13 for visits and 4 in hand; holds 3": the need, rounded up, the spare it keeps, and what it holds. */
   why: (line: { need: number; safety: number; usable: number }) =>
-    `${String(Math.ceil(line.need))} for visits + ${String(Math.ceil(line.safety))} buffer · ${String(line.usable)} there now`,
+    `Needs ${String(Math.ceil(line.need))} for visits and ${String(Math.ceil(line.safety))} in hand; holds ${String(line.usable)}`,
   everyCity: "All cities",
   quantity: (name: string) => `Quantity of ${name}`,
   approve: "Approve",
