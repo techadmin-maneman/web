@@ -11,8 +11,8 @@ import { types, week as copy } from "../content.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock } from "../lib/when.ts";
 import { go } from "../route.ts";
-import { Failed, Loading } from "../states/States.tsx";
-import frame from "../components/frame.module.css";
+import { Failed, Loading } from "../frame/States.tsx";
+import frame from "../frame/frame.module.css";
 import styles from "./mine.module.css";
 import { apiNow } from "@maneman/web-kit/clock";
 

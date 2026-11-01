@@ -13,7 +13,6 @@ export const stockTransit = {
   arrived: "Arrived",
   note: "Note (optional)",
   confirm: "Record",
-  cancel: "Cancel",
   short: (lost: number, unit: string) => `${String(lost)} ${unit} lost on the way.`,
   errors: {
     received: "More arrived than was sent. Check the figure.",

@@ -7,7 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { SlotTimes } from "../../apps/ops/src/api.ts";
 import { settings } from "../../apps/ops/src/content/settings.ts";
-import { PageHead } from "../../apps/ops/src/components/PageHead.tsx";
+import { PageHead } from "../../apps/ops/src/frame/PageHead.tsx";
 import { WindowTimes } from "../../apps/ops/src/settings/WindowTimes.tsx";
 import { contractChecked } from "./contract-fetch.ts";
 import { openDialogsAsJsdomCan } from "./dialogs.ts";

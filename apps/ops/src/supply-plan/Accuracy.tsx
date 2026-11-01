@@ -9,11 +9,11 @@ import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { dayAfter } from "./Forecast.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
 import { supplyPlanApi } from "./supply-plan-api.ts";
 
 type Accuracy = Success<paths["/api/stock/forecast-accuracy"]["get"]>;
@@ -88,7 +88,7 @@ export function AccuracyPart({ city }: { city: string }) {
   return (
     <div className={form.group}>
       <h3 className={form.ruleTitle}>{copy.title}</h3>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Measured accuracy={loaded.value} />}
     </div>

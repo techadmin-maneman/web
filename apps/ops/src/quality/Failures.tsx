@@ -9,10 +9,10 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { RowHead } from "@maneman/ui/RowHead";
 import { qualityApi } from "./quality-api.ts";
 
 type Rates = Success<paths["/api/quality/failures"]["get"]>;
@@ -78,7 +78,7 @@ export function FailuresPanel() {
   return (
     <Panel titleId="quality-failures" title={copy.failures}>
       <Note>{copy.failuresPeriod}</Note>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Groups rates={loaded.value} />}
     </Panel>

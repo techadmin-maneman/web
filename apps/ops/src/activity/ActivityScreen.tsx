@@ -13,11 +13,11 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type ActivityEntry } from "../api.ts";
-import { DrawerButton } from "../components/DrawerButton.tsx";
-import { OpsLink } from "../components/Shell.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { OpsLink } from "../frame/Shell.tsx";
 import { activity } from "../content/activity.ts";
 import { activityPath, clientPath, dispatchPath, technicianPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./activity-screen.module.css";
 import { appliedOf, askedOf, filtersOf, type Filters } from "./filters.ts";
 import { Narrow } from "./Narrow.tsx";
@@ -156,7 +156,7 @@ function Log({ filters }: { filters: Filters }) {
   const [older, setOlder] = useState<Older | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [olderFailed, setOlderFailed] = useState<{ requestId: string | null } | null>(null);
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const entries = [...loaded.value.entries, ...(older?.entries ?? [])];

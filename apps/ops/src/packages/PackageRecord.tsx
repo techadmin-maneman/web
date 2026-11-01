@@ -8,7 +8,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { SettingValue } from "@maneman/ui/SettingRow";
 import { errorText } from "@maneman/web-kit/refusal";
 import type { ReactNode } from "react";
-import { PriceRow, priceText } from "../components/PriceRow.tsx";
+import { PriceRow, priceText } from "../prices/index.ts";
 import { EDITING } from "../content/common.ts";
 import { packagesCopy as copy } from "../content/packages.ts";
 import { useAccess } from "../lib/access.ts";

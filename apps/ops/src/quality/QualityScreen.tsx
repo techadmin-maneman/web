@@ -11,15 +11,15 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { ExpiryRiskPanel } from "./ExpiryRisk.tsx";
 import { FailuresPanel } from "./Failures.tsx";
 import { RaiseRecall, RecallDetail, type Answer, type Quality, type Detail } from "./Recall.tsx";
-import { Refusal } from "../components/Refusal.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
+import { RowHead } from "@maneman/ui/RowHead";
 import { qualityApi } from "./quality-api.ts";
 
 const loadRecalls = () => qualityApi.recalls();
@@ -96,7 +96,7 @@ export function QualityScreen() {
   };
   return (
     <>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>

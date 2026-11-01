@@ -4,7 +4,7 @@ import { StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { applyTheme, keptTheme } from "./lib/theme.ts";
-import { AppBoundary } from "./states/ErrorBoundary.tsx";
+import { AppBoundary } from "./frame/ErrorBoundary.tsx";
 import "./styles/global.css";
 
 reportUncaughtErrors();

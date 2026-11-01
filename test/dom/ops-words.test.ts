@@ -44,7 +44,7 @@ let answers: Map<string, (init?: RequestInit) => Response>;
 let sent: unknown[];
 
 beforeEach(() => {
-  // The drawers open beside the page, as modal dialogs (../../apps/ops/src/components/FormDrawer.tsx).
+  // The drawers open beside the page, as modal dialogs (../../packages/ui/FormDrawer.tsx).
   openDialogsAsJsdomCan();
   answers = new Map([
     ["GET /api/words", () => Response.json({ words: [REMINDER, HERO], published: null, messages: "at_once" })],

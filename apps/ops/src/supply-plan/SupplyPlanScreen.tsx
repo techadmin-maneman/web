@@ -12,19 +12,19 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { stock } from "../content/stock.ts";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { LineState, PlanLineSteps, type Answer, type Line, type Plan } from "./PlanLine.tsx";
 import { Planning } from "./Planning.tsx";
 import { LineGroup } from "./LineGroup.tsx";
-import { Refusal } from "../components/Refusal.tsx";
-import { FormActions } from "../components/FormActions.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
-import { ListTools } from "../components/ListTools.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
+import { FormActions } from "@maneman/ui/FormActions";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { ListTools } from "@maneman/ui/ListTools";
+import { RowHead } from "@maneman/ui/RowHead";
 import styles from "./supply-plan.module.css";
 import { supplyPlanApi } from "./supply-plan-api.ts";
 
@@ -147,7 +147,7 @@ export function SupplyPlanScreen() {
   };
   return (
     <>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>

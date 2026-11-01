@@ -71,13 +71,11 @@ export const deletions = {
     /** The runbook's first step, "Check the request comes from the number's owner". */
     checked: "I’ve confirmed this with the client, on their own number.",
     confirm: (name: string) => `Erase ${name}`,
-    cancel: "Keep client",
     deleting: "Erasing…",
     reason: {
       label: "Reason",
       // The client is sent this reason on WhatsApp, and their app shows it for thirty days.
       confirm: "Reject request",
-      cancel: "Cancel",
     },
     rejecting: "Rejecting…",
     /** Above the queue once a decision is made. */
@@ -124,7 +122,6 @@ export const numberChanges = {
       label: "Reason",
       // The client's profile shows this reason for thirty days.
       confirm: "Reject change",
-      cancel: "Cancel",
     },
     deciding: "Saving…",
     empty: "No number changes.",

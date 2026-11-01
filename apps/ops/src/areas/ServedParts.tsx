@@ -2,6 +2,7 @@
 // how the last save went, and a file read with its changes shown before they are saved.
 
 import { Toast } from "@maneman/ui/Toast";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Badge } from "@maneman/ui/Badge";
 import { Field, Checkbox, DateInput, Fieldset, FileInput, TextInput } from "@maneman/ui/Field";
@@ -14,17 +15,17 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import type { ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./served-parts.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import { rowOf, type FileChange, type Row, type Upload } from "./served-draft.ts";
 import type { CsvRow } from "./csv.ts";
 import { AREA_NAME } from "./rules.ts";
 import type { Saving } from "./useAreaSaves.ts";
-import { Refusal } from "../components/Refusal.tsx";
-import { FormActions } from "../components/FormActions.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
+import { FormActions } from "@maneman/ui/FormActions";
+import { RowHead } from "@maneman/ui/RowHead";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 
 const copy = areas.served;
 const launch = areas.launch;
@@ -98,9 +99,7 @@ function PincodeDrawer({
         >
           {copy.save}
         </Button>
-        <Button variant="outline" size="small" narrow onClick={onClose}>
-          {copy.cancel}
-        </Button>
+        <CancelButton onClick={onClose} />
       </FormActions>
     </FormDrawer>
   );
@@ -246,9 +245,7 @@ function FilePreview({
         <Button variant="primary" size="small" onClick={onApply}>
           {copy.upload.apply}
         </Button>
-        <Button variant="outline" size="small" narrow onClick={onCancel}>
-          {copy.upload.cancel}
-        </Button>
+        <CancelButton onClick={onCancel} />
       </FormActions>
     </div>
   );
@@ -294,9 +291,7 @@ function FileAdds({
         <Button variant="primary" size="small" disabled={busy} onClick={() => void once(onAdd)}>
           {busy ? copy.upload.adding : copy.upload.add(adds.length)}
         </Button>
-        <Button variant="outline" size="small" narrow onClick={onCancel}>
-          {copy.upload.cancel}
-        </Button>
+        <CancelButton onClick={onCancel} />
       </FormActions>
     </div>
   );

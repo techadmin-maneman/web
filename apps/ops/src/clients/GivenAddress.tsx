@@ -4,6 +4,7 @@
 // (docs/decisions/0054-address-capture.md); an address typed without the search saves with no pin.
 
 import { errorText } from "@maneman/web-kit/refusal";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { hiddenLook } from "@maneman/ui/VisuallyHidden";
 import { Button } from "@maneman/ui/Button";
@@ -22,8 +23,8 @@ import {
 import { type AddressGiven, type ClientRecord } from "../api.ts";
 import { clients, NOT_PERMITTED, OFFLINE } from "../content.ts";
 import styles from "./address.module.css";
-import { Refusal } from "../components/Refusal.tsx";
-import { InDrawer } from "../components/FormDrawer.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
+import { InDrawer } from "@maneman/ui/FormDrawer";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.given;
@@ -238,9 +239,7 @@ export function GivenAddressForm({ clientId, address, onSaved, onCancel }: Given
         <Button variant="primary" size="small" type="submit" busy={busy}>
           {busy ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" disabled={busy} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={busy} onClick={onCancel} />
       </div>
     </form>
   );

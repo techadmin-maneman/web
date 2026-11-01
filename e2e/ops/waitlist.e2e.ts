@@ -3,6 +3,7 @@
 // the panel shows both counts so the gap between them is visible.
 
 import type { Page, Route } from "@playwright/test";
+import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, AREAS, fails, json, LAUNCHED, PREVIEW, type Call } from "./fixtures.ts";
@@ -87,7 +88,7 @@ test("launches the pincode on the second press, and says how many went out", asy
 test("closes the panel on Not now, without sending anything", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
-  await page.getByRole("button", { name: opsCopy.areas.launch.cancel }).click();
+  await page.getByRole("button", { name: DISMISS.cancel }).click();
   await expect(page.getByText("Messages 84 people")).toBeHidden();
 });
 

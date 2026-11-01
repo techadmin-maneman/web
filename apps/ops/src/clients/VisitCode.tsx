@@ -4,6 +4,8 @@
 // box.
 
 import { Field, TextInput } from "@maneman/ui/Field";
+import { Refusal } from "@maneman/ui/Refusal";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -13,7 +15,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type ClientVisit, type VisitDiscountCode } from "../api.ts";
 import { clients } from "../content.ts";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { useAccess } from "../lib/access.ts";
 import shared from "./clients.module.css";
 import styles from "./visit-code.module.css";
@@ -72,11 +74,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
     setCode(null);
   };
 
-  const problem = failure !== null && (
-    <p className={styles.codeError} role="alert">
-      {failure}
-    </p>
-  );
+  const problem = failure !== null && <Refusal said={failure} />;
 
   const stopEntering = () => {
     setStep("showing");
@@ -108,9 +106,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
         <Button type="submit" variant="primary" size="small" disabled={typed.trim() === "" || step === "applying"}>
           {step === "applying" ? copy.applying : copy.apply}
         </Button>
-        <Button variant="outline" size="small" disabled={step === "applying"} onClick={stopEntering}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={step === "applying"} onClick={stopEntering} />
       </form>
     </FormDrawer>
   );

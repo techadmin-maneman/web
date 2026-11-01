@@ -6,7 +6,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { Task, TaskGroup } from "../api.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import shared from "./tasks.module.css";

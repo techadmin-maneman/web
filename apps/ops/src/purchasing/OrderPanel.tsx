@@ -2,6 +2,7 @@
 // done with it now: approved, by a second manager where it needs one; marked sent; cancelled with why; printed.
 
 import { fullDate } from "@maneman/web-kit/dates";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -11,15 +12,15 @@ import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useAccess, whoami } from "../lib/access.ts";
 import { OrderSheet } from "./OrderSheet.tsx";
 import { Receiving } from "./Receiving.tsx";
 import type { Order, Orders } from "./types.ts";
-import { FormRefusal } from "../components/Refusal.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormRefusal } from "@maneman/ui/Refusal";
+import { RowHead } from "@maneman/ui/RowHead";
+import { FormActions } from "@maneman/ui/FormActions";
 import { purchasingApi } from "./purchasing-api.ts";
 
 type Answer = Awaited<ReturnType<typeof purchasingApi.sendOrder>>;
@@ -77,9 +78,7 @@ function CancelOrder({
         >
           {copy.order.confirmCancel}
         </Button>
-        <Button variant="outline" size="small" onClick={onKeep}>
-          {copy.order.keep}
-        </Button>
+        <CancelButton keep onClick={onKeep} />
       </FormActions>
     </div>
   );

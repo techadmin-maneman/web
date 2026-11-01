@@ -4,6 +4,8 @@
 // task's own lines, as the way to where it is decided does.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
+import { Refusal } from "@maneman/ui/Refusal";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { staffName } from "../lib/who.ts";
@@ -15,7 +17,7 @@ import { type ClosableGroup, type Task, type TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
 import shared from "./tasks.module.css";
 import styles from "./task-actions.module.css";
-import { useRereadOnChange } from "../components/Refusal.tsx";
+import { useRereadOnChange } from "@maneman/ui/Refusal";
 import { tasksApi } from "./tasks-api.ts";
 
 type Group = TaskGroup["group"];
@@ -101,9 +103,7 @@ function GiveForm({
         >
           {busy ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" disabled={busy} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={busy} onClick={onCancel} />
       </div>
     </div>
   );
@@ -153,9 +153,7 @@ function CloseForm({
         >
           {busy ? copy.closing : copy.confirm}
         </Button>
-        <Button variant="outline" size="small" disabled={busy} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={busy} onClick={onCancel} />
       </div>
     </div>
   );
@@ -320,11 +318,7 @@ export function TaskActions({
           }}
         />
       )}
-      {refused !== null && (
-        <span className={shared.error} role="alert">
-          {refused}
-        </span>
-      )}
+      {refused !== null && <Refusal inline said={refused} />}
     </>
   );
 }

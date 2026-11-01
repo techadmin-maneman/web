@@ -102,8 +102,15 @@ describe("the CSS modules", () => {
     expect(files.flatMap((file) => missingIn(program, file))).toEqual([]);
   });
 
+  // A sheet of the one library's the console reads is read by the library's own parts too.
   it("define, in the console, no class that nothing reads", () => {
     const reads = readsOf(filesUnder("apps/ops/src"));
+    for (const [path, read] of readsOf(filesUnder("packages/ui"))) {
+      const console = reads.get(path);
+      if (console === undefined) continue;
+      for (const key of read.keys) console.keys.add(key);
+      console.any ||= read.any;
+    }
     const unread = [...reads].flatMap(([path, read]) =>
       read.any ? [] : [...classesOf(path)].filter((name) => !read.keys.has(name)).map((name) => `${path}: .${name}`),
     );

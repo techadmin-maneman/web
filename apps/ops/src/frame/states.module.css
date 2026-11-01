@@ -1,0 +1,6 @@
+/* The page that did not draw (./ErrorBoundary.tsx), at a panel's padding. */
+
+.failed {
+  padding: var(--sp-24);
+  font-size: var(--fs-15);
+}

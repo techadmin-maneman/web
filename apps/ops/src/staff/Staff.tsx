@@ -4,7 +4,7 @@
 // refuses a change beyond their own.
 
 import { Toast } from "@maneman/ui/Toast";
-import { PageActions } from "../components/PageHead.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
@@ -17,18 +17,18 @@ import { useState } from "react";
 import { type StaffList, type StaffToken } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess, whoami } from "../lib/access.ts";
-import { AddForm } from "../components/AddForm.tsx";
-import { DeleteAction } from "../components/DeleteAction.tsx";
+import { AddForm } from "@maneman/ui/AddForm";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { whoWords } from "../lib/who.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { grantWords } from "../lib/grants.ts";
 import { AddPerson } from "./StaffForm.tsx";
 import { StaffRecord } from "./StaffRecord.tsx";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./staff.module.css";
 import { staffApi } from "./staff-api.ts";
-import { FormDrawer } from "../components/FormDrawer.tsx";
-import { DrawerButton } from "../components/DrawerButton.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
 
 const copy = settings.staff;
 
@@ -288,7 +288,7 @@ export function Staff() {
   /** The page as the last change left it, so it follows a change without reading it again. */
   const [changed, setChanged] = useState<StaffList | null>(null);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const staff = changed ?? loaded.value;
 

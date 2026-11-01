@@ -4,6 +4,7 @@
 // any other (docs/decisions/0069-dispatch-under-concurrency.md).
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
@@ -205,9 +206,7 @@ export function MovePicker({ job, to, starts, blackout, sending, clearingCheckIn
         >
           {sendLabel(job, sending, notice.messaged, asking)}
         </Button>
-        <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={sending} onClick={onCancel} />
       </div>
     </Dialog>
   );

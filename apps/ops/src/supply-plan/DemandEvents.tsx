@@ -11,13 +11,13 @@ import { Table } from "@maneman/ui/Table";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import { dayAfter } from "./Forecast.tsx";
-import { FormRefusal } from "../components/Refusal.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormRefusal } from "@maneman/ui/Refusal";
+import { RowHead } from "@maneman/ui/RowHead";
+import { FormActions } from "@maneman/ui/FormActions";
 import { supplyPlanApi } from "./supply-plan-api.ts";
 
 export type Calendar = Success<paths["/api/demand-events"]["get"]>;

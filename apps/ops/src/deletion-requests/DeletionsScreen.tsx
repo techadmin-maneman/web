@@ -4,6 +4,7 @@
 // which.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -12,19 +13,19 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import { type DeletionRequest } from "../api.ts";
-import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { Reach } from "../components/Reach.tsx";
-import { OpsLink } from "../components/Shell.tsx";
+import { DecisionQueue } from "@maneman/ui/DecisionQueue";
+import { Reach } from "../clients/index.ts";
+import { OpsLink } from "../frame/Shell.tsx";
 import { deletions } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import shared from "../components/erasure.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import shared from "./erasure.module.css";
 import styles from "./deletions-screen.module.css";
-import { ErasureLists } from "../components/ErasureLists.tsx";
-import { Refusal } from "../components/Refusal.tsx";
+import { ErasureLists } from "./ErasureLists.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { deletionRequestsApi } from "./deletion-requests-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -75,9 +76,7 @@ function ConfirmDelete({
         <Button variant="destructive" size="small" disabled={sending || !checked} onClick={onDelete}>
           {sending ? copy.deleting : copy.confirm(request.name)}
         </Button>
-        <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={sending} onClick={onCancel} />
       </div>
     </div>
   );
@@ -121,9 +120,7 @@ function RejectReason(props: {
         <Button variant="outline" size="small" disabled={sending || reason.trim() === ""} onClick={props.onReject}>
           {sending ? copy.rejecting : copy.reason.confirm}
         </Button>
-        <Button variant="outline" size="small" disabled={sending} onClick={props.onCancel}>
-          {copy.reason.cancel}
-        </Button>
+        <CancelButton disabled={sending} onClick={props.onCancel} />
       </div>
     </div>
   );
@@ -264,7 +261,7 @@ function DeletionQueue() {
   const [loaded, retry] = useLoad(deletionRequestsApi.deletionRequests);
   const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
   const [done, setDone] = useState<string | null>(null);
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date(apiNow());

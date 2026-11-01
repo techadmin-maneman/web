@@ -139,7 +139,7 @@ const fullListeners = new Set<(isFull: boolean) => void>();
 /** Whether the phone is full now: a write to some store found no room, and none to it has landed since. */
 export const isStorageFull = (): boolean => full.size > 0;
 
-/** The screens say so while the phone is full (apps/tech/src/components/Banners.tsx). */
+/** The screens say so while the phone is full (apps/tech/src/frame/Banners.tsx). */
 export function onStorageFull(listener: (isFull: boolean) => void): () => void {
   fullListeners.add(listener);
   return () => {

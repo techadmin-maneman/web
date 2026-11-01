@@ -10,7 +10,7 @@ import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import type { Unassigned } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { dispatch, CLOSE } from "../content.ts";
 import { clientPath } from "../route.ts";
 import styles from "./dispatch.module.css";

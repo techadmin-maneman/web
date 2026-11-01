@@ -14,19 +14,19 @@ import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Claims } from "./Claims.tsx";
 import { DraftOrder } from "./DraftOrder.tsx";
 import { Letterhead } from "./Letterhead.tsx";
 import { OrderPanel } from "./OrderPanel.tsx";
 import { SupplierScores } from "./SupplierScores.tsx";
 import type { Orders } from "./types.ts";
-import { RowHead } from "../components/RowHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
 import { purchasingApi } from "./purchasing-api.ts";
-import { PageActions } from "../components/PageHead.tsx";
-import { DrawerButton } from "../components/DrawerButton.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
 
 const loadOrders = () => purchasingApi.orders();
 
@@ -78,7 +78,7 @@ export function PurchasingScreen() {
   const opened = current?.orders.find((each) => each.id === open) ?? null;
   return (
     <>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>

@@ -3,8 +3,8 @@
 
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
-import { AddForm } from "../components/AddForm.tsx";
-import form from "../components/forms.module.css";
+import { AddForm } from "@maneman/ui/AddForm";
+import form from "@maneman/ui/forms.module.css";
 import { cities } from "../content/cities.ts";
 import { citiesApi } from "./cities-api.ts";
 

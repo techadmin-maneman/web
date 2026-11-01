@@ -4,7 +4,7 @@
 // sent, and each run links to the board to move them. A run is reopened from its line, asked once.
 
 import { isBlackoutReason } from "@rules/policy/blackouts.ts";
-import { CheckWarning } from "../components/CheckPanel.tsx";
+import { CheckWarning } from "@maneman/ui/CheckPanel";
 import { Field, DateInput, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { buttonLook } from "@maneman/ui/Button";
@@ -14,19 +14,19 @@ import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useEffect, useState } from "react";
 import { type Blackout } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import form from "../components/forms.module.css";
-import { AddForm } from "../components/AddForm.tsx";
-import { DeleteAction } from "../components/DeleteAction.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import form from "@maneman/ui/forms.module.css";
+import { AddForm } from "@maneman/ui/AddForm";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
+import { FormActions } from "@maneman/ui/FormActions";
 import { settingsApi } from "./settings-api.ts";
-import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/PageHead.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { PageActions } from "../frame/PageHead.tsx";
 
 const copy = settings.blackouts;
 
@@ -269,7 +269,7 @@ export function Blackouts() {
   const mayRemove = access.mayCall("POST /api/blackouts/remove");
   const mayShow = access.mayCall("GET /api/dispatch");
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const periods = periodsOf(changed ?? loaded.value.blackouts);
 

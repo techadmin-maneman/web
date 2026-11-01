@@ -5,7 +5,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { addDays, dayClock, shortDate } from "@maneman/web-kit/dates";
 import { type VisitAvailability } from "../api.ts";
-import styles from "../components/visit-dialog.module.css";
+import styles from "./visit-dialog.module.css";
 import { Choose } from "./book-choices.tsx";
 import { CHOICES, copy, kindOf, STRIP_DAYS, type Choice, type Picked, type slotOf } from "./book-slot.ts";
 import { BookDay } from "./BookDay.tsx";

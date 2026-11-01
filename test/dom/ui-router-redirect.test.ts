@@ -1,5 +1,5 @@
 // A redirect (packages/ui/router.tsx) puts the page's own address in place of the one shown, which is not another page
-// opening: the console's frame leaves the focus where it is for one (apps/ops/src/components/Shell.tsx), and moves it
+// opening: the console's frame leaves the focus where it is for one (apps/ops/src/frame/Shell.tsx), and moves it
 // to the heading for a link's move.
 
 import { afterEach, describe, expect, it } from "vitest";

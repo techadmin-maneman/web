@@ -3,19 +3,19 @@
 // where it reads (docs/decisions/0212-editing-in-place.md).
 
 import { Toast } from "@maneman/ui/Toast";
-import { PageActions } from "../components/PageHead.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
-import { DrawerButton } from "../components/DrawerButton.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { RowHead } from "@maneman/ui/RowHead";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { AddSupplier } from "./SupplierForm.tsx";
 import { SupplierRecord } from "./SupplierRecord.tsx";
 import { suppliersApi, type Suppliers as SupplierList } from "./suppliers-api.ts";
@@ -72,7 +72,7 @@ export function Suppliers() {
   const [said, setSaid] = useState<string | null>(null);
   const mayAdd = useAccess().mayCall("POST /api/suppliers");
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = suppliers ?? loaded.value;
   const opened = current.suppliers.find((each) => each.id === open);

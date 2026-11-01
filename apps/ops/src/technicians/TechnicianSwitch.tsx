@@ -2,14 +2,15 @@
 // and switching them back on (./TechnicianForms.tsx).
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { type ReturnedVisit, type TechnicianSummary } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { technicians } from "../content.ts";
 import styles from "./technicians.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 import { refusal } from "./refusal.ts";
 
@@ -60,17 +61,12 @@ export function SwitchOff({
         <Button variant="danger" size="small" className={styles.revoke} disabled={sending} onClick={() => void send()}>
           {sending ? copy.sending : copy.confirm}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
+        <CancelButton
           disabled={sending}
           onClick={() => {
             setAsking(false);
           }}
-        >
-          {copy.cancel}
-        </Button>
+        />
       </div>
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </div>

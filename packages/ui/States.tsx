@@ -5,16 +5,19 @@
 import type { ReactNode } from "react";
 import { Button, type ButtonVariant } from "./Button.tsx";
 import { classes } from "./classes.ts";
+import { ErrorRef } from "./ErrorRef.tsx";
 import { VisuallyHidden } from "./VisuallyHidden.tsx";
+import { states } from "./words.ts";
 import styles from "./states.module.css";
 
 /** The shape of a label and a card while the data comes, and the word for it, said once. */
 export function Loading({
-  label,
+  label = states.loading,
   ground = "paper",
   className,
 }: {
-  label: string;
+  /** The word said for it, the shared one unless the app says another. */
+  label?: string;
   ground?: "paper" | "ink";
   className?: string;
 }) {
@@ -65,5 +68,24 @@ export function Failed({
       </Button>
       {also}
     </div>
+  );
+}
+
+/** A console panel while its data comes, at the panel's padding. */
+export function PanelLoading() {
+  return <Loading label={states.loading} className={styles.panel} />;
+}
+
+/** A console panel whose data did not come. `requestId`: the failed call's, for ops to quote; null when none answered. */
+export function PanelFailed({ onRetry, requestId }: { onRetry: () => void; requestId: string | null }) {
+  const reference = requestId === null ? null : <ErrorRef requestId={requestId} words={states.ref} />;
+  return (
+    <Failed
+      message={states.failed}
+      retry={states.retry}
+      onRetry={onRetry}
+      className={styles.panelFailed}
+      reference={reference}
+    />
   );
 }

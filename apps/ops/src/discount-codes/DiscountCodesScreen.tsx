@@ -1,7 +1,7 @@
 // Finance › Discount codes: what every code has come to, the codes, and making more.
 
 import { DiscountCodes } from "./DiscountCodes.tsx";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 
 export function DiscountCodesScreen() {
   return (

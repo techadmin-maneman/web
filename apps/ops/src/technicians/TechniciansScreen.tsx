@@ -3,6 +3,7 @@
 // their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
 import { typeLook } from "@maneman/ui/type";
+import { Toast } from "@maneman/ui/Toast";
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
@@ -20,14 +21,14 @@ import {
   type TechnicianSummary,
   type TechnicianWork,
 } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
-import { PageActions, useHeaderSub } from "../components/PageHead.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 import { tables, technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { technicianPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
-import { useTableView, type Column } from "../components/useTableView.ts";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { AddTechnician } from "./TechnicianForms.tsx";
 import shared from "./technicians.module.css";
 import styles from "./technicians-screen.module.css";
@@ -226,7 +227,7 @@ function Roster() {
   const [added, setAdded] = useState<string | null>(null);
   const mayAdd = useAccess().mayCall("POST /api/technicians");
 
-  if (loaded.state === "loading" || work.state === "loading") return <Loading />;
+  if (loaded.state === "loading" || work.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed" || work.state === "failed") {
     return (
       <PanelFailed
@@ -266,11 +267,7 @@ function Roster() {
         </PageActions>
       )}
       <Period from={work.value.from} to={work.value.to} />
-      {added !== null && (
-        <p className={shared.notice} role="status">
-          {technicians.add.added(added)}
-        </p>
-      )}
+      {added !== null && <Toast>{technicians.add.added(added)}</Toast>}
       {roster.technicians.length === 0 ? (
         <EmptyState look="panel" line={technicians.empty} />
       ) : (

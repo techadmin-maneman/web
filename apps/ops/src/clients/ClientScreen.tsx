@@ -16,13 +16,13 @@ import { rupees } from "@maneman/web-kit/money";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useEffect, useState } from "react";
 import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
-import { PageActions, useRecordTitle } from "../components/PageHead.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
+import { PageActions, useRecordTitle } from "../frame/PageHead.tsx";
 import { clients } from "../content.ts";
 import { rememberClient } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath, type ClientTab } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./clients.module.css";
 import styles from "./client-screen.module.css";
 import { Consents } from "./Consents.tsx";
@@ -212,7 +212,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   return (
     <>
       {whenLoaded(loaded, {
-        loading: <Loading />,
+        loading: <PanelLoading />,
         failed:
           loaded.state === "failed" && loaded.notFound ? (
             <NoClient />

@@ -92,7 +92,9 @@ test("says what the press does when nobody asked to be told, in words that agree
   await expect(panel).toContainText("No one will be messaged");
   await expect(panel).toContainText("1 didn’t opt in and won’t be messaged.");
   await panel.getByRole("button", { name: "Mark live" }).click();
-  await expect(panel.getByRole("status")).toHaveText("Live. No one messaged.");
+  await expect(page.getByRole("status").filter({ hasText: "Live. No one messaged." })).toHaveText(
+    "Live. No one messaged.",
+  );
 });
 
 // A pincode served from Settings showed "Live" with its waitlist untold and no way to tell them.
@@ -104,7 +106,9 @@ test("tells those still waiting in a pincode already live", async ({ page }) => 
   await expect(panel).toContainText("Messages 2 people");
   await expect(panel.getByLabel(opsCopy.waitlist.date)).toHaveCount(0);
   await panel.getByRole("button", { name: "Send to 2" }).click();
-  await expect(panel.getByRole("status")).toHaveText("Live. 2 messages sent.");
+  await expect(page.getByRole("status").filter({ hasText: "Live. 2 messages sent." })).toHaveText(
+    "Live. 2 messages sent.",
+  );
 });
 
 test("offers nothing to send where everyone in a live pincode has been told", async ({ page }) => {
@@ -171,7 +175,9 @@ test("adds a pincode the service area does not hold, then marks it live in the s
   await expect(panel).toContainText("Messages 2 people");
   await expect(panel).toContainText("Mane Man now comes to MG Road");
   await panel.getByRole("button", { name: "Send to 2" }).click();
-  await expect(panel.getByRole("status")).toHaveText("Live. 2 messages sent.");
+  await expect(page.getByRole("status").filter({ hasText: "Live. 2 messages sent." })).toHaveText(
+    "Live. 2 messages sent.",
+  );
 });
 
 test("says so when the pincode is held already, and adds nothing", async ({ page }) => {

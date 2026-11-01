@@ -10,7 +10,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import type { ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
-import { CheckPanel } from "../components/CheckPanel.tsx";
+import { CheckPanel } from "@maneman/ui/CheckPanel";
 import { useAccess } from "../lib/access.ts";
 import { LaunchCheck } from "./ServedParts.tsx";
 import { ChosenForms, type ChosenForm } from "./Launches.tsx";

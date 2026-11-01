@@ -2,12 +2,13 @@
 // way to where it is done. No board draws it.
 
 import { typeLook } from "@maneman/ui/type";
+import { PanelFailed } from "@maneman/ui/States";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useCallback } from "react";
 import { type Task, type TaskGroup, type Tasks } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { clients, tasks as taskCopy } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
@@ -61,7 +62,7 @@ function List({ board, clientId }: { board: Tasks; clientId: string }) {
 
 function Strip({ clientId }: { clientId: string }) {
   const load = useCallback(() => clientsApi.clientTasks(clientId), [clientId]);
-  const [loaded] = useLoad(load);
+  const [loaded, retry] = useLoad(load);
   return (
     <section className={styles.open} aria-labelledby="open-tasks">
       <h3 className={typeLook("title-4", styles.sectionTitle)} id="open-tasks">
@@ -69,7 +70,7 @@ function Strip({ clientId }: { clientId: string }) {
       </h3>
       {whenLoaded(loaded, {
         loading: null,
-        failed: <p className={styles.openNone}>{copy.failed}</p>,
+        failed: <PanelFailed onRetry={retry} requestId={loaded.state === "failed" ? loaded.requestId : null} />,
         loaded: (board) => <List board={board} clientId={clientId} />,
       })}
     </section>

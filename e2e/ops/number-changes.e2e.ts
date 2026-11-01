@@ -5,6 +5,7 @@
 // fixture's dates are read against, so the days left mean the same on every run.
 
 import type { Page } from "@playwright/test";
+import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, json, NUMBER_CHANGES, TASKS_READ_ON, type Call } from "./fixtures.ts";
@@ -84,7 +85,7 @@ test("rejects with a reason, which it will not send without", async ({ page }) =
 test("leaves the change waiting when the rejection is called off", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true }).click();
-  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reason.cancel }).click();
+  await page.getByRole("button", { name: DISMISS.cancel }).click();
   await expect(page.getByRole("button", { name: opsCopy.numberChanges.queue.confirm })).toBeVisible();
   // The keyboard goes back to the button that asked, not to the top of the page.
   await expect(page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true })).toBeFocused();

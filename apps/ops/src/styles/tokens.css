@@ -35,6 +35,7 @@
   --table-row-height: var(--ops-row);
   /* The shared boxes' widths, by what each holds (packages/ui/Field.tsx's BoxWidth). */
   --box-figure: var(--ops-figure);
+  --screen-max: var(--ops-list);
   --box-amount: var(--ops-column-wide);
   --box-date: var(--ops-date);
   --box-area: var(--ops-area);

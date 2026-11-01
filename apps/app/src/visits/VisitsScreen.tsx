@@ -23,11 +23,11 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
 import { arrivalHours, home, ONE_VISIT, VISIT_TYPES, visits, windowHours } from "../content.ts";
-import { AppLink, Shell } from "../components/Shell.tsx";
+import { AppLink, Shell } from "../frame/Shell.tsx";
 import { bookingName, oneVisitOf, technicianOf, visitTitle } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
-import { Loading } from "../states/Loading.tsx";
-import { PageFailed } from "../states/PageFailed.tsx";
+import { Loading } from "@maneman/ui/States";
+import { PageFailed } from "../frame/PageFailed.tsx";
 import { upcomingEntries, type UpcomingEntry } from "./upcoming.ts";
 import styles from "./visits.module.css";
 

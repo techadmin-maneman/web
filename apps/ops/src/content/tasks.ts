@@ -299,7 +299,6 @@ export const tasks = {
     you: (email: string) => `${email} (you)`,
     save: "Assign",
     saving: "Saving…",
-    cancel: "Cancel",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already handled."),
@@ -323,7 +322,6 @@ export const tasks = {
     consumablesShort: { open: "Checked", label: "What the kit showed" },
     confirm: "Close task",
     closing: "Closing…",
-    cancel: "Cancel",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already booked or closed."),
@@ -340,7 +338,6 @@ export const tasks = {
     utr: "UPI reference (UTR)",
     record: "Record",
     recording: "Recording…",
-    cancel: "Cancel",
     errors: {
       invalid_request: "Enter the UTR as the bank shows it: letters and digits.",
       not_due: "This visit isn’t paid at the visit.",

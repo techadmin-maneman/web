@@ -20,7 +20,7 @@ import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
 import { RECORD } from "../../e2e/ops/fixtures/clients.ts";
 import { openDialogsAsJsdomCan } from "./dialogs.ts";
-import { Shell } from "../../apps/ops/src/components/Shell.tsx";
+import { Shell } from "../../apps/ops/src/frame/Shell.tsx";
 
 const ARJUN: Conversation = {
   id: "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e",
@@ -70,7 +70,7 @@ let asked: string[];
 let posted: { path: string; body: unknown }[];
 
 beforeEach(() => {
-  // The drawers open beside the page, as modal dialogs (../../apps/ops/src/components/FormDrawer.tsx).
+  // The drawers open beside the page, as modal dialogs (../../packages/ui/FormDrawer.tsx).
   openDialogsAsJsdomCan();
   // A chat opened brings its pane into view, which jsdom cannot scroll.
   Reflect.set(Element.prototype, "scrollIntoView", () => undefined);

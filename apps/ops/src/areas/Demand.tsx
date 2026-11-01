@@ -5,7 +5,7 @@ import { Fieldset } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { areas } from "../content.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import shared from "./areas.module.css";
 import { areasApi } from "./areas-api.ts";
 

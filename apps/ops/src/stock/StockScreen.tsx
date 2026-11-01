@@ -12,23 +12,23 @@ import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dat
 import { Suspense, useState } from "react";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { type Stock } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { shell } from "../content/shell.ts";
 import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
-import form from "../components/forms.module.css";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
-import { useTableView, type Column } from "../components/useTableView.ts";
+import form from "@maneman/ui/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import type { LabelsFor } from "./Labels.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
-import { RowHead } from "../components/RowHead.tsx";
-import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/PageHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { PageActions } from "../frame/PageHead.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
 const PlacesPanel = lazyScreen(() => import("./PlacesPanel.tsx").then((module) => module.PlacesPanel));
@@ -278,16 +278,16 @@ function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stoc
         {showing.by === "place" ? (
           <OnHand stock={stock} picked={showing.beside} />
         ) : (
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<PanelLoading />}>
             <Totals stock={stock} by={showing.by} />
           </Suspense>
         )}
       </Panel>
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<PanelLoading />}>
         <Demand stock={stock} />
       </Suspense>
       {stock.in_transit.length > 0 && (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PanelLoading />}>
           <InTransit stock={stock} onChanged={onChanged} />
         </Suspense>
       )}
@@ -328,7 +328,7 @@ export function StockScreen() {
   const [labelsFor, setLabelsFor] = useState<{ readonly at: LabelsFor; readonly time: number } | null>(null);
   const access = useAccess();
   if (current === null) {
-    return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <Loading />;
+    return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <PanelLoading />;
   }
   const views = viewsOf(current, access);
   const shown = views.includes(view) ? view : "onHand";
@@ -359,7 +359,7 @@ export function StockScreen() {
       <div className={styles.screen}>
         {shown === "onHand" && <OnHandView stock={current} onChanged={setStock} />}
         {shown === "movements" && <Movements stock={current} />}
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<PanelLoading />}>
           {shown === "expiring" && <Expiring stock={current} />}
           {shown === "labels" && (
             <Labels key={String(labelsFor?.time ?? 0)} stock={current} focus={labelsFor?.at ?? null} />

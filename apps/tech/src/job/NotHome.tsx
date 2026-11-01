@@ -29,9 +29,9 @@ import {
 import { DoorCamera } from "../camera/index.ts";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { CardFrame } from "./CardFrame.tsx";
-import { ReachOps } from "../components/ReachOps.tsx";
+import { ReachOps } from "../frame/ReachOps.tsx";
 import { receiptLine, type ReceiptLine } from "./receipt.ts";
-import frame from "../components/frame.module.css";
+import frame from "../frame/frame.module.css";
 import styles from "./job.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
 import { apiNow } from "@maneman/web-kit/clock";

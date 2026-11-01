@@ -3,6 +3,7 @@
 // one raised.
 
 import { Toast } from "@maneman/ui/Toast";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
@@ -13,14 +14,14 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { RaiseCustomOrder, type CustomOrders } from "./RaiseCustomOrder.tsx";
-import { Refusal } from "../components/Refusal.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
+import { RowHead } from "@maneman/ui/RowHead";
+import { FormActions } from "@maneman/ui/FormActions";
 import { clientsApi } from "./clients-api.ts";
 
 type Order = CustomOrders["orders"][number];
@@ -108,7 +109,7 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
           setAsking(true);
         }}
       >
-        {copy.cancel}
+        {copy.cancelOrder}
       </Button>
     );
   }
@@ -127,15 +128,12 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
         >
           {copy.cancelYes}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
+        <CancelButton
+          keep
           onClick={() => {
             setAsking(false);
           }}
-        >
-          {copy.cancelKeep}
-        </Button>
+        />
       </FormActions>
     </div>
   );
@@ -208,7 +206,7 @@ export function CustomOrders({ clientId }: { clientId: string }) {
   };
   return (
     <Panel titleId="custom-orders" title={copy.title}>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && <OrdersTable customOrders={current} onAnswer={answered} />}
       {current !== null && raising && (

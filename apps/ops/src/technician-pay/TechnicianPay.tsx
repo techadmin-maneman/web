@@ -14,13 +14,13 @@ import { useState } from "react";
 import { type TechnicianPay as Pay } from "../api.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { ChoiceRow } from "../components/RecordRows.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { ChoiceRow } from "@maneman/ui/RecordRows";
 import { PayRates } from "./PayRates.tsx";
 import { PayStatement } from "./PayStatement.tsx";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./technician-pay.module.css";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { technicianPayApi } from "./technician-pay-api.ts";
 
 const copy = technicianPay.technicians;
@@ -120,7 +120,7 @@ export function TechnicianPay({ part }: { readonly part: "grades" | "statements"
   const [changed, setChanged] = useState<Pay | null>(null);
   const access = useAccess();
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const pay = changed ?? loaded.value;
   if (part === "statements") return <PayStatement today={pay.today} />;

@@ -12,17 +12,17 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { tasks as taskWords } from "../content.ts";
 import { today as copy } from "../content/today.ts";
 import { useAccess, useMayCall, whoami } from "../lib/access.ts";
-import { useHeaderSub } from "../components/PageHead.tsx";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { RoleParts } from "./RoleParts.tsx";
 import { Left } from "../lib/Left.tsx";
 import { decidedAt, subjectOf, taskClientPath } from "../lib/task-links.ts";
 import { useTaskBoard } from "../lib/waiting.ts";
 import { mayOpen, type Page, sectionOf } from "../route.ts";
-import { Loading } from "../states/States.tsx";
+import { PanelLoading } from "@maneman/ui/States";
 import { todayApi } from "./today-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -158,7 +158,7 @@ function Needs({ board }: { board: Tasks }) {
 export function TodayScreen() {
   const board = useTaskBoard(true);
   useHeaderSub(copy.day(fullDate(todayInIndia(apiNow()))));
-  if (board === null) return <Loading />;
+  if (board === null) return <PanelLoading />;
   return (
     <Stack gap="24">
       <Figures board={board} />

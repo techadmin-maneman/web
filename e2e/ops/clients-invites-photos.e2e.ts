@@ -46,7 +46,9 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   await attach.click();
   expect((await sent).postDataJSON()).toEqual({ code: "rm4k7p", reason: "Told us Rohit sent them" });
 
-  await expect(invite.getByRole("status")).toHaveText(opsCopy.clients.invite.news.attached);
+  await expect(page.getByRole("status").filter({ hasText: opsCopy.clients.invite.news.attached })).toHaveText(
+    opsCopy.clients.invite.news.attached,
+  );
   // The head names who sent it as the API answered, without the record being read again.
   await expect(invitedBy(page)).toHaveText("Rohit Malhotra (RM4K7P)");
   await expect(invite).toContainText("RewardGiven once this client is fitted");
@@ -90,7 +92,9 @@ test.describe("says why an invite was not attached", () => {
     await invite.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
     await invite.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
     await invite.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
-    await expect(invite.getByRole("status")).toHaveText(opsCopy.clients.invite.news.already_invited);
+    await expect(page.getByRole("status").filter({ hasText: opsCopy.clients.invite.news.already_invited })).toHaveText(
+      opsCopy.clients.invite.news.already_invited,
+    );
     await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
   });
 });

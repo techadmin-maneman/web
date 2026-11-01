@@ -3,6 +3,7 @@
 // refer on their own code are Settings' (./Partners.tsx). Approving a grant releases its credits.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -13,17 +14,17 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState } from "react";
 import { type Held, type Referrer } from "../api.ts";
-import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { OpsLink } from "../components/Shell.tsx";
+import { DecisionQueue } from "@maneman/ui/DecisionQueue";
+import { OpsLink } from "../frame/Shell.tsx";
 import { referrals } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { clientPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
-import { useTableView, type Column } from "../components/useTableView.ts";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import styles from "./referrals.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { referralsApi } from "./referrals-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -122,16 +123,12 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             >
               {sending ? copy.deciding : copy.reason.confirm[asking.choice]}
             </Button>
-            <Button
-              variant="outline"
-              size="small"
+            <CancelButton
               disabled={sending}
               onClick={() => {
                 keepHeld(asking.choice);
               }}
-            >
-              {copy.reason.cancel}
-            </Button>
+            />
           </div>
         </div>
       )}
@@ -171,7 +168,7 @@ function ReviewQueue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(referralsApi.held);
   const mayDecide = useAccess().mayCall("POST /api/referrals/{id}/decision");
   const copy = referrals.queue;
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date(apiNow());
@@ -271,7 +268,7 @@ function ReferrersTable({ version }: { version: number }) {
     page: Number.POSITIVE_INFINITY,
   });
 
-  if (pages.state === "loading") return <Loading />;
+  if (pages.state === "loading") return <PanelLoading />;
   if (pages.state === "failed") return <PanelFailed onRetry={retry} requestId={pages.requestId} />;
 
   return (

@@ -7,11 +7,10 @@ import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { EDITING } from "../content/common.ts";
 import { purchasing } from "../content/purchasing.ts";
-import { AddForm } from "../components/AddForm.tsx";
-import { LinesRow, TextRow } from "../components/RecordRows.tsx";
-import form from "../components/forms.module.css";
+import { AddForm } from "@maneman/ui/AddForm";
+import { LinesRow, TextRow } from "@maneman/ui/RecordRows";
+import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import type { Orders } from "./types.ts";
 import { purchasingApi } from "./purchasing-api.ts";
@@ -96,7 +95,7 @@ function SetLetterhead({ onSaved }: { onSaved: (next: Orders, said: string) => v
   return (
     <AddForm
       title={copy.title}
-      words={{ add: copy.save, cancel: EDITING.cancel }}
+      words={{ add: copy.save }}
       errors={copy.errors}
       boxes={ENTRIES.map((entry) => entry.field)}
       send={() =>

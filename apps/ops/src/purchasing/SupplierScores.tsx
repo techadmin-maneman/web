@@ -7,9 +7,9 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { inCurrency } from "@maneman/web-kit/money";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import form from "@maneman/ui/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { RowHead } from "@maneman/ui/RowHead";
 import { purchasingApi } from "./purchasing-api.ts";
 
 const loadScores = () => purchasingApi.scorecard();
@@ -19,7 +19,7 @@ export function SupplierScores() {
   return (
     <Panel titleId="supplier-scores" title={copy.scorecard.title}>
       <Note>{copy.scorecard.note}</Note>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && loaded.value.suppliers.length === 0 && <Note>{copy.scorecard.none}</Note>}
       {loaded.state === "loaded" && loaded.value.suppliers.length > 0 && (

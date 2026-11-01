@@ -16,15 +16,15 @@ import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import { type PartnerStatement, type PartnerStatements } from "../api.ts";
-import { DeleteAction } from "../components/DeleteAction.tsx";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { partnerCommission } from "../content/partner-commission.ts";
 import { useAccess } from "../lib/access.ts";
 import { saveFile } from "../lib/save-file.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { monthCsv, statementCsv } from "./partner-commission-csv.ts";
 import { PayoutForm } from "./PayoutForm.tsx";
 import styles from "./partner-commission.module.css";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { partnerCommissionApi } from "./partner-commission-api.ts";
 
 const copy = partnerCommission;
@@ -238,7 +238,7 @@ export function PartnerCommission() {
   const [acting, setActing] = useState<Acting>(null);
   const [said, setSaid] = useState<string | null>(null);
   const mayPay = useAccess().mayCall("POST /api/partner-statements/{id}/payouts");
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const statements = changed ?? loaded.value;
   const row: RowProps = {

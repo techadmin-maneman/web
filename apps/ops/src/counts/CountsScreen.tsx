@@ -9,15 +9,15 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { useState } from "react";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { CountClasses, type CountTasks } from "./CountClasses.tsx";
 import { CountTaskPanel, whatOf } from "./CountTask.tsx";
 import { StartCount } from "./StartCount.tsx";
-import { ListTools } from "../components/ListTools.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { ListTools } from "@maneman/ui/ListTools";
+import { RowHead } from "@maneman/ui/RowHead";
 import { countsApi } from "./counts-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -82,7 +82,7 @@ export function CountsScreen() {
   };
   return (
     <>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {rereadFailed !== null && <PanelFailed onRetry={reload} requestId={rereadFailed.requestId} />}
       {current !== null && (

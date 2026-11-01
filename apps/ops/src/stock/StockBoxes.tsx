@@ -3,7 +3,7 @@
 
 import { Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { stock as copy } from "../content/stock.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 
 /** Words for a box the API refused, by the name it refused it by. */
 export type Refused = (box: string) => string | null;

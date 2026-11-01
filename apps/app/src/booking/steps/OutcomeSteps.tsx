@@ -10,7 +10,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold } from "../../api.ts";
 import { arrivalHours, booking, change, messages, VISIT_TYPES } from "../../content.ts";
-import { AddToCalendar } from "../../components/AddToCalendar.tsx";
+import { AddToCalendar } from "../../visits/index.ts";
 import { whatsappWith } from "../../lib/whatsapp.ts";
 import { NoteSheet } from "../NoteSheet.tsx";
 import bookingSheet from "../booking.module.css";

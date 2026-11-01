@@ -4,6 +4,7 @@
 // went missing on the way (docs/decisions/0162-scanning-labels.md).
 
 import { Panel } from "@maneman/ui/Panel";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
@@ -13,15 +14,15 @@ import { boxError, errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type Stock } from "../api.ts";
 import { stockTransit as copy } from "../content/stock-transit.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { PieceScans } from "./PieceScans.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 import { unitOf } from "./holdings.ts";
-import { FormRefusal, Refusal } from "../components/Refusal.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormRefusal, Refusal } from "@maneman/ui/Refusal";
+import { RowHead } from "@maneman/ui/RowHead";
+import { FormActions } from "@maneman/ui/FormActions";
 import { stockApi } from "./stock-api.ts";
 
 type Transfer = Stock["in_transit"][number];
@@ -90,15 +91,11 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void record()}>
           {copy.confirm}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
+        <CancelButton
           onClick={() => {
             props.onDone(null);
           }}
-        >
-          {copy.cancel}
-        </Button>
+        />
       </FormActions>
       <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={["received", "note"]} />
     </div>

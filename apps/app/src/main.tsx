@@ -5,7 +5,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { carriesLogin, mobileInLink, signInInLink, type LinkedLogin } from "./login/linked-mobile.ts";
-import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
+import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
 import "./styles/global.css";
 
 reportUncaughtErrors();

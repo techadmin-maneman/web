@@ -6,7 +6,7 @@ import type { Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
 import { stockViews } from "../content/stock-views.ts";
 import styles from "./stock.module.css";
-import { RowHead } from "../components/RowHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
 
 export type Grouping = "zone" | "city";
 

@@ -18,7 +18,6 @@ export const stockPlaces = {
     zone: "Zone",
     city: "City",
     add: "Add",
-    cancel: "Cancel",
   },
   change: {
     name: "Name",
@@ -31,7 +30,6 @@ export const stockPlaces = {
     warning: (name: string) => `Close ${name}? Nothing can be sent to it until it opens again.`,
     confirm: "Close",
     sending: "Closing…",
-    cancel: "Cancel",
   },
   errors: {
     name: "Another place has that name.",

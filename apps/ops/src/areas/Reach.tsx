@@ -8,7 +8,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useEffect, useState } from "react";
 import type { CityReach } from "../api.ts";
 import { areas } from "../content.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import shared from "./areas.module.css";
 import { areasApi } from "./areas-api.ts";

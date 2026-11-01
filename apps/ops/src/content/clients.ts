@@ -112,7 +112,6 @@ export const clients = {
   openTasks: {
     title: "Open tasks",
     none: "Nothing open.",
-    failed: "Couldn’t load open tasks.",
     /** A task done on a tab of the client's page: "Open Payments". */
     toTab: (tab: string) => `Open ${tab}`,
   },
@@ -120,14 +119,12 @@ export const clients = {
   notes: {
     title: "Notes",
     none: "No notes.",
-    failed: "Couldn’t load notes.",
     add: "Add a note",
     label: "Note",
     change: "Change",
     takeOff: "Take off",
     save: "Save",
     saving: "Saving…",
-    cancel: "Cancel",
     /** "Priya · 12 Oct 2026" */
     by: (name: string, date: string) => `${name} · ${date}`,
     errors: {
@@ -200,7 +197,6 @@ export const clients = {
       invalid: "Add the flat, building or street, area, city and a 6-digit pincode.",
       save: "Save address",
       saving: "Saving…",
-      cancel: "Cancel",
       saved: "Address saved.",
       failed: FAILED,
     },
@@ -230,7 +226,6 @@ export const clients = {
       label: "Discount code",
       apply: "Apply",
       applying: "Applying…",
-      cancel: "Cancel",
       remove: "Remove",
       removeLabel: (visit: string) => `Take the discount code off the visit of ${visit}`,
       removing: "Removing…",
@@ -696,7 +691,6 @@ export const clients = {
     moved: "The profile changed while you were editing. Review it and try again.",
     save: "Save new version",
     saving: "Saving…",
-    cancel: "Cancel",
   },
   photos: {
     locked: "Locked",
@@ -797,7 +791,6 @@ export const clients = {
     /** The runbook's first step, "Check the request comes from the number's owner". */
     checked: "I’ve confirmed this with them, on their own number.",
     confirm: (name: string) => `Erase ${name}`,
-    cancel: "Cancel",
     erasing: "Erasing…",
     /** Why nothing was erased, and what ops may do about it. */
     owed: {

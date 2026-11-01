@@ -7,10 +7,10 @@ import { Field, Select } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type StaffGrant, type StaffList, type StaffPerson } from "../api.ts";
-import { AddForm } from "../components/AddForm.tsx";
-import { DeleteAction } from "../components/DeleteAction.tsx";
-import { ChoiceRow, ReadRow } from "../components/RecordRows.tsx";
-import form from "../components/forms.module.css";
+import { AddForm } from "@maneman/ui/AddForm";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
+import { ChoiceRow, ReadRow } from "@maneman/ui/RecordRows";
+import form from "@maneman/ui/forms.module.css";
 import { settings } from "../content/settings.ts";
 import {
   departmentOf,

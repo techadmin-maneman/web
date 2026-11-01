@@ -3,6 +3,7 @@
 // It goes only with a reason, which is kept with the cancel (src/routes/ops/visit-changes.ts). No board draws it.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
@@ -12,8 +13,8 @@ import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { type CancelOutcome, type CancelTerms } from "../api.ts";
 import { clients, CLOSE } from "../content.ts";
-import styles from "../components/visit-dialog.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import styles from "./visit-dialog.module.css";
+import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.cancel;
@@ -209,9 +210,7 @@ export function CancelVisit({
       {cancelled === null ? (
         <Body visitId={visitId} onCancelled={setCancelled} />
       ) : (
-        <p className={styles.done} role="status">
-          {copy.done(cancelled)}
-        </p>
+        <InlineMessage tone="saved">{copy.done(cancelled)}</InlineMessage>
       )}
     </Drawer>
   );

@@ -6,11 +6,11 @@ import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import type { CountTasks } from "./CountClasses.tsx";
-import { FormRefusal } from "../components/Refusal.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormRefusal } from "@maneman/ui/Refusal";
+import { FormActions } from "@maneman/ui/FormActions";
 import { countsApi } from "./counts-api.ts";
 
 export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; onStarted: (id: string) => void }) {

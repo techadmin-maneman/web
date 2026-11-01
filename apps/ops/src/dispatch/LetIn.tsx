@@ -3,15 +3,16 @@
 // no-show's evidence. No board draws it.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
-import styles from "../components/visit-dialog.module.css";
+import { visitDialogStyles as styles } from "../clients/index.ts";
 import { dispatch, CLOSE } from "../content.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { dispatchApi } from "./dispatch-api.ts";
 
 const copy = dispatch.letIn;
@@ -84,9 +85,7 @@ export function LetIn({
   return (
     <Drawer titleId="let-in-title" title={copy.title(technician)} close={CLOSE} onDismiss={dismiss}>
       {done ? (
-        <p className={styles.done} role="status">
-          {copy.done(technician)}
-        </p>
+        <InlineMessage tone="saved">{copy.done(technician)}</InlineMessage>
       ) : (
         <LetInForm
           visitId={visitId}

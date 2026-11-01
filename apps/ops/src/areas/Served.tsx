@@ -16,10 +16,10 @@ import { type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { saveFile } from "../lib/save-file.ts";
-import form from "../components/forms.module.css";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
-import { useTableView, type Column } from "../components/useTableView.ts";
+import form from "@maneman/ui/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { AddPincode } from "./AddPincode.tsx";
 import { addFromFile, OpenCity } from "./OpenCity.tsx";
 import { CityTools } from "./Reach.tsx";
@@ -252,7 +252,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
 
 export function Served() {
   const [loaded, retry] = useLoad(areasApi.serviceArea);
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   return <Area pincodes={loaded.value.pincodes} cities={loaded.value.cities} />;
 }

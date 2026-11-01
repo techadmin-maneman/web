@@ -4,6 +4,7 @@
 // why.
 
 import { typeLook } from "@maneman/ui/type";
+import { Toast } from "@maneman/ui/Toast";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -12,8 +13,8 @@ import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
 import { addressLine } from "@maneman/web-kit/address";
 import type { AutoRefund, ClientRecord, ClientVisit } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
-import { PageActions } from "../components/PageHead.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
@@ -25,7 +26,7 @@ import { CloseVisit } from "./CloseVisit.tsx";
 import { LostReason } from "./LostReason.tsx";
 import { GivenAddressForm } from "./GivenAddress.tsx";
 import { VisitCode } from "./VisitCode.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { apiNow } from "@maneman/web-kit/clock";
 
 type SavedAddress = NonNullable<ClientRecord["address"]>;
@@ -107,11 +108,7 @@ function Address({
         </FormDrawer>
       )}
       {address === null ? <p className={styles.note}>{copy.noAddress}</p> : <AddressRows address={address} />}
-      {saved && (
-        <p className={styles.done} role="status">
-          {copy.given.saved}
-        </p>
-      )}
+      {saved && <Toast>{copy.given.saved}</Toast>}
       {mayRecord && (
         <Button
           variant="outline"

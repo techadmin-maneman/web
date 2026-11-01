@@ -10,6 +10,11 @@
     line-height: var(--lh-160);
   }
 
+  /* Inside a row, beside its actions. */
+  .inline {
+    margin: 0;
+  }
+
   .error {
     color: var(--status-error);
   }

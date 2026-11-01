@@ -5,7 +5,7 @@ import { Field, Select } from "@maneman/ui/Field";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import type { VisitAvailability } from "../api.ts";
 import { clients } from "../content.ts";
-import styles from "../components/visit-dialog.module.css";
+import styles from "./visit-dialog.module.css";
 
 const copy = clients.visits.book;
 

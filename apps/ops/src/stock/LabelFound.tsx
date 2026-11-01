@@ -9,11 +9,11 @@ import { useState } from "react";
 import { type Stock } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import { stockLabels as copy } from "../content/stock-labels.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { recordedBy } from "../lib/who.ts";
 import { placeName } from "./StockForm.tsx";
 import styles from "./label-found.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { stockApi } from "./stock-api.ts";
 
 type StockUnitFound = Success<paths["/api/stock/units/{code}"]["get"]>;

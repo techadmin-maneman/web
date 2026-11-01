@@ -4,6 +4,7 @@
 // it is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import type { Page } from "@playwright/test";
+import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, IMRAN, json, STOCK, type Answers, type OpsReply } from "./fixtures.ts";
@@ -195,7 +196,7 @@ test("a transfer shows both places, and says when the store would hold less than
   await form.getByRole("button", { name: stock.record.check }).click();
   const check = form.getByRole("group", { name: review.title });
   await expect(check).toContainText(stock.confirm.onItsWay("Imran Qureshi"));
-  await check.getByRole("button", { name: review.edit }).click();
+  await check.getByRole("button", { name: DISMISS.back }).click();
 
   // Handed over in person, it arrives at once.
   await form.getByLabel(stock.record.waitForScan).uncheck();
@@ -234,7 +235,7 @@ test("a count shows the figure it finds, and one that agrees says it records onl
   await form.getByRole("button", { name: stock.record.check }).click();
   await expect(form.getByRole("group", { name: review.title })).toContainText(stock.confirm.same);
 
-  await form.getByRole("button", { name: review.edit }).click();
+  await form.getByRole("button", { name: DISMISS.back }).click();
   await form.getByLabel(stock.record.counted).fill("2");
   await form.getByRole("button", { name: stock.record.check }).click();
   await expect(form.getByRole("group", { name: review.title })).toContainText("Imran Qureshi: 3 strips → 2 strips");

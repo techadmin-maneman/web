@@ -8,7 +8,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Task, TaskGroup } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { CLOSE, tasks } from "../content.ts";
 import { useMayCall } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";

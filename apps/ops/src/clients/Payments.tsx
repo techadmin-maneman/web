@@ -3,6 +3,7 @@
 // entries together (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { typeLook } from "@maneman/ui/type";
+import { Toast } from "@maneman/ui/Toast";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, ChoiceGroup, Radio, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -23,9 +24,9 @@ import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { RefundPayment } from "./RefundPayment.tsx";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
-import { DrawerButton } from "../components/DrawerButton.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
 
 type Credits = ClientRecord["credits"];
 type Reason = CreditAdjustment["reason"];
@@ -271,11 +272,7 @@ function CreditSection({
           )}
         </DrawerButton>
       )}
-      {saved !== null && (
-        <p className={styles.done} role="status">
-          {creditCopy.saved(saved)}
-        </p>
-      )}
+      {saved !== null && <Toast>{creditCopy.saved(saved)}</Toast>}
     </section>
   );
 }

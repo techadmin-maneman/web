@@ -28,7 +28,6 @@ export const supplyPlan = {
   reject: "Reject",
   why_label: "Reason",
   confirmReject: "Reject it",
-  keep: "Keep line",
   draft: "Draft again",
   drafted: "Drafted again from the latest forecast.",
   approvedSaid: "Approved. Its order is drafted in Purchasing, to approve there.",

@@ -16,11 +16,11 @@ import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
-import { JobFailed } from "../states/JobFailed.tsx";
-import { Failed, Loading } from "../states/States.tsx";
+import { JobFailed } from "../frame/JobFailed.tsx";
+import { Failed, Loading } from "../frame/States.tsx";
 import { type Heard, keptArrival, keptClosed, keptOutcome, keptStates } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
-import frame from "../components/frame.module.css";
+import frame from "../frame/frame.module.css";
 import shared from "./steps.module.css";
 import styles from "./close-out.module.css";
 

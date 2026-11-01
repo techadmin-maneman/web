@@ -62,7 +62,7 @@ export function buttonLook({ variant, size, narrow = false, className }: Look): 
   return classes(styles.button, styles[variant], styles[size], narrow && styles.narrow, className);
 }
 
-type ButtonProps = Look &
+export type ButtonProps = Look &
   Leading &
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & {
     /** Working on what the tap asked for: drawn dimmed, said to a screen reader, and a second tap does nothing. */

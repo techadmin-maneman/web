@@ -1,7 +1,7 @@
 // One count task (docs/decisions/0185-cycle-counts.md): counted blind, item by item; what differed counted again; and
 // a recount that still differs signed off by a manager, who alone sees what the ledger held.
 
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
 import { Button } from "@maneman/ui/Button";
@@ -12,15 +12,15 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { stock } from "../content/stock.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { PieceScans } from "../stock/index.ts";
-import { Refusal } from "../components/Refusal.tsx";
-import { RowHead } from "../components/RowHead.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
+import { RowHead } from "@maneman/ui/RowHead";
+import { FormActions } from "@maneman/ui/FormActions";
 import { countsApi } from "./counts-api.ts";
 
 type Task = Success<paths["/api/count-tasks/{id}"]["get"]>;
@@ -114,7 +114,7 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
   const load = useCallback(() => countsApi.differences(task.task.id), [task.task.id]);
   const [loaded, retry] = useLoad(load);
   const [note, setNote] = useState("");
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   return (
     <div className={form.group}>
@@ -228,7 +228,7 @@ export function CountTaskPanel({
     onChanged();
   };
   if (current === null) {
-    return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <Loading />;
+    return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <PanelLoading />;
   }
   return (
     <FormDrawer title={copy.heading(current.task.place, whatOf(current.task))} onClose={onClose}>

@@ -9,8 +9,8 @@ import { api } from "../api.ts";
 import { month as copy } from "../content.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { go } from "../route.ts";
-import { Failed, Loading } from "../states/States.tsx";
-import frame from "../components/frame.module.css";
+import { Failed, Loading } from "../frame/States.tsx";
+import frame from "../frame/frame.module.css";
 import styles from "./mine.module.css";
 
 export function MonthScreen() {

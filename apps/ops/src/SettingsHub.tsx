@@ -28,7 +28,7 @@ import {
 } from "./route.ts";
 import { Rules } from "./settings/Rules.tsx";
 import { settingsApi } from "./settings/settings-api.ts";
-import { Loading } from "./states/States.tsx";
+import { PanelLoading } from "@maneman/ui/States";
 
 /** Each page that is a screen of its own, loaded the first time it opens. */
 const SCREENS: Readonly<Record<ScreenTab, ComponentType>> = {
@@ -124,7 +124,7 @@ function Page({ tab }: { tab: SettingsTab }) {
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {
   return (
     <SettingsLayout menu={<Menu tab={tab} />}>
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<PanelLoading />}>
         <Page tab={tab} />
       </Suspense>
     </SettingsLayout>

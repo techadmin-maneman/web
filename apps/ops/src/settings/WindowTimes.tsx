@@ -4,11 +4,11 @@
 // page, each window's hours read beneath its boxes as they are typed, before it is set.
 
 import { Toast } from "@maneman/ui/Toast";
-import { PageActions } from "../components/PageHead.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
-import { DeleteAction } from "../components/DeleteAction.tsx";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate, shortDate } from "@maneman/web-kit/dates";
@@ -17,13 +17,13 @@ import { windowTimesOf } from "@rules/policy/slot-times.ts";
 import { WINDOW_SLOT_MAP } from "@rules/config/scheduling.ts";
 import { useState } from "react";
 import type { SlotTimes } from "../api.ts";
-import { AddForm } from "../components/AddForm.tsx";
-import { DrawerButton } from "../components/DrawerButton.tsx";
-import form from "../components/forms.module.css";
+import { AddForm } from "@maneman/ui/AddForm";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import form from "@maneman/ui/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { settingsApi } from "./settings-api.ts";
 import styles from "./window-times.module.css";
 
@@ -201,7 +201,7 @@ export function WindowTimes() {
   const access = useAccess();
   const [loaded, retry] = useLoad(settingsApi.slotTimes);
   const [said, setSaid] = useState<string | null>(null);
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const times = loaded.value;
   return (

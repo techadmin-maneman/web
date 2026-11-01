@@ -3,6 +3,7 @@
 // their city still needs; and served ones paused, taking no new clients till a day, or resumed.
 
 import { Badge } from "@maneman/ui/Badge";
+import { BackButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
 import { DateInput, Field, Fieldset } from "@maneman/ui/Field";
 import { Toast } from "@maneman/ui/Toast";
@@ -13,11 +14,11 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import type { LaunchReadiness, PincodeLaunch } from "../api.ts";
 import { areas } from "../content.ts";
-import form from "../components/forms.module.css";
-import { CheckPanel, CheckWarning } from "../components/CheckPanel.tsx";
-import { FormActions } from "../components/FormActions.tsx";
-import { Refusal } from "../components/Refusal.tsx";
-import { OpsLink } from "../components/Shell.tsx";
+import form from "@maneman/ui/forms.module.css";
+import { CheckPanel, CheckWarning } from "@maneman/ui/CheckPanel";
+import { FormActions } from "@maneman/ui/FormActions";
+import { Refusal } from "@maneman/ui/Refusal";
+import { OpsLink } from "../frame/Shell.tsx";
 import { useAccess } from "../lib/access.ts";
 import shared from "./areas.module.css";
 import { areasApi } from "./areas-api.ts";
@@ -56,7 +57,7 @@ function LaunchRow({ launch, onCancel }: { launch: PincodeLaunch; onCancel: (() 
           aria-label={copy.cancelLabel(launch.city, day)}
           onClick={onCancel}
         >
-          {copy.cancel}
+          {copy.cancelLaunch}
         </Button>
       )}
     </li>
@@ -188,9 +189,7 @@ function ScheduleForm(props: {
         <Button variant="primary" size="small" disabled={busy || day === ""} onClick={() => void schedule()}>
           {busy ? copy.scheduling : copy.schedule}
         </Button>
-        <Button variant="outline" size="small" narrow onClick={props.onBack}>
-          {copy.back}
-        </Button>
+        <BackButton onClick={props.onBack} />
       </FormActions>
       {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
     </Fieldset>
@@ -242,9 +241,7 @@ function PauseForm(props: {
             {words.resume}
           </Button>
         )}
-        <Button variant="outline" size="small" narrow onClick={props.onBack}>
-          {words.back}
-        </Button>
+        <BackButton onClick={props.onBack} />
       </FormActions>
       {code !== null && <Refusal className={shared.error} said={errorText(words.errors, { code })} />}
     </Fieldset>

@@ -9,8 +9,8 @@ import { useState } from "react";
 import { type ClientRecord } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { FormDrawer } from "../components/FormDrawer.tsx";
-import { Refused } from "../components/Refusal.tsx";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { Refused } from "@maneman/ui/Refusal";
 import styles from "./clients.module.css";
 import { clientsApi } from "./clients-api.ts";
 

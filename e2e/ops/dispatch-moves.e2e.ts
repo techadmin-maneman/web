@@ -10,6 +10,7 @@
 // the keyboard as well, and that path is what most of these tests walk.
 
 import type { Route } from "@playwright/test";
+import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { BOARD, empty, fails, json, MOVED, PROPOSED, ROOM, VIKRAM, type Call } from "./fixtures.ts";
 import {
@@ -382,7 +383,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "Move Rohit Malhotra to Sandeep Yadav" })).toBeVisible();
-  await expect(page.getByRole("button", { name: opsCopy.dispatch.move.cancel })).toBeDisabled();
+  await expect(page.getByRole("button", { name: DISMISS.cancel })).toBeDisabled();
 
   release();
   await expect(page.getByRole("status")).toContainText("Moved. Rohit Malhotra gets the new time on WhatsApp.");

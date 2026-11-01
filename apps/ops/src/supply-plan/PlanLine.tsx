@@ -2,16 +2,17 @@
 // rejected with why; once decided, what came of it.
 
 import type { Success } from "@maneman/web-kit/api";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Badge } from "@maneman/ui/Badge";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { supplyPlanApi } from "./supply-plan-api.ts";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormActions } from "@maneman/ui/FormActions";
 
 export type Plan = Success<paths["/api/supply-plan"]["get"]>;
 export type Line = Plan["lines"][number];
@@ -72,9 +73,7 @@ function Reject({
         >
           {copy.confirmReject}
         </Button>
-        <Button variant="outline" size="small" onClick={onKeep}>
-          {copy.keep}
-        </Button>
+        <CancelButton onClick={onKeep} />
       </FormActions>
     </div>
   );

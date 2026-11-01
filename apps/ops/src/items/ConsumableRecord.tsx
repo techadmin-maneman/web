@@ -5,9 +5,9 @@
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { type Consumable, type ConsumableChange, type Consumables } from "../api.ts";
-import { DeleteAction } from "../components/DeleteAction.tsx";
-import { figureOrNone, FigureRow, MoneyRow, ReadRow, TextRow } from "../components/RecordRows.tsx";
-import form from "../components/forms.module.css";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
+import { figureOrNone, FigureRow, MoneyRow, ReadRow, TextRow } from "@maneman/ui/RecordRows";
+import form from "@maneman/ui/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Restoring, Retiring, stateWords } from "./Retirement.tsx";

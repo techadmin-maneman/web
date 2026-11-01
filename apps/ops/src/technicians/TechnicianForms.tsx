@@ -4,19 +4,20 @@
 // board.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { useState } from "react";
 import { type ReturnedVisit, type TechnicianChange, type TechnicianSummary } from "../api.ts";
-import { DeleteAction } from "../components/DeleteAction.tsx";
-import { ChoiceRow, TextRow } from "../components/RecordRows.tsx";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
+import { ChoiceRow, TextRow } from "@maneman/ui/RecordRows";
 import { technicians, CLOSE } from "../content.ts";
 import { GIVING_NO_CITY, useAccess } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
 import styles from "./technicians.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 import { SwitchOff, SwitchOn } from "./TechnicianSwitch.tsx";
 import { refusal } from "./refusal.ts";
@@ -180,9 +181,7 @@ export function AddTechnician({
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} disabled={sending} onClick={onClose}>
-          {copy.cancel}
-        </Button>
+        <CancelButton disabled={sending} onClick={onClose} />
       </div>
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </Drawer>

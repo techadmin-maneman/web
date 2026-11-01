@@ -9,9 +9,9 @@ import { SettingRow } from "@maneman/ui/SettingRow";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { countsApi } from "./counts-api.ts";
 
 export type CountTasks = Success<paths["/api/count-tasks"]["get"]>;

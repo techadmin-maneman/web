@@ -4,19 +4,19 @@
 
 import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
-import { DrawerButton } from "../components/DrawerButton.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { Table } from "@maneman/ui/Table";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { AddForm } from "../components/AddForm.tsx";
-import { DeleteAction } from "../components/DeleteAction.tsx";
+import { AddForm } from "@maneman/ui/AddForm";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { cities } from "../content/cities.ts";
 import { useAccess } from "../lib/access.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import type { Cities } from "./types.ts";
-import { RowHead } from "../components/RowHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
 import { citiesApi } from "./cities-api.ts";
 
 const copy = cities.registrations;
@@ -61,7 +61,7 @@ function RegistrationForm({ onAdded, onCancel }: { onAdded: () => Promise<void>;
   return (
     <AddForm
       title={copy.add}
-      words={{ add: cities.form.add, cancel: copy.cancel }}
+      words={{ add: cities.form.add }}
       errors={copy.errors}
       boxes={["state_code", "gstin", "books_branch_id"]}
       send={() =>

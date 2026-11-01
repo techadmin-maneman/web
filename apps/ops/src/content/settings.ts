@@ -132,7 +132,6 @@ export const settings = {
         `Switch off ${code}? It can’t be used again. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it.`,
       confirm: "Switch off",
       sending: "Switching off…",
-      cancel: "Cancel",
     },
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -374,7 +373,6 @@ export const settings = {
     /** What a change will set, read beneath its boxes. */
     summary: "What changes",
     add: "Set",
-    cancel: "Cancel",
     /** A window's line: "Morning: 9 am–12 noon → 9:30 am–12:30 pm". */
     change: (window: string, was: string, now: string) =>
       was === now ? `${window}: ${now}` : `${window}: ${was} → ${now}`,
@@ -392,7 +390,7 @@ export const settings = {
       warning: (from: string) => `Withdraw the change from ${from}? Those days go back to the times before it.`,
       confirm: "Withdraw",
       sending: "Withdrawing…",
-      cancel: "Keep it",
+      keep: true,
     },
     withdrawn: "Withdrawn.",
     errors: {
@@ -421,7 +419,6 @@ export const settings = {
     reason: "Reason",
     formTitle: "Close days",
     add: "Close",
-    cancel: "Cancel",
     /** What closing the days leaves to move, said before they are closed. */
     stranded: (visits: number) =>
       `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} booked on these days. Move ${
@@ -447,7 +444,6 @@ export const settings = {
       warning: (period: string) => `Reopen ${period}?`,
       confirm: "Reopen",
       sending: "Reopening…",
-      cancel: "Cancel",
     },
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -524,7 +520,6 @@ export const settings = {
       warning: (name: string) => `Retire ${name}? Their open orders stay.`,
       confirm: "Retire",
       sending: "Retiring…",
-      cancel: "Cancel",
     },
     added: "Added.",
     form: {
@@ -539,7 +534,6 @@ export const settings = {
       terms: "Payment terms, days",
       warranty: "Warranty, days",
       add: "Add",
-      cancel: "Cancel",
     },
     item: {
       title: (name: string) => `What ${name} supplies`,
@@ -573,7 +567,6 @@ export const settings = {
         label: (name: string) => `Remove ${name}`,
         confirm: "Remove",
         sending: "Removing…",
-        cancel: "Cancel",
       },
       removeQuestion: (item: string, supplier: string) => `Take ${item} off ${supplier}’s list?`,
     },
@@ -664,7 +657,6 @@ export const settings = {
       central: "Warehouse low at (optional)",
       shelf: "Shelf life, days (optional)",
       add: "Add",
-      cancel: "Cancel",
       added: "Added.",
     },
     retiring: {
@@ -729,7 +721,6 @@ export const settings = {
     committed: "Default",
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
     addButton: "Add",
-    cancel: "Cancel",
     saved: "Saved.",
     /** A refusal of the list with the limits the API gave it. */
     limits: {
@@ -786,7 +777,6 @@ export const settings = {
       noAccess: "No access",
       addGrant: "Add a department",
       add: "Add",
-      cancel: "Cancel",
     },
     saved: "Saved.",
     removed: "Removed.",
@@ -797,7 +787,6 @@ export const settings = {
       warning: (email: string) => `Remove ${email} from staff?`,
       confirm: "Remove",
       sending: "Removing…",
-      cancel: "Cancel",
     },
     errors: {
       email: "Enter their sign-in email.",
@@ -821,7 +810,6 @@ export const settings = {
         warning: () => "Turn on access control? Only listed people can use the console.",
         confirm: "Turn on",
         sending: "Saving…",
-        cancel: "Cancel",
       },
       stopping: {
         open: "Turn off",
@@ -829,7 +817,6 @@ export const settings = {
         warning: () => "Turn off access control? Everyone signed in will see every section.",
         confirm: "Turn off",
         sending: "Saving…",
-        cancel: "Cancel",
       },
       /** Typed before access control goes off for everyone. */
       typed: "OFF",
@@ -853,7 +840,6 @@ export const settings = {
         warning: (label: string) => `Remove ${label}? It’s refused once access control is on.`,
         confirm: "Remove",
         sending: "Removing…",
-        cancel: "Cancel",
       },
       errors: {
         client_id: "Paste the client ID exactly as shown.",

@@ -3,7 +3,7 @@
 // A grade's row opens its record beside the table, where its name and its rates change where they read.
 
 import { Toast } from "@maneman/ui/Toast";
-import { PageActions } from "../components/PageHead.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
@@ -12,8 +12,8 @@ import { classes } from "@maneman/ui/classes";
 import { Note } from "@maneman/ui/Note";
 import { useState } from "react";
 import { type TechnicianPay } from "../api.ts";
-import { DrawerButton } from "../components/DrawerButton.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { technicianPay } from "../content/technician-pay.ts";
 import { tables } from "../content.ts";
 import { AddGrade, GradeRecord } from "./PayForms.tsx";

@@ -3,6 +3,7 @@
 // someone else holds is refused, and each change says how long it has left, as Tasks counts it.
 
 import { Field, TextArea } from "@maneman/ui/Field";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -10,17 +11,17 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import { type NumberChange } from "../api.ts";
-import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { Reach } from "../components/Reach.tsx";
-import { OpsLink } from "../components/Shell.tsx";
+import { DecisionQueue } from "@maneman/ui/DecisionQueue";
+import { Reach } from "../clients/index.ts";
+import { OpsLink } from "../frame/Shell.tsx";
 import { numberChanges } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./number-changes.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { numberChangesApi } from "./number-changes-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -114,18 +115,14 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
             >
               {sending ? copy.deciding : copy.reason.confirm}
             </Button>
-            <Button
-              variant="outline"
-              size="small"
+            <CancelButton
               disabled={sending}
               onClick={() => {
                 setDeciding({ step: "open" });
                 // Back to the button that asked, rather than to the top of the page.
                 requestAnimationFrame(() => rejectButton.current?.focus());
               }}
-            >
-              {copy.reason.cancel}
-            </Button>
+            />
           </div>
         </div>
       )}
@@ -159,7 +156,7 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
 function NumberChangeQueue() {
   const [loaded, retry] = useLoad(numberChangesApi.numberChanges);
   const mayDecide = useAccess().mayCall("POST /api/number-changes/{id}/decision");
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date(apiNow());

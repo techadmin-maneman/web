@@ -14,7 +14,7 @@ import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
-import { Offline } from "../components/Banners.tsx";
+import { Offline } from "../frame/Banners.tsx";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../content.ts";
 import { jobLabel } from "../lib/kind.ts";
@@ -27,7 +27,7 @@ import { useSession } from "../session.ts";
 import { account, forget, replay, sendAgain, STUCK, type EventKind, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
 import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "../lib/sets.ts";
-import frame from "../components/frame.module.css";
+import frame from "../frame/frame.module.css";
 import styles from "./waiting.module.css";
 
 const PHOTO_STEPS: ReadonlySet<InJobStep> = new Set(["before_photos", "after_photos"]);

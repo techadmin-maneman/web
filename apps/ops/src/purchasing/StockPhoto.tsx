@@ -9,7 +9,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { smallJpeg } from "@maneman/web-kit/small-jpeg";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./stock-photo.module.css";
 import { purchasingApi } from "./purchasing-api.ts";
 

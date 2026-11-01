@@ -18,8 +18,8 @@ import {
   type Covered,
   type Draft,
 } from "./discount-draft.ts";
-import { AddForm } from "../components/AddForm.tsx";
-import form from "../components/forms.module.css";
+import { AddForm } from "@maneman/ui/AddForm";
+import form from "@maneman/ui/forms.module.css";
 import { discountCodesApi } from "./discount-codes-api.ts";
 import styles from "./discount-codes.module.css";
 
@@ -236,7 +236,7 @@ export function DiscountCodeForm({
       )}
       <AddForm
         title={copy.make}
-        words={{ add: copy.makeButton, cancel: copy.close }}
+        words={{ add: copy.makeButton }}
         errors={copy.errors}
         boxes={["code", "count", "kind", "value", "cap", "covers", "expires_on", "max_uses"]}
         send={() => discountCodesApi.makeDiscountCodes(requestOf(draft))}

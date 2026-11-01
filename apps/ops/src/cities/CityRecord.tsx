@@ -5,8 +5,8 @@
 import type { Sent } from "@maneman/web-kit/api";
 import { errorText } from "@maneman/web-kit/refusal";
 import type { paths } from "../api-schema.ts";
-import { ChoiceRow, figureOrNone, FigureRow, TextRow } from "../components/RecordRows.tsx";
-import form from "../components/forms.module.css";
+import { ChoiceRow, figureOrNone, FigureRow, TextRow } from "@maneman/ui/RecordRows";
+import form from "@maneman/ui/forms.module.css";
 import { cities as words } from "../content/cities.ts";
 import { useAccess } from "../lib/access.ts";
 import { citiesApi } from "./cities-api.ts";

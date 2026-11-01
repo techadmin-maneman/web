@@ -4,19 +4,19 @@
 import { Toast } from "@maneman/ui/Toast";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
-import { DrawerButton } from "../components/DrawerButton.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { Table } from "@maneman/ui/Table";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { AddForm } from "../components/AddForm.tsx";
-import { DeleteAction } from "../components/DeleteAction.tsx";
+import { AddForm } from "@maneman/ui/AddForm";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { cities } from "../content/cities.ts";
 import { useAccess } from "../lib/access.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import type { Cities, CityPrice } from "./types.ts";
-import { RowHead } from "../components/RowHead.tsx";
+import { RowHead } from "@maneman/ui/RowHead";
 import { citiesApi } from "./cities-api.ts";
 
 const copy = cities.prices;
@@ -191,7 +191,7 @@ function PriceForm(props: { cities: Cities; onAdded: () => Promise<void>; onCanc
   return (
     <AddForm
       title={copy.add}
-      words={{ add: cities.form.add, cancel: copy.cancel }}
+      words={{ add: cities.form.add }}
       errors={copy.errors}
       boxes={["item", "tier", "amount_ex_gst", "gst_percent", "valid_from"]}
       send={() =>

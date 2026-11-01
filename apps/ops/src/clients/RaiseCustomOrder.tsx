@@ -2,17 +2,18 @@
 // price, with what the client pays and when the supplier promised it. Raising it sends the client the payment link.
 
 import type { Success } from "@maneman/web-kit/api";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { clients } from "../content.ts";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
-import { FormRefusal } from "../components/Refusal.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormRefusal } from "@maneman/ui/Refusal";
+import { FormActions } from "@maneman/ui/FormActions";
 import { clientsApi } from "./clients-api.ts";
 
 export type CustomOrders = Success<paths["/api/clients/{id}/custom-orders"]["get"]>;
@@ -172,9 +173,7 @@ export function RaiseCustomOrder({
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void raise()}>
           {copy.raise.send}
         </Button>
-        <Button variant="outline" size="small" onClick={onClose}>
-          {copy.raise.keep}
-        </Button>
+        <CancelButton onClick={onClose} />
       </FormActions>
       <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={ORDER_BOXES} />
     </div>

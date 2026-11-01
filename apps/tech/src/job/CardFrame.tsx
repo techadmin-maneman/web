@@ -13,7 +13,7 @@ import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { arrival, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
-import frame from "../components/frame.module.css";
+import frame from "../frame/frame.module.css";
 import styles from "./card-frame.module.css";
 
 /** The day, written only when it is not today: "Tomorrow", or "Fri 27 Sep". */

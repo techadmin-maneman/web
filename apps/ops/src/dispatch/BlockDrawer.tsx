@@ -9,7 +9,7 @@ import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { dispatch, CLOSE } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";

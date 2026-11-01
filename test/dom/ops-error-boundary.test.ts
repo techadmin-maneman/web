@@ -1,12 +1,12 @@
-// A console page that throws while it draws (apps/ops/src/states/ErrorBoundary.tsx): the navigation stays, the page
+// A console page that throws while it draws (apps/ops/src/frame/ErrorBoundary.tsx): the navigation stays, the page
 // says it didn't open and offers a reload, and what was thrown is reported.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { broken, shell } from "../../apps/ops/src/content.ts";
-import { Shell } from "../../apps/ops/src/components/Shell.tsx";
-import { AppBoundary, PageBoundary } from "../../apps/ops/src/states/ErrorBoundary.tsx";
+import { Shell } from "../../apps/ops/src/frame/Shell.tsx";
+import { AppBoundary, PageBoundary } from "../../apps/ops/src/frame/ErrorBoundary.tsx";
 import { contractChecked } from "./contract-fetch.ts";
 
 let page: HTMLDivElement;

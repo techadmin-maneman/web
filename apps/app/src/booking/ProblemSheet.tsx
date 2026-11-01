@@ -12,7 +12,7 @@ import { api } from "../api.ts";
 import { booking, problem as copy } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import styles from "./booking.module.css";
-import { WordsField } from "../components/WordsField.tsx";
+import { WordsField } from "@maneman/ui/WordsField";
 
 type Step = "writing" | "sent" | "limited" | "failed";
 

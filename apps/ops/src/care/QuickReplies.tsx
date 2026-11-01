@@ -9,15 +9,15 @@ import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useRef, useState } from "react";
 import { api, isErased } from "../api.ts";
-import { AddForm } from "../components/AddForm.tsx";
-import { DeleteAction } from "../components/DeleteAction.tsx";
+import { AddForm } from "@maneman/ui/AddForm";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { care } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { careApi } from "./care-api.ts";
-import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/PageHead.tsx";
-import form from "../components/forms.module.css";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { PageActions } from "../frame/PageHead.tsx";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./care.module.css";
 
 const copy = care.quick;
@@ -155,7 +155,7 @@ export function QuickRepliesPanel() {
   const load = useCallback(() => careApi.quickReplies(), []);
   const [loaded, retry] = useLoad(load);
   const mayKeep = useAccess().mayCall("POST /api/quick-replies");
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { replies } = loaded.value;
   return (

@@ -3,16 +3,17 @@
 // order in another currency, and its freight, duty and clearing, which the landed cost shares out.
 
 import { Button } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Field, Fieldset, TextInput } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { microRupeesFromRupees, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import type { Order, Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
-import { FormRefusal } from "../components/Refusal.tsx";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormRefusal } from "@maneman/ui/Refusal";
+import { FormActions } from "@maneman/ui/FormActions";
 import { purchasingApi } from "./purchasing-api.ts";
 
 interface LineDraft {
@@ -248,9 +249,7 @@ export function ReceiveForm(props: {
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void send()}>
           {copy.receive.send}
         </Button>
-        <Button variant="outline" size="small" onClick={props.onCancel}>
-          {copy.receive.cancel}
-        </Button>
+        <CancelButton onClick={props.onCancel} />
       </FormActions>
       <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={boxesOf(order)} />
     </div>

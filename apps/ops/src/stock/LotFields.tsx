@@ -7,7 +7,7 @@ import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { fullDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { holdingOf } from "./holdings.ts";
 
 /** What the fields read and write of the movement being recorded. */

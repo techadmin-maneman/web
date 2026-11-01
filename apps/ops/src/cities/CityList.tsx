@@ -3,16 +3,16 @@
 // it reads (docs/decisions/0212-editing-in-place.md).
 
 import { Toast } from "@maneman/ui/Toast";
-import { PageActions } from "../components/PageHead.tsx";
+import { PageActions } from "../frame/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { Badge } from "@maneman/ui/Badge";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useState } from "react";
-import { DrawerButton } from "../components/DrawerButton.tsx";
-import { FormDrawer } from "../components/FormDrawer.tsx";
-import { RowHead } from "../components/RowHead.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { RowHead } from "@maneman/ui/RowHead";
 import { cities as words } from "../content/cities.ts";
 import { useAccess } from "../lib/access.ts";
 import { AddCity } from "./CityForm.tsx";

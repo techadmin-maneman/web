@@ -148,7 +148,7 @@ describe("the client’s custom orders", () => {
     await press(copy.sendAgain);
     expect(document.body.textContent).toContain(copy.sent);
     // A cancel is asked once more, as the order's link stops working.
-    await press(copy.cancel);
+    await press(copy.cancelOrder);
     expect(posted.map((each) => each.path)).toEqual(["/api/custom-orders/co-1/send-link"]);
     await press(copy.cancelYes);
     expect(posted.map((each) => each.path)).toEqual([

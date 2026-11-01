@@ -8,7 +8,7 @@
 
 import { ButtonLink } from "@maneman/ui/Button";
 import { DocumentButton } from "@maneman/ui/DocumentLink";
-import { OpenDocument } from "../components/OpenDocument.tsx";
+import { OpenDocument } from "./OpenDocument.tsx";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
@@ -19,13 +19,13 @@ import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
 import { messages, payments } from "../content.ts";
-import { Shell } from "../components/Shell.tsx";
+import { Shell } from "../frame/Shell.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../lib/money.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
-import { Loading } from "../states/Loading.tsx";
-import { NotFound } from "../states/NotFound.tsx";
-import { PageFailed } from "../states/PageFailed.tsx";
+import { Loading } from "@maneman/ui/States";
+import { NotFound } from "../frame/NotFound.tsx";
+import { PageFailed } from "../frame/PageFailed.tsx";
 import {
   chargeEvidence,
   documentsOf,

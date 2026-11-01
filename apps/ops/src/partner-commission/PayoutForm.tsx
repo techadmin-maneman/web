@@ -2,14 +2,14 @@
 // its amount, the day it was paid and the payout's reference. A payment short of what is due says so beneath the
 // boxes before it is recorded.
 
-import { CheckWarning } from "../components/CheckPanel.tsx";
+import { CheckWarning } from "@maneman/ui/CheckPanel";
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type PartnerStatement, type PartnerStatements } from "../api.ts";
-import { AddForm } from "../components/AddForm.tsx";
+import { AddForm } from "@maneman/ui/AddForm";
 import { partnerCommission } from "../content/partner-commission.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { partnerCommissionApi } from "./partner-commission-api.ts";
 
 const { form: formWords, check, errors } = partnerCommission;

@@ -6,6 +6,7 @@
 // the day the fixture's leave is read against.
 
 import { EDITING } from "../../apps/ops/src/content/common.ts";
+import { DISMISS } from "../../packages/ui/words.ts";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -159,7 +160,7 @@ test("switches a technician off only once asked, and lists the visits they no lo
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
   // Said before it is confirmed: the visits it leaves with nobody.
   await expect(main.getByText(opsCopy.technicians.switchOff.warning(2))).toBeVisible();
-  await main.getByRole("button", { name: opsCopy.technicians.switchOff.cancel }).click();
+  await main.getByRole("button", { name: DISMISS.cancel }).click();
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
 
   roster.current = {
@@ -227,7 +228,9 @@ test("lists the technicians switched off apart, and switches one back on", async
   };
   await main.getByRole("button", { name: "Switch Ravi Kumar back on" }).click();
 
-  await expect(main.getByRole("status")).toContainText("Ravi Kumar can sign in again.");
+  await expect(page.getByRole("status").filter({ hasText: "Ravi Kumar can sign in again." })).toContainText(
+    "Ravi Kumar can sign in again.",
+  );
   await expect(main.getByRole("navigation", { name: /^Ravi Kumar:/ })).toBeVisible();
   await backToRoster(page);
   await expect(off).toBeHidden();

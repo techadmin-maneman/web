@@ -3,13 +3,15 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
+import { Toast } from "@maneman/ui/Toast";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { type ReactNode } from "react";
 import { areas, BOOKING_URL } from "../content.ts";
 import shared from "./areas.module.css";
 import styles from "./launch-panel.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 
 const copy = areas.launch;
 const bookingUrl = BOOKING_URL[import.meta.env.MM_ENV];
@@ -57,11 +59,7 @@ export function LaunchPanel(props: Props) {
       )}
       {props.children}
       <p className={shared.message}>{copy.message(area ?? copy.eachArea, bookingUrl)}</p>
-      {done !== null && (
-        <p className={shared.done} role="status">
-          {done}
-        </p>
-      )}
+      {done !== null && <Toast>{done}</Toast>}
       {done === null && (
         <div className={shared.actions}>
           {sendLabel !== null && (
@@ -69,9 +67,7 @@ export function LaunchPanel(props: Props) {
               {sending ? copy.sending : sendLabel}
             </Button>
           )}
-          <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
-            {copy.cancel}
-          </Button>
+          <CancelButton disabled={sending} onClick={onCancel} />
         </div>
       )}
       {error !== null && <Refusal className={shared.error} said={error} />}

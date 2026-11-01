@@ -11,7 +11,7 @@ import { useCallback } from "react";
 import { type Consent } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./clients.module.css";
 import styles from "./consents.module.css";
 import { Erase } from "./Erase.tsx";
@@ -66,7 +66,7 @@ export function Consents({ clientId, name, onErased }: { clientId: string; name:
   const load = useCallback(() => clientsApi.clientConsents(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const { consents, deletion } = loaded.value;

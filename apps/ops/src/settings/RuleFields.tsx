@@ -9,7 +9,7 @@ import { NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import type { ChoiceRule, NumberRule, OpsSetting, SettingValue } from "../api.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { EDITING } from "../content/common.ts";
 import { settings } from "../content/settings.ts";
 import { boundsOf, choiceLabel, keyLabel, rangeWords, READ_AS, ruleRefusal, whole } from "./rule-drafts.ts";

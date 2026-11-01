@@ -3,14 +3,15 @@
 // offering it from that day; nothing already recorded moves, and neither does its stock.
 
 import { Button } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { DateInput, Field } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type Consumable, type Consumables } from "../api.ts";
-import { FormActions } from "../components/FormActions.tsx";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "@maneman/ui/FormActions";
+import { Refusal } from "@maneman/ui/Refusal";
 import { settings } from "../content/settings.ts";
 import { itemsApi } from "./items-api.ts";
 import styles from "./consumables.module.css";
@@ -121,16 +122,11 @@ export function Retiring({ consumable, today, onSaved }: Props & { readonly toda
         <Button variant="danger" size="small" type="submit" busy={busy}>
           {copy.retire}
         </Button>
-        <Button
-          variant="outline"
-          size="small"
-          narrow
+        <CancelButton
           onClick={() => {
             setAsking(false);
           }}
-        >
-          {copy.form.cancel}
-        </Button>
+        />
       </FormActions>
       {refused !== null && <Refusal said={refused} />}
     </form>

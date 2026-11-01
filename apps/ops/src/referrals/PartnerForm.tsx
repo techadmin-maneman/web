@@ -5,8 +5,8 @@ import { Field, NumberInput, TextInput, type BoxWidth } from "@maneman/ui/Field"
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type Partners } from "../api.ts";
-import { AddForm } from "../components/AddForm.tsx";
-import form from "../components/forms.module.css";
+import { AddForm } from "@maneman/ui/AddForm";
+import form from "@maneman/ui/forms.module.css";
 import { partners as copy } from "../content/partners.ts";
 import { referralsApi } from "./referrals-api.ts";
 

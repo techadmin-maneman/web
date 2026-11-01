@@ -1,0 +1,20 @@
+/* A long table's bar of search and lists, its heads that sort, and the line beneath it (./TableTools.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  /* The bar's place above its table, in from the panel's edge as the table's first column is. */
+  .bar {
+    margin: var(--sp-12) var(--sp-20);
+  }
+
+  .figure {
+    text-align: right;
+  }
+
+  .end {
+    margin: var(--sp-12) var(--sp-20) 0;
+    font-size: var(--fs-14);
+    color: var(--ui-text-muted);
+  }
+}

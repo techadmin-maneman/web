@@ -229,8 +229,3 @@ a.subject {
     opacity: 0;
   }
 }
-
-.error {
-  font-size: var(--fs-14);
-  color: var(--status-error);
-}

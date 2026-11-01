@@ -4,15 +4,16 @@
 // is their details alone.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { Toast } from "@maneman/ui/Toast";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { type ReturnedVisit, type Roster, type Technician, type TechnicianSummary } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
-import { useRecordTitle } from "../components/PageHead.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
+import { useRecordTitle } from "../frame/PageHead.tsx";
 import { technicians } from "../content.ts";
 import { go, TECHNICIAN_TAB_NAMES, TECHNICIAN_TABS, technicianPath, type TechnicianTab } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Details } from "./TechnicianForms.tsx";
 import { Returned } from "./TechnicianSwitch.tsx";
 import { Kit } from "./TechnicianKit.tsx";
@@ -115,11 +116,7 @@ function TechnicianPage({
         }}
       />
       {switched?.to === "off" && <Returned visits={switched.visits} />}
-      {switched?.to === "on" && (
-        <p className={styles.notice} role="status">
-          {technicians.switchOn.done(summary.name)}
-        </p>
-      )}
+      {switched?.to === "on" && <Toast>{technicians.switchOn.done(summary.name)}</Toast>}
       {active !== null && <TechnicianTabs technician={active} tab={tab} onChange={onChange} />}
     </div>
   );
@@ -147,7 +144,7 @@ export function TechnicianScreen({ technicianId, tab }: { technicianId: string; 
   };
 
   const page = () => {
-    if (loaded.state === "loading") return <Loading />;
+    if (loaded.state === "loading") return <PanelLoading />;
     if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />;
     const roster = fresh ?? loaded.value;
     const entry = entryOf(roster, technicianId);

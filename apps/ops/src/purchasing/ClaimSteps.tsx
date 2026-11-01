@@ -2,15 +2,16 @@
 // withdrawn with why; a sent claim settled by the supplier's answer, a credit of so much, a replacement or a refusal.
 
 import { Button } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { StockPhoto } from "./StockPhoto.tsx";
 import type { Claim } from "./types.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormActions } from "@maneman/ui/FormActions";
 import { purchasingApi } from "./purchasing-api.ts";
 
 export type ClaimAnswer = Awaited<ReturnType<typeof purchasingApi.sendClaim>>;
@@ -59,15 +60,12 @@ function Withdraw({
       >
         {copy.claims.confirmWithdraw}
       </Button>
-      <Button
-        variant="outline"
-        size="small"
+      <CancelButton
+        keep
         onClick={() => {
           onWithdrawing(false);
         }}
-      >
-        {copy.claims.keep}
-      </Button>
+      />
     </>
   );
 }

@@ -5,7 +5,7 @@
 import { fullDate, shortMonth } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import type { ClientRecord } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { activityPath } from "../route.ts";

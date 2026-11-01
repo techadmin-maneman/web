@@ -36,7 +36,7 @@ import { typeLook, type TextStyle } from "@maneman/ui/type";
 import { useState, type ReactNode } from "react";
 import { kit as words } from "../content/kit.ts";
 import styles from "./kit.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { ConsoleKit } from "./ConsoleKit.tsx";
 import { CLOSE } from "../content.ts";
 

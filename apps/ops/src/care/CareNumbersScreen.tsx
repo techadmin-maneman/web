@@ -11,12 +11,12 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { care } from "../content/care.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
 import shared from "./care.module.css";
 import { Columns, Stack } from "@maneman/ui/Layout";
 import { StatTile } from "@maneman/ui/StatTile";
-import { useHeaderSub } from "../components/PageHead.tsx";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toolbar } from "@maneman/ui/Toolbar";
 
@@ -147,7 +147,7 @@ function Span({ from, to }: { from: string; to: string }) {
 function Numbers({ period }: { period: CarePeriod }) {
   const load = useCallback(() => careApi.careNumbers(period), [period]);
   const [loaded, retry] = useLoad(load);
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const numbers = loaded.value;
   return (

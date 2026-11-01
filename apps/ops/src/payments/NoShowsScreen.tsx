@@ -4,6 +4,7 @@
 // more; the server never charges by itself (src/policy/no-show.ts).
 
 import { typeLook } from "@maneman/ui/type";
+import { BackButton } from "@maneman/ui/CancelButton";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, DateInput, TextArea } from "@maneman/ui/Field";
@@ -17,8 +18,8 @@ import { indiaClock, indiaDate, minutesBetween, shortDate, todayInIndia } from "
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
-import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { OpsLink } from "../components/Shell.tsx";
+import { DecisionQueue } from "@maneman/ui/DecisionQueue";
+import { OpsLink } from "../frame/Shell.tsx";
 import { firstShown, noShows } from "../content.ts";
 import { useAccess, WAIVING_A_NO_SHOW } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
@@ -26,9 +27,9 @@ import { clientPath } from "../route.ts";
 import { Charges } from "./Charges.tsx";
 import { Disputes } from "./Disputes.tsx";
 import { Distance } from "./Distance.tsx";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./no-shows.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { paymentsApi } from "./payments-api.ts";
 import { DoorPhoto } from "./DoorPhoto.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -71,7 +72,7 @@ function Money() {
   const [loaded, retry] = useLoad(load);
   const copy = noShows.money;
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const day = loaded.value;
@@ -256,9 +257,7 @@ function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge:
         <Button variant="primary" size="small" disabled={preview.state !== "loaded"} onClick={onCharge}>
           {keepsNothing(preview) ? copy.closeNoShow : copy.confirmCharge}
         </Button>
-        <Button variant="outline" size="small" onClick={onBack}>
-          {copy.back}
-        </Button>
+        <BackButton onClick={onBack} />
       </div>
     </div>
   );
@@ -373,7 +372,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
 function NoShowQueue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(paymentsApi.noShows);
   const access = useAccess();
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date(apiNow());
@@ -416,7 +415,7 @@ function rulingOf(each: DecidedNoShow): string {
 function DecidedToday() {
   const [loaded, retry] = useLoad(paymentsApi.decidedNoShows);
   const decided = noShows.decided;
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const { cases, more } = loaded.value;

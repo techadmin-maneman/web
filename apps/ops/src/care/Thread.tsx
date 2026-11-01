@@ -2,7 +2,7 @@
 // and our automatic messages to them with how far each got, in order.
 
 import { Toast } from "@maneman/ui/Toast";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink } from "../frame/Shell.tsx";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
@@ -13,16 +13,16 @@ import { careApi, type ChatThread, type Conversation, type ThreadItem } from "./
 import { care as copy } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
 import { clientPath, technicianPath } from "../route.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { CarePerson } from "./CarePerson.tsx";
 import { CityMatter } from "./CityMatter.tsx";
 import { RemedyForm } from "./Remedies.tsx";
 import { ClientPanel } from "./ClientPanel.tsx";
 import { Stranger } from "./Stranger.tsx";
 import { Composer } from "./Composer.tsx";
-import form from "../components/forms.module.css";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./thread.module.css";
-import { FormActions } from "../components/FormActions.tsx";
+import { FormActions } from "@maneman/ui/FormActions";
 
 const thread = copy.thread;
 
@@ -124,7 +124,7 @@ export function Thread({
   }, [loaded]);
   const [said, setSaid] = useState<string | null>(null);
   const mayAct = useAccess().mayCall("POST /api/conversations/{id}/replies");
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { items } = changed ?? loaded.value;
   return (

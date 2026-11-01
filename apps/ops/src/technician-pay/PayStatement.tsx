@@ -15,8 +15,8 @@ import type { components } from "../api-schema.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { csvText } from "../lib/csv.ts";
 import { saveFile } from "../lib/save-file.ts";
-import { Loading, PanelFailed } from "../states/States.tsx";
-import form from "../components/forms.module.css";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import form from "@maneman/ui/forms.module.css";
 import shared from "./technician-pay.module.css";
 import styles from "./pay-statement.module.css";
 import { technicianPayApi } from "./technician-pay-api.ts";
@@ -144,7 +144,7 @@ export function PayStatement({ today }: { today: string }) {
           </Button>
         )}
       </div>
-      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" &&
         (loaded.value.lines.length === 0 ? <Note>{copy.none}</Note> : <StatementTable lines={loaded.value.lines} />)}

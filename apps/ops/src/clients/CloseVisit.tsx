@@ -3,6 +3,7 @@
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
@@ -11,9 +12,9 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useId, useState } from "react";
 import { type HandClose } from "../api.ts";
 import { clients, CLOSE } from "../content.ts";
-import shared from "../components/visit-dialog.module.css";
+import shared from "./visit-dialog.module.css";
 import styles from "./close-visit.module.css";
-import { FormRefusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.handClose;
@@ -159,9 +160,7 @@ export function CloseVisit({
       {closed === null ? (
         <ClosingForm visitId={visitId} date={date} onClosed={setClosed} />
       ) : (
-        <p className={shared.done} role="status">
-          {copy.done[closed]}
-        </p>
+        <InlineMessage tone="saved">{copy.done[closed]}</InlineMessage>
       )}
     </Drawer>
   );

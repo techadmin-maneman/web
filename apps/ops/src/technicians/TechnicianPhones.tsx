@@ -4,6 +4,8 @@
 // does their number using up its login codes for the day.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { Toast } from "@maneman/ui/Toast";
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
@@ -13,7 +15,7 @@ import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import shared from "./technicians.module.css";
 import styles from "./technician-phones.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 
 const copy = technicians.phones;
@@ -77,17 +79,12 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
             >
               {sending ? copy.revoking : copy.confirm}
             </Button>
-            <Button
-              variant="outline"
-              size="small"
-              className={shared.quiet}
+            <CancelButton
               disabled={sending}
               onClick={() => {
                 setRevoking({ step: "listed" });
               }}
-            >
-              {copy.cancel}
-            </Button>
+            />
           </div>
         </div>
       )}
@@ -135,11 +132,7 @@ function SignInStopped({ technician, why }: { technician: Technician; why: strin
   };
 
   if (allowing.step === "allowed") {
-    return (
-      <p className={shared.signedIn} role="status">
-        {copy.allowed}
-      </p>
-    );
+    return <Toast>{copy.allowed}</Toast>;
   }
   return (
     <div className={styles.phone}>

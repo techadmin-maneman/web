@@ -39,7 +39,6 @@ export const areas = {
     /** A save on Served sends every change in the table with the messages. */
     saveAndSend: (alerts: number) => `Save and send to ${String(alerts)}`,
     sending: "Sending…",
-    cancel: "Cancel",
     /** The board's note beneath the panel, with the figures filled in. */
     note: (quiet: number) => {
       if (quiet === 0) return "Everyone waiting opted in.";
@@ -101,7 +100,7 @@ export const areas = {
     states: { scheduled: "Scheduled", live: "Live", cancelled: "Cancelled" },
     told: (alerted: number) => (alerted === 1 ? "1 told" : `${String(alerted)} told`),
     held: "Not live: no active technician in the city.",
-    cancel: "Cancel",
+    cancelLaunch: "Cancel launch",
     cancelLabel: (city: string, day: string) => `Cancel the ${city} launch on ${day}`,
     cancelCheck: (city: string, day: string) => `Cancel the ${city} launch on ${day}?`,
     keep: "Keep it",
@@ -242,7 +241,6 @@ export const areas = {
     edit: "Edit",
     editLabel: (pincode: string) => `Edit ${pincode}`,
     editTitle: (pincode: string, area: string) => (area === "" ? pincode : `${pincode} · ${area}`),
-    cancel: "Cancel",
     /** The name a row's box holds: a letter or a digit first, as the API takes it. */
     badName: (pincode: string) => `${pincode}: 2–40 characters, starting with a letter or digit.`,
     save: "Save",
@@ -297,7 +295,6 @@ export const areas = {
           ? `${String(count)} added.`
           : `${String(count)} added. Not in India Post’s list: ${unlisted.join(", ")}. Add those below.`,
       apply: "Save these changes",
-      cancel: "Cancel",
       badDate: (pincode: string) => `${pincode}: write the date as 2026-10-01.`,
       badServed: (pincode: string) => `${pincode}: served must be yes or no.`,
       badHeader: "Not the file from Download CSV. Download it again and make your changes there.",
