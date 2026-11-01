@@ -44,8 +44,8 @@ test.describe("the discount codes", () => {
     await form.getByLabel(settingsCopy.discountCodes.value).fill("10");
     await form.getByRole("button", { name: copy.makeButton, exact: true }).click();
     const covers = form.getByRole("group", { name: copy.covers });
-    await expect(covers.getByText(copy.errors.covers ?? "")).toBeVisible();
-    await expect(covers.getByText(copy.errors.covers ?? "")).toBeInViewport();
+    await expect(covers.getByText(copy.errors.covers)).toBeVisible();
+    await expect(covers.getByText(copy.errors.covers)).toBeInViewport();
   });
 
   test("heads the page with what every code has come to", async ({ page }) => {
