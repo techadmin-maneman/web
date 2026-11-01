@@ -4,6 +4,7 @@
 // (docs/decisions/0212-editing-in-place.md).
 
 import { Toast } from "@maneman/ui/Toast";
+import { Apart } from "@maneman/ui/Apart";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Badge } from "@maneman/ui/Badge";
 import { Note } from "@maneman/ui/Note";
@@ -87,6 +88,29 @@ function ConsumableTable(props: { rows: readonly Consumable[]; none: string; onO
   );
 }
 
+/** What is in use, and apart beneath it what is retired: an item retiring later is still in use until then. */
+function InUseAndRetired(props: {
+  id: string;
+  rows: readonly Consumable[];
+  none: string;
+  onOpen: (code: string) => void;
+}) {
+  const inUse = props.rows.filter((each) => each.offered);
+  const retired = props.rows.filter((each) => !each.offered);
+  return (
+    <>
+      {(inUse.length > 0 || retired.length === 0) && (
+        <ConsumableTable rows={inUse} none={props.none} onOpen={props.onOpen} />
+      )}
+      {retired.length > 0 && (
+        <Apart id={props.id} title={copy.retiredTitle}>
+          <ConsumableTable rows={retired} none="" onOpen={props.onOpen} />
+        </Apart>
+      )}
+    </>
+  );
+}
+
 export function Consumables() {
   const [loaded, retry] = useLoad(itemsApi.consumables);
   /** The list after a change, so the table follows without reading it again. */
@@ -127,7 +151,8 @@ export function Consumables() {
         )}
       </PageActions>
       <Panel titleId="consumables" title={copy.title}>
-        <ConsumableTable
+        <InUseAndRetired
+          id="consumables-retired"
           rows={current.consumables.filter((each) => each.hair_system === null)}
           none={copy.none}
           onOpen={opening}
@@ -149,7 +174,8 @@ export function Consumables() {
         )}
       </Panel>
       <Panel titleId="hair-systems" title={copy.hairSystems}>
-        <ConsumableTable
+        <InUseAndRetired
+          id="hair-systems-retired"
           rows={current.consumables.filter((each) => each.hair_system !== null)}
           none={copy.noHairSystems}
           onOpen={opening}

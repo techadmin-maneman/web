@@ -1,0 +1,13 @@
+/* What is switched off, retired or paused, apart beneath the live list (./Apart.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .apart {
+    margin-top: var(--sp-24);
+  }
+
+  .title {
+    margin: 0 var(--form-inset) var(--sp-8);
+  }
+}
