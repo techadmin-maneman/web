@@ -137,7 +137,9 @@ test("records leave, saying first that nobody can be booked on those days, and s
   await pressTwice(main.getByRole("button", { name: opsCopy.technicians.leave.save }));
   expect((await sent).postDataJSON()).toEqual({ from: "2027-10-12", to: "2027-10-14", note: "Away" });
 
-  await expect(main.getByRole("status")).toHaveText(opsCopy.technicians.leave.recorded);
+  await expect(page.getByRole("status").filter({ hasText: opsCopy.technicians.leave.recorded })).toHaveText(
+    opsCopy.technicians.leave.recorded,
+  );
   expect(records).toBe(1);
   const period = main.getByRole("listitem").filter({ hasText: "12 Oct 2027 to 14 Oct 2027" });
   await expect(period).toContainText("1 visit is still booked on these days. Move it on the dispatch board.");

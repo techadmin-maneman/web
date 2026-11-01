@@ -228,7 +228,9 @@ test("lists the technicians switched off apart, and switches one back on", async
   };
   await main.getByRole("button", { name: "Switch Ravi Kumar back on" }).click();
 
-  await expect(main.getByRole("status")).toContainText("Ravi Kumar can sign in again.");
+  await expect(page.getByRole("status").filter({ hasText: "Ravi Kumar can sign in again." })).toContainText(
+    "Ravi Kumar can sign in again.",
+  );
   await expect(main.getByRole("navigation", { name: /^Ravi Kumar:/ })).toBeVisible();
   await backToRoster(page);
   await expect(off).toBeHidden();

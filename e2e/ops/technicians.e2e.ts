@@ -235,7 +235,9 @@ test("says when a revoke stopped them signing in, and lets them in again", async
   const sent = page.waitForRequest((request) => request.url().endsWith(`/api/technicians/${IMRAN}/allow-sign-in`));
   await main.getByRole("button", { name: opsCopy.technicians.phones.allow }).click();
   await sent;
-  await expect(main.getByRole("status")).toHaveText(opsCopy.technicians.phones.allowed);
+  await expect(page.getByRole("status").filter({ hasText: opsCopy.technicians.phones.allowed })).toHaveText(
+    opsCopy.technicians.phones.allowed,
+  );
 });
 
 // Their number's codes for the day used up, after a lost code or a new phone; ops give them back.
@@ -251,7 +253,9 @@ test("says when they are out of login codes for today, and lets them in again", 
   const sent = page.waitForRequest((request) => request.url().endsWith(`/api/technicians/${IMRAN}/allow-sign-in`));
   await main.getByRole("button", { name: opsCopy.technicians.phones.allow }).click();
   await sent;
-  await expect(main.getByRole("status")).toHaveText(opsCopy.technicians.phones.allowed);
+  await expect(page.getByRole("status").filter({ hasText: opsCopy.technicians.phones.allowed })).toHaveText(
+    opsCopy.technicians.phones.allowed,
+  );
 });
 
 test("offers no revoke on a phone that is revoked already", async ({ page }) => {

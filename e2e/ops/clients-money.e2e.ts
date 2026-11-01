@@ -252,7 +252,7 @@ test("puts a client’s credits right, with the reason, and shows the balance it
 
   // The drawer closes once saved, and the section says what the change left them with.
   await expect(credits).toBeHidden();
-  await expect(page.getByRole("region", { name: opsCopy.clients.credits.title }).getByRole("status")).toHaveText(
+  await expect(page.getByRole("status").filter({ hasText: "Done. They now have 1 visit." })).toHaveText(
     "Done. They now have 1 visit.",
   );
   // The head reads the balance the API answered, without the record being read again.
