@@ -70,9 +70,11 @@ test("lists each person with their access and whether they are let in", async ({
   const owner = row(page, "owner@maneman.in");
   await expect(owner).toContainText("Admin · Manage · National");
   await expect(owner).toContainText("Finance · Manage · National");
-  await expect(owner).toContainText(settingsCopy.suppliers.active);
   await expect(row(page, "noida.lead@maneman.in")).toContainText("Operations · Act · Noida");
-  await expect(row(page, "noida.lead@maneman.in")).toContainText(settingsCopy.staff.inactive);
+  // Someone switched off is listed apart, beneath those let in.
+  const switchedOff = page.getByRole("region", { name: settingsCopy.staff.switchedOff });
+  await expect(switchedOff.getByRole("row").filter({ hasText: "noida.lead@maneman.in" })).toHaveCount(1);
+  await expect(switchedOff.getByRole("row").filter({ hasText: "owner@maneman.in" })).toHaveCount(0);
   await expect(page.getByText("a1b2c3d4.access")).toBeVisible();
 });
 
