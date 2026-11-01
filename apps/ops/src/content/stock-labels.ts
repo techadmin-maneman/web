@@ -21,7 +21,7 @@ export const stockLabels = {
   copies: "Copies",
   noLots: "No lots here to label.",
   lot: "Lot",
-  expires: (date: string) => `Exp ${date}`,
+  expires: (date: string) => `Expires ${date}`,
   noLabel: "That label couldn’t be made. Try again.",
   scan: {
     label: "Label",

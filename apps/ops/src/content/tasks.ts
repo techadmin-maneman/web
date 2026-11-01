@@ -63,7 +63,7 @@ export const tasks = {
     label: "Narrow the tasks",
     search: "Find a client",
     kind: "Kind",
-    allKinds: "Every kind",
+    allKinds: "Kind: All",
     mine: "Mine",
   },
   /** Each group, lettered in small caps as the board letters its own two. */

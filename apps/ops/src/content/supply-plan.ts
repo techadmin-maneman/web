@@ -15,7 +15,7 @@ export const supplyPlan = {
   /** "13 for visits + 4 buffer · 3 there now": the need, rounded up, the spare it keeps, and what the place holds. */
   why: (line: { need: number; safety: number; usable: number }) =>
     `${String(Math.ceil(line.need))} for visits + ${String(Math.ceil(line.safety))} buffer · ${String(line.usable)} there now`,
-  everyCity: "Every city",
+  everyCity: "All cities",
   quantity: (name: string) => `Quantity of ${name}`,
   approve: "Approve",
   /** The lines that go to one place, or come from one supplier, together. */

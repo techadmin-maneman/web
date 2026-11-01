@@ -2,12 +2,19 @@
 
 import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
-/** India Post's names come in capitals: "MUMBAI SUBURBAN" reads "Mumbai Suburban". A name already cased is kept. */
-const titled = (name: string): string =>
+const SMALL = new Set(["and", "of"]);
+
+/**
+ * India Post's names come in capitals: "MUMBAI SUBURBAN" reads "Mumbai Suburban", "ANDAMAN AND NICOBAR ISLANDS" reads
+ * "Andaman and Nicobar Islands". A name already cased is kept.
+ */
+export const titled = (name: string): string =>
   name === name.toUpperCase()
     ? name
         .toLowerCase()
-        .replace(/(^|[\s(-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toUpperCase())
+        .replace(/(^|[\s(-])(\p{L}+)/gu, (whole: string, before: string, word: string, at: number) =>
+          at > 0 && SMALL.has(word) ? whole : before + word.charAt(0).toUpperCase() + word.slice(1),
+        )
     : name;
 
 /**

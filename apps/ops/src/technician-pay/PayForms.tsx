@@ -16,7 +16,7 @@ import form from "@maneman/ui/forms.module.css";
 import { EDITING } from "../content/common.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { useAccess } from "../lib/access.ts";
-import { rateNow, ratesLater } from "./pay-rates.ts";
+import { rateLines } from "./pay-rates.ts";
 import styles from "./pay-rates.module.css";
 import { technicianPayApi } from "./technician-pay-api.ts";
 
@@ -81,7 +81,7 @@ function RateRow(props: {
       label={technicianPay.kinds[kind]}
       words={EDITING}
       mayChange={useAccess().mayCall("POST /api/technician-pay/rates")}
-      value={[rateNow(pay, cell), ...ratesLater(pay, cell)].join(" · ")}
+      value={rateLines(pay, cell).join(", then ")}
       start={() => ({
         amount: own?.amount === undefined || own.amount === null ? "" : String(own.amount / 100),
         from: pay.today,

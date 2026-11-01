@@ -51205,6 +51205,23 @@ Request body:
       },
       "description": "The rules a city may set."
     },
+    "national": {
+      "type": "object",
+      "properties": {
+        "checkin_radius_m": {
+          "type": "number"
+        },
+        "reminder_hour": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "checkin_radius_m",
+        "reminder_hour"
+      ],
+      "additionalProperties": false,
+      "description": "Each rule's national figure, which a city follows until it sets its own."
+    },
     "prices": {
       "type": "array",
       "items": {
@@ -51222,6 +51239,7 @@ Request body:
     "registrations",
     "rules",
     "rule_names",
+    "national",
     "prices",
     "today"
   ],

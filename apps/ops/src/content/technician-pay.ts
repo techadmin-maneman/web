@@ -19,7 +19,7 @@ export const technicianPay = {
     title: "Rates per visit",
     city: "City",
     everyCity: "Every city",
-    addGrade: "Add grade",
+    addGrade: "Add a grade",
     none: "No grades yet.",
     grade: "Grade",
     technicians: "Technicians",
@@ -45,7 +45,7 @@ export const technicianPay = {
     open: (name: string) => `Open ${name}`,
   },
   form: {
-    addTitle: "New grade",
+    addTitle: "Add a grade",
     name: "Name",
     /** The heading over a grade's rates in its record: "Rates in Delhi", "Rates in every city". */
     ratesIn: (city: string | null) => (city === null ? "Rates in every city" : `Rates in ${city}`),

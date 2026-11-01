@@ -33,10 +33,10 @@ export interface DirectoryPincode {
  */
 const SERVABLE = "d.pincode < '900000'";
 
-/** The states the directory lists, in order. */
+/** The states the directory lists, in order; never "NA", which it gives its delivery centres, no state's. */
 export async function directoryStates(db: D1Database): Promise<string[]> {
   const { results } = await db
-    .prepare(`SELECT DISTINCT state FROM pincode_directory d WHERE ${SERVABLE} ORDER BY state`)
+    .prepare(`SELECT DISTINCT state FROM pincode_directory d WHERE ${SERVABLE} AND d.state <> 'NA' ORDER BY state`)
     .all<{ state: string }>();
   return results.map((row) => row.state);
 }

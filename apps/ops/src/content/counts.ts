@@ -48,8 +48,8 @@ export const counts = {
   waiting: "Waiting for a manager’s sign-off.",
   done: "Done.",
   classesTitle: "Count classes",
-  /** "Default · Weekly" */
-  ownClass: (countClass: string) => `Default · ${countClass}`,
+  /** "Default (weekly)" */
+  ownClass: (countClass: string) => `Default (${countClass.toLowerCase()})`,
   classSaid: "Class saved.",
   startTitle: "Count now",
   place: "Place",

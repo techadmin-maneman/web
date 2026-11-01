@@ -67,7 +67,7 @@ test.describe("the discount codes", () => {
     await open(page, "/settings/discount-codes");
     await expect(row(page, "WEDDNG25").getByRole("cell")).toHaveText([
       "25% (max Rs. 5,000)",
-      "First fit, Service",
+      "First fit, Service visit",
       "Fri 31 Dec",
       settingsCopy.discountCodes.states.live,
       "3 of 50",

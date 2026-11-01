@@ -28930,6 +28930,11 @@ export interface components {
             }[];
             /** @description The rules a city may set. */
             rule_names: ("checkin_radius_m" | "reminder_hour")[];
+            /** @description Each rule's national figure, which a city follows until it sets its own. */
+            national: {
+                checkin_radius_m: number;
+                reminder_hour: number;
+            };
             prices: components["schemas"]["CityPrice"][];
             /** Format: date */
             today: string;

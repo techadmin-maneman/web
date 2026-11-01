@@ -145,7 +145,7 @@ test("moves a technician to another city, or to none", async ({ page }) => {
   await change.click();
   const city = main.getByRole("combobox", { name: opsCopy.technicians.details.city });
   await expect(city).toHaveValue("Gurgaon");
-  await city.selectOption("No city · no bookings");
+  await city.selectOption(opsCopy.technicians.fields.noCity);
   const sent = page.waitForRequest((request) => request.method() === "PATCH");
   await main.getByRole("button", { name: EDITING.save }).click();
 

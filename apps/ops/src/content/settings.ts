@@ -30,6 +30,9 @@ function figureWords(value: number, unit: string): string {
  * bounds before it is typed, and a change is shown before it is made
  * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
  */
+/** A window's parts after its first, in words. */
+const PARTS: Readonly<Record<number, string>> = { 2: "second", 3: "third", 4: "fourth" };
+
 export const settings = {
   title: "Settings",
   find: "Find a setting",
@@ -104,7 +107,7 @@ export const settings = {
     offSince: (day: string) => `Off since ${day}`,
     coverShort: {
       first_fit: "First fit",
-      service: "Service",
+      service: "Service visit",
       replacement: "Replacement",
     },
     noEnd: "No end",
@@ -366,9 +369,9 @@ export const settings = {
     appliesFrom: "From",
     /** The first day a change may take, after the last a client can book and the last visit booked. */
     earliest: (date: string) => `The earliest is ${date}.`,
-    /** A half-slot's start box, by its window: "Morning starts", "Afternoon, half-slot 3 starts". */
+    /** A start's box, by its window: "Morning starts", "Afternoon’s third part starts". */
     start: (window: string, position: number) =>
-      position === 1 ? `${window} starts` : `${window}, half-slot ${String(position)} starts`,
+      position === 1 ? `${window} starts` : `${window}’s ${PARTS[position] ?? String(position)} part starts`,
     dayEnd: "The day ends",
     /** What a change will set, read beneath its boxes. */
     summary: "What changes",
@@ -401,7 +404,7 @@ export const settings = {
       not_eight_starts: "Give all eight starts.",
       not_a_time: "Give each time as hh:mm.",
       not_in_order: "Each start must follow the one before.",
-      half_slot_too_short: "Each half-slot needs 45 minutes, the last one to the day’s end included.",
+      half_slot_too_short: "Each part needs at least 45 minutes, the last one to the day’s end included.",
       outside_the_day: "Keep the day between 6 am and 10 pm.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -670,9 +673,8 @@ export const settings = {
     usage: {
       title: "Expected use per service",
       service: "Service",
-      /** A service by its name, as the console names it; "Lace replacement, retired from 1 Oct 2027" once retired. */
-      serviceName: (name: string, retiredFrom: string | null) =>
-        retiredFrom === null ? name : `${name}, retired from ${retiredFrom}`,
+      /** Beneath the services offered, those retired, whose visits sold before are still done. */
+      retired: "Retired",
       quantity: (name: string, unit: string) => `${name}, ${unit} per visit`,
       noneOffered: "Add a consumable first.",
       none: "None",
@@ -717,8 +719,8 @@ export const settings = {
     up: (label: string) => `Move up: ${label}`,
     down: (label: string) => `Move down: ${label}`,
     remove: (label: string) => `Remove: ${label}`,
-    add: "Add item",
-    addReason: "Add reason",
+    add: "Add an item",
+    addReason: "Add a reason",
     retired: "Removed",
     putBack: (label: string) => `Restore: ${label}`,
     putBackButton: "Restore",

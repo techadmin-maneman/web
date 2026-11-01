@@ -14,6 +14,7 @@ import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { CITY_SETTING_NAMES } from "../../policy/city-settings.ts";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
@@ -96,6 +97,10 @@ const citiesRoute = opsRoute({
             registrations: z.array(RegistrationSchema),
             rules: z.array(z.object({ city: z.string(), rule: z.enum(CITY_SETTING_NAMES), value: RuleValue }).strict()),
             rule_names: z.array(z.enum(CITY_SETTING_NAMES)).openapi({ description: "The rules a city may set." }),
+            national: z
+              .object({ checkin_radius_m: z.number(), reminder_hour: z.number() })
+              .strict()
+              .openapi({ description: "Each rule's national figure, which a city follows until it sets its own." }),
             prices: z.array(CityPriceSchema),
             today: z.iso.date(),
           })
@@ -269,13 +274,14 @@ export function registerOpsCities(app: App): void {
   app.openapi(citiesRoute, async (c) => {
     const db = c.env.DB;
     const today = indiaDate(c.var.deps.now());
-    const [cities, technicians, zones, registrations, rules, prices] = await Promise.all([
+    const [cities, technicians, zones, registrations, rules, prices, inputs] = await Promise.all([
       allCities(db),
       techniciansByCity(db),
       db.prepare("SELECT name FROM zones ORDER BY sort, name").all<{ name: string }>(),
       stateRegistrations(db),
       cityRules(db),
       cityPrices(db, today),
+      opsInputs(c),
     ]);
     const ruleRows = [...rules].flatMap(([city, set]) =>
       CITY_SETTING_NAMES.flatMap((rule) => {
@@ -292,6 +298,7 @@ export function registerOpsCities(app: App): void {
         registrations,
         rules: ruleRows,
         rule_names: [...CITY_SETTING_NAMES],
+        national: { checkin_radius_m: inputs.checkinRadiusM, reminder_hour: inputs.reminderHour },
         prices,
         today,
       },
