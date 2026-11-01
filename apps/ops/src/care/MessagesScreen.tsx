@@ -179,7 +179,9 @@ function shownOf(latest: readonly Conversation[], older: Older | null): Conversa
 function Conversations({ view, search }: { view: ConversationView; search: string }) {
   const load = useCallback(() => careApi.conversations(view, search), [view, search]);
   const { loaded, refresh, retry } = useLiveLoad(load, LIST_EVERY_MS);
-  const [opened, setOpened] = useState<string | null>(null);
+  // The chat open beside the list, held by itself: a reply that moves it out of this view, as a sent reply moves it
+  // from waiting on us to waiting on the client, leaves it open until Care close it or open another.
+  const [opened, setOpened] = useState<Conversation | null>(null);
   const [older, setOlder] = useState<Older | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const pane = useRef<HTMLElement>(null);
@@ -187,7 +189,7 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const conversations = shownOf(loaded.value.conversations, older);
-  if (conversations.length === 0) return <Note>{copy.none}</Note>;
+  if (conversations.length === 0 && opened === null) return <Note>{copy.none}</Note>;
   const next = older === null ? loaded.value.next_cursor : older.next;
   const showOlder = async (cursor: string) => {
     setLoadingOlder(true);
@@ -199,23 +201,27 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
       next: answer.body.next_cursor,
     });
   };
-  const open = conversations.find((each) => each.id === opened) ?? null;
+  const open = conversations.find((each) => each.id === opened?.id) ?? opened;
   return (
     <div className={styles.inbox}>
       <div className={styles.list}>
-        <ul className={styles.chats} aria-label={copy.chats}>
-          {conversations.map((conversation) => (
-            <ConversationCard
-              key={conversation.id}
-              conversation={conversation}
-              open={conversation.id === opened}
-              onOpen={(id) => {
-                setOpened(id);
-                pane.current?.scrollIntoView({ block: "nearest" });
-              }}
-            />
-          ))}
-        </ul>
+        {conversations.length === 0 ? (
+          <Note>{copy.none}</Note>
+        ) : (
+          <ul className={styles.chats} aria-label={copy.chats}>
+            {conversations.map((conversation) => (
+              <ConversationCard
+                key={conversation.id}
+                conversation={conversation}
+                open={conversation.id === opened?.id}
+                onOpen={(id) => {
+                  setOpened(conversations.find((each) => each.id === id) ?? null);
+                  pane.current?.scrollIntoView({ block: "nearest" });
+                }}
+              />
+            ))}
+          </ul>
+        )}
         {next !== null && (
           <div className={styles.more}>
             <Note>{copy.latest(conversations.length)}</Note>
