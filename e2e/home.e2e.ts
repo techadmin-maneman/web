@@ -150,7 +150,7 @@ test.describe("WhatsApp", () => {
     const links = page.locator('a[href^="https://wa.me/"]');
     await expect(links).toHaveCount(3); // the sticky bar, the footer, the FAQ intro
     for (const href of await links.evaluateAll((all) => all.map((link) => link.getAttribute("href")))) {
-      expect(href).toBe("https://wa.me/919034572990");
+      expect(href).toBe("https://wa.me/17116660760");
     }
   });
 });
@@ -506,7 +506,7 @@ test.describe("other pages", () => {
     await page.goto("/");
     await expect(page.getByRole("link", { name: siteCopy.whatsapp.label })).toHaveAttribute(
       "href",
-      "https://wa.me/919034572990",
+      "https://wa.me/17116660760",
     );
     await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
   });
@@ -539,7 +539,7 @@ test.describe("other pages", () => {
     await expect(page.getByRole("heading", { name: siteCopy.stopMessages.expired.title })).toBeVisible();
     await expect(page.getByRole("link", { name: siteCopy.whatsapp.display })).toHaveAttribute(
       "href",
-      "https://wa.me/919034572990",
+      "https://wa.me/17116660760",
     );
   });
 

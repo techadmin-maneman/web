@@ -24,7 +24,7 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `GEOCODE_PROVIDER` | `stub` | `google` | `google` |
 | `IMAGE_PROVIDER` | `stub` | `youcam` | `youcam` |
 | `MESSAGING_ENABLED` | `true` | `true` | `false` |
-| `MESSAGING_PROVIDER` | `stub` | `evolution` | `evolution` |
+| `MESSAGING_PROVIDER` | `stub` | `msg91` | `evolution` |
 | `PAYMENTS_PROVIDER` | `stub` | `none` | `none` |
 | `RAZORPAY_KEY_ID` | — | `rzp_test_Tf1Bf3ElRK6uNQ` | — |
 | `REFERRER_NAME_ON_INVITE` | `true` | `true` | `true` |

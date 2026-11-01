@@ -2,11 +2,17 @@
 // any number, and words to share with whoever the sender picks. The links are
 // wa.me's, which open the app on a phone and WhatsApp Web at a desk.
 
-/** The business's WhatsApp number: digits with the country code, no "+". */
-export const WHATSAPP_NUMBER = "919034572990";
+/** The business's WhatsApp number, the one MSG91 sends from and takes replies on: digits with the country code, no "+". */
+export const WHATSAPP_NUMBER = "17116660760";
 
-/** The business's number as it is written for people: "+91 90345 72990". */
-export const WHATSAPP_DISPLAY = `+${WHATSAPP_NUMBER.slice(0, 2)} ${WHATSAPP_NUMBER.slice(2, 7)} ${WHATSAPP_NUMBER.slice(7)}`;
+/** The business's number as it is written for people: "+1 711 666 0760". */
+export const WHATSAPP_DISPLAY = `+${WHATSAPP_NUMBER.slice(0, 1)} ${WHATSAPP_NUMBER.slice(1, 4)} ${WHATSAPP_NUMBER.slice(4, 7)} ${WHATSAPP_NUMBER.slice(7)}`;
+
+/**
+ * Ops' own phone, which technicians call or WhatsApp: the business's WhatsApp number answers through MSG91 and takes no
+ * calls.
+ */
+export const OPS_NUMBER = "919034572990";
 
 /** A chat with `number`, written any way ("+91 98100 04417"), with `text` ready to send if there is any. */
 export function whatsappChat(number: string, text?: string): string {

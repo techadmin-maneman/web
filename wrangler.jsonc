@@ -250,7 +250,7 @@
         "TURNSTILE_ACCEPT_TEST_TOKEN": "true",
         "IMAGE_PROVIDER": "youcam",
         "CRM_PROVIDER": "zoho",
-        "MESSAGING_PROVIDER": "evolution",
+        "MESSAGING_PROVIDER": "msg91",
         "ACCESS_PROVIDER": "cloudflare",
         // The ops-staging Access application's audience tag.
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",

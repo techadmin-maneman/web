@@ -2964,7 +2964,7 @@
     "surface": "site",
     "group": "Contact",
     "where": "whatsapp",
-    "text": "+91 90345 72990",
+    "text": "+1 711 666 0760",
     "reviewed": false
   },
   {
@@ -2972,7 +2972,7 @@
     "surface": "site",
     "group": "Contact",
     "where": "whatsapp",
-    "text": "WhatsApp · +91 90345 72990",
+    "text": "WhatsApp · +1 711 666 0760",
     "reviewed": false
   },
   {
@@ -5960,11 +5960,11 @@
     "reviewed": false
   },
   {
-    "key": "message:book_in_app_v3",
+    "key": "message:book_in_app_v4",
     "surface": "message",
     "group": "Messages",
-    "where": "book_in_app_v3",
-    "text": "Hi {{1}}, we couldn't take your booking on our site.\nAs a client, you book your visits in the Mane Man app, signed in with this number.",
+    "where": "book_in_app_v4",
+    "text": "Hi {{1}}, your booking request on our site wasn't taken.\nThis number has a Mane Man account, so its visits are booked in the Mane Man app.",
     "reviewed": false
   },
   {
