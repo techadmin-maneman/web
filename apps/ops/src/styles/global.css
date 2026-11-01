@@ -35,10 +35,14 @@
   --settings-menu-width: var(--ops-settings-menu);
 }
 
-/* On a phone, Today's tiles two to a row. */
+/* On a phone, Today's tiles two to a row, and every box and button a finger's height. */
 @media (max-width: 600px) {
   :root {
     --columns-tile: var(--ops-tile-phone);
+    --action-height: var(--tap);
+    --control-height: var(--tap);
+    --small-height: var(--tap);
+    --field-height: var(--tap);
   }
 }
 
