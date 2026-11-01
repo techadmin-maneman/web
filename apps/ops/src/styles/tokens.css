@@ -16,7 +16,7 @@
   --ops-table-min: 860px; /* the narrowest a wide table goes before it scrolls: a Settings page beside its menu */
   /* A table's columns, by how much they hold: each screen names its own for what it holds, as one of these. */
   --ops-column-narrow: 72px; /* an owner, a source */
-  --ops-task-actions: 176px; /* a task's actions: Book a visit and Details on one line */
+  --ops-task-actions: var(--ops-filter); /* a task's actions: Book a visit and Details on one line */
   --ops-cell: 88px; /* a day on the board, a figure with its unit */
   --ops-column: 96px; /* a date, a city */
   --ops-column-wide: calc(var(--ops-column) + var(--sp-24)); /* a date with its weekday, an amount */

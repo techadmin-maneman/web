@@ -42,7 +42,8 @@ test.describe("the list", () => {
     await expect(tape).toContainText("strip");
     await expect(tape).toContainText("Rs. 12.50");
     await expect(tape).toContainText("Kit 5 · warehouse 50");
-    await expect(tape).toContainText(copy.states.offered);
+    // In use says nothing: only a retirement is a state worth a word.
+    await expect(tape).not.toContainText(copy.states.offered);
     await expect(row(page, "Solvent")).toContainText("In use until 1 Oct 2027");
     await expect(row(page, "Shampoo sachet")).toContainText("Retired from 1 Sep 2027");
     // Tables are for finding: nothing in a row but the way to its record.
