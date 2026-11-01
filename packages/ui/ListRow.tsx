@@ -1,0 +1,94 @@
+// A list's row on a phone, where the console's table would be too wide: what it is over who or where, on the left,
+// and one figure or state on the right, with the rule a table row carries for how pressing it is. A tap opens what the
+// table's row opens. Rows are never stacks of a column's name beside its value.
+//
+//   <ListRows label={copy.tasks}>
+//     <ListRow title={task.kind} meta={task.client} end={task.due} endTone="warning" rule="warning" onClick={open} />
+//   </ListRows>
+
+import type { ReactNode } from "react";
+import { classes } from "./classes.ts";
+import { Link } from "./router.tsx";
+import type { RuleTone } from "./Table.tsx";
+import styles from "./list-row.module.css";
+
+/** The figure or state's colour: muted unless it says something is due, late or wrong. */
+export type EndTone = "muted" | "plain" | "attention" | "warning" | "error";
+
+const END_TONES: Readonly<Record<EndTone, string | undefined>> = {
+  muted: styles.endMuted,
+  plain: styles.endPlain,
+  attention: styles.endAttention,
+  warning: styles.endWarning,
+  error: styles.endError,
+};
+
+export function ListRows({
+  label,
+  className,
+  children,
+}: {
+  /** The list's name, read out, where no heading above it names it. */
+  readonly label?: string | undefined;
+  readonly className?: string | undefined;
+  readonly children: ReactNode;
+}) {
+  return (
+    <ul className={classes(styles.list, className)} aria-label={label}>
+      {children}
+    </ul>
+  );
+}
+
+export function ListRow({
+  title,
+  meta,
+  end,
+  endTone = "muted",
+  rule,
+  to,
+  onClick,
+}: {
+  readonly title: ReactNode;
+  readonly meta?: ReactNode;
+  /** One figure or state: a time, an amount, a Badge. */
+  readonly end?: ReactNode;
+  readonly endTone?: EndTone;
+  readonly rule?: RuleTone | undefined;
+  /** The page the row opens. */
+  readonly to?: string | undefined;
+  /** What the row opens in place, as a drawer. */
+  readonly onClick?: (() => void) | undefined;
+}) {
+  const inside = (
+    <>
+      <span className={styles.words}>
+        <span className={styles.title}>{title}</span>
+        {meta !== undefined && <span className={styles.meta}>{meta}</span>}
+      </span>
+      {end !== undefined && <span className={classes(styles.end, END_TONES[endTone])}>{end}</span>}
+    </>
+  );
+  const row = classes(styles.row, rule !== undefined && styles[rule]);
+  if (to !== undefined)
+    return (
+      <li>
+        <Link className={classes(row, styles.opens)} to={to}>
+          {inside}
+        </Link>
+      </li>
+    );
+  if (onClick !== undefined)
+    return (
+      <li>
+        <button type="button" className={classes(row, styles.opens)} onClick={onClick}>
+          {inside}
+        </button>
+      </li>
+    );
+  return (
+    <li>
+      <div className={row}>{inside}</div>
+    </li>
+  );
+}

@@ -1,0 +1,89 @@
+/* The navigation on a phone (./TabBar.tsx): a bar on the ink at the window's foot, its tabs sharing the width, each
+   a target at least --tap tall, clear of the home indicator. */
+
+@layer base, ui;
+
+@layer ui {
+  .bar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: var(--z-bar);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: var(--hairline) solid var(--nav-rule);
+    background: var(--nav-ground);
+  }
+
+  .tabs {
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cell {
+    min-width: 0;
+  }
+
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-4);
+    min-height: var(--tap);
+    padding: var(--sp-8) var(--sp-4);
+    color: var(--nav-text);
+    font-size: var(--fs-13);
+    line-height: var(--lh-115);
+    text-decoration: none;
+  }
+
+  .tab[aria-current="page"] {
+    color: var(--nav-text-current);
+    font-weight: var(--weight-medium);
+  }
+
+  .tab:focus-visible {
+    outline: var(--focus-width) solid var(--nav-text-current);
+    outline-offset: var(--focus-inset);
+  }
+
+  .icon {
+    position: relative;
+    display: flex;
+  }
+
+  .name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* How many wait, over the icon's corner: in the label's tone, or filled where some are overdue. */
+  .count,
+  .urgent {
+    position: absolute;
+    bottom: 50%;
+    left: 75%;
+    min-width: var(--sp-20);
+    padding: 0 var(--sp-4);
+    font-size: var(--fs-13);
+    font-weight: var(--weight-regular);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--lh-145);
+    text-align: center;
+  }
+
+  .count {
+    background: var(--nav-ground);
+    color: var(--nav-label);
+  }
+
+  .urgent {
+    background: var(--error-on-ink);
+    color: var(--ink);
+  }
+}

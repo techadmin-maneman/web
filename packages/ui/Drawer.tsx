@@ -1,6 +1,8 @@
 // The ops console's drawer: a Dialog fixed under the header at the page's right, its title in the serif over a rule,
 // what the head holds beside it, and the body beneath. A drawer that is one form has the form as its body. Every
 // drawer closes the same way: the cross at the head's right, which stays in view as the body scrolls, or Escape.
+// Its foot, where it has one, holds its actions at the window's foot however short the body. On a phone it fills
+// the window.
 
 import { ICONS } from "@maneman/brand/icons";
 import type { ComponentProps, ReactNode } from "react";
@@ -11,6 +13,41 @@ import { typeLook } from "./type.ts";
 
 /** The drawer's frame alone, for a panel that opens where a drawer does but draws its own inside. */
 export const drawerFrame = styles.drawer;
+
+/**
+ * What the drawer holds beneath its head: the body, a form where it is one, and the foot after it, which with the body
+ * fills the drawer, so the foot sits at the window's foot.
+ */
+function Body({
+  onSubmit,
+  foot,
+  children,
+}: {
+  readonly onSubmit: ComponentProps<"form">["onSubmit"] | undefined;
+  readonly foot: ReactNode;
+  readonly children: ReactNode;
+}) {
+  if (foot === undefined) {
+    if (onSubmit === undefined) return <div className={styles.body}>{children}</div>;
+    return (
+      <form className={styles.body} onSubmit={onSubmit}>
+        {children}
+      </form>
+    );
+  }
+  const inside = (
+    <>
+      <div className={styles.body}>{children}</div>
+      <div className={styles.foot}>{foot}</div>
+    </>
+  );
+  if (onSubmit === undefined) return <div className={styles.footed}>{inside}</div>;
+  return (
+    <form className={styles.footed} onSubmit={onSubmit}>
+      {inside}
+    </form>
+  );
+}
 
 export function Drawer(props: {
   readonly titleId: string;
@@ -24,6 +61,8 @@ export function Drawer(props: {
   readonly onDismiss: () => void;
   /** Where the body is one form, what its submit does. */
   readonly onSubmit?: ComponentProps<"form">["onSubmit"];
+  /** The drawer's actions, and what they will do, pinned at its foot; within the form, where it is one. */
+  readonly foot?: ReactNode;
   readonly children: ReactNode;
 }) {
   const title = (
@@ -54,13 +93,9 @@ export function Drawer(props: {
           )}
         </div>
       </div>
-      {props.onSubmit === undefined ? (
-        <div className={styles.body}>{props.children}</div>
-      ) : (
-        <form className={styles.body} onSubmit={props.onSubmit}>
-          {props.children}
-        </form>
-      )}
+      <Body onSubmit={props.onSubmit} foot={props.foot}>
+        {props.children}
+      </Body>
     </Dialog>
   );
 }

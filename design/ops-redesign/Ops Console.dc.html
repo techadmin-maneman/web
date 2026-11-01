@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E9E4D8;color:#1A1714;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#16233A;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#CEC6B4}
+a:hover{color:#B98B45}
+button{font-family:inherit}
+input,select,textarea{font-family:inherit}
+</style>
+</helmet>
+<div style="display:flex;min-height:100vh;font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums">
+
+<aside style="width:224px;flex-shrink:0;background:#16233A;color:#A8B2C2;border-right:1px solid #1E2E49;display:flex;flex-direction:column;position:sticky;top:0;height:100vh">
+  <div style="height:56px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 20px;border-bottom:1px solid #1E2E49;color:#E9E4D8">
+    <span style="font-family:'EB Garamond',serif;font-size:22px;letter-spacing:-.01em">Mane Man</span>
+    <span style="font-family:'EB Garamond',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;font-size:15px;color:#8C96A8">ops</span>
+  </div>
+  <nav style="flex:1;overflow:auto;scrollbar-width:thin;scrollbar-color:#3A4A64 transparent;padding:12px 8px;display:flex;flex-direction:column;gap:16px">
+    <sc-for list="{{ nav }}" as="g" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="font-family:'EB Garamond',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;font-size:14px;color:#8C96A8;padding:0 12px 4px">{{ g.label }}</div>
+        <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="3">
+          <button onClick="{{ n.go }}" style="display:flex;align-items:center;gap:12px;min-height:36px;padding:0 12px;border:none;background:{{ n.bg }};color:{{ n.fg }};box-shadow:{{ n.mark }};font-size:14px;cursor:pointer;text-align:left" style-hover="color:#E9E4D8">
+            <span style="display:flex">{{ n.icon }}</span>
+            <span style="flex:1">{{ n.label }}</span>
+            <sc-if value="{{ n.count }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;min-width:20px;padding:0 4px;text-align:center;background:{{ n.countBg }};color:{{ n.countFg }}">{{ n.count }}</span></sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </sc-for>
+  </nav>
+  <div style="border-top:1px solid #1E2E49;padding:12px 20px;display:flex;align-items:center;gap:12px">
+    <span style="width:32px;height:32px;flex-shrink:0;background:#1A2740;color:#E9E4D8;display:grid;place-items:center;font-size:13px">OP</span>
+    <div style="display:flex;flex-direction:column;line-height:1.3;min-width:0">
+      <span style="font-size:13px;color:#E9E4D8">Ops team</span>
+      <span style="font-size:13px;color:#8C96A8">ops@maneman.in</span>
+    </div>
+  </div>
+</aside>
+
+<main style="flex:1;min-width:0;display:flex;flex-direction:column">
+  <header style="height:56px;display:flex;align-items:center;gap:12px;padding:0 28px;border-bottom:1px solid #CEC6B4;background:#E9E4D8;position:sticky;top:0;z-index:5">
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#5F5851">
+      <span>{{ crumbA }}</span>
+      <sc-if value="{{ crumbB }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px">{{ i.chev }}<span style="color:#1A1714">{{ crumbB }}</span></span></sc-if>
+    </div>
+    <div style="flex:1;min-width:8px"></div>
+    <button onClick="{{ openSearch }}" style="display:flex;align-items:center;gap:8px;flex:0 1 300px;min-width:44px;height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #8A8173;color:#756D60;font-size:14px;cursor:text;text-align:left;overflow:hidden">{{ i.search }}<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Search clients, numbers, pieces</span><span style="font-size:13px;border:1px solid #CEC6B4;padding:0 6px;color:#5F5851">/</span></button>
+    <div style="position:relative">
+      <button onClick="{{ toggleCity }}" style="display:flex;align-items:center;gap:8px;height:36px;min-width:160px;padding:0 12px;background:#FFFFFF;border:1px solid #8A8173;font-size:14px;cursor:pointer">{{ i.pin }}<span style="flex:1;text-align:left">{{ city }}</span>{{ i.down }}</button>
+      <sc-if value="{{ cityOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;right:0;top:40px;width:240px;background:#FFFFFF;border:1px solid #CEC6B4;z-index:12;padding:4px 0">
+          <sc-for list="{{ cities }}" as="c" hint-placeholder-count="4">
+            <button onClick="{{ c.go }}" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 12px;border:none;background:{{ c.bg }};font-size:14px;cursor:pointer;text-align:left" style-hover="background:#F4F1E9">
+              <span style="width:16px;display:flex">{{ c.tick }}</span><span style="flex:1">{{ c.label }}</span><span style="font-size:13px;color:#5F5851">{{ c.sub }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <button style="display:flex;align-items:center;gap:8px;height:36px;padding:0 16px;background:#16233A;color:#E9E4D8;border:1px solid #16233A;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0" style-hover="background:#0E1728" onClick="{{ openBook }}">{{ i.plus }}Book a visit</button>
+  </header>
+
+  <div style="flex:1;padding:28px 28px 64px;max-width:1360px;width:100%">
+
+<!-- TODAY -->
+<sc-if value="{{ is.today }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;color:#5F5851">Monday 2 November · {{ cityLabel }}</div>
+        <h1 style="font-family:'EB Garamond',serif;font-weight:400;font-size:34px;margin:2px 0 0;letter-spacing:-.01em">{{ today.greeting }}</h1>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;color:#5F5851">View as</span>
+          <div style="display:flex;gap:2px;background:#F4F1E9;padding:3px">
+            <sc-for list="{{ roles }}" as="r" hint-placeholder-count="5">
+              <button onClick="{{ r.go }}" style="border:none;padding:5px 10px;font-size:12px;cursor:pointer;background:{{ r.bg }};color:{{ r.fg }};box-shadow:{{ r.shadow }}">{{ r.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ todayA }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:22px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+          <sc-for list="{{ today.kpis }}" as="k" hint-placeholder-count="4">
+            <button onClick="{{ k.go }}" style="text-align:left;background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px;display:flex;flex-direction:column;gap:4px;cursor:pointer" style-hover="border-color:#CEC6B4">
+              <span style="font-size:12px;color:#5F5851">{{ k.label }}</span>
+              <span style="font-family:'EB Garamond',serif;font-size:34px;line-height:1.05;color:{{ k.fg }}">{{ k.value }}</span>
+              <span style="font-size:12px;color:#5F5851">{{ k.sub }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:{{ todayCols }};gap:18px;align-items:start">
+          <section style="background:#FFFFFF;border:1px solid #CEC6B4;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #CEC6B4">
+              <h2 style="font-family:'EB Garamond',serif;font-weight:400;font-size:21px;margin:0">Needs you</h2>
+              <span style="font-size:12px;color:#5F5851">{{ today.queueCount }} things, most urgent first</span>
+            </div>
+            <sc-for list="{{ today.queue }}" as="q" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #CEC6B4;border-left:2px solid {{ q.dot }}">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="font-weight:500">{{ q.title }}</span>
+                  <span style="font-size:13px;color:#5F5851">{{ q.meta }}</span>
+                </div>
+                <span style="font-size:12px;color:{{ q.dueFg }};white-space:nowrap">{{ q.due }}</span>
+                <button onClick="{{ q.go }}" style="background:#FFFFFF;border:1px solid #8A8173;padding:6px 11px;font-size:13px;cursor:pointer;white-space:nowrap" style-hover="border-color:#16233A">{{ q.action }}</button>
+              </div>
+            </sc-for>
+            <button onClick="{{ goTasks }}" style="width:100%;border:none;background:none;padding:12px;font-size:13px;color:#16233A;cursor:pointer">See all tasks</button>
+          </section>
+          <section style="background:#FFFFFF;border:1px solid #CEC6B4;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #CEC6B4">
+              <h2 style="font-family:'EB Garamond',serif;font-weight:400;font-size:21px;margin:0">{{ today.asideTitle }}</h2>
+              <button onClick="{{ today.asideGo }}" style="border:none;background:none;font-size:12px;color:#16233A;cursor:pointer">{{ today.asideLink }}</button>
+            </div>
+            <sc-for list="{{ today.aside }}" as="a" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 18px;border-bottom:1px solid #CEC6B4">
+                <span style="font-size:13px;color:#5F5851">{{ a.time }}</span>
+                <div style="display:flex;flex-direction:column;min-width:0">
+                  <span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.title }}</span>
+                  <span style="font-size:12px;color:#5F5851">{{ a.meta }}</span>
+                </div>
+                <span style="font-size:11px;font-weight:500;padding:2px 8px;background:{{ a.bg }};color:{{ a.fg }}">{{ a.chip }}</span>
+              </div>
+            </sc-for>
+          </section>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</sc-if>
+
+<!-- TASKS -->
+<sc-if value="{{ is.tasks }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px">
+      <div>
+        <h1 style="font-family:'EB Garamond',serif;font-weight:400;font-size:34px;margin:0">Tasks</h1>
+        <div style="font-size:13px;color:#5F5851">Everything the system or a colleague has asked someone to do.</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <sc-for list="{{ taskFilters }}" as="f" hint-placeholder-count="5">
+        <button onClick="{{ f.go }}" style="display:flex;align-items:center;gap:6px;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.fg }};padding:6px 12px;font-size:13px;cursor:pointer">{{ f.label }}<span style="font-size:11px;opacity:.75">{{ f.count }}</span></button>
+      </sc-for>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:8px;background:#FFFFFF;border:1px solid #8A8173;padding:7px 10px;color:#5F5851;width:260px">{{ i.search }}<span style="font-size:13px">Find a task or client</span></div>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) 130px 150px 120px;gap:14px;padding:10px 18px;border-bottom:1px solid #CEC6B4;font-size:12px;color:#5F5851;background:#F4F1E9">
+        <span>Task</span><span>Client</span><span>Due</span><span>Owner</span><span></span>
+      </div>
+      <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="8">
+        <div onClick="{{ t.open }}" style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) 130px 150px 120px;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid #CEC6B4;border-left:2px solid {{ t.dot }};cursor:pointer" style-hover="background:#F4F1E9">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0">
+            <div style="display:flex;flex-direction:column;min-width:0">
+              <span style="font-weight:500">{{ t.kind }}</span>
+              <span style="font-size:12px;color:#5F5851;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.detail }}</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;min-width:0">
+            <span>{{ t.client }}</span>
+            <span style="font-size:12px;color:#5F5851">{{ t.city }}</span>
+          </div>
+          <span style="font-size:13px;color:{{ t.dueFg }}">{{ t.due }}</span>
+          <span style="font-size:13px;color:{{ t.ownerFg }}">{{ t.owner }}</span>
+          <div style="display:flex;justify-content:flex-end"><button onClick="{{ t.act }}" style="background:#FFFFFF;border:1px solid #8A8173;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#16233A">{{ t.action }}</button></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<!-- DISPATCH -->
+<sc-if value="{{ is.dispatch }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-family:'EB Garamond',serif;font-weight:400;font-size:34px;margin:0">Dispatch</h1>
+        <div style="font-size:13px;color:#5F5851">23 visits · 6 technicians working · 2 without a technician</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;background:#FFFFFF;border:1px solid #8A8173;overflow:hidden">
+          <button style="border:none;background:none;padding:7px 10px;cursor:pointer;font-size:13px">‹</button>
+          <span style="padding:7px 8px;font-size:13px;font-weight:500;border-left:1px solid #CEC6B4;border-right:1px solid #CEC6B4">Today, Mon 2 Nov</span>
+          <button style="border:none;background:none;padding:7px 10px;cursor:pointer;font-size:13px">›</button>
+        </div>
+        <div style="display:flex;gap:2px;background:#F4F1E9;padding:3px">
+          <button style="border:none;padding:5px 12px;font-size:12px;background:#FFFFFF;cursor:pointer">Day</button>
+          <button style="border:none;padding:5px 12px;font-size:12px;background:transparent;color:#5F5851;cursor:pointer">Week</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:12px;color:#3A352E">
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:{{ l.bg }};border:1px solid #CEC6B4;border-left:2px solid {{ l.bd }}"></span>{{ l.label }}</span>
+      </sc-for>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border:1px dashed #8A3A2E"></span>No technician</span>
+      <span style="flex:1"></span>
+      <span>Click a visit for details · drag to move</span>
+    </div>
+
+    <sc-if value="{{ dispatchA }}" hint-placeholder-val="{{ true }}">
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+        <div style="display:grid;grid-template-columns:210px minmax(0,1fr);border-bottom:1px solid #CEC6B4;background:#F4F1E9">
+          <div style="padding:10px 16px;font-size:12px;color:#5F5851">Technician</div>
+          <div style="position:relative;height:36px">
+            <sc-for list="{{ hours }}" as="h" hint-placeholder-count="11">
+              <span style="position:absolute;left:{{ h.left }};top:11px;font-size:11px;color:#5F5851;padding-left:6px;border-left:1px solid #CEC6B4;height:25px">{{ h.label }}</span>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:210px minmax(0,1fr);border-bottom:1px solid #CEC6B4;background:#FFFFFF">
+          <div style="padding:12px 16px;display:flex;flex-direction:column">
+            <span style="font-weight:500;color:#8A3A2E">No technician</span>
+            <span style="font-size:12px;color:#8A3A2E">2 visits · drag onto a row</span>
+          </div>
+          <div style="position:relative;height:68px">
+            <sc-for list="{{ unassigned }}" as="b" hint-placeholder-count="2">
+              <button onClick="{{ b.open }}" style="position:absolute;top:8px;bottom:8px;left:{{ b.left }};width:{{ b.width }};background:#FFFFFF;border:1.5px dashed #8A3A2E;padding:6px 8px;text-align:left;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;gap:1px">
+                <span style="font-size:12px;font-weight:500;color:#1A1714;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.client }}</span>
+                <span style="font-size:11px;color:#8A3A2E;white-space:nowrap">{{ b.type }} · {{ b.area }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <sc-for list="{{ techRows }}" as="t" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:210px minmax(0,1fr);border-bottom:1px solid #CEC6B4">
+            <div style="padding:12px 16px;display:flex;flex-direction:column;gap:4px;border-right:1px solid #CEC6B4">
+              <span style="font-weight:500">{{ t.name }}</span>
+              <span style="font-size:12px;color:#5F5851">{{ t.city }} · {{ t.sub }}</span>
+              <sc-if value="{{ t.working }}" hint-placeholder-val="{{ true }}"><span style="height:3px;background:#CEC6B4;overflow:hidden;display:block"><span style="display:block;height:3px;width:{{ t.utilW }};background:#B98B45"></span></span></sc-if>
+            </div>
+            <div style="position:relative;height:72px">
+              <sc-for list="{{ hours }}" as="h" hint-placeholder-count="11">
+                <span style="position:absolute;left:{{ h.left }};top:0;bottom:0;border-left:1px solid #E9E4D8"></span>
+              </sc-for>
+              <sc-if value="{{ t.leave }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;inset:10px;background:repeating-linear-gradient(135deg,#E9E4D8 0 8px,#DED7C8 8px 16px);display:grid;place-items:center;font-size:12px;color:#5F5851">On leave</div>
+              </sc-if>
+              <sc-for list="{{ t.blocks }}" as="b" hint-placeholder-count="3">
+                <button onClick="{{ b.open }}" style="position:absolute;top:9px;bottom:9px;left:{{ b.left }};width:{{ b.width }};background:{{ b.bg }};border:none;border-left:2px solid {{ b.bd }};padding:6px 8px;text-align:left;cursor:pointer;overflow:hidden;opacity:{{ b.op }};display:flex;flex-direction:column;gap:1px">
+                  <span style="font-size:13px;font-weight:500;color:{{ b.nameFg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.client }}</span>
+                  <span style="font-size:11px;color:{{ b.fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.chip }} · {{ b.area }}</span>
+                </button>
+              </sc-for>
+              <span style="position:absolute;left:{{ nowLeft }};top:0;bottom:0;border-left:2px solid #8A3A2E"></span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+  </div>
+</sc-if>
+
+<!-- CLIENT LIST -->
+<sc-if value="{{ is.clientlist }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-family:'EB Garamond',serif;font-size:34px;line-height:1.15;margin:0;letter-spacing:-.015em">Clients</h1>
+        <div style="font-size:13px;color:#5F5851">4,603 clients · 312 fitted · 38 need something from us</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button style="height:36px;padding:0 14px;background:#FFFFFF;border:1px solid #16233A;font-size:14px;cursor:pointer">Download CSV</button>
+        <button style="height:36px;padding:0 14px;background:#16233A;color:#E9E4D8;border:1px solid #16233A;font-size:14px;font-weight:500;cursor:pointer">Add a client</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;height:36px;background:#FFFFFF;border:1px solid #8A8173;padding:0 12px;color:#756D60;width:300px;font-size:14px">{{ i.search }}Name, mobile or piece number</div>
+      <sc-for list="{{ clientFilters }}" as="f" hint-placeholder-count="6">
+        <button onClick="{{ f.go }}" style="height:32px;padding:0 12px;border:1px solid {{ f.bd }};background:{{ f.bg }};color:{{ f.fg }};font-size:14px;cursor:pointer;white-space:nowrap">{{ f.label }} <span style="color:{{ f.nfg }}">{{ f.n }}</span></button>
+      </sc-for>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+      <div style="display:grid;grid-template-columns:minmax(0,1.6fr) 100px 140px minmax(0,1.1fr) minmax(0,1.1fr) 110px;gap:12px;padding:10px 20px;font-size:13px;color:#5F5851;background:#F4F1E9;border-bottom:1px solid #CEC6B4">
+        <span>Client</span><span>City</span><span>Stage</span><span>Next visit</span><span>Needs</span><span style="text-align:right">Paid to date</span>
+      </div>
+      <sc-for list="{{ clientRows }}" as="c" hint-placeholder-count="10">
+        <button onClick="{{ c.go }}" style="width:100%;text-align:left;display:grid;grid-template-columns:minmax(0,1.6fr) 100px 140px minmax(0,1.1fr) minmax(0,1.1fr) 110px;gap:12px;padding:10px 20px;border:none;border-bottom:1px solid #CEC6B4;border-left:2px solid {{ c.rule }};background:#FFFFFF;font-size:14px;cursor:pointer;align-items:center" style-hover="background:#F4F1E9">
+          <span style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:500">{{ c.name }}</span><span style="font-size:13px;color:#5F5851;letter-spacing:.04em">{{ c.mobile }}</span></span>
+          <span>{{ c.city }}</span>
+          <span style="color:#3A352E">{{ c.stage }}</span>
+          <span style="color:{{ c.nextFg }}">{{ c.next }}</span>
+          <span style="font-size:13px;font-weight:500;color:{{ c.needFg }}">{{ c.need }}</span>
+          <span style="text-align:right">{{ c.paid }}</span>
+        </button>
+      </sc-for>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;font-size:13px;color:#5F5851;background:#F4F1E9"><span>1–10 of 4,603</span><span style="display:flex;gap:8px"><button style="height:32px;padding:0 12px;border:1px solid #CEC6B4;background:#FFFFFF;color:#756D60;font-size:14px">Previous</button><button style="height:32px;padding:0 12px;border:1px solid #16233A;background:#FFFFFF;font-size:14px;cursor:pointer">Next</button></span></div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- CLIENT -->
+<sc-if value="{{ is.clients }}" hint-placeholder-val="{{ false }}">
+  <div style="display:grid;grid-template-columns:{{ clientCols }};gap:24px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+      <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+        <div style="width:56px;height:56px;background:#DED7C8;display:grid;place-items:center;font-family:'EB Garamond',serif;font-size:22px">RM</div>
+        <div style="flex:1;min-width:200px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <h1 style="font-family:'EB Garamond',serif;font-weight:400;font-size:34px;margin:0;line-height:1.1">Rohit Malhotra</h1>
+            <span style="font-size:12px;padding:2px 9px;background:transparent;color:#1A1714">Fitted</span>
+            <span style="font-size:12px;padding:2px 9px;background:transparent;color:#8A3A2E">Replacement overdue</span>
+          </div>
+          <div style="font-size:13px;color:#5F5851;margin-top:4px;display:flex;gap:14px;flex-wrap:wrap">
+            <span>+91 95513 44252</span><span>Gurgaon</span><span>Client since Aug 2026</span><span>Mane Man Essential</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button style="display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">{{ i.phone }}Call</button>
+          <button style="display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">{{ i.wa }}WhatsApp</button>
+          <button onClick="{{ openBook }}" style="background:#16233A;color:#E9E4D8;border:none;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer">Book a visit</button>
+        </div>
+      </div>
+
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;border-left:2px solid #8A3A2E;padding:14px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <div style="font-weight:500">Replacement order is 26 days late</div>
+          <div style="font-size:13px;color:#3A352E">MM-STD-4417-D should have been ordered by 7 Oct for a 4 Nov replacement. No one owns this yet.</div>
+        </div>
+        <button style="background:#FFFFFF;border:1px solid #8A8173;padding:7px 12px;font-size:13px;cursor:pointer">Take it</button>
+        <button style="background:#16233A;color:#E9E4D8;border:none;padding:7px 12px;font-size:13px;cursor:pointer">Order now</button>
+      </div>
+
+      <div style="display:flex;gap:22px;border-bottom:1px solid #CEC6B4;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex-shrink:0">
+        <sc-for list="{{ clientTabs }}" as="t" hint-placeholder-count="8">
+          <button onClick="{{ t.go }}" style="border:none;background:none;padding:10px 0;font-size:14px;color:{{ t.fg }};border-bottom:2px solid {{ t.bd }};cursor:pointer;white-space:nowrap;margin-bottom:-1px">{{ t.label }}</button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ ct.visits }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="background:#FFFFFF;border:1px dashed #CEC6B4;padding:16px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div style="font-weight:500">Nothing booked</div>
+              <div style="font-size:13px;color:#5F5851">Next service visit was due 12 Nov. He has no free service visits left.</div>
+            </div>
+            <button onClick="{{ openBook }}" style="background:#FFFFFF;border:1px solid #16233A;padding:7px 12px;font-size:13px;cursor:pointer">Book a service visit</button>
+          </div>
+          <div style="background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+            <div style="display:grid;grid-template-columns:90px minmax(0,1.2fr) minmax(0,1fr) 110px 100px 70px;gap:12px;padding:10px 18px;font-size:12px;color:#5F5851;background:#F4F1E9;border-bottom:1px solid #CEC6B4">
+              <span>Date</span><span>Visit</span><span>Technician</span><span>Time</span><span>Paid</span><span></span>
+            </div>
+            <sc-for list="{{ clientVisits }}" as="v" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:90px minmax(0,1.2fr) minmax(0,1fr) 110px 100px 70px;gap:12px;padding:12px 18px;border-bottom:1px solid #CEC6B4;align-items:center;font-size:13px" style-hover="background:#F4F1E9">
+                <span style="color:#3A352E">{{ v.date }}</span><span style="font-weight:500">{{ v.type }}</span><span>{{ v.tech }}</span><span style="color:#3A352E">{{ v.time }}</span><span>{{ v.paid }}</span>
+                <span style="font-size:11px;padding:2px 8px;background:transparent;color:#1A1714;justify-self:end">{{ v.status }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ct.pieces }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:18px;display:grid;grid-template-columns:120px minmax(0,1fr);gap:18px">
+          <div style="aspect-ratio:1;background:repeating-linear-gradient(135deg,#E9E4D8 0 8px,#DED7C8 8px 16px);display:grid;place-items:center;font-size:11px;color:#5F5851">Photo</div>
+          <div style="display:grid;grid-template-columns:140px 1fr;row-gap:8px;font-size:13px">
+            <span style="color:#5F5851">Piece</span><span style="font-weight:500">MM-STD-4417-D</span>
+            <span style="color:#5F5851">Hair system</span><span>Mane Man Essential · 8×10 in · #1B</span>
+            <span style="color:#5F5851">Fitted</span><span>3 Sep 2026 by Imran Qureshi</span>
+            <span style="color:#5F5851">Replace by</span><span style="color:#8A3A2E">4 Nov 2026 · order is late</span>
+            <span style="color:#5F5851">Warranty</span><span>To 2 Dec 2026</span>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ct.payments }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+          <sc-for list="{{ clientPay }}" as="p" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:80px minmax(0,1fr) 120px 60px;gap:12px;padding:12px 18px;border-bottom:1px solid #CEC6B4;align-items:center;font-size:13px">
+              <span style="color:#3A352E">{{ p.date }}</span>
+              <div style="display:flex;flex-direction:column"><span style="font-weight:500">{{ p.what }}</span><span style="font-size:12px;color:#5F5851">{{ p.how }}</span></div>
+              <span style="text-align:right">{{ p.amount }}</span>
+              <span style="font-size:11px;padding:2px 8px;background:transparent;color:#1A1714;justify-self:end">{{ p.status }}</span>
+            </div>
+          </sc-for>
+          <div style="display:flex;justify-content:space-between;padding:12px 18px;font-size:13px;background:#F4F1E9"><span style="color:#5F5851">Paid to date</span><span style="font-weight:500">Rs. 31,000</span></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ct.other }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:28px;text-align:center;color:#5F5851;font-size:13px;border:1px dashed #8A8173;">Same pattern: one table or timeline, empty states as one line with the next action.</div>
+      </sc-if>
+    </div>
+
+    <aside style="display:flex;flex-direction:column;gap:16px;position:sticky;top:84px">
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:16px">
+        <div style="font-size:12px;color:#5F5851;margin-bottom:10px">At a glance</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div><div style="font-family:'EB Garamond',serif;font-size:24px;line-height:1.1">Rs. 31,000</div><div style="font-size:12px;color:#5F5851">Paid to date</div></div>
+          <div><div style="font-family:'EB Garamond',serif;font-size:24px;line-height:1.1">3</div><div style="font-size:12px;color:#5F5851">Visits</div></div>
+          <div><div style="font-family:'EB Garamond',serif;font-size:24px;line-height:1.1;color:#8A3A2E">4 Nov</div><div style="font-size:12px;color:#5F5851">Replace by</div></div>
+          <div><div style="font-family:'EB Garamond',serif;font-size:24px;line-height:1.1">0</div><div style="font-size:12px;color:#5F5851">Free visits left</div></div>
+        </div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:16px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#5F5851">Visit address</span><button style="border:none;background:none;color:#16233A;font-size:12px;cursor:pointer">Edit</button></div>
+        <div style="font-size:13px;display:flex;gap:8px"><span style="color:#5F5851;padding-top:2px">{{ i.pin }}</span><span>Tower B, 1204, Sunrise Greens, Sector 56, Gurgaon 122011</span></div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:16px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:12px;color:#5F5851">Notes</div>
+        <div style="font-size:13px;color:#756D60">Prefers mornings. Ask for the guard to call up.</div>
+        <div style="border:1px solid #CEC6B4;padding:8px 10px;font-size:13px;color:#756D60">Add a note…</div>
+      </div>
+      <div style="font-size:12px;color:#5F5851;padding:0 4px">Care person · care@maneman.example</div>
+    </aside>
+  </div>
+</sc-if>
+
+<!-- MESSAGES -->
+<sc-if value="{{ is.messages }}" hint-placeholder-val="{{ false }}">
+  <div style="display:grid;grid-template-columns:{{ msgCols }};height:calc(100vh - 140px);background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+    <div style="border-right:1px solid #CEC6B4;display:flex;flex-direction:column;background:#F4F1E9;min-height:0">
+      <div style="padding:14px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid #CEC6B4">
+        <div style="display:flex;gap:2px;background:#F4F1E9;padding:3px">
+          <sc-for list="{{ chatFilters }}" as="f" hint-placeholder-count="3">
+            <button onClick="{{ f.go }}" style="flex:1;border:none;padding:6px 6px;font-size:12px;cursor:pointer;background:{{ f.bg }};color:{{ f.fg }};box-shadow:{{ f.shadow }}">{{ f.label }} <span style="opacity:.6">{{ f.n }}</span></button>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#FFFFFF;border:1px solid #8A8173;padding:7px 10px;color:#5F5851;font-size:13px">{{ i.search }}Name or number</div>
+      </div>
+      <div style="flex:1;overflow:auto;scrollbar-width:thin;padding:6px">
+        <sc-for list="{{ chats }}" as="c" hint-placeholder-count="6">
+          <button onClick="{{ c.go }}" style="width:100%;text-align:left;display:flex;gap:10px;padding:10px;border:1px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;margin-bottom:2px" style-hover="background:#FFFFFF">
+            <span style="width:34px;height:34px;background:#DED7C8;display:grid;place-items:center;font-size:12px;font-weight:500;flex-shrink:0">{{ c.initials }}</span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+              <span style="display:flex;justify-content:space-between;gap:6px"><span style="font-weight:500;font-size:13px">{{ c.name }}</span><span style="font-size:11px;color:{{ c.tfg }}">{{ c.time }}</span></span>
+              <span style="font-size:12px;color:#3A352E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.preview }}</span>
+              <span style="align-self:flex-start;font-size:11px;padding:1px 7px;background:{{ c.tbg }};color:{{ c.tfg }}">{{ c.tag }}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;min-height:0;min-width:0">
+      <div style="padding:12px 18px;border-bottom:1px solid #CEC6B4;display:flex;align-items:center;gap:12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500">{{ chatSel.name }}</div>
+          <div style="font-size:12px;color:#8A3A2E">Waiting on us · {{ chatSel.time }} · reply promised within 60 min</div>
+        </div>
+        <button style="background:#FFFFFF;border:1px solid #8A8173;padding:6px 10px;font-size:12px;cursor:pointer">Assign</button>
+        <button style="background:#FFFFFF;border:1px solid #8A8173;padding:6px 10px;font-size:12px;cursor:pointer">Close chat</button>
+      </div>
+      <div style="flex:1;overflow:auto;scrollbar-width:thin;padding:18px;display:flex;flex-direction:column;gap:12px;background:#F4F1E9">
+        <sc-for list="{{ thread }}" as="m" hint-placeholder-count="4">
+          <sc-if value="{{ m.isAuto }}" hint-placeholder-val="{{ false }}">
+            <div style="align-self:center;font-size:12px;color:#5F5851;background:#F4F1E9;padding:5px 12px;max-width:80%;text-align:center">{{ m.text }} <span style="color:#16233A;text-decoration:underline;text-underline-offset:2px;cursor:pointer">{{ m.link }}</span></div>
+          </sc-if>
+          <sc-if value="{{ m.isClient }}" hint-placeholder-val="{{ true }}">
+            <div style="align-self:flex-start;max-width:70%;display:flex;flex-direction:column;gap:3px">
+              <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:10px 12px;font-size:14px">{{ m.text }}</div>
+              <span style="font-size:11px;color:#5F5851">{{ m.who }} · {{ m.time }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ m.isSystem }}" hint-placeholder-val="{{ false }}">
+            <div style="align-self:stretch;border-left:2px solid #CEC6B4;padding:2px 0 2px 12px;font-size:12px;color:#3A352E"><span style="font-weight:500;color:#5F5851">{{ m.who }} · {{ m.time }}</span><br>{{ m.text }}</div>
+          </sc-if>
+        </sc-for>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid #CEC6B4;display:flex;flex-direction:column;gap:8px;background:#FFFFFF">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <sc-for list="{{ quickReplies }}" as="q" hint-placeholder-count="4">
+            <button style="background:#F4F1E9;border:1px solid #CEC6B4;padding:4px 10px;font-size:12px;cursor:pointer">{{ q }}</button>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #8A8173;background:{{ composerBg }};display:flex;flex-direction:column">
+          <div style="padding:10px 12px;font-size:14px;color:#756D60;min-height:52px">{{ composerPh }}</div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-top:1px solid #CEC6B4">
+            <button onClick="{{ toggleNote }}" style="border:none;background:none;font-size:12px;color:#3A352E;cursor:pointer;padding:4px 6px">Reply · <span style="text-decoration:underline;text-underline-offset:2px">Internal note</span></button>
+            <span style="flex:1"></span>
+            
+            <button style="display:flex;align-items:center;gap:6px;background:#16233A;color:#E9E4D8;border:none;padding:7px 12px;font-size:13px;cursor:pointer">{{ i.send }}{{ sendLabel }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><div style="border-left:1px solid #CEC6B4;padding:16px;display:flex;flex-direction:column;gap:16px;overflow:auto">
+      <div>
+        <div style="font-weight:500">{{ chatSel.name }}</div>
+        <div style="font-size:12px;color:#5F5851">{{ chatSel.city }} · Fitted 9 Nov · Classic</div>
+        <a style="font-size:12px">Open client page</a>
+      </div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12px">
+        <span style="color:#5F5851">Next visit</span><span>Fri 1 Jan, 9:30 am</span>
+        <span style="color:#5F5851">Last visit</span><span>Thu 24 Dec</span>
+        <span style="color:#5F5851">Free visits</span><span>None</span>
+        <span style="color:#5F5851">Warranty</span><span>To 7 Feb 2027</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:12px;color:#5F5851">Do something</div>
+        <button onClick="{{ openBook }}" style="text-align:left;background:#FFFFFF;border:1px solid #8A8173;padding:8px 10px;font-size:13px;cursor:pointer">Book or move a visit</button>
+        <button style="text-align:left;background:#FFFFFF;border:1px solid #8A8173;padding:8px 10px;font-size:13px;cursor:pointer">Give free service visits</button>
+        <button style="text-align:left;background:#FFFFFF;border:1px solid #8A8173;padding:8px 10px;font-size:13px;cursor:pointer">Send a payment link</button>
+        <button style="text-align:left;background:#FFFFFF;border:1px solid #8A8173;padding:8px 10px;font-size:13px;cursor:pointer">Pass to the city team</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:12px;color:#5F5851">What it's about</div>
+        <div style="display:flex;justify-content:space-between;border:1px solid #8A8173;padding:7px 10px;font-size:13px;background:#FFFFFF"><span>Fit problem</span><span>▾</span></div>
+      </div>
+    </div></sc-if>
+  </div>
+</sc-if>
+
+<!-- TECHNICIAN -->
+<sc-if value="{{ is.techs }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+      <div style="width:56px;height:56px;background:#DED7C8;display:grid;place-items:center;font-family:'EB Garamond',serif;font-size:22px">AT</div>
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;align-items:center;gap:10px"><h1 style="font-family:'EB Garamond',serif;font-weight:400;font-size:34px;margin:0;line-height:1.1">Aman Tyagi</h1><span style="font-size:12px;padding:2px 9px;background:transparent;color:#1A1714">Working</span></div>
+        <div style="font-size:13px;color:#5F5851;margin-top:4px;display:flex;gap:14px;flex-wrap:wrap"><span>+91 90666 27410</span><span>Noida</span><span>Trained to fit</span><span>Mon–Sat, 9 am–7 pm</span></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button style="display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">{{ i.phone }}Call</button>
+        <button style="background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">Edit details</button>
+        <button style="background:#FFFFFF;border:1px solid #8A8173;padding:8px 10px;cursor:pointer;color:#3A352E">{{ i.more }}</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px"><div style="font-size:12px;color:#5F5851">This week</div><div style="font-family:'EB Garamond',serif;font-size:28px">4 visits</div></div>
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px"><div style="font-size:12px;color:#5F5851">Last 90 days</div><div style="font-family:'EB Garamond',serif;font-size:28px">2 jobs</div></div>
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px"><div style="font-size:12px;color:#5F5851">On time</div><div style="font-family:'EB Garamond',serif;font-size:28px">100%</div></div>
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px"><div style="font-size:12px;color:#8A3A2E">Kit</div><div style="font-family:'EB Garamond',serif;font-size:28px;color:#8A3A2E">4 below zero</div></div>
+    </div>
+    <div style="display:flex;gap:22px;border-bottom:1px solid #CEC6B4;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex-shrink:0">
+      <sc-for list="{{ techTabs }}" as="t" hint-placeholder-count="5">
+        <button onClick="{{ t.go }}" style="border:none;background:none;padding:10px 0;font-size:14px;color:{{ t.fg }};border-bottom:2px solid {{ t.bd }};cursor:pointer;margin-bottom:-1px;display:flex;gap:6px;align-items:center">{{ t.label }}<sc-if value="{{ t.badge }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;padding:0 6px;background:#8A3A2E;color:#FFFFFF">{{ t.badge }}</span></sc-if></button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ tt.kit }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;font-size:13px;color:#3A352E">Below zero means more was used than the system thinks he was given. Count the kit to fix it.</div>
+          <button style="background:#FFFFFF;border:1px solid #8A8173;padding:7px 12px;font-size:13px;cursor:pointer">Send stock</button>
+          <button style="background:#16233A;color:#E9E4D8;border:none;padding:7px 12px;font-size:13px;cursor:pointer">Count this kit</button>
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px 120px 110px;gap:12px;padding:10px 18px;font-size:12px;color:#5F5851;background:#F4F1E9;border-bottom:1px solid #CEC6B4"><span>Item</span><span style="text-align:right">On hand</span><span>Status</span><span>Last counted</span></div>
+          <sc-for list="{{ kit }}" as="k" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px 120px 110px;gap:12px;padding:11px 18px;font-size:13px;border-bottom:1px solid #CEC6B4;align-items:center">
+              <span>{{ k.item }}</span><span style="text-align:right;color:{{ k.qfg }};font-weight:500">{{ k.qty }}</span>
+              <span><span style="font-size:11px;padding:2px 8px;background:{{ k.bg }};color:{{ k.fg }}">{{ k.status }}</span></span>
+              <span style="color:#756D60">{{ k.counted }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ tt.week }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px">
+        <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+          <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:10px;min-height:120px;display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:12px;font-weight:500">{{ d.d }}</span>
+            <sc-for list="{{ d.visits }}" as="v" hint-placeholder-count="1"><span style="font-size:12px;background:#F4EAD6;padding:6px">{{ v.x }}</span></sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ tt.hours }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:18px;display:grid;grid-template-columns:180px 1fr auto;row-gap:14px;font-size:13px;align-items:center">
+        <span style="color:#5F5851">Working hours</span><span>Monday to Saturday, 9 am to 7 pm · off Sunday</span><button style="border:none;background:none;color:#16233A;cursor:pointer">Change</button>
+        <span style="color:#5F5851">Day starts from</span><span>Sunrise Greens, Sector 65, Gurugram 122018</span><button style="border:none;background:none;color:#16233A;cursor:pointer">Change</button>
+        <span style="color:#5F5851">Reach from home</span><span>Business default · 45 min</span><button style="border:none;background:none;color:#16233A;cursor:pointer">Change</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ tt.leave }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:22px;display:flex;align-items:center;justify-content:space-between;border:1px dashed #8A8173;font-size:13px;color:#5F5851">No leave booked.<button style="background:#FFFFFF;border:1px solid #16233A;padding:7px 12px;font-size:13px;cursor:pointer;color:#1A1714">Record leave</button></div>
+    </sc-if>
+    <sc-if value="{{ tt.phones }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 18px;display:flex;align-items:center;gap:12px;font-size:13px"><span style="flex:1"><strong style="font-weight:500">Phone ending e96</strong> · signed in · last used 31 Dec, 7:30 am</span><button style="background:none;border:1px solid #8A3A2E;color:#8A3A2E;padding:6px 10px;font-size:12px;cursor:pointer">Sign out</button></div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<!-- STOCK -->
+<sc-if value="{{ is.stock }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-family:'EB Garamond',serif;font-weight:400;font-size:34px;margin:0">Inventory</h1>
+        <div style="font-size:13px;color:#5F5851">Stock across 1 warehouse, 2 stockrooms and 9 technician kits.</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button style="background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">Print labels</button>
+        <button style="background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">New order</button>
+        <button style="background:#16233A;color:#E9E4D8;border:none;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer">Record a movement</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:22px;border-bottom:1px solid #CEC6B4;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex-shrink:0">
+      <sc-for list="{{ stockTabs }}" as="t" hint-placeholder-count="9">
+        <button style="border:none;background:none;padding:10px 0;font-size:14px;color:{{ t.fg }};border-bottom:2px solid {{ t.bd }};cursor:pointer;white-space:nowrap;margin-bottom:-1px">{{ t.label }}</button>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">
+      <sc-for list="{{ attention }}" as="a" hint-placeholder-count="4">
+        <div style="background:#FFFFFF;border:1px solid #CEC6B4;border-left:2px solid {{ a.dot }};padding:12px 14px;display:flex;align-items:center;gap:10px">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <span style="font-weight:500;font-size:13px">{{ a.n }} <span style="font-weight:400;color:#5F5851">· {{ a.k }}</span></span>
+            <span style="font-size:12px;color:#3A352E">{{ a.d }}</span>
+          </div>
+          <button style="background:#FFFFFF;border:1px solid #8A8173;padding:5px 10px;font-size:12px;cursor:pointer">{{ a.a }}</button>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="position:relative">
+        <button onClick="{{ togglePlace }}" style="display:flex;align-items:center;gap:8px;height:36px;min-width:260px;padding:0 12px;background:#FFFFFF;border:1px solid #8A8173;font-size:14px;cursor:pointer"><span style="color:#5F5851">Place</span><span style="flex:1;text-align:left;font-weight:500">{{ place }}</span>{{ i.down }}</button>
+        <sc-if value="{{ placeOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:0;top:40px;width:300px;max-height:360px;overflow:auto;background:#FFFFFF;border:1px solid #CEC6B4;z-index:12;padding:4px 0">
+            <sc-for list="{{ placeGroups }}" as="g" hint-placeholder-count="3">
+              <div style="font-family:'EB Garamond',serif;font-variant-caps:all-small-caps;letter-spacing:.14em;font-size:14px;color:#5F5851;padding:8px 12px 2px">{{ g.g }}</div>
+              <sc-for list="{{ g.items }}" as="p" hint-placeholder-count="3">
+                <button onClick="{{ p.go }}" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 12px;border:none;background:{{ p.bg }};font-size:14px;cursor:pointer;text-align:left" style-hover="background:#F4F1E9">
+                  <span style="width:16px;display:flex">{{ p.tick }}</span><span style="flex:1">{{ p.n }}</span><span style="font-size:13px;color:{{ p.subFg }}">{{ p.sub }}</span>
+                </button>
+              </sc-for>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;height:36px;background:#FFFFFF;border:1px solid #8A8173;padding:0 12px;color:#756D60;width:240px;font-size:14px">{{ i.search }}Find an item</div>
+      <button style="border:1px solid #16233A;background:#16233A;color:#E9E4D8;height:32px;padding:0 12px;font-size:14px;cursor:pointer">All items</button>
+      <button style="border:1px solid #CEC6B4;background:#FFFFFF;height:32px;padding:0 12px;font-size:14px;cursor:pointer">Low or out <span style="color:#5F5851">{{ placeLowCount }}</span></button>
+      <button style="border:1px solid #CEC6B4;background:#FFFFFF;height:32px;padding:0 12px;font-size:14px;cursor:pointer">Expiring soon <span style="color:#5F5851">0</span></button>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) 120px 110px 120px 130px 120px;gap:12px;padding:10px 18px;font-size:13px;color:#5F5851;background:#F4F1E9;border-bottom:1px solid #CEC6B4">
+        <span>Item</span><span style="text-align:right">On hand</span><span style="text-align:right">Low at</span><span>Status</span><span>Soonest expiry</span><span>Last counted</span>
+      </div>
+      <sc-for list="{{ stock }}" as="r" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:minmax(0,2fr) 120px 110px 120px 130px 120px;gap:12px;padding:10px 18px;font-size:14px;border-bottom:1px solid #CEC6B4;align-items:center" style-hover="background:#F4F1E9">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.item }}</span>
+          <span style="text-align:right;color:{{ r.qFg }};font-weight:500">{{ r.qty }} <span style="font-weight:400;color:#5F5851">{{ r.unit }}</span></span>
+          <span style="text-align:right;color:#5F5851">{{ r.lowAt }}</span>
+          <span style="font-size:13px;font-weight:500;color:{{ r.chipFg }}">{{ r.chip }}</span>
+          <span style="color:#3A352E">{{ r.exp }}</span>
+          <span style="color:#5F5851">{{ r.counted }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<!-- MONEY -->
+<sc-if value="{{ is.money }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-family:'EB Garamond',serif;font-weight:400;font-size:34px;margin:0">Money</h1>
+        <div style="font-size:13px;color:#5F5851">Every payment, charge and payout in one ledger.</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button style="background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">Download CSV</button>
+        <button style="background:#16233A;color:#E9E4D8;border:none;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer">Record a payment</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:22px;border-bottom:1px solid #CEC6B4;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex-shrink:0">
+      <sc-for list="{{ moneyTabs }}" as="t" hint-placeholder-count="4">
+        <button style="border:none;background:none;padding:10px 0;font-size:14px;color:{{ t.fg }};border-bottom:2px solid {{ t.bd }};cursor:pointer;margin-bottom:-1px">{{ t.label }}</button>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px"><div style="font-size:12px;color:#5F5851">Collected today</div><div style="font-family:'EB Garamond',serif;font-size:30px">Rs. 72,000</div><div style="font-size:12px;color:#5F5851">4 payments</div></div>
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px"><div style="font-size:12px;color:#5F5851">Links not yet paid</div><div style="font-family:'EB Garamond',serif;font-size:30px">Rs. 25,000</div><div style="font-size:12px;color:#5F5851">1 link, sent Sat</div></div>
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px"><div style="font-size:12px;color:#7A5B24">Needs you</div><div style="font-family:'EB Garamond',serif;font-size:30px;color:#7A5B24">2</div><div style="font-size:12px;color:#5F5851">1 UPI to record · 1 no-show to decide</div></div>
+      <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px"><div style="font-size:12px;color:#5F5851">Refunds processing</div><div style="font-family:'EB Garamond',serif;font-size:30px">Rs. 0</div><div style="font-size:12px;color:#5F5851">None</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;background:#FFFFFF;border:1px solid #8A8173;padding:7px 10px;color:#5F5851;width:240px;font-size:13px">{{ i.search }}Client or reference</div>
+      <button style="border:1px solid #8A8173;background:#FFFFFF;padding:7px 12px;font-size:13px;cursor:pointer">Last 7 days ▾</button>
+      <button style="border:1px solid #8A8173;background:#FFFFFF;padding:7px 12px;font-size:13px;cursor:pointer">Any status ▾</button>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #CEC6B4;overflow:hidden">
+      <div style="display:grid;grid-template-columns:90px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) 120px 110px;gap:12px;padding:10px 18px;font-size:12px;color:#5F5851;background:#F4F1E9;border-bottom:1px solid #CEC6B4"><span>When</span><span>Client</span><span>For</span><span>How</span><span style="text-align:right">Amount</span><span></span></div>
+      <sc-for list="{{ ledger }}" as="l" hint-placeholder-count="7">
+        <div style="display:grid;grid-template-columns:90px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) 120px 110px;gap:12px;padding:11px 18px;font-size:13px;border-bottom:1px solid #CEC6B4;align-items:center" style-hover="background:#F4F1E9">
+          <span style="color:#3A352E">{{ l.time }}</span><span style="font-weight:500">{{ l.client }}</span><span>{{ l.what }}</span><span style="color:#3A352E">{{ l.how }}</span><span style="text-align:right">{{ l.amount }}</span>
+          <span style="justify-self:end;font-size:11px;padding:2px 8px;background:{{ l.bg }};color:{{ l.fg }}">{{ l.status }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<!-- SETTINGS -->
+<sc-if value="{{ is.settings }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-family:'EB Garamond',serif;font-weight:400;font-size:34px;margin:0">Settings</h1>
+        <div style="font-size:13px;color:#5F5851">How the business runs. Changes are logged and apply from the moment you save.</div>
+      </div>
+    </div>
+
+    <sc-if value="{{ settingsA }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:250px minmax(0,1fr);gap:28px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px;position:sticky;top:84px">
+          <div style="display:flex;align-items:center;gap:8px;background:#FFFFFF;border:1px solid #8A8173;padding:7px 10px;color:#5F5851;font-size:13px">{{ i.search }}Find a setting</div>
+          <div style="display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 220px);overflow:auto;scrollbar-width:thin">
+            <sc-for list="{{ settingsNav }}" as="g" hint-placeholder-count="9">
+              <div style="display:flex;flex-direction:column">
+                <span style="font-size:11px;color:#5F5851;letter-spacing:.06em;text-transform:uppercase;padding:0 8px 3px">{{ g.g }}</span>
+                <sc-for list="{{ g.items }}" as="p" hint-placeholder-count="3">
+                  <button style="text-align:left;border:none;background:{{ p.bg }};padding:5px 8px;font-size:13px;font-weight:{{ p.fw }};cursor:pointer" style-hover="background:#ECE6DA">{{ p.n }}</button>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px;max-width:760px">
+          <div>
+            <div style="font-size:12px;color:#5F5851">Visits</div>
+            <h2 style="font-family:'EB Garamond',serif;font-weight:400;font-size:28px;margin:0">Moves and no-shows</h2>
+            <div style="font-size:13px;color:#5F5851">What a client pays when they move late or don't open the door. Last changed by ops@maneman.in on 16 Oct · <a>History</a></div>
+          </div>
+          <sc-for list="{{ movesForm }}" as="sec" hint-placeholder-count="4">
+            <section style="background:#FFFFFF;border:1px solid #CEC6B4;padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+              <div>
+                <h3 style="font-size:14px;font-weight:500;margin:0">{{ sec.section }}</h3>
+                <sc-if value="{{ sec.hasHelp }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:#5F5851">{{ sec.help }} <a>Open</a></div></sc-if>
+              </div>
+              <div style="display:grid;grid-template-columns:{{ sec.cols }};gap:12px 20px">
+                <sc-for list="{{ sec.rows }}" as="r" hint-placeholder-count="2">
+                  <label style="display:flex;flex-direction:column;gap:5px">
+                    <span style="font-size:13px;color:#3A352E">{{ r.label }}</span>
+                    <sc-if value="{{ r.hasUnit }}" hint-placeholder-val="{{ false }}">
+                      <span style="display:flex;align-items:center;gap:8px"><input onInput="{{ markDirty }}" defaultValue="{{ r.value }}" style="width:80px;border:1px solid #8A8173;padding:7px 10px;font-size:14px;background:#FFFFFF;outline-color:#16233A"><span style="font-size:13px;color:#3A352E">{{ r.unit }}</span></span>
+                    </sc-if>
+                    <sc-if value="{{ r.select }}" hint-placeholder-val="{{ true }}">
+                      <button onClick="{{ markDirty }}" style="display:flex;justify-content:space-between;align-items:center;border:1px solid #8A8173;padding:7px 10px;font-size:14px;background:#FFFFFF;cursor:pointer;text-align:left">{{ r.value }}<span style="color:#5F5851">▾</span></button>
+                    </sc-if>
+                    <sc-if value="{{ r.hasHelp }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:#5F5851">{{ r.help }}</span></sc-if>
+                  </label>
+                </sc-for>
+              </div>
+            </section>
+          </sc-for>
+          <sc-if value="{{ dirty }}" hint-placeholder-val="{{ false }}">
+            <div style="position:sticky;bottom:20px;background:#1A1714;color:#E9E4D8;padding:10px 12px 10px 16px;display:flex;align-items:center;gap:10px;">
+              <span style="flex:1;font-size:13px">You have unsaved changes.</span>
+              <button onClick="{{ saveSettings }}" style="background:none;border:1px solid #3A4A64;color:#E9E4D8;padding:6px 12px;font-size:13px;cursor:pointer">Discard</button>
+              <button onClick="{{ saveSettings }}" style="background:#E9E4D8;color:#1A1714;border:none;padding:7px 14px;font-size:13px;font-weight:500;cursor:pointer">Save changes</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</sc-if>
+
+<sc-if value="{{ is.other }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:60px 20px;text-align:center;color:#5F5851">
+    <h1 style="font-family:'EB Garamond',serif;font-weight:400;font-size:34px;margin:0;color:#1A1714">{{ crumbA }}</h1>
+    <p style="font-size:14px;max-width:460px;margin:8px auto 0">Not drawn in this round. It follows the same list, table and drawer patterns as Money and Inventory.</p>
+  </div>
+</sc-if>
+
+<!-- MORE SCREENS -->
+
+  </div>
+</main>
+
+<!-- DRAWERS -->
+<sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(11,18,32,.72);z-index:20"></div>
+  <div style="position:fixed;top:0;right:0;bottom:0;width:520px;max-width:100vw;background:#F4F1E9;z-index:21;display:flex;flex-direction:column;">
+
+    <sc-if value="{{ dVisit }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;height:100vh">
+        <div style="padding:20px 24px 16px;border-bottom:1px solid #CEC6B4;display:flex;gap:12px;align-items:flex-start">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:10px"><h2 style="font-family:'EB Garamond',serif;font-weight:400;font-size:26px;margin:0">{{ visit.title }}</h2><span style="font-size:12px;padding:2px 8px;background:{{ visit.chipBg }};color:{{ visit.chipFg }}">{{ visit.chip }}</span></div>
+            <div style="font-size:13px;color:#5F5851;margin-top:2px">{{ visit.sub }}</div>
+          </div>
+          <button onClick="{{ closeDrawer }}" style="border:none;background:none;cursor:pointer;padding:4px;color:#3A352E">{{ i.x }}</button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:20px">
+          <sc-if value="{{ visit.noTech }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-weight:500;color:#8A3A2E">Needs a technician</span>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <label style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border:1px solid #16233A;background:#F4F1E9;font-size:13px"><span><strong style="font-weight:500">Imran Qureshi</strong> · free from 1:30 pm · 14 min away</span><span style="font-size:11px;color:#1A1714">Best fit</span></label>
+                <label style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border:1px solid #CEC6B4;background:#FFFFFF;font-size:13px"><span>Vikas Rana · free all afternoon · 26 min away</span></label>
+                <label style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border:1px solid #CEC6B4;background:#FFFFFF;font-size:13px;color:#756D60"><span>Sunil Rawat · busy until 1:30 pm, then Sameer at 3:30</span></label>
+              </div>
+              <button style="align-self:flex-start;background:#16233A;color:#E9E4D8;border:none;padding:8px 14px;font-size:13px;cursor:pointer">Assign Imran Qureshi</button>
+            </div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:110px 1fr;row-gap:10px;font-size:13px">
+            <span style="color:#5F5851">Technician</span><span>{{ visit.tech }}</span>
+            <span style="color:#5F5851">Where</span><span>{{ visit.area }}</span>
+            <span style="color:#5F5851">Time</span><span>{{ visit.time }}</span>
+            <span style="color:#5F5851">Visit</span><span>{{ visit.type }}</span>
+          </div>
+          <div>
+            <h3 style="font-size:13px;font-weight:500;margin:0 0 10px">What happened</h3>
+            <div style="display:flex;flex-direction:column;border-left:1.5px solid #CEC6B4;margin-left:5px">
+              <sc-for list="{{ visit.events }}" as="e" hint-placeholder-count="4">
+                <div style="position:relative;padding:0 0 14px 18px">
+                  <span style="position:absolute;left:-5px;top:5px;width:9px;height:9px;background:#F4F1E9;border:1.5px solid #B98B45"></span>
+                  <div style="font-size:12px;color:#5F5851">{{ e.t }}</div>
+                  <div style="font-size:13px;font-weight:500">{{ e.what }}</div>
+                  <div style="font-size:12px;color:#5F5851">{{ e.note }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="padding:14px 24px;border-top:1px solid #CEC6B4;display:flex;gap:8px;background:#F4F1E9">
+          <button style="display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">{{ i.phone }}Call client</button>
+          <button style="display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">{{ i.wa }}Message</button>
+          <button onClick="{{ openBookFromVisit }}" style="background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">Move</button>
+          <span style="flex:1"></span>
+          <button style="background:none;border:none;color:#8A3A2E;font-size:13px;cursor:pointer">Cancel visit</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ dBook }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;height:100vh">
+        <div style="padding:20px 24px 16px;border-bottom:1px solid #CEC6B4;display:flex;gap:12px;align-items:flex-start">
+          <div style="flex:1">
+            <h2 style="font-family:'EB Garamond',serif;font-weight:400;font-size:26px;margin:0">Book a visit</h2>
+            <div style="font-size:13px;color:#5F5851;margin-top:2px">Rohit Malhotra · Sector 56, Gurgaon · Mane Man Essential</div>
+          </div>
+          <button onClick="{{ closeDrawer }}" style="border:none;background:none;cursor:pointer;padding:4px;color:#3A352E">{{ i.x }}</button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:13px;font-weight:500">1. What visit</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <sc-for list="{{ bookTypes }}" as="b" hint-placeholder-count="4">
+                <button onClick="{{ b.go }}" style="text-align:left;background:{{ b.bg }};border:1px solid {{ b.bd }};box-shadow:{{ b.ring }};padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px">
+                  <span style="font-weight:500">{{ b.id }}</span>
+                  <span style="font-size:12px;color:#5F5851">{{ b.len }} · {{ b.price }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:13px;font-weight:500">2. Day</span>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
+              <sc-for list="{{ days }}" as="d" hint-placeholder-count="7">
+                <button onClick="{{ d.go }}" style="background:{{ d.bg }};border:1px solid {{ d.bd }};padding:8px 2px;cursor:{{ d.cursor }};display:flex;flex-direction:column;align-items:center;gap:1px;color:{{ d.fg }}">
+                  <span style="font-size:11px">{{ d.d }}</span>
+                  <span style="font-size:13px;font-weight:500">{{ d.dt }}</span>
+                  <span style="font-size:10px;color:{{ d.sub }}">{{ d.n }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <span style="font-size:13px;font-weight:500">3. Time</span>
+            <sc-for list="{{ slots }}" as="w" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:12px;color:#5F5851">{{ w.w }}</span>
+                <div style="display:flex;flex-wrap:wrap;gap:6px">
+                  <sc-for list="{{ w.items }}" as="t" hint-placeholder-count="4">
+                    <button onClick="{{ t.go }}" style="min-width:82px;background:{{ t.bg }};color:{{ t.fg }};border:1px solid {{ t.bd }};padding:7px 10px;font-size:13px;cursor:{{ t.cursor }};text-decoration:{{ t.deco }}">{{ t.t }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#FFFFFF;border:1px solid #CEC6B4;font-size:13px">
+              <span><span style="color:#5F5851">Technician</span> · Anyone free, shortest drive</span>
+              <button style="border:none;background:none;color:#16233A;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px">Choose</button>
+            </div>
+            <button style="align-self:flex-start;border:none;background:none;color:#16233A;font-size:13px;cursor:pointer;padding:0">+ Add a discount code</button>
+          </div>
+        </div>
+        <div style="padding:14px 24px;border-top:1px solid #CEC6B4;display:flex;align-items:center;gap:12px;background:#FFFFFF">
+          <div style="flex:1;display:flex;flex-direction:column">
+            <span style="font-size:13px;font-weight:500">{{ book.type }} · {{ book.price }}</span>
+            <span style="font-size:12px;color:#5F5851">{{ book.when }} · payment link by WhatsApp</span>
+          </div>
+          <button onClick="{{ book.done }}" style="background:{{ book.ctaBg }};color:{{ book.ctaFg }};border:none;padding:10px 16px;font-size:14px;font-weight:500;cursor:pointer">{{ book.cta }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+<sc-if value="{{ dTask }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;height:100vh">
+        <div style="padding:20px 24px 16px;border-bottom:1px solid #CEC6B4;display:flex;gap:12px;align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-size:12px;color:#5F5851">{{ task.kind }}</div>
+            <h2 style="font-family:'EB Garamond',serif;font-weight:400;font-size:26px;margin:0">{{ task.client }}</h2>
+            <div style="font-size:13px;color:#3A352E;margin-top:2px">{{ task.detail }}</div>
+          </div>
+          <button onClick="{{ closeDrawer }}" style="border:none;background:none;cursor:pointer;padding:4px;color:#3A352E">{{ i.x }}</button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:grid;grid-template-columns:110px 1fr;row-gap:10px;font-size:13px">
+            <span style="color:#5F5851">Due</span><span>{{ task.due }}</span>
+            <span style="color:#5F5851">Owner</span><span>{{ task.owner }}</span>
+            <span style="color:#5F5851">City</span><span>{{ task.city }}</span>
+            <span style="color:#5F5851">Raised by</span><span>The system, when the order date passed</span>
+          </div>
+          <div style="background:#FFFFFF;border:1px solid #CEC6B4;padding:14px 16px;font-size:13px;display:flex;flex-direction:column;gap:6px">
+            <span style="font-weight:500">What to do</span>
+            <span style="color:#3A352E">Do the thing on the button below. The task closes itself when it's done; you don't need to tick it off.</span>
+          </div>
+        </div>
+        <div style="padding:14px 24px;border-top:1px solid #CEC6B4;display:flex;gap:8px;background:#FFFFFF">
+          <button style="background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">Take it</button>
+          <button style="background:#FFFFFF;border:1px solid #8A8173;padding:8px 12px;font-size:13px;cursor:pointer">Assign to…</button>
+          <span style="flex:1"></span>
+          <button style="background:#16233A;color:#E9E4D8;border:none;padding:8px 14px;font-size:13px;cursor:pointer">{{ task.action }}</button>
+        </div>
+      </div>
+    </sc-if>
+<!-- MORE DRAWERS -->
+  </div>
+</sc-if>
+<sc-if value="{{ palette }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closePalette }}" style="position:fixed;inset:0;background:rgba(11,18,32,.72);z-index:40"></div>
+  <div style="position:fixed;top:12vh;left:50%;transform:translateX(-50%);width:620px;max-width:94vw;background:#F4F1E9;border:1px solid #CEC6B4;z-index:41;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #CEC6B4;color:#5F5851">{{ i.search }}<span style="font-size:16px;color:#1A1714">rohit</span><span style="flex:1"></span><span style="font-size:11px;border:1px solid #8A8173;padding:0 5px">Esc</span></div>
+    <div style="padding:6px">
+      <sc-for list="{{ paletteItems }}" as="p" hint-placeholder-count="6">
+        <div style="display:flex;align-items:center;gap:12px;padding:9px 12px;background:{{ p.bg }};font-size:14px">
+          <span style="width:56px;font-size:11px;color:#5F5851;text-transform:uppercase;letter-spacing:.05em">{{ p.k }}</span>
+          <span style="flex:1">{{ p.t }}</span>
+          <span style="font-size:11px;color:#5F5851">{{ p.sc }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="padding:8px 16px;border-top:1px solid #CEC6B4;font-size:11px;color:#5F5851;display:flex;gap:14px"><span>↑↓ to move</span><span>Enter to open</span><span>Search finds clients by name, phone, piece or PO number</span></div>
+  </div>
+</sc-if>
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1714;color:#E9E4D8;padding:12px 16px;font-size:13px;display:flex;gap:16px;align-items:center;z-index:30;">
+    <span>{{ toast }}</span>
+    <button onClick="{{ closeToast }}" style="background:none;border:none;color:#C9A363;font-size:13px;cursor:pointer">Undo</button>
+  </div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const P = {
+  home:'M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z',
+  check:'M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+  calendar:'M3 5h18v16H3z M3 9h18 M8 3v4 M16 3v4',
+  users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
+  chat:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+  tech:'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z',
+  box:'M21 8 12 3 3 8v8l9 5 9-5z M3 8l9 5 9-5 M12 13v8',
+  inbox:'M22 12h-6l-2 3h-4l-2-3H2 M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',
+  wallet:'M3 7h18v13H3z M3 7l3-4h12l3 4 M16 13.5h2',
+  growth:'M3 17l6-6 4 4 8-8 M14 7h7v7',
+  chart:'M3 3v18h18 M7 15v3 M12 10v8 M17 6v12',
+  gear:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
+  search:'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35',
+  x:'M18 6 6 18 M6 6l12 12',
+  chev:'M9 18l6-6-6-6',
+  phone:'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z',
+  plus:'M12 5v14 M5 12h14',
+  pin:'M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+  edit:'M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+  clock:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2',
+  send:'M22 2 11 13 M22 2l-7 20-4-9-9-4z',
+  check2:'M20 6 9 17l-5-5',
+  down:'M6 9l6 6 6-6',
+  more:'M5 12h.01 M12 12h.01 M19 12h.01',
+  wa:'M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9z M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1'
+};
+const ico = (n, s = 16) => React.createElement('svg', { width: s, height: s, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' }, React.createElement('path', { d: P[n] }));
+const TONE = {
+  bad: { bg: 'transparent', fg: '#8A3A2E', dot: '#8A3A2E' },
+  warn: { bg: 'transparent', fg: '#7A5B24', dot: '#B98B45' },
+  ok: { bg: 'transparent', fg: '#1A1714', dot: '#1A1714' },
+  info: { bg: 'transparent', fg: '#7A5B24', dot: '#7A5B24' },
+  neutral: { bg: 'transparent', fg: '#3A352E', dot: '#8A8173' }
+};
+const tone = t => TONE[t] || TONE.neutral;
+
+const TODAY = {
+  dispatch: {
+    greeting: 'Good morning. 2 visits still need a technician.',
+    kpis: [
+      { label: 'Visits today', value: '23', sub: '6 done · 1 under way', tone: 'neutral', to: 'dispatch' },
+      { label: 'No technician yet', value: '2', sub: 'Both this afternoon', tone: 'bad', to: 'dispatch' },
+      { label: 'Running late', value: '1', sub: 'Ravi Kumar, 25 min', tone: 'warn', to: 'dispatch' },
+      { label: "Short for tomorrow's kits", value: '3', sub: 'Check before 5 pm', tone: 'warn', to: 'stock' }
+    ],
+    queue: [
+      { g: 'now', title: 'Give this visit a technician', meta: 'Service visit · Kabir Mehta · 2–3:30 pm · Sector 56, Gurgaon', due: 'Starts in 3 h', tone: 'bad', action: 'Assign', to: 'dispatch' },
+      { g: 'now', title: 'Ravi Kumar is running 25 min late', meta: 'Next: First fit · Arjun Sethi · 11:30 am · Saket', due: 'Now', tone: 'bad', action: 'Tell client', to: 'messages' },
+      { g: 'today', title: 'Client asked to move a visit', meta: 'Rohit Malhotra · from Tue 3 Nov 10 am to the evening', due: 'Today', tone: 'warn', action: 'Review', to: 'client' },
+      { g: 'today', title: 'Confirm an address', meta: 'Nikhil Bansal · Consultation tomorrow 10 am · pin is 1.2 km off', due: 'By 6 pm', tone: 'warn', action: 'Call', to: 'client' },
+      { g: 'today', title: "Tomorrow's kit is short", meta: 'Deepak Negi · Tape strips −8, Bonding glue −6 ml', due: 'By 5 pm', tone: 'warn', action: 'Plan transfer', to: 'stock' },
+      { g: 'later', title: 'Leave asked for', meta: 'Sunil Rawat · Fri 6 Nov, full day · 3 visits booked', due: 'Tomorrow', tone: 'neutral', action: 'Decide', to: 'tech' }
+    ],
+    asideTitle: 'Coming up', asideLink: 'Open the board', asideTo: 'dispatch',
+    aside: [
+      { time: '11:30 am', title: 'Arjun Sethi', meta: 'First fit · Ravi Kumar', chip: 'Late', tone: 'warn' },
+      { time: '12:00 pm', title: 'Priya Kapoor for Anil Kapoor', meta: 'Service visit · Imran Qureshi', chip: 'On the way', tone: 'info' },
+      { time: '1:00 pm', title: 'Varun Chopra', meta: 'Consultation · Aman Tyagi', chip: 'Booked', tone: 'neutral' },
+      { time: '2:00 pm', title: 'Kabir Mehta', meta: 'Service visit · no technician', chip: 'Assign', tone: 'bad' },
+      { time: '3:30 pm', title: 'Sameer Khanna', meta: 'Replacement · Sunil Rawat', chip: 'Booked', tone: 'neutral' },
+      { time: '4:00 pm', title: 'Harsh Vardhan', meta: 'Consultation · no technician', chip: 'Assign', tone: 'bad' }
+    ]
+  },
+  care: {
+    greeting: '4 clients are waiting on a reply.',
+    kpis: [
+      { label: 'Waiting on us', value: '4', sub: 'Oldest 38 min', tone: 'warn', to: 'messages' },
+      { label: 'Past reply time', value: '1', sub: 'Promise is 60 min', tone: 'bad', to: 'messages' },
+      { label: 'Median first reply', value: '6 min', sub: 'Last 7 days', tone: 'neutral', to: 'messages' },
+      { label: 'Remedies to approve', value: '1', sub: 'Over your limit', tone: 'neutral', to: 'messages' }
+    ],
+    queue: [
+      { g: 'now', title: 'Kabir Mehta: “the front is lifting”', meta: 'Fit problem · waiting 38 min · fitted 9 Nov', due: 'Past 60 min soon', tone: 'bad', action: 'Reply', to: 'messages' },
+      { g: 'now', title: 'Nikhil Bansal asked about price', meta: 'New lead · Gurgaon · waiting 12 min', due: '48 min left', tone: 'warn', action: 'Reply', to: 'messages' },
+      { g: 'today', title: 'Approve a remedy', meta: '2 free service visits for Rahul Jain · above your limit of 1', due: 'Today', tone: 'warn', action: 'Review', to: 'messages' },
+      { g: 'today', title: 'Call about a move', meta: 'Rohit Malhotra wants Tue evening', due: 'Today', tone: 'neutral', action: 'Call', to: 'client' },
+      { g: 'later', title: 'Second check-in due', meta: 'Mohan Lal · 21 days after his fit', due: 'Wed', tone: 'neutral', action: 'Message', to: 'messages' }
+    ],
+    asideTitle: 'Your chats', asideLink: 'Open messages', asideTo: 'messages',
+    aside: [
+      { time: '38 min', title: 'Kabir Mehta', meta: 'Fit problem', chip: 'Waiting', tone: 'bad' },
+      { time: '12 min', title: 'Nikhil Bansal', meta: 'Price question', chip: 'Waiting', tone: 'warn' },
+      { time: '9 min', title: 'Varun Chopra', meta: 'Booking', chip: 'Waiting', tone: 'warn' },
+      { time: '2 min', title: 'Sameer Khanna', meta: 'Payment link', chip: 'Waiting', tone: 'warn' },
+      { time: '1 h', title: 'Anil Kapoor', meta: 'Thank you', chip: 'Their turn', tone: 'neutral' }
+    ]
+  },
+  city: {
+    greeting: 'Gurgaon is 78% booked today.',
+    kpis: [
+      { label: 'Visits today', value: '12', sub: '5 technicians working', tone: 'neutral', to: 'dispatch' },
+      { label: 'Booked time', value: '78%', sub: 'Target 80%', tone: 'neutral', to: 'dispatch' },
+      { label: 'Collected today', value: 'Rs. 72,000', sub: '4 payments', tone: 'neutral', to: 'money' },
+      { label: 'Open concerns', value: '0', sub: 'None this week', tone: 'ok', to: 'tasks' }
+    ],
+    queue: [
+      { g: 'now', title: 'Replacement order is late', meta: 'Rohit Malhotra · MM-STD-4417-D · replace by 4 Nov', due: '26 days overdue', tone: 'bad', action: 'Order now', to: 'client' },
+      { g: 'today', title: 'Decide a no-show', meta: 'Vivek Arora · Sat 31 Oct · technician waited 15 min', due: 'Today', tone: 'warn', action: 'Decide', to: 'money' },
+      { g: 'today', title: 'Leave asked for', meta: 'Sunil Rawat · Fri 6 Nov · 3 visits to move', due: 'Today', tone: 'warn', action: 'Decide', to: 'tech' },
+      { g: 'later', title: 'Set November targets', meta: 'Leads, fits and revenue are not set', due: 'This week', tone: 'neutral', action: 'Set', to: 'settings' }
+    ],
+    asideTitle: 'Technicians today', asideLink: 'Open the board', asideTo: 'dispatch',
+    aside: [
+      { time: '4 visits', title: 'Imran Qureshi', meta: '2 done', chip: 'Working', tone: 'ok' },
+      { time: '3 visits', title: 'Sunil Rawat', meta: '1 done', chip: 'Working', tone: 'ok' },
+      { time: '2 visits', title: 'Vikas Rana', meta: 'First at 1 pm', chip: 'Free till 1', tone: 'neutral' },
+      { time: '0 visits', title: 'Mohit Bhati', meta: 'On leave', chip: 'Leave', tone: 'neutral' }
+    ]
+  },
+  finance: {
+    greeting: 'Rs. 72,000 collected so far today.',
+    kpis: [
+      { label: 'Collected today', value: 'Rs. 72,000', sub: '4 payments', tone: 'neutral', to: 'money' },
+      { label: 'UPI to record', value: '2', sub: 'Paid outside the link', tone: 'warn', to: 'money' },
+      { label: 'Disputed charges', value: '0', sub: 'Nothing open', tone: 'ok', to: 'money' },
+      { label: 'October pay', value: 'Ready', sub: '9 technicians', tone: 'neutral', to: 'money' }
+    ],
+    queue: [
+      { g: 'now', title: 'Record a UPI payment', meta: 'Sameer Khanna · Rs. 2,000 · screenshot sent in chat', due: 'Overdue 2 h', tone: 'bad', action: 'Record', to: 'money' },
+      { g: 'today', title: 'Record a UPI payment', meta: 'Varun Chopra · Rs. 25,000', due: 'Today', tone: 'warn', action: 'Record', to: 'money' },
+      { g: 'today', title: 'Approve October technician pay', meta: '9 technicians · Rs. 1,84,500 · 1 visit has no rate', due: 'Today', tone: 'warn', action: 'Review', to: 'money' },
+      { g: 'later', title: 'Pay partner commission', meta: 'Fade Studio Salon · 1 fit · Rs. 1,500', due: '7 Nov', tone: 'neutral', action: 'Review', to: 'money' }
+    ],
+    asideTitle: 'Latest payments', asideLink: 'Open Money', asideTo: 'money',
+    aside: [
+      { time: '10:42 am', title: 'Rohit Malhotra', meta: 'Replacement · link', chip: 'Rs. 17,000', tone: 'ok' },
+      { time: '10:05 am', title: 'Anil Kapoor', meta: 'Service visit · link', chip: 'Rs. 2,000', tone: 'ok' },
+      { time: '9:31 am', title: 'Arjun Sethi', meta: 'First fit · link', chip: 'Rs. 25,000', tone: 'ok' },
+      { time: '9:02 am', title: 'Harsh Vardhan', meta: 'First fit · link', chip: 'Rs. 28,000', tone: 'ok' }
+    ]
+  },
+  inventory: {
+    greeting: '3 kits need topping up before tomorrow.',
+    kpis: [
+      { label: 'Below zero', value: '4', sub: 'Counts are wrong somewhere', tone: 'bad', to: 'stock' },
+      { label: 'Out of stock', value: '9', sub: 'Across 6 kits', tone: 'warn', to: 'stock' },
+      { label: 'Counts due this week', value: '11', sub: 'Quarterly items by 9 Nov', tone: 'neutral', to: 'stock' },
+      { label: 'Open recall', value: '1', sub: 'Lot L041-hs_cla', tone: 'warn', to: 'stock' }
+    ],
+    queue: [
+      { g: 'now', title: "Top up tomorrow's kit", meta: 'Deepak Negi · Tape strips, Bonding glue · 3 visits tomorrow', due: 'By 5 pm', tone: 'bad', action: 'Transfer', to: 'stock' },
+      { g: 'now', title: 'Aman Tyagi shows below zero', meta: 'Bonding glue −6 ml, Solvent −20 ml · likely a missed delivery', due: 'Today', tone: 'bad', action: 'Count', to: 'stock' },
+      { g: 'today', title: 'Receive an order', meta: 'PO-852228 · Lumen Hair Supplies · expected 10 Dec', due: 'Arriving', tone: 'neutral', action: 'Receive', to: 'stock' },
+      { g: 'later', title: 'Quarterly count', meta: 'Delhi stockroom · 4 items', due: '9 Nov', tone: 'neutral', action: 'Start', to: 'stock' }
+    ],
+    asideTitle: 'Places needing attention', asideLink: 'Open stock', asideTo: 'stock',
+    aside: [
+      { time: 'Kit', title: 'Aman Tyagi', meta: '4 below zero · 5 out', chip: 'Fix', tone: 'bad' },
+      { time: 'Kit', title: 'Imran Qureshi', meta: '9 out', chip: 'Out', tone: 'warn' },
+      { time: 'Room', title: 'Delhi stockroom', meta: '5 out', chip: 'Out', tone: 'warn' },
+      { time: 'Hub', title: 'National warehouse', meta: '1 out · 4 low', chip: 'Low', tone: 'warn' }
+    ]
+  }
+};
+const ROLES = [['dispatch', 'Dispatch'], ['care', 'Care'], ['city', 'City head'], ['finance', 'Finance'], ['inventory', 'Inventory']];
+const NAV = [
+  { label: 'Work', items: [['today', 'Today', 'home'], ['tasks', 'Tasks', 'check', '12'], ['dispatch', 'Dispatch', 'calendar', '2', 'bad'], ['messages', 'Messages', 'chat', '4']] },
+  { label: 'People', items: [['clientlist', 'Clients', 'users'], ['techs', 'Technicians', 'tech']] },
+  { label: 'Running the business', items: [['stock', 'Inventory', 'box', '3', 'bad'], ['requests', 'Requests', 'inbox'], ['money', 'Money', 'wallet'], ['growth', 'Growth', 'growth'], ['reports', 'Reports', 'chart']] },
+  { label: 'Admin', items: [['settings', 'Settings', 'gear']] }
+];
+const ALIAS = { client: 'clients', tech: 'techs' };
+const NAV_ON = { clients: 'clientlist' };
+const CRUMB = { today: ['Today'], tasks: ['Tasks'], dispatch: ['Dispatch'], messages: ['Messages'], client: ['Clients', 'Rohit Malhotra'], clients: ['Clients', 'Rohit Malhotra'], clientlist: ['Clients'], tech: ['Technicians', 'Aman Tyagi'], techs: ['Technicians', 'Aman Tyagi'], stock: ['Inventory', 'Stock'], money: ['Money', 'Payments'], settings: ['Settings'], requests: ['Requests'], growth: ['Growth'], reports: ['Reports'] };
+
+const TASKS = [
+  { kind: 'Replacement order', detail: 'MM-STD-4417-D · order by 7 Oct, replace by 4 Nov', client: 'Rohit Malhotra', city: 'Gurgaon', due: '26 days overdue', tone: 'bad', owner: 'No one', action: 'Take', f: ['unassigned', 'overdue'] },
+  { kind: 'No technician', detail: 'Service visit · today 2–3:30 pm', client: 'Kabir Mehta', city: 'Gurgaon', due: 'In 3 h', tone: 'bad', owner: 'Dispatch', action: 'Assign', f: ['overdue'] },
+  { kind: 'Move requested', detail: 'Tue 3 Nov 10 am → evening', client: 'Rohit Malhotra', city: 'Gurgaon', due: 'Today', tone: 'warn', owner: 'You', action: 'Review', f: ['mine'] },
+  { kind: 'Address to confirm', detail: 'Pin is 1.2 km from the typed address', client: 'Nikhil Bansal', city: 'Gurgaon', due: 'Today 6 pm', tone: 'warn', owner: 'No one', action: 'Take', f: ['unassigned'] },
+  { kind: 'UPI to record', detail: 'Rs. 2,000 · screenshot in chat', client: 'Sameer Khanna', city: 'Delhi', due: 'Today', tone: 'warn', owner: 'Finance', action: 'Record', f: [] },
+  { kind: 'Remedy to approve', detail: '2 free service visits · fit problem', client: 'Rahul Jain', city: 'Noida', due: 'Today', tone: 'warn', owner: 'You', action: 'Review', f: ['mine'] },
+  { kind: 'Leave asked for', detail: 'Fri 6 Nov · 3 visits booked', client: 'Sunil Rawat (technician)', city: 'Gurgaon', due: 'Tomorrow', tone: 'neutral', owner: 'No one', action: 'Take', f: ['unassigned'] },
+  { kind: 'First fit to book', detail: 'Consultation done 28 Oct · liked Classic #1B', client: 'Harsh Vardhan', city: 'Delhi', due: 'Wed', tone: 'neutral', owner: 'You', action: 'Book', f: ['mine'] },
+  { kind: 'At-risk client', detail: 'No service visit for 62 days', client: 'Mohan Lal', city: 'Noida', due: 'Thu', tone: 'neutral', owner: 'No one', action: 'Take', f: ['unassigned'] },
+  { kind: 'Consumables short', detail: 'Deepak Negi · tomorrow', client: '—', city: 'Delhi', due: 'Today 5 pm', tone: 'warn', owner: 'Inventory', action: 'Open', f: [] }
+];
+
+const VT = {
+  'Consultation': { bg: '#FFFFFF', fg: '#5F5851', name: '#1A1714', bd: '#CEC6B4' },
+  'Service visit': { bg: '#F4F1E9', fg: '#5F5851', name: '#1A1714', bd: '#8A8173' },
+  'Replacement': { bg: '#DED7C8', fg: '#3A352E', name: '#1A1714', bd: '#B98B45' },
+  'First fit': { bg: '#16233A', fg: '#C5CDD9', name: '#E9E4D8', bd: '#6B7B95' }
+};
+const fmtH = h => { const hr = Math.floor(h), m = Math.round((h - hr) * 60); const h12 = hr > 12 ? hr - 12 : hr; return h12 + (m ? ':' + String(m).padStart(2, '0') : '') + (hr >= 12 ? ' pm' : ' am'); };
+const V = (s, e, type, client, area, status) => ({ s, e, type, client, area, status });
+const TECHS = [
+  { name: 'Imran Qureshi', city: 'Gurgaon', visits: [V(9, 10.5, 'Service visit', 'Anil Kapoor', 'DLF Phase 2', 'done'), V(11, 12.5, 'Consultation', 'Ritesh Gupta', 'Sector 49', 'running'), V(13, 14.5, 'First fit', 'Karan Malik', 'Sohna Road', 'booked'), V(16, 17.5, 'Service visit', 'Vikram Singh', 'Sector 56', 'booked')] },
+  { name: 'Sunil Rawat', city: 'Gurgaon', visits: [V(10, 11.5, 'Service visit', 'Manish Arora', 'Sector 82', 'done'), V(12, 13.5, 'Consultation', 'Gaurav Jain', 'Golf Course Rd', 'booked'), V(15.5, 18, 'Replacement', 'Sameer Khanna', 'Sector 57', 'booked')] },
+  { name: 'Ravi Kumar', city: 'Delhi', visits: [V(9, 10.5, 'Consultation', 'Deepak Sood', 'Lajpat Nagar', 'done'), V(11.5, 14, 'First fit', 'Arjun Sethi', 'Saket', 'late'), V(16, 17.5, 'Service visit', 'Rahul Jain', 'Hauz Khas', 'booked')] },
+  { name: 'Deepak Negi', city: 'Delhi', visits: [V(9.5, 11, 'Consultation', 'Neha Batra', 'Dargah Sharif', 'done'), V(12, 13.5, 'Service visit', 'Aditya Rao', 'Karol Bagh', 'booked'), V(17, 18.5, 'Consultation', 'Neeraj Bhalla', 'Rajouri Garden', 'booked')] },
+  { name: 'Aman Tyagi', city: 'Noida', visits: [V(13, 14.5, 'Consultation', 'Varun Chopra', 'Sector 62', 'booked'), V(15, 17.5, 'First fit', 'Harsh Vardhan', 'Sector 50', 'booked')] },
+  { name: 'Mohit Bhati', city: 'Noida', leave: true, visits: [] }
+];
+const UNASSIGNED = [V(14, 15.5, 'Service visit', 'Kabir Mehta', 'Sector 56, Gurgaon', 'none'), V(16, 17.5, 'Consultation', 'Nitin Arora', 'Sector 15, Noida', 'none')];
+const STATUS = { done: ['Done', 'ok'], running: ['Under way', 'info'], late: ['25 min late', 'bad'], booked: ['Booked', 'neutral'], none: ['No technician', 'bad'] };
+const BOOK_TYPES = [
+  { id: 'Consultation', price: 'Free', len: '60 min' },
+  { id: 'First fit', price: 'Rs. 25,000', len: '2 h 30 min' },
+  { id: 'Service visit', price: 'Rs. 2,000', len: '90 min' },
+  { id: 'Replacement', price: 'Rs. 17,000', len: '2 h 30 min' }
+];
+const DAYS = [['Mon', '2 Nov', 0], ['Tue', '3 Nov', 4], ['Wed', '4 Nov', 7], ['Thu', '5 Nov', 2], ['Fri', '6 Nov', 0], ['Sat', '7 Nov', 9], ['Sun', '8 Nov', -1]];
+const SLOTS = [['Morning', ['9 am', '9:30 am', '10 am', '10:30 am'], [0, 0, 1, 2]], ['Afternoon', ['12 pm', '12:30 pm', '1 pm', '2 pm', '3 pm', '3:30 pm'], [1, 0, 2, 3, 1, 2]], ['Evening', ['4 pm', '4:30 pm', '5 pm', '6 pm'], [2, 1, 0, 1]]];
+
+const CLIENT_VISITS = [
+  { date: '13 Oct', type: 'Service visit', tech: 'Imran Qureshi', time: '12–1:30 pm', status: 'Done', paid: 'Rs. 2,000' },
+  { date: '3 Sep', type: 'First fit', tech: 'Imran Qureshi', time: '12–2:30 pm', status: 'Done', paid: 'Rs. 25,000' },
+  { date: '4 Aug', type: 'Consultation', tech: 'Imran Qureshi', time: '12–1 pm', status: 'Done', paid: 'Free' }
+];
+const CLIENT_PAY = [
+  { date: '13 Oct', what: 'Service visit', how: 'Payment link · UPI', amount: 'Rs. 2,000', status: 'Paid' },
+  { date: '3 Sep', what: 'First fit · Mane Man Essential', how: 'Payment link · card', amount: 'Rs. 25,000', status: 'Paid' },
+  { date: '1 Sep', what: 'Deposit', how: 'UPI, recorded by Finance', amount: 'Rs. 4,000', status: 'Paid' }
+];
+const CHATS = [
+  { name: 'Kabir Mehta', preview: 'Hi, the front is lifting, can someone help?', time: '38 min', tag: 'Fit problem', tone: 'bad', city: 'Gurgaon' },
+  { name: 'Nikhil Bansal', preview: 'What does the first fit cost in total?', time: '12 min', tag: 'Price', tone: 'warn', city: 'Gurgaon' },
+  { name: 'Varun Chopra', preview: 'Can I move to the evening?', time: '9 min', tag: 'Booking', tone: 'warn', city: 'Noida' },
+  { name: 'Sameer Khanna', preview: 'Paid by UPI, screenshot attached', time: '2 min', tag: 'Payment', tone: 'warn', city: 'Delhi' },
+  { name: 'Anil Kapoor', preview: 'You: See you at 12, Imran is on the way.', time: '1 h', tag: 'Their turn', tone: 'neutral', city: 'Gurgaon' },
+  { name: 'Rohit Malhotra', preview: 'You: Your replacement is on order.', time: 'Sat', tag: 'Their turn', tone: 'neutral', city: 'Gurgaon' }
+];
+const THREAD = [
+  { k: 'auto', text: '14 automatic messages between 2 Nov and 3 Dec: booking confirmation, reminders, arrival notices, receipts and check-ins.', link: 'Show them' },
+  { k: 'client', who: 'Kabir', time: 'Sun 6 Dec, 7:30 am', text: 'Something’s wrong with my hair system. The front edge is lifting after three days.' },
+  { k: 'system', who: 'From the app', time: '7:30 am', text: 'Piece MM-CLA-0000001-B, fitted 9 Nov 2026. Replacement due 9 May 2027. Supplier’s warranty to 7 Feb 2027.' },
+  { k: 'bot', who: 'Automatic reply', time: '7:30 am', text: 'Thank you for your message. We’re back at 9 am and will reply by 10 am.' },
+  { k: 'client', who: 'Kabir', time: '9:52 am', text: 'Hi, the front is lifting, can someone help?' }
+];
+const KIT = [
+  { item: 'Bonding glue', qty: '−6 ml', status: 'Below zero', tone: 'bad', counted: 'Never' },
+  { item: 'Solvent', qty: '−20 ml', status: 'Below zero', tone: 'bad', counted: 'Never' },
+  { item: 'Shampoo sachet', qty: '−2', status: 'Below zero', tone: 'bad', counted: 'Never' },
+  { item: 'Tape strips', qty: '−8', status: 'Below zero', tone: 'bad', counted: 'Never' },
+  { item: 'Classic 7×9 in · #1B · 0% grey · 100%', qty: '0', status: 'Out', tone: 'warn', counted: 'Never' },
+  { item: 'Classic 7×9 in · #1B · 10% grey · 100%', qty: '0', status: 'Out', tone: 'warn', counted: 'Never' },
+  { item: 'Classic 7×9 in · #2 · 0% grey · 100%', qty: '0', status: 'Out', tone: 'warn', counted: 'Never' },
+  { item: 'Classic 7×9 in · #2 · 10% grey · 120%', qty: '0', status: 'Out', tone: 'warn', counted: 'Never' },
+  { item: 'Mane Man Essential · 8×10 in · #1B', qty: '0', status: 'Out', tone: 'warn', counted: 'Never' }
+];
+
+const STOCK = [
+  { item: 'Bonding glue', unit: 'ml', wh: '46', dl: '120', gg: '80', kits: '−6', low: true, exp: '10 Feb 2027' },
+  { item: 'Tape strips', unit: 'strips', wh: '58', dl: '40', gg: '12', kits: '−8', low: true, exp: '—' },
+  { item: 'Solvent', unit: 'ml', wh: '138', dl: '300', gg: '210', kits: '−20', low: true, exp: '11 Apr 2027' },
+  { item: 'Shampoo sachet', unit: '', wh: '18', dl: '22', gg: '30', kits: '−2', low: true, exp: '12 Dec 2027' },
+  { item: 'Classic 7×9 · #1B · 0% grey · 100%', unit: '', wh: '273', dl: '0', gg: '2', kits: '0', low: false, exp: '—' },
+  { item: 'Classic 7×9 · #1B · 10% grey · 100%', unit: '', wh: '274', dl: '0', gg: '1', kits: '0', low: false, exp: '—' },
+  { item: 'Classic 7×9 · #2 · 0% grey · 100%', unit: '', wh: '275', dl: '0', gg: '0', kits: '0', low: false, exp: '—' },
+  { item: 'Mane Man Essential · 8×10 · #1B', unit: '', wh: '0', dl: '0', gg: '0', kits: '0', low: true, exp: '—', out: true }
+];
+const LEDGER = [
+  { time: '10:42 am', client: 'Rohit Malhotra', what: 'Replacement', how: 'Link · UPI', amount: 'Rs. 17,000', status: 'Paid', tone: 'ok' },
+  { time: '10:05 am', client: 'Anil Kapoor', what: 'Service visit', how: 'Link · card', amount: 'Rs. 2,000', status: 'Paid', tone: 'ok' },
+  { time: '9:31 am', client: 'Arjun Sethi', what: 'First fit', how: 'Link · UPI', amount: 'Rs. 25,000', status: 'Paid', tone: 'ok' },
+  { time: '9:02 am', client: 'Harsh Vardhan', what: 'First fit', how: 'Link · UPI', amount: 'Rs. 28,000', status: 'Paid', tone: 'ok' },
+  { time: '8:40 am', client: 'Sameer Khanna', what: 'Service visit', how: 'UPI outside the link', amount: 'Rs. 2,000', status: 'To record', tone: 'warn' },
+  { time: 'Sun', client: 'Vivek Arora', what: 'No-show charge', how: '—', amount: 'Rs. 4,000', status: 'To decide', tone: 'warn' },
+  { time: 'Sat', client: 'Varun Chopra', what: 'First fit', how: 'Link sent', amount: 'Rs. 25,000', status: 'Waiting', tone: 'neutral' }
+];
+const SETTINGS = [
+  { g: 'Business', items: [['Cities', '3 served · 2 with no technician'], ['Areas', '142 pincodes'], ['Targets', 'November not set']] },
+  { g: 'Scheduling', items: [['Day times', 'Morning 9–12 · Afternoon 12–4 · Evening 4–8'], ['Closed days', '1 coming up'], ['Booking', 'Slots every 30 min · 6 visits a day']] },
+  { g: 'Visits', items: [['Moves and no-shows', 'Free to move until 24 h before'], ['Field', 'Check-in within 200 m'], ['Reminders', 'Sent at 6 pm'], ['Job sheet', '4 checklist items']] },
+  { g: 'Prices', items: [['Packages', '1 on sale · 1 not priced'], ['Services and fees', '4 services'], ['Discount codes', '3 live']] },
+  { g: 'Growth', items: [['Referrals', '3 free visits each'], ['Partners', '1 active'], ['Try-on', 'One look per 30 days'], ['Words', 'Site and app wording']] },
+  { g: 'Care', items: [['Care team', '1 person'], ['Care hours', '9 am–9 pm · reply within 60 min'], ['Remedies', '1 free visit without approval'], ['Quick replies', 'None yet']] },
+  { g: 'Inventory', items: [['Stock', 'Alerts, counts, kits'], ['Purchasing', 'Second approver over Rs. 1 crore'], ['Supply plan', 'Weekly, 12 weeks ahead']] },
+  { g: 'Team', items: [['Staff', '4 people · access control on'], ['Pay grades', '1 grade']] },
+  { g: 'System', items: [['Console', 'Task deadlines'], ['Daily limits', '9 ceilings'], ['Reports', 'Lost after 90 days']] }
+];
+const MOVES_FORM = [
+  { section: 'Moving or cancelling', rows: [{ label: 'Free to move or cancel until', help: 'After this, the late charge below applies.', value: '24', unit: 'hours before the visit' }] },
+  { section: 'Late move or cancel charge', help: 'Late fees themselves are set in Services and fees.', grid: true, rows: [{ label: 'Consultation', value: 'Nothing' }, { label: 'First fit', value: 'Late fee · Rs. 4,000' }, { label: 'Service visit', value: 'The full visit' }, { label: 'Replacement', value: 'Late fee · Rs. 3,000' }] },
+  { section: 'No-show charge', grid: true, rows: [{ label: 'Consultation', value: 'Nothing' }, { label: 'First fit', value: 'Late fee · Rs. 4,000' }, { label: 'Service visit', value: 'The full visit' }, { label: 'Replacement', value: 'Late fee · Rs. 3,000' }] },
+  { section: 'If a no-show is waived', rows: [{ label: 'The visit’s payment', value: 'Refunded' }, { label: 'A free service visit used', value: 'Returned' }, { label: 'Client can dispute for', value: '30', unit: 'days' }] }
+];
+
+const PLACES = [
+  ['Stores', [['National warehouse', 'wh', '1 out · 4 low'], ['Delhi stockroom', 'dl', '5 out'], ['Gurgaon stockroom', 'gg', '5 out']]],
+  ['Technician kits', [['Aman Tyagi · Noida', 'k1', '4 below zero'], ['Deepak Negi · Delhi', 'k2', 'Short tomorrow'], ['Imran Qureshi · Gurgaon', 'k3', '9 out'], ['Ravi Kumar · Delhi', 'k4', '1 out'], ['Sunil Rawat · Gurgaon', 'k5', ''], ['Mohit Bhati · Noida', 'k6', '9 out'], ['Vikas Rana · Gurgaon', 'k7', '9 out']]]
+];
+const LOW_AT = { wh: ['300', '200', '600', '40', '4', '4', '4', '4'], dl: ['100', '60', '150', '20', '2', '2', '2', '2'], kit: ['20', '20', '50', '4', '1', '1', '1', '1'] };
+const KITQ = { k1: ['−6', '−8', '−20', '−2', '0', '0', '0', '0'], k2: ['4', '6', '30', '2', '1', '0', '1', '0'], k3: ['22', '30', '70', '6', '0', '0', '0', '0'] };
+const CLIENTS = [
+  ['Rohit Malhotra', '+91 95513 44252', 'Gurgaon', 'Fitted · Essential', 'None booked', 'Replacement late', 'bad', 'Rs. 31,000'],
+  ['Kabir Mehta', '+91 80663 42326', 'Gurgaon', 'Fitted · Classic', 'Fri 1 Jan, 9:30 am', 'Reply in chat', 'bad', 'Rs. 27,000'],
+  ['Nikhil Bansal', '+91 98101 55320', 'Gurgaon', 'Consultation booked', 'Tue 3 Nov, 10 am', 'Confirm address', 'warn', '—'],
+  ['Harsh Vardhan', '+91 99580 11244', 'Delhi', 'Consulted', 'None booked', 'Book first fit', 'warn', '—'],
+  ['Anil Kapoor', '+91 98110 20871', 'Gurgaon', 'Fitted · Essential', 'Today, 12 pm', '', 'none', 'Rs. 52,000'],
+  ['Arjun Sethi', '+91 97170 66213', 'Delhi', 'First fit today', 'Today, 11:30 am', '', 'none', 'Rs. 25,000'],
+  ['Sameer Khanna', '+91 99100 34518', 'Delhi', 'Fitted · Classic', 'Today, 3:30 pm', 'Record UPI', 'warn', 'Rs. 29,000'],
+  ['Mohan Lal', '+91 98731 90062', 'Noida', 'Fitted · Classic', 'None booked', 'At risk · 62 days', 'warn', 'Rs. 27,000'],
+  ['Varun Chopra', '+91 98995 12740', 'Noida', 'Consultation booked', 'Today, 1 pm', '', 'none', '—'],
+  ['Rahul Jain', '+91 99711 40388', 'Delhi', 'Fitted · Essential', 'Today, 4 pm', 'Remedy to approve', 'warn', 'Rs. 25,000']
+];
+
+class Component extends DCLogic {
+  state = {
+    screen: 'today', role: 'dispatch', city: 'All cities',
+    todayV: (this.props.todayLayout || 'A') === 'B' ? 'b' : 'a',
+    taskFilter: 'all',
+    dispatchV: (this.props.dispatchLayout || 'A') === 'B' ? 'b' : 'a',
+    settingsV: (this.props.settingsLayout || 'A') === 'B' ? 'b' : 'a',
+    clientTab: 'visits', techTab: 'kit', chat: 0, chatFilter: 'waiting', noteMode: false,
+    dirty: false, palette: false, cityOpen: false, place: 'National warehouse', placeOpen: false, clientFilter: 'all',
+    drawer: null, visit: null, bookType: 'Service visit', bookDay: 1, bookSlot: null, bookTime: '', toast: null
+  };
+  go = s => () => this.setState({ screen: ALIAS[s] || s, drawer: null, palette: false });
+  componentDidMount() {
+    this._k = e => { const tag = (e.target && e.target.tagName) || ''; if (e.key === '/' && !/INPUT|TEXTAREA/.test(tag)) { e.preventDefault(); this.setState({ palette: true }); } if (e.key === 'Escape') this.setState({ palette: false, drawer: null, cityOpen: false, placeOpen: false }); };
+    window.addEventListener('keydown', this._k);
+    this._r = () => this.setState({ vw: window.innerWidth });
+    window.addEventListener('resize', this._r); this._r();
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._k); }
+  renderVals() {
+    const s = this.state;
+    const scr = s.screen;
+    const seg = (on) => ({ bg: on ? '#FFFFFF' : 'transparent', fg: on ? '#1A1714' : '#5F5851', shadow: 'none' });
+    const nav = NAV.map(g => ({
+      label: g.label,
+      items: g.items.map(([id, label, ic, count, t]) => {
+        const on = scr === id || NAV_ON[scr] === id;
+        return { label, icon: ico(ic), count: count || '', go: this.go(id), bg: on ? '#0E1728' : 'transparent', fg: on ? '#E9E4D8' : '#A8B2C2', mark: on ? 'inset 2px 0 0 0 #C9A363' : 'none', countBg: t === 'bad' ? '#E0917F' : 'transparent', countFg: t === 'bad' ? '#16233A' : '#8C96A8' };
+      })
+    }));
+    const T = TODAY[s.role];
+    const mapQ = q => ({ ...q, dot: tone(q.tone).dot, dueFg: q.tone === 'bad' ? '#8A3A2E' : q.tone === 'warn' ? '#7A5B24' : '#5F5851', go: this.go(q.to) });
+    const groupsDef = [['now', 'Do now', 'bad'], ['today', 'Today', 'warn'], ['later', 'Coming up', 'neutral']];
+    const today = {
+      greeting: T.greeting,
+      kpis: T.kpis.map(k => ({ ...k, fg: k.tone === 'bad' ? '#8A3A2E' : k.tone === 'warn' ? '#7A5B24' : '#1A1714', go: this.go(k.to) })),
+      queue: T.queue.map(mapQ), queueCount: T.queue.length,
+      groups: groupsDef.map(([id, label, t]) => { const items = T.queue.filter(q => q.g === id).map(mapQ); return { label, count: items.length, dot: tone(t).dot, items }; }).filter(g => g.items.length),
+      asideTitle: T.asideTitle, asideLink: T.asideLink, asideGo: this.go(T.asideTo),
+      aside: T.aside.map(a => ({ ...a, bg: tone(a.tone).bg, fg: tone(a.tone).fg }))
+    };
+    const tf = s.taskFilter;
+    const filters = [['all', 'All'], ['mine', 'Mine'], ['unassigned', 'No owner'], ['overdue', 'Overdue']].map(([id, label]) => {
+      const on = tf === id;
+      return { label, count: id === 'all' ? TASKS.length : TASKS.filter(t => t.f.includes(id)).length, go: () => this.setState({ taskFilter: id }), bg: on ? '#16233A' : '#FFFFFF', fg: on ? '#E9E4D8' : '#1A1714', border: on ? '#16233A' : '#8A8173' };
+    });
+    const tasks = TASKS.filter(t => tf === 'all' || t.f.includes(tf)).map(t => ({ ...t, dot: tone(t.tone).dot, dueFg: t.tone === 'bad' ? '#8A3A2E' : t.tone === 'warn' ? '#7A5B24' : '#3A352E', ownerFg: t.owner === 'No one' ? '#756D60' : '#1A1714', open: () => this.setState({ drawer: 'task', task: t }), act: (e) => { e && e.stopPropagation && e.stopPropagation(); } }));
+    const crumb = CRUMB[scr] || [scr];
+    const pct = h => ((h - 9) / 11 * 100) + '%';
+    const block = (v, techName) => {
+      const c = VT[v.type]; const st = STATUS[v.status];
+      return { ...v, time: fmtH(v.s) + ' – ' + fmtH(v.e), left: pct(v.s), width: ((v.e - v.s) / 11 * 100) + '%', bg: v.status === 'none' ? '#FFFFFF' : c.bg, fg: v.status === 'late' ? (v.type === 'First fit' ? '#E0917F' : '#8A3A2E') : c.fg, nameFg: c.name, bd: v.status === 'late' ? (v.type === 'First fit' ? '#E0917F' : '#8A3A2E') : c.bd, bstyle: v.status === 'none' ? 'dashed' : 'solid', op: v.status === 'done' ? 0.55 : 1, chip: st[0], chipBg: tone(st[1]).bg, chipFg: tone(st[1]).fg, tech: techName || 'No technician', open: () => this.setState({ drawer: 'visit', visit: { ...v, tech: techName || 'No technician' } }) };
+    };
+    const techRows = TECHS.map(t => {
+      const booked = t.visits.reduce((a, v) => a + (v.e - v.s), 0);
+      const blocks = t.visits.map(v => block(v, t.name));
+      const cards = [];
+      blocks.forEach((b, ix) => { if (ix > 0) cards.push({ gap: true, card: false, text: [18, 24, 31, 15][ix % 4] + ' min drive · ' + (Math.round((b.s - blocks[ix - 1].e) * 60)) + ' min free' }); cards.push({ ...b, gap: false, card: true }); });
+      return { name: t.name, city: t.city, leave: !!t.leave, working: !t.leave, sub: t.leave ? 'On leave today' : t.visits.length + ' visits · ' + booked + ' h booked', util: Math.round(booked / 9 * 100) + '%', utilW: Math.min(100, Math.round(booked / 9 * 100)) + '%', blocks, cards };
+    });
+    const unassigned = UNASSIGNED.map(v => block(v, null));
+    const hours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map(h => ({ label: h > 12 ? (h - 12) + ' pm' : h === 12 ? '12 pm' : h + ' am', left: pct(h) }));
+    const vis = s.visit || unassigned[0];
+    const visit = vis && { ...vis, title: vis.client, sub: vis.type + ' · ' + fmtH(vis.s) + ' – ' + fmtH(vis.e), chip: STATUS[vis.status][0], chipBg: tone(STATUS[vis.status][1]).bg, chipFg: tone(STATUS[vis.status][1]).fg, noTech: vis.status === 'none', hasTech: vis.status !== 'none', events: vis.status === 'done' ? [['9:28 am', 'Arrived', 'Checked in 40 m from the door'], ['9:31 am', 'Started', ''], ['9:34 am', 'Before photos taken', '4 photos'], ['10:12 am', 'Checklist ticked', 'System removed · Scalp cleaned · Re-bonded · Styled'], ['10:15 am', 'Used recorded', 'Tape strips 6 · Bonding glue 3 ml'], ['10:22 am', 'Closed, done', 'Paid Rs. 2,000 by link']] : vis.status === 'none' ? [['Fri 30 Oct', 'Booked by the client in the app', ''], ['Today 9:00 am', 'Imran Qureshi was taken off', 'Ran over on an earlier visit']] : [['Sat 31 Oct', 'Booked', 'By Care, on a call'], ['Sun 1 Nov 6 pm', 'Reminder sent', 'WhatsApp, read'], ['Today', 'Technician on the way', 'Shared live location']] };
+    if (visit) visit.events = visit.events.map(([t, what, note]) => ({ t, what, note }));
+    const dV = s.dispatchV;
+    const bt = s.bookType;
+    const bookTypes = BOOK_TYPES.map(b => ({ ...b, go: () => this.setState({ bookType: b.id, bookSlot: null }), bd: bt === b.id ? '#16233A' : '#8A8173', bg: bt === b.id ? '#F4F1E9' : '#FFFFFF', ring: bt === b.id ? '0 0 0 1px #16233A' : 'none' }));
+    const days = DAYS.map(([d, dt, n], ix) => { const on = s.bookDay === ix; const closed = n < 0; const full = n === 0; return { d, dt, n: closed ? 'Closed' : full ? 'Full' : n + ' free', go: () => !closed && !full && this.setState({ bookDay: ix, bookSlot: null }), bg: on ? '#16233A' : '#FFFFFF', fg: on ? '#E9E4D8' : closed || full ? '#756D60' : '#1A1714', sub: on ? '#A8B2C2' : closed || full ? '#756D60' : '#1A1714', bd: on ? '#16233A' : '#CEC6B4', cursor: closed || full ? 'not-allowed' : 'pointer' }; });
+    const slots = SLOTS.map(([w, times, n]) => ({ w, items: times.map((t, ix) => { const key = w + t; const on = s.bookSlot === key; const none = n[ix] === 0; return { t, go: () => !none && this.setState({ bookSlot: key, bookTime: t }), bg: on ? '#16233A' : none ? '#E9E4D8' : '#FFFFFF', fg: on ? '#E9E4D8' : none ? '#756D60' : '#1A1714', bd: on ? '#16233A' : '#CEC6B4', deco: none ? 'line-through' : 'none', cursor: none ? 'not-allowed' : 'pointer' }; }) }));
+    const btype = BOOK_TYPES.find(b => b.id === bt);
+    const book = { price: btype.price, len: btype.len, type: bt, day: DAYS[s.bookDay][0] + ' ' + DAYS[s.bookDay][1], cta: s.bookSlot ? 'Book ' + DAYS[s.bookDay][0] + ' ' + DAYS[s.bookDay][1] + ', ' + s.bookTime : 'Pick a time', ready: !!s.bookSlot, ctaBg: s.bookSlot ? '#16233A' : '#8A8173', ctaFg: s.bookSlot ? '#E9E4D8' : '#5F5851', when: s.bookSlot ? s.bookTime + ', ' + DAYS[s.bookDay][0] + ' ' + DAYS[s.bookDay][1] : 'No time picked yet', done: () => this.setState({ drawer: null, toast: 'Booked. Rohit gets a WhatsApp with the payment link.' }) };
+    return {
+      i: { down: ico('down', 14), search: ico('search', 15), chev: ico('chev', 13), plus: ico('plus', 15), x: ico('x', 18), phone: ico('phone', 15), wa: ico('chat', 15), more: ico('more', 18), pin: ico('pin', 14), edit: ico('edit', 13), clock: ico('clock', 14), send: ico('send', 15), check: ico('check', 14) },
+      nav, crumbA: crumb[0], crumbB: crumb[1] || '',
+      is: { clientlist: scr === 'clientlist', today: scr === 'today', tasks: scr === 'tasks', dispatch: scr === 'dispatch', messages: scr === 'messages', clients: scr === 'clients', techs: scr === 'techs', stock: scr === 'stock', money: scr === 'money', settings: scr === 'settings', other: ['requests', 'growth', 'reports'].includes(scr) },
+      city: s.city, cityOpen: s.cityOpen, toggleCity: () => this.setState({ cityOpen: !s.cityOpen }),
+      cities: [['All cities', '3 served'], ['Gurgaon', '5 technicians'], ['Delhi', '2 technicians'], ['Noida', '2 technicians'], ['Faridabad', 'No technician'], ['Ghaziabad', 'No technician']].map(([c, sub]) => ({ label: c, sub, tick: s.city === c ? ico('check2', 14) : '', bg: s.city === c ? '#F4F1E9' : '#FFFFFF', go: () => this.setState({ city: c, cityOpen: false }) })),
+      cityLabel: s.role === 'city' ? 'Gurgaon' : s.city === 'All cities' ? 'NCR, all cities' : s.city,
+      roles: ROLES.map(([id, label]) => ({ label, go: () => this.setState({ role: id }), ...seg(s.role === id) })),
+      todayOpts: [['a', 'Option A · Briefing'], ['b', 'Option B · Queue']].map(([id, label]) => ({ label, go: () => this.setState({ todayV: id }), bg: s.todayV === id ? '#16233A' : 'transparent', fg: s.todayV === id ? '#E9E4D8' : '#5F5851' })),
+      todayA: true, today,
+      taskFilters: filters, tasks,
+      clientTabs: [['visits', 'Visits'], ['pieces', 'Hair systems'], ['payments', 'Payments'], ['messages', 'Messages'], ['referrals', 'Referrals'], ['consents', 'Consents'], ['photos', 'Photos'], ['history', 'History']].map(([id, label]) => ({ label, go: () => this.setState({ clientTab: id }), fg: s.clientTab === id ? '#1A1714' : '#5F5851', bd: s.clientTab === id ? '#16233A' : 'transparent' })),
+      ct: { visits: s.clientTab === 'visits', pieces: s.clientTab === 'pieces', payments: s.clientTab === 'payments', other: !['visits', 'pieces', 'payments'].includes(s.clientTab) },
+      clientVisits: CLIENT_VISITS, clientPay: CLIENT_PAY,
+      techTabs: [['week', 'This week'], ['hours', 'Hours'], ['leave', 'Leave'], ['phones', 'Phones'], ['kit', 'Kit']].map(([id, label]) => ({ label, go: () => this.setState({ techTab: id }), fg: s.techTab === id ? '#1A1714' : '#5F5851', bd: s.techTab === id ? '#16233A' : 'transparent', badge: id === 'kit' ? '4' : '' })),
+      tt: { week: s.techTab === 'week', hours: s.techTab === 'hours', leave: s.techTab === 'leave', phones: s.techTab === 'phones', kit: s.techTab === 'kit' },
+      kit: KIT.map(k => ({ ...k, bg: tone(k.tone).bg, fg: tone(k.tone).fg, qfg: k.tone === 'bad' ? '#8A3A2E' : '#1A1714' })),
+      week: [['Mon 2', []], ['Tue 3', ['10 am · Consultation · Sector 62']], ['Wed 4', []], ['Thu 5', ['1 pm · First fit · Sector 50', '4:30 pm · Service visit · Sector 18']], ['Fri 6', []], ['Sat 7', ['11 am · Consultation · Sector 137']], ['Sun 8', []]].map(([d, v]) => ({ d, visits: v.map(x => ({ x })), empty: !v.length, off: d.startsWith('Sun') })),
+      chatFilters: [['waiting', 'Waiting on us', 4], ['mine', 'Mine', 6], ['all', 'All', 38]].map(([id, label, n]) => ({ label, n, go: () => this.setState({ chatFilter: id }), ...seg(s.chatFilter === id) })),
+      chats: CHATS.map((c, ix) => ({ ...c, initials: c.name.split(' ').map(w => w[0]).join(''), go: () => this.setState({ chat: ix }), bg: s.chat === ix ? '#FFFFFF' : 'transparent', bd: s.chat === ix ? '#16233A' : 'transparent', tfg: tone(c.tone).fg, tbg: tone(c.tone).bg })),
+      chatSel: CHATS[s.chat],
+      thread: THREAD.map(m => ({ ...m, isAuto: m.k === 'auto', isClient: m.k === 'client', isSystem: m.k === 'system' || m.k === 'bot' })),
+      noteMode: s.noteMode, toggleNote: () => this.setState({ noteMode: !s.noteMode }),
+      composerBg: s.noteMode ? '#F4F1E9' : '#FFFFFF', composerPh: s.noteMode ? 'Write a note only the team will see' : 'Reply to Kabir on WhatsApp', sendLabel: s.noteMode ? 'Add note' : 'Send',
+      quickReplies: ['Book a free service visit', 'Ask for a photo', 'Care tips for lifting', 'We’ll call you'],
+      stockTabs: [['onhand', 'On hand'], ['moves', 'Movements'], ['counts', 'Counts'], ['orders', 'Purchasing'], ['plan', 'Supply plan'], ['quality', 'Quality'], ['usage', 'Usage'], ['items', 'Items'], ['suppliers', 'Suppliers']].map(([id, label], ix) => ({ label, fg: ix === 0 ? '#1A1714' : '#5F5851', bd: ix === 0 ? '#16233A' : 'transparent' })),
+      place: s.place, placeOpen: s.placeOpen, togglePlace: () => this.setState({ placeOpen: !s.placeOpen }),
+      placeGroups: PLACES.map(([g, items]) => ({ g, items: items.map(([n, key, sub]) => ({ n, sub, subFg: /zero|Short/.test(sub) ? '#8A3A2E' : '#5F5851', tick: s.place === n ? ico('check2', 14) : '', bg: s.place === n ? '#F4F1E9' : '#FFFFFF', go: () => this.setState({ place: n, placeOpen: false }) })) })),
+      ...(() => {
+        const key = (PLACES.flatMap(p => p[1]).find(p => p[0] === s.place) || [0, 'wh'])[1];
+        const isKit = key.startsWith('k');
+        const rows = STOCK.map((r, ix) => {
+          const q = key === 'wh' ? r.wh : key === 'dl' ? r.dl : key === 'gg' ? r.gg : (KITQ[key] || KITQ.k3)[ix];
+          const lowAt = (isKit ? LOW_AT.kit : key === 'wh' ? LOW_AT.wh : LOW_AT.dl)[ix];
+          const n = parseFloat(String(q).replace('−', '-'));
+          const st = n < 0 ? ['Below zero', '#8A3A2E'] : n === 0 ? ['Out', '#8A3A2E'] : n <= parseFloat(lowAt) ? ['Low', '#7A5B24'] : ['In stock', '#5F5851'];
+          return { item: r.item, unit: r.unit, qty: q, lowAt, chip: st[0], chipFg: st[1], qFg: n <= 0 ? '#8A3A2E' : '#1A1714', exp: isKit ? '—' : r.exp, counted: key === 'wh' ? (ix === 1 ? '26 Nov' : 'Not yet') : 'Not yet' };
+        });
+        return { stock: rows, placeLowCount: rows.filter(r => r.chip !== 'In stock').length };
+      })(),
+      clientFilters: [['all', 'All', '4,603'], ['needs', 'Needs us', '38'], ['fitted', 'Fitted', '312'], ['leads', 'Leads', '4,213'], ['risk', 'At risk', '17'], ['due', 'Replacement due', '9']].map(([id, label, n]) => { const on = s.clientFilter === id; return { label, n, go: () => this.setState({ clientFilter: id }), bg: on ? '#16233A' : '#FFFFFF', fg: on ? '#E9E4D8' : '#1A1714', nfg: on ? '#A8B2C2' : '#5F5851', bd: on ? '#16233A' : '#CEC6B4' }; }),
+      clientRows: CLIENTS.map(([name, mobile, city, stage, next, need, t, paid]) => ({ name, mobile, city, stage, next, need, paid, rule: t === 'bad' ? '#8A3A2E' : t === 'warn' ? '#B98B45' : 'transparent', needFg: t === 'bad' ? '#8A3A2E' : '#7A5B24', nextFg: next === 'None booked' ? '#756D60' : '#1A1714', go: this.go('clients') })),
+      attention: [['Aman Tyagi', 'Kit · Noida', '4 below zero · 5 out', 'bad', 'Count'], ['Deepak Negi', 'Kit · Delhi', 'Short for 3 visits tomorrow', 'bad', 'Transfer'], ['Imran Qureshi', 'Kit · Gurgaon', '9 hair systems out', 'warn', 'Transfer'], ['National warehouse', 'Warehouse', 'Essential #1B out · 4 low', 'warn', 'Order']].map(([n, k, d, t, a]) => ({ n, k, d, a, dot: tone(t).dot })),
+      ledger: LEDGER.map(l => ({ ...l, bg: tone(l.tone).bg, fg: tone(l.tone).fg })),
+      moneyTabs: ['Payments', 'Charges', 'Technician pay', 'Partner commission'].map((label, ix) => ({ label, fg: ix === 0 ? '#1A1714' : '#5F5851', bd: ix === 0 ? '#16233A' : 'transparent' })),
+      wide: (s.vw || 1440) >= 1240,
+      msgCols: (s.vw || 1440) >= 1240 ? '300px minmax(0,1fr) 260px' : '260px minmax(0,1fr)',
+      todayCols: (s.vw || 1440) >= 1100 ? 'minmax(0,1.65fr) minmax(0,1fr)' : 'minmax(0,1fr)',
+      clientCols: (s.vw || 1440) >= 1100 ? 'minmax(0,1fr) 300px' : 'minmax(0,1fr)',
+      goSettingsA: () => this.setState({ settingsV: 'a' }),
+      settingsA: true,
+      settingsOpts: [['a', 'Option A · Two-pane'], ['b', 'Option B · Overview']].map(([id, label]) => ({ label, go: () => this.setState({ settingsV: id }), bg: s.settingsV === id ? '#16233A' : 'transparent', fg: s.settingsV === id ? '#E9E4D8' : '#5F5851' })),
+      settingsNav: SETTINGS.map(g => ({ g: g.g, items: g.items.map(([n, sum]) => ({ n, sum, bg: n === 'Moves and no-shows' ? '#FFFFFF' : 'transparent', fw: n === 'Moves and no-shows' ? 600 : 400 })) })),
+      movesForm: MOVES_FORM.map(sec => ({ ...sec, hasHelp: !!sec.help, cols: sec.grid ? 'repeat(2,minmax(0,1fr))' : 'minmax(0,1fr)', rows: sec.rows.map(r => ({ ...r, hasUnit: !!r.unit, select: !r.unit, hasHelp: !!r.help })) })),
+      dirty: s.dirty, markDirty: () => this.setState({ dirty: true }), saveSettings: () => this.setState({ dirty: false, toast: 'Saved. Applies to visits booked from now.' }),
+      palette: s.palette, closePalette: () => this.setState({ palette: false }),
+      paletteItems: [['Go to', 'Dispatch board', 'G D'], ['Go to', 'Messages', 'G M'], ['Client', 'Rohit Malhotra · +91 95513 44252 · Gurgaon', ''], ['Client', 'Rohit Sharma · +91 98100 22341 · Delhi', ''], ['Do', 'Book a visit', 'B'], ['Do', 'Record a stock movement', ''], ['Setting', 'Free to move or cancel until · Moves and no-shows', '']].map(([k, t, sc], ix) => ({ k, t, sc, bg: ix === 2 ? '#F4F1E9' : 'transparent' })),
+      techRows, unassigned, hours, nowLeft: pct(10.75), visit, book, bookTypes, days, slots,
+      dispatchA: true,
+      dispatchOpts: [['a', 'Option A · Timeline'], ['b', 'Option B · Columns']].map(([id, label]) => ({ label, go: () => this.setState({ dispatchV: id }), bg: dV === id ? '#16233A' : 'transparent', fg: dV === id ? '#E9E4D8' : '#5F5851' })),
+      legend: Object.keys(VT).map(k => ({ label: k, bg: VT[k].bg, bd: VT[k].bd })),
+      task: s.task || TASKS[0],
+      drawerOpen: !!s.drawer, dVisit: s.drawer === 'visit', dBook: s.drawer === 'book', dTask: s.drawer === 'task',
+      closeDrawer: () => this.setState({ drawer: null }),
+      openBookFromVisit: () => this.setState({ drawer: 'book' }),
+      toast: s.toast || '', hasToast: !!s.toast, closeToast: () => this.setState({ toast: null }),
+      goTasks: this.go('tasks'), openSearch: () => this.setState({ palette: true }), openBook: () => this.setState({ drawer: 'book' })
+    };
+  }
+}
+</script>
+</body>
+</html>

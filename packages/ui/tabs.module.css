@@ -3,7 +3,8 @@
 @layer base, ui;
 
 @layer ui {
-  /* One line of tabs, however many: past the room it scrolls sideways rather than wrap a tab onto two lines. */
+  /* One line of tabs, however many: past the room it scrolls sideways rather than wrap a tab onto two lines, with no
+     scrollbar under it; the fade at a cut-off end says there is more. */
   /* Never squeezed by a column it stands in: scrolling sideways, it would otherwise shrink to nothing. */
   .tabs {
     display: flex;
@@ -11,7 +12,7 @@
     gap: var(--sp-24);
     overflow-x: auto;
     border-bottom: var(--hairline) solid var(--ui-line);
-    scrollbar-width: thin;
+    scrollbar-width: none;
   }
 
   /* Where the row runs on past its edge, it fades there, so a tab cut off reads as more to come. */

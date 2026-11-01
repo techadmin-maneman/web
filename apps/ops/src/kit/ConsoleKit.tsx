@@ -10,15 +10,17 @@ import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Icon } from "@maneman/ui/Icon";
 import { Columns, Stack } from "@maneman/ui/Layout";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { PageHeader } from "@maneman/ui/PageHeader";
 import { Panel } from "@maneman/ui/Panel";
-import { Popover, PopoverItem, PopoverLink, PopoverNote } from "@maneman/ui/Popover";
+import { Popover, PopoverChoice, PopoverHeading, PopoverItem, PopoverLink, PopoverNote } from "@maneman/ui/Popover";
 import { SearchInput } from "@maneman/ui/SearchInput";
 import { SettingRow, SettingValue } from "@maneman/ui/SettingRow";
 import { ChangeBar, SettingsLayout, SubNav } from "@maneman/ui/SettingsLayout";
-import { NavButton, NavItem, SideNav } from "@maneman/ui/SideNav";
+import { NavButton, NavGroup, NavItem, SideNav } from "@maneman/ui/SideNav";
 import { StatTile } from "@maneman/ui/StatTile";
-import { Table } from "@maneman/ui/Table";
+import { TabBar, TabBarItem } from "@maneman/ui/TabBar";
+import { rowRule, Table, type RuleTone } from "@maneman/ui/Table";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { typeLook } from "@maneman/ui/type";
@@ -28,6 +30,8 @@ import styles from "./kit.module.css";
 
 const NAV_ICONS = [TAB_ICONS.home, GLYPHS.tasks, GLYPHS.board, GLYPHS.person] as const;
 const TONES: readonly BadgeTone[] = ["neutral", "done", "attention", "warning", "error"];
+/** A badge's tone as its row's rule, where the row is pressing. */
+const RULE_OF: Partial<Record<BadgeTone, RuleTone>> = { attention: "attention", warning: "warning", error: "error" };
 
 function Head() {
   return (
@@ -118,7 +122,7 @@ function List() {
           </thead>
           <tbody>
             {TONES.map((tone, at) => (
-              <tr key={tone}>
+              <tr key={tone} className={rowRule(RULE_OF[tone])}>
                 <td>{words.cell(at + 1)}</td>
                 <td>
                   <Badge tone={tone}>{words.badges[tone]}</Badge>
@@ -128,7 +132,59 @@ function List() {
           </tbody>
         </Table>
       </Panel>
+      <ListRows label={words.panel}>
+        {words.rows.map((row) => (
+          <ListRow
+            key={row.title}
+            title={row.title}
+            meta={row.meta}
+            end={row.end}
+            endTone={"tone" in row ? row.tone : "muted"}
+            rule={"tone" in row ? row.tone : undefined}
+            onClick={() => undefined}
+          />
+        ))}
+      </ListRows>
     </>
+  );
+}
+
+/** A picker: the city as a field, the places by kind, the chosen one ticked, a figure beside each. */
+function Picker() {
+  const [city, setCity] = useState<string>(words.cities[0]);
+  return (
+    <div className={styles.row}>
+      <Popover
+        className={styles.picker}
+        look="field"
+        icon={GLYPHS.pin}
+        align="start"
+        label={words.picker(city)}
+        button={city}
+      >
+        {(close) =>
+          words.pickerGroups.map((group, at) => (
+            <div key={group}>
+              <PopoverHeading>{group}</PopoverHeading>
+              {words.cities.map((each) => (
+                <PopoverChoice
+                  key={each}
+                  chosen={each === city}
+                  detail={words.pickerDetails[at]}
+                  detailTone={at === 1 ? "warning" : "muted"}
+                  onClick={() => {
+                    setCity(each);
+                    close();
+                  }}
+                >
+                  {each}
+                </PopoverChoice>
+              ))}
+            </div>
+          ))
+        }
+      </Popover>
+    </div>
   );
 }
 
@@ -193,20 +249,37 @@ function Navigation() {
             head={<Caps>{words.nav}</Caps>}
             foot={<NavButton icon={GLYPHS.fold} name={words.fold} onClick={() => undefined} />}
           >
-            {words.navItems.map((item, at) => (
-              <NavItem
-                key={item.name}
-                to="#kit"
-                icon={NAV_ICONS[at] ?? GLYPHS.tasks}
-                name={item.name}
-                current={at === 1}
-                count={item.count}
-                urgent={"urgent" in item}
-              />
+            {words.navGroups.map((group, half) => (
+              <NavGroup key={group} label={group}>
+                {words.navItems.slice(half * 2, half * 2 + 2).map((item, at) => (
+                  <NavItem
+                    key={item.name}
+                    to="#kit"
+                    icon={NAV_ICONS[half * 2 + at] ?? GLYPHS.tasks}
+                    name={item.name}
+                    current={half * 2 + at === 1}
+                    count={item.count}
+                    urgent={"urgent" in item}
+                  />
+                ))}
+              </NavGroup>
             ))}
           </SideNav>
         ))}
       </div>
+      <TabBar className={styles.tabBar} label={words.nav}>
+        {words.navItems.map((item, at) => (
+          <TabBarItem
+            key={item.name}
+            to="#kit"
+            icon={NAV_ICONS[at] ?? GLYPHS.tasks}
+            name={item.name}
+            current={at === 1}
+            count={item.count}
+            urgent={"urgent" in item}
+          />
+        ))}
+      </TabBar>
     </>
   );
 }
@@ -219,6 +292,7 @@ export function ConsoleKit() {
         <Head />
         <Figures />
         <List />
+        <Picker />
         <Settings />
         <Navigation />
       </Stack>

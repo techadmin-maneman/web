@@ -272,6 +272,11 @@ function Modals() {
           onDismiss={() => {
             setOpen(null);
           }}
+          foot={
+            <Button variant="primary" size="small">
+              {words.yes}
+            </Button>
+          }
         >
           <p>{words.noteLine}</p>
         </Drawer>

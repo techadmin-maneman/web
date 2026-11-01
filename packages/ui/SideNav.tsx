@@ -2,10 +2,13 @@
 // wait there, and its foot. Folded, it keeps the icons alone, and each entry is named by its title and its label.
 //
 //   <SideNav label={copy.title} folded={folded} head={…} foot={…}>
-//     <NavItem to="/tasks" icon={GLYPHS.tasks} name="Tasks" count={8} urgent current />
+//     <NavGroup label={copy.work}>
+//       <NavItem to="/tasks" icon={GLYPHS.tasks} name="Tasks" count={8} urgent current />
+//     </NavGroup>
 //   </SideNav>
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { capsLook } from "./Caps.tsx";
 import { Icon } from "./Icon.tsx";
 import { Link } from "./router.tsx";
 import { classes } from "./classes.ts";
@@ -41,6 +44,21 @@ export function SideNav({
       <ul className={styles.items}>{children}</ul>
       {foot !== undefined && <div className={styles.foot}>{foot}</div>}
     </nav>
+  );
+}
+
+/** Entries for one kind of work under its name in small capitals, which folds away with the entries' names. */
+export function NavGroup({ label, children }: { readonly label: string; readonly children: ReactNode }) {
+  const id = useId();
+  return (
+    <li className={styles.group}>
+      <span className={capsLook(styles.groupLabel)} id={id}>
+        {label}
+      </span>
+      <ul className={styles.groupItems} aria-labelledby={id}>
+        {children}
+      </ul>
+    </li>
   );
 }
 
