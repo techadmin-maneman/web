@@ -163,6 +163,21 @@ test("draws the day along the hours, who is free at each start, and picks the st
   expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
 });
 
+// A start chosen from the list late in the day was off to the right of the day drawn, out of sight.
+test("brings the start chosen from the list into view along the day", async ({ page }) => {
+  await openVisits(page, { "GET /api/dispatch": json(BOARD) });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  const booking = panel(page);
+  const start = booking.getByLabel(opsCopy.clients.visits.book.start, { exact: true });
+  const last = await start.locator("option").last().getAttribute("value");
+  const day = booking.getByRole("table", { name: opsCopy.clients.visits.book.dayLabel("Thu 23 Sep") });
+  const time = (await start.locator("option").last().innerText()).split(" ")[0] ?? "";
+  const late = day.getByRole("button", { name: new RegExp(`^${time}`) }).first();
+  await expect(late).not.toBeInViewport();
+  await start.selectOption(last ?? "");
+  await expect(late).toBeInViewport();
+});
+
 test("opens on the replacement the app offers next, naming the hair system it replaces", async ({ page }) => {
   const due = { ...RECORD, next_visit: { type: "replacement" as const, tier: "standard", due_on: "2027-09-25" } };
   await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json(due) });
