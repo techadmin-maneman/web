@@ -20,7 +20,7 @@ import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import type { LabelsFor } from "./Labels.tsx";
-import { firstShowing, Grouping, OnHand, type Showing } from "./OnHand.tsx";
+import { firstShowing, Grouping, Needs, OnHand, type Showing } from "./OnHand.tsx";
 import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
@@ -140,6 +140,7 @@ function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stoc
         title={copy.onHand}
         actions={<Grouping stock={stock} showing={showing} onShow={setShowing} />}
       >
+        <Needs stock={stock} onShow={setShowing} />
         {showing.by === "place" ? (
           <OnHand stock={stock} place={showing.place} />
         ) : (

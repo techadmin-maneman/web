@@ -3,6 +3,7 @@
 // their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
 import { plainDate } from "@maneman/web-kit/plain-date";
+import { Panel } from "@maneman/ui/Panel";
 import { Apart } from "@maneman/ui/Apart";
 import { Toast } from "@maneman/ui/Toast";
 import { classes } from "@maneman/ui/classes";
@@ -11,7 +12,6 @@ import { Table } from "@maneman/ui/Table";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { addDays, listDate, todayInIndia } from "@maneman/web-kit/dates";
 import { Field, Select } from "@maneman/ui/Field";
 import { useCallback, useState, type ReactNode } from "react";
@@ -161,7 +161,7 @@ function RosterTable({
   const view = useTableView(active, columns, { search: (row) => `${row.name} ${city(row)}` });
   return (
     <>
-      <Narrowing view={view} label={technicians.narrow} className={styles.narrow}>
+      <Narrowing view={view} label={technicians.narrow}>
         {period}
       </Narrowing>
       <Table className={styles.table}>
@@ -246,10 +246,7 @@ function Roster() {
   };
 
   return (
-    <section className={shared.panel} aria-labelledby="roster">
-      <VisuallyHidden as="h2" id="roster">
-        {technicians.title}
-      </VisuallyHidden>
+    <Panel titleId="roster" title={technicians.title}>
       {mayAdd && (
         <PageActions>
           <Button
@@ -289,7 +286,7 @@ function Roster() {
           }}
         />
       )}
-    </section>
+    </Panel>
   );
 }
 

@@ -9,26 +9,9 @@
   text-align: right;
 }
 
-/* The roster's box sets the table in already, so its first and last columns meet the box's own edge, in line with the
-   search above. Between them, the table's own room. */
-.table th:first-child,
-.table td:first-child {
-  padding-left: 0;
-}
-
-.table th:last-child,
-.table td:last-child {
-  padding-right: 0;
-}
-
 .offRow {
   display: flex;
   align-items: baseline;
   gap: var(--sp-12);
   border-bottom: var(--hairline) solid var(--ui-line);
-}
-
-/* The roster's search and zone list, flush with the table beneath. */
-.narrow {
-  margin-inline: 0;
 }

@@ -6,7 +6,7 @@
 import { Panel } from "@maneman/ui/Panel";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Button } from "@maneman/ui/Button";
-import { Checkbox, ChoiceGroup, Field, NumberInput, Select } from "@maneman/ui/Field";
+import { Checkbox, type Choice, ChoiceGroup, ChoiceOptions, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -18,7 +18,7 @@ import form from "@maneman/ui/forms.module.css";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { LabelFound } from "./LabelFound.tsx";
 import { LabelSheet, type PrintedLabel } from "./LabelSheet.tsx";
-import { placeName } from "./StockForm.tsx";
+import { placeChoices } from "./StockForm.tsx";
 import styles from "./labels.module.css";
 import { holdingOf } from "./holdings.ts";
 import { Refusal } from "@maneman/ui/Refusal";
@@ -233,7 +233,7 @@ function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: Labels
 function LabelChoice(props: {
   label: string;
   value: string;
-  options: readonly (readonly [string, string])[];
+  options: readonly Choice[];
   onChange: (value: string) => void;
 }) {
   return (
@@ -246,11 +246,7 @@ function LabelChoice(props: {
             props.onChange(event.target.value);
           }}
         >
-          {props.options.map(([value, text]) => (
-            <option key={value} value={value}>
-              {text}
-            </option>
-          ))}
+          <ChoiceOptions choices={props.options} />
         </Select>
       )}
     </Field>
@@ -278,12 +274,7 @@ export function Labels({ stock, focus }: { stock: Stock; focus: LabelsFor | null
           options={stock.consumables.map((each) => [each.code, each.name] as const)}
           onChange={setCode}
         />
-        <LabelChoice
-          label={copy.place}
-          value={place}
-          options={stock.places.map((each) => [each.id, placeName(stock, each.id)] as const)}
-          onChange={setPlace}
-        />
+        <LabelChoice label={copy.place} value={place} options={placeChoices(stock)} onChange={setPlace} />
       </div>
       {consumable?.hair_system === true ? (
         <PieceLabels key={`${code}:${place}`} name={consumable.name} at={at} />

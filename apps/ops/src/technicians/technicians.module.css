@@ -6,12 +6,6 @@
  * its cached jobs.
  */
 
-.panel {
-  padding: var(--sp-20);
-  border: var(--hairline) solid var(--ui-line);
-  background: var(--ui-raised);
-}
-
 .head {
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
@@ -141,9 +135,10 @@
 
 /* ---- Those switched off, beneath the table ------------------------------- */
 
+/* Those switched off, set in from the panel's edge as its table's rows are. */
 .offList {
   margin: 0;
-  padding: 0;
+  padding: 0 var(--form-inset);
   list-style: none;
 }
 

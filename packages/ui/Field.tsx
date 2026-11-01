@@ -403,3 +403,35 @@ export function RangeInput({
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { readonly over?: boolean }) {
   return <input {...rest} type="range" className={classes(over ? styles.rangeOver : styles.range, className)} />;
 }
+
+/** A choice: its value, its name alone, and the heading it sits under, where it is one of a group. */
+export type Choice = readonly [value: string, name: string, group?: string];
+
+/**
+ * A select's options: each by its name alone, never with a state added to it ("Delhi · low"), those of a group
+ * beneath its own heading, after the rest: "No longer in use".
+ */
+export function ChoiceOptions({ choices }: { readonly choices: readonly Choice[] }) {
+  const loose = choices.filter(([, , group]) => group === undefined);
+  const groups = [...new Set(choices.flatMap(([, , group]) => (group === undefined ? [] : [group])))];
+  return (
+    <>
+      {loose.map(([value, name]) => (
+        <option key={value} value={value}>
+          {name}
+        </option>
+      ))}
+      {groups.map((group) => (
+        <optgroup key={group} label={group}>
+          {choices
+            .filter(([, , each]) => each === group)
+            .map(([value, name]) => (
+              <option key={value} value={value}>
+                {name}
+              </option>
+            ))}
+        </optgroup>
+      ))}
+    </>
+  );
+}
