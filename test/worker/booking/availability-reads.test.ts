@@ -27,12 +27,13 @@ const availability = (who: { cookie: string }) =>
 
 /** A Delhi technician's two weeks ahead, DELHI_VISITS of them, four a day, for a Delhi client. */
 async function busyInDelhi(): Promise<void> {
-  const { id } = await aPerson({ name: "Kabir Sood" });
+  const kabir = "0d1e2f30-0000-4000-8000-0000000000d1";
+  await aPerson({ id: kabir, name: "Kabir Sood" });
   const starts = Array.from({ length: DELHI_VISITS }, (_, index) => {
     const day = Date.parse("2026-09-22T03:30:00.000Z") + Math.floor(index / 4) * DAY_MS;
     return new Date(day + (index % 4) * 150 * MINUTE_MS).toISOString();
   });
-  await Promise.all(starts.map((start) => visit(id, "service", "scheduled", start, DELHI)));
+  await Promise.all(starts.map((start) => visit(kabir, "service", "scheduled", start, DELHI)));
 }
 
 beforeEach(async () => {
