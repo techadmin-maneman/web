@@ -14,6 +14,15 @@
     grid-template-columns: repeat(auto-fill, minmax(var(--columns-tile), 1fr));
   }
 
+  /* Columns' `row`: every tile on one line, at one width. */
+  @media (min-width: 761px) {
+    .row {
+      grid-template-columns: none;
+      grid-auto-columns: minmax(0, 1fr);
+      grid-auto-flow: column;
+    }
+  }
+
   .gap8 {
     gap: var(--sp-8);
   }

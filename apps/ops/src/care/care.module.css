@@ -25,7 +25,12 @@
 
 /* Care numbers' counts by reason, a line each, set in from their panel's edges as its note is. */
 .reasons {
-  margin: var(--sp-12) var(--note-inset) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: var(--sp-12) var(--note-inset) var(--sp-16);
+  padding: 0;
+  list-style: none;
 }
 
 /* The Care team: a member's leave as a short list, their days off as boxes in place, and adding leave. */

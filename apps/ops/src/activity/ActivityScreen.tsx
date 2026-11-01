@@ -4,6 +4,7 @@
 // already narrowed. The design draws no board for it; it is built as Areas' tables are.
 
 import { ROUTE_NEEDS } from "@rules/policy/console-routes.ts";
+import { Panel } from "@maneman/ui/Panel";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Chip } from "@maneman/ui/Chip";
 import { Button } from "@maneman/ui/Button";
@@ -213,7 +214,7 @@ export function ActivityScreen() {
     setFilters(next);
   };
   return (
-    <div className={styles.column}>
+    <Panel titleId="activity" title={copy.title}>
       <Toolbar label={copy.filters.label}>
         <DrawerButton label={copy.filters.filter}>
           {(close) => (
@@ -229,6 +230,6 @@ export function ActivityScreen() {
         <Applied filters={filters} onApply={apply} />
       </Toolbar>
       <Log key={activityPath(filters)} filters={filters} />
-    </div>
+    </Panel>
   );
 }

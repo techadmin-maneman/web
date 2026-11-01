@@ -33,7 +33,7 @@ const minutes = (value: number | null): string => (value === null ? copy.nothing
 function Figures({ numbers }: { numbers: CareNumbers }) {
   const overdue = numbers.backlog.overdue;
   return (
-    <Columns>
+    <Columns row>
       <StatTile label={copy.chats} value={numbers.replies.chats} />
       <StatTile label={copy.firstReply} value={minutes(numbers.replies.median_minutes)} />
       <StatTile label={copy.withinTarget} value={percent(numbers.replies.within_target)} />
@@ -52,7 +52,7 @@ function Counted({ titleId, title, lines }: { titleId: string; title: string; li
       {lines.length === 0 ? (
         <Note>{copy.nothing}</Note>
       ) : (
-        <ul className={`${shared.leave} ${shared.reasons}`}>
+        <ul className={shared.reasons}>
           {lines.map((line) => (
             <li key={line}>{line}</li>
           ))}

@@ -3,8 +3,7 @@
 // overdue. It reads the board the navigation reads and the day's routes; each tile is shown only to a person who may
 // open the page it leads to.
 
-import { Stack } from "@maneman/ui/Layout";
-import styles from "./today.module.css";
+import { Columns, Stack } from "@maneman/ui/Layout";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -80,7 +79,7 @@ function Figures({ board }: { board: Tasks }) {
   const visitsTile = access.mayCall("GET /api/dispatch/day") && !access.mayCall("GET /api/dispatch");
   const shown = TILES.filter((tile) => mayOpen(mayCall, tile.page));
   return (
-    <div className={styles.row}>
+    <Columns row>
       {visitsTile && <VisitsToday />}
       {shown.map((tile) => {
         const figure = figureOf(tile, board);
@@ -94,7 +93,7 @@ function Figures({ board }: { board: Tasks }) {
           />
         );
       })}
-    </div>
+    </Columns>
   );
 }
 

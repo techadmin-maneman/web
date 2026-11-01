@@ -10,6 +10,11 @@
     gap: var(--sp-8);
   }
 
+  /* Straight under a panel's head, in from the panel's edges as its table's first column is. */
+  :where([data-panel-head]) + .toolbar {
+    margin: var(--sp-12) var(--sp-20);
+  }
+
   /* Its boxes' labels are read, not shown, so nothing above them needs room. */
   .toolbar :is(input, select) {
     margin-top: 0;

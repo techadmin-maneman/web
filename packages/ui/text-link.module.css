@@ -83,7 +83,7 @@
   }
 
   /* Its height is the row's, not a button's: a row with a name in it stands as high as one without. */
-  :where(table) .compact {
+  :where(table) .words {
     min-height: 0;
   }
 
