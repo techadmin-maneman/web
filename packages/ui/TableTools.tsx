@@ -97,7 +97,6 @@ export function Narrowing<Row>({
   );
 }
 
-/** Beneath the table: that nothing matches, or the button that shows the next page. */
 /**
  * Beneath a long table: what is empty, where it has no rows at all (`empty`, the page's own words, else the shared
  * ones); Nothing matches, where a search or a choice left none; else the way to the next rows.

@@ -2,10 +2,6 @@
 
 import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
-/**
- * Areas, under Growth: who waits in each pincode, and every pincode we hold. Both tabs mark a pincode live through
- * one panel, which says who it messages before anything is sent.
- */
 /** India Post's names come in capitals: "MUMBAI SUBURBAN" reads "Mumbai Suburban". A name already cased is kept. */
 const titled = (name: string): string =>
   name === name.toUpperCase()
@@ -14,6 +10,10 @@ const titled = (name: string): string =>
         .replace(/(^|[\s(-])(\p{L})/gu, (_, before: string, letter: string) => before + letter.toUpperCase())
     : name;
 
+/**
+ * Areas, under Growth: who waits in each pincode, and every pincode we hold. Both tabs mark a pincode live through
+ * one panel, which says who it messages before anything is sent.
+ */
 export const areas = {
   title: "Areas",
   /** Waiting is the design's waitlist; Served was Settings · Service area. */
