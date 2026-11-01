@@ -14,8 +14,8 @@ import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician
 import { withinReach } from "../../policy/reach.ts";
 import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
 import { tieRange } from "./technician-choice.ts";
-import { loadDayPlans, type DayPlans, type Leaving } from "./day-plans.ts";
-import { loadBlackouts, techniciansFor, type Fitting, type Moving, type Technician } from "./occupancy.ts";
+import { loadDayPlans, type CityOf, type DayPlans, type Leaving } from "./day-plans.ts";
+import { bookingCity, loadBlackouts, techniciansFor, type Fitting, type Moving, type Technician } from "./occupancy.ts";
 import { visitsOfClient } from "./technician-rotation.ts";
 
 /** A visit to place: its kind, how long it takes, the day its service is retired from, and the fit it is. */
@@ -104,21 +104,32 @@ function loadOf(plans: DayPlans, technicianId: string, date: string): { day: num
   return { day: minutes(date), week };
 }
 
+interface Reach {
+  readonly id: string;
+  readonly home_lat: number | null;
+  readonly home_lng: number | null;
+  readonly reach_min: number | null;
+}
+
+/** Each home and reach of the technicians of the visit's city, read beside who may take it rather than after. */
+async function reachesIn(db: D1Database, cityOf: CityOf): Promise<ReadonlyMap<string, Reach>> {
+  const { results } = await db
+    .prepare(`SELECT id, home_lat, home_lng, reach_min FROM technicians WHERE city = ${bookingCity("?1", "?2")}`)
+    .bind(cityOf.pincode, cityOf.personId)
+    .all<Reach>();
+  return new Map(results.map((row) => [row.id, row]));
+}
+
 /**
  * The technicians whose reach from home takes in the visit's pin (docs/decisions/0223-reach-from-home.md); all of them
  * where the pin is not known, or for a move, which stays with its technician.
  */
-async function inReach(
-  db: D1Database,
+function inReach(
   technicians: readonly Technician[],
+  rows: ReadonlyMap<string, Reach>,
   at: { readonly pin: Pin | null; readonly moving: boolean; readonly inputs: OpsInputs },
-): Promise<Technician[]> {
+): Technician[] {
   if (at.pin === null || at.moving || technicians.length === 0) return [...technicians];
-  const { results } = await db
-    .prepare(`SELECT id, home_lat, home_lng, reach_min FROM technicians WHERE id IN (SELECT value FROM json_each(?1))`)
-    .bind(JSON.stringify(technicians.map((technician) => technician.id)))
-    .all<{ id: string; home_lat: number | null; home_lng: number | null; reach_min: number | null }>();
-  const rows = new Map(results.map((row) => [row.id, row]));
   return technicians.filter((technician) => {
     const row = rows.get(technician.id);
     const lat = row?.home_lat ?? null;
@@ -143,9 +154,10 @@ export async function startOffers(input: {
   const { db, placing, visit, from, days, now } = input;
   const to = addDays(from, days - 1);
   const place = { pincode: placing.pincode ?? null, personId: placing.personId };
+  const cityOf = { ...place, keeping: placing.moving?.technicianId ?? null };
   const reading = input.inputs === undefined ? readOpsInputs(db, now) : Promise.resolve(input.inputs);
-  // Every technician's days are read beside who may take the visit, so the plans wait on no trip of their own.
-  const [everyone, closed, clientVisits, pin, plans, inputs] = await Promise.all([
+  // The city's technicians' days are read beside who may take the visit, so the plans wait on no trip of their own.
+  const [everyone, closed, clientVisits, pin, plans, inputs, reaches] = await Promise.all([
     techniciansFor(db, placing.moving ?? null, place, visit.fitting ?? null),
     loadBlackouts(db, from, to, place),
     visitsOfClient(db, placing.personId, placing.moving?.visitId ?? placing.replacing ?? null),
@@ -153,6 +165,7 @@ export async function startOffers(input: {
     loadDayPlans({
       db,
       technicianIds: null,
+      cityOf,
       from: tieRange(from).from,
       to: tieRange(to).to,
       now,
@@ -160,8 +173,9 @@ export async function startOffers(input: {
       leaving: { ...placing.leaving, visitId: placing.moving?.visitId ?? placing.leaving?.visitId ?? null },
     }),
     reading,
+    reachesIn(db, cityOf),
   ]);
-  const technicians = await inReach(db, everyone, { pin, moving: (placing.moving ?? null) !== null, inputs });
+  const technicians = inReach(everyone, reaches, { pin, moving: (placing.moving ?? null) !== null, inputs });
   const rules = planRulesOf(inputs);
   const toPlan = { minutes: visit.minutes, pin, fit: visit.fitting !== null && visit.fitting !== undefined };
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;

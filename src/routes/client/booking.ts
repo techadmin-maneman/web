@@ -205,17 +205,17 @@ export function registerClientBooking(app: App): void {
     const { type, tier, date, window: asked, starts_at: startText, moving: movingId } = c.req.valid("json");
     if (!servesItself(c, type)) return refuse(c, "ops_assisted");
     const now = c.var.deps.now();
-    const time = await askedTime(c.env.DB, { date, window: asked, startText });
-    if (time === null) return refuse(c, "invalid_request", ["starts_at"]);
-    const { window, startsAt } = time;
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
-    const [move, offered, range, address, inputs] = await Promise.all([
+    const [time, move, offered, range, address, inputs] = await Promise.all([
+      askedTime(c.env.DB, { date, window: asked, startText }),
       movingId === undefined ? null : moveTermsFor({ c, personId, visitId: movingId, type, on: date }),
       movingId === undefined ? bookable(c, personId, { type, tier }, date) : null,
       rangeFor(c, personId, type),
       currentAddress(c.env.DB, personId),
       opsInputs(c),
     ]);
+    if (time === null) return refuse(c, "invalid_request", ["starts_at"]);
+    const { window, startsAt } = time;
     if (movingId !== undefined && move === null) return refuse(c, "not_changeable");
     if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
     const moves = movesOf(move);

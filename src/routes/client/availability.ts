@@ -19,7 +19,7 @@ import { opsInputs } from "../../http/ops-inputs.ts";
 import type { OpsInputs } from "../../domain/platform/ops-settings.ts";
 import { selfServeRoute } from "../../http/session-routes.ts";
 import { servesItself } from "../../http/self-serve.ts";
-import { indiaInstant } from "../../lib/india-time.ts";
+import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { changeChargedOnBooking } from "../../policy/moving-a-visit.ts";
 import { stripStart } from "../../policy/next-visit.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
@@ -157,7 +157,13 @@ export function registerClientAvailability(app: App): void {
     const { type, tier, from, moving: movingId } = c.req.valid("query");
     if (!servesItself(c, type)) return refuse(c, "ops_assisted");
     const now = c.var.deps.now();
-    const range = await rangeFor(c, session.subjectId, type);
+    const db = c.env.DB;
+    // Where the client lives is read beside the days they may book, rather than after what they may book.
+    const [range, outside, city] = await Promise.all([
+      rangeFor(c, session.subjectId, type),
+      addressOutsideArea(db, session.subjectId),
+      cityOfPerson(db, session.subjectId),
+    ]);
     const start = stripStart(from, range, BOOKING_DAYS);
     const move =
       movingId === undefined
@@ -169,8 +175,7 @@ export function registerClientAvailability(app: App): void {
     const service = move === null ? offered : await movedService(c, move.terms.visit);
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
     if (service === null || price === null) return refuse(c, "not_bookable");
-    const db = c.env.DB;
-    if (await addressOutsideArea(db, session.subjectId)) return refuse(c, "not_served");
+    if (outside) return refuse(c, "not_served");
     // A move in place keeps the visit's technician; a charged move books a new visit with anyone.
     const moving = move === null || move.terms.move.cost === "charged" ? null : move.moving;
     // A move in place keeps its visit's terms, as its hold will (soldAs); anything else is sold under those in force.
@@ -185,7 +190,16 @@ export function registerClientAvailability(app: App): void {
       // A new visit's window the client is already paying for stays open to them: picking it gives their hold back.
       atCheckout: move === null ? { type, tier: service.tier } : null,
     };
-    const [days, schedule] = await Promise.all([
+    // A free or late-fee move costs the same whichever day it goes to; a new visit costs that day's price, in the
+    // client's city. Each day's price is read beside the days themselves, not after them.
+    const priceOn = async (date: string): Promise<Price> => {
+      if (move !== null && move.terms.move.cost !== "charged") return price;
+      return (
+        (await visitPriceOf(db, { type, tier: service.tier, on: date, city, personId: session.subjectId })) ?? price
+      );
+    };
+    const dates = Array.from({ length: BOOKING_DAYS }, (_, index) => addDays(start, index));
+    const [days, schedule, prices] = await Promise.all([
       availability({
         db,
         placing,
@@ -195,16 +209,9 @@ export function registerClientAvailability(app: App): void {
         now,
       }),
       loadSlotSchedule(db),
+      Promise.all(dates.map(async (date) => [date, await priceOn(date)] as const)),
     ]);
-    // A free or late-fee move costs the same whichever day it goes to; a new visit costs that day's price, in the
-    // client's city.
-    const city = await cityOfPerson(db, session.subjectId);
-    const priceOn = async (date: string): Promise<Price> => {
-      if (move !== null && move.terms.move.cost !== "charged") return price;
-      return (
-        (await visitPriceOf(db, { type, tier: service.tier, on: date, city, personId: session.subjectId })) ?? price
-      );
-    };
+    const pricedOn = new Map(prices);
     // A day before the bookable days open, or past the last, is offered to nobody. Each window says its hours that day,
     // and whether a visit booked in it now would already cost the client to change.
     const inputs = await opsInputs(c);
@@ -226,7 +233,7 @@ export function registerClientAvailability(app: App): void {
         price,
         change_notice_hours: terms.noticeHours,
         last: range.last,
-        days: await Promise.all(strip.map(async (day) => ({ ...day, price: await priceOn(day.date) }))),
+        days: strip.map((day) => ({ ...day, price: pricedOn.get(day.date) ?? price })),
       },
       200,
     );
