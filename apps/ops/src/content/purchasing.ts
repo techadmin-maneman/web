@@ -205,7 +205,7 @@ export const purchasing = {
       "Damaged",
       "Claims won",
       "Credited",
-    ],
+    ] as const,
     none: "No suppliers yet.",
     percent: (value: number | null) => (value === null ? "" : `${String(value)}%`),
     /** "13.5 days (promised 14)", or "12 days" where nothing was promised. */

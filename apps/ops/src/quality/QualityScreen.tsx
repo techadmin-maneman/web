@@ -9,6 +9,8 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { Panel } from "@maneman/ui/Panel";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -26,47 +28,63 @@ import { qualityApi } from "./quality-api.ts";
 
 const loadRecalls = () => qualityApi.recalls();
 
+type Recalled = Quality["recalls"][number];
+
+const [recallHead, itemHead, lotHead, raisedHead, statusHead] = copy.columns;
+const standingOf = (recall: Recalled) => (recall.closed_at === null ? copy.open : copy.closed);
+
+const COLUMNS: readonly Column<Recalled>[] = [
+  { label: recallHead, sort: (recall) => recall.number },
+  { label: itemHead, sort: (recall) => recall.name, choice: (recall) => recall.name },
+  { label: lotHead, sort: (recall) => recall.lot_code },
+  { label: raisedHead, sort: (recall) => recall.raised_at },
+  { label: statusHead, sort: standingOf, choice: standingOf },
+];
+
 function Recalls({ quality, opener, onOpen }: { quality: Quality; opener: RowOpener; onOpen: (id: string) => void }) {
+  const view = useTableView(quality.recalls, COLUMNS, {
+    search: (recall) => `${copy.number(recall.number)} ${recall.name} ${recall.lot_code}`,
+  });
   if (quality.recalls.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
-    <Table controls>
-      <thead>
-        <tr>
-          {copy.columns.map((column) => (
-            <th key={column} scope="col">
-              {column}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {quality.recalls.map((recall) => (
-          <tr key={recall.id}>
-            <RowHead>
-              <TextButton
-                compact
-                aria-label={copy.view(copy.number(recall.number))}
-                {...opener(recall.id, () => {
-                  onOpen(recall.id);
-                })}
-              >
-                {copy.number(recall.number)}
-              </TextButton>
-            </RowHead>
-            <td>{recall.name}</td>
-            <td>{recall.lot_code}</td>
-            <td>{plainDate(indiaDate(recall.raised_at))}</td>
-            <td>
-              {recall.closed_at === null ? (
-                <Badge tone="attention">{copy.open}</Badge>
-              ) : (
-                <Badge tone="done">{copy.closed}</Badge>
-              )}
-            </td>
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {view.shown.map((recall) => (
+            <tr key={recall.id}>
+              <RowHead>
+                <TextButton
+                  compact
+                  aria-label={copy.view(copy.number(recall.number))}
+                  {...opener(recall.id, () => {
+                    onOpen(recall.id);
+                  })}
+                >
+                  {copy.number(recall.number)}
+                </TextButton>
+              </RowHead>
+              <td>{recall.name}</td>
+              <td>{recall.lot_code}</td>
+              <td>{plainDate(indiaDate(recall.raised_at))}</td>
+              <td>
+                {recall.closed_at === null ? (
+                  <Badge tone="attention">{copy.open}</Badge>
+                ) : (
+                  <Badge tone="done">{copy.closed}</Badge>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
   );
 }
 
