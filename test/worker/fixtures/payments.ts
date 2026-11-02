@@ -1,5 +1,5 @@
-// A payment Razorpay captured: Rs 30,000 by UPI, now, unless the test says otherwise; and a one visit's link to pay
-// by, Rs 32,000 for a first fit, made and texted now and unpaid.
+// A payment Razorpay captured: Rs 30,000 by UPI, now, unless the test says otherwise; a refund of Rs 1,000 asked of
+// one; and a one visit's link to pay by, Rs 32,000 for a first fit, made and texted now and unpaid.
 
 import { AT, nextSerial, writeRow, type RowOf } from "./rows.ts";
 
@@ -14,6 +14,20 @@ export const aPayment = (row: RowOf<"payments"> = {}) =>
       method: "upi",
       status: "captured",
       captured_at: AT,
+      created_at: AT,
+      updated_at: AT,
+    },
+    row,
+  );
+
+export const aRefund = (row: RowOf<"refunds"> & { readonly payment_id: string }) =>
+  writeRow(
+    "refunds",
+    {
+      id: crypto.randomUUID(),
+      razorpay_refund_id: `rfnd_test${String(nextSerial()).padStart(8, "0")}`,
+      amount: 100_000,
+      status: "created",
       created_at: AT,
       updated_at: AT,
     },

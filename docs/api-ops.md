@@ -34633,6 +34633,21 @@ Request body:
           "under_way": {
             "type": "boolean",
             "description": "Whether a visit of theirs has begun and is not yet closed."
+          },
+          "package": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The package they are on, by name; null before they book a first fit or ops choose one."
+          },
+          "paid": {
+            "type": "integer",
+            "description": "What they have paid, less what was refunded, in paise."
           }
         },
         "required": [
@@ -34642,10 +34657,48 @@ Request body:
           "state",
           "city",
           "next_visit",
-          "under_way"
+          "under_way",
+          "package",
+          "paid"
         ],
         "additionalProperties": false
       }
+    },
+    "counts": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "all": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "lead": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "fitted": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nothing_booked": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "all",
+            "lead",
+            "fitted",
+            "nothing_booked"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How many in the city asked for stand where; on the first page, else null."
     },
     "next_cursor": {
       "anyOf": [
@@ -34668,6 +34721,7 @@ Request body:
   },
   "required": [
     "clients",
+    "counts",
     "next_cursor",
     "cities"
   ],

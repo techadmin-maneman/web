@@ -8,7 +8,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Badge } from "../../packages/ui/Badge.tsx";
 import { Breadcrumbs } from "../../packages/ui/Breadcrumbs.tsx";
+import { EmptyState } from "../../packages/ui/EmptyState.tsx";
+import { FigureGrid } from "../../packages/ui/FigureGrid.tsx";
 import { NumberInput } from "../../packages/ui/Field.tsx";
+import { Initials, initialsOf } from "../../packages/ui/Initials.tsx";
 import { PageHeader } from "../../packages/ui/PageHeader.tsx";
 import { Popover, PopoverItem } from "../../packages/ui/Popover.tsx";
 import { SettingRow, SettingValue } from "../../packages/ui/SettingRow.tsx";
@@ -41,6 +44,26 @@ describe("a page's head", () => {
       createElement(PageHeader, { title: "Every visit has a technician.", over: "Monday 2 November · Gurgaon" }),
     );
     expect(sentence.indexOf("Monday 2 November")).toBeLessThan(sentence.indexOf("<h1"));
+  });
+
+  it("draws a record's initials before its name, unread, and its badges and facts after", () => {
+    const record = renderToStaticMarkup(
+      createElement(PageHeader, {
+        title: "Rohit Malhotra",
+        mark: createElement(Initials, { name: "Rohit Malhotra" }),
+        beside: createElement(Badge, { tone: "done", children: "Fitted" }),
+        under: "Gurgaon",
+      }),
+    );
+    expect(record).toMatch(/<span[^>]*aria-hidden="true"[^>]*>RM<\/span>/);
+    expect(record.indexOf(">RM<")).toBeLessThan(record.indexOf("<h1"));
+    expect(record.indexOf("</h1>")).toBeLessThan(record.indexOf("Fitted"));
+    expect(record.indexOf("Fitted")).toBeLessThan(record.indexOf("Gurgaon"));
+  });
+
+  it("takes the first letters of a name's first two words", () => {
+    expect(initialsOf("Rohit Malhotra")).toBe("RM");
+    expect(initialsOf("  priya  ")).toBe("PR");
   });
 });
 
@@ -276,5 +299,33 @@ describe("a button's panel", () => {
     });
     expect(chosen).toBe(1);
     expect(item()).toBeUndefined();
+  });
+});
+
+describe("a record's figures, and a tab with nothing yet", () => {
+  it("names each figure before it, drawn beneath, in the tone it is given", () => {
+    const markup = renderToStaticMarkup(
+      createElement(FigureGrid, {
+        figures: [
+          { label: "Paid to date", value: "Rs. 31,000" },
+          { label: "Replace by", value: "4 Nov", tone: "warning" },
+        ],
+      }),
+    );
+    expect(markup.indexOf("Paid to date")).toBeLessThan(markup.indexOf("Rs. 31,000"));
+    expect(markup).toMatch(/<dd class="[^"]*warning[^"]*">4 Nov<\/dd>/);
+  });
+
+  it("says what is missing and why, with the next action", () => {
+    const markup = renderToStaticMarkup(
+      createElement(EmptyState, {
+        look: "next",
+        line: "Nothing booked",
+        detail: "Their service visit fell due on 12 Nov.",
+        action: createElement("button", { type: "button" }, "Book a visit"),
+      }),
+    );
+    expect(markup).toContain(">Nothing booked</p>");
+    expect(markup.indexOf("fell due")).toBeLessThan(markup.indexOf(">Book a visit</button>"));
   });
 });

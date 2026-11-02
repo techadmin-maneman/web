@@ -1,5 +1,5 @@
 // Every piece the client has been fitted with, read only, since the technician's phone records them
-// (src/routes/ops/client-pieces.ts). Above them the hair profile (./HairProfile.tsx), the stock it matches
+// (src/routes/ops/client-pieces.ts). Beneath them the hair profile (./HairProfile.tsx), the stock it matches
 // (./StockMatch.tsx) and custom orders (./CustomOrders.tsx), each loaded when the tab first opens. Only the live
 // piece's replacement date is in brass.
 
@@ -56,12 +56,12 @@ function PieceRow({ piece }: { piece: Piece }) {
 export function Pieces({ clientId }: { clientId: string }) {
   return (
     <>
+      <PieceTable clientId={clientId} />
       <Suspense fallback={<PanelLoading />}>
         <HairProfile clientId={clientId} />
         <StockMatch clientId={clientId} />
         <CustomOrders clientId={clientId} />
       </Suspense>
-      <PieceTable clientId={clientId} />
     </>
   );
 }

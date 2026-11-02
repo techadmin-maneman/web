@@ -65,7 +65,8 @@ describe("the client’s match to stock", () => {
     expect(page.textContent).toContain(copy.inTransit(2));
   });
 
-  it("says when none is held yet, what the profile lacks, that there is none, or that theirs is a custom order", async () => {
+  // With no hair profile it said "nothing to match" beneath the profile's own panel, which says there is none.
+  it("says when none is held yet, what the profile lacks, or that theirs is a custom order; with no profile, nothing", async () => {
     await show({ ...NONE, kind: "stocked", code: "hs_1", name: "A hair system" });
     expect(page.textContent).toContain(copy.noneHeld);
     await show({ ...NONE, kind: "incomplete", missing: ["colour", "grey_percent", "density_percent"] });
@@ -73,7 +74,7 @@ describe("the client’s match to stock", () => {
     await show({ ...NONE, kind: "incomplete", missing: ["density_percent"] });
     expect(page.textContent).toContain("The profile needs density to match stock.");
     await show(NONE);
-    expect(page.textContent).toContain(copy.noProfile);
+    expect(page.textContent).toBe("");
     await show({ ...NONE, kind: "custom" });
     expect(page.textContent).toContain(copy.custom);
   });

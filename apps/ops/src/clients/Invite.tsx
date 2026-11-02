@@ -10,9 +10,11 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { api, isErased, type ClientInvite } from "../api.ts";
 import { clients } from "../content.ts";
+import { OpsLink } from "../frame/Shell.tsx";
+import { clientPath } from "../route.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import shared from "./clients.module.css";
@@ -29,8 +31,20 @@ type Attaching =
 /** What the form last found: the invite attached, or one the client came with meanwhile. */
 export type InviteNews = keyof typeof copy.news;
 
+/** Who invited the client, a way to their page, and the invite's code: "Vikram Sethi (VSAB23)". */
+function InvitedBy({ invite }: { invite: ClientInvite }) {
+  const code = clients.meta.inviteCode(invite.code);
+  if (invite.referrer === null) return `${copy.erased} ${code}`;
+  return (
+    <>
+      <OpsLink to={clientPath(invite.referrer.id, "visits")}>{invite.referrer.name}</OpsLink> {code}
+    </>
+  );
+}
+
 function Details({ invite, news }: { invite: ClientInvite; news: InviteNews | null }) {
-  const rows = [
+  const rows: { key: string; value: ReactNode }[] = [
+    { key: clients.meta.invitedBy, value: <InvitedBy invite={invite} /> },
     { key: copy.grant, value: copy.grants[invite.grant] },
     { key: copy.since, value: longDate(invite.since) },
     ...(invite.attached === null

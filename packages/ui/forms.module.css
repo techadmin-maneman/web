@@ -181,6 +181,13 @@
     white-space: nowrap;
   }
 
+  .rowHeadMeta {
+    display: block;
+    font-size: var(--fs-13);
+    font-weight: var(--weight-regular);
+    color: var(--ui-text-muted);
+  }
+
   .file {
     display: block;
     margin-top: var(--sp-8);

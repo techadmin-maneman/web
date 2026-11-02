@@ -1,5 +1,6 @@
 // A client's page, and finding one (board B): their visits, pieces, consents, payments, photos and profile.
 
+import { quantity } from "@maneman/web-kit/figures";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN, UNCONFIRMED } from "./common.ts";
 
 export const clients = {
@@ -47,6 +48,17 @@ export const clients = {
     city: "City",
     noCity: "Not known",
     nextVisit: "Next visit",
+    stage: "Stage",
+    needs: "Needs",
+    /** Beside the title: "4,603 clients · 312 fitted · 38 with a task open"; the last only where the board is whole. */
+    sub: (all: number, fitted: number, open: number | null) =>
+      [
+        `${quantity(all)} ${all === 1 ? "client" : "clients"}`,
+        `${quantity(fitted)} fitted`,
+        ...(open === null ? [] : [`${quantity(open)} with a task open`]),
+      ].join(" · "),
+    /** "51–100 of 4,603". */
+    range: (first: number, last: number, total: number) => `${quantity(first)}–${quantity(last)} of ${quantity(total)}`,
     underWay: "Under way",
     noVisit: "None booked",
     /** A visit whose day has passed and is not yet closed: not a next visit, one to close. */
@@ -97,25 +109,34 @@ export const clients = {
   pieceNotRecorded: "Hair system not recorded",
   /** A figure the head has nothing for yet. */
   noneYet: "None yet",
-  /** The tabs of the design's eight that the ops routes answer, the Overview first, which it draws none of. */
+  /** A client's page's tabs, in the design's order: their visits first, what was done on the record last. */
   tabs: [
-    { tab: "history", label: "Overview" },
     { tab: "visits", label: "Visits" },
     { tab: "pieces", label: "Hair systems" },
     { tab: "payments", label: "Payments" },
+    { tab: "messages", label: "Messages" },
     { tab: "referrals", label: "Referrals" },
     { tab: "consents", label: "Consents" },
     { tab: "photos", label: "Photos" },
+    { tab: "history", label: "History" },
   ],
-  /**
-   * Our words, all of them: what waits on Tasks for the client, under the page's head, each with how long it has left
-   * and where it is done. No board draws it.
-   */
+  /** The head's facts beneath the name, and a badge beside it once their replacement is past its day. */
+  head: {
+    since: (month: string) => `Client since ${month}`,
+    replacementLate: "Replacement overdue",
+    call: "Call",
+  },
+  /** The four figures at the right of a client's page. */
+  glance: {
+    title: "At a glance",
+    paid: "Paid to date",
+    visits: "Visits",
+    replaceBy: "Replace by",
+    freeVisits: "Free visits left",
+  },
+  /** What waits on Tasks for the client, under the page's head, as a screen reader names the list. */
   openTasks: {
     title: "Open tasks",
-    none: "Nothing open.",
-    /** A task done on a tab of the client's page: "Open Payments". */
-    toTab: (tab: string) => `Open ${tab}`,
   },
   /** Staff's notes on the client, under the head of their page, each with who wrote it and when. */
   notes: {
@@ -206,7 +227,7 @@ export const clients = {
     /** Visits whose day has passed and nobody has closed: each waits to be closed by hand. */
     overdue: "Overdue",
     past: "Done",
-    columns: ["Date", "Time", "Visit", "Technician", "Status", "Discount code"],
+    columns: ["Date", "Visit", "Technician", "Time", "Status", "Discount code"],
     onBoard: "See on the board",
     /** The link's whole name, since every row's says the same. */
     onBoardLabel: (visit: string) => `See the visit of ${visit} on the board`,
@@ -244,6 +265,12 @@ export const clients = {
       },
     },
     noUpcoming: "Nothing booked.",
+    /** A client with no visit to come, on the Visits tab: what falls due next, and the free visits they hold. */
+    nothingBooked: "Nothing booked",
+    dueOn: (kind: string, date: string) => `${kind} due ${date}.`,
+    freeLeft: (visits: number) =>
+      visits === 0 ? "No free visits left." : `${String(visits)} free ${visits === 1 ? "visit" : "visits"} left.`,
+    bookKind: (kind: string) => `Book a ${kind.toLowerCase()}`,
     noPast: "No past visits.",
     /** A booking that refunded its payment by itself, which no board draws. The client is told. */
     autoRefunds: {
@@ -850,23 +877,15 @@ export const clients = {
    * records is written in words, never as a dash or a zero (PR #89, PR #100).
    */
   history: {
-    title: "Overview",
+    title: "History",
     rows: {
       firstFit: "First fit",
-      visits: "Visits",
       services: "Service visits",
       replacements: "Replacements",
       lastVisit: "Last visit",
-      replacement: "Replacement due",
-      spend: "Paid",
     },
     /** A client we have never fitted, and one whose earlier visits were never recorded here, read the same. */
     noFirstFit: "No first fit",
     noVisit: "No visits yet",
-    /** The day ops order a piece against, with the piece it is for, as the Tasks board names one. */
-    due: (date: string, piece: string) => `${date} · ${piece}`,
-    noPiece: "No hair system fitted",
-    /** To Activity, narrowed to this client: what they did, and everything done to their record. */
-    activity: "View activity",
   },
 } as const;

@@ -1,6 +1,7 @@
 // One of a few to show, pressed while it is shown: the angle a comparison is drawn at, or a filter with how many it
 // shows. On the ink or on paper.
 
+import { quantity } from "@maneman/web-kit/figures";
 import type { ButtonHTMLAttributes } from "react";
 import { classes } from "./classes.ts";
 import styles from "./toggle-button.module.css";
@@ -33,7 +34,7 @@ export function ToggleButton({
       className={classes(styles.toggle, onInk ? styles.onInk : styles.onPaper, filled && styles.filled, className)}
     >
       {children}
-      {count !== undefined && <span className={styles.count}>{count}</span>}
+      {count !== undefined && <span className={styles.count}>{quantity(count)}</span>}
     </button>
   );
 }

@@ -18,6 +18,14 @@
     min-height: var(--sp-40);
   }
 
+  /* A record's initials, then the title and what goes with it. */
+  .lead {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-16);
+    min-width: 0;
+  }
+
   .heading {
     display: flex;
     flex-wrap: wrap;
@@ -36,6 +44,24 @@
   .title {
     margin: 0;
     color: var(--ui-text);
+  }
+
+  .beside {
+    display: flex;
+    flex-wrap: wrap;
+    align-self: center;
+    gap: var(--sp-8);
+  }
+
+  /* A record's facts, on a line of their own beneath its title. */
+  .under {
+    display: flex;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    gap: var(--sp-4) var(--sp-16);
+    font-size: var(--fs-14);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text-muted);
   }
 
   .meta {

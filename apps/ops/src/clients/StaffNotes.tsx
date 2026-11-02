@@ -1,14 +1,15 @@
-// Staff's notes on the client, under the head of their page: what to bear in mind, each with who wrote it and when,
-// changed or taken off where it stands. A change made over someone else's reads the page again
-// (src/routes/ops/staff-notes.ts).
+// Staff's notes on the client, at the right of their page: what to bear in mind, each with who wrote it and when,
+// changed or taken off where it stands, and a box beneath to add one. A change made over someone else's reads the page
+// again (src/routes/ops/staff-notes.ts).
 
+import { classes } from "@maneman/ui/classes";
+import { Panel } from "@maneman/ui/Panel";
 import { STAFF_NOTE_MAX_CHARS } from "@rules/policy/staff-notes.ts";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { PanelFailed } from "@maneman/ui/States";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
-import { typeLook } from "@maneman/ui/type";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { todayInIndia } from "@maneman/web-kit/dates";
@@ -73,12 +74,51 @@ function NoteForm({
   );
 }
 
-/** The notes as last read or written, and the box open for a new note or the note being changed, if any. */
+/** The box beneath the notes a new one is written in; Save shows once there is something to save. */
+function AddNote({ onSave }: { onSave: (body: string) => Promise<string | null> }) {
+  const [body, setBody] = useState("");
+  const [refused, setRefused] = useState<string | null>(null);
+  const [busy, once] = useOneAtATime();
+  const save = () =>
+    once(async () => {
+      const said = await onSave(body.trim());
+      setRefused(said);
+      if (said === null) setBody("");
+    });
+  return (
+    <div className={classes(styles.noteForm, styles.addNote)}>
+      <Field label={copy.add} labelHidden>
+        {(control) => (
+          <TextArea
+            {...control}
+            rows={1}
+            placeholder={copy.add}
+            value={body}
+            maxLength={STAFF_NOTE_MAX_CHARS}
+            onChange={(event) => {
+              setBody(event.currentTarget.value);
+            }}
+          />
+        )}
+      </Field>
+      {refused !== null && <Refusal said={refused} />}
+      {body.trim() !== "" && (
+        <div className={styles.noteActions}>
+          <Button variant="primary" size="small" disabled={busy} onClick={() => void save()}>
+            {busy ? copy.saving : copy.save}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The notes as last read or written, the note being changed if any, and the box to add one. */
 function NoteList({ clientId, initial }: { clientId: string; initial: readonly Note[] }) {
   const mayWrite = useAccess().mayCall("POST /api/clients/{id}/notes");
   const [notes, setNotes] = useState(initial);
-  /** The box open: for a new note, for the note of that ID, or none. */
-  const [open, setOpen] = useState<{ readonly note: string | null } | null>(null);
+  /** The note being changed, by its ID, or none. */
+  const [open, setOpen] = useState<string | null>(null);
   const write = async (body: string, replaces: string | null) => {
     const answer = await clientsApi.writeStaffNote(clientId, body, replaces);
     if (!answer.ok) return errorText(copy.errors, answer);
@@ -95,10 +135,10 @@ function NoteList({ clientId, initial }: { clientId: string; initial: readonly N
   };
   return (
     <>
-      {notes.length === 0 && open === null && <p className={styles.openNone}>{copy.none}</p>}
+      {notes.length === 0 && !mayWrite && <p className={styles.openNone}>{copy.none}</p>}
       <ul className={styles.notes}>
         {notes.map((note) =>
-          open?.note === note.id ? (
+          open === note.id ? (
             <li key={note.id}>
               <NoteForm initial={note.body} onSave={(body) => write(body, note.id)} onCancel={close} />
             </li>
@@ -112,7 +152,7 @@ function NoteList({ clientId, initial }: { clientId: string; initial: readonly N
                 <span className={styles.noteActions}>
                   <RowButton
                     onClick={() => {
-                      setOpen({ note: note.id });
+                      setOpen(note.id);
                     }}
                   >
                     {copy.change}
@@ -124,18 +164,7 @@ function NoteList({ clientId, initial }: { clientId: string; initial: readonly N
           ),
         )}
       </ul>
-      {open !== null && open.note === null && (
-        <NoteForm initial="" onSave={(body) => write(body, null)} onCancel={close} />
-      )}
-      {mayWrite && open === null && (
-        <RowButton
-          onClick={() => {
-            setOpen({ note: null });
-          }}
-        >
-          {copy.add}
-        </RowButton>
-      )}
+      {mayWrite && open === null && <AddNote onSave={(body) => write(body, null)} />}
     </>
   );
 }
@@ -144,16 +173,13 @@ function Strip({ clientId }: { clientId: string }) {
   const load = useCallback(() => clientsApi.staffNotes(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
   return (
-    <section className={styles.notesStrip} aria-labelledby="staff-notes">
-      <h3 className={typeLook("title-4", styles.sectionTitle)} id="staff-notes">
-        {copy.title}
-      </h3>
+    <Panel titleId="staff-notes" title={copy.title}>
       {whenLoaded(loaded, {
         loading: null,
         failed: <PanelFailed onRetry={retry} requestId={loaded.state === "failed" ? loaded.requestId : null} />,
         loaded: (read) => <NoteList clientId={clientId} initial={read.notes} />,
       })}
-    </section>
+    </Panel>
   );
 }
 

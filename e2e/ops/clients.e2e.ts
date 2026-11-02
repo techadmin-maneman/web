@@ -29,7 +29,8 @@ import {
   NAME,
   FOUND,
   openClient,
-  meta,
+  glanceFigure,
+  openTasks,
   clientTab,
   invitedBy,
 } from "./clients-fixtures.ts";
@@ -83,8 +84,6 @@ const OPEN_FOR_ROHIT = {
   ],
 } satisfies OpsReply<"/api/tasks">;
 
-const openForClient = (page: Page) => page.getByRole("region", { name: opsCopy.clients.openTasks.title });
-
 // A client could be found only by their whole number, typed exactly.
 test("finds clients by part of a name, and sends it in the body, never in the URL", async ({ page }) => {
   await answer(page, {
@@ -133,7 +132,7 @@ test("finds a client from any page through the header's search, and keeps the wo
   await page.getByRole("option", { name: `${FOUND.name} ${phoneWords(FOUND.mobile)}` }).click();
 
   await expect(page.getByRole("heading", NAME)).toBeVisible();
-  expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/history`);
+  expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/visits`);
   expect(new URL(page.url()).search).toBe("");
   expect(asked).toEqual(["98100 0441"]);
 });
@@ -189,33 +188,38 @@ test("asks for two letters or four digits when given fewer", async ({ page }) =>
   await expect(page.getByRole("alert")).toContainText(opsCopy.clients.find.errors.invalid_request);
 });
 
-test("heads the page with the client’s standing and the number to reach them on", async ({ page }) => {
+/** The head's line beneath the client's name. */
+const headLine = (page: Page) => page.getByRole("heading", NAME).locator("xpath=..");
+
+test("heads the page with the client’s standing and the number to reach them on, their figures at the right", async ({
+  page,
+}) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("heading", NAME)).toBeVisible();
-  // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
+  await expect(headLine(page)).toContainText(
+    [
+      opsCopy.clients.states.fitted,
+      MOBILE,
+      "Gurgaon",
+      opsCopy.clients.head.since("Nov 2026"),
+      "Mane Man Essential",
+    ].join(""),
+  );
   // The replacement is the month the board's head writes, never the day the pieces table carries.
-  // The head named no city, package, next visit, start or spend.
-  await expect(meta(page)).toHaveText([
-    opsCopy.clients.pieces.columns.fitted,
-    "Gurgaon",
-    "Mane Man Essential",
-    "25 Sep 2027, 9 am",
-    "1 Nov 2026",
-    "Rs. 2,360",
-    "2 · use by 3 Jan 2028",
-    "Mar 2028",
-    MOBILE,
-    "Vikram Sethi (VSAB23)",
-  ]);
+  await expect(glanceFigure(page, opsCopy.clients.glance.paid)).toHaveText("Rs. 2,360");
+  await expect(glanceFigure(page, opsCopy.clients.glance.visits)).toHaveText("6");
+  await expect(glanceFigure(page, opsCopy.clients.glance.replaceBy)).toHaveText("Mar 2028");
+  await expect(glanceFigure(page, opsCopy.clients.glance.freeVisits)).toHaveText("2");
   await expect(page.getByRole("link", { name: `Call ${CLIENT.name} on ${MOBILE}` })).toHaveAttribute(
     "href",
     `tel:${CLIENT.mobile}`,
   );
 });
 
-// Who invited a client was shown only under Payments, below the credits form.
-test("heads the page with who invited the client, a way to their page, and the invite’s code", async ({ page }) => {
-  await openClient(page, `/clients/${CLIENT.id}`);
+// Who invited a client was shown only under Payments, below the credits form; then in the head, which now carries
+// only the client's own facts.
+test("says on Referrals who invited the client, a way to their page, and the invite’s code", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/referrals`);
   await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
   await expect(invitedBy(page).getByRole("link", { name: "Vikram Sethi" })).toHaveAttribute(
     "href",
@@ -224,7 +228,7 @@ test("heads the page with who invited the client, a way to their page, and the i
 });
 
 // A client's page showed nothing open for them while a task about them waited.
-test("lists what waits on Tasks for the client under the head, each with a way to where it is done", async ({
+test("lists what waits on Tasks for the client under the head, each with how long it has left and its step", async ({
   page,
 }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
@@ -235,24 +239,25 @@ test("lists what waits on Tasks for the client under the head, each with a way t
   await openClient(page, `/clients/${CLIENT.id}`, { "GET /api/tasks": json(OPEN_FOR_ROHIT) });
   await asked;
 
-  const rows = openForClient(page).getByRole("listitem");
+  const rows = openTasks(page).getByRole("listitem");
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0)).toContainText("Replacement order3 days overdue");
-  await expect(rows.nth(1)).toContainText("Number change1 day left");
+  await expect(rows.nth(0)).toContainText(opsCopy.tasks.groups.replacement_order);
+  await expect(rows.nth(0)).toContainText("3 days overdue");
+  await expect(rows.nth(1)).toContainText(opsCopy.tasks.groups.number_change);
+  await expect(rows.nth(1)).toContainText("1 day left");
   await expect(
-    openForClient(page).getByRole("link", { name: "Open Hair systems · Replacement order" }),
-  ).toHaveAttribute("href", `/clients/${CLIENT.id}/pieces`);
-  await expect(
-    openForClient(page).getByRole("link", { name: "Decide in Number changes · Number change" }),
+    openTasks(page).getByRole("link", { name: `Decide in Number changes · ${CLIENT.name}` }),
   ).toHaveAttribute("href", "/number-changes#change-94000000-0000-4000-8000-000000000009");
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("says when nothing waits on Tasks for the client", async ({ page }) => {
+// A panel said only that nothing was open.
+test("draws nothing under the head while nothing waits on Tasks for the client", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, {
     "GET /api/tasks": json({ overdue: 0, truncated: false, low_stock_places: 0, lapsed: 0, staff: [], groups: [] }),
   });
-  await expect(openForClient(page)).toContainText(opsCopy.clients.openTasks.none);
+  await expect(page.getByRole("heading", NAME)).toBeVisible();
+  await expect(openTasks(page)).toHaveCount(0);
 });
 
 // The design draws WhatsApp beside the name; the page once gave no way to reach the client.
@@ -266,17 +271,8 @@ test("opens a WhatsApp chat with the client from beside their name, as the board
 
 test("says in words that a client wearing no piece falls due on no date", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(meta(page)).toHaveText([
-    opsCopy.clients.states.lead,
-    opsCopy.clients.list.noCity,
-    opsCopy.clients.noneYet,
-    opsCopy.clients.list.noVisit,
-    "1 Nov 2026",
-    "Rs. 0",
-    "2 · use by 3 Jan 2028",
-    opsCopy.clients.noPiece,
-    MOBILE,
-  ]);
+  await expect(headLine(page)).toContainText(opsCopy.clients.states.lead);
+  await expect(glanceFigure(page, opsCopy.clients.glance.replaceBy)).toHaveText(opsCopy.clients.noPiece);
 });
 
 // "Status Fitted" sat beside "Replacement due: No hair system fitted".
@@ -284,19 +280,17 @@ test("says a fitted client's hair system was not recorded, rather than that none
   await openClient(page, `/clients/${CLIENT.id}`, {
     [READ_RECORD]: json({ ...RECORD, history: { ...RECORD.history, replacement_due: null } }),
   });
-  await expect(meta(page)).toContainText([opsCopy.clients.pieces.columns.fitted, opsCopy.clients.pieceNotRecorded]);
+  await expect(glanceFigure(page, opsCopy.clients.glance.replaceBy)).toHaveText(opsCopy.clients.pieceNotRecorded);
 });
 
-// The page opened on an empty Pieces tab, a click away from the visit; then Overview sat last, and Book a visit lived
-// on the Visits tab alone.
-test("opens on the overview, first, with Book a visit on every tab and the invite on a Referrals tab", async ({
-  page,
-}) => {
+// The page opened on an empty Pieces tab, a click away from the visit; then on an overview, whose figures now stand
+// at the page's right; and Book a visit lived on the Visits tab alone.
+test("opens on Visits, first, with Book a visit on every tab and the invite on a Referrals tab", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   const tabs = opsCopy.clients.tabs.map((each) => each.label);
   await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText(tabs);
-  expect(tabs[0]).toBe(opsCopy.clients.history.title);
-  await expect(clientTab(page, opsCopy.clients.history.title)).toHaveAttribute("aria-current", "page");
+  expect(tabs[0]).toBe(opsCopy.clients.tabs[0].label);
+  await expect(clientTab(page, opsCopy.clients.tabs[0].label)).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("button", { name: opsCopy.clients.visits.book.open })).toBeVisible();
   await clientTab(page, opsCopy.clients.tabs.find((each) => each.tab === "payments")?.label ?? "").click();
   await expect(page.getByRole("button", { name: opsCopy.clients.visits.book.open })).toBeVisible();

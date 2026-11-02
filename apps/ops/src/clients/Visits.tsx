@@ -1,39 +1,32 @@
-// The client's Visits tab: every visit to come and done, from the record the page holds. From here ops save an address
-// given on the phone (GivenAddress.tsx), set a visit's discount code (VisitCode.tsx), book a visit (BookVisit.tsx), and
-// cancel one (CancelVisit.tsx) or close one by hand (CloseVisit.tsx). Beneath, any booking that refunded itself, and
-// why.
+// The client's Visits tab: every visit in one table, past its day first, then to come, then done, from the record the
+// page holds; where nothing is to come, what falls due next and a way to book it (./BookOne.tsx). From here ops set a
+// visit's discount code (VisitCode.tsx) and cancel one (CancelVisit.tsx) or close one by hand (CloseVisit.tsx).
+// Beneath, any booking that refunded itself, and why.
 
 import { typeLook } from "@maneman/ui/type";
-import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { NoValue } from "@maneman/ui/NoValue";
 import { Badge } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
-import { Toast } from "@maneman/ui/Toast";
 import { Button, RowButton } from "@maneman/ui/Button";
-import { Table } from "@maneman/ui/Table";
-import { indiaClock, longDate, todayInIndia } from "@maneman/web-kit/dates";
+import { rowRule, Table } from "@maneman/ui/Table";
+import { EmptyState } from "@maneman/ui/EmptyState";
+import { indiaClock, longDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
-import { addressLine } from "@maneman/web-kit/address";
 import type { AutoRefund, ClientRecord, ClientVisit } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
-import { PageActions } from "../frame/PageHead.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
 import styles from "./clients.module.css";
-import { BookVisit } from "./BookVisit.tsx";
+import type { Booking } from "./BookOne.tsx";
 import { CancelVisit } from "./CancelVisit.tsx";
 import { CloseVisit } from "./CloseVisit.tsx";
 import { LostReason } from "./LostReason.tsx";
-import { GivenAddressForm } from "./GivenAddress.tsx";
 import { VisitCode } from "./VisitCode.tsx";
-import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { apiNow } from "@maneman/web-kit/clock";
-
-type SavedAddress = NonNullable<ClientRecord["address"]>;
 
 const copy = clients.visits;
 
@@ -59,90 +52,6 @@ function whatOf(visit: ClientVisit): string {
   return copy.what(kind, visit.service);
 }
 
-function AddressRows({ address }: { address: SavedAddress }) {
-  const rows = [
-    { key: copy.address, value: addressLine(address) },
-    ...(address.landmark === null ? [] : [{ key: copy.landmark, value: address.landmark }]),
-    ...(address.access_notes === null ? [] : [{ key: copy.access, value: address.access_notes }]),
-    ...(address.given_to_ops === null
-      ? []
-      : [
-          {
-            key: copy.givenToOps,
-            value: copy.givenTo(whoWords(address.given_to_ops.by), longDate(address.given_to_ops.at)),
-          },
-        ]),
-  ];
-  return (
-    <dl className={styles.address}>
-      {rows.map((row) => (
-        <div className={styles.addressRow} key={row.key}>
-          <dt className={styles.metaKey}>{row.key}</dt>
-          <dd className={styles.addressValue}>{row.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function Address({
-  clientId,
-  address,
-  onAddress,
-}: {
-  clientId: string;
-  address: ClientRecord["address"];
-  onAddress: (address: SavedAddress) => void;
-}) {
-  const [recording, setRecording] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const opener = useRef<HTMLButtonElement>(null);
-  const mayRecord = useAccess().mayCall("POST /api/clients/{id}/address");
-
-  const stopRecording = () => {
-    setRecording(false);
-    requestAnimationFrame(() => opener.current?.focus());
-  };
-  return (
-    <Panel
-      titleId="visit-address"
-      title={copy.address}
-      actions={
-        mayRecord && (
-          <Button
-            variant="outline"
-            size="small"
-            ref={opener}
-            onClick={() => {
-              setSaved(false);
-              setRecording(true);
-            }}
-          >
-            {address === null ? copy.given.open : copy.given.change}
-          </Button>
-        )
-      }
-    >
-      {recording && (
-        <FormDrawer title={copy.given.title} onClose={stopRecording}>
-          <GivenAddressForm
-            clientId={clientId}
-            address={address}
-            onSaved={(given) => {
-              onAddress(given);
-              setSaved(true);
-              stopRecording();
-            }}
-            onCancel={stopRecording}
-          />
-        </FormDrawer>
-      )}
-      {address === null ? <Note>{copy.noAddress}</Note> : <AddressRows address={address} />}
-      {saved && <Toast>{copy.given.saved}</Toast>}
-    </Panel>
-  );
-}
-
 /** Ops closing a visit left partly done without a follow-up: who, when and why (docs/decisions/0092-task-owners.md). */
 function ClosedWithoutFollowUp({ visit }: { visit: ClientVisit }) {
   const closed = visit.closed_without_follow_up;
@@ -153,17 +62,6 @@ function ClosedWithoutFollowUp({ visit }: { visit: ClientVisit }) {
       {closed.reason === null ? "" : `: ${closed.reason}`}
     </span>
   );
-}
-
-/**
- * What Book a visit opens on: what the client app offers them next, a replacement where the piece falls due first;
- * else a fitted client's service, a consulted lead's first fit, anyone else's consultation.
- */
-function firstChoiceOf(record: ClientRecord): "service" | "replacement" | "first_fit" | "consultation" {
-  if (record.next_visit !== null) return record.next_visit.type;
-  if (record.state === "fitted") return "service";
-  const consulted = record.visits.past.some((visit) => visit.type === "consultation" && visit.status === "completed");
-  return consulted ? "first_fit" : "consultation";
 }
 
 type Change = "cancel" | "close";
@@ -233,78 +131,54 @@ function ShowOnBoard({ visit }: { visit: ClientVisit }) {
   );
 }
 
-/** The client whose visits a table lists, where its rows may be changed: only the visits to come. */
+/** The client whose visits the table lists, as the panels that change one name them, and what to do once one is. */
 interface Changing {
   readonly name: string;
   readonly onChanged: () => void;
 }
 
-function VisitTable({
-  title,
-  visits,
-  empty,
-  changing = null,
-  onBoard = false,
-  lost = null,
+/** Where a row stands in the one table: past its day and not closed, to come, or done. */
+type When = "overdue" | "upcoming" | "past";
+
+interface Listed {
+  readonly visit: ClientVisit;
+  readonly when: When;
+}
+
+function VisitRow({
+  listed,
+  changing,
+  lost,
 }: {
-  title: string;
-  visits: readonly ClientVisit[];
-  empty: string;
-  changing?: Changing | null;
-  /** The reasons a closed consultation may be given, and what to do once one is; null where they are only shown. */
-  lost?: { readonly reasons: ClientRecord["lost_reasons"]; readonly onChanged: () => void } | null;
-  /** Whether each visit links to its place on the dispatch board: the visits to come do. */
-  onBoard?: boolean;
+  listed: Listed;
+  changing: Changing;
+  /** The reasons a closed consultation may be given; null where they are only shown. */
+  lost: ClientRecord["lost_reasons"] | null;
 }) {
+  const { visit, when } = listed;
+  const ahead = when !== "past";
   return (
-    <Panel titleId={`visits-${title.toLowerCase().replace(/\W+/g, "-")}`} title={title}>
-      {visits.length === 0 ? (
-        <Note>{empty}</Note>
-      ) : (
-        <Table fixed className={styles.visitTable}>
-          <thead>
-            <tr>
-              {copy.columns.map((column) => (
-                <th key={column} scope="col">
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {visits.map((visit) => (
-              <tr key={visit.id}>
-                <td>
-                  {plainDate(visit.date)}
-                  {onBoard && <ShowOnBoard visit={visit} />}
-                </td>
-                <td>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
-                <td>
-                  {whatOf(visit)}
-                  {visit.client_note !== null && <p className={styles.note}>{copy.clientNote(visit.client_note)}</p>}
-                </td>
-                <td>{visit.technician?.name ?? <NoValue />}</td>
-                <td>
-                  <StateBadge visit={visit} />
-                  <ClosedWithoutFollowUp visit={visit} />
-                  <LostReason
-                    visit={visit}
-                    reasons={lost?.reasons ?? null}
-                    onChanged={lost?.onChanged ?? (() => undefined)}
-                  />
-                  {changing !== null && (
-                    <ChangeVisit visit={visit} name={changing.name} onChanged={changing.onChanged} />
-                  )}
-                </td>
-                <td>
-                  <VisitCode visit={visit} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      )}
-    </Panel>
+    <tr className={rowRule(when === "overdue" ? "error" : undefined)}>
+      <td>
+        {plainDate(visit.date)}
+        {ahead && <ShowOnBoard visit={visit} />}
+      </td>
+      <td>
+        {whatOf(visit)}
+        {visit.client_note !== null && <p className={styles.note}>{copy.clientNote(visit.client_note)}</p>}
+      </td>
+      <td>{visit.technician?.name ?? <NoValue />}</td>
+      <td>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
+      <td>
+        <StateBadge visit={visit} />
+        <ClosedWithoutFollowUp visit={visit} />
+        <LostReason visit={visit} reasons={ahead ? null : lost} onChanged={changing.onChanged} />
+        {ahead && <ChangeVisit visit={visit} name={changing.name} onChanged={changing.onChanged} />}
+      </td>
+      <td>
+        <VisitCode visit={visit} />
+      </td>
+    </tr>
   );
 }
 
@@ -335,75 +209,55 @@ function AutoRefunds({ refunds }: { refunds: readonly AutoRefund[] }) {
   );
 }
 
-/** Book a visit, and the panel it opens; a visit booked, or a link sent, has the page read the record again. */
-export function BookOne({
-  clientId,
-  record,
-  onBooked,
-}: {
-  clientId: string;
-  record: ClientRecord;
-  onBooked: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const opener = useRef<HTMLButtonElement>(null);
-  const mayBook = useAccess().mayCall("POST /api/visits");
-  if (!mayBook) return null;
+/** Nothing to come: what falls due next, the free visits a fitted client holds, and a way to book it. */
+function NothingBooked({ record, booking }: { record: ClientRecord; booking: Booking }) {
+  const next = record.next_visit;
+  const kind = next === null ? null : copy.book.kinds[next.type];
+  const due = next === null || kind === null ? null : copy.dueOn(kind, shortDate(next.due_on));
+  const free = record.state === "fitted" ? copy.freeLeft(record.credits?.visits ?? 0) : null;
+  const detail = [due, free].filter((line) => line !== null).join(" ");
   return (
-    <>
-      <PageActions>
-        <Button
-          variant="primary"
-          size="small"
-          ref={opener}
-          onClick={() => {
-            setOpen(true);
-          }}
-        >
-          {copy.book.open}
-        </Button>
-      </PageActions>
-      {open && (
-        <BookVisit
-          clientId={clientId}
-          name={record.name}
-          prefill={{ choice: firstChoiceOf(record), replacing: record.history.replacement_due?.piece_code }}
-          onClose={(booked) => {
-            setOpen(false);
-            if (booked !== null) onBooked();
-            else requestAnimationFrame(() => opener.current?.focus());
-          }}
-        />
-      )}
-    </>
+    <EmptyState
+      look="next"
+      line={copy.nothingBooked}
+      detail={detail === "" ? undefined : detail}
+      action={
+        booking.mayBook && (
+          <Button
+            variant="outline"
+            size="small"
+            onClick={(event) => {
+              booking.open(event.currentTarget);
+            }}
+          >
+            {kind === null ? copy.book.open : copy.bookKind(kind)}
+          </Button>
+        )
+      }
+    />
   );
 }
 
 export function Visits({
-  clientId,
   record,
-  address,
-  onAddress,
+  booking,
   onChanged,
 }: {
-  clientId: string;
   record: ClientRecord;
-  /** The address visits go to, the one saved on this page since it opened if there is one. */
-  address: ClientRecord["address"];
-  onAddress: (address: SavedAddress) => void;
+  booking: Booking;
   /** A visit booked, cancelled or closed: the page reads the record again. */
   onChanged: () => void;
 }) {
   return (
     <div className={styles.visits}>
-      <Address clientId={clientId} address={address} onAddress={onAddress} />
+      {record.visits.upcoming.length === 0 && <NothingBooked record={record} booking={booking} />}
       <VisitRecords visits={record.visits} name={record.name} onChanged={onChanged} lostReasons={record.lost_reasons} />
       <AutoRefunds refunds={record.auto_refunds} />
     </div>
   );
 }
 
-/** The visits past their day and not closed, which ops close by hand; those to come; then the visits done. */
+/** Every visit in one table: those past their day and not closed, which ops close by hand; those to come; then done. */
 export function VisitRecords({
   visits,
   name,
@@ -418,25 +272,32 @@ export function VisitRecords({
   lostReasons?: ClientRecord["lost_reasons"] | null;
 }) {
   const today = todayInIndia(apiNow());
-  const overdue = visits.upcoming.filter((visit) => visit.date < today);
+  const rows: Listed[] = [
+    ...visits.upcoming.map((visit) => ({
+      visit,
+      when: visit.date < today ? ("overdue" as const) : ("upcoming" as const),
+    })),
+    ...visits.past.map((visit) => ({ visit, when: "past" as const })),
+  ].sort((a, b) => Number(b.when === "overdue") - Number(a.when === "overdue"));
+  if (rows.length === 0) return null;
   return (
-    <>
-      {overdue.length > 0 && (
-        <VisitTable title={copy.overdue} visits={overdue} empty="" changing={{ name, onChanged }} onBoard />
-      )}
-      <VisitTable
-        title={copy.upcoming}
-        visits={visits.upcoming.filter((visit) => visit.date >= today)}
-        empty={copy.noUpcoming}
-        changing={{ name, onChanged }}
-        onBoard
-      />
-      <VisitTable
-        title={copy.past}
-        visits={visits.past}
-        empty={copy.noPast}
-        lost={lostReasons === null ? null : { reasons: lostReasons, onChanged }}
-      />
-    </>
+    <Panel titleId="client-visits" title={clients.tabs[0].label}>
+      <Table fixed className={styles.visitTable}>
+        <thead>
+          <tr>
+            {copy.columns.map((column) => (
+              <th key={column} scope="col">
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((listed) => (
+            <VisitRow key={listed.visit.id} listed={listed} changing={{ name, onChanged }} lost={lostReasons} />
+          ))}
+        </tbody>
+      </Table>
+    </Panel>
   );
 }

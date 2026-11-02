@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { CLIENT, empty, fails, json, NEW_RECORD, RECORD, type Call, type OpsReply } from "./fixtures.ts";
-import { RECORD_PATH, READ_RECORD, openClient, meta } from "./clients-fixtures.ts";
+import { RECORD_PATH, READ_RECORD, openClient, glanceFigure, visitRow } from "./clients-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const ADD_CREDITS: Call = `POST ${RECORD_PATH}/credits`;
@@ -29,7 +29,7 @@ test("enters a discount code on a visit not yet paid for, says when one does not
     },
     [removed]: empty(),
   });
-  const row = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
+  const row = visitRow(page, "25 Sep");
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
   // The code is typed in a drawer beside the page, not in a box in the row.
   const drawer = page.getByRole("dialog", { name: opsCopy.clients.visits.code.drawerTitle("25 Sep 2027") });
@@ -66,7 +66,7 @@ test("shows the code the client gave when booking, and starts the box from it", 
     },
   } satisfies OpsReply<"/api/clients/{id}">;
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(asked) });
-  const row = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
+  const row = visitRow(page, "25 Sep");
   await expect(row).toContainText("Client entered TENPC when booking");
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
   const drawer = page.getByRole("dialog", { name: opsCopy.clients.visits.code.drawerTitle("25 Sep 2027") });
@@ -75,7 +75,7 @@ test("shows the code the client gave when booking, and starts the box from it", 
 
 test("offers no code on a visit already paid for", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(RECORD) });
-  const row = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
+  const row = visitRow(page, "25 Sep");
   await expect(row.getByRole("cell").last()).toHaveText("—None");
   await expect(row.getByRole("button", { name: /discount code/ })).toHaveCount(0);
 });
@@ -102,7 +102,7 @@ test("says who closed a visit left partly done without a follow-up, when and why
     },
   } satisfies OpsReply<"/api/clients/{id}">;
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(closed) });
-  await expect(page.getByRole("region", { name: opsCopy.clients.visits.past }).getByRole("row").nth(1)).toContainText(
+  await expect(visitRow(page, "22 Aug 2027")).toContainText(
     "Closed without follow-up by priya@maneman.in, 1 Sep 2027: Moving to Pune; wants no more visits.",
   );
 });
@@ -213,14 +213,12 @@ test("says where each finished visit’s invoice stands in Books", async ({ page
   await expect(invoices.nth(2)).toContainText("Sent 22 Aug 2027");
 });
 
-test("says so when nothing was linked or invoiced yet", async ({ page }) => {
+// Two panels said only that nothing was linked and nothing invoiced.
+test("draws no panel for payment links or invoices while there are none", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(page.getByRole("region", { name: opsCopy.clients.links.title })).toContainText(
-    opsCopy.clients.links.none,
-  );
-  await expect(page.getByRole("region", { name: opsCopy.clients.invoices.title })).toContainText(
-    opsCopy.clients.invoices.none,
-  );
+  await expect(page.getByRole("region", { name: opsCopy.clients.credits.title })).toBeVisible();
+  await expect(page.getByRole("region", { name: opsCopy.clients.links.title })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: opsCopy.clients.invoices.title })).toHaveCount(0);
 });
 
 /** The form that changes a client's free service visits, opened from their panel. */
@@ -255,8 +253,8 @@ test("puts a client’s credits right, with the reason, and shows the balance it
   await expect(page.getByRole("status").filter({ hasText: "Done. They now have 1 visit." })).toHaveText(
     "Done. They now have 1 visit.",
   );
-  // The head reads the balance the API answered, without the record being read again.
-  await expect(meta(page).nth(6)).toHaveText("1 · use by 3 Jan 2028");
+  // The page's figures read the balance the API answered, without the record being read again.
+  await expect(glanceFigure(page, opsCopy.clients.glance.freeVisits)).toHaveText("1");
 });
 
 test("offers no change of nought, or of more than twelve visits either way", async ({ page }) => {

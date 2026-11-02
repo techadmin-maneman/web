@@ -8,6 +8,7 @@ import { CLIENTS_PER_PAGE } from "../../../src/domain/clients/client-list.ts";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
 import { person } from "./ops-clients-fixtures.ts";
+import { aPackage, aPayment, aRefund } from "../fixtures/index.ts";
 
 const ROHIT = "11111111-1111-4111-8111-111111111111";
 const VIKRAM = "11111111-1111-4111-8111-111111111112";
@@ -84,6 +85,35 @@ describe("GET /api/clients", () => {
     expect(await names("?state=fitted")).toEqual(["Rohit Malhotra"]);
     expect(await names("?state=lead")).toEqual(["Vikram Sethi"]);
     expect(await names("?state=nothing_booked&city=Gurgaon")).toEqual(["Kabir Suri"]);
+  });
+
+  it("gives each one's package by name and what they have paid, less refunds, as their page does", async () => {
+    await aPackage({ code: "natural", name: "Natural hair system", firstFit: 3_000_000 });
+    await env.DB.prepare("UPDATE people SET package = 'natural' WHERE id = ?1").bind(ROHIT).run();
+    const kept = crypto.randomUUID();
+    await aPayment({ id: kept, person_id: ROHIT, amount: 236_000 });
+    await aPayment({ person_id: ROHIT, amount: 50_000, status: "failed" });
+    await aRefund({ payment_id: kept, amount: 6_000 });
+    const rows = (
+      await (
+        await request(ops, "/api/clients")
+      ).json<{
+        clients: { name: string; package: string | null; paid: number }[];
+      }>()
+    ).clients;
+    expect(rows.find((row) => row.name === "Rohit Malhotra")).toMatchObject({
+      package: "Natural hair system",
+      paid: 230_000,
+    });
+    expect(rows.find((row) => row.name === "Kabir Suri")).toMatchObject({ package: null, paid: 0 });
+  });
+
+  it("counts how many stand where on the first page, in the city asked for, and not on the pages after", async () => {
+    const counted = async (query: string) =>
+      (await (await request(ops, `/api/clients${query}`)).json<{ counts: unknown }>()).counts;
+    expect(await counted("")).toEqual({ all: 4, lead: 1, fitted: 1, nothing_booked: 2 });
+    expect(await counted("?city=Gurgaon&state=fitted")).toEqual({ all: 3, lead: 1, fitted: 1, nothing_booked: 1 });
+    expect(await counted("?cursor=MQ")).toBeNull();
   });
 
   it("gives a page at a time, saying when another follows", async () => {

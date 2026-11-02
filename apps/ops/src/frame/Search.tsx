@@ -99,13 +99,13 @@ function useResults(text: string, onGo: () => void): SearchGroup[] {
       ? recentClients().map((each) => ({
           key: each.id,
           label: each.name,
-          onChoose: open(clientPath(each.id, "history")),
+          onChoose: open(clientPath(each.id, "visits")),
         }))
       : found.map((each) => ({
           key: each.id,
           label: each.name,
           detail: phoneWords(each.mobile),
-          onChoose: open(clientPath(each.id, "history")),
+          onChoose: open(clientPath(each.id, "visits")),
         }));
   const technicians = useTechnicians(access.mayCall("GET /api/technicians") && asked !== "")
     .filter((each) => asked !== "" && each.name.toLowerCase().includes(asked))

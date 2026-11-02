@@ -81,6 +81,7 @@ async function show() {
     setOver: () => undefined,
     setRecord: () => undefined,
     setHeading: () => undefined,
+    setRecordHead: () => undefined,
     actions,
   };
   act(() => {

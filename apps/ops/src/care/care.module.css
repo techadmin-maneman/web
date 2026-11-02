@@ -122,3 +122,10 @@
   display: inline-flex;
   gap: var(--sp-8);
 }
+
+/* A client's Care person, beneath the notes at the right of their page (./ClientChat.tsx). */
+.careLine {
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+}

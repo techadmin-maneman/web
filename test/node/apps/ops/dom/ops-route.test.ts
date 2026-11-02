@@ -121,11 +121,11 @@ describe("the ops console’s routes", () => {
     expect(rulePath("task_sla_hours")).toBe("/settings/console#task_sla_hours");
   });
 
-  // A client's page opened on an empty Pieces tab, and so did every bare link.
-  // Overview sat last, its path /history; the page now opens on it, first.
-  it("opens a client’s page on their overview, and names the tab of every link to it", () => {
-    expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "history" });
-    expect(routeOf(`/clients/${CLIENT}`)).toEqual({ page: "clients", clientId: CLIENT, tab: "history" });
+  // A client's page opened on an empty Pieces tab, and so did every bare link; then on an overview, whose figures
+  // now stand at the page's right.
+  it("opens a client’s page on their visits, and names the tab of every link to it", () => {
+    expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "visits" });
+    expect(routeOf(`/clients/${CLIENT}`)).toEqual({ page: "clients", clientId: CLIENT, tab: "visits" });
     expect(clientPath(CLIENT, "visits")).toBe(`/clients/${CLIENT}/visits`);
     expect(routeOf(clientPath(CLIENT, "referrals"))).toEqual({ page: "clients", clientId: CLIENT, tab: "referrals" });
   });

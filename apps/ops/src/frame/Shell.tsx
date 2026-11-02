@@ -6,6 +6,8 @@
 import { Breadcrumbs, type Crumb } from "@maneman/ui/Breadcrumbs";
 import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Badge } from "@maneman/ui/Badge";
+import { Initials } from "@maneman/ui/Initials";
 import { PageHeader, PageTitle } from "@maneman/ui/PageHeader";
 import { Link, usePath, wasRedirected } from "@maneman/ui/router";
 import { SkipLink } from "@maneman/ui/SkipLink";
@@ -33,7 +35,7 @@ import { Mine } from "./Mine.tsx";
 import { Navigation, NAV_ID } from "./Navigation.tsx";
 import { PhoneTabs } from "./PhoneTabs.tsx";
 import { HeaderSearch, PhoneSearch } from "./Search.tsx";
-import { PageHead } from "./PageHead.tsx";
+import { PageHead, type RecordHead } from "./PageHead.tsx";
 import { GroupTabs } from "./SectionGroups.tsx";
 import styles from "./shell.module.css";
 
@@ -156,7 +158,22 @@ function useHeadTold() {
   const [over, setOver] = useState<string | undefined>();
   const [heading, setHeading] = useState<string | undefined>();
   const [record, setRecord] = useState<string | undefined>();
-  return { sub, over, heading, record, told: { setSub, setOver, setHeading, setRecord } };
+  const [recordHead, setRecordHead] = useState<RecordHead | undefined>();
+  return { sub, over, heading, record, recordHead, told: { setSub, setOver, setHeading, setRecord, setRecordHead } };
+}
+
+/** A record's initials before its name, its badges beside it and its facts beneath, where its page gives them. */
+function recordParts(record: string | undefined, head: RecordHead | undefined) {
+  if (record === undefined || head === undefined) return {};
+  return {
+    mark: <Initials name={record} />,
+    beside: head.badges.map((badge) => (
+      <Badge key={badge.words} tone={badge.tone}>
+        {badge.words}
+      </Badge>
+    )),
+    under: head.facts.map((fact) => <span key={fact}>{fact}</span>),
+  };
 }
 
 /** The pages whose head, on a phone, carries the city as chips; elsewhere it is on More. */
@@ -175,7 +192,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
   const lapsed = useLapsed();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const main = useRef<HTMLElement>(null);
-  const { sub, over, heading, record, told } = useHeadTold();
+  const { sub, over, heading, record, recordHead, told } = useHeadTold();
   const [actions, setActions] = useState<HTMLElement | null>(null);
   const menu = useMenu();
   const phone = useIsPhone();
@@ -220,6 +237,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
             titleRef={headingRef}
             meta={sub}
             over={over}
+            {...recordParts(record, recordHead)}
             actions={<div className={styles.actions} ref={setActions} />}
             tabs={
               route.page === "settings" || route.page === "more" || record !== undefined ? undefined : (

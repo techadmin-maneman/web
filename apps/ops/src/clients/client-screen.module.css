@@ -1,6 +1,29 @@
-/* What ./ClientScreen.tsx alone draws; what it shares is in ./clients.module.css. */
+/* What ./ClientScreen.tsx alone places; what it shares is in ./clients.module.css. */
 
-/* The board letters the replacement due in brass, as it does the live piece's date. */
-.metaBrass {
-  color: var(--status-attention);
+/* The tabs beside the column of figures, address, notes and Care person; below a desk's width, that column beneath. */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 18.75rem);
+  gap: var(--sp-24);
+  align-items: start;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  min-width: 0;
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  min-width: 0;
+}
+
+@media (max-width: 1279px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

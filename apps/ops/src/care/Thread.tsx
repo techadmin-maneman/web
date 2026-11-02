@@ -111,7 +111,8 @@ export function Thread({
   onChanged,
 }: {
   conversation: Conversation;
-  onClose: () => void;
+  /** Shuts the chat in the inbox; a client's page, which shows theirs alone, has none. */
+  onClose?: () => void;
   /** The chat became a client's: the list is read again. */
   onChanged: () => void;
 }) {
@@ -161,11 +162,13 @@ export function Thread({
           }}
         />
       )}
-      <FormActions>
-        <Button variant="outline" size="small" narrow onClick={onClose}>
-          {thread.close}
-        </Button>
-      </FormActions>
+      {onClose !== undefined && (
+        <FormActions>
+          <Button variant="outline" size="small" narrow onClick={onClose}>
+            {thread.close}
+          </Button>
+        </FormActions>
+      )}
     </section>
   );
 }

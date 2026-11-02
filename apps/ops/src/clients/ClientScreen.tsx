@@ -1,42 +1,42 @@
-// One client's page: who they are, how to reach them, what waits for them on Tasks, then a tab each for visits, pieces,
-// payments, referrals, consents, photographs and history. The record is read once for the page, so moving between tabs
-// costs no request; an erased client's page keeps only their visits and money (Erase.tsx).
+// One client's page: their initials, name, badges and facts in the head, with Call, WhatsApp and Book a visit; what
+// waits for them on Tasks; a tab each from visits to history; and their figures, address, notes and Care person at the
+// right (./ClientAside.tsx). The record is read once for the page, so moving between tabs costs no request; an erased
+// client's page keeps only their visits and money (Erase.tsx).
 
-import { Stack } from "@maneman/ui/Layout";
-import { plainDate } from "@maneman/web-kit/plain-date";
-import { ClientPackage } from "./ClientPackage.tsx";
-import { TextLink } from "@maneman/ui/TextLink";
-import { ButtonLink } from "@maneman/ui/Button";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
-import { DescriptionList } from "@maneman/ui/DescriptionList";
-import { ICONS } from "@maneman/brand/icons";
+import { GLYPHS, ICONS } from "@maneman/brand/icons";
+import { PageTitle } from "@maneman/ui/PageHeader";
+import { Stack } from "@maneman/ui/Layout";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
+import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { indiaClock, longDate, todayInIndia } from "@maneman/web-kit/dates";
-import { rupees } from "@maneman/web-kit/money";
+import { indiaDate, shortMonth, todayInIndia } from "@maneman/web-kit/dates";
+import { apiNow } from "@maneman/web-kit/clock";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
+import { ClientChat } from "../care/index.ts";
 import { OpsLink } from "../frame/Shell.tsx";
-import { PageActions, useRecordTitle } from "../frame/PageHead.tsx";
+import { PageActions, useRecordHead, useRecordTitle, type RecordHead } from "../frame/PageHead.tsx";
 import { clients } from "../content.ts";
 import { rememberClient } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath, type ClientTab } from "../route.ts";
-import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./clients.module.css";
 import styles from "./client-screen.module.css";
+import { useBookVisit, type Booking } from "./BookOne.tsx";
+import { ClientAside } from "./ClientAside.tsx";
+import { ClientPackage } from "./ClientPackage.tsx";
 import { Consents } from "./Consents.tsx";
 import { Erased, ErasedRecord, NoClient } from "./Erase.tsx";
-import { History, replacementDueOf } from "./History.tsx";
+import { History } from "./History.tsx";
 import { Invite, type InviteNews } from "./Invite.tsx";
 import { OpenTasks } from "./OpenTasks.tsx";
-import { StaffNotes } from "./StaffNotes.tsx";
 import { Payments } from "./Payments.tsx";
 import { Photos, usePhotos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
-import { BookOne, Visits } from "./Visits.tsx";
-import { apiNow } from "@maneman/web-kit/clock";
+import { Visits } from "./Visits.tsx";
 
 type Credits = ClientRecord["credits"];
 type Address = ClientRecord["address"];
@@ -47,158 +47,217 @@ interface Attached {
   readonly news: InviteNews;
 }
 
-// Null when they hold none, which every page says the one way.
-const creditsOf = (credits: Credits) =>
-  credits === null
-    ? clients.credits.none
-    : clients.creditLine(credits.visits, credits.earliest_expiry === null ? null : longDate(credits.earliest_expiry));
+/** Fitted is done; Booked is under way; nothing booked is a client to win back, said plainly. */
+const STATE_TONES = { fitted: "done", lead: "attention", nothing_booked: "neutral" } as const;
 
-/** Who invited the client, a way to their page, and the invite's code: "Vikram Sethi (VSAB23)". */
-function InvitedBy({ invite }: { invite: ClientInvite }) {
-  const code = clients.meta.inviteCode(invite.code);
-  if (invite.referrer === null) return `${clients.invite.erased} ${code}`;
+/** The head's badges and facts: where they stand, a replacement past its day; their number, city, since and package. */
+function headOf(record: ClientRecord): RecordHead {
+  const due = record.history.replacement_due;
+  const late = due !== null && due.on < todayInIndia(apiNow());
+  return {
+    badges: [
+      { words: clients.states[record.state], tone: STATE_TONES[record.state] },
+      ...(late ? [{ words: clients.head.replacementLate, tone: "error" as const }] : []),
+    ],
+    facts: [
+      phoneWords(record.mobile),
+      ...(record.address === null ? [] : [record.address.city]),
+      clients.head.since(shortMonth(indiaDate(record.known_since).slice(0, 7))),
+      ...(record.package === null ? [] : [record.package.name]),
+    ],
+  };
+}
+
+/** A chat with the client in WhatsApp, in a new tab. */
+function WhatsApp({ record }: { record: ClientRecord }) {
   return (
-    <>
-      <OpsLink to={clientPath(invite.referrer.id, "visits")}>{invite.referrer.name}</OpsLink> {code}
-    </>
+    <ButtonLink
+      variant="outline"
+      size="small"
+      href={whatsappChat(record.mobile)}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={clients.whatsappLabel(record.name)}
+    >
+      <Icon d={ICONS.whatsapp} size="sm" className={shared.icon} />
+      {clients.whatsapp}
+    </ButtonLink>
   );
 }
 
-/** What they have paid, less what was refunded, in paise. */
-const paidToDate = (payments: ClientRecord["payments"]): number =>
-  payments.reduce((sum, each) => sum + (each.kind === "payment" ? each.amount : -each.amount), 0);
-
-/** Their next visit booked, "25 Sep 2027, 9 am"; none while nothing is booked ahead. */
-function nextVisitWords(record: ClientRecord): string {
-  const today = todayInIndia(apiNow());
-  const next = record.visits.upcoming.find((visit) => visit.date >= today);
-  return next === undefined ? clients.list.noVisit : `${plainDate(next.date)}, ${indiaClock(next.starts_at)}`;
-}
-
-/** The client's name as the page's title, the way to message them at its right, and their standing beneath. */
-function Head({ record, credits, invite }: { record: ClientRecord; credits: Credits; invite: ClientInvite | null }) {
+/** The client's name, badges and facts as the page's head, with Call, WhatsApp and Book a visit at its right. */
+function Head({ record, booking }: { record: ClientRecord; booking: Booking }) {
   useRecordTitle(record.name);
+  useRecordHead(useMemo(() => headOf(record), [record]));
   const mobile = phoneWords(record.mobile);
-  const facts = [
-    { term: clients.meta.state, details: clients.states[record.state] },
-    { term: clients.meta.city, details: record.address?.city ?? clients.list.noCity },
-    { term: clients.meta.package, details: record.package?.name ?? clients.noneYet },
-    { term: clients.meta.nextVisit, details: nextVisitWords(record) },
-    { term: clients.meta.since, details: longDate(record.known_since) },
-    { term: clients.meta.spent, details: rupees(paidToDate(record.payments)) },
-    { term: clients.meta.credits, details: creditsOf(credits) },
-    {
-      term: clients.meta.replacement,
-      details: <span className={styles.metaBrass}>{replacementDueOf(record.history, record.state === "fitted")}</span>,
-    },
-    {
-      term: clients.meta.mobile,
-      details: (
-        <TextLink compact href={`tel:${record.mobile}`} aria-label={clients.callLabel(record.name, mobile)}>
-          {mobile}
-        </TextLink>
-      ),
-    },
-    ...(invite === null ? [] : [{ term: clients.meta.invitedBy, details: <InvitedBy invite={invite} /> }]),
-  ];
   return (
-    <>
-      <PageActions>
-        <ButtonLink
-          variant="outline"
+    <PageActions>
+      <ButtonLink
+        variant="outline"
+        size="small"
+        href={`tel:${record.mobile}`}
+        aria-label={clients.callLabel(record.name, mobile)}
+      >
+        <Icon d={GLYPHS.phone} size="sm" className={shared.icon} />
+        {clients.head.call}
+      </ButtonLink>
+      <WhatsApp record={record} />
+      {booking.mayBook && (
+        <Button
+          variant="primary"
           size="small"
-          href={whatsappChat(record.mobile)}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={clients.whatsappLabel(record.name)}
+          onClick={(event) => {
+            booking.open(event.currentTarget);
+          }}
         >
-          <Icon d={ICONS.whatsapp} size="sm" className={shared.icon} />
-          {clients.whatsapp}
-        </ButtonLink>
-      </PageActions>
-      <DescriptionList items={facts} />
-    </>
+          {clients.visits.book.open}
+        </Button>
+      )}
+    </PageActions>
   );
 }
 
-function Tab({
-  clientId,
-  tab,
-  record,
-  credits,
-  onCredits,
-  attached,
-  onAttached,
-  address,
-  onAddress,
-  onChanged,
-  onErased,
-  photos,
-}: {
-  clientId: string;
-  tab: ClientTab;
-  record: ClientRecord;
-  credits: Credits;
-  onCredits: (credits: Credits) => void;
-  attached: Attached | null;
-  onAttached: (attached: Attached) => void;
-  address: Address;
-  onAddress: (address: NonNullable<Address>) => void;
-  onChanged: () => void;
-  onErased: () => void;
-  photos: ReturnType<typeof usePhotos>;
-}) {
-  if (tab === "visits") {
-    return <Visits clientId={clientId} record={record} address={address} onAddress={onAddress} onChanged={onChanged} />;
-  }
-  if (tab === "pieces") {
+/** What a tab draws: from the record the page holds, or what it reads for itself. */
+interface TabProps {
+  readonly clientId: string;
+  readonly tab: ClientTab;
+  readonly record: ClientRecord;
+  readonly booking: Booking;
+  readonly credits: Credits;
+  readonly onCredits: (credits: Credits) => void;
+  readonly attached: Attached | null;
+  readonly onAttached: (attached: Attached) => void;
+  readonly onChanged: () => void;
+  readonly onErased: () => void;
+  readonly photos: ReturnType<typeof usePhotos>;
+}
+
+function Tab(props: TabProps) {
+  const { clientId, tab, record } = props;
+  if (tab === "visits") return <Visits record={record} booking={props.booking} onChanged={props.onChanged} />;
+  if (tab === "pieces")
     return (
       <>
-        <ClientPackage clientId={clientId} record={record} onChanged={onChanged} />
         <Pieces clientId={clientId} />
+        <ClientPackage clientId={clientId} record={record} onChanged={props.onChanged} />
       </>
     );
-  }
-  if (tab === "payments") {
+  if (tab === "payments")
     return (
       <Payments
         clientId={clientId}
         payments={record.payments}
         links={record.payment_links}
         invoices={record.invoices}
-        credits={credits}
-        onCredits={onCredits}
+        credits={props.credits}
+        onCredits={props.onCredits}
       />
     );
-  }
-  if (tab === "referrals") {
+  if (tab === "messages")
+    return <ClientChat clientId={clientId} mobile={record.mobile} none={<WhatsApp record={record} />} />;
+  if (tab === "referrals")
     return (
-      <div className={shared.visits}>
-        <Invite
+      <Invite
+        clientId={clientId}
+        invite={props.attached?.invite ?? record.invite}
+        news={props.attached?.news ?? null}
+        onInvite={(invite, news) => {
+          props.onAttached({ invite, news });
+        }}
+      />
+    );
+  if (tab === "consents") return <Consents clientId={clientId} name={record.name} onErased={props.onErased} />;
+  if (tab === "history") return <History clientId={clientId} history={record.history} />;
+  return <Photos photos={props.photos} name={record.name} />;
+}
+
+/** The tabs, one row that scrolls on a phone, and the tab chosen beneath, its panel unheaded where it is titled so. */
+function TabBody(props: TabProps) {
+  const label = clients.tabs.find((each) => each.tab === props.tab)?.label ?? null;
+  return (
+    <div className={styles.main}>
+      <Tabs label={props.record.name}>
+        {clients.tabs.map((each) => (
+          <OpsLink
+            key={each.tab}
+            className={TAB}
+            to={clientPath(props.clientId, each.tab)}
+            current={each.tab === props.tab}
+          >
+            {each.label}
+          </OpsLink>
+        ))}
+      </Tabs>
+      <PageTitle.Provider value={label}>
+        <Stack>
+          <Tab {...props} />
+        </Stack>
+      </PageTitle.Provider>
+    </div>
+  );
+}
+
+function ClientPage({
+  clientId,
+  tab,
+  record,
+  retry,
+  photos,
+  onErased,
+}: {
+  clientId: string;
+  tab: ClientTab;
+  record: ClientRecord;
+  retry: () => void;
+  photos: ReturnType<typeof usePhotos>;
+  onErased: () => void;
+}) {
+  // What the credit form last answered, which stands over the record read when the page opened.
+  const [adjusted, setAdjusted] = useState<{ credits: Credits } | null>(null);
+  const [attached, setAttached] = useState<Attached | null>(null);
+  // An address a client gave on the phone, saved on this page, which stands over the one read on opening.
+  const [given, setGiven] = useState<{ address: NonNullable<Address> } | null>(null);
+  const booking = useBookVisit(clientId, record, retry);
+  const credits = adjusted === null ? record.credits : adjusted.credits;
+  return (
+    <div className={shared.client}>
+      <Head record={record} booking={booking} />
+      {booking.panel}
+      <OpenTasks clientId={clientId} name={record.name} />
+      <div className={styles.columns}>
+        <TabBody
           clientId={clientId}
-          invite={attached?.invite ?? record.invite}
-          news={attached?.news ?? null}
-          onInvite={(invite, news) => {
-            onAttached({ invite, news });
+          tab={tab}
+          record={record}
+          booking={booking}
+          credits={credits}
+          onCredits={(next) => {
+            setAdjusted({ credits: next });
+          }}
+          attached={attached}
+          onAttached={setAttached}
+          onChanged={retry}
+          onErased={onErased}
+          photos={photos}
+        />
+        <ClientAside
+          clientId={clientId}
+          record={record}
+          credits={credits}
+          address={given?.address ?? record.address}
+          onAddress={(address) => {
+            setGiven({ address });
           }}
         />
       </div>
-    );
-  }
-  if (tab === "consents") return <Consents clientId={clientId} name={record.name} onErased={onErased} />;
-  if (tab === "history") return <History clientId={clientId} history={record.history} />;
-  return <Photos photos={photos} name={record.name} />;
+    </div>
+  );
 }
 
 export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientTab }) {
   const load = useCallback(() => api.client(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
   const photos = usePhotos(clientId);
-  // What the credit form last answered, which stands over the record read when the page opened.
-  const [adjusted, setAdjusted] = useState<{ credits: Credits } | null>(null);
-  const [attached, setAttached] = useState<Attached | null>(null);
-  // An address a client gave on the phone, saved on this page, which stands over the one read on opening.
-  const [given, setGiven] = useState<{ address: NonNullable<Address> } | null>(null);
   const [erasedId, setErasedId] = useState<string | null>(null);
   // Offered again on the Clients page, for the rest of the session.
   const opened = loaded.state === "loaded" && !isErased(loaded.value) ? loaded.value.name : null;
@@ -206,70 +265,29 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
     if (opened !== null) rememberClient({ id: clientId, name: opened });
   }, [clientId, opened]);
 
-  if (erasedId === clientId) {
-    return <Erased />;
-  }
-
-  return (
-    <>
-      {whenLoaded(loaded, {
-        loading: <PanelLoading />,
-        failed:
-          loaded.state === "failed" && loaded.notFound ? (
-            <NoClient />
-          ) : (
-            <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />
-          ),
-        loaded: (record) =>
-          isErased(record) ? (
-            <ErasedRecord record={record} onChanged={retry} />
-          ) : (
-            <div className={shared.client}>
-              <Head
-                record={record}
-                credits={adjusted === null ? record.credits : adjusted.credits}
-                invite={attached?.invite ?? record.invite}
-              />
-              <BookOne clientId={clientId} record={record} onBooked={retry} />
-              <OpenTasks clientId={clientId} />
-              <StaffNotes clientId={clientId} />
-              <Tabs label={record.name}>
-                {clients.tabs.map((each) => (
-                  <OpsLink
-                    key={each.tab}
-                    className={TAB}
-                    to={clientPath(clientId, each.tab)}
-                    current={each.tab === tab}
-                  >
-                    {each.label}
-                  </OpsLink>
-                ))}
-              </Tabs>
-              <Stack>
-                <Tab
-                  clientId={clientId}
-                  tab={tab}
-                  record={record}
-                  credits={adjusted === null ? record.credits : adjusted.credits}
-                  onCredits={(credits) => {
-                    setAdjusted({ credits });
-                  }}
-                  attached={attached}
-                  onAttached={setAttached}
-                  address={given?.address ?? record.address}
-                  onAddress={(address) => {
-                    setGiven({ address });
-                  }}
-                  onChanged={retry}
-                  onErased={() => {
-                    setErasedId(clientId);
-                  }}
-                  photos={photos}
-                />
-              </Stack>
-            </div>
-          ),
-      })}
-    </>
-  );
+  if (erasedId === clientId) return <Erased />;
+  return whenLoaded(loaded, {
+    loading: <PanelLoading />,
+    failed:
+      loaded.state === "failed" && loaded.notFound ? (
+        <NoClient />
+      ) : (
+        <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />
+      ),
+    loaded: (record) =>
+      isErased(record) ? (
+        <ErasedRecord record={record} onChanged={retry} />
+      ) : (
+        <ClientPage
+          clientId={clientId}
+          tab={tab}
+          record={record}
+          retry={retry}
+          photos={photos}
+          onErased={() => {
+            setErasedId(clientId);
+          }}
+        />
+      ),
+  });
 }

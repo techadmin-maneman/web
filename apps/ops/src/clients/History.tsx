@@ -1,19 +1,21 @@
-// What the client's record adds up to: visits, purchases, payments, and when their piece falls due, from the record the
-// page already holds, so the tab asks for nothing. For whoever may read the audit log, it links to everything done on
-// the record, in Activity.
+// The client's History tab: what their visits add up to, from the record the page already holds, and, for whoever may
+// read the audit log, everything done on the record and by them, the latest first. What they paid, how many visits
+// and when their piece falls due are at the page's right (./ClientAside.tsx).
 
 import { shortMonth } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
+import { PanelLoading } from "@maneman/ui/States";
+import { Suspense } from "react";
+import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { plainDate } from "@maneman/web-kit/plain-date";
-import { rupees } from "@maneman/web-kit/money";
 import type { ClientRecord } from "../api.ts";
-import { OpsLink } from "../frame/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { activityPath } from "../route.ts";
 import styles from "./history.module.css";
 
 const copy = clients.history;
+
+const RecordActivity = lazyScreen(() => import("../activity/index.ts").then((module) => module.RecordActivity));
 
 function HistoryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -25,7 +27,6 @@ function HistoryRow({ label, value }: { label: string; value: string }) {
 }
 
 export function History({ clientId, history }: { clientId: string; history: ClientRecord["history"] }) {
-  const due = history.replacement_due;
   const mayReadLog = useAccess().mayCall("GET /api/activity");
   return (
     <Panel titleId="client-history" title={copy.title}>
@@ -34,23 +35,17 @@ export function History({ clientId, history }: { clientId: string; history: Clie
           label={copy.rows.firstFit}
           value={history.first_fit_on === null ? copy.noFirstFit : plainDate(history.first_fit_on)}
         />
-        <HistoryRow label={copy.rows.visits} value={String(history.visits)} />
         <HistoryRow label={copy.rows.services} value={String(history.services)} />
         <HistoryRow label={copy.rows.replacements} value={String(history.replacements)} />
         <HistoryRow
           label={copy.rows.lastVisit}
           value={history.last_visit_on === null ? copy.noVisit : plainDate(history.last_visit_on)}
         />
-        <HistoryRow
-          label={copy.rows.replacement}
-          value={due === null ? copy.noPiece : copy.due(plainDate(due.on), due.piece_code)}
-        />
-        <HistoryRow label={copy.rows.spend} value={rupees(history.spend)} />
       </dl>
       {mayReadLog && (
-        <p className={styles.historyActivity}>
-          <OpsLink to={activityPath({ person: clientId })}>{copy.activity}</OpsLink>
-        </p>
+        <Suspense fallback={<PanelLoading />}>
+          <RecordActivity person={clientId} />
+        </Suspense>
       )}
     </Panel>
   );

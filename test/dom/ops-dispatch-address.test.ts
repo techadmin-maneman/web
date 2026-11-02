@@ -89,6 +89,7 @@ async function openAt(path: string) {
       setOver: () => undefined,
       setRecord: () => undefined,
       setHeading: () => undefined,
+      setRecordHead: () => undefined,
       actions: controls,
     };
     root.render(

@@ -17,6 +17,7 @@ import {
   READ_HAIR_PROFILE,
   READ_STOCK_MATCH,
   openClient,
+  visitRow,
 } from "./clients-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { stockMatch as matchCopy } from "../../apps/ops/src/content/stock-match.ts";
@@ -138,27 +139,23 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(page.getByText("House 1204, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
 
-  const coming = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
+  const coming = visitRow(page, "25 Sep");
   await expect(coming).toContainText("25 Sep");
   await expect(coming).toContainText("9 am to 10:30 am");
   await expect(coming).toContainText(opsCopy.clients.visits.types.service);
   await expect(coming).toContainText("Imran Qureshi");
   await expect(coming).toContainText("Booked · Prepaid");
-  await expect(page.getByRole("region", { name: opsCopy.clients.visits.past }).getByRole("row").nth(1)).toContainText(
-    "22 Aug 2027",
-  );
+  await expect(visitRow(page, "22 Aug 2027")).toBeVisible();
   // A visit to come opens on the dispatch board, on its week with its drawer open; a visit done does not.
   await expect(coming.getByRole("link", { name: "See the visit of 25 Sep 2027 on the board" })).toHaveAttribute(
     "href",
     "/dispatch?from=2027-09-25&visit=33000000-0000-4000-8000-000000000002",
   );
-  await expect(
-    page.getByRole("region", { name: opsCopy.clients.visits.past }).getByRole("link", { name: /on the board/ }),
-  ).toHaveCount(0);
+  await expect(visitRow(page, "22 Aug 2027").getByRole("link", { name: /on the board/ })).toHaveCount(0);
 });
 
 // On 25 Oct, a 20 Oct visit nobody arrived for sat under "To come".
-test("sets a visit past its day and not closed apart, as overdue, from those to come", async ({ page }) => {
+test("puts a visit past its day and not closed first, ahead of those to come", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2027-09-24T06:00:00.000Z"));
   const [coming] = RECORD.visits.upcoming;
   if (coming === undefined) throw new Error("the record has a visit to come");
@@ -166,19 +163,17 @@ test("sets a visit past its day and not closed apart, as overdue, from those to 
   await openClient(page, `/clients/${CLIENT.id}/visits`, {
     [READ_RECORD]: json({ ...RECORD, visits: { ...RECORD.visits, upcoming: [missed, coming] } }),
   });
-  const overdue = page.getByRole("region", { name: opsCopy.clients.visits.overdue });
-  await expect(overdue.getByRole("row")).toHaveCount(2);
-  await expect(overdue).toContainText("20 Sep");
-  const toCome = page.getByRole("region", { name: opsCopy.clients.visits.upcoming });
-  await expect(toCome).toContainText("25 Sep");
-  await expect(toCome).not.toContainText("20 Sep");
+  const rows = page.getByRole("region", { name: opsCopy.clients.tabs[0].label, exact: true }).getByRole("row");
+  await expect(rows.nth(1)).toContainText("20 Sep");
+  await expect(rows.nth(2)).toContainText("25 Sep");
 });
 
-test("says so when there is no address and no visit either way", async ({ page }) => {
+// Two empty panels said there was no visit to come and none done.
+test("says so when there is no address, and that nothing is booked, with the way to book", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(NEW_RECORD) });
   await expect(page.getByText(opsCopy.clients.visits.noAddress)).toBeVisible();
-  await expect(page.getByText(opsCopy.clients.visits.noUpcoming)).toBeVisible();
-  await expect(page.getByText(opsCopy.clients.visits.noPast)).toBeVisible();
+  await expect(page.getByText(opsCopy.clients.visits.nothingBooked, { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: opsCopy.clients.tabs[0].label, exact: true })).toHaveCount(0);
 });
 
 // An address a client gives ops on the phone, saved as theirs and marked as given to ops (ADR 0092; open point 62).

@@ -1,11 +1,16 @@
 /* What ./ClientList.tsx alone draws; what it shares is in ./clients.module.css. */
 /* Every client, beneath the search: how they are narrowed, the table, and its pages. */
-/* The search and the narrowing above the list, at the panel's inset. */
-.listTools {
-  padding: var(--sp-16) var(--form-inset) var(--sp-12);
+/* Where clients stand, a chip each, in one row that scrolls sideways where it runs past its end. */
+.listStates {
+  display: flex;
+  gap: var(--sp-8);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-/* A visit left partly done that ops closed without a follow-up, beneath its state. */
+.listStates > * {
+  flex-shrink: 0;
+}
 
 .listScroll {
   overflow-x: auto;
@@ -14,11 +19,29 @@
 .listPages {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--sp-12);
   margin: var(--sp-16) var(--form-inset);
 }
 
 .listPage {
+  order: -1;
+  margin-right: auto;
   font-size: var(--fs-14);
   color: var(--ui-text-muted);
+}
+
+/* What waits on Tasks for the client, in brass; past its day, in the error's red. */
+.listNeed {
+  color: var(--ui-attention);
+}
+
+.listLate {
+  color: var(--ui-error);
+}
+
+/* What they have paid, at the right, its figures in line. */
+.listPaid {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }

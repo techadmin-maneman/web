@@ -18,7 +18,6 @@ function joined(words: readonly string[]): string {
 
 export const stockMatch = {
   title: "Stock",
-  noProfile: "No hair profile yet, so nothing to match.",
   /** "The profile needs grey and density to match stock." */
   incomplete: (missing: readonly string[]) =>
     `The profile needs ${joined(missing.map((field) => FIELDS[field] ?? field))} to match stock.`,

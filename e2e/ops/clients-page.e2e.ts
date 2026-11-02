@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, CLIENT, fails, json, NEW_RECORD, RECORD } from "./fixtures.ts";
@@ -13,40 +14,40 @@ import {
   clientTab,
 } from "./clients-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { care } from "../../apps/ops/src/content/care.ts";
 
-// What a client has bought and how
-// often they have been served belongs on the ops console as well as in the app.
-test("counts the client’s visits and replacements, and the day their piece falls due", async ({ page }) => {
+/** A fact's value in a region of the page, by its name. */
+const factIn = (page: Page, region: string) => (label: string) =>
+  page
+    .getByRole("region", { name: region })
+    .getByRole("term")
+    .filter({ hasText: new RegExp(`^${label}$`) })
+    .locator("+ dd");
+
+// What a client has bought and how often they have been served belongs on the ops console as well as in the app.
+// The visits, when the piece falls due and what was paid stand at the page's right; History has the rest.
+test("counts the client’s visits and replacements, and the month their piece falls due", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/history`);
-  const history = page.getByRole("region", { name: opsCopy.clients.history.title });
-  const fact = (label: string) =>
-    history
-      .getByRole("term")
-      .filter({ hasText: new RegExp(`^${label}$`) })
-      .locator("+ dd");
+  const fact = factIn(page, opsCopy.clients.history.title);
   await expect(fact("First fit")).toHaveText("14 Nov");
-  await expect(fact("Visits")).toHaveText("6");
   await expect(fact("Service visits")).toHaveText("4");
   await expect(fact("Replacements")).toHaveText("1");
   await expect(fact("Last visit")).toHaveText("22 Aug 2027");
-  // Ops order a piece against a day, so this tab carries one; only the client is told the month alone.
-  await expect(fact("Replacement due")).toHaveText("1 Mar 2028 · MM-STD-4417-C");
-  await expect(fact("Paid")).toHaveText("Rs. 49,560");
+  const glance = factIn(page, opsCopy.clients.glance.title);
+  await expect(glance(opsCopy.clients.glance.visits)).toHaveText("6");
+  await expect(glance(opsCopy.clients.glance.replaceBy)).toHaveText("Mar 2028");
 });
 
 test("writes a client with no record in words, and their true noughts as noughts", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/history`, { [READ_RECORD]: json(NEW_RECORD) });
-  const history = page.getByRole("region", { name: opsCopy.clients.history.title });
-  const fact = (label: string) =>
-    history
-      .getByRole("term")
-      .filter({ hasText: new RegExp(`^${label}$`) })
-      .locator("+ dd");
+  const fact = factIn(page, opsCopy.clients.history.title);
   await expect(fact("First fit")).toHaveText(opsCopy.clients.history.noFirstFit);
   await expect(fact("Last visit")).toHaveText(opsCopy.clients.history.noVisit);
-  await expect(fact("Replacement due")).toHaveText(opsCopy.clients.history.noPiece);
   await expect(fact("Service visits")).toHaveText("0");
-  await expect(fact("Paid")).toHaveText("Rs. 0");
+  const glance = factIn(page, opsCopy.clients.glance.title);
+  await expect(glance(opsCopy.clients.glance.replaceBy)).toHaveText(opsCopy.clients.noPiece);
+  await expect(glance(opsCopy.clients.glance.paid)).toHaveText("Rs. 0");
+  await expect(glance(opsCopy.clients.glance.visits)).toHaveText("0");
 });
 
 test("moves between the tabs without reading the record again, and keeps the photographs open", async ({ page }) => {
@@ -68,7 +69,7 @@ test("moves between the tabs without reading the record again, and keeps the pho
   await page.getByRole("link", { name: opsCopy.clients.photos.angles.hair }).click();
   await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
   // Visits, Payments and History are drawn from the record already loaded, so they ask the API for nothing.
-  await page.getByRole("link", { name: opsCopy.clients.history.rows.visits }).click();
+  await clientTab(page, opsCopy.clients.tabs[0].label).click();
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
   await clientTab(page, "Payments").click();
   await expect(page.getByRole("region", { name: opsCopy.clients.payments.title })).toContainText(
@@ -115,7 +116,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
   await clean("pieces");
 
-  await page.getByRole("link", { name: opsCopy.clients.history.rows.visits }).click();
+  await clientTab(page, opsCopy.clients.tabs[0].label).click();
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();
   await clean("visits");
 
@@ -126,6 +127,10 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await clientTab(page, "Referrals").click();
   await expect(page.getByRole("region", { name: opsCopy.clients.invite.title })).toBeVisible();
   await clean("referrals");
+
+  await clientTab(page, "Messages").click();
+  await expect(page.getByText(care.clientChat.none)).toBeVisible();
+  await clean("messages");
 
   await page.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText(opsCopy.clients.photos.locked)).toBeVisible();
