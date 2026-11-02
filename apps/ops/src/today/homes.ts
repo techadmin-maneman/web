@@ -4,8 +4,7 @@
 
 import type { Tasks, Whoami } from "../api.ts";
 
-const HOMES = ["dispatch", "care", "city", "finance"] as const;
-export type Home = (typeof HOMES)[number];
+export type Home = "dispatch" | "care" | "city" | "finance";
 
 type Staff = Whoami["staff"];
 type Group = Tasks["groups"][number]["group"];
