@@ -220,6 +220,11 @@
   background: var(--ui-raised);
 }
 
+/* Its head keeps the heads' band. */
+.scroll .table:has(td:last-child :is(button, a)) thead th:last-child {
+  background: var(--ui-ground);
+}
+
 /*
  * On a phone a row is a card: its first cell its title, every other value on a line of its own beside its column's
  * name (Table's data-label), and the heads a line of their own above where they tick every row; other heads are read
