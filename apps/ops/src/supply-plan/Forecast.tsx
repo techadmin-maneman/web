@@ -7,6 +7,7 @@ import { addDays, dayMonth, todayInIndia } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -31,8 +32,8 @@ export function dayAfter(date: string, days: number, year = false): string {
 
 function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
   const { run } = forecast;
-  if (run === null) return <Note>{copy.none}</Note>;
-  if (forecast.lines.length === 0) return <Note>{copy.empty(city)}</Note>;
+  if (run === null) return <EmptyState look="panel" line={copy.none} />;
+  if (forecast.lines.length === 0) return <EmptyState look="panel" line={copy.empty(city)} />;
   const items = new Map<string, { name: string; periods: Map<number, Forecast["lines"][number]> }>();
   for (const line of forecast.lines) {
     const item = items.get(line.consumable_code) ?? { name: line.name, periods: new Map() };

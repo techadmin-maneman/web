@@ -16,7 +16,6 @@ import { technicianPay } from "../content/technician-pay.ts";
 import { csvText } from "../lib/csv.ts";
 import { saveFile } from "../lib/save-file.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
-import form from "@maneman/ui/forms.module.css";
 import shared from "./technician-pay.module.css";
 import styles from "./pay-statement.module.css";
 import { technicianPayApi } from "./technician-pay-api.ts";
@@ -24,6 +23,9 @@ import { technicianPayApi } from "./technician-pay-api.ts";
 const copy = technicianPay.statement;
 
 type Line = components["schemas"]["PayStatement"]["lines"][number];
+
+/** The columns from Visits on are figures, set right under heads set right. */
+const FIRST_FIGURE = 3;
 
 /** The twelve months to today's, newest first, as YYYY-MM. */
 function monthsTo(today: string): string[] {
@@ -71,11 +73,11 @@ function byTechnician(lines: readonly Line[]) {
 function StatementTable({ lines }: { lines: readonly Line[] }) {
   return (
     <TableScroll labelledBy="pay-statement">
-      <Table controls className={classes(shared.table, shared.people)}>
+      <Table className={classes(shared.table, shared.people)}>
         <thead>
           <tr>
-            {copy.columns.map((column) => (
-              <th scope="col" key={column}>
+            {copy.columns.map((column, at) => (
+              <th scope="col" key={column} className={at >= FIRST_FIGURE ? shared.figure : undefined}>
                 {column}
               </th>
             ))}
@@ -113,37 +115,43 @@ export function PayStatement({ today }: { today: string }) {
   const load = useCallback(() => technicianPayApi.payStatement(month), [month]);
   const [loaded, retry] = useLoad(load);
   return (
-    <Panel titleId="pay-statement" title={copy.title}>
-      <div className={shared.tools}>
-        <Field label={copy.month} className={form.field}>
-          {(control) => (
-            <Select
-              {...control}
-              value={month}
-              onChange={(event) => {
-                setMonth(event.target.value);
+    <Panel
+      titleId="pay-statement"
+      title={copy.title}
+      actions={
+        <>
+          <Field label={copy.month} labelHidden>
+            {(control) => (
+              <Select
+                {...control}
+                width="choice"
+                value={month}
+                onChange={(event) => {
+                  setMonth(event.target.value);
+                }}
+              >
+                {months.map((each) => (
+                  <option key={each} value={each}>
+                    {copy.monthName(each)}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+          {loaded.state === "loaded" && loaded.value.lines.length > 0 && (
+            <Button
+              variant="outline"
+              size="control"
+              onClick={() => {
+                saveFile(copy.fileName(month), statementCsv(loaded.value.lines), "text/csv");
               }}
             >
-              {months.map((each) => (
-                <option key={each} value={each}>
-                  {copy.monthName(each)}
-                </option>
-              ))}
-            </Select>
+              {copy.download}
+            </Button>
           )}
-        </Field>
-        {loaded.state === "loaded" && loaded.value.lines.length > 0 && (
-          <Button
-            variant="outline"
-            size="control"
-            onClick={() => {
-              saveFile(copy.fileName(month), statementCsv(loaded.value.lines), "text/csv");
-            }}
-          >
-            {copy.download}
-          </Button>
-        )}
-      </div>
+        </>
+      }
+    >
       {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" &&

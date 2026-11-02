@@ -2,6 +2,8 @@
 // client who came with none may have one attached, for a friend who booked away from the invite's page
 // (docs/decisions/0089-an-invite-is-not-lost.md).
 
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import form from "@maneman/ui/forms.module.css";
 import { Toast } from "@maneman/ui/Toast";
@@ -108,7 +110,6 @@ function AttachForm({
         if (ready) void send();
       }}
     >
-      <p className={shared.findHint}>{copy.none}</p>
       <Field label={copy.form.code}>
         {(control) => (
           <TextInput
@@ -164,12 +165,33 @@ export function Invite({
 }) {
   const mayAttach = useAccess().mayCall("POST /api/clients/{id}/referral");
   return (
-    <Panel titleId="invite" title={copy.title}>
-      <div className={form.group}>
-        {invite !== null && <Details invite={invite} news={news} />}
-        {invite === null && mayAttach && <AttachForm clientId={clientId} onInvite={onInvite} />}
-        {invite === null && !mayAttach && <p className={shared.findHint}>{copy.noInvite}</p>}
-      </div>
+    <Panel
+      titleId="invite"
+      title={copy.title}
+      actions={
+        invite === null &&
+        mayAttach && (
+          <DrawerButton label={copy.attach}>
+            {(close) => (
+              <AttachForm
+                clientId={clientId}
+                onInvite={(attached, said) => {
+                  close();
+                  onInvite(attached, said);
+                }}
+              />
+            )}
+          </DrawerButton>
+        )
+      }
+    >
+      {invite === null ? (
+        <EmptyState look="panel" line={copy.none} />
+      ) : (
+        <div className={form.group}>
+          <Details invite={invite} news={news} />
+        </div>
+      )}
     </Panel>
   );
 }

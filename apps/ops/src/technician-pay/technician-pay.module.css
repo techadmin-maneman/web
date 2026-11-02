@@ -1,14 +1,5 @@
 /* Technician pay: the rates as a table of grades by kind of visit, and the technicians with their grades. */
 
-/* The city the rates are shown for, on a line above the table. */
-.tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: var(--sp-12) var(--sp-24);
-  margin: var(--sp-16) var(--sp-20) var(--sp-8);
-}
-
 .people {
   min-width: var(--ops-measure);
 }
@@ -24,6 +15,6 @@
 }
 
 /* Room above and below for a rate set to start later. */
-.table .figure {
+.table td.figure {
   padding-block: var(--sp-4);
 }

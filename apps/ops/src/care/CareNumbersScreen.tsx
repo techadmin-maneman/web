@@ -3,12 +3,12 @@
 // about, the remedies given, and the replies of each Care person.
 
 import { Field, Select } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { BarChart } from "@maneman/ui/BarChart";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
+import { quantity } from "@maneman/web-kit/figures";
 import { useCallback, useState } from "react";
 import { care } from "../content/care.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
@@ -45,12 +45,13 @@ function Figures({ numbers }: { numbers: CareNumbers }) {
   );
 }
 
-/** One of the counts by reason, a line each, or a dash with none. */
-function Counted({ titleId, title, lines }: { titleId: string; title: string; lines: readonly string[] }) {
+/** One of the counts by reason, a line each, or a line saying there were none. */
+function Counted(props: { titleId: string; title: string; lines: readonly string[]; empty: string }) {
+  const { titleId, title, lines } = props;
   return (
     <Panel titleId={titleId} title={title}>
       {lines.length === 0 ? (
-        <Note>{copy.nothing}</Note>
+        <EmptyState look="panel" line={props.empty} />
       ) : (
         <ul className={shared.reasons}>
           {lines.map((line) => (
@@ -70,11 +71,15 @@ function Reasons({ numbers }: { numbers: CareNumbers }) {
       key: row.reason,
       label: care.reasons[row.reason as keyof typeof care.reasons],
       value: row.chats,
-      shown: String(row.chats),
+      shown: quantity(row.chats),
     }));
   return (
     <Panel titleId="care-reasons" title={copy.reasons}>
-      {bars.length === 0 ? <Note>{copy.nothing}</Note> : <BarChart label={copy.reasons} bars={bars} />}
+      {bars.length === 0 ? (
+        <EmptyState look="panel" line={copy.noReasons} />
+      ) : (
+        <BarChart label={copy.reasons} bars={bars} />
+      )}
     </Panel>
   );
 }
@@ -86,7 +91,7 @@ function Lists({ numbers }: { numbers: CareNumbers }) {
   return (
     <>
       <Reasons numbers={numbers} />
-      <Counted titleId="care-remedies" title={copy.remedies} lines={remedies} />
+      <Counted titleId="care-remedies" title={copy.remedies} lines={remedies} empty={copy.noRemedies} />
     </>
   );
 }

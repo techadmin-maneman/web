@@ -1,11 +1,10 @@
 /* What Today places: the homes' choice, then what needs the person beside the home's own list, wider to narrower. */
 
-/* The homes' choice: one row, scrolled sideways on a phone where the homes run past its end, as the city's chips are. */
+/* The homes' choice: a chip each, running on to a second line on a phone rather than out of sight. */
 .homes {
   display: flex;
   gap: var(--sp-8);
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
 }
 
 .homes > * {

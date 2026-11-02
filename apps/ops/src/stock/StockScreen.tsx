@@ -5,7 +5,7 @@
 
 import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
@@ -81,7 +81,7 @@ function Movements({ stock }: { stock: Stock }) {
   return (
     <Panel titleId="stock-movements" title={words.title}>
       {stock.movements.length === 0 ? (
-        <Note>{words.none}</Note>
+        <EmptyState look="panel" line={words.none} />
       ) : (
         <>
           <Narrowing view={view} label={words.narrow} />

@@ -76,4 +76,9 @@
     line-height: var(--lh-160);
     color: var(--on-surface-muted);
   }
+
+  /* With more beneath it in the panel, the room below is that part's own. */
+  .panel:has(+ *) {
+    padding-bottom: 0;
+  }
 }

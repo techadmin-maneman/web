@@ -3,7 +3,7 @@
 
 import type { Success } from "@maneman/web-kit/api";
 import { quantity } from "@maneman/web-kit/figures";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { BarChart } from "@maneman/ui/BarChart";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -35,7 +35,7 @@ function Head({ columns }: { columns: readonly string[] }) {
 }
 
 function Measured({ accuracy }: { accuracy: Accuracy }) {
-  if (accuracy.periods.length === 0) return <Note>{copy.none}</Note>;
+  if (accuracy.periods.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <>
       <BarChart

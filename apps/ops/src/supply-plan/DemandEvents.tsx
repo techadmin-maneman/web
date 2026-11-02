@@ -6,7 +6,7 @@ import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -206,7 +206,7 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
   return (
     <Panel titleId="plan-events" title={copy.title}>
       {demand.events.length === 0 ? (
-        <Note>{copy.none}</Note>
+        <EmptyState look="panel" line={copy.none} />
       ) : (
         <Table controls>
           <thead>

@@ -60,7 +60,7 @@ const row = (page: Page) =>
 
 test("shows last month’s fits, what refunds took back, what is due and what is owed", async ({ page }) => {
   await open(page);
-  await expect(page.getByLabel(copy.month)).toHaveValue("2026-08");
+  await expect(page.getByLabel(copy.month, { exact: true })).toHaveValue("2026-08");
   await expect(row(page).getByRole("cell")).toHaveText([
     "2",
     "Rs. 2,500",
@@ -130,6 +130,6 @@ test("reads another month when one is chosen", async ({ page }) => {
       return json(AUGUST)(route);
     },
   });
-  await page.getByLabel(copy.month).selectOption({ label: "July 2026" });
+  await page.getByLabel(copy.month, { exact: true }).selectOption({ label: "July 2026" });
   await expect.poll(() => asked).toEqual(["", "2026-07"]);
 });

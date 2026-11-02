@@ -499,6 +499,8 @@ export const clients = {
   payments: {
     title: "Payments and refunds",
     columns: { date: "Date", what: "What", amount: "Amount", state: "Status" },
+    /** The column of each payment's refund button, named aloud only. */
+    refundColumn: "Refund",
     none: "No payments yet.",
     /** "Service visit of 22 Aug 2027", and a late fee named as one. */
     visit: (type: string, date: string) => `${type} of ${date}`,
@@ -618,8 +620,8 @@ export const clients = {
     attachedBy: "Attached by",
     why: "Reason",
     none: "No invite.",
-    /** The same, to a person whose access does not let them attach one. */
-    noInvite: "No invite.",
+    /** For a friend who booked away from the invite's page; it opens the form in a drawer. */
+    attach: "Attach an invite",
     form: {
       code: "Invite code",
       reason: "Reason",

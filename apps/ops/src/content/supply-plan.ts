@@ -7,6 +7,8 @@ export const supplyPlan = {
   title: "Supply plan",
   transfers: "Transfers",
   orders: "Orders",
+  /** The panel that says so when no line waits on a decision. */
+  toApprove: "To approve",
   none: "Nothing to approve.",
   transferColumns: ["Item", "From", "To", "For", "Quantity", "Status"],
   orderColumns: ["Item", "Supplier", "For", "Quantity", "Status"],

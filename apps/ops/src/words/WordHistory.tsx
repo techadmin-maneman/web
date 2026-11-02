@@ -3,7 +3,7 @@
 
 import { whoWords } from "../lib/who.ts";
 import { RowButton } from "@maneman/ui/Button";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
@@ -39,7 +39,7 @@ export function WordHistory(props: {
   return (
     <section className={form.group} aria-label={versions.title(placeOf(word))}>
       <h3 className={form.ruleTitle}>{versions.title(placeOf(word))}</h3>
-      {kept.length === 0 && <Note>{versions.none}</Note>}
+      {kept.length === 0 && <EmptyState look="panel" line={versions.none} />}
       <ol className={styles.versions}>
         {kept.map((version) => {
           const day = shortDate(indiaDate(version.set_at));

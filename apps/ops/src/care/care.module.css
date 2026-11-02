@@ -138,13 +138,12 @@
   color: var(--ui-text-muted);
 }
 
-/* A chat's foot (./Composer.tsx): quick replies, a chip each in one row that scrolls sideways, over the box; then
-   reply or note, and Send. */
+/* A chat's foot (./Composer.tsx): quick replies, a chip each, running on to a second line rather than out of sight,
+   over the box; then reply or note, and Send. */
 .quickChips {
   display: flex;
   gap: var(--sp-8);
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
 }
 
 .quickChips > * {

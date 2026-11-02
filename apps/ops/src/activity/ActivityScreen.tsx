@@ -151,8 +151,11 @@ interface Older {
   readonly next: string | null;
 }
 
-/** The log as narrowed, a page at a time: older pages are added beneath as they are asked for. */
-function Log({ filters }: { filters: Filters }) {
+/**
+ * The log as narrowed, a page at a time: older pages are added beneath as they are asked for. `empty` says there is
+ * nothing, in words fit for where it stands.
+ */
+function Log({ filters, empty = copy.empty }: { filters: Filters; empty?: string }) {
   const [loaded, retry] = useLoad(useCallback(() => activityApi.activity(askedOf(filters)), [filters]));
   const [older, setOlder] = useState<Older | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -170,7 +173,7 @@ function Log({ filters }: { filters: Filters }) {
     if (!answer.ok) return;
     setOlder({ entries: [...(older?.entries ?? []), ...answer.body.entries], next: answer.body.next_cursor });
   };
-  if (entries.length === 0) return <EmptyState look="panel" line={copy.empty} />;
+  if (entries.length === 0) return <EmptyState look="panel" line={empty} />;
   return (
     <>
       <Rows entries={entries} />
@@ -195,7 +198,7 @@ function Log({ filters }: { filters: Filters }) {
 /** What was done on one client's record and by them, the latest first: their page's History tab. */
 export function RecordActivity({ person }: { person: string }) {
   const filters = useMemo(() => ({ person }), [person]);
-  return <Log filters={filters} />;
+  return <Log filters={filters} empty={copy.recordEmpty} />;
 }
 
 /** Each filter set, a chip with its way off: a client or visit a link narrowed to, and what Filter chose. */

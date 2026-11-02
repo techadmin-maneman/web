@@ -5,6 +5,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -166,7 +167,7 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
 }
 
 function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean; onRemove: (id: string) => void }) {
-  if (props.entries.length === 0) return <Note>{copy.none}</Note>;
+  if (props.entries.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <Table controls>
       <thead>

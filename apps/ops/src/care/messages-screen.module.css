@@ -34,7 +34,10 @@
   gap: var(--sp-8);
 }
 
+/* The search the column's width, as the chats beneath it are. */
 .search {
+  --search-width: 100%;
+
   display: flex;
   flex-wrap: wrap;
   align-items: center;

@@ -338,6 +338,8 @@ export const activity = {
     job_sheet: "Job sheet",
   } as Readonly<Partial<Record<string, string>>>,
   empty: "Nothing in the log matches.",
+  /** A client's History tab with nothing done on their record yet. */
+  recordEmpty: "Nothing done on this record yet.",
   older: "Show older",
   loadingOlder: "Loading older…",
 };

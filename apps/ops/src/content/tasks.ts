@@ -1,5 +1,6 @@
 // Tasks: every queue ops work through, a payment link's state, and the alerts that need a hand.
 
+import { quantity } from "@maneman/web-kit/figures";
 import type { components } from "../api-schema.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN } from "./common.ts";
@@ -47,15 +48,15 @@ export const tasks = {
   title: "Tasks",
   // Not drawn: the list's heading, the tasks open, as the page's bar already says "Tasks".
   /** The head's count, in oxblood, as the board writes "4 overdue". */
-  openCount: (count: number) => `${String(count)} open`,
+  openCount: (count: number) => `${quantity(count)} open`,
   /** The head's count: the tasks open, and the alerts beside them, "90 open · 3 alerts". */
   openWithAlerts: (count: number, alerts: number) =>
     alerts === 0
-      ? `${String(count)} open`
-      : `${String(count)} open · ${String(alerts)} ${alerts === 1 ? "alert" : "alerts"}`,
-  overdue: (count: number) => `${String(count)} overdue`,
+      ? `${quantity(count)} open`
+      : `${quantity(count)} open · ${quantity(alerts)} ${alerts === 1 ? "alert" : "alerts"}`,
+  overdue: (count: number) => `${quantity(count)} overdue`,
   /** The head's count as a screen reader names it, with what it does. */
-  overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
+  overdueJump: (count: number) => `${quantity(count)} overdue, go to the first`,
   /** Each department's section, named as the navigation names it. */
   departments: DEPARTMENT_NAMES,
   /** The bar over the board: all, a person's own, nobody's or overdue; one kind; or a client by name or number. */
@@ -126,11 +127,11 @@ export const tasks = {
   open: (name: string) => `Open ${name}`,
   decide: DECIDE,
   /** A group longer than the board lists: its count is all of them. */
-  shown: (shown: number, count: number) => `Longest ${String(shown)} of ${String(count)}.`,
+  shown: (shown: number, count: number) => `Longest ${quantity(shown)} of ${quantity(count)}.`,
   /** A card's way to its drawer, with everything else done on the task. */
   details: "Details",
   /** A group shows its five longest waits until ops ask for the rest. */
-  more: (count: number) => `Show ${String(count)} more`,
+  more: (count: number) => `Show ${quantity(count)} more`,
   fewer: "Show fewer",
   /** What a consultation asked for, a first fit to book and a replacement due are done with. */
   book: "Book a visit",
@@ -146,7 +147,7 @@ export const tasks = {
   /** More were waiting than one look reads. */
   truncated: "Counts may be incomplete.",
   /** Tasks past the lapse days set in Settings, left off the board until asked for. */
-  lapsed: (count: number) => `${String(count)} lapsed ${count === 1 ? "task is" : "tasks are"} left out.`,
+  lapsed: (count: number) => `${quantity(count)} lapsed ${count === 1 ? "task is" : "tasks are"} left out.`,
   showLapsed: "Show them",
   hideLapsed: "Leave them out",
   /** The second line, one per group: the one fact the group turns on. */

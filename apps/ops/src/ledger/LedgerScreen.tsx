@@ -8,11 +8,11 @@ import { NoValue } from "@maneman/ui/NoValue";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { DateInput, Field } from "@maneman/ui/Field";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table, TableScroll } from "@maneman/ui/Table";
-import { Toolbar } from "@maneman/ui/Toolbar";
-import { useLoad } from "@maneman/ui/useLoad";
+import { ACTIONS, Table, TableScroll } from "@maneman/ui/Table";
+import { useLoad, type Loaded } from "@maneman/ui/useLoad";
 import { addDays, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useState } from "react";
@@ -22,7 +22,7 @@ import { MoneyFigures } from "./MoneyFigures.tsx";
 import { RowHead } from "@maneman/ui/RowHead";
 import { RefundPayment } from "../clients/index.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
-import { useTableView, type Column } from "@maneman/ui/useTableView";
+import { useTableView, type Column, type TableView } from "@maneman/ui/useTableView";
 import form from "@maneman/ui/forms.module.css";
 import { ledger as copy } from "../content/ledger.ts";
 import { csvText } from "../lib/csv.ts";
@@ -91,45 +91,68 @@ function shown(row: Payment, at: number, words: string): ReactNode {
   return words;
 }
 
-function Payments({ ledger }: { ledger: Ledger }) {
-  const view = useTableView(ledger.payments, COLUMNS, { search: (row) => `${nameOf(row)} ${row.reference ?? ""}` });
+const NO_PAYMENTS: readonly Payment[] = [];
+
+/**
+ * The days' payments, under one row of tools: the search and the states the table narrows by, and the days it reads,
+ * which stay in place as a new choice of days is read.
+ */
+function Payments({ loaded, retry, days }: { loaded: Loaded<Ledger>; retry: () => void; days: ReactNode }) {
+  const ledger = loaded.state === "loaded" ? loaded.value : null;
+  const view = useTableView(ledger?.payments ?? NO_PAYMENTS, COLUMNS, {
+    search: (row) => `${nameOf(row)} ${row.reference ?? ""}`,
+  });
   return (
     <Panel titleId="ledger-payments" title={copy.payments.title}>
-      <Narrowing view={view} label={copy.narrow} />
-      {ledger.more && <Note>{copy.payments.more(ledger.payments.length)}</Note>}
-      <TableScroll labelledBy="ledger-payments">
-        <Table>
-          <thead>
-            <tr>
-              <SortHeads view={view} />
-              <th scope="col">
-                <VisuallyHidden>{copy.payments.refund}</VisuallyHidden>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {view.shown.map((row) => {
-              const [date, ...rest] = cellsOf(row);
-              return (
-                <tr key={row.id}>
-                  <RowHead>{date}</RowHead>
-                  {rest.map((cell, at) => (
-                    <td key={copy.payments.columns[at + 1]} className={FIGURES.has(at + 1) ? styles.figure : undefined}>
-                      {shown(row, at + 1, cell)}
-                    </td>
-                  ))}
-                  {/* Finance give back what is left of a payment here, without opening the client's page. */}
-                  <td>
-                    <RefundPayment entry={row} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </Table>
-      </TableScroll>
-      <TableEnd view={view} empty={copy.noneInRange} />
+      <Narrowing view={view} label={copy.narrow}>
+        {days}
+      </Narrowing>
+      {loaded.state === "loading" && <PanelLoading />}
+      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
+      {ledger !== null && (
+        <>
+          {ledger.more && <Note>{copy.payments.more(ledger.payments.length)}</Note>}
+          <PaymentsTable view={view} />
+          <TableEnd view={view} empty={copy.noneInRange} />
+        </>
+      )}
     </Panel>
+  );
+}
+
+function PaymentsTable({ view }: { view: TableView<Payment> }) {
+  return (
+    <TableScroll labelledBy="ledger-payments">
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+            <th scope="col">
+              <VisuallyHidden>{copy.payments.refund}</VisuallyHidden>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((row) => {
+            const [date, ...rest] = cellsOf(row);
+            return (
+              <tr key={row.id}>
+                <RowHead>{date}</RowHead>
+                {rest.map((cell, at) => (
+                  <td key={copy.payments.columns[at + 1]} className={FIGURES.has(at + 1) ? styles.figure : undefined}>
+                    {shown(row, at + 1, cell)}
+                  </td>
+                ))}
+                {/* Finance give back what is left of a payment here, without opening the client's page. */}
+                <td className={ACTIONS}>
+                  <RefundPayment entry={row} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </Table>
+    </TableScroll>
   );
 }
 
@@ -144,7 +167,7 @@ function Links({ links }: { links: readonly Link[] }) {
   return (
     <Panel titleId="ledger-links" title={copy.links.title}>
       {links.length === 0 ? (
-        <Note>{copy.links.none}</Note>
+        <EmptyState look="panel" line={copy.links.none} />
       ) : (
         <TableScroll labelledBy="ledger-links">
           <Table>
@@ -189,6 +212,45 @@ function exportCsv(ledger: Ledger) {
   );
 }
 
+/** The first and last day the payments are read for, each a date box named aloud, in the payments' own row of tools. */
+function Days(props: {
+  today: string;
+  from: string;
+  to: string;
+  onFrom: (day: string) => void;
+  onTo: (day: string) => void;
+}) {
+  const { today } = props;
+  return (
+    <>
+      <Field label={copy.from} labelHidden>
+        {(control) => (
+          <DateInput
+            {...control}
+            value={props.from}
+            max={today}
+            onChange={(event) => {
+              if (event.target.value !== "") props.onFrom(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={copy.to} labelHidden>
+        {(control) => (
+          <DateInput
+            {...control}
+            value={props.to}
+            max={today}
+            onChange={(event) => {
+              if (event.target.value !== "") props.onTo(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+    </>
+  );
+}
+
 export function LedgerScreen() {
   const today = todayInIndia(apiNow());
   const { city } = useCity();
@@ -199,32 +261,6 @@ export function LedgerScreen() {
   return (
     <div className={form.screen}>
       <MoneyFigures />
-      <Toolbar label={copy.title}>
-        <Field label={copy.from}>
-          {(control) => (
-            <DateInput
-              {...control}
-              value={from}
-              max={today}
-              onChange={(event) => {
-                if (event.target.value !== "") setFrom(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-        <Field label={copy.to}>
-          {(control) => (
-            <DateInput
-              {...control}
-              value={to}
-              max={today}
-              onChange={(event) => {
-                if (event.target.value !== "") setTo(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-      </Toolbar>
       {loaded.state === "loaded" && (
         <PageActions>
           <Button
@@ -238,15 +274,13 @@ export function LedgerScreen() {
           </Button>
         </PageActions>
       )}
-      {loaded.state === "loading" && <PanelLoading />}
-      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
-      {loaded.state === "loaded" && (
-        <>
-          <Counted ledger={loaded.value} />
-          <Payments ledger={loaded.value} />
-          <Links links={loaded.value.unpaid_links} />
-        </>
-      )}
+      {loaded.state === "loaded" && <Counted ledger={loaded.value} />}
+      <Payments
+        loaded={loaded}
+        retry={retry}
+        days={<Days today={today} from={from} to={to} onFrom={setFrom} onTo={setTo} />}
+      />
+      {loaded.state === "loaded" && <Links links={loaded.value.unpaid_links} />}
     </div>
   );
 }

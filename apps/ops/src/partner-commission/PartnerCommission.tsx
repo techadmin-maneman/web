@@ -6,7 +6,7 @@
 import { Toast } from "@maneman/ui/Toast";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -206,26 +206,24 @@ function StatementsTable(row: RowProps) {
 
 function MonthChoice({ statements, onMonth }: { statements: PartnerStatements; onMonth: (month: string) => void }) {
   return (
-    <div className={styles.tools}>
-      <Field label={copy.month}>
-        {(control) => (
-          <Select
-            {...control}
-            width="choice"
-            value={statements.month}
-            onChange={(event) => {
-              onMonth(event.target.value);
-            }}
-          >
-            {monthsOf(statements).map((month) => (
-              <option key={month} value={month}>
-                {month === statements.this_month ? copy.soFar(fullMonth(month)) : fullMonth(month)}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-    </div>
+    <Field label={copy.month} labelHidden>
+      {(control) => (
+        <Select
+          {...control}
+          width="choice"
+          value={statements.month}
+          onChange={(event) => {
+            onMonth(event.target.value);
+          }}
+        >
+          {monthsOf(statements).map((month) => (
+            <option key={month} value={month}>
+              {month === statements.this_month ? copy.soFar(fullMonth(month)) : fullMonth(month)}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
   );
 }
 
@@ -264,25 +262,26 @@ export function PartnerCommission() {
   return (
     <Panel
       titleId="partner-commission"
-      title={copy.title}
+      title={copy.monthTitle}
       actions={
-        statements.statements.length > 0 && (
-          <Button
-            variant="outline"
-            size="small"
-            narrow
-            onClick={() => {
-              saveFile(copy.downloadName(statements.month), monthCsv(statements.statements), "text/csv");
-            }}
-          >
-            {copy.download}
-          </Button>
-        )
+        <>
+          <MonthChoice statements={statements} onMonth={choose} />
+          {statements.statements.length > 0 && (
+            <Button
+              variant="outline"
+              size="control"
+              onClick={() => {
+                saveFile(copy.downloadName(statements.month), monthCsv(statements.statements), "text/csv");
+              }}
+            >
+              {copy.download}
+            </Button>
+          )}
+        </>
       }
     >
-      <MonthChoice statements={statements} onMonth={choose} />
       {said !== null && <Toast>{said}</Toast>}
-      {statements.statements.length === 0 ? <Note>{copy.none}</Note> : <StatementsTable {...row} />}
+      {statements.statements.length === 0 ? <EmptyState look="panel" line={copy.none} /> : <StatementsTable {...row} />}
     </Panel>
   );
 }

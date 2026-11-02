@@ -2,6 +2,7 @@
 // Care person. Below a desk's width it stands beneath the tabs.
 
 import { FigureGrid, type FigureTone } from "@maneman/ui/FigureGrid";
+import { quantity } from "@maneman/web-kit/figures";
 import { Panel } from "@maneman/ui/Panel";
 import { todayInIndia } from "@maneman/web-kit/dates";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -30,11 +31,12 @@ function Glance({ record, credits }: { record: ClientRecord; credits: ClientReco
       <FigureGrid
         figures={[
           { label: copy.paid, value: rupees(paidToDate(record.payments)) },
-          { label: copy.visits, value: String(record.history.visits) },
+          { label: copy.visits, value: quantity(record.history.visits) },
           {
             label: copy.replaceBy,
             value: replacementDueOf(record.history, record.state === "fitted"),
             tone: replaceTone(record.history),
+            words: record.history.replacement_due === null,
           },
           { label: copy.freeVisits, value: String(credits?.visits ?? 0) },
         ]}

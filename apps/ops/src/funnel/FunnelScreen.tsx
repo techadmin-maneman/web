@@ -3,8 +3,10 @@
 // channel; and the Zoho Analytics dashboards beyond it (src/domain/analytics/funnel.ts).
 
 import { BarChart } from "@maneman/ui/BarChart";
+import { quantity } from "@maneman/web-kit/figures";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Field, Select } from "@maneman/ui/Field";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
@@ -25,8 +27,8 @@ const PERIODS: readonly FunnelDays[] = ["30", "90"];
 function Steps({ funnel }: { funnel: Funnel }) {
   const { steps } = funnel;
   const bars = [
-    { key: "tryons", label: copy.steps.tryons, value: funnel.tryons, shown: String(funnel.tryons) },
-    { key: "leads", label: copy.steps.leads, value: steps.leads, shown: String(steps.leads) },
+    { key: "tryons", label: copy.steps.tryons, value: funnel.tryons, shown: quantity(funnel.tryons) },
+    { key: "leads", label: copy.steps.leads, value: steps.leads, shown: quantity(steps.leads) },
     { key: "booked", label: copy.steps.booked, value: steps.booked, shown: copy.share(steps.booked, steps.leads) },
     {
       key: "consulted",
@@ -48,7 +50,7 @@ function Channels({ funnel }: { funnel: Funnel }) {
   return (
     <Panel titleId="funnel-channels" title={copy.channels.title}>
       {shown.length === 0 ? (
-        <Note>{copy.channels.none}</Note>
+        <EmptyState look="panel" line={copy.channels.none} />
       ) : (
         <TableScroll labelledBy="funnel-channels">
           <Table>
@@ -65,7 +67,7 @@ function Channels({ funnel }: { funnel: Funnel }) {
               {shown.map((each) => (
                 <tr key={each.channel}>
                   <RowHead>{each.channel}</RowHead>
-                  <td className={FIGURE}>{each.leads}</td>
+                  <td className={FIGURE}>{quantity(each.leads)}</td>
                   <td className={FIGURE}>{copy.share(each.booked, each.leads)}</td>
                   <td className={FIGURE}>{copy.share(each.consulted, each.leads)}</td>
                   <td className={FIGURE}>{copy.share(each.fitted, each.leads)}</td>

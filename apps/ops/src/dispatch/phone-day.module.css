@@ -11,8 +11,7 @@
 .chips {
   display: flex;
   gap: var(--sp-8);
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
 }
 
 .chips > * {

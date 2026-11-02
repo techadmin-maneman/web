@@ -1,15 +1,8 @@
 /* What ./TechnicianHours.tsx alone draws; what it shares is in ./technicians.module.css. */
 
-.hours {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-24);
-}
-
 .part {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-8);
 }
 
 /* The week as it reads: a run of days with the same hours a line. */
@@ -18,9 +11,12 @@
   flex-direction: column;
 }
 
-.home {
-  margin: 0;
-  font-size: var(--fs-14);
+/* Where their day starts, and the way to set it beside it. */
+.homeValue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-4) var(--sp-12);
 }
 
 .form {

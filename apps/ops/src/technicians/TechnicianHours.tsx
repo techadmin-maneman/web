@@ -3,12 +3,12 @@
 // only inside their hours, and counts the drive to their first visit from that place. A technician with no week of their
 // own works their city's hours every day.
 
-import { typeLook } from "@maneman/ui/type";
-import { classes } from "@maneman/ui/classes";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { AddressSearch } from "@maneman/ui/AddressSearch";
-import { Button } from "@maneman/ui/Button";
 import { EditableRow } from "@maneman/ui/EditableRow";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { ReadRow } from "@maneman/ui/RecordRows";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Checkbox, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { dayClock } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -21,7 +21,6 @@ import { useAccess } from "../lib/access.ts";
 import { useWrite } from "../lib/write.ts";
 import { Refused } from "@maneman/ui/Refusal";
 import form from "@maneman/ui/forms.module.css";
-import shared from "./technicians.module.css";
 import styles from "./technician-hours.module.css";
 import { techniciansApi } from "./technicians-api.ts";
 
@@ -262,49 +261,68 @@ function HomeForm(props: { technician: Technician; onDone: () => void; onCancel:
   );
 }
 
-export function Hours({ technician, onChange }: { technician: Technician; onChange: () => Promise<void> }) {
-  const access = useAccess();
-  const maySetHome = access.mayCall("POST /api/technicians/{id}/home");
-  const [home, setHome] = useState(false);
-  const done = () => {
-    setHome(false);
-    void onChange();
-  };
+/** Where their day starts, as the rows above read, and the search that sets it in a drawer beside the page. */
+function HomeRow(props: { technician: Technician; mayChange: boolean; onChange: () => Promise<void> }) {
+  const { technician } = props;
+  const [open, setOpen] = useState(false);
   const close = () => {
-    setHome(false);
+    setOpen(false);
   };
   return (
-    <div className={styles.hours}>
-      <section className={styles.part} aria-label={copy.title}>
-        <WeekRow
-          technician={technician}
-          mayChange={access.mayCall("POST /api/technicians/{id}/hours")}
-          onChange={onChange}
-        />
-        <ReachRow
-          technician={technician}
-          mayChange={access.mayCall("POST /api/technicians/{id}/reach")}
-          onChange={onChange}
-        />
-      </section>
-      <section className={classes(styles.part, form.group)} aria-label={copy.home}>
-        <h3 className={typeLook("title-4", shared.sectionTitle)}>{copy.home}</h3>
-        <p className={styles.home}>{technician.home?.label ?? copy.noHome}</p>
-        {home && <HomeForm technician={technician} onDone={done} onCancel={close} />}
-        {!home && maySetHome && (
-          <div className={shared.actions}>
-            <Button
-              variant="outline"
-              size="small"
-              onClick={() => {
-                setHome(true);
-              }}
-            >
-              {technician.home === null ? copy.setHome : copy.changeHome}
-            </Button>
-          </div>
-        )}
-      </section>
-    </div>
+    <>
+      <ReadRow
+        label={copy.home}
+        value={
+          <span className={styles.homeValue}>
+            {technician.home?.label ?? copy.noHome}
+            {props.mayChange && (
+              <TextButton
+                compact
+                onClick={() => {
+                  setOpen(true);
+                }}
+              >
+                {technician.home === null ? copy.setHome : copy.changeHome}
+              </TextButton>
+            )}
+          </span>
+        }
+      />
+      {open && (
+        <FormDrawer title={copy.home} onClose={close}>
+          <HomeForm
+            technician={technician}
+            onDone={() => {
+              close();
+              void props.onChange();
+            }}
+            onCancel={close}
+          />
+        </FormDrawer>
+      )}
+    </>
+  );
+}
+
+export function Hours({ technician, onChange }: { technician: Technician; onChange: () => Promise<void> }) {
+  const access = useAccess();
+  return (
+    <section className={styles.part} aria-label={copy.title}>
+      <WeekRow
+        technician={technician}
+        mayChange={access.mayCall("POST /api/technicians/{id}/hours")}
+        onChange={onChange}
+      />
+      <ReachRow
+        technician={technician}
+        mayChange={access.mayCall("POST /api/technicians/{id}/reach")}
+        onChange={onChange}
+      />
+      <HomeRow
+        technician={technician}
+        mayChange={access.mayCall("POST /api/technicians/{id}/home")}
+        onChange={onChange}
+      />
+    </section>
   );
 }

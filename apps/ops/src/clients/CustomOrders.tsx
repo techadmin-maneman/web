@@ -8,6 +8,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -146,7 +147,7 @@ function OrdersTable({
   customOrders: CustomOrders;
   onAnswer: (answer: Answer, said: string) => void;
 }) {
-  if (customOrders.orders.length === 0) return <Note>{copy.none}</Note>;
+  if (customOrders.orders.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <Table controls>
       <thead>

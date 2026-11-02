@@ -6,6 +6,7 @@ import { plainDate } from "@maneman/web-kit/plain-date";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useState } from "react";
@@ -126,7 +127,7 @@ export function RecallDetail({
       <Note>{recall.reason}</Note>
       <h3 className={form.ruleTitle}>{copy.held}</h3>
       {recall.held.length === 0 ? (
-        <Note>{copy.noneHeld}</Note>
+        <EmptyState look="panel" line={copy.noneHeld} />
       ) : (
         <Rows
           columns={copy.heldColumns}
@@ -135,7 +136,7 @@ export function RecallDetail({
       )}
       <h3 className={form.ruleTitle}>{copy.worn}</h3>
       {recall.worn.length === 0 ? (
-        <Note>{copy.noneWorn}</Note>
+        <EmptyState look="panel" line={copy.noneWorn} />
       ) : (
         <WornRows worn={recall.worn} mayBook={recall.closed_at === null && access.mayCall("POST /api/visits")} />
       )}

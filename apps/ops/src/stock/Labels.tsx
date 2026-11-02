@@ -7,6 +7,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, type Choice, ChoiceGroup, ChoiceOptions, Field, NumberInput, Select } from "@maneman/ui/Field";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -160,7 +161,7 @@ function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: Labels
   const [printing, setPrinting] = useState<readonly PrintedLabel[] | null>(null);
   const lot = lots.find((each) => each.id === lotId);
   const count = /^\d{1,3}$/.test(copies) ? Number(copies) : 0;
-  if (lots.length === 0) return <Note>{copy.noLots}</Note>;
+  if (lots.length === 0) return <EmptyState look="panel" line={copy.noLots} />;
 
   const print = async () => {
     if (lot === undefined) return;

@@ -7,7 +7,7 @@ import { plainDate } from "@maneman/web-kit/plain-date";
 import { Badge } from "@maneman/ui/Badge";
 import { TextButton } from "@maneman/ui/TextLink";
 import { Panel } from "@maneman/ui/Panel";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
@@ -27,7 +27,7 @@ import { qualityApi } from "./quality-api.ts";
 const loadRecalls = () => qualityApi.recalls();
 
 function Recalls({ quality, opener, onOpen }: { quality: Quality; opener: RowOpener; onOpen: (id: string) => void }) {
-  if (quality.recalls.length === 0) return <Note>{copy.none}</Note>;
+  if (quality.recalls.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <Table controls>
       <thead>

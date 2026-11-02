@@ -10,7 +10,7 @@ import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, ChoiceGroup, Radio, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { Table } from "@maneman/ui/Table";
+import { ACTIONS, Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -97,6 +97,9 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
               {copy.columns[column]}
             </th>
           ))}
+          <th scope="col">
+            <VisuallyHidden>{copy.refundColumn}</VisuallyHidden>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -108,10 +111,8 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
               <CodeLine entry={entry} />
             </td>
             <td className={styles.figureCell}>{rupees(entry.amount)}</td>
-            <td className={styles.quietCell}>
-              {stateOf(entry)}
-              {entry.kind === "payment" && <RefundPayment entry={entry} />}
-            </td>
+            <td className={styles.quietCell}>{stateOf(entry)}</td>
+            <td className={ACTIONS}>{entry.kind === "payment" && <RefundPayment entry={entry} />}</td>
           </tr>
         ))}
       </tbody>
@@ -121,6 +122,7 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
             {clients.glance.paid}
           </th>
           <td className={styles.figureCell}>{rupees(paidToDate(payments))}</td>
+          <td />
           <td />
         </tr>
       </tfoot>

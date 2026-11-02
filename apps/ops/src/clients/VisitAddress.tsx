@@ -2,7 +2,8 @@
 // client gave on the phone (./GivenAddress.tsx). Saved, it stands over the one the page read.
 
 import { Panel } from "@maneman/ui/Panel";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
+import { classes } from "@maneman/ui/classes";
 import { Toast } from "@maneman/ui/Toast";
 import { TextButton } from "@maneman/ui/TextLink";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
@@ -35,7 +36,7 @@ function AddressRows({ address }: { address: SavedAddress }) {
         ]),
   ];
   return (
-    <dl className={styles.address}>
+    <dl className={classes(styles.address, styles.asideRows)}>
       {rows.map((row) => (
         <div className={styles.addressRow} key={row.key}>
           <dt className={styles.metaKey}>{row.key}</dt>
@@ -97,7 +98,7 @@ export function VisitAddress({
           />
         </FormDrawer>
       )}
-      {address === null ? <Note>{copy.noAddress}</Note> : <AddressRows address={address} />}
+      {address === null ? <EmptyState look="panel" line={copy.noAddress} /> : <AddressRows address={address} />}
       {saved && <Toast>{copy.given.saved}</Toast>}
     </Panel>
   );

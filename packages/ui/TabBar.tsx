@@ -10,6 +10,7 @@ import { classes } from "./classes.ts";
 import { Icon } from "./Icon.tsx";
 import { Link } from "./router.tsx";
 import styles from "./tab-bar.module.css";
+import { quantity } from "@maneman/web-kit/figures";
 
 export function TabBar({
   label,
@@ -52,7 +53,9 @@ export function TabBarItem({
       <Link className={styles.tab} to={to} current={current} label={label}>
         <span className={styles.icon}>
           <Icon d={icon} size="md" />
-          {count !== undefined && count > 0 && <span className={urgent ? styles.urgent : styles.count}>{count}</span>}
+          {count !== undefined && count > 0 && (
+            <span className={urgent ? styles.urgent : styles.count}>{quantity(count)}</span>
+          )}
         </span>
         <span className={styles.name}>{name}</span>
       </Link>
