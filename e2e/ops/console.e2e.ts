@@ -153,9 +153,10 @@ test("moves the keyboard to a new page’s heading, and offers a way past the na
 test("titles each page by what it is, and says where it sits", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Today · Mane Man Ops");
+  const crumbs = page.getByRole("banner").getByRole("navigation", { name: opsCopy.shell.crumbs });
+  await expect(crumbs.getByRole("listitem")).toHaveText([opsCopy.shell.nav.today]);
   await page.goto("/counts");
   await expect(page).toHaveTitle("Counts · Mane Man Ops");
-  const crumbs = page.getByRole("banner").getByRole("navigation", { name: opsCopy.shell.crumbs });
   await expect(crumbs.getByRole("listitem")).toHaveText([opsCopy.shell.nav.inventory, opsCopy.shell.sections.counts]);
   await page.goto("/settings/prices");
   await expect(page).toHaveTitle("Services and fees · Settings · Mane Man Ops");

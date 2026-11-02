@@ -45,6 +45,7 @@ export function CityChips({ className }: { readonly className?: string }) {
           <ToggleButton
             key={each ?? ""}
             asRadio
+            filled
             pressed={each === city}
             onClick={() => {
               choose(each);

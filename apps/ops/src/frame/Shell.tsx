@@ -127,7 +127,10 @@ function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: 
   }, [heading, page, path]);
 }
 
-/** Where the page sits: its entry above a page of several, its section above a record, Settings' group above its page. */
+/**
+ * What stands above the page where it sits: its entry above a page of several, its section above a record, Settings'
+ * group above its page. The page's own name follows, alone where nothing stands above it.
+ */
 function crumbsOf(route: Route, record: string | undefined): Crumb[] {
   if (route.page === "more") return [];
   if (route.page === "settings") {
@@ -194,7 +197,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
             {menu.open ? shell.closeMenu : shell.menu}
           </Button>
           <div className={styles.crumbs}>
-            {crumbs.length > 0 && <Breadcrumbs label={shell.crumbs} crumbs={[...crumbs, { label: title }]} />}
+            <Breadcrumbs label={shell.crumbs} crumbs={[...crumbs, { label: title }]} />
           </div>
           <HeaderSearch className={styles.search} />
           <CityPicker className={styles.city} />

@@ -30,4 +30,13 @@
     font-variant-numeric: tabular-nums;
     color: var(--ui-text-muted);
   }
+
+  /* On a phone the row's end takes a line of its own, and a search there the line's width. */
+  @media (max-width: 600px) {
+    .end {
+      flex-basis: 100%;
+      margin-left: 0;
+      --search-width: 100%;
+    }
+  }
 }

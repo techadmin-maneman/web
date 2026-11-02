@@ -4,9 +4,8 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, HELD, json, REFERRERS, TASKS, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, BOARD, HELD, json, REFERRERS, TASKS, TASKS_READ_ON } from "./fixtures.ts";
 import { open as openTechnicians } from "./technicians-fixtures.ts";
-import { row } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { today } from "../../apps/ops/src/content/today.ts";
 import { quality } from "../../apps/ops/src/content/quality.ts";
@@ -35,28 +34,30 @@ test("reads a table's rows as cards, each value beside its column's name, the he
 test("sets Today's figures two to a row", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "GET /api/tasks": json(TASKS) });
+  await answer(page, { "GET /api/tasks": json(TASKS), "GET /api/dispatch": json(BOARD) });
   await page.goto("/today");
   const tile = (name: string) => page.locator("main a[href]").filter({ hasText: name }).first();
   await expect(tile(today.tiles.unassigned)).toBeVisible();
-  const first = await tile(today.tiles.unassigned).boundingBox();
-  const second = await tile(today.tiles.overdue).boundingBox();
+  const first = await tile(today.tiles.visits).boundingBox();
+  const second = await tile(today.tiles.unassigned).boundingBox();
   if (first === null || second === null) throw new Error("the tiles are not drawn");
   expect(second.y).toBeCloseTo(first.y, 0);
   expect(second.x).toBeGreaterThan(first.x);
   expect(await pageWidth(page)).toBeLessThanOrEqual(PHONE.width);
 });
 
-test("reads a task down: what it is, then whose it is and when it is due beneath", async ({ page }) => {
+test("reads a task as a list's row: what it is over whom, and when it is due at its right", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/tasks");
-  const kunal = row(page, "Kunal Mehta");
-  const subject = await kunal.getByRole("link", { name: "Kunal Mehta" }).boundingBox();
+  const kunal = page.getByRole("main").getByRole("listitem").filter({ hasText: "Kunal Mehta" });
+  const what = await kunal.getByText(opsCopy.tasks.groups.replacement_order).boundingBox();
+  const whom = await kunal.getByText(/^Kunal Mehta/).boundingBox();
   const due = await kunal.getByText("3 days overdue").boundingBox();
-  if (subject === null || due === null) throw new Error("the task is not drawn");
-  expect(due.y).toBeGreaterThan(subject.y + subject.height);
+  if (what === null || whom === null || due === null) throw new Error("the task is not drawn");
+  expect(whom.y).toBeGreaterThan(what.y);
+  expect(due.x).toBeGreaterThan(what.x + what.width);
   expect(await pageWidth(page)).toBeLessThanOrEqual(PHONE.width);
 });
 

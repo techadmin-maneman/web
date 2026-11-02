@@ -277,7 +277,7 @@ test("books a consultation asked for from its Tasks row, at the first start in t
     },
   });
   await page.goto("/tasks");
-  const tasks = page.getByRole("region", { name: /^\d+ open$/ });
+  const tasks = page.getByRole("region", { name: opsCopy.tasks.title });
   await tasks.getByRole("button", { name: `Book a visit · ${CLIENT.name}` }).click();
   const booking = panel(page);
   await expect(booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true })).toHaveValue("consultation");
@@ -297,7 +297,7 @@ test("books a consultation asked for from its Tasks row, at the first start in t
   ]);
 
   await booking.getByRole("button", { name: opsCopy.CLOSE }).click();
-  await expect(tasks.getByRole("listitem")).toHaveCount(0);
+  await expect(tasks.getByRole("row")).toHaveCount(0);
 });
 
 // A first fit left partly done once offered only "Close without follow-up", and the console priced the refit again.
@@ -359,7 +359,7 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
     },
   });
   await page.goto("/tasks");
-  const tasks = page.getByRole("region", { name: /^\d+ open$/ });
+  const tasks = page.getByRole("region", { name: opsCopy.tasks.title });
   await expect(tasks).toContainText("Hair system not ready");
   await tasks.getByRole("button", { name: `${opsCopy.tasks.bookFree} · ${CLIENT.name}` }).click();
   const booking = panel(page);
@@ -384,7 +384,7 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
     },
   ]);
   await booking.getByRole("button", { name: opsCopy.CLOSE }).click();
-  await expect(tasks.getByRole("listitem")).toHaveCount(0);
+  await expect(tasks.getByRole("row")).toHaveCount(0);
 });
 
 // A booking that refunded its payment by itself showed nowhere in the console.

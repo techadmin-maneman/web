@@ -1,11 +1,11 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, empty, fails, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
-import { detail, NO_ALERTS, open, list, row } from "./tasks-fixtures.ts";
+import { detail, NO_ALERTS, open, list, row, rows } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // The counts were cut at 200 tasks across every group, and said nothing of it.
-test("counts a group whole when it lists only its longest waits, and says when it could not count", async ({
+test("counts the board whole when it lists only its longest waits, and says when it could not count", async ({
   page,
 }) => {
   const [first] = TASKS.groups;
@@ -15,9 +15,8 @@ test("counts a group whole when it lists only its longest waits, and says when i
     truncated: true,
     groups: [{ ...first, count: 73 }],
   });
-  // The group's whole count, and so its department's.
-  await expect(list(page).getByText("73", { exact: true })).toHaveCount(2);
-  await expect(page.getByText("Longest 2 of 73.")).toBeVisible();
+  await expect(page.getByText(opsCopy.tasks.openWithAlerts(73, 0), { exact: true })).toBeVisible();
+  await expect(rows(page)).toHaveCount(first.tasks.length);
   await expect(page.getByText(opsCopy.tasks.truncated)).toBeVisible();
 });
 
@@ -37,7 +36,7 @@ test("writes each task’s owner in the board’s column, by first name, and non
   await expect(row(page, "Kunal Mehta")).toContainText("Priya");
   await expect(row(page, "Karan Bose")).toContainText("Anil");
   await expect(row(page, "Deepak Rao")).not.toContainText("Priya");
-  await expect(row(page, "Deepak Rao").getByText("Owner: unassigned")).toBeAttached();
+  await expect(row(page, "Deepak Rao").getByRole("cell").nth(2)).toHaveText(/^—/);
 });
 
 test("takes a task, and hands it back, from its drawer", async ({ page }) => {
@@ -143,9 +142,8 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
 
   await why.fill("Moving to Pune; wants no more visits.");
   await closeIt.click();
-  await expect(list(page).getByRole("listitem")).toHaveCount(1);
-  await expect(page.getByRole("button", { name: /overdue, go to the first$/ })).toHaveCount(0);
-  await expect(list(page)).toBeFocused();
+  await expect(rows(page)).toHaveCount(1);
+  await expect(list(page).getByRole("heading", { name: opsCopy.tasks.title })).toBeFocused();
   expect(reasons).toEqual([{ reason: "Moving to Pune; wants no more visits." }]);
 });
 
@@ -228,15 +226,14 @@ test("records a call about a move from its drawer, and opens each of the board�
     "tel:+919810004418",
   );
   await call.getByRole("button", { name: "Told by phone · Vikram Sethi" }).click();
-  await expect(list(page).getByRole("listitem")).toHaveCount(1);
-  await expect(list(page)).toBeFocused();
+  await expect(rows(page)).toHaveCount(1);
+  await expect(list(page).getByRole("heading", { name: opsCopy.tasks.title })).toBeFocused();
   expect(told).toEqual([`/api/dispatch/moves/${MOVE}/told`]);
 });
 
 test("says so when no queue holds anything", async ({ page }) => {
   await open(page, { overdue: 0, truncated: false, low_stock_places: 0, lapsed: 0, staff: [], groups: [] });
   await expect(page.getByText(opsCopy.tasks.empty)).toBeVisible();
-  await expect(page.getByRole("button", { name: /overdue, go to the first$/ })).toHaveCount(0);
 });
 
 test("says so when the list cannot be loaded, and loads it on Try again", async ({ page }) => {

@@ -1,4 +1,8 @@
-// Today's words (../today/TodayScreen.tsx).
+// Today's words (../today/TodayScreen.tsx). Its homes take the words their figures already have where they are acted
+// on; a slot the redesign added with none holds TODO_COPY (design/ops-redesign/COPY-TODO.md).
+
+import { TODO_COPY } from "./common.ts";
+import { DEPARTMENT_NAMES, shell } from "./shell.ts";
 
 export const today = {
   tiles: {
@@ -11,33 +15,35 @@ export const today = {
     charges: "Charges to decide",
     upi: "UPI to record",
   },
-  /** Beside the title: the day it is. */
-  day: (date: string) => date,
-  /** A part of the day for each kind of work, shown to whoever's access reaches it. */
+  /** Beside the title: the day it is, and the city the header is narrowed to. */
+  day: (date: string, city: string) => `${date} · ${city}`,
+  /** A sentence on the day beneath the title, drawn once it is worded. */
+  greeting: TODO_COPY,
+  /** The homes Today opens on, by the person's grants (ADR 0227), and the choice between them. */
+  homes: {
+    label: shell.nav.today,
+    names: {
+      dispatch: shell.nav.dispatch,
+      care: DEPARTMENT_NAMES.customer_care,
+      // The brief's own words, to confirm (design/ops-redesign/COPY-TODO.md).
+      city: "City head",
+      finance: DEPARTMENT_NAMES.finance,
+      inventory: shell.nav.inventory,
+    },
+  },
   road: {
     title: "On the road today",
-    done: "Done",
-    underWay: "Under way",
     late: "Running late",
-    toCome: "Still to come",
   },
   care: {
-    title: "Care, the last week",
     median: "Median first reply",
-    onTime: "Answered on time",
     minutes: (minutes: number) => `${String(minutes)} min`,
-    percent: (percent: number) => `${String(percent)}%`,
     none: "—",
-  },
-  growth: {
-    title: "Growth, the last 30 days",
-    leads: "New clients",
-    fitted: "Fitted",
   },
   /** Yours first, then the rest of what waits, the longest overdue first. */
   needs: "Needs you",
   none: "Nothing waiting.",
-  who: "Who",
-  what: "What",
-  due: "Due",
+  /** The homes' own lists with nothing in them, where nothing on the console says so yet. */
+  noPayments: TODO_COPY,
+  noPlaces: TODO_COPY,
 };

@@ -1,5 +1,5 @@
 // What the Tasks browser tests share (tasks*.e2e.ts): no alerts waiting, the board opened with its answers, and its
-// list, rows and group names.
+// table, rows and drawers.
 
 import type { Page } from "@playwright/test";
 import { expect } from "../support.ts";
@@ -23,20 +23,23 @@ export async function open(
   await expect(list(page)).toBeVisible();
 }
 
-/** The list itself; the console's navigation is a list too. */
-/** The list of tasks, named by how many are open. */
-export const list = (page: Page) => page.getByRole("region", { name: /^\d+ open$/ });
+/** The table of tasks, named as the page is. */
+export const list = (page: Page) => page.getByRole("region", { name: tasks.title });
 
-/** A task's row, found by the line that heads it. */
-export const row = (page: Page, heading: string) => list(page).getByRole("listitem").filter({ hasText: heading });
+/** The tasks' rows, less the table's head. */
+export const rows = (page: Page) => list(page).locator("tbody").getByRole("row");
 
-/** A task's drawer, opened from its card's Details, which holds all else done on it. */
+/** A task's row, found by whom it is about or the line that heads it. */
+export const row = (page: Page, heading: string) => rows(page).filter({ hasText: heading });
+
+/** A task's drawer, opened from its row, which holds all else done on it. */
 export async function detail(page: Page, heading: string) {
-  await row(page, heading)
-    .getByRole("button", { name: `${tasks.details} · ${heading}` })
-    .click();
+  await row(page, heading).getByRole("button").first().click();
   return page.getByRole("dialog", { name: heading });
 }
 
-/** The groups' names, as each department lists them. */
-export const groupNames = (page: Page) => list(page).getByRole("heading", { level: 4 });
+/** The kinds of task listed, each once: the first line of each row's name. */
+export async function kindsListed(page: Page): Promise<string[]> {
+  const kinds = await rows(page).getByRole("rowheader").locator("button > span:first-child").allTextContents();
+  return [...new Set(kinds)].sort();
+}

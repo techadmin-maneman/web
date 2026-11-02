@@ -1,6 +1,7 @@
 // The console's parts for a phone and its pickers (packages/ui): the navigation's groups, the tab bar at a phone's
-// foot, a list's row in place of a table's, the rule a pressing row carries, a picker's choices, a drawer's actions
-// pinned at its foot, and the search with its results beneath. What a screen reader is told is held here.
+// foot, a list's row in place of a table's, with a time before it and an action beside it, the rule a pressing row
+// carries, a row that opens a drawer, a filter's count and its chosen fill, a picker's choices, a drawer's actions pinned at its foot, and
+// the search with its results beneath. What a screen reader is told is held here.
 
 import { readFileSync } from "node:fs";
 import { act, createElement } from "react";
@@ -13,7 +14,8 @@ import { Popover, PopoverChoice, PopoverHeading } from "../../packages/ui/Popove
 import { SearchMenu } from "../../packages/ui/SearchMenu.tsx";
 import { NavGroup, NavItem, SideNav } from "../../packages/ui/SideNav.tsx";
 import { TabBar, TabBarItem } from "../../packages/ui/TabBar.tsx";
-import { rowRule } from "../../packages/ui/Table.tsx";
+import { RowOpener, rowRule } from "../../packages/ui/Table.tsx";
+import { ToggleButton } from "../../packages/ui/ToggleButton.tsx";
 
 const css = (name: string) => readFileSync(`packages/ui/${name}`, "utf8");
 const classOf = (markup: string) => /class="([^"]*)"/.exec(markup)?.[1] ?? "";
@@ -112,6 +114,18 @@ describe("a list's row", () => {
     const today = classOf(row({ rule: "attention" }).replace(/^<li>/, ""));
     expect(late.split(" ")).toHaveLength(none.split(" ").length + 1);
     expect(late).not.toBe(today);
+  });
+
+  it("leads with a time in a column of its own, before what it is", () => {
+    const markup = row({ lead: "11:30 am", end: "Late" });
+    expect(markup.indexOf("11:30 am")).toBeLessThan(markup.indexOf("Address to confirm"));
+    expect(markup).toMatch(/<span class="[^"]+">11:30 am<\/span>/);
+  });
+
+  it("sets its one action beside the row, outside what pressing the row opens", () => {
+    const markup = row({ to: "/clients/1", action: createElement("button", { type: "button" }, "Assign") });
+    expect(markup).toMatch(/^<li class="[^"]+"><a [^>]*href="\/clients\/1"[^>]*>.*<\/a><span class="[^"]+"><button/);
+    expect(row({ to: "/clients/1" })).toMatch(/^<li><a /);
   });
 
   it("lists its rows under one name", () => {
@@ -332,5 +346,49 @@ describe("a search with its results beneath", () => {
     expect(page.textContent).toContain("Nothing matches.");
     draw("re", [{ key: "pages", results: [result("Reports")] }]);
     expect(page.querySelector('[role="group"]')?.hasAttribute("aria-labelledby")).toBe(false);
+  });
+});
+
+describe("a table row that opens a drawer", () => {
+  const opener = () =>
+    renderToStaticMarkup(
+      createElement(RowOpener, { onOpen: () => undefined, meta: "Kunal Shah · 2 days left", children: "Address" }),
+    );
+
+  it("is a button that says it opens a dialog, what it is over its line of detail", () => {
+    expect(opener()).toMatch(
+      /^<button type="button" class="[^"]+" aria-haspopup="dialog"><span class="[^"]+">Address<\/span><span class="[^"]+">Kunal Shah · 2 days left<\/span><\/button>$/,
+    );
+  });
+
+  it("reaches over the whole row from its head, as a row's name does", () => {
+    expect(css("table.module.css")).toMatch(
+      /\.table tbody th\[scope="row"\] :is\(a, button\):first-of-type::after \{\s+position: absolute;\s+inset: 0;/,
+    );
+  });
+});
+
+describe("a filter's count", () => {
+  it("follows its words, and is read with them", () => {
+    const markup = renderToStaticMarkup(
+      createElement(ToggleButton, { pressed: true, asRadio: true, count: 12, children: "Overdue" }),
+    );
+    expect(markup).toMatch(
+      /^<button role="radio" aria-checked="true" type="button" class="[^"]+">Overdue<span class="[^"]+">12<\/span><\/button>$/,
+    );
+    expect(renderToStaticMarkup(createElement(ToggleButton, { pressed: false, children: "All" }))).not.toContain(
+      "<span",
+    );
+  });
+
+  it("fills the chosen one in ink where asked, and only where asked", () => {
+    const edged = classOf(renderToStaticMarkup(createElement(ToggleButton, { pressed: true, children: "All" })));
+    const filled = classOf(
+      renderToStaticMarkup(createElement(ToggleButton, { pressed: true, filled: true, children: "All" })),
+    );
+    expect(filled.split(" ")).toHaveLength(edged.split(" ").length + 1);
+    expect(css("toggle-button.module.css")).toMatch(
+      /\.filled:is\(\[aria-pressed="true"\], \[aria-checked="true"\]\) \{[^}]*background: var\(--ui-strong\)/,
+    );
   });
 });

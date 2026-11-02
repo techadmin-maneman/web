@@ -1,0 +1,12 @@
+/* Where Tasks' views sit (./TaskFilters.tsx): one row, scrolled sideways on a phone where they run past its end. */
+
+.views {
+  display: flex;
+  gap: var(--sp-8);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.views > * {
+  flex-shrink: 0;
+}

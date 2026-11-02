@@ -1,95 +1,8 @@
 /*
- * The Tasks board: a head with the count of what has run over in oxblood, then
- * a section for each department, its groups one beneath another across the
- * page's width. Each group is the design's panel: its name on a shaded band with its
- * count, then the tasks under it, each in the board's three columns: what it is,
- * whose it is, and when it is due. The actions on a task, which the board does
- * not draw, sit under its lines as the way to where it is decided does
- * (docs/decisions/0092-task-owners.md).
+ * What Tasks' parts share: the cards of Needs a hand (NeedsAHand.tsx), a task's drawer and its actions, and the forms
+ * a task is settled with (CallAboutMove.tsx, LeaveDecision.tsx, PaymentLinkActions.tsx, UpiPaymentAction.tsx). The
+ * table of tasks itself is the shared Table (TasksScreen.tsx).
  */
-
-.board {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-24);
-}
-
-/* The one figure the board sets in oxblood: how many have run over. */
-.overdue {
-  font-size: var(--fs-14);
-  color: var(--status-warning);
-}
-
-/* ---- The board, by department --------------------------------------------- */
-
-.queue {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-20);
-}
-
-/* The list takes the keyboard once a task leaves it; a region, not a control, so it has no ring. */
-.queue:focus {
-  outline: none;
-}
-
-.department {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-12);
-}
-
-.departmentHead {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-8);
-}
-
-.departmentName {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-18);
-}
-
-/* The department's groups one beneath another, each as wide as the page, so its tasks read down a single list. */
-.groups {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-16);
-}
-
-/* ---- One group ------------------------------------------------------------ */
-
-.group {
-  border: var(--hairline) solid var(--ui-line);
-  background: var(--ui-raised);
-}
-
-.groupHead {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  padding: var(--sp-12) var(--sp-20);
-}
-
-.groupName {
-  margin: 0;
-  letter-spacing: var(--tracking-12);
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
-}
-
-.count {
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* The rest of a group's longest waits, and back to its first few. */
-.fold {
-  margin: var(--sp-8) var(--sp-20) var(--sp-12);
-}
 
 /* ---- One task ------------------------------------------------------------- */
 
@@ -97,28 +10,6 @@
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.task,
-.marked {
-  display: grid;
-  grid-template-columns: 1fr var(--ops-column-narrow) var(--ops-column-wide);
-  align-items: center;
-  gap: var(--sp-12);
-  min-height: var(--ops-row);
-  padding: var(--sp-8) var(--sp-20);
-  border-top: var(--hairline) solid var(--ui-line);
-}
-
-/* The row the head's overdue count went to, marked as a row a task's link lands on is. */
-.marked {
-  box-shadow: inset var(--rule-strong) 0 0 var(--ui-accent);
-}
-
-.task:focus-visible,
-.marked:focus-visible {
-  outline: var(--focus-width) solid var(--focus-colour);
-  outline-offset: var(--focus-inset);
 }
 
 /* An alert on "Needs a hand" (NeedsAHand.tsx): what went wrong, then how often and since when. */
@@ -138,38 +29,6 @@
   min-width: 0;
 }
 
-/*
- * On a desk's width a task reads on one line: who, what it is, then its actions, before whose it is and when it is due.
- * The actions' column is one width in every group, Details last and set right, so every group's columns line up.
- */
-@media (min-width: 1024px) {
-  .task .what,
-  .marked .what {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) var(--ops-task-actions);
-    align-items: baseline;
-    column-gap: var(--sp-16);
-  }
-
-  .task .cardActions,
-  .marked .cardActions {
-    justify-content: flex-end;
-  }
-}
-
-/* On a phone a task reads down: what it is, then whose it is and when it is due on a line beneath. */
-@media (max-width: 600px) {
-  .task,
-  .marked {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .task .what,
-  .marked .what {
-    grid-column: 1 / -1;
-  }
-}
-
 /* The client's name, which reaches their page: the board draws it as plain text. */
 .subject {
   font-size: var(--fs-14);
@@ -180,15 +39,6 @@
 /* As a table reads a row's name: no line until the pointer is on it. */
 a.subject {
   text-decoration: none;
-}
-
-@media (hover: hover) {
-  .task:hover a.subject,
-  .marked:hover a.subject {
-    text-decoration: underline;
-    text-decoration-color: var(--ui-line);
-    text-underline-offset: var(--sp-4);
-  }
 }
 
 .sub {
@@ -238,13 +88,28 @@ a.subject {
   gap: var(--sp-4) var(--sp-16);
 }
 
-/*
- * Taking a task, giving it and closing it show on the row the pointer is over or the keyboard is in, so a long list
- * does not repeat them on every row. A screen without hover shows them always.
- */
-@media (hover: hover) {
-  .task:not(:hover, :focus-within) .ownerActs,
-  .marked:not(:hover, :focus-within) .ownerActs {
-    opacity: 0;
-  }
+/* A task's drawer's facts, across the drawer. */
+.facts {
+  align-self: stretch;
+}
+
+/* A task's drawer's foot: taking it, giving it or closing it, a form opening beneath; the step that settles it, right. */
+.foot {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-12);
+}
+
+.footOwner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+
+.footStep {
+  display: flex;
+  gap: var(--sp-8);
+  margin-left: auto;
 }

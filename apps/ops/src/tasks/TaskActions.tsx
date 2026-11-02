@@ -322,3 +322,44 @@ export function TaskActions({
     </>
   );
 }
+
+/** A row's one action where the task has no step of its own: taking it, while nobody has it. */
+export function TakeButton({
+  group,
+  task,
+  subject,
+  owner,
+  me,
+  staff,
+  mayOwn,
+  onOwner,
+}: {
+  group: Group;
+  task: Task;
+  subject: string;
+  owner: string | null;
+  me: string | null;
+  staff: readonly string[];
+  mayOwn: boolean;
+  onOwner: (owner: string | null) => void;
+}) {
+  const [failed, setFailed] = useState<{ readonly code: string; readonly closing: boolean } | null>(null);
+  const [busy, once] = useOneAtATime();
+  const refused = useRowRefusal(failed);
+  if (owner !== null || !mayOwn || me === null || !staff.includes(me)) return null;
+  const take = () =>
+    once(async () => {
+      setFailed(null);
+      const answer = await tasksApi.setTaskOwner(group, task.id, me);
+      if (answer.ok) onOwner(answer.body.owner);
+      else setFailed({ code: answer.code, closing: false });
+    });
+  return (
+    <>
+      <RowButton busy={busy} onClick={() => void take()}>
+        <Named label={tasks.owner.take} subject={subject} />
+      </RowButton>
+      {refused !== null && <Refusal inline said={refused} />}
+    </>
+  );
+}

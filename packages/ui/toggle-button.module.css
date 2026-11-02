@@ -13,6 +13,13 @@
     cursor: pointer;
   }
 
+  /* A filter's count, after its words, in their colour. */
+  .count {
+    margin-left: var(--sp-8);
+    font-size: var(--fs-13);
+    font-variant-numeric: tabular-nums;
+  }
+
   .onInk {
     border: var(--hairline) solid var(--edge-on-ink);
     color: var(--ink-muted);
@@ -38,13 +45,20 @@
     color: var(--ui-text);
   }
 
+  /* Chosen and filled: a chip or a filter, its words on the ink. */
+  .filled:is([aria-pressed="true"], [aria-checked="true"]) {
+    border-color: var(--ui-strong);
+    background: var(--ui-strong);
+    color: var(--ui-on-strong);
+  }
+
   /* Only one not chosen brightens: a chosen one's words are ink on paper, which paper would wipe out. */
   @media (hover: hover) {
     .onInk:not([aria-pressed="true"], [aria-checked="true"]):hover {
       color: var(--paper);
     }
 
-    .onPaper:hover {
+    .onPaper:not(.filled[aria-pressed="true"], .filled[aria-checked="true"]):hover {
       color: var(--ui-text);
     }
   }

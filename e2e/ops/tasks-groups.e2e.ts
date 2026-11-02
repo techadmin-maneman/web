@@ -1,7 +1,7 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, empty, json, TASKS, type OpsReply } from "./fixtures.ts";
-import { detail, NO_ALERTS, open, row, groupNames } from "./tasks-fixtures.ts";
+import { detail, kindsListed, NO_ALERTS, open, row } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 /** What a task turns on, as the board answers it. */
@@ -43,7 +43,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.consultation_request]);
+  await expect.poll(() => kindsListed(page)).toEqual([opsCopy.tasks.groups.consultation_request].sort());
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep, afternoon");
 });
 
@@ -117,11 +117,15 @@ test("names an At-risk client’s weeks since the last visit, a first fit to boo
     ],
   };
   await open(page, body);
-  await expect(groupNames(page)).toHaveText([
-    opsCopy.tasks.groups.consultation_request,
-    opsCopy.tasks.groups.first_fit_to_book,
-    opsCopy.tasks.groups.at_risk_client,
-  ]);
+  await expect
+    .poll(() => kindsListed(page))
+    .toEqual(
+      [
+        opsCopy.tasks.groups.consultation_request,
+        opsCopy.tasks.groups.first_fit_to_book,
+        opsCopy.tasks.groups.at_risk_client,
+      ].sort(),
+    );
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep, afternoon + first fit, morning");
   await expect(row(page, "Sanjay Arora")).toContainText("Consultation Fri 10 Sep, afternoon · not fitted");
   await expect(row(page, "Deepak Rao")).toContainText("9 weeks since last visit · due Fri 20 Aug");
@@ -161,7 +165,7 @@ test("names a draft invoice’s visit", async ({ page }) => {
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.draft_invoice]);
+  await expect.poll(() => kindsListed(page)).toEqual([opsCopy.tasks.groups.draft_invoice].sort());
   await expect(row(page, "Sanjay Arora")).toContainText("Visit of Mon 20 Sep · draft in Books");
 });
 
@@ -247,10 +251,9 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText([
-    opsCopy.tasks.groups.consultation_request,
-    opsCopy.tasks.groups.payment_owed,
-  ]);
+  await expect
+    .poll(() => kindsListed(page))
+    .toEqual([opsCopy.tasks.groups.consultation_request, opsCopy.tasks.groups.payment_owed].sort());
   await expect(row(page, "Arjun Kapoor")).toContainText(opsCopy.tasks.subs.withOneVisit);
   await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000 · link sent");
   await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000 · link not sent");
@@ -321,7 +324,7 @@ test("lists each payment to refund, why, and what is owed back, and leads to the
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.payment_to_refund]);
+  await expect.poll(() => kindsListed(page)).toEqual([opsCopy.tasks.groups.payment_to_refund].sort());
   await expect(row(page, "Nikhil Suri")).toContainText("Rs. 2,000 to refund on pay_Q1late · refund refused");
   await expect(row(page, "Manoj Iyer")).toContainText("Rs. 35,400 to refund on pay_Q2fail · refund failed");
   await expect(row(page, "Manoj Iyer").getByRole("link", { name: "Manoj Iyer", exact: true })).toHaveAttribute(
@@ -376,7 +379,7 @@ test("names a disputed charge and what it kept, and leads to the dispute in Char
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.no_show_dispute]);
+  await expect.poll(() => kindsListed(page)).toEqual([opsCopy.tasks.groups.no_show_dispute].sort());
   const vikram = row(page, "Vikram Sethi");
   await expect(vikram).toContainText("Disputes a charge: Rs. 2,360");
   await expect(vikram.getByRole("link", { name: "Vikram Sethi", exact: true })).toHaveAttribute(
@@ -452,7 +455,7 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.grievance]);
+  await expect.poll(() => kindsListed(page)).toEqual([opsCopy.tasks.groups.grievance].sort());
   const grievance = row(page, "Neha Kapoor");
   await expect(grievance).toContainText(opsCopy.tasks.subs.grievance);
   await expect(grievance).toContainText("22 days left");
@@ -489,11 +492,11 @@ test("narrows the board to my own tasks, one kind, or a client found by name", a
     }),
   });
   const filters = page.getByRole("search", { name: opsCopy.tasks.filters.label });
-  await filters.getByLabel(opsCopy.tasks.filters.mine).check();
+  await filters.getByRole("radio", { name: new RegExp(`^${opsCopy.tasks.filters.views.mine}`) }).click();
   await expect(row(page, "Kunal Mehta")).toBeVisible();
   await expect(row(page, "Rohan Bhalla")).toHaveCount(0);
 
-  await filters.getByLabel(opsCopy.tasks.filters.mine).uncheck();
+  await filters.getByRole("radio", { name: new RegExp(`^${opsCopy.tasks.filters.views.all}`) }).click();
   await filters.getByLabel(opsCopy.tasks.filters.kind).selectOption({ label: opsCopy.tasks.groups.referral_review });
   await expect(row(page, "Rohan Bhalla")).toBeVisible();
   await expect(row(page, "Kunal Mehta")).toHaveCount(0);
@@ -593,7 +596,7 @@ test("approves a technician’s ask for leave from its drawer", async ({ page })
       await empty()(route);
     },
   });
-  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.leave_request]);
+  await expect.poll(() => kindsListed(page)).toEqual([opsCopy.tasks.groups.leave_request].sort());
   await expect(row(page, "Imran Qureshi")).toContainText("Sister’s wedding");
   const drawer = await detail(page, "Imran Qureshi");
   await drawer.getByRole("button", { name: opsCopy.tasks.leave.approve }).click();

@@ -4,7 +4,7 @@
 import { GLYPHS, TAB_ICONS } from "@maneman/brand/icons";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { Breadcrumbs } from "@maneman/ui/Breadcrumbs";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Caps } from "@maneman/ui/Caps";
 import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
@@ -21,7 +21,7 @@ import { ChangeBar, SettingsLayout, SubNav } from "@maneman/ui/SettingsLayout";
 import { NavAccount, NavButton, NavGroup, NavItem, SideNav } from "@maneman/ui/SideNav";
 import { StatTile } from "@maneman/ui/StatTile";
 import { TabBar, TabBarItem } from "@maneman/ui/TabBar";
-import { rowRule, Table, type RuleTone } from "@maneman/ui/Table";
+import { RowOpener, rowRule, Table, type RuleTone } from "@maneman/ui/Table";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { typeLook } from "@maneman/ui/type";
@@ -124,7 +124,11 @@ function List() {
           <tbody>
             {TONES.map((tone, at) => (
               <tr key={tone} className={rowRule(RULE_OF[tone])}>
-                <td>{words.cell(at + 1)}</td>
+                <th scope="row">
+                  <RowOpener onOpen={() => undefined} meta={words.rows[0].meta}>
+                    {words.cell(at + 1)}
+                  </RowOpener>
+                </th>
                 <td>
                   <Badge tone={tone}>{words.badges[tone]}</Badge>
                 </td>
@@ -137,12 +141,14 @@ function List() {
         {words.rows.map((row) => (
           <ListRow
             key={row.title}
+            lead={row.lead}
             title={row.title}
             meta={row.meta}
             end={row.end}
             endTone={"tone" in row ? row.tone : "muted"}
             rule={"tone" in row ? row.tone : undefined}
             onClick={() => undefined}
+            action={row === words.rows[0] ? <RowButton>{words.act}</RowButton> : undefined}
           />
         ))}
       </ListRows>

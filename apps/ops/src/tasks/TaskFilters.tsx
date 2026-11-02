@@ -1,51 +1,51 @@
-// What Tasks is narrowed to (./TasksScreen.tsx): a person's own, one kind, or a client found by name or number. A task
-// names no city, so the board narrows by those three alone.
+// The bar over Tasks (./TasksScreen.tsx): its views, each with how many it holds (./task-views.ts), one kind, and a
+// client found by name or number. On a phone the views are a row of chips.
 
-import { Checkbox, Field, Select } from "@maneman/ui/Field";
+import { Field, Select } from "@maneman/ui/Field";
 import { SearchInput } from "@maneman/ui/SearchInput";
+import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Toolbar } from "@maneman/ui/Toolbar";
-import type { TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
+import styles from "./task-filters.module.css";
+import { TASK_VIEWS, type TaskFilter, type TaskView } from "./task-views.ts";
 
-export interface TaskFilter {
-  readonly mine: boolean;
-  readonly kind: string;
-  readonly search: string;
-}
-
-export const NO_FILTER: TaskFilter = { mine: false, kind: "", search: "" };
-
-const isNarrowed = (filter: TaskFilter) => filter.mine || filter.kind !== "" || filter.search.trim() !== "";
-
-/** The groups narrowed as asked, each counting what it shows; the board's own counts stand while nothing is. */
-export function narrowed(groups: readonly TaskGroup[], filter: TaskFilter, me: string | null): TaskGroup[] {
-  if (!isNarrowed(filter)) return [...groups];
-  const search = filter.search.trim().toLowerCase();
-  return groups
-    .filter((group) => filter.kind === "" || group.group === filter.kind)
-    .map((group) => {
-      const left = group.tasks.filter(
-        (task) =>
-          (!filter.mine || task.owner === me) &&
-          (search === "" || `${task.person?.name ?? ""} ${task.person?.mobile ?? ""}`.toLowerCase().includes(search)),
-      );
-      return { ...group, count: left.length, tasks: left };
-    })
-    .filter((group) => group.count > 0);
-}
-
-export function TaskFilters({ filter, onFilter }: { filter: TaskFilter; onFilter: (next: TaskFilter) => void }) {
+export function TaskFilters(props: {
+  filter: TaskFilter;
+  counts: Readonly<Record<TaskView, number>>;
+  onFilter: (next: TaskFilter) => void;
+}) {
+  const { filter, onFilter } = props;
   const words = tasks.filters;
   const kinds = Object.entries(tasks.groups).sort(([, one], [, other]) => one.localeCompare(other));
   return (
-    <Toolbar label={words.label}>
-      <SearchInput
-        label={words.search}
-        value={filter.search}
-        onChange={(search) => {
-          onFilter({ ...filter, search });
-        }}
-      />
+    <Toolbar
+      label={words.label}
+      end={
+        <SearchInput
+          label={words.search}
+          value={filter.search}
+          onChange={(search) => {
+            onFilter({ ...filter, search });
+          }}
+        />
+      }
+    >
+      <div className={styles.views} role="radiogroup" aria-label={words.label}>
+        {TASK_VIEWS.map((view) => (
+          <ToggleButton
+            key={view}
+            asRadio
+            filled
+            pressed={filter.view === view}
+            count={props.counts[view]}
+            onClick={() => {
+              onFilter({ ...filter, view });
+            }}
+          >
+            {words.views[view]}
+          </ToggleButton>
+        ))}
+      </div>
       <Field label={words.kind} labelHidden>
         {(control) => (
           <Select
@@ -65,13 +65,6 @@ export function TaskFilters({ filter, onFilter }: { filter: TaskFilter; onFilter
           </Select>
         )}
       </Field>
-      <Checkbox
-        label={words.mine}
-        checked={filter.mine}
-        onChange={(event) => {
-          onFilter({ ...filter, mine: event.target.checked });
-        }}
-      />
     </Toolbar>
   );
 }

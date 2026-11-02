@@ -58,14 +58,17 @@ export const tasks = {
   overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
   /** Each department's section, named as the navigation names it. */
   departments: DEPARTMENT_NAMES,
-  /** The bar over the board: a person's own, one kind, or a client by name or number. */
+  /** The bar over the board: all, a person's own, nobody's or overdue; one kind; or a client by name or number. */
   filters: {
     label: "Narrow the tasks",
     search: "Find a client",
     kind: "Kind",
     allKinds: "Kind: All",
-    mine: "Mine",
+    /** The four views, each with how many it shows, in the words the console already gives each. */
+    views: { all: "All", mine: "Mine", nobody: "Unassigned", overdue: "Overdue" },
   },
+  /** The table's columns, in the words Today's list headed its own with, and an owner's label's. */
+  columns: { what: "What", who: "Who", due: "Due", owner: "Owner" },
   /** Each group, lettered in small caps as the board letters its own two. */
   groups: {
     // A group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
