@@ -3,13 +3,16 @@
 // last counted, each in a column of its own. With a handful of places, every place side by side as well.
 
 import { Badge } from "@maneman/ui/Badge";
-import { TextButton } from "@maneman/ui/TextLink";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
+import { SearchInput } from "@maneman/ui/SearchInput";
+import { ToggleButton } from "@maneman/ui/ToggleButton";
+import { Toolbar } from "@maneman/ui/Toolbar";
 import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Panel } from "@maneman/ui/Panel";
 import { RowHead } from "@maneman/ui/RowHead";
-import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll, type RuleTone } from "@maneman/ui/Table";
 import { addDays, indiaDate, listDate } from "@maneman/web-kit/dates";
+import { useState } from "react";
 import { type Stock } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { shell } from "../content/shell.ts";
@@ -101,50 +104,36 @@ export function placesNeedingAttention(stock: Stock): PlaceNeeds[] {
     .sort((one, other) => other.below - one.below || other.out - one.out || other.low - one.low);
 }
 
-/** The places with something below zero, out or low, the worst first, and how many items each: a name shows it. */
+/** A place's rule: below zero in the error's red, out in the warning's, low in brass. */
+const ruleOf = (row: PlaceNeeds): RuleTone => {
+  if (row.below > 0) return "error";
+  return row.out > 0 ? "warning" : "attention";
+};
+
+/** The places with something below zero, out or low, the worst first, a card each: pressing one shows its stock. */
 export function Attention({ stock, onShow }: { stock: Stock; onShow: (showing: Showing) => void }) {
   const rows = placesNeedingAttention(stock);
   if (rows.length === 0) return null;
-  const figure = (count: number) => (count === 0 ? <span className={styles.none}>{copy.noExpiry}</span> : count);
   return (
-    <Panel titleId="stock-attention" title={copy.attention.title}>
-      <Table fixed className={styles.attention}>
-        <thead>
-          <tr>
-            <th scope="col">{copy.place}</th>
-            {copy.attention.columns.map((column) => (
-              <th scope="col" key={column} className={FIGURE}>
-                {column}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.place.id}>
-              <th scope="row">
-                <TextButton
-                  compact
-                  onClick={() => {
-                    onShow({ by: "place", place: row.place.id });
-                    document.getElementById("stock-on-hand")?.scrollIntoView({ block: "start" });
-                  }}
-                >
-                  {placeName(stock, row.place.id)}
-                </TextButton>
-              </th>
-              <td className={FIGURE}>{figure(row.below)}</td>
-              <td className={FIGURE}>{figure(row.out)}</td>
-              <td className={FIGURE}>{figure(row.low)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </Panel>
+    <ListRows label={copy.attention.title} className={styles.attentionCards}>
+      {rows.map((row) => (
+        <ListRow
+          key={row.place.id}
+          title={placeName(stock, row.place.id)}
+          meta={copy.attention.counts(row.below, row.out, row.low)}
+          end={copy.attention.show}
+          endTone="plain"
+          rule={ruleOf(row)}
+          onClick={() => {
+            onShow({ by: "place", place: row.place.id });
+            document.getElementById("stock-on-hand")?.scrollIntoView({ block: "start" });
+          }}
+        />
+      ))}
+    </ListRows>
   );
 }
 
-/** The soonest of a place's lots to expire, dated plainly, and marked when it has or soon will. */
 function Expires({ stock, holding }: { stock: Stock; holding: Holding | undefined }) {
   // The lots come soonest to expire first.
   const soonest = holding?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? null;
@@ -190,8 +179,81 @@ function ItemName({ consumable }: { consumable: Stock["consumables"][number] }) 
 }
 
 /** One place: each item's figure, its soonest expiry and when it was last counted. */
+type Narrowing = "all" | "short" | "expiring";
+
+/** Whether the item's soonest lot at the place expires within the warning's days, or has. */
+function expiringSoon(stock: Stock, holding: Holding | undefined): boolean {
+  const soonest = holding?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? null;
+  return soonest !== null && soonest <= addDays(stock.today, stock.expiry_warning_days);
+}
+
+/** The place's items narrowed one way: every one, those low or out (or below zero), or those expiring soon. */
+function narrowed(stock: Stock, place: string, narrowing: Narrowing): Consumable[] {
+  if (narrowing === "all") return [...stock.consumables];
+  if (narrowing === "short") return stock.consumables.filter((each) => stateOf(stock, each, place) !== null);
+  return stock.consumables.filter((each) => expiringSoon(stock, holdingOf(stock, each.code, place)));
+}
+
+/** The chips that narrow a place's items, each with how many it holds, and the box that finds one by name. */
+function NarrowItems(props: {
+  stock: Stock;
+  place: string;
+  narrowing: Narrowing;
+  onNarrow: (narrowing: Narrowing) => void;
+  found: string;
+  onFind: (found: string) => void;
+}) {
+  const { stock, place } = props;
+  return (
+    <Toolbar label={copy.narrow.label} className={styles.narrow}>
+      <SearchInput label={copy.narrow.find} value={props.found} maxLength={60} onChange={props.onFind} />
+      <div role="radiogroup" aria-label={copy.narrow.label} className={styles.narrowChips}>
+        {(["all", "short", "expiring"] as const).map((each) => (
+          <ToggleButton
+            key={each}
+            asRadio
+            filled
+            pressed={props.narrowing === each}
+            count={narrowed(stock, place, each).length}
+            onClick={() => {
+              props.onNarrow(each);
+            }}
+          >
+            {copy.narrow[each]}
+          </ToggleButton>
+        ))}
+      </div>
+    </Toolbar>
+  );
+}
+
 function OnePlace({ stock, place }: { stock: Stock; place: string }) {
   const year = Number(stock.today.slice(0, 4));
+  const [narrowing, setNarrowing] = useState<Narrowing>("all");
+  const [found, setFound] = useState("");
+  const shown = narrowed(stock, place, narrowing).filter((each) =>
+    each.name.toLowerCase().includes(found.trim().toLowerCase()),
+  );
+  return (
+    <>
+      <NarrowItems
+        stock={stock}
+        place={place}
+        narrowing={narrowing}
+        onNarrow={setNarrowing}
+        found={found}
+        onFind={setFound}
+      />
+      {shown.length === 0 ? (
+        <Note>{copy.narrow.none}</Note>
+      ) : (
+        <PlaceTable stock={stock} place={place} shown={shown} year={year} />
+      )}
+    </>
+  );
+}
+
+function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string; shown: Consumable[]; year: number }) {
   return (
     <Table controls fixed className={styles.onePlace}>
       <thead>
@@ -206,7 +268,7 @@ function OnePlace({ stock, place }: { stock: Stock; place: string }) {
         </tr>
       </thead>
       <tbody>
-        {stock.consumables.map((consumable) => {
+        {shown.map((consumable) => {
           const holding = holdingOf(stock, consumable.code, place);
           const counted = holding?.counted_at ?? null;
           return (
