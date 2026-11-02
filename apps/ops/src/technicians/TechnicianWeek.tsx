@@ -16,24 +16,20 @@ import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = technicians.week;
 
-const DAY_MS = 86_400_000;
-
 /**
- * Their jobs over the roster's period, how long a visit takes them where the phone timed any, and how often they were
- * at the door by the end of the arrival window.
+ * How long a visit takes them where the phone timed any, and whether they run over; their jobs and how often they were
+ * on time are the page's figures (./TechnicianHead.tsx).
  */
 function WorkStrip({ technicianId }: { technicianId: string }) {
   const read = useCallback(() => techniciansApi.technicianWork(null), []);
   const [loaded] = useLoad(read);
   if (loaded.state !== "loaded") return null;
   const work = loaded.value.technicians.find((each) => each.technician_id === technicianId);
-  if (work === undefined) return null;
-  const days = Math.round((Date.parse(loaded.value.to) - Date.parse(loaded.value.from)) / DAY_MS);
+  // With no visit timed and none run over, there is nothing to say, and no empty line is left.
+  if (work === undefined || (work.average_minutes === null && !work.runs_over)) return null;
   return (
     <p className={styles.strip}>
-      <span>{copy.jobs(work.jobs, days)}</span>
       {work.average_minutes !== null && <span>{copy.average(hoursAndMinutes(work.average_minutes))}</span>}
-      {work.jobs > 0 && <span>{copy.onTime(technicians.work.onTime(work.on_time_jobs, work.jobs))}</span>}
       {work.runs_over && <span className={styles.over}>{copy.runsOver}</span>}
     </p>
   );

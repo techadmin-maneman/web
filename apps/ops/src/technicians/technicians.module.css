@@ -250,3 +250,11 @@
 .tabCount {
   margin-left: var(--sp-8);
 }
+
+/* A tab's panel, its title not shown again: what it holds starts a step in from the panel's top, as from its sides. */
+.tabBody {
+  --note-inset: 0; /* its notes sit at its edge, which is in from the panel's already */
+
+  margin: 0 var(--form-inset);
+  padding: var(--sp-16) 0 var(--sp-4);
+}

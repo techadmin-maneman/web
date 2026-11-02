@@ -110,7 +110,8 @@ const ruleOf = (row: PlaceNeeds): RuleTone => {
   return row.out > 0 ? "warning" : "attention";
 };
 
-/** The places with something below zero, out or low, the worst first, a card each: pressing one shows its stock. */
+/** The places with something below zero, out or low, the worst first, a card each: pressing one shows its stock. A
+ * card is the button, its name saying whose stock it shows. */
 export function Attention({ stock, onShow }: { stock: Stock; onShow: (showing: Showing) => void }) {
   const rows = placesNeedingAttention(stock);
   if (rows.length === 0) return null;
@@ -121,8 +122,6 @@ export function Attention({ stock, onShow }: { stock: Stock; onShow: (showing: S
           key={row.place.id}
           title={placeName(stock, row.place.id)}
           meta={copy.attention.counts(row.below, row.out, row.low)}
-          end={copy.attention.show}
-          endTone="plain"
           rule={ruleOf(row)}
           onClick={() => {
             onShow({ by: "place", place: row.place.id });
