@@ -41,7 +41,6 @@ export const technicians = {
     period: (from: string, to: string) => `Jobs ${from} – ${to}`,
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
   },
-  /** Our words, all of them: the board draws the roster and no page for one technician. */
   /** A technician's head: where they stand today beside their name, their facts beneath, and its actions. */
   head: {
     working: "Working",
@@ -61,6 +60,7 @@ export const technicians = {
     kit: "Kit",
     belowZero: (items: number) => (items === 0 ? "None below zero" : `${String(items)} below zero`),
   },
+  /** Our words, all of them: the board draws the roster and no page for one technician. */
   page: {
     back: "All technicians",
     tabsLabel: (name: string) => `${name}: week, hours, leave, phones and kit`,
