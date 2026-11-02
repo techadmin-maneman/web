@@ -10,6 +10,11 @@ import { FIGURE, Table } from "@maneman/ui/Table";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { FormActions } from "@maneman/ui/FormActions";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import form from "@maneman/ui/forms.module.css";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate, indiaDate } from "@maneman/web-kit/dates";
@@ -38,7 +43,7 @@ function Choices(props: {
 }) {
   return (
     <>
-      <Field label={copy.visits} error={boxError(copy.errors, props.failure, "visits")}>
+      <Field label={copy.visits} className={form.field} error={boxError(copy.errors, props.failure, "visits")}>
         {(control) => (
           <Select
             {...control}
@@ -56,7 +61,7 @@ function Choices(props: {
           </Select>
         )}
       </Field>
-      <Field label={copy.reason} error={boxError(copy.errors, props.failure, "reason")}>
+      <Field label={copy.reason} className={form.field} error={boxError(copy.errors, props.failure, "reason")}>
         {(control) => (
           <Select
             {...control}
@@ -78,63 +83,75 @@ function Choices(props: {
   );
 }
 
-/** Free visits given from the chat: at once within the limit, else sent to a manager. */
-export function RemedyForm({ personId }: { readonly personId: string }) {
-  const [open, setOpen] = useState(false);
+/** How many, why and a note for the team, in the drawer: given at once within the limit, else sent to a manager. */
+function RemedyFields(props: { personId: string; onGiven: (said: string) => void; onCancel: () => void }) {
   const [visits, setVisits] = useState(1);
   const [reason, setReason] = useState<RemedyReason>("fit_problem");
   const [note, setNote] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
-  const [said, setSaid] = useState<string | null>(null);
-  const give = async () => {
-    setFailure(null);
-    const answer = await careApi.giveRemedy(personId, { visits, reason, note: note.trim() });
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setSaid(answer.body.state === "given" ? copy.given(visits) : copy.awaiting);
-    setOpen(false);
-    setNote("");
-  };
-  if (!open) {
-    return (
-      <div className={styles.closing}>
-        {said !== null && <Toast>{said}</Toast>}
-        <Button
-          variant="outline"
-          size="small"
-          narrow
-          onClick={() => {
-            setOpen(true);
-          }}
-        >
-          {copy.open}
-        </Button>
+  const [busy, once] = useOneAtATime();
+  const give = () =>
+    once(async () => {
+      setFailure(null);
+      const answer = await careApi.giveRemedy(props.personId, { visits, reason, note: note.trim() });
+      if (!answer.ok) {
+        setFailure({ code: answer.code, fields: answer.fields });
+        return;
+      }
+      props.onGiven(answer.body.state === "given" ? copy.given(visits) : copy.awaiting);
+    });
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void give();
+      }}
+    >
+      <div className={form.fields}>
+        <Choices visits={visits} reason={reason} onVisits={setVisits} onReason={setReason} failure={failure} />
+        <Field label={copy.note} className={form.field} error={boxError(copy.errors, failure, "note")}>
+          {(control) => (
+            <TextArea
+              {...control}
+              rows={3}
+              maxLength={REASON_MAX_CHARS}
+              value={note}
+              onChange={(event) => {
+                setNote(event.target.value);
+              }}
+            />
+          )}
+        </Field>
       </div>
-    );
-  }
+      <Refused failed={failure} errors={copy.errors} boxes={["visits", "reason", "note"]} />
+      <FormActions>
+        <Button variant="primary" size="small" type="submit" busy={busy} disabled={note.trim() === ""}>
+          {copy.give}
+        </Button>
+        <CancelButton disabled={busy} onClick={props.onCancel} />
+      </FormActions>
+    </form>
+  );
+}
+
+/** Free visits given from the chat, in a drawer beside it, and what came of the last. */
+export function RemedyForm({ personId }: { readonly personId: string }) {
+  const [said, setSaid] = useState<string | null>(null);
   return (
     <div className={styles.closing}>
-      <Choices visits={visits} reason={reason} onVisits={setVisits} onReason={setReason} failure={failure} />
-      <Field label={copy.note} className={styles.reply} error={boxError(copy.errors, failure, "note")}>
-        {(control) => (
-          <TextArea
-            {...control}
-            className={styles.box}
-            rows={2}
-            maxLength={REASON_MAX_CHARS}
-            value={note}
-            onChange={(event) => {
-              setNote(event.target.value);
+      {said !== null && <Toast>{said}</Toast>}
+      <DrawerButton label={copy.open}>
+        {(close) => (
+          <RemedyFields
+            personId={personId}
+            onGiven={(words) => {
+              setSaid(words);
+              close();
             }}
+            onCancel={close}
           />
         )}
-      </Field>
-      <Button variant="outline" size="small" disabled={note.trim() === ""} onClick={() => void give()}>
-        {copy.give}
-      </Button>
-      <Refused failed={failure} errors={copy.errors} boxes={["visits", "reason", "note"]} />
+      </DrawerButton>
     </div>
   );
 }

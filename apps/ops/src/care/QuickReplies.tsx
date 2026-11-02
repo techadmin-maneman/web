@@ -110,12 +110,11 @@ function AddReply({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => 
             />
           )}
         </Field>
-        <Field label={copy.text} className={styles.reply} box="text">
+        <Field label={copy.text} className={form.field} box="text">
           {(control) => (
             <TextArea
               {...control}
               ref={box}
-              className={styles.box}
               rows={3}
               maxLength={1000}
               value={text}

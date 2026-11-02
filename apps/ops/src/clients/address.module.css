@@ -1,17 +1,14 @@
 /*
  * The form a member of staff saves an address a client gave them on the phone
- * with (GivenAddress.tsx), on the client's Visits tab. No board draws it; it
- * stands on the panel the credits and the invite stand on, and its fields are
- * the console's own (packages/ui/Field.tsx).
+ * with (GivenAddress.tsx), in the drawer the client's Visit address opens. No
+ * board draws it; the drawer is its box, and its fields are the console's own
+ * (packages/ui/Field.tsx).
  */
 
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--sp-12);
-  max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--ui-line);
-  padding: var(--sp-24);
 }
 
 .title {

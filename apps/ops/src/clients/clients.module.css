@@ -336,10 +336,6 @@
 /* ---- Credits, put right by hand ------------------------------------------ */
 
 /* The reason an invite is attached for, as tall as the reason for a held grant. */
-.inviteReason {
-  margin-top: var(--sp-16);
-}
-
 .creditForm {
   margin-top: var(--sp-16);
 }

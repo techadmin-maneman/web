@@ -77,13 +77,14 @@
     position: relative;
   }
 
-  .table tbody th[scope="row"] :is(a, button):first-of-type::after {
+  .table tbody th[scope="row"] :is(a, button):first-of-type:not(dialog *)::after {
     position: absolute;
     inset: 0;
     content: "";
   }
 
-  .table tbody td :is(a, button, input, select, textarea, label, summary) {
+  /* A drawer opened from a row stands inside its cell, so none of this reaches into a dialog. */
+  .table tbody td :is(a, button, input, select, textarea, label, summary):not(dialog *) {
     position: relative;
     z-index: var(--z-raised);
   }
@@ -322,7 +323,7 @@
 
   /* A button's words are never broken: one too wide for the line goes to the next whole. The card's title, a name
      that opens the row, runs on as words do. */
-  .table[data-cards] tbody :is(th, td):not(:first-child) button {
+  .table[data-cards] tbody :is(th, td):not(:first-child) button:not(dialog *) {
     overflow-wrap: normal;
     white-space: nowrap;
   }

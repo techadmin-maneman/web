@@ -40,6 +40,8 @@
 }
 
 .items {
+  --local-bubble: 80%; /* a message's widest, so the two sides read as two */
+
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -87,15 +89,20 @@
   }
 }
 
+/* What they said at the left and what we said at the right, each as wide as its words, to the same width at most. */
 .theirs,
 .ours {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
-  max-width: var(--ops-measure);
+  max-width: min(var(--ops-measure), var(--local-bubble));
   padding: var(--sp-8) var(--sp-12);
   border: var(--hairline) solid var(--ui-line);
   background: var(--ui-raised);
+}
+
+.theirs {
+  align-self: flex-start;
 }
 
 .ours {

@@ -4,9 +4,10 @@
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
+import { CancelButton } from "@maneman/ui/CancelButton";
+import { FormActions } from "@maneman/ui/FormActions";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -48,7 +49,7 @@ function SpendChoice(props: {
   error: string | null;
 }) {
   return (
-    <Field label={props.label} error={props.error}>
+    <Field label={props.label} className={form.field} error={props.error}>
       {(control) => (
         <Select
           {...control}
@@ -75,12 +76,15 @@ function Typed(props: {
   maxLength: number;
   onChange: (value: string) => void;
   error: string | null;
+  hint?: string;
+  width?: "amount";
 }) {
   return (
-    <Field label={props.label} error={props.error}>
+    <Field label={props.label} className={form.field} hint={props.hint} error={props.error}>
       {(control) => (
         <TextInput
           {...control}
+          width={props.width}
           maxLength={props.maxLength}
           value={props.value}
           onChange={(event) => {
@@ -92,19 +96,109 @@ function Typed(props: {
   );
 }
 
-function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendEntry) => void }) {
-  const [month, setMonth] = useState(list.this_month);
-  const [city, setCity] = useState("");
-  const [channel, setChannel] = useState<SpendChannel>(list.channels[0] ?? "partner");
-  const [campaign, setCampaign] = useState("");
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
+/** What a spend line holds as it is typed. */
+interface Draft {
+  readonly month: string;
+  readonly city: string;
+  readonly channel: SpendChannel;
+  readonly campaign: string;
+  readonly amount: string;
+  readonly note: string;
+}
+
+/** The drawer's boxes, one under another. */
+function SpendFields(props: {
+  list: SpendList;
+  draft: Draft;
+  onDraft: (change: Partial<Draft>) => void;
+  refused: (box: string) => string | null;
+}) {
+  const { list, draft, onDraft, refused } = props;
+  return (
+    <div className={form.fields}>
+      <SpendChoice
+        label={copy.month}
+        error={refused("month")}
+        value={draft.month}
+        options={monthsOf(list).map((each) => [each, fullMonth(each)])}
+        onChange={(month) => {
+          onDraft({ month });
+        }}
+      />
+      <SpendChoice
+        label={copy.city}
+        error={refused("city")}
+        value={draft.city}
+        options={[["", copy.national], ...list.cities.map((each) => [each, each] as const)]}
+        onChange={(city) => {
+          onDraft({ city });
+        }}
+      />
+      <SpendChoice
+        label={copy.channel}
+        error={refused("channel")}
+        value={draft.channel}
+        options={list.channels.map((each) => [each, copy.channels[each]])}
+        onChange={(value) => {
+          onDraft({ channel: list.channels.find((each) => each === value) ?? draft.channel });
+        }}
+      />
+      <Typed
+        label={copy.campaign}
+        hint={copy.campaignNote}
+        error={refused("campaign")}
+        value={draft.campaign}
+        maxLength={120}
+        onChange={(campaign) => {
+          onDraft({ campaign });
+        }}
+      />
+      <Typed
+        label={copy.amount}
+        width="amount"
+        error={refused("amount")}
+        value={draft.amount}
+        maxLength={12}
+        onChange={(amount) => {
+          onDraft({ amount });
+        }}
+      />
+      <Typed
+        label={copy.note}
+        error={refused("note")}
+        value={draft.note}
+        maxLength={200}
+        onChange={(note) => {
+          onDraft({ note });
+        }}
+      />
+    </div>
+  );
+}
+
+function SpendForm({
+  list,
+  onAdded,
+  onCancel,
+}: {
+  list: SpendList;
+  onAdded: (entry: SpendEntry) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<Draft>({
+    month: list.this_month,
+    city: "",
+    channel: list.channels[0] ?? "partner",
+    campaign: "",
+    amount: "",
+    note: "",
+  });
   const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
-  const refused = (box: string) => boxError(copy.errors, failure, box);
   const add = () =>
     once(async () => {
       setFailure(null);
+      const { month, city, channel, campaign, amount, note } = draft;
       const answer = await spendApi.add({
         month,
         city: city === "" ? null : city,
@@ -117,52 +211,32 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
         setFailure({ code: answer.code, fields: answer.fields });
         return;
       }
-      setAmount("");
-      setCampaign("");
-      setNote("");
+      setDraft({ ...draft, amount: "", campaign: "", note: "" });
       onAdded(answer.body);
     });
-  const channelOf = (value: string) => list.channels.find((each) => each === value);
   return (
-    <div className={form.group}>
-      <SpendChoice
-        label={copy.month}
-        error={refused("month")}
-        value={month}
-        options={monthsOf(list).map((each) => [each, fullMonth(each)])}
-        onChange={setMonth}
-      />
-      <SpendChoice
-        label={copy.city}
-        error={refused("city")}
-        value={city}
-        options={[["", copy.national], ...list.cities.map((each) => [each, each] as const)]}
-        onChange={setCity}
-      />
-      <SpendChoice
-        label={copy.channel}
-        error={refused("channel")}
-        value={channel}
-        options={list.channels.map((each) => [each, copy.channels[each]])}
-        onChange={(value) => {
-          setChannel(channelOf(value) ?? channel);
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void add();
+      }}
+    >
+      <SpendFields
+        list={list}
+        draft={draft}
+        onDraft={(change) => {
+          setDraft({ ...draft, ...change });
         }}
+        refused={(box) => boxError(copy.errors, failure, box)}
       />
-      <Typed
-        label={copy.campaign}
-        error={refused("campaign")}
-        value={campaign}
-        maxLength={120}
-        onChange={setCampaign}
-      />
-      <Note>{copy.campaignNote}</Note>
-      <Typed label={copy.amount} error={refused("amount")} value={amount} maxLength={12} onChange={setAmount} />
-      <Typed label={copy.note} error={refused("note")} value={note} maxLength={200} onChange={setNote} />
-      <Button variant="outline" size="small" disabled={busy || !isRupees(amount)} onClick={() => void add()}>
-        {busy ? copy.adding : copy.add}
-      </Button>
       <Refused failed={failure} errors={copy.errors} boxes={SPEND_BOXES} />
-    </div>
+      <FormActions>
+        <Button variant="primary" size="small" type="submit" busy={busy} disabled={!isRupees(draft.amount)}>
+          {busy ? copy.adding : copy.add}
+        </Button>
+        <CancelButton disabled={busy} onClick={onCancel} />
+      </FormActions>
+    </form>
   );
 }
 
@@ -243,6 +317,7 @@ function Spend() {
                   setEntries([entry, ...shown].sort((one, other) => other.month.localeCompare(one.month)));
                   close();
                 }}
+                onCancel={close}
               />
             )}
           </DrawerButton>

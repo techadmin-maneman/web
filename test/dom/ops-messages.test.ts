@@ -449,9 +449,9 @@ describe("the Messages page", () => {
         box.dispatchEvent(new Event("input", { bubbles: true }));
       }
     });
-    // The chat's own Send is beside it; the matter's is in the client's column.
+    // The chat's own Send is beside it; the matter's is in the drawer the client's column opens.
     await act(async () => {
-      [...document.body.querySelectorAll(`aside[aria-label="${copy.panel.title}"] button`)]
+      [...document.body.querySelectorAll("dialog button")]
         .find((each) => each.textContent.trim() === copy.cityMatter.send)
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       await answered();

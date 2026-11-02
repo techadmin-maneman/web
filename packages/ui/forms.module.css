@@ -51,6 +51,16 @@
     border-top: var(--hairline) solid var(--ui-line);
   }
 
+  /* A group's name stands under its rule, not on it as a fieldset's legend would: floated, it leaves the border. */
+  .group > legend {
+    float: left;
+    width: 100%;
+  }
+
+  .group > legend + * {
+    clear: both;
+  }
+
   /* A panel form's fields one under another, with the room a drawer's have between them. */
   .group > .field + .field,
   .group > .field + .group {

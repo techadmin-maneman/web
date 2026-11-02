@@ -17,6 +17,14 @@
     border: var(--hairline) solid var(--border-subtle);
     background: var(--surface);
     color: var(--on-surface);
+    /* Opened from a table's row, it would take on that cell's type: its size, weight, alignment and unbroken lines.
+       It reads as the page does wherever it is opened from. */
+    font-size: var(--fs-14);
+    font-variant-numeric: normal;
+    font-weight: var(--weight-regular);
+    line-height: var(--lh-145);
+    text-align: start;
+    white-space: normal;
     /* It slides in from the page's right edge and back out as it closes (./motion.module.css's spec). */
     transform: translateX(100%);
     transition:
