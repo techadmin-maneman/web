@@ -12,6 +12,7 @@ export const signedInLocally = (cities: readonly string[]): Answer =>
     sign_out: null,
     staff: { enforced: false, listed: false, grants: [], may_call: Object.keys(ROUTE_NEEDS) },
     cities: [...cities],
+    every_city: true,
   } satisfies OpsReply<"/api/whoami">);
 
 /** Narrows the console to a city with the header's picker, as a person does. */

@@ -7,6 +7,7 @@ import { DAY_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
 import { read, readAll } from "../../lib/read-all.ts";
+import { idWithinReach } from "../clients/places.ts";
 
 interface Replies {
   readonly chats: number;
@@ -70,8 +71,12 @@ function countBy<T>(rows: readonly T[], keyOf: (row: T) => string | null): Map<s
   return groups;
 }
 
-/** The numbers over the `days` India days to `now`'s, both included. */
-export async function careNumbers(db: D1Database, days: number, hours: CareHours, now: Date): Promise<CareNumbers> {
+/** The numbers over the `days` India days to `now`'s, both included; for one city's clients alone, where asked. */
+export async function careNumbers(
+  db: D1Database,
+  { days, hours, now, city }: { days: number; hours: CareHours; now: Date; city?: string | undefined },
+): Promise<CareNumbers> {
+  const cities = city === undefined ? null : JSON.stringify([city]);
   const to = indiaDate(now);
   const since = new Date(now.getTime() - days * DAY_MS).toISOString();
   const { chatRows, openRows, remedyRows } = await readAll(db, {
@@ -82,20 +87,26 @@ export async function careNumbers(db: D1Database, days: number, hours: CareHours
            (SELECT MIN(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
               AND m.author <> ?2 AND m.sent_at >= c.opened_at) AS first_reply_at
          FROM conversations c LEFT JOIN care_owners o ON o.person_id = c.person_id
-         WHERE c.opened_at >= ?1`,
+         WHERE c.opened_at >= ?1 AND ${idWithinReach("client", "c.person_id", "?3")}`,
         )
-        .bind(since, AUTO_REPLY),
+        .bind(since, AUTO_REPLY, cities),
     ),
     openRows: read<{ state: string; last_inbound_at: string | null }>(
-      db.prepare("SELECT state, last_inbound_at FROM conversations WHERE state IN ('open', 'waiting')"),
+      db
+        .prepare(
+          `SELECT c.state, c.last_inbound_at FROM conversations c
+           WHERE c.state IN ('open', 'waiting') AND ${idWithinReach("client", "c.person_id", "?1")}`,
+        )
+        .bind(cities),
     ),
     remedyRows: read<CareNumbers["remedies"][number]>(
       db
         .prepare(
           `SELECT reason, COUNT(*) AS remedies, SUM(visits) AS visits FROM remedies
-         WHERE given_at >= ?1 AND state = 'given' GROUP BY reason ORDER BY remedies DESC`,
+         WHERE given_at >= ?1 AND state = 'given' AND ${idWithinReach("client", "person_id", "?2")}
+         GROUP BY reason ORDER BY remedies DESC`,
         )
-        .bind(since),
+        .bind(since, cities),
     ),
   });
   const chats = chatRows;

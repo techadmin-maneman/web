@@ -150,6 +150,7 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
         may_call: ["GET /api/clients/{id}", "POST /api/clients/find", "GET /api/clients/{id}/hair-profile"],
       },
       cities: [],
+      every_city: true,
     }),
     [READ_RECORD]: json(RECORD),
     [READ_PIECES]: json(PIECES),

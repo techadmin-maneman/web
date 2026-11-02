@@ -1,6 +1,7 @@
-// The city the whole console is narrowed to, chosen in the header (ADR 0225): every page that lists by city reads it.
-// It is kept in this browser with the e-mail of the person who chose it, so it is theirs alone, and is let go where
-// that is someone else or the city is no longer served. Null is every city.
+// The city the whole console is narrowed to, chosen in the header (ADR 0225) from the cities the person's grants reach
+// (ADR 0228): every page that lists by city reads it. A person with one city has it, and no choice of every city. A
+// choice is kept in this browser with the e-mail of the person who made it, so it is theirs alone, and is let go where
+// that is someone else or the city is not one of theirs. Null is every city.
 
 import { useLoad } from "@maneman/ui/useLoad";
 import { useSyncExternalStore } from "react";
@@ -48,8 +49,10 @@ function keep(choice: Kept | null): void {
 export interface CityChoice {
   /** The city chosen; null for every city. */
   readonly city: string | null;
-  /** The cities served, in the console's order, once the API has said. */
+  /** The cities the person's grants reach, in the console's order, once the API has said. */
   readonly cities: readonly string[];
+  /** Whether the person may look at every city at once: their grants reach everywhere, or more than one city. */
+  readonly everyCity: boolean;
   readonly choose: (city: string | null) => void;
 }
 
@@ -62,10 +65,13 @@ export function useCity(): CityChoice {
   const kept = useSyncExternalStore(subscribe, () => chosen);
   const who = loaded.state === "loaded" ? loaded.value.signed_in_as : null;
   const cities = loaded.state === "loaded" ? loaded.value.cities : [];
+  const everyCity = loaded.state !== "loaded" || loaded.value.every_city;
   const stands = kept !== null && (who === null || (kept.who === who && cities.includes(kept.city)));
+  const [only] = !everyCity && cities.length === 1 ? cities : [];
   return {
-    city: stands ? kept.city : null,
+    city: only ?? (stands ? kept.city : null),
     cities,
+    everyCity,
     choose: (city) => {
       if (who === null) return;
       keep(city === null ? null : { who, city });

@@ -23,6 +23,7 @@ import { dueRule } from "../lib/due.ts";
 import { Left } from "../lib/Left.tsx";
 import { useIsPhone } from "../lib/media.ts";
 import { subjectOf, taskClientPath } from "../lib/task-links.ts";
+import { useCity } from "../lib/city.ts";
 import { readTasks } from "../lib/waiting.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { RowStep } from "./RowStep.tsx";
@@ -41,7 +42,8 @@ const keyOf = (row: Pick<Row, "group" | "task">) => `${row.group}/${row.task.id}
 /** The board, read with the tasks lapsed off it or without, and the switch between the two. */
 function useBoard() {
   const [withLapsed, setWithLapsed] = useState(false);
-  const read = useCallback(() => (withLapsed ? api.tasksWithLapsed() : readTasks()), [withLapsed]);
+  const { city } = useCity();
+  const read = useCallback(() => (withLapsed ? api.tasksWithLapsed(city) : readTasks(city)), [withLapsed, city]);
   const [loaded, retry] = useLoad(read);
   const toggle = () => {
     setWithLapsed((was) => !was);

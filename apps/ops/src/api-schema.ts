@@ -7523,6 +7523,8 @@ export interface paths {
             parameters: {
                 query?: {
                     view?: "mine" | "open" | "waiting" | "closed" | "all";
+                    /** @description One city to narrow to, within those the caller's grants reach; every city they reach when left out. */
+                    city?: string;
                     /** @description A client's name, or a number, or part of either. */
                     search?: string;
                     /** @description The next page: `next_cursor` from the last one. Left out, the first. */
@@ -10037,6 +10039,8 @@ export interface paths {
             parameters: {
                 query?: {
                     days?: "7" | "30" | "90";
+                    /** @description One city to narrow to, within those the caller's grants reach; every city they reach when left out. */
+                    city?: string;
                 };
                 header?: never;
                 path?: never;
@@ -13481,6 +13485,8 @@ export interface paths {
                 query?: {
                     /** @description One client's tasks alone, for their page; every count is then theirs. */
                     person?: string;
+                    /** @description One city to narrow to, within those the caller's grants reach; every city they reach when left out. */
+                    city?: string;
                     /** @description The tasks past the days ops set for a task to lapse as well, which the board otherwise leaves out. */
                     lapsed?: "include";
                 };
@@ -13986,6 +13992,8 @@ export interface paths {
                     from?: string;
                     /** @description India's last day, counted; today when left out. */
                     to?: string;
+                    /** @description One city to narrow to, within those the caller's grants reach; every city they reach when left out. */
+                    city?: string;
                 };
                 header?: never;
                 path?: never;
@@ -14061,6 +14069,8 @@ export interface paths {
                 query?: {
                     /** @description India's calendar date; today when it is left out. */
                     date?: string;
+                    /** @description One city to narrow to, within those the caller's grants reach; every city they reach when left out. */
+                    city?: string;
                 };
                 header?: never;
                 path?: never;
@@ -30028,13 +30038,15 @@ export interface components {
                 may_call: string[];
             };
             /**
-             * @description Each city ops serve, or with a technician at work, in the console's order: what the header's picker offers.
+             * @description The cities the header's picker offers, in the console's order: each city ops serve or with a technician at work that the caller's grants reach, every one for a grant that reaches everywhere.
              * @example [
              *       "Gurgaon",
              *       "Delhi"
              *     ]
              */
             cities: string[];
+            /** @description Whether the caller's grants reach every city, so the picker offers them all at once; a person whose grants keep to one city has that city alone. */
+            every_city: boolean;
         };
         StaffGrant: {
             /** @enum {string} */

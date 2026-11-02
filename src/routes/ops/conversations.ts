@@ -1,6 +1,7 @@
 // The Care inbox, behind Access (Customer Care; docs/decisions/0129-the-care-inbox.md).
 
 import { opsRoute } from "../../http/session-routes.ts";
+import { CityAsked } from "../schemas/city.ts";
 import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -90,6 +91,7 @@ const listRoute = opsRoute({
   request: {
     query: z.object({
       view: z.enum(INBOX_VIEWS).default("open"),
+      city: CityAsked,
       search: z.string().trim().max(80).optional().openapi({
         description: "A client's name, or a number, or part of either.",
       }),
@@ -231,10 +233,10 @@ export function registerOpsConversations(app: App): void {
   registerAnswers(app);
   app.openapi(listRoute, async (c) => {
     const me = staffMemberOf(c)?.id ?? "";
-    const { view, search, cursor } = c.req.valid("query");
+    const { view, search, cursor, city } = c.req.valid("query");
     const before = cursor === undefined ? undefined : placeOf(cursor);
     if (before === null || (before !== undefined && !THREAD_PLACE.test(before))) return refuse(c, "invalid_request");
-    const page = await listConversations(c.env.DB, { view, me, search, before }, await inboxContext(c));
+    const page = await listConversations(c.env.DB, { view, me, search, before, city }, await inboxContext(c));
     const next = page.nextBefore === null ? null : cursorOf(page.nextBefore);
     return c.json({ conversations: page.conversations, next_cursor: next }, 200);
   });

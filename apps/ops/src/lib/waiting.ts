@@ -1,34 +1,39 @@
-// The task board, read once for the Tasks screen and the navigation's counts both. The navigation reads it again as a
-// page opens or the window comes back into view, at most once a minute.
+// The task board, read once for the Tasks screen and the navigation's counts both, in the header's city (./city.ts).
+// The navigation reads it again as a page opens or the window comes back into view, at most once a minute, and at
+// once when another city is chosen.
 
 import { useEffect, useSyncExternalStore } from "react";
 import { api, type Answer, type Tasks } from "../api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
+import { useCity } from "./city.ts";
 
 const FRESH_MS = 60_000;
 
-let board: Tasks | null = null;
+/** The board as last read, and the city it was read for; null for every city. */
+let board: { readonly tasks: Tasks; readonly city: string | null } | null = null;
 let readAt = 0;
-let reading: Promise<Answer<Tasks>> | null = null;
+let reading: { readonly city: string | null; readonly answer: Promise<Answer<Tasks>> } | null = null;
 const listeners = new Set<() => void>();
 
-/** Reads the board afresh, or joins the read already under way. */
-export function readTasks(): Promise<Answer<Tasks>> {
-  reading ??= api.tasks().then((answer) => {
-    reading = null;
-    if (answer.ok) {
-      board = answer.body;
+/** Reads the board afresh for the city, or joins the read for it already under way. */
+export function readTasks(city: string | null): Promise<Answer<Tasks>> {
+  if (reading?.city === city) return reading.answer;
+  const answer = api.tasks(city).then((answered) => {
+    if (reading?.answer === answer) reading = null;
+    if (answered.ok) {
+      board = { tasks: answered.body, city };
       readAt = apiNow();
       for (const listener of listeners) listener();
     }
-    return answer;
+    return answered;
   });
-  return reading;
+  reading = { city, answer };
+  return answer;
 }
 
-function readIfStale(): void {
-  if (apiNow() - readAt < FRESH_MS) return;
-  void readTasks();
+function readIfStale(city: string | null): void {
+  if (board?.city === city && apiNow() - readAt < FRESH_MS) return;
+  void readTasks(city);
 }
 
 function subscribe(listener: () => void): () => void {
@@ -38,16 +43,20 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/** The board as last read, for a person whose calls to it go ahead; null until it has been read. */
+/** The board as last read for the header's city, for a person whose calls to it go ahead; null until it has been. */
 export function useTaskBoard(mayRead: boolean): Tasks | null {
+  const { city } = useCity();
   useEffect(() => {
     if (!mayRead) return;
-    readIfStale();
-    window.addEventListener("focus", readIfStale);
-    return () => {
-      window.removeEventListener("focus", readIfStale);
+    const again = () => {
+      readIfStale(city);
     };
-  }, [mayRead]);
+    again();
+    window.addEventListener("focus", again);
+    return () => {
+      window.removeEventListener("focus", again);
+    };
+  }, [mayRead, city]);
   const read = useSyncExternalStore(subscribe, () => board);
-  return mayRead ? read : null;
+  return mayRead && read?.city === city ? read.tasks : null;
 }

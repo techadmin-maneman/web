@@ -472,6 +472,7 @@ test("narrows the board to my own tasks, one kind, or a client found by name", a
       signed_in_as: "priya@maneman.in",
       sign_out: "/cdn-cgi/access/logout",
       cities: [],
+      every_city: true,
       staff: {
         enforced: false,
         listed: true,
@@ -520,6 +521,7 @@ test("counts in the header the tasks given to me that I have not seen, and lists
       signed_in_as: "priya@maneman.in",
       sign_out: "/cdn-cgi/access/logout",
       cities: [],
+      every_city: true,
       staff: { enforced: false, listed: true, grants, may_call: ["GET /api/tasks", "GET /api/alerts"] },
     }),
   });
@@ -542,6 +544,7 @@ test("names a client as plain text, and offers no way to a section, where the pe
       signed_in_as: "dispatch@maneman.in",
       sign_out: "/cdn-cgi/access/logout",
       cities: [],
+      every_city: true,
       staff: {
         enforced: true,
         listed: true,

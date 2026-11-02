@@ -4,13 +4,14 @@
 
 import { apiNow } from "@maneman/web-kit/clock";
 import { indiaClock, minutesBetween } from "@maneman/web-kit/dates";
-import type { ReactNode } from "react";
+import { useCallback, type ReactNode } from "react";
 import type { Tasks } from "../api.ts";
 import type { Conversation } from "../care/index.ts";
 import { tasks as taskWords } from "../content.ts";
 import { care } from "../content/care.ts";
 import { today as copy } from "../content/today.ts";
 import { useHeading } from "../frame/PageHead.tsx";
+import { useCity } from "../lib/city.ts";
 import { sectionOf } from "../route.ts";
 import { AsideList, HomeLayout, type AsideRow, type Shown } from "./HomeLayout.tsx";
 import { countOf } from "./homes.ts";
@@ -48,8 +49,11 @@ function waiting(chats: readonly Conversation[]): AsideRow[] {
 }
 
 export function CareHome({ board, needs }: { readonly board: Tasks; readonly needs: ReactNode }) {
-  const numbers = useRead(todayApi.care, "GET /api/care-numbers");
-  const chats = useRead(todayApi.waiting, "GET /api/conversations");
+  const { city } = useCity();
+  const readNumbers = useCallback(() => todayApi.care(city), [city]);
+  const readChats = useCallback(() => todayApi.waiting(city), [city]);
+  const numbers = useRead(readNumbers, "GET /api/care-numbers");
+  const chats = useRead(readChats, "GET /api/conversations");
   const median = numbers?.replies.median_minutes ?? null;
   const toAnswer = countOf(board, "unanswered_chat");
   const oldest = chats === null ? undefined : longestWait(chats.conversations);

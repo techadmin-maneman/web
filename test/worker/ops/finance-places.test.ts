@@ -339,6 +339,27 @@ describe("Finance's reach", () => {
     expect((await dayMoney(ncr)).collected).toBe(paid(IN_DELHI) + paid(IN_GURGAON));
   });
 
+  it("narrows the day's money and the payments to a city asked, never past the cities it reaches", async () => {
+    const ncr = await staffWith("finance:view:zone:NCR");
+    const money = async (city: string) =>
+      (await get(ncr, `/api/payments?city=${city}`)).json<DayMoney>().then((day) => day.collected);
+    expect(await money("Delhi")).toBe(paid(IN_DELHI));
+    expect(await money("Gurgaon")).toBe(paid(IN_GURGAON));
+    expect(await money("Mumbai")).toBe(0);
+
+    const ledger = await (
+      await get(ncr, "/api/payments/ledger?city=Gurgaon")
+    ).json<{
+      payments: { person: { id: string } | null }[];
+    }>();
+    expect(ledger.payments.length).toBeGreaterThan(0);
+    expect(new Set(ledger.payments.map((payment) => payment.person?.id))).toEqual(new Set([IN_GURGAON.id]));
+
+    await listStaff("delhi.money@maneman.in", ["finance:view:city:Delhi"]);
+    const delhi = opsAs(person("delhi.money@maneman.in"));
+    expect((await (await get(delhi, "/api/payments?city=Gurgaon")).json<DayMoney>()).collected).toBe(0);
+  });
+
   it("is everywhere for a national grant", async () => {
     const national = await staffWith("finance:view:national");
     expect(await idsIn(await get(national, "/api/no-shows/disputes"), "disputes")).toHaveLength(3);

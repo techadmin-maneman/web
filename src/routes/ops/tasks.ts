@@ -42,7 +42,8 @@ import {
 } from "../../policy/tasks.ts";
 import { callerAccess, permits, reachOf } from "../../http/staff-access.ts";
 import { placesWithin } from "../../domain/inventory/stock-places.ts";
-import { placesReached, type Level } from "../../policy/access.ts";
+import { narrowedTo, placesReached, type Level } from "../../policy/access.ts";
+import { CityAsked } from "../schemas/city.ts";
 import { callerMeetsNeed, TASK_DEPARTMENTS, taskNeed } from "../../policy/console-routes.ts";
 import { TaskFactsSchema } from "./tasks.schemas.ts";
 import { boardDays } from "../../policy/next-visit.ts";
@@ -162,6 +163,7 @@ const tasksRoute = opsRoute({
       person: z.uuid().optional().openapi({
         description: "One client's tasks alone, for their page; every count is then theirs.",
       }),
+      city: CityAsked,
       lapsed: z.enum(["include"]).optional().openapi({
         description:
           "The tasks past the days ops set for a task to lapse as well, which the board otherwise leaves out.",
@@ -257,14 +259,14 @@ const closeRoute = opsRoute({
  * Every task on the board in the caller's cities, or one client's, as a look at it reads them now: each group's where
  * their grants in its department reach at the level asked.
  */
-async function readTheBoard(c: Context<AppEnv>, level: Level, person?: string) {
+async function readTheBoard(c: Context<AppEnv>, level: Level, person?: string, city?: string) {
   const [inputs, access] = await Promise.all([opsInputs(c), callerAccess(c)]);
   const fitsSelfBooked = selfServeKinds(c.var.config.settings).includes("first_fit");
   return outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, {
     days: boardDays(inputs.nextVisitDays, fitsSelfBooked),
     hours: inputs.careHours,
     lostAfter: inputs.lostAfterDays,
-    reach: (group: TaskGroup) => placesReached(access, TASK_DEPARTMENTS[group], level),
+    reach: (group: TaskGroup) => narrowedTo(placesReached(access, TASK_DEPARTMENTS[group], level), city),
     person,
   });
 }
@@ -313,18 +315,22 @@ function splitLapsed(
 }
 
 /** Stock's badge: the low places within the caller's reach, as Stock itself, an Operations page, reaches them. */
-const lowStockInReach = async (c: Context<AppEnv>, today: string): Promise<number> =>
-  lowStockPlaces(c.env.DB, today, await placesWithin(c.env.DB, await reachOf(c, "operations", "view")));
+const lowStockInReach = async (c: Context<AppEnv>, today: string, city?: string): Promise<number> =>
+  lowStockPlaces(
+    c.env.DB,
+    today,
+    await placesWithin(c.env.DB, narrowedTo(await reachOf(c, "operations", "view"), city)),
+  );
 
 export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
-    const { person, lapsed: asked } = c.req.valid("query");
+    const { person, city, lapsed: asked } = c.req.valid("query");
     const [board, staff, seen, lowStock, inputs] = await Promise.all([
-      readTheBoard(c, "view", person),
+      readTheBoard(c, "view", person, city),
       staffNow(c),
       groupsSeenBy(c),
-      lowStockInReach(c, indiaDate(now)),
+      lowStockInReach(c, indiaDate(now), city),
       opsInputs(c),
     ]);
     const { tasks, lapsed } = splitLapsed(board.tasks, { seen, asked, now, lapseDays: inputs.taskLapseDays });

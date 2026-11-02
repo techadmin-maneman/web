@@ -16,6 +16,7 @@ const signedIn = (who: string, listed: boolean, mayCall: readonly string[]) =>
     sign_out: "/cdn-cgi/access/logout",
     staff: { enforced: true, listed, grants: [], may_call: mayCall },
     cities: [],
+    every_city: true,
   });
 
 const ONLY_SIGNED_IN = ["GET /api/health", "GET /api/whoami"];

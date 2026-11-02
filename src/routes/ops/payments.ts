@@ -19,6 +19,8 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { capped, More } from "../../http/paging.ts";
 import { routeReach } from "../../http/staff-access.ts";
+import { narrowedTo } from "../../policy/access.ts";
+import { CityAsked } from "../schemas/city.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 
 /** As many lines as the board can usefully hold; past this the day is not one to read on a card. */
@@ -74,6 +76,7 @@ const dayRoute = opsRoute({
   request: {
     query: z.object({
       date: z.iso.date().optional().openapi({ description: "India's calendar date; today when it is left out." }),
+      city: CityAsked,
     }),
   },
   responses: {
@@ -147,6 +150,7 @@ const ledgerRoute = opsRoute({
     query: z.object({
       from: z.iso.date().optional().openapi({ description: "India's first day; thirty days back when left out." }),
       to: z.iso.date().optional().openapi({ description: "India's last day, counted; today when left out." }),
+      city: CityAsked,
     }),
   },
   responses: {
@@ -161,7 +165,7 @@ export function registerOpsPayments(app: App): void {
     const to = asked.to ?? indiaDate(c.var.deps.now());
     const from = asked.from ?? addDays(to, 1 - LEDGER_DAYS);
     if (from > to) return refuse(c, "invalid_request", ["from"]);
-    const reached = await routeReach(c);
+    const reached = narrowedTo(await routeReach(c), asked.city);
     const [payments, links] = await Promise.all([
       ledgerPayments(c.env.DB, { from, to }, reached, LEDGER_LIMIT + 1),
       unpaidLinks(c.env.DB, reached, LIMIT + 1),
@@ -175,8 +179,9 @@ export function registerOpsPayments(app: App): void {
   });
 
   app.openapi(dayRoute, async (c) => {
-    const { date } = c.req.valid("query");
-    const money = await dayMoney(c.env.DB, date ?? indiaDate(c.var.deps.now()), LIMIT + 1, await routeReach(c));
+    const { date, city } = c.req.valid("query");
+    const reached = narrowedTo(await routeReach(c), city);
+    const money = await dayMoney(c.env.DB, date ?? indiaDate(c.var.deps.now()), LIMIT + 1, reached);
     const { rows: charges, more } = capped(money.charges, LIMIT);
     return c.json({ ...money, charges, more }, 200);
   });

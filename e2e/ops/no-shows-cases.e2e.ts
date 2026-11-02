@@ -45,6 +45,7 @@ const financeAt = (level: "view" | "act", rulings: readonly string[]) =>
     signed_in_as: "money@maneman.in",
     sign_out: "/cdn-cgi/access/logout",
     cities: [],
+    every_city: true,
     staff: {
       enforced: true,
       listed: true,

@@ -295,9 +295,10 @@ export const api = {
   roster: () => client.get("/api/technicians"),
   client: (id: string) => client.get("/api/clients/{id}", { path: { id } }),
   /** Every queue ops still have to work through, and whose each task is. A task leaves when its row is decided. */
-  tasks: () => client.get("/api/tasks"),
+  tasks: (city: string | null) => client.get("/api/tasks", { query: setOnly({ city }) }),
   /** The same, with the tasks past the lapse days ops set, which the board otherwise leaves out. */
-  tasksWithLapsed: () => client.get("/api/tasks", { query: { lapsed: "include" } }),
+  tasksWithLapsed: (city: string | null) =>
+    client.get("/api/tasks", { query: { lapsed: "include", ...setOnly({ city }) } }),
   /** What each place holds, what is low, and the latest movements. */
   stock: () => client.get("/api/stock"),
 };

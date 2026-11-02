@@ -243,6 +243,18 @@ describe("Tasks, kept to the cities of each department's grant", () => {
     expect(idsIn(tasks, "grievance")).toEqual([GRIEVANCE_GURGAON]);
   });
 
+  it("narrows the board to a city asked, within the cities its grants reach and never past them", async () => {
+    const national = await staffWith("operations:view:national", "customer_care:view:national");
+    const gurgaon = await (await get(national, "/api/tasks?city=Gurgaon")).json<Tasks>();
+    expect(idsIn(gurgaon, "leave_conflict")).toEqual([GURGAON_VISIT]);
+    expect(idsIn(gurgaon, "grievance")).toEqual([GRIEVANCE_GURGAON]);
+
+    await listStaff("delhi.lead@maneman.in", ["operations:act:city:Delhi", "customer_care:view:city:Delhi"]);
+    const delhi = opsAs("delhi.lead@maneman.in");
+    const elsewhere = await (await get(delhi, "/api/tasks?city=Gurgaon")).json<Tasks>();
+    expect(elsewhere.groups).toEqual([]);
+  });
+
   it("hands back a task only in its city", async () => {
     const lead = await staffWith("operations:act:city:Delhi");
     const handBack = (visit: string) => send(lead, "PUT", `/api/tasks/leave_conflict/${visit}/owner`, { owner: null });

@@ -5,6 +5,7 @@ import { expect, test } from "../support.ts";
 import { answer, BOARD, json, TASKS, type OpsReply } from "./fixtures.ts";
 import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 import { care } from "../../apps/ops/src/content/care.ts";
+import { shell, tables } from "../../apps/ops/src/content.ts";
 import { tasks } from "../../apps/ops/src/content/tasks.ts";
 import { today as copy } from "../../apps/ops/src/content/today.ts";
 
@@ -113,6 +114,7 @@ test("offers a person whose grants are in one city the City head's home first, a
         may_call: Object.keys(ROUTE_NEEDS),
       },
       cities: ["Gurgaon"],
+      every_city: false,
     } satisfies OpsReply<"/api/whoami">),
     "GET /api/tasks": json(TASKS),
     "GET /api/dispatch": json(BOARD),
@@ -124,4 +126,34 @@ test("offers a person whose grants are in one city the City head's home first, a
     copy.homes.names.inventory,
   ]);
   await expect(homes(page).getByRole("radio", { name: copy.homes.names.city })).toBeChecked();
+});
+
+test("offers a city head their one city in the header, and reads the board for it", async ({ page }) => {
+  await page.clock.setFixedTime(NOON);
+  const asked: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/tasks") asked.push(new URL(request.url()).search);
+  });
+  await answer(page, {
+    "GET /api/whoami": json({
+      signed_in_as: "meera@maneman.in",
+      sign_out: null,
+      staff: {
+        enforced: true,
+        listed: true,
+        grants: [{ department: "operations", level: "manage", geography: "city", place: "Gurgaon" }],
+        may_call: Object.keys(ROUTE_NEEDS),
+      },
+      cities: ["Gurgaon"],
+      every_city: false,
+    } satisfies OpsReply<"/api/whoami">),
+    "GET /api/tasks": json(TASKS),
+    "GET /api/dispatch": json(BOARD),
+  });
+  await page.goto("/today");
+  const picker = page.getByRole("banner").getByRole("button", { name: shell.city.label("Gurgaon") });
+  await picker.click();
+  await expect(page.getByRole("banner").getByRole("button", { name: tables.allCities })).toHaveCount(0);
+  await expect(page.getByText("Friday 19 September · Gurgaon", { exact: true })).toBeVisible();
+  await expect.poll(() => asked.at(-1)).toBe("?city=Gurgaon");
 });

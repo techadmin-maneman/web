@@ -22,7 +22,8 @@ import { todayApi } from "./today-api.ts";
 /** The money collected today, once read: its figure, and the amount for a sentence. */
 export function useCollected(note?: string): { figure: Shown; amount: string | null } {
   const date = todayInIndia(apiNow());
-  const read = useCallback(() => todayApi.money(date), [date]);
+  const { city } = useCity();
+  const read = useCallback(() => todayApi.money(date, city), [date, city]);
   const money = useRead(read, "GET /api/payments");
   if (money === null) return { figure: null, amount: null };
   const amount = rupees(money.collected);

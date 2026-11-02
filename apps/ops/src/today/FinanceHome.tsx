@@ -12,6 +12,7 @@ import { tasks as taskWords } from "../content.ts";
 import { ledger } from "../content/ledger.ts";
 import { today as copy } from "../content/today.ts";
 import { useHeading } from "../frame/PageHead.tsx";
+import { useCity } from "../lib/city.ts";
 import { clientPath } from "../route.ts";
 import { useCollected } from "./CityHome.tsx";
 import { AsideList, HomeLayout, type AsideRow, type Shown } from "./HomeLayout.tsx";
@@ -23,7 +24,8 @@ type Payment = Success<paths["/api/payments/ledger"]["get"]>["payments"][number]
 
 function useTodaysPayments(): readonly Payment[] | null {
   const date = todayInIndia(apiNow());
-  const read = useCallback(() => todayApi.payments(date), [date]);
+  const { city } = useCity();
+  const read = useCallback(() => todayApi.payments(date, city), [date, city]);
   return useRead(read, "GET /api/payments/ledger")?.payments ?? null;
 }
 

@@ -13,6 +13,7 @@ import { boardCities } from "../../domain/cities/cities.ts";
 import type { App } from "../../http/context.ts";
 import { callerAccess } from "../../http/staff-access.ts";
 import { routesOpenTo } from "../../policy/console-routes.ts";
+import { placesSeen, type PlacesReached } from "../../policy/access.ts";
 import { grantJson, GrantSchema } from "./staff.ts";
 
 /** Access's own path on every host it guards: it ends the session and shows the team's page. */
@@ -50,8 +51,14 @@ const whoamiRoute = opsRoute({
                 .strict(),
               cities: z.array(z.string()).openapi({
                 description:
-                  "Each city ops serve, or with a technician at work, in the console's order: what the header's picker offers.",
+                  "The cities the header's picker offers, in the console's order: each city ops serve or with a technician " +
+                  "at work that the caller's grants reach, every one for a grant that reaches everywhere.",
                 example: ["Gurgaon", "Delhi"],
+              }),
+              every_city: z.boolean().openapi({
+                description:
+                  "Whether the caller's grants reach every city, so the picker offers them all at once; a person whose " +
+                  "grants keep to one city has that city alone.",
               }),
             })
             .strict()
@@ -61,6 +68,17 @@ const whoamiRoute = opsRoute({
     },
   },
 });
+
+/**
+ * The cities the picker offers: every city served or with a technician at work, for a person whose grants reach
+ * everywhere; else those of them their grants reach, then any other city a grant names, by name.
+ */
+function citiesSeen(all: readonly string[], seen: PlacesReached): string[] {
+  if (seen.kind === "everywhere") return [...all];
+  const listed = all.filter((city) => seen.cities.has(city));
+  const others = [...seen.cities].filter((city) => !all.includes(city)).sort((one, other) => one.localeCompare(other));
+  return [...listed, ...others];
+}
 
 export function registerOpsWhoami(app: App): void {
   app.openapi(whoamiRoute, async (c) => {
@@ -74,6 +92,15 @@ export function registerOpsWhoami(app: App): void {
       caller.kind === "person"
         ? { enforced, listed: caller.active, grants: caller.grants.map(grantJson), may_call: mayCall }
         : { enforced, listed: caller.allowed, grants: [], may_call: mayCall };
-    return c.json({ signed_in_as: signedInAs, sign_out: signOut, staff, cities: await boardCities(c.env.DB) }, 200);
+    const seen = placesSeen(await callerAccess(c));
+    const cities = citiesSeen(await boardCities(c.env.DB), seen);
+    const answer = {
+      signed_in_as: signedInAs,
+      sign_out: signOut,
+      staff,
+      cities,
+      every_city: seen.kind === "everywhere",
+    };
+    return c.json(answer, 200);
   });
 }
