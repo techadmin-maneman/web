@@ -6,6 +6,8 @@ import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { Badge } from "@maneman/ui/Badge";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useState } from "react";
@@ -28,42 +30,58 @@ function Status({ city }: { city: City }) {
   return <Badge tone="done">{copy.served}</Badge>;
 }
 
+/** A city's standing in words, as its badge says it: the list sorts and narrows by it. */
+function standingOf(city: City): string {
+  if (!city.active) return copy.hidden;
+  if (!city.served) return copy.notServed;
+  return city.technicians === 0 ? copy.noTechnician : copy.served;
+}
+
+const COLUMNS: readonly Column<City>[] = [
+  { label: copy.columns.city, sort: (city) => city.name },
+  { label: copy.columns.state, sort: (city) => city.state ?? "", choice: (city) => city.state ?? copy.noState },
+  { label: copy.columns.zone, sort: (city) => city.zone ?? "", choice: (city) => city.zone ?? copy.noZone },
+  { label: copy.columns.technicians, sort: (city) => city.technicians, figure: true },
+  { label: copy.columns.status, sort: standingOf, choice: standingOf },
+];
+
 function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) => void }) {
+  const view = useTableView(cities.cities, COLUMNS, { search: (city) => `${city.name} ${city.state ?? ""}` });
   return (
-    <Table>
-      <thead>
-        <tr>
-          {copy.columns.map((column) => (
-            <th key={column} scope="col">
-              {column}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {cities.cities.map((city) => (
-          <tr key={city.name}>
-            <RowHead>
-              <TextButton
-                compact
-                aria-label={copy.open(city.name)}
-                onClick={() => {
-                  onOpen(city.name);
-                }}
-              >
-                {city.name}
-              </TextButton>
-            </RowHead>
-            <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
-            <td>{city.zone ?? copy.noZone}</td>
-            <td className={FIGURE}>{city.technicians}</td>
-            <td>
-              <Status city={city} />
-            </td>
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {view.shown.map((city) => (
+            <tr key={city.name}>
+              <RowHead>
+                <TextButton
+                  compact
+                  aria-label={copy.open(city.name)}
+                  onClick={() => {
+                    onOpen(city.name);
+                  }}
+                >
+                  {city.name}
+                </TextButton>
+              </RowHead>
+              <td>{city.state === null ? copy.noState : `${city.state} (${city.state_code ?? ""})`}</td>
+              <td>{city.zone ?? copy.noZone}</td>
+              <td className={FIGURE}>{city.technicians}</td>
+              <td>
+                <Status city={city} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
   );
 }
 

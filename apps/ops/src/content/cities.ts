@@ -13,7 +13,9 @@ export const cities = {
   title: "Cities",
   list: {
     panel: "Cities",
-    columns: ["City", "State", "Zone", "Technicians", "Status"],
+    columns: { city: "City", state: "State", zone: "Zone", technicians: "Technicians", status: "Status" },
+    find: "Find a city",
+    noState: "No state",
     served: "Served",
     notServed: "Not served",
     /** A city served that no active technician works in: clients there can book, and nobody can go. */
@@ -64,7 +66,8 @@ export const cities = {
   },
   prices: {
     panel: "City prices",
-    columns: ["City", "Service", "Before GST", "GST", "From", ""],
+    columns: { city: "City", service: "Service", before: "Before GST", gst: "GST", from: "From", withdraw: "Withdraw" },
+    find: "Find a city or service",
     none: "No city prices",
     inForce: "In force",
     add: "Add a city price",
@@ -104,7 +107,7 @@ export const cities = {
   },
   registrations: {
     panel: "GST registrations",
-    columns: ["State", "GSTIN", "Books branch", ""],
+    columns: { state: "State", gstin: "GSTIN", branch: "Books branch", remove: "Remove" },
     none: "No registrations",
     add: "Add a registration",
     stateCode: "State code",
