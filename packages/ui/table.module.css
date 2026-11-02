@@ -209,8 +209,8 @@
 
 /*
  * On a phone a row is a card: its first cell its title, every other value on a line of its own beside its column's
- * name (Table's data-label), and the heads a line of their own above where they sort or tick every row; heads that
- * do neither are read aloud only, since each card names its values. Outside the layer and named closely, so a
+ * name (Table's data-label), and the heads a line of their own above where they tick every row; other heads are read
+ * aloud only, since each card names its values, and the order is chosen in the bar above (TableTools' Sort by). Outside the layer and named closely, so a
  * screen's column widths, room and unbroken lines give way to the card's.
  */
 @media (max-width: 600px) {
@@ -241,7 +241,7 @@
     border: 0;
   }
 
-  .table[data-cards] thead:not(:has(button, input)) {
+  .table[data-cards] thead:not(:has(input)) {
     position: absolute;
     width: var(--sr-only-size);
     height: var(--sr-only-size);

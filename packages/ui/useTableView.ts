@@ -33,6 +33,8 @@ export interface TableView<Row> {
   readonly total: number;
   readonly sorted: Sorted | null;
   readonly sortBy: (column: number) => void;
+  /** Sorts by a column one way, or back to the rows' own order: a phone's choice of order, where no head is shown. */
+  readonly sortTo: (sorted: Sorted | null) => void;
   readonly searchable: boolean;
   readonly search: string;
   readonly setSearch: (search: string) => void;
@@ -96,6 +98,7 @@ export function useTableView<Row>(
           : { column, direction: "ascending" },
       );
     },
+    sortTo: setSorted,
     searchable: options.search !== undefined,
     search,
     setSearch: (next) => {

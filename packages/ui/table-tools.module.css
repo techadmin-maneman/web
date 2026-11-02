@@ -8,6 +8,17 @@
     margin: var(--sp-12) var(--sp-20);
   }
 
+  /* The order's choice: a phone's alone, where the heads that sort are not shown. */
+  .phoneOnly {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .phoneOnly {
+      display: block;
+    }
+  }
+
   .end {
     margin: var(--sp-12) var(--sp-20) 0;
     font-size: var(--fs-14);
