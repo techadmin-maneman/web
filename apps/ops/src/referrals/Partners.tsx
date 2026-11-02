@@ -7,6 +7,8 @@ import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
@@ -54,37 +56,50 @@ function PartnerRow({ partner, onOpen }: { partner: Partner; onOpen: () => void 
   );
 }
 
+const heads = copy.columns;
+
+/** Every column sorts; a partner paused or not narrows the list. */
+const COLUMNS: readonly Column<Partner>[] = [
+  { label: heads.name, sort: (row) => row.name },
+  { label: heads.link, sort: (row) => row.code },
+  { label: heads.friend, sort: (row) => row.friend_visits },
+  { label: heads.commission, sort: (row) => row.commission, figure: true },
+  { label: heads.opens, sort: (row) => row.opens, figure: true },
+  { label: heads.referred, sort: (row) => row.referred, figure: true },
+  { label: heads.fitted, sort: (row) => row.fitted, figure: true },
+  { label: heads.earned, sort: (row) => row.earned, figure: true },
+  { label: heads.owed, sort: (row) => row.owed, figure: true },
+];
+
 function PartnerTable({ list, onOpen }: { list: PartnerList; onOpen: (id: string) => void }) {
-  const heads = copy.columns;
-  const figures = [heads.commission, heads.opens, heads.referred, heads.fitted, heads.earned, heads.owed];
+  const view = useTableView(list.channels, COLUMNS, {
+    search: (row) => `${row.name} ${row.code} ${row.discount_code ?? ""}`,
+  });
   return (
-    <TableScroll labelledBy="partners">
-      <Table className={styles.table}>
-        <thead>
-          <tr>
-            <th scope="col">{heads.name}</th>
-            <th scope="col">{heads.link}</th>
-            <th scope="col">{heads.friend}</th>
-            {figures.map((label) => (
-              <th key={label} scope="col" className={styles.figure}>
-                {label}
-              </th>
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <TableScroll labelledBy="partners">
+        <Table className={styles.table}>
+          <thead>
+            <tr>
+              <SortHeads view={view} />
+            </tr>
+          </thead>
+          <tbody>
+            {view.shown.map((partner) => (
+              <PartnerRow
+                key={partner.id}
+                partner={partner}
+                onOpen={() => {
+                  onOpen(partner.id);
+                }}
+              />
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {list.channels.map((partner) => (
-            <PartnerRow
-              key={partner.id}
-              partner={partner}
-              onOpen={() => {
-                onOpen(partner.id);
-              }}
-            />
-          ))}
-        </tbody>
-      </Table>
-    </TableScroll>
+          </tbody>
+        </Table>
+      </TableScroll>
+      <TableEnd view={view} />
+    </>
   );
 }
 

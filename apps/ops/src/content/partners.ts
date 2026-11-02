@@ -9,6 +9,7 @@ export const partners = {
   title: "Partners",
   none: "No partners yet.",
   add: "Add a partner",
+  find: "Find a partner",
   columns: {
     name: "Partner",
     link: "Link",

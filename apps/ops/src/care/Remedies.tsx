@@ -6,7 +6,11 @@ import { Toast } from "@maneman/ui/Toast";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { NoValue } from "@maneman/ui/NoValue";
 import { RowHead } from "@maneman/ui/RowHead";
-import { FIGURE, Table } from "@maneman/ui/Table";
+import { ACTIONS, FIGURE, Table } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
+import type { Success } from "@maneman/web-kit/api";
+import type { paths } from "../api-schema.ts";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
@@ -161,6 +165,73 @@ const STATE_TONES = { given: "done", awaiting: "attention", declined: "neutral" 
   Record<string, BadgeTone>
 >;
 
+type Remedy = Success<paths["/api/remedies"]["get"]>["remedies"][number];
+
+const [client, visits, why, given, status, note] = copy.columns;
+
+/** Each column sorts; why and where it stands narrow the list. */
+const COLUMNS: readonly Column<Remedy>[] = [
+  { label: client, sort: (remedy) => remedy.person.name },
+  { label: visits, sort: (remedy) => remedy.visits, figure: true },
+  { label: why, sort: (remedy) => copy.reasons[remedy.reason], choice: (remedy) => copy.reasons[remedy.reason] },
+  { label: given, sort: (remedy) => remedy.given_at },
+  { label: status, sort: (remedy) => copy.states[remedy.state], choice: (remedy) => copy.states[remedy.state] },
+  { label: note, sort: (remedy) => remedy.note ?? "" },
+];
+
+function RemediesTable(props: { remedies: readonly Remedy[]; mayDecide: boolean; retry: () => void }) {
+  const { mayDecide, retry } = props;
+  const view = useTableView(props.remedies, COLUMNS, { search: (remedy) => remedy.person.name });
+  return (
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+            <th scope="col">
+              <VisuallyHidden>{copy.decide}</VisuallyHidden>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((remedy) => (
+            <tr key={remedy.id}>
+              <RowHead>{remedy.person.name}</RowHead>
+              <td className={FIGURE}>{remedy.visits}</td>
+              <td>{copy.reasons[remedy.reason]}</td>
+              <td>{shortDate(indiaDate(remedy.given_at))}</td>
+              <td>
+                <Badge tone={STATE_TONES[remedy.state]}>{copy.states[remedy.state]}</Badge>
+              </td>
+              <td>{remedy.note ?? <NoValue />}</td>
+              <td className={ACTIONS}>
+                {mayDecide && remedy.state === "awaiting" && (
+                  <span className={styles.decide}>
+                    <RowButton
+                      aria-label={copy.approveLabel(remedy.person.name)}
+                      onClick={() => void careApi.decideRemedy(remedy.id, true).then(retry)}
+                    >
+                      {copy.approve}
+                    </RowButton>
+                    <RowButton
+                      aria-label={copy.declineLabel(remedy.person.name)}
+                      onClick={() => void careApi.decideRemedy(remedy.id, false).then(retry)}
+                    >
+                      {copy.decline}
+                    </RowButton>
+                  </span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
+  );
+}
+
 /** Those awaiting a manager first, then the last 30 days' given and declined, a row each. */
 export function RemediesPanel() {
   const load = useCallback(() => careApi.remedies(), []);
@@ -170,52 +241,5 @@ export function RemediesPanel() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { remedies } = loaded.value;
   if (remedies.length === 0) return <EmptyState look="panel" line={copy.none} />;
-  return (
-    <Table>
-      <thead>
-        <tr>
-          {copy.columns.map((column, at) => (
-            <th key={column} scope="col" className={at === 1 ? FIGURE : undefined}>
-              {column}
-            </th>
-          ))}
-          <th scope="col">
-            <VisuallyHidden>{copy.decide}</VisuallyHidden>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {remedies.map((remedy) => (
-          <tr key={remedy.id}>
-            <RowHead>{remedy.person.name}</RowHead>
-            <td className={FIGURE}>{remedy.visits}</td>
-            <td>{copy.reasons[remedy.reason]}</td>
-            <td>{shortDate(indiaDate(remedy.given_at))}</td>
-            <td>
-              <Badge tone={STATE_TONES[remedy.state]}>{copy.states[remedy.state]}</Badge>
-            </td>
-            <td>{remedy.note ?? <NoValue />}</td>
-            <td>
-              {mayDecide && remedy.state === "awaiting" && (
-                <span className={styles.decide}>
-                  <RowButton
-                    aria-label={copy.approveLabel(remedy.person.name)}
-                    onClick={() => void careApi.decideRemedy(remedy.id, true).then(retry)}
-                  >
-                    {copy.approve}
-                  </RowButton>
-                  <RowButton
-                    aria-label={copy.declineLabel(remedy.person.name)}
-                    onClick={() => void careApi.decideRemedy(remedy.id, false).then(retry)}
-                  >
-                    {copy.decline}
-                  </RowButton>
-                </span>
-              )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
-  );
+  return <RemediesTable remedies={remedies} mayDecide={mayDecide} retry={retry} />;
 }

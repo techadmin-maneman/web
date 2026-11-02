@@ -33,6 +33,7 @@ export const technicianPay = {
     inUse: "In use: a technician holds it, or a rate names it.",
   },
   technicians: {
+    find: "Find a technician",
     title: "Technicians",
     none: "No technicians.",
     name: "Technician",

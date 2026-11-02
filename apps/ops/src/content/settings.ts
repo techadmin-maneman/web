@@ -494,7 +494,8 @@ export const settings = {
   /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
   suppliers: {
     title: "Suppliers",
-    columns: ["Supplier", "Country · currency", "Terms", "Warranty"],
+    columns: { supplier: "Supplier", country: "Country · currency", terms: "Terms", warranty: "Warranty" },
+    find: "Find a supplier",
     /** Those no longer bought from, folded in a panel beneath those who are. */
     retiredTitle: "Retired suppliers",
     none: "No suppliers yet.",
@@ -749,6 +750,7 @@ export const settings = {
     zones: "Zones",
     cities: "Cities",
     columns: { person: "Person", access: "Access", state: "Status" },
+    find: "Find a person",
     noAccess: "No access",
     /** A record's Status: let in, or kept with their grants but let in nowhere. */
     active: "Active",

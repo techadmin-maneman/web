@@ -24,7 +24,7 @@ export const funnel = {
     of === 0 ? quantity(count) : `${quantity(count)} · ${String(Math.round((count / of) * 100))}%`,
   channels: {
     title: "By channel",
-    columns: ["Channel", "New clients", "Booked", "Had a consultation", "Fitted"],
+    columns: ["Channel", "New clients", "Booked", "Had a consultation", "Fitted"] as const,
     none: "No new clients in these days.",
   },
   dashboards: {

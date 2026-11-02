@@ -12,6 +12,8 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
@@ -68,42 +70,53 @@ function Enforcement({ staff, onChanged }: PanelProps) {
 type Person = StaffList["people"][number];
 
 /** Each person by their sign-in email, the way their record opens, with their access. */
+const accessOf = (person: Person) => person.grants.map(grantWords).join(" ") || copy.noAccess;
+
+const COLUMNS: readonly Column<Person>[] = [
+  { label: copy.columns.person, sort: (person) => person.email },
+  { label: copy.columns.access, sort: accessOf },
+];
+
 function PeopleTable({ people, onOpen }: { people: readonly Person[]; onOpen: (email: string) => void }) {
+  const view = useTableView(people, COLUMNS, { search: (person) => `${person.email} ${accessOf(person)}` });
   return (
-    <Table>
-      <thead>
-        <tr>
-          <th scope="col">{copy.columns.person}</th>
-          <th scope="col">{copy.columns.access}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {people.map((each) => (
-          <tr key={each.email}>
-            <th scope="row">
-              <TextButton
-                compact
-                aria-label={copy.open(each.email)}
-                onClick={() => {
-                  onOpen(each.email);
-                }}
-              >
-                {each.email}
-              </TextButton>
-            </th>
-            <td>
-              {each.grants.length === 0
-                ? copy.noAccess
-                : each.grants.map((grant) => (
-                    <span className={styles.grantLine} key={grantWords(grant)}>
-                      {grantWords(grant)}
-                    </span>
-                  ))}
-            </td>
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {view.shown.map((each) => (
+            <tr key={each.email}>
+              <th scope="row">
+                <TextButton
+                  compact
+                  aria-label={copy.open(each.email)}
+                  onClick={() => {
+                    onOpen(each.email);
+                  }}
+                >
+                  {each.email}
+                </TextButton>
+              </th>
+              <td>
+                {each.grants.length === 0
+                  ? copy.noAccess
+                  : each.grants.map((grant) => (
+                      <span className={styles.grantLine} key={grantWords(grant)}>
+                        {grantWords(grant)}
+                      </span>
+                    ))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
   );
 }
 
