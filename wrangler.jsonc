@@ -284,7 +284,7 @@
         "SELF_SERVE_BOOKING": "false",
         "SELF_SERVE_CONSULTATIONS": "true",
         "REFERRER_NAME_ON_INVITE": "true",
-        "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",
+        "RAZORPAY_KEY_ID": "rzp_test_TvFc2eEnPG73fO",
         // Daily ceilings; test/node/tooling/free-tier-budget.test.ts proves they fit the free tier.
         "RENDER_DAILY_CEILING": "20",
         "UPLOAD_DAILY_CEILING": "40",

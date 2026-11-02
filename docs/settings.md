@@ -26,7 +26,7 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `MESSAGING_ENABLED` | `true` | `true` | `false` |
 | `MESSAGING_PROVIDER` | `stub` | `msg91` | `evolution` |
 | `PAYMENTS_PROVIDER` | `stub` | `none` | `none` |
-| `RAZORPAY_KEY_ID` | — | `rzp_test_Tf1Bf3ElRK6uNQ` | — |
+| `RAZORPAY_KEY_ID` | — | `rzp_test_TvFc2eEnPG73fO` | — |
 | `REFERRER_NAME_ON_INVITE` | `true` | `true` | `true` |
 | `RENDER_DAILY_CEILING` | `20` | `20` | `40` |
 | `RESULT_READ_DAILY_CEILING` | `400` | `400` | `800` |
