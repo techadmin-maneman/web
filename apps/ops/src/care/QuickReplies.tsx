@@ -2,7 +2,7 @@
 // next visit, and kept on the Messages page by a Customer Care manager, who adds them and retires them, asked once.
 
 import { Button } from "@maneman/ui/Button";
-import { Field, Select, TextArea, TextInput } from "@maneman/ui/Field";
+import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
@@ -40,7 +40,7 @@ async function filled(text: string, client: { name: string | null; personId: str
     : withName;
 }
 
-/** The answers to pick from in a chat; picking one puts it, filled in, in the reply box. */
+/** The answers to pick from in a chat, a chip each over the reply box; picking one puts it, filled in, in the box. */
 export function QuickReplyPick(props: {
   readonly name: string | null;
   readonly personId: string | null;
@@ -49,28 +49,21 @@ export function QuickReplyPick(props: {
   const load = useCallback(() => careApi.quickReplies(), []);
   const [loaded] = useLoad(load);
   if (loaded.state !== "loaded" || loaded.value.replies.length === 0) return null;
-  const { replies } = loaded.value;
   return (
-    <Field label={copy.pick}>
-      {(control) => (
-        <Select
-          {...control}
-          width="choice"
-          value=""
-          onChange={(event) => {
-            const reply = replies.find((each) => each.id === event.target.value);
-            if (reply !== undefined) void filled(reply.text, props).then(props.onPick);
+    <div className={styles.quickChips} role="group" aria-label={copy.pick}>
+      {loaded.value.replies.map((reply) => (
+        <Button
+          key={reply.id}
+          variant="outline"
+          size="small"
+          onClick={() => {
+            void filled(reply.text, props).then(props.onPick);
           }}
         >
-          <option value="">{copy.choose}</option>
-          {replies.map((reply) => (
-            <option key={reply.id} value={reply.id}>
-              {reply.title}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
+          {reply.title}
+        </Button>
+      ))}
+    </div>
   );
 }
 

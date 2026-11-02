@@ -49,6 +49,7 @@ export function ListRows({
 
 export function ListRow({
   lead,
+  mark,
   title,
   meta,
   end,
@@ -58,9 +59,12 @@ export function ListRow({
   onClick,
   label,
   action,
+  current = false,
 }: {
   /** Before the words, in a column of its own down the list: a time, or what the row is. */
   readonly lead?: ReactNode;
+  /** Before the words at its own size, as a person's initials (./Initials.tsx). */
+  readonly mark?: ReactNode;
   readonly title: ReactNode;
   readonly meta?: ReactNode;
   /** One figure or state: a time, an amount, a Badge. */
@@ -75,10 +79,13 @@ export function ListRow({
   readonly label?: string | undefined;
   /** The row's one action, beside it, apart from what pressing the row opens: a desk's, which a phone leaves out. */
   readonly action?: ReactNode;
+  /** The row whose thing is open beside the list, as a chat is: raised, ruled in the ink, and said to be current. */
+  readonly current?: boolean;
 }) {
   const inside = (
     <>
       {lead !== undefined && <span className={styles.lead}>{lead}</span>}
+      {mark}
       <span className={styles.words}>
         <span className={styles.title}>{title}</span>
         {meta !== undefined && <span className={styles.meta}>{meta}</span>}
@@ -86,10 +93,10 @@ export function ListRow({
       {end !== undefined && <span className={classes(styles.end, END_TONES[endTone])}>{end}</span>}
     </>
   );
-  const row = classes(styles.row, rule !== undefined && styles[rule]);
+  const row = classes(styles.row, current && styles.current, rule !== undefined && styles[rule]);
   return (
     <li className={action === undefined ? undefined : styles.acting}>
-      <RowBody row={row} to={to} onClick={onClick} label={label}>
+      <RowBody row={row} to={to} onClick={onClick} label={label} current={current}>
         {inside}
       </RowBody>
       {action !== undefined && <span className={styles.action}>{action}</span>}
@@ -103,14 +110,17 @@ function RowBody({
   to,
   onClick,
   label,
+  current,
   children,
 }: {
   readonly row: string;
   readonly to: string | undefined;
   readonly onClick: (() => void) | undefined;
   readonly label: string | undefined;
+  readonly current: boolean;
   readonly children: ReactNode;
 }) {
+  const now = current ? "true" : undefined;
   if (to !== undefined)
     return (
       <Link className={classes(row, styles.opens)} to={to} label={label}>
@@ -119,9 +129,19 @@ function RowBody({
     );
   if (onClick !== undefined)
     return (
-      <button type="button" className={classes(row, styles.opens)} aria-label={label} onClick={onClick}>
+      <button
+        type="button"
+        className={classes(row, styles.opens)}
+        aria-label={label}
+        aria-current={now}
+        onClick={onClick}
+      >
         {children}
       </button>
     );
-  return <div className={row}>{children}</div>;
+  return (
+    <div className={row} aria-current={now}>
+      {children}
+    </div>
+  );
 }

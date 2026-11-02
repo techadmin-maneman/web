@@ -3,10 +3,11 @@
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import type { Answer } from "../api.ts";
 import { careApi, type ChatThread, type CloseReason } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { Refused } from "@maneman/ui/Refusal";
@@ -41,7 +42,7 @@ function lastFailed(thread: ChatThread): boolean {
 function ReplyBox(props: { text: string; onText: (text: string) => void; error: string | null }) {
   const { text, onText } = props;
   return (
-    <Field label={compose.label} className={styles.reply} error={props.error}>
+    <Field label={compose.label} labelHidden className={styles.reply} error={props.error}>
       {(control) => (
         <TextArea
           {...control}
@@ -83,6 +84,39 @@ function ReasonChoice(props: { reason: CloseReason; onReason: (reason: CloseReas
   );
 }
 
+/** Whether what is typed goes to the client, or stays in the chat as a note for the team. */
+type Mode = "reply" | "note";
+
+/** Reply or note, a chip each, beneath the box. */
+function ModeChoice({ mode, onMode }: { mode: Mode; onMode: (mode: Mode) => void }) {
+  return (
+    <div className={styles.modes} role="radiogroup" aria-label={compose.label}>
+      {(["reply", "note"] as const).map((each) => (
+        <ToggleButton
+          key={each}
+          asRadio
+          pressed={mode === each}
+          onClick={() => {
+            onMode(each);
+          }}
+        >
+          {each === "reply" ? compose.label : compose.noteMode}
+        </ToggleButton>
+      ))}
+    </div>
+  );
+}
+
+/** What Send says, by what is being written. */
+const sendWords: Readonly<Record<Mode, string>> = { reply: compose.send, note: compose.note };
+
+/** What is said once it went: a note added; a reply sent, or that it did not reach the client. */
+function saidOf(mode: Mode, thread: ChatThread): string {
+  if (mode === "note") return compose.noted;
+  return lastFailed(thread) ? compose.failed : compose.sent;
+}
+
+/** The foot of a chat: quick replies over the box, then reply or note, and Send. */
 export function Composer(props: {
   readonly conversationId: string;
   /** Whose chat it is, for a quick reply's {name} and {next_visit}. */
@@ -91,74 +125,75 @@ export function Composer(props: {
 }) {
   const { conversationId } = props;
   const [text, setText] = useState("");
-  const [reason, setReason] = useState<CloseReason>("other");
+  const [mode, setMode] = useState<Mode>("reply");
   const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
-  const act = (call: () => Promise<Answer<ChatThread>>, said: (thread: ChatThread) => string) =>
+  const send = () =>
     once(async () => {
       setFailure(null);
-      const answer = await call();
+      const typed = text.trim();
+      const answer =
+        mode === "reply"
+          ? await careApi.replyChat(conversationId, typed)
+          : await careApi.noteChat(conversationId, typed);
       if (!answer.ok) {
         setFailure({ code: answer.code, fields: answer.fields });
         return;
       }
       setText("");
-      props.onThread(answer.body, said(answer.body));
+      props.onThread(answer.body, saidOf(mode, answer.body));
     });
-  const empty = text.trim() === "";
   return (
     <div className={styles.compose}>
-      <div className={form.fields}>
-        <QuickReplyPick name={props.client.name} personId={props.client.personId} onPick={setText} />
-        <ReplyBox text={text} onText={setText} error={boxError(copy.errors, failure, "text")} />
+      <QuickReplyPick name={props.client.name} personId={props.client.personId} onPick={setText} />
+      <ReplyBox text={text} onText={setText} error={boxError(copy.errors, failure, "text")} />
+      <div className={styles.composeFoot}>
+        <ModeChoice mode={mode} onMode={setMode} />
+        <Button variant="primary" size="small" disabled={busy || text.trim() === ""} onClick={() => void send()}>
+          {busy ? compose.sending : sendWords[mode]}
+        </Button>
       </div>
+      <Refused failed={failure} errors={copy.errors} boxes={["text"]} />
+    </div>
+  );
+}
+
+/** Close chat, in the chat's head: what it was about, then Close, in a drawer. */
+export function CloseChat(props: {
+  readonly conversationId: string;
+  readonly onThread: (thread: ChatThread, said: string) => void;
+}) {
+  return <DrawerButton label={compose.closeChat}>{(close) => <CloseForm {...props} onClosed={close} />}</DrawerButton>;
+}
+
+function CloseForm(props: {
+  readonly conversationId: string;
+  readonly onThread: (thread: ChatThread, said: string) => void;
+  readonly onClosed: () => void;
+}) {
+  const [reason, setReason] = useState<CloseReason>("other");
+  const [busy, once] = useOneAtATime();
+  const [failure, setFailure] = useState<Failure | null>(null);
+  const shut = () =>
+    once(async () => {
+      setFailure(null);
+      const answer = await careApi.closeChat(props.conversationId, reason);
+      if (!answer.ok) {
+        setFailure({ code: answer.code, fields: answer.fields });
+        return;
+      }
+      props.onClosed();
+      props.onThread(answer.body, compose.closed);
+    });
+  return (
+    <div className={form.fields}>
+      <ReasonChoice reason={reason} onReason={setReason} error={boxError(copy.errors, failure, "reason")} />
       <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          disabled={busy || empty}
-          onClick={() =>
-            void act(
-              () => careApi.replyChat(conversationId, text.trim()),
-              (thread) => (lastFailed(thread) ? compose.failed : compose.sent),
-            )
-          }
-        >
-          {busy ? compose.sending : compose.send}
-        </Button>
-        <Button
-          variant="outline"
-          size="small"
-          narrow
-          disabled={busy || empty}
-          onClick={() =>
-            void act(
-              () => careApi.noteChat(conversationId, text.trim()),
-              () => compose.noted,
-            )
-          }
-        >
-          {compose.note}
-        </Button>
-      </FormActions>
-      <div className={styles.closing}>
-        <ReasonChoice reason={reason} onReason={setReason} error={boxError(copy.errors, failure, "reason")} />
-        <Button
-          variant="outline"
-          size="small"
-          narrow
-          disabled={busy}
-          onClick={() =>
-            void act(
-              () => careApi.closeChat(conversationId, reason),
-              () => compose.closed,
-            )
-          }
-        >
+        <Button variant="primary" size="small" disabled={busy} onClick={() => void shut()}>
           {compose.closeChat}
         </Button>
-      </div>
-      <Refused failed={failure} errors={copy.errors} boxes={["text", "reason"]} />
+      </FormActions>
+      <Refused failed={failure} errors={copy.errors} boxes={["reason"]} />
     </div>
   );
 }

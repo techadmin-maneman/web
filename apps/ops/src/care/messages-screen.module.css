@@ -1,6 +1,44 @@
-/* What ./MessagesScreen.tsx alone draws; what it shares is in ./care.module.css. */
+/* What ./MessagesScreen.tsx alone places: the inbox in one box, the chats, the chat open and who it is with side by
+   side at a desk; the one with them beneath the chat short of a desk's width; and one beneath another on a phone. */
 
-/* A chat found by name or number: the box, then Find and Clear beside it. */
+.inbox {
+  --local-list: 18.75rem; /* the column of chats */
+  --local-client: 16rem; /* the column of who the chat is with */
+  --local-room-above: 11rem; /* the frame's head and the page's above the box, which it leaves in view */
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The views and the search above the chats. */
+.tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  padding: var(--sp-16);
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+/* The views, a chip each, in one row that scrolls sideways where it runs past the list's width. */
+.views {
+  display: flex;
+  gap: var(--sp-8);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.views > * {
+  flex-shrink: 0;
+}
+
 .search {
   display: flex;
   flex-wrap: wrap;
@@ -14,118 +52,69 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-12) var(--sp-24);
-  margin: var(--sp-12) var(--sp-20) var(--sp-16);
+  margin: var(--sp-12) var(--sp-16) var(--sp-16);
 }
 
-.overdue {
-  color: var(--status-warning);
+/* The chat open, between the chats and who it is with. */
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
-/* The list of chats beside the chat open; on a narrow screen the chat falls beneath the list. */
-.inbox {
-  --local-chat-list: 16rem; /* the narrowest the list of chats runs beside a chat */
-
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-16);
-  align-items: start;
+/* Before a chat is chosen, the line saying so, set in. */
+.pane > p {
+  padding: var(--sp-20);
 }
 
 @media (min-width: 1024px) {
   .inbox {
-    grid-template-columns: minmax(var(--local-chat-list), 2fr) minmax(0, 3fr);
+    grid-template-columns: var(--local-list) minmax(0, 1fr) var(--local-client);
+    height: calc(100dvh - var(--local-room-above));
   }
 
   .list {
-    position: sticky;
-    top: 0;
-    max-height: calc(100vh - var(--sp-64) * 2);
     overflow-y: auto;
+    border-right: var(--hairline) solid var(--ui-line);
   }
-}
 
-.chats {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* A chat in the list: who and when on its first line, then what they said, then the number, the Care person and when
-   our reply is due. */
-.chat,
-.chatOpen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  width: 100%;
-  padding: var(--sp-12) var(--sp-16) var(--sp-12) calc(var(--sp-20) - var(--rule-strong));
-  border-top: var(--hairline) solid var(--ui-line);
-  border-left: var(--rule-strong) solid transparent;
-  text-align: start;
-}
-
-.chatOpen {
-  border-left-color: var(--ui-strong);
-  background: var(--ui-raised);
-}
-
-@media (hover: hover) {
-  .chat:hover {
-    background: var(--ui-raised);
-  }
-}
-
-.chatHead {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sp-8);
-}
-
-.chatWho {
-  font-size: var(--fs-15);
-  color: var(--ui-text);
-}
-
-.chatAt,
-.chatMeta {
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
-}
-
-.chatDetails {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-
-.chatLine {
-  overflow: hidden;
-  font-size: var(--fs-14);
-  color: var(--ui-text);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-/* The chat open, a box of its own set in from the panel's edge; beside the list, from its right edge alone. */
-.pane {
-  min-width: 0;
-  margin-inline: var(--note-inset);
-  padding: var(--sp-16) var(--sp-20);
-  border: var(--hairline) solid var(--ui-line);
-  background: var(--ui-raised);
-}
-
-/* The chat open in it starts at its top: its group draws no rule of its own, the pane's edge being one. */
-.pane > section:first-child {
-  margin: 0;
-  padding-top: 0;
-  border-top: 0;
-}
-
-@media (min-width: 1024px) {
   .pane {
-    margin-left: 0;
+    border-top: 0;
+  }
+}
+
+/* Short of a desk's width, who the chat is with stands beneath it, the chat taking the room. */
+@media (max-width: 1279px) {
+  .inbox {
+    grid-template-columns: var(--local-list) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    height: auto;
+  }
+
+  .list {
+    grid-row: span 2;
+  }
+
+  /* The chat keeps a screen's room, the box growing beneath it for who it is with. */
+  .pane {
+    height: calc(100dvh - var(--local-room-above));
+  }
+}
+
+/* Short of a laptop's width, one beneath another. */
+@media (max-width: 1023px) {
+  .inbox {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+
+  .list {
+    grid-row: auto;
+  }
+
+  .pane {
+    height: auto;
   }
 }

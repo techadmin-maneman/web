@@ -1,28 +1,22 @@
-// One chat in the Care inbox (docs/decisions/0129-the-care-inbox.md): what the client wrote, our replies and notes,
-// and our automatic messages to them with how far each got, in order.
+// One chat in the Care inbox (docs/decisions/0129-the-care-inbox.md): its head with how long it has waited and Close
+// chat; what the client wrote, our replies and notes, and our automatic messages with how far each got, a row of them
+// folded into one line; and the reply box at its foot. Who it is with is beside it (./ChatClient.tsx).
 
 import { Toast } from "@maneman/ui/Toast";
-import { OpsLink } from "../frame/Shell.tsx";
-import { textLinkLook } from "@maneman/ui/TextLink";
-import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Note } from "@maneman/ui/Note";
+import { typeLook } from "@maneman/ui/type";
 import { useLiveLoad } from "@maneman/ui/useLoad";
-import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { apiNow } from "@maneman/web-kit/clock";
+import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useState } from "react";
 import { careApi, type ChatThread, type Conversation, type ThreadItem } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
+import { today } from "../content/today.ts";
 import { useAccess } from "../lib/access.ts";
-import { clientPath, technicianPath } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
-import { CarePerson } from "./CarePerson.tsx";
-import { CityMatter } from "./CityMatter.tsx";
-import { RemedyForm } from "./Remedies.tsx";
-import { ClientPanel } from "./ClientPanel.tsx";
-import { Stranger } from "./Stranger.tsx";
-import { Composer } from "./Composer.tsx";
-import form from "@maneman/ui/forms.module.css";
+import { CloseChat, Composer } from "./Composer.tsx";
 import styles from "./thread.module.css";
-import { FormActions } from "@maneman/ui/FormActions";
 
 const thread = copy.thread;
 
@@ -39,7 +33,7 @@ const kindName = (kind: string): string => {
 };
 
 /** "21 Sep, 11:42 am". */
-export const whenOf = (at: string): string => `${shortDate(indiaDate(at))}, ${indiaClock(at)}`;
+const whenOf = (at: string): string => `${shortDate(indiaDate(at))}, ${indiaClock(at)}`;
 
 /** Who said it: the client, our automatic reply, or the member of staff who wrote it. */
 function fromOf(item: Extract<ThreadItem, { kind: "in" | "out" | "note" }>): string {
@@ -73,46 +67,92 @@ function Item({ item }: { item: ThreadItem }) {
   );
 }
 
-/** Who the chat is with: one of our technicians, or the client, beside their page and their Care person. */
-function About({ conversation }: { conversation: Conversation }) {
-  const { person, technician } = conversation;
-  if (technician !== null) {
+/** Our automatic messages in a row: one line saying how many, and each of them once asked for. */
+function AutoRun({ items }: { items: readonly ThreadItem[] }) {
+  const [shown, setShown] = useState(false);
+  if (items.length === 1 || shown)
     return (
-      <Note>
-        {thread.technician}{" "}
-        <OpsLink className={textLinkLook()} to={technicianPath(technician.id)}>
-          {thread.technicianPage}
-        </OpsLink>
-      </Note>
+      <>
+        {items.map((item) => (
+          <Item key={keyOf(item)} item={item} />
+        ))}
+        {items.length > 1 && (
+          <li className={styles.autoRun}>
+            <TextButton
+              compact
+              onClick={() => {
+                setShown(false);
+              }}
+            >
+              {thread.hideAutos}
+            </TextButton>
+          </li>
+        )}
+      </>
     );
-  }
-  if (person === null) return null;
   return (
-    <>
-      <Note>
-        <OpsLink className={textLinkLook()} to={clientPath(person.id, "visits")}>
-          {thread.page}
-        </OpsLink>
-      </Note>
-      <ClientPanel personId={person.id} />
-      <CarePerson
-        personId={person.id}
-        email={conversation.care_person}
-        name={conversation.care_name}
-        coveredBy={conversation.covered_by}
-      />
-    </>
+    <li className={styles.autoRun}>
+      {thread.autos(items.length)}{" "}
+      <TextButton
+        compact
+        onClick={() => {
+          setShown(true);
+        }}
+      >
+        {thread.showAutos}
+      </TextButton>
+    </li>
+  );
+}
+
+const keyOf = (item: ThreadItem): string =>
+  `${item.kind}-${item.at}-${item.kind === "auto" ? item.message : (item.text ?? "")}`;
+
+/** The chat's items with each row of our automatic messages folded into one line. */
+function Items({ items }: { items: readonly ThreadItem[] }) {
+  const runs: ThreadItem[][] = [];
+  for (const item of items) {
+    const last = runs.at(-1);
+    if (item.kind === "auto" && last?.[0]?.kind === "auto") last.push(item);
+    else runs.push([item]);
+  }
+  return (
+    <ol className={styles.items}>
+      {runs.map((run) =>
+        run[0]?.kind === "auto" ? (
+          <AutoRun key={keyOf(run[0])} items={run} />
+        ) : (
+          run.map((item) => <Item key={keyOf(item)} item={item} />)
+        ),
+      )}
+    </ol>
+  );
+}
+
+/** Beneath the name: how long the chat has waited on us, and when our reply is due, in red once it has passed. */
+function StateLine({ conversation }: { conversation: Conversation }) {
+  const now = new Date(apiNow()).toISOString();
+  const waiting =
+    conversation.waiting_since === null
+      ? null
+      : thread.waiting(today.waited(minutesBetween(conversation.waiting_since, now)));
+  const due = conversation.reply_by;
+  const late = due !== null && due < now;
+  if (waiting === null && due === null) return null;
+  return (
+    <p className={styles.state}>
+      {waiting}
+      {waiting !== null && due !== null && " · "}
+      {due !== null && <span className={late ? styles.late : undefined}>{thread.replyBy(whenOf(due))}</span>}
+    </p>
   );
 }
 
 export function Thread({
   conversation,
-  onClose,
   onChanged,
 }: {
   conversation: Conversation;
-  /** Shuts the chat in the inbox; a client's page, which shows theirs alone, has none. */
-  onClose?: () => void;
   /** The chat became a client's: the list is read again. */
   onChanged: () => void;
 }) {
@@ -128,46 +168,31 @@ export function Thread({
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { items } = changed ?? loaded.value;
+  const who = whoOf(conversation);
+  const applied = (next: ChatThread, words: string) => {
+    setChanged(next);
+    setSaid(words);
+    // Read again at once, so a read begun before the change cannot put the chat back as it was.
+    refresh();
+    onChanged();
+  };
   return (
-    <section className={form.group} aria-label={thread.title(whoOf(conversation))}>
-      <h3 className={form.ruleTitle}>{thread.title(whoOf(conversation))}</h3>
-      <About conversation={conversation} />
-      {items.length === 0 ? (
-        <Note>{thread.empty}</Note>
-      ) : (
-        <ol className={styles.items}>
-          {items.map((item) => (
-            <Item
-              key={`${item.kind}-${item.at}-${item.kind === "auto" ? item.message : (item.text ?? "")}`}
-              item={item}
-            />
-          ))}
-        </ol>
-      )}
+    <section className={styles.chat} aria-label={thread.title(who)}>
+      <header className={styles.head}>
+        <div className={styles.headWords}>
+          <h3 className={typeLook("title-4", styles.name)}>{who}</h3>
+          <StateLine conversation={conversation} />
+        </div>
+        {mayAct && <CloseChat conversationId={conversation.id} onThread={applied} />}
+      </header>
+      {items.length === 0 ? <Note>{thread.empty}</Note> : <Items items={items} />}
       {said !== null && <Toast>{said}</Toast>}
-      {mayAct && conversation.person === null && conversation.technician === null && (
-        <Stranger conversationId={conversation.id} onDone={onChanged} />
-      )}
-      {mayAct && conversation.person !== null && <CityMatter conversationId={conversation.id} />}
-      {mayAct && conversation.person !== null && <RemedyForm personId={conversation.person.id} />}
       {mayAct && (
         <Composer
           conversationId={conversation.id}
           client={{ name: conversation.person?.name ?? null, personId: conversation.person?.id ?? null }}
-          onThread={(next, words) => {
-            setChanged(next);
-            setSaid(words);
-            // Read again at once, so a read begun before the change cannot put the chat back as it was.
-            refresh();
-          }}
+          onThread={applied}
         />
-      )}
-      {onClose !== undefined && (
-        <FormActions>
-          <Button variant="outline" size="small" narrow onClick={onClose}>
-            {thread.close}
-          </Button>
-        </FormActions>
       )}
     </section>
   );

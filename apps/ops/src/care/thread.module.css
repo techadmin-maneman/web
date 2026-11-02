@@ -1,12 +1,80 @@
-/* What ./Thread.tsx alone draws; what it shares is in ./care.module.css. */
+/* What ./Thread.tsx and ./ChatClient.tsx place; what they share is in ./care.module.css. */
+
+/* A chat: its head, what was said running between, and the reply box at its foot. */
+.chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  padding: var(--sp-16) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.headWords {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+}
+
+.state {
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+}
+
+.late {
+  color: var(--status-error);
+}
 
 .items {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--sp-8);
-  margin: var(--sp-12) 0 0;
-  padding: 0;
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  overflow-y: auto;
+  background: var(--ui-ground);
   list-style: none;
+}
+
+/* A row of our automatic messages, folded into one line, and its way open. */
+.autoRun {
+  align-self: center;
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+  text-align: center;
+}
+
+/* Who the chat is with, at the inbox's right; beneath the chat short of a desk's width. */
+.client {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  min-width: 0;
+  padding: var(--sp-16);
+  overflow-y: auto;
+  border-left: var(--hairline) solid var(--ui-line);
+}
+
+@media (max-width: 1279px) {
+  .client {
+    border-top: var(--hairline) solid var(--ui-line);
+    border-left: 0;
+  }
 }
 
 .theirs,
@@ -17,7 +85,7 @@
   max-width: var(--ops-measure);
   padding: var(--sp-8) var(--sp-12);
   border: var(--hairline) solid var(--ui-line);
-  background: var(--ui-ground);
+  background: var(--ui-raised);
 }
 
 .ours {

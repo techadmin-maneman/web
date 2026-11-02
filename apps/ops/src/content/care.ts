@@ -32,7 +32,6 @@ export const care = {
   overdue: (when: string) => `Overdue · ${when}`,
   noLine: "Only our messages",
   open: "Open",
-  openLabel: (who: string) => `Open the chat with ${who}`,
   /** The list beside the open chat, and the open chat's place before one is chosen. */
   chats: "Chats",
   choose: "Choose a chat to read it here.",
@@ -56,12 +55,21 @@ export const care = {
     technicianPage: "Technician’s page",
     /** The after-hours answer, kept in the chat under our number. */
     autoReply: "Automatic reply",
+    /** Beneath the name in the chat's head: how long it has waited on us, and when our reply is due. */
+    waiting: (waited: string) => `Waiting on us · ${waited}`,
+    replyBy: (when: string) => `reply by ${when}`,
+    /** Our automatic messages in a row, folded into one line until asked for. */
+    autos: (count: number) => `${String(count)} automatic ${count === 1 ? "message" : "messages"}`,
+    showAutos: "Show them",
+    hideAutos: "Hide them",
   },
   compose: {
     label: "Reply",
     send: "Send",
     sending: "Sending…",
     note: "Add note",
+    /** The reply box's other use: a note for the team, which the client never sees. */
+    noteMode: "Note for the team",
     reason: "What it was about",
     closeChat: "Close chat",
     sent: "Sent.",

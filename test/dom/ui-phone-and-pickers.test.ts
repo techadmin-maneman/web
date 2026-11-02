@@ -9,6 +9,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Drawer } from "../../packages/ui/Drawer.tsx";
+import { Initials } from "../../packages/ui/Initials.tsx";
 import { ListRow, ListRows } from "../../packages/ui/ListRow.tsx";
 import { Popover, PopoverChoice, PopoverHeading } from "../../packages/ui/Popover.tsx";
 import { SearchMenu } from "../../packages/ui/SearchMenu.tsx";
@@ -120,6 +121,17 @@ describe("a list's row", () => {
     const markup = row({ lead: "11:30 am", end: "Late" });
     expect(markup.indexOf("11:30 am")).toBeLessThan(markup.indexOf("Address to confirm"));
     expect(markup).toMatch(/<span class="[^"]+">11:30 am<\/span>/);
+  });
+
+  it("draws a person's initials before the words, unread, and says which row is open beside the list", () => {
+    const markup = row({
+      mark: createElement(Initials, { name: "Kunal Shah", small: true }),
+      onClick: () => undefined,
+      current: true,
+    });
+    expect(markup).toMatch(/<button type="button" class="[^"]+" aria-current="true">/);
+    expect(markup.indexOf(">KS<")).toBeLessThan(markup.indexOf("Address to confirm"));
+    expect(row({ onClick: () => undefined })).not.toContain("aria-current");
   });
 
   it("sets its one action beside the row, outside what pressing the row opens", () => {

@@ -65,8 +65,9 @@
 .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: var(--sp-4) var(--sp-16);
+  gap: var(--sp-4) var(--sp-12);
   margin: 0 0 var(--sp-8);
+  font-size: var(--fs-13);
 }
 
 .facts dt {
@@ -77,8 +78,11 @@
   margin: 0;
 }
 
-.panel .link + .link {
-  margin-left: var(--sp-16);
+/* Each part of the client's page Care go to, a button a line, across the column. */
+.panelLinks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
 }
 
 .quick {
@@ -95,8 +99,10 @@
 
 /* Writing in the chat: the reply box across, its buttons, then closing it with a reason. */
 .compose {
-  margin-top: var(--sp-16);
-  padding-top: var(--sp-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  padding: var(--sp-16) var(--sp-20);
   border-top: var(--hairline) solid var(--ui-line);
 }
 
@@ -128,4 +134,30 @@
   margin: 0;
   font-size: var(--fs-13);
   color: var(--ui-text-muted);
+}
+
+/* A chat's foot (./Composer.tsx): quick replies, a chip each in one row that scrolls sideways, over the box; then
+   reply or note, and Send. */
+.quickChips {
+  display: flex;
+  gap: var(--sp-8);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.quickChips > * {
+  flex-shrink: 0;
+}
+
+.composeFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+}
+
+.modes {
+  display: flex;
+  gap: var(--sp-8);
 }

@@ -1,6 +1,7 @@
 // Customer Care · Messages (docs/decisions/0129-the-care-inbox.md), which no board draws. Every name and number is
 // made up.
 
+import type { Page } from "@playwright/test";
 import { indiaClock, indiaDate, shortDate } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -23,6 +24,10 @@ const ARJUN: Conversation = {
   waiting_since: "2026-09-21T05:12:00.000Z",
   reply_by: "2026-09-21T06:12:00.000Z",
 };
+
+/** A chat in the list, by who it is with. */
+const chatRow = (page: Page, who: string) =>
+  page.getByRole("list", { name: copy.chats }).getByRole("button", { name: new RegExp(`^${who}`) });
 
 test("lists the chats waiting on us, and opens one with our automatic messages in it", async ({ page }) => {
   await answer(page, {
@@ -62,16 +67,16 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
   });
   await page.goto("/messages");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
-  const chat = page
-    .getByRole("list", { name: copy.chats })
-    .getByRole("button", { name: copy.openLabel("Arjun Mehta") });
-  await expect(chat).toContainText("asha@maneman.test");
+  const chat = chatRow(page, "Arjun Mehta");
   await expect(chat).toContainText(ARJUN.last_line ?? "");
-  const due = ARJUN.reply_by ?? "";
-  await expect(chat).toContainText(copy.overdue(`${shortDate(indiaDate(due))}, ${indiaClock(due)}`));
   await expect(page.getByText(copy.choose)).toBeVisible();
   await chat.click();
   await expect(chat).toHaveAttribute("aria-current", "true");
+  // The chat's head says when our reply was due, the Care person is beside it with the client.
+  const due = ARJUN.reply_by ?? "";
+  await expect(page.getByRole("region", { name: copy.thread.title("Arjun Mehta") })).toContainText(
+    copy.thread.replyBy(`${shortDate(indiaDate(due))}, ${indiaClock(due)}`),
+  );
   expect(await axeViolations(page)).toEqual([]);
   await expect(
     page.getByText(copy.thread.auto("Visit reminder", [copy.thread.delivered, copy.thread.read])),
@@ -90,9 +95,7 @@ test("names a Care person by the name clients know them by, once a manager has s
     "GET /api/conversations/{id}": json({ conversation: named, items: [] }),
   });
   await page.goto("/messages");
-  const chat = page.getByRole("button", { name: copy.openLabel("Arjun Mehta") });
-  await expect(chat).toContainText("Asha");
-  await chat.click();
+  await chatRow(page, "Arjun Mehta").click();
   await expect(page.getByText(`${copy.carePerson.label}: Asha`)).toBeVisible();
 });
 
@@ -120,7 +123,7 @@ test("says so when a chat new to the list comes in as it reads itself again", as
     "GET /api/care-team": json({ team: [], me: null }),
   });
   await page.goto("/messages");
-  await expect(page.getByRole("button", { name: copy.openLabel("Arjun Mehta") })).toBeVisible();
+  await expect(chatRow(page, "Arjun Mehta")).toBeVisible();
   const neha: Conversation = {
     ...ARJUN,
     id: "c1000000-0000-4000-8000-000000000002",
@@ -145,7 +148,7 @@ test("keeps a chat open when, read again, the list it was opened from no longer 
     }),
   });
   await page.goto("/messages");
-  await page.getByRole("button", { name: copy.openLabel("Arjun Mehta") }).click();
+  await chatRow(page, "Arjun Mehta").click();
   const chat = page.getByRole("region", { name: copy.thread.title("Arjun Mehta") });
   const line = ARJUN.last_line ?? "";
   await expect(chat.getByText(line)).toBeVisible();
