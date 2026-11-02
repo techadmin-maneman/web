@@ -33,7 +33,7 @@ const kindName = (kind: string): string => {
 };
 
 /** "21 Sep, 11:42 am". */
-export const whenOf = (at: string): string => `${shortDate(indiaDate(at))}, ${indiaClock(at)}`;
+const whenOf = (at: string): string => `${shortDate(indiaDate(at))}, ${indiaClock(at)}`;
 
 /** Who said it: the client, our automatic reply, or the member of staff who wrote it. */
 function fromOf(item: Extract<ThreadItem, { kind: "in" | "out" | "note" }>): string {
