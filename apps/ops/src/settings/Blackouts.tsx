@@ -3,12 +3,12 @@
 // booked on it, so the visits it would strand are counted beneath the boxes as the days are typed, before anything is
 // sent, and each run links to the board to move them. A run is reopened from its line, asked once.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { isBlackoutReason } from "@rules/policy/blackouts.ts";
 import { CheckWarning } from "@maneman/ui/CheckPanel";
 import { Field, DateInput, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { buttonLook } from "@maneman/ui/Button";
-import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -293,7 +293,7 @@ export function Blackouts() {
         </PageActions>
       )}
       {periods.length === 0 ? (
-        <Note>{copy.none}</Note>
+        <EmptyState look="panel" line={copy.none} />
       ) : (
         <ul className={form.rules}>
           {periods.map((period) => (

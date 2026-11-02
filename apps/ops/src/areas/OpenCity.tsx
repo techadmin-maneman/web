@@ -2,8 +2,9 @@
 // then their pincodes, each one not held already ticked, added unserved to one of our cities. Serving them is the
 // table's above; a pincode the directory does not list is still added by hand beneath.
 
+import { AreaSection } from "./AreaSection.tsx";
 import { Button } from "@maneman/ui/Button";
-import { Checkbox, ChoiceGroup, Field, Fieldset, Select } from "@maneman/ui/Field";
+import { Checkbox, ChoiceGroup, Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { Toast } from "@maneman/ui/Toast";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -13,7 +14,6 @@ import { useState } from "react";
 import type { DirectoryDistrict, DirectoryPincode, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { titled } from "../content/areas.ts";
-import form from "@maneman/ui/forms.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import shared from "./areas.module.css";
 import { areasApi } from "./areas-api.ts";
@@ -237,7 +237,7 @@ export function OpenCity(props: { cities: readonly string[]; onAdded: (added: re
     });
 
   return (
-    <Fieldset className={form.group} legend={copy.title} legendLook="title">
+    <AreaSection id="area-open-city" title={copy.title}>
       <ChooseDistricts onShown={shown} />
       {pincodes !== null && <PincodeTicks pincodes={pincodes} ticked={ticked} onTicked={setTicked} />}
       {pincodes !== null && (
@@ -274,6 +274,6 @@ export function OpenCity(props: { cities: readonly string[]; onAdded: (added: re
       )}
       {said !== null && <Toast>{said}</Toast>}
       {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
-    </Fieldset>
+    </AreaSection>
   );
 }

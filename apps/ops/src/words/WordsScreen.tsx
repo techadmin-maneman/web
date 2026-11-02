@@ -2,6 +2,7 @@
 // client, found by page or by what it says. A row opens the line's record beside the table, where its wording changes
 // where it reads, with its history beneath it (docs/decisions/0212-editing-in-place.md).
 
+import { PageActions } from "../frame/PageHead.tsx";
 import { Toast } from "@maneman/ui/Toast";
 import { whoWords } from "../lib/who.ts";
 import { Button } from "@maneman/ui/Button";
@@ -106,16 +107,12 @@ function Words() {
   };
   const mayPublish = access.mayCall("POST /api/words/publish");
   return (
-    <Panel
-      titleId="words"
-      title={copy.title}
-      actions={
-        mayPublish &&
-        !publishing && (
+    <Panel titleId="words" title={copy.title}>
+      {mayPublish && !publishing && (
+        <PageActions>
           <Button
-            variant="outline"
+            variant="primary"
             size="small"
-            narrow
             onClick={() => {
               setSaid(null);
               setPublishing(true);
@@ -123,9 +120,8 @@ function Words() {
           >
             {copy.publish.open}
           </Button>
-        )
-      }
-    >
+        </PageActions>
+      )}
       <LastPublished published={loaded.value.published} />
       {publishing && (
         <PublishCheck

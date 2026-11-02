@@ -1,9 +1,9 @@
 // Remedies (docs/decisions/0143-remedies.md): free service visits Care give a client from their chat, with why, and
 // the panel on the Messages page where a Customer Care manager approves or declines those above the limit.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { Note } from "@maneman/ui/Note";
 import { NoValue } from "@maneman/ui/NoValue";
 import { RowHead } from "@maneman/ui/RowHead";
 import { FIGURE, Table } from "@maneman/ui/Table";
@@ -152,7 +152,7 @@ export function RemediesPanel() {
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { remedies } = loaded.value;
-  if (remedies.length === 0) return <Note>{copy.none}</Note>;
+  if (remedies.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <Table>
       <thead>

@@ -2,6 +2,9 @@
 // with their uses and takings. A code is made, and found by how it begins; a row opens its record beside the list,
 // where it is switched off or, while no booking has taken it, deleted. Codes switched off fold away beneath.
 
+import { Columns } from "@maneman/ui/Layout";
+import { StatTile } from "@maneman/ui/StatTile";
+import { PageActions } from "../frame/PageHead.tsx";
 import { Badge } from "@maneman/ui/Badge";
 import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
@@ -48,14 +51,11 @@ function Figures({ totals }: { totals: DiscountCodeList["totals"] }) {
     [copy.figures.paid, rupees(totals.paid)],
   ];
   return (
-    <dl className={styles.figures}>
+    <Columns row>
       {figures.map(([label, value]) => (
-        <div key={label} className={styles.total}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
+        <StatTile key={label} label={label} value={value} />
       ))}
-    </dl>
+    </Columns>
   );
 }
 
@@ -230,37 +230,38 @@ export function DiscountCodes() {
   const opened = codes.codes.find((code) => code.id === open);
 
   return (
-    <Panel
-      titleId="discount-codes"
-      title={copy.title}
-      actions={<MakeCodes codes={codes} onMade={() => void refresh()} />}
-    >
+    <>
+      <PageActions>
+        <MakeCodes codes={codes} onMade={() => void refresh()} />
+      </PageActions>
       <Figures totals={codes.totals} />
-      {said !== null && <Toast>{said}</Toast>}
-      {codes.codes.length === 0 ? (
-        <>
-          <div className={styles.tools}>{findForm}</div>
-          <Note>{finding === null ? copy.none : copy.noneFound}</Note>
-        </>
-      ) : (
-        <>
-          <CodesTable codes={codes.codes} today={codes.today} find={findForm} onOpen={opening} />
-        </>
-      )}
-      {opened !== undefined && (
-        <OpenCode
-          code={opened}
-          today={codes.today}
-          onClose={() => {
-            setOpen(null);
-          }}
-          onDone={async (words) => {
-            setOpen(null);
-            setSaid(words);
-            await refresh();
-          }}
-        />
-      )}
-    </Panel>
+      <Panel titleId="discount-codes" title={copy.title}>
+        {said !== null && <Toast>{said}</Toast>}
+        {codes.codes.length === 0 ? (
+          <>
+            <div className={styles.tools}>{findForm}</div>
+            <Note>{finding === null ? copy.none : copy.noneFound}</Note>
+          </>
+        ) : (
+          <>
+            <CodesTable codes={codes.codes} today={codes.today} find={findForm} onOpen={opening} />
+          </>
+        )}
+        {opened !== undefined && (
+          <OpenCode
+            code={opened}
+            today={codes.today}
+            onClose={() => {
+              setOpen(null);
+            }}
+            onDone={async (words) => {
+              setOpen(null);
+              setSaid(words);
+              await refresh();
+            }}
+          />
+        )}
+      </Panel>
+    </>
   );
 }

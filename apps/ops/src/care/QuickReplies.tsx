@@ -1,9 +1,10 @@
 // Saved answers (docs/decisions/0141-quick-replies.md): picked in a chat and filled in with the client's first name and
 // next visit, and kept on the Messages page by a Customer Care manager, who adds them and retires them, asked once.
 
+import { classes } from "@maneman/ui/classes";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -151,12 +152,13 @@ export function QuickRepliesPanel() {
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { replies } = loaded.value;
+  // With none, the line sits where every panel's does; the list itself is set in.
   return (
-    <div className={styles.quick}>
+    <>
       {replies.length === 0 ? (
-        <Note>{copy.none}</Note>
+        <EmptyState look="panel" line={copy.none} />
       ) : (
-        <ul className={styles.leave}>
+        <ul className={classes(styles.quick, styles.leave)}>
           {replies.map((reply) => (
             <li key={reply.id}>
               <span className={styles.who}>{reply.title}</span> · {reply.text}{" "}
@@ -189,6 +191,6 @@ export function QuickRepliesPanel() {
           </DrawerButton>
         </PageActions>
       )}
-    </div>
+    </>
   );
 }

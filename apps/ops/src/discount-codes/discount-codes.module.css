@@ -1,22 +1,4 @@
-/* Discount codes: every code's figures in a row of five, then the codes as a table, the switched-off ones folded. */
-
-.figures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-12) var(--sp-32);
-  margin: var(--sp-16) var(--sp-20) var(--sp-8);
-}
-
-.total dt {
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
-}
-
-.total dd {
-  margin: var(--sp-4) 0 0;
-  font-size: var(--fs-18);
-  font-variant-numeric: tabular-nums;
-}
+/* Discount codes: the codes as a table beneath the page's figures, the switched-off ones folded. */
 
 .table {
   min-width: var(--ops-table-min);

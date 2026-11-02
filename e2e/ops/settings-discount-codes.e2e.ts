@@ -48,17 +48,19 @@ test.describe("the discount codes", () => {
     await expect(covers.getByText(copy.errors.covers)).toBeInViewport();
   });
 
+  // The figures stand as the console's figure tiles, each its name over its value.
   test("heads the page with what every code has come to", async ({ page }) => {
     await open(page, "/settings/discount-codes");
-    const figures = page.getByRole("definition");
-    await expect(figures).toHaveText(["1", "4", "4", "Rs. 14,000", "Rs. 77,000"]);
-    await expect(page.getByRole("term")).toHaveText([
-      settingsCopy.discountCodes.figures.live,
-      settingsCopy.discountCodes.figures.uses,
-      settingsCopy.discountCodes.figures.clients,
-      settingsCopy.discountCodes.figures.given,
-      settingsCopy.discountCodes.figures.paid,
-    ]);
+    const figures = settingsCopy.discountCodes.figures;
+    for (const [label, value] of [
+      [figures.live, "1"],
+      [figures.uses, "4"],
+      [figures.clients, "4"],
+      [figures.given, "Rs. 14,000"],
+      [figures.paid, "Rs. 77,000"],
+    ] as const) {
+      await expect(page.getByRole("main").getByText(label, { exact: true }).first().locator("..")).toContainText(value);
+    }
   });
 
   test("lists each code in a row: its terms, uses, clients, what it gave, what was paid and when last used", async ({

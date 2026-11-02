@@ -3,6 +3,9 @@
 // the API names as the earliest, and is kept for good, so the list of changes only grows. A change is made beside the
 // page, each window's hours read beneath its boxes as they are typed, before it is set.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
+import { ReadRow } from "@maneman/ui/RecordRows";
+import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
@@ -57,11 +60,11 @@ function InForce({ times }: { times: SlotTimes }) {
       <Note>
         {copy.inForce} · {copy.since(since)}
       </Note>
-      <ul className={form.rules}>
+      <SettingPairs>
         {WINDOWS.map((window) => (
-          <li key={window} className={form.rule}>{`${copy.window[window]}: ${hours(window)}`}</li>
+          <ReadRow key={window} label={copy.window[window]} value={hours(window)} />
         ))}
-      </ul>
+      </SettingPairs>
     </>
   );
 }
@@ -178,7 +181,7 @@ function Withdraw({ from, onWithdrawn }: { from: string; onWithdrawn: () => void
 /** Every change set, each from its day, by whom, and what it sets; the last, while still to come, may be withdrawn. */
 function Changes({ times, onWithdrawn }: { times: SlotTimes; onWithdrawn: () => void }) {
   const mayWithdraw = useAccess().mayCall("DELETE /api/slot-times/{applies_from}");
-  if (times.changes.length === 0) return <Note>{copy.none}</Note>;
+  if (times.changes.length === 0) return <EmptyState look="panel" line={copy.none} />;
   const last = times.changes.at(-1);
   const toCome = last !== undefined && last.applies_from !== times.in_force.applies_from;
   return (
@@ -226,8 +229,9 @@ export function WindowTimes() {
       </PageActions>
       <Panel titleId="window-times" title={copy.title}>
         <InForce times={times} />
-        {said !== null && <Toast>{said}</Toast>}
-        <h3 className={form.ruleTitle}>{copy.history}</h3>
+      </Panel>
+      {said !== null && <Toast>{said}</Toast>}
+      <Panel titleId="window-times-changes" title={copy.history}>
         <Changes
           times={times}
           onWithdrawn={() => {

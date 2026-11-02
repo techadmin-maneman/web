@@ -3,6 +3,7 @@
 // beside the table, where a Customer Care manager changes the name and the days off where they read, adds or cancels
 // leave, and moves every client to another member (docs/decisions/0212-editing-in-place.md).
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Checkbox, DateInput, Field, Select } from "@maneman/ui/Field";
@@ -340,7 +341,7 @@ export function CareTeam() {
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { team } = loaded.value;
-  if (team.length === 0) return <Note>{care.carePerson.noTeam}</Note>;
+  if (team.length === 0) return <EmptyState look="panel" line={care.carePerson.noTeam} />;
   const columns = copy.columns;
   const me = team.find((member) => member.email === loaded.value.me);
   const opened = team.find((member) => member.email === open);

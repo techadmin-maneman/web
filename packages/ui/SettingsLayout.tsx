@@ -3,6 +3,8 @@
 //
 //   <SettingsLayout menu={<SubNav label={copy.menu} groups={groups} />}>{page}</SettingsLayout>
 
+import { StackedRows } from "./stacked-rows.ts";
+import { capsLook } from "./Caps.tsx";
 import { classes } from "./classes.ts";
 import { GLYPHS } from "@maneman/brand/icons";
 import { useId, useState, type ReactNode } from "react";
@@ -53,20 +55,45 @@ function Group({
   );
 }
 
+/** Every group open, its name in small capitals over its pages, as the console's own navigation groups them. */
+function FlatGroup({ group }: { readonly group: SubNavGroup }) {
+  const id = useId();
+  return (
+    <div className={styles.flatGroup}>
+      <span id={id} className={capsLook(styles.flatName)}>
+        {group.name}
+      </span>
+      <ul className={styles.items} aria-labelledby={id}>
+        {group.items.map((item) => (
+          <li key={item.to}>
+            <Link className={classes(styles.item, styles.flatItem)} to={item.to} current={item.current}>
+              {item.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
- * A menu by group, each group's name a button that folds its pages away: the open page's group shows its pages, the
- * rest only their names until opened, and every group shows its pages while `unfolded` (a search's matches). A group
- * with no page is left out; `children` sit above the groups.
+ * A menu by group. At a desk (`flat`) every group shows its pages under its name. Short of one, each group's name is a
+ * button that folds its pages away: the open page's group shows its pages, the rest only their names until opened, and
+ * every group shows its pages while `unfolded` (a search's matches). A group with no page is left out; `children` sit
+ * above the groups.
  */
 export function SubNav({
   label,
   groups,
   unfolded = false,
+  flat = false,
   children,
 }: {
   readonly label: string;
   readonly groups: readonly SubNavGroup[];
   readonly unfolded?: boolean;
+  /** Every group open under its name, as a desk has room for. */
+  readonly flat?: boolean;
   readonly children?: ReactNode;
 }) {
   /** The groups opened or folded by hand; the rest follow the open page. */
@@ -77,16 +104,20 @@ export function SubNav({
       {children}
       {groups
         .filter((group) => group.items.length > 0)
-        .map((group) => (
-          <Group
-            key={group.name}
-            group={group}
-            open={openOf(group)}
-            onToggle={() => {
-              setByHand((already) => ({ ...already, [group.name]: !openOf(group) }));
-            }}
-          />
-        ))}
+        .map((group) =>
+          flat ? (
+            <FlatGroup key={group.name} group={group} />
+          ) : (
+            <Group
+              key={group.name}
+              group={group}
+              open={openOf(group)}
+              onToggle={() => {
+                setByHand((already) => ({ ...already, [group.name]: !openOf(group) }));
+              }}
+            />
+          ),
+        )}
     </nav>
   );
 }
@@ -107,7 +138,7 @@ export function SettingPairs({
       role={label === undefined ? undefined : "group"}
       aria-label={label}
     >
-      {children}
+      <StackedRows.Provider value>{children}</StackedRows.Provider>
     </div>
   );
 }

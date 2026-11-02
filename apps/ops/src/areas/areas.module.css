@@ -292,3 +292,13 @@
   height: auto;
   border: var(--hairline) solid var(--ui-line);
 }
+
+/* A section's fields in its own panel (./AreaSection.tsx), as far in as a panel's notes and a step beneath its head. */
+.section {
+  --note-inset: 0;
+
+  min-width: 0;
+  margin: 0 var(--form-inset);
+  padding: var(--sp-16) 0 var(--sp-20);
+  border: 0;
+}

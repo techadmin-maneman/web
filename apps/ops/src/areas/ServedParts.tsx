@@ -1,11 +1,12 @@
 // Settings › Areas' parts (./Served.tsx): the city tabs, one pincode's row and its drawer, who a save would message,
 // how the last save went, and a file read with its changes shown before they are saved.
 
+import { AreaSection } from "./AreaSection.tsx";
 import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Badge } from "@maneman/ui/Badge";
-import { Field, Checkbox, DateInput, Fieldset, FileInput, TextInput } from "@maneman/ui/Field";
+import { Field, Checkbox, DateInput, FileInput, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -312,7 +313,7 @@ export function UploadFile({
   onCancel: () => void;
 }) {
   return (
-    <Fieldset className={form.group} legend={copy.upload.title} legendLook="title">
+    <AreaSection id="area-upload" title={copy.upload.title}>
       <Field
         label={copy.upload.label}
         hint={copy.upload.hint}
@@ -345,7 +346,7 @@ export function UploadFile({
         />
       )}
       {upload?.step === "failed" && <Refusal className={form.error} said={upload.says} />}
-    </Fieldset>
+    </AreaSection>
   );
 }
 

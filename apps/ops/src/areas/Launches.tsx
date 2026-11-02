@@ -2,6 +2,7 @@
 // the launches ops have scheduled, each cancelled once asked; the chosen pincodes scheduled for a later day, with what
 // their city still needs; and served ones paused, taking no new clients till a day, or resumed.
 
+import { AreaSection } from "./AreaSection.tsx";
 import { Badge } from "@maneman/ui/Badge";
 import { BackButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
@@ -84,7 +85,7 @@ export function LaunchList() {
     });
 
   return (
-    <Fieldset className={form.group} legend={copy.title} legendLook="title">
+    <AreaSection id="area-launches" title={copy.title}>
       {launches.length === 0 && <p className={shared.note}>{copy.none}</p>}
       {asking !== null && (
         <CheckPanel
@@ -113,7 +114,7 @@ export function LaunchList() {
       </ul>
       {said !== null && <Toast>{said}</Toast>}
       {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
-    </Fieldset>
+    </AreaSection>
   );
 }
 

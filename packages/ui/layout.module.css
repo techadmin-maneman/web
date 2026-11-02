@@ -23,6 +23,13 @@
     }
   }
 
+  /* On a phone, two to a row: an odd last tile runs across both, so none stands alone. */
+  @media (max-width: 600px) {
+    .row > :last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+  }
+
   .gap8 {
     gap: var(--sp-8);
   }

@@ -112,10 +112,11 @@ function type(label: string, value: string) {
 const said = () => document.body.textContent.replaceAll("\u00a0", " ");
 
 describe("the window times", () => {
+  // Each window's name stands above its hours, two to a row, as every Settings value does.
   it("say each window's hours as the times in force read them", async () => {
     await show();
-    expect(said()).toContain(`${copy.window.morning}: 9 am–12 noon`);
-    expect(said()).toContain(`${copy.window.evening}: 6–9 pm`);
+    expect(said()).toContain(`${copy.window.morning}9 am–12 noon`);
+    expect(said()).toContain(`${copy.window.evening}6–9 pm`);
     expect(said()).toContain(copy.none);
   });
 

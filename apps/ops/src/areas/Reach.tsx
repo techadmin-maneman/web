@@ -2,13 +2,13 @@
 // from home as one map, the served pincodes no reach takes in, and each technician's reach as a way to choose its
 // pincodes, which the bar above then serves, schedules or pauses.
 
+import { AreaSection } from "./AreaSection.tsx";
 import { Button } from "@maneman/ui/Button";
-import { Fieldset } from "@maneman/ui/Field";
+
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useEffect, useState } from "react";
 import type { CityReach } from "../api.ts";
 import { areas } from "../content.ts";
-import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import shared from "./areas.module.css";
 import { areasApi } from "./areas-api.ts";
@@ -109,12 +109,12 @@ function Reach({ city, onChoose }: { city: string; onChoose: (pincodes: Readonly
   const [loaded] = useLoad(load);
   const map = useAreaMap(city);
   return (
-    <Fieldset className={form.group} legend={copy.title} legendLook="title">
+    <AreaSection id="area-reach" title={copy.title}>
       {map !== null && <img className={shared.areaMap} src={map} alt={copy.mapAlt(city)} width={640} height={400} />}
       {map !== null && <p className={shared.note}>{copy.key}</p>}
       {loaded.state === "loaded" && <Unreached reach={loaded.value} onChoose={onChoose} />}
       {loaded.state === "loaded" && <Within reach={loaded.value} onChoose={onChoose} />}
-    </Fieldset>
+    </AreaSection>
   );
 }
 

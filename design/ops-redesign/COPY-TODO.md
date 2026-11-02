@@ -54,3 +54,4 @@ Each slot the redesign adds where the console had no words of its own. None wait
 | Technician | The four figures                           | Visits to come; Last 90 days, 12 jobs; On time; Kit, 4 below zero      | `technicians.figures`      |
 | Stock      | Beneath a place's card                     | 4 below zero · 5 out · 2 low                                          | `stock.attention.counts`   |
 | Stock      | A place's items narrowed                   | All items, Low or out, Expiring soon; Find an item; No item matches.  | `stock.narrow`             |
+| Settings   | Staff, with nobody added                   | Nobody added yet.                                                     | `settings.staff.none`      |

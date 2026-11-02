@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0234. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0235. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -266,6 +266,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0231](0231-messages-redesigned.md) Messages, to the November redesign
 - [0232](0232-technicians-stock-and-money-redesigned.md) A technician's page, Stock and Money, to the November redesign
 - [0233](0233-settings-redesigned.md) Settings, to the November redesign
+- [0234](0234-every-settings-page-aligned.md) Every Settings page in the redesign's look
 
 ## Every decision, oldest first
 
@@ -501,4 +502,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0230](0230-clients-redesigned.md) | Clients and a client's page, to the November redesign | 2026-11-02 | accepted |  |
 | [0231](0231-messages-redesigned.md) | Messages, to the November redesign | 2026-11-02 | accepted |  |
 | [0232](0232-technicians-stock-and-money-redesigned.md) | A technician's page, Stock and Money, to the November redesign | 2026-11-02 | accepted |  |
-| [0233](0233-settings-redesigned.md) | Settings, to the November redesign | 2026-11-02 | accepted |  |
+| [0233](0233-settings-redesigned.md) | Settings, to the November redesign | 2026-11-02 | accepted | [0234](0234-every-settings-page-aligned.md) |
+| [0234](0234-every-settings-page-aligned.md) | Every Settings page in the redesign's look | 2026-11-02 | accepted |  |

@@ -11,7 +11,8 @@
 //
 // `save` answers null once the change is kept, or the words of why it was not.
 
-import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useContext, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
+import { StackedRows } from "./stacked-rows.ts";
 import { GLYPHS } from "@maneman/brand/icons";
 import { Button } from "./Button.tsx";
 import { Icon } from "./Icon.tsx";
@@ -53,7 +54,7 @@ interface EditableRowProps<Draft> {
   /** Opened already, its box holding `start`: as a line opens on an earlier wording chosen from its history. */
   readonly opened?: boolean;
   readonly className?: string | undefined;
-  /** Its name above its value, as rows two to a row stand (./SettingsLayout.tsx's SettingPairs). */
+  /** Its name above its value, as rows two to a row stand; inside SettingPairs it is, unless told otherwise. */
   readonly stacked?: boolean;
 }
 
@@ -165,8 +166,10 @@ export function EditableRow<Draft>({
   id,
   className,
   opened = false,
-  stacked = false,
+  stacked: asked,
 }: EditableRowProps<Draft>) {
+  const inPairs = useContext(StackedRows);
+  const stacked = asked ?? inPairs;
   const boxId = useId();
   const errorId = useId();
   const row = useEditing(start, save, opened);
