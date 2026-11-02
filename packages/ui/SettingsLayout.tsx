@@ -90,6 +90,15 @@ export function SubNav({
   );
 }
 
+/** A rule's rows two to a row at a desk, one beneath another short of it; each row's name stands above its value. */
+export function SettingPairs({ label, children }: { readonly label?: string; readonly children: ReactNode }) {
+  return (
+    <div className={styles.pairs} role={label === undefined ? undefined : "group"} aria-label={label}>
+      {children}
+    </div>
+  );
+}
+
 /** At the foot of the page while a change waits: how many, and the buttons that discard it or take it on. */
 export function ChangeBar({ count, children }: { readonly count: string; readonly children: ReactNode }) {
   return (

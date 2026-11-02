@@ -15,7 +15,7 @@ import { Initials, initialsOf } from "../../packages/ui/Initials.tsx";
 import { PageHeader } from "../../packages/ui/PageHeader.tsx";
 import { Popover, PopoverItem } from "../../packages/ui/Popover.tsx";
 import { SettingRow, SettingValue } from "../../packages/ui/SettingRow.tsx";
-import { ChangeBar, SubNav } from "../../packages/ui/SettingsLayout.tsx";
+import { ChangeBar, SettingPairs, SubNav } from "../../packages/ui/SettingsLayout.tsx";
 import { NavItem, SideNav } from "../../packages/ui/SideNav.tsx";
 import { StatTile } from "../../packages/ui/StatTile.tsx";
 import { Toolbar } from "../../packages/ui/Toolbar.tsx";
@@ -327,5 +327,19 @@ describe("a record's figures, and a tab with nothing yet", () => {
     );
     expect(markup).toContain(">Nothing booked</p>");
     expect(markup.indexOf("fell due")).toBeLessThan(markup.indexOf(">Book a visit</button>"));
+  });
+});
+
+describe("a rule's figures, two to a row", () => {
+  it("names the pair's group where it is given a name, and holds its rows in order", () => {
+    const markup = renderToStaticMarkup(
+      createElement(SettingPairs, {
+        label: "No-show charge",
+        children: [createElement("div", { key: "a" }, "Consultation"), createElement("div", { key: "b" }, "First fit")],
+      }),
+    );
+    expect(markup).toMatch(/^<div class="[^"]+" role="group" aria-label="No-show charge">/);
+    expect(markup.indexOf("Consultation")).toBeLessThan(markup.indexOf("First fit"));
+    expect(renderToStaticMarkup(createElement(SettingPairs, { children: "x" }))).not.toContain("role=");
   });
 });

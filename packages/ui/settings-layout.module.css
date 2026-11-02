@@ -173,4 +173,25 @@
       min-height: var(--tap);
     }
   }
+
+  /* A rule's rows two to a row (./SettingsLayout.tsx's SettingPairs), a rule between each pair. */
+  .pairs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    .pairs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pairs > :last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
+    /* The last pair ends the panel together: the first of it draws no rule beneath either. */
+    .pairs > :nth-last-child(2):nth-child(odd) {
+      border-bottom: 0;
+    }
+  }
 }

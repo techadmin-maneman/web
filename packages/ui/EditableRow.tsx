@@ -53,6 +53,8 @@ interface EditableRowProps<Draft> {
   /** Opened already, its box holding `start`: as a line opens on an earlier wording chosen from its history. */
   readonly opened?: boolean;
   readonly className?: string | undefined;
+  /** Its name above its value, as rows two to a row stand (./SettingsLayout.tsx's SettingPairs). */
+  readonly stacked?: boolean;
 }
 
 /** A row's state: the draft while its box is open, what was refused, whether it just saved, and the focus between. */
@@ -163,6 +165,7 @@ export function EditableRow<Draft>({
   id,
   className,
   opened = false,
+  stacked = false,
 }: EditableRowProps<Draft>) {
   const boxId = useId();
   const errorId = useId();
@@ -170,7 +173,7 @@ export function EditableRow<Draft>({
 
   if (!mayChange || row.draft === null) {
     return (
-      <div className={classes(styles.row, className)} id={id}>
+      <div className={classes(styles.row, stacked && styles.stacked, className)} id={id}>
         <span className={styles.label}>{label}</span>
         {mayChange ? (
           <Reading
@@ -196,7 +199,7 @@ export function EditableRow<Draft>({
   return (
     <form
       ref={row.form}
-      className={classes(styles.row, styles.editing, className)}
+      className={classes(styles.row, styles.editing, stacked && styles.stacked, className)}
       id={id}
       // The row says what will not hold in its own words, under the box, rather than the browser in a bubble.
       noValidate

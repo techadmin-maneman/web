@@ -10,15 +10,6 @@
   border-top: var(--hairline) solid var(--ui-line);
 }
 
-/* A rule of several figures, named over its rows. */
-.ruleTitle {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20) var(--sp-4);
-  font-size: var(--fs-14);
-  font-weight: var(--weight-medium);
-  color: var(--ui-text);
-}
-
 .refusal {
   margin: 0;
   flex-basis: 100%;
