@@ -5,7 +5,7 @@
 import { createHmac, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { expect } from "@playwright/test";
-import { fullDate } from "../../../packages/web-kit/dates.ts";
+import { weekdayDate } from "../../../packages/web-kit/dates.ts";
 import { Phone } from "../actors.ts";
 import { appOf, windowOf } from "./clients.ts";
 import { idOf } from "./client-events.ts";
@@ -276,7 +276,7 @@ export async function profileUpkeep(sim: Sim, wave: string): Promise<void> {
 
 /**
  * A desk whose own clock is weeks out (the browser left on the real date, the API on the sim's): the console must
- * still say the API's today, as the client and technician apps do. The page's sub-header carries the day.
+ * still say the API's today, as the client and technician apps do. The line above Today's title carries the day.
  */
 export async function deskClockDrift(sim: Sim, wave: string): Promise<void> {
   const phone = await Phone.open(sim.browser, sim.clock, sim.steps, "ops", { onClock: false });
@@ -294,7 +294,7 @@ export async function deskClockDrift(sim: Sim, wave: string): Promise<void> {
       // One answer heard, as any first page load has: the Date header the console is to set its clock by.
       await phone.page.waitForLoadState("networkidle");
       await phone.go("/today");
-      const want = fullDate(indiaDateOf(sim.clock.now));
+      const want = weekdayDate(indiaDateOf(sim.clock.now));
       await expect(phone.page.getByText(want).first()).toBeVisible();
     },
     { pages: [phone.page] },

@@ -10,7 +10,7 @@ import { go, usePath } from "@maneman/ui/router";
 import { SearchMenu, type SearchGroup } from "@maneman/ui/SearchMenu";
 import { useEffect, useRef, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
-import { CLOSE, shell, written } from "../content.ts";
+import { CLOSE, shell } from "../content.ts";
 import { useAccess, useMayCall } from "../lib/access.ts";
 import { recentClients } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -128,7 +128,7 @@ function useResults(text: string, onGo: () => void): SearchGroup[] {
   return [
     { key: "clients", name: words.clients, results: clients },
     { key: "technicians", name: words.technicians, results: technicians },
-    { key: "pages", name: written(words.pages), results: pages },
+    { key: "pages", name: words.pages, results: pages },
   ];
 }
 

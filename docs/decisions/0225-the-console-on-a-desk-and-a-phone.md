@@ -1,6 +1,6 @@
 # 0225. The console on a desk and a phone, to the November redesign
 
-- Status: accepted
+- Status: accepted; amended 2 November 2026 by [0227](0227-today-by-home-and-tasks-as-one-table.md): a slot the redesign adds is worded under the console's copy rules, not left as `TODO(copy)`
 - Date: 2026-11-02
 - Topic: The ops console
 - Amends [0208](0208-the-console-redesigned.md) on the console's widths and its frame; access is unchanged

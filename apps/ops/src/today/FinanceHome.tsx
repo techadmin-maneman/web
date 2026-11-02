@@ -1,5 +1,5 @@
 // Finance's home on Today (ADR 0227): the money collected today, the UPI payments to record, the charges to decide and
-// the payments owed; beside Needs you, today's payments, the latest first.
+// the payments owed; beside Needs you, today's payments, the latest first. Its sentence is what was collected today.
 
 import type { Success } from "@maneman/web-kit/api";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -8,9 +8,10 @@ import { rupees } from "@maneman/web-kit/money";
 import { useCallback, type ReactNode } from "react";
 import type { Tasks } from "../api.ts";
 import type { paths } from "../api-schema.ts";
-import { tasks as taskWords, written } from "../content.ts";
+import { tasks as taskWords } from "../content.ts";
 import { ledger } from "../content/ledger.ts";
 import { today as copy } from "../content/today.ts";
+import { useHeading } from "../frame/PageHead.tsx";
 import { clientPath } from "../route.ts";
 import { useCollected } from "./CityHome.tsx";
 import { AsideList, HomeLayout, type AsideRow, type Shown } from "./HomeLayout.tsx";
@@ -47,10 +48,12 @@ function latest(payments: readonly Payment[]): AsideRow[] {
 }
 
 export function FinanceHome({ board, needs }: { readonly board: Tasks; readonly needs: ReactNode }) {
-  const collected = useCollected();
   const payments = useTodaysPayments();
+  const taken = payments?.filter((payment) => payment.captured_at !== null).length;
+  const collected = useCollected(taken === undefined ? undefined : copy.notes.payments(taken));
+  useHeading(collected.amount === null ? undefined : copy.greeting.finance(collected.amount));
   const figures: Shown[] = [
-    collected,
+    collected.figure,
     { label: copy.tiles.upi, value: countOf(board, "upi_due"), tone: "attention", page: "tasks" },
     {
       label: copy.tiles.charges,
@@ -69,7 +72,7 @@ export function FinanceHome({ board, needs }: { readonly board: Tasks; readonly 
           id="today-payments"
           title={ledger.title}
           rows={payments === null ? null : latest(payments)}
-          none={written(copy.noPayments)}
+          none={copy.noPayments}
         />
       }
     />

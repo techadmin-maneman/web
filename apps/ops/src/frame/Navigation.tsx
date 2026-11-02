@@ -9,7 +9,7 @@ import { classes } from "@maneman/ui/classes";
 import { Mark } from "@maneman/ui/Mark";
 import { FOLDS, NavButton, NavGroup, NavItem, SideNav } from "@maneman/ui/SideNav";
 import { useState } from "react";
-import { shell, written } from "../content.ts";
+import { shell } from "../content.ts";
 import { useMayCall } from "../lib/access.ts";
 import { useTaskBoard } from "../lib/waiting.ts";
 import {
@@ -140,7 +140,7 @@ export function Navigation({ route, open, className }: { route: Route; open: boo
         const settings = group === "admin" && setting !== null;
         if (shown.length === 0 && !settings) return null;
         return (
-          <NavGroup key={group} label={written(NAV_GROUP_NAMES[group])}>
+          <NavGroup key={group} label={NAV_GROUP_NAMES[group]}>
             {shown.map((line) => (
               <Entry key={line.entry} line={line} />
             ))}

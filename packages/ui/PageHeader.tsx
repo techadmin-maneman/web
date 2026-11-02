@@ -1,5 +1,6 @@
 // The head of a console page: where it sits (Breadcrumbs), its title in the serif, a line of figures beside the
-// title, the page's actions at the right, and its tabs beneath. Every page has it, so every page reads alike.
+// title or the day and place above it, the page's actions at the right, and its tabs beneath. Every page has it, so
+// every page reads alike.
 //
 //   <PageHeader title={copy.title} meta={copy.count(rows.length)} actions={<Button …>{copy.add}</Button>} />
 
@@ -15,6 +16,7 @@ export function PageHeader({
   title,
   titleRef,
   meta,
+  over,
   actions,
   crumbs,
   tabs,
@@ -25,6 +27,8 @@ export function PageHeader({
   readonly titleRef?: Ref<HTMLHeadingElement>;
   /** Figures beside the title, a count or a week; never a sentence. */
   readonly meta?: ReactNode;
+  /** A small line above the title, the day and the place, where the title is a sentence on them. */
+  readonly over?: ReactNode;
   /** The page's own actions, at the right. */
   readonly actions?: ReactNode;
   /** Where the page sits, above the title. */
@@ -38,6 +42,7 @@ export function PageHeader({
       {crumbs}
       <div className={styles.row}>
         <div className={styles.heading}>
+          {over !== undefined && over !== null && <span className={styles.over}>{over}</span>}
           <h1 className={typeLook("title-2", styles.title)} ref={titleRef} tabIndex={-1}>
             {title}
           </h1>

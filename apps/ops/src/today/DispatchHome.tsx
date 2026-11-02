@@ -1,33 +1,48 @@
 // Dispatch's home on Today (ADR 0227), in the header's city: today's visits, those with no technician yet, those
 // running late, and the places low on stock; beside Needs you, today's visits still to come in the order they start.
+// Its sentence is how many visits today still need a technician.
 
 import type { BadgeTone } from "@maneman/ui/Badge";
 import { apiNow } from "@maneman/web-kit/clock";
-import { indiaClock } from "@maneman/web-kit/dates";
+import { indiaClock, minutesBetween } from "@maneman/web-kit/dates";
 import type { ReactNode } from "react";
 import type { Tasks } from "../api.ts";
 import { dispatch, tasks as taskWords } from "../content.ts";
 import { today as copy } from "../content/today.ts";
+import { useHeading } from "../frame/PageHead.tsx";
 import { dispatchPath } from "../route.ts";
 import { AsideList, HomeLayout, type AsideRow, type Shown } from "./HomeLayout.tsx";
 import { isDone, isLate, unassignedToday, useRoad, type Block, type Road } from "./road.ts";
 
-/** The day's visits, how many have no technician, and how many are running late. */
+/** The day's visits, how many have no technician, and how many are running late, the longest late named beneath. */
 export function roadFigures(road: Road | null): { visits: Shown; unassigned: Shown; late: Shown } {
   if (road === null) return { visits: null, unassigned: null, late: null };
   const now = apiNow();
+  const blocks = road.visits.map((visit) => visit.block);
+  const late = road.visits.filter(({ block }) => isLate(block, now));
+  const [longest] = late;
+  const underWay = blocks.filter((block) => !isDone(block) && block.begun !== null).length;
   return {
-    visits: { label: copy.tiles.visits, value: road.visits.length, page: "dispatch" },
+    visits: {
+      label: copy.tiles.visits,
+      value: road.visits.length,
+      note: copy.notes.road(blocks.filter(isDone).length, underWay),
+      page: "dispatch",
+    },
     unassigned: {
       label: copy.tiles.unassigned,
-      value: road.board.unassigned.length,
+      value: unassignedToday(road).length,
       tone: "attention",
       page: "dispatch",
     },
     late: {
       label: copy.road.late,
-      value: road.visits.filter(({ block }) => isLate(block, now)).length,
+      value: late.length,
       tone: "warning",
+      note:
+        longest === undefined
+          ? undefined
+          : copy.notes.late(longest.technician, minutesBetween(longest.block.starts_at, new Date(now).toISOString())),
       page: "dispatch",
     },
   };
@@ -80,6 +95,7 @@ function comingUp(road: Road): AsideRow[] {
 export function DispatchHome({ board, needs }: { readonly board: Tasks; readonly needs: ReactNode }) {
   const road = useRoad();
   const { visits, unassigned, late } = roadFigures(road);
+  useHeading(road === null ? undefined : copy.greeting.dispatch(unassignedToday(road).length));
   const lowStock: Shown = {
     label: copy.tiles.lowStock,
     value: board.low_stock_places,

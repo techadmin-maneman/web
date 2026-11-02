@@ -22,6 +22,8 @@ interface Figure {
   readonly page: Page;
   /** The tone a count above nought takes. */
   readonly tone?: StatTone;
+  /** A short line beneath the figure. */
+  readonly note?: string | undefined;
 }
 
 /** A figure, or null until what it counts has loaded or where the person may not read it. */
@@ -41,6 +43,7 @@ function Figures({ figures }: { figures: readonly Shown[] }) {
           label={figure.label}
           value={figure.value}
           tone={toneOf(figure)}
+          note={figure.note}
           to={sectionOf(figure.page).path}
         />
       ))}

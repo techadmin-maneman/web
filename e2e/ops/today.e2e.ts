@@ -59,6 +59,10 @@ test("opens on Dispatch's home: today's visits, those running late, and the visi
   const tile = (label: string) => page.getByRole("main").getByRole("link", { name: new RegExp(`^${label}`) });
   await expect(tile(copy.tiles.visits)).toContainText("4");
   await expect(tile(copy.road.late)).toContainText("3");
+  // The longest late of the three begun at 9, three hours ago, and the day's sentence: no visit today is unassigned.
+  await expect(tile(copy.road.late)).toContainText(copy.notes.late("Imran Qureshi", 180));
+  await expect(tile(copy.tiles.visits)).toContainText(copy.notes.road(0, 0));
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(copy.greeting.dispatch(0));
   const road = page.getByRole("region", { name: copy.road.title });
   await expect(road.getByRole("listitem")).toHaveCount(4);
   await expect(road.getByRole("listitem").first()).toContainText(copy.road.late);
@@ -84,6 +88,10 @@ test("lists each home's own tasks under Needs you, and Care's replies and chats 
   await expect(needs).not.toContainText(tasks.groups.replacement_order);
   await expect(page.getByRole("main").getByRole("link", { name: new RegExp(`^${copy.care.median}`) })).toContainText(
     copy.care.minutes(42),
+  );
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(copy.greeting.care(0));
+  await expect(page.getByRole("main").getByRole("link", { name: new RegExp(`^${copy.tiles.chats}`) })).toContainText(
+    copy.notes.oldest(60),
   );
   const chats = page.getByRole("region", { name: care.views.open });
   await expect(chats.getByRole("listitem")).toHaveCount(1);

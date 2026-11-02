@@ -4,7 +4,7 @@
 import { Stack } from "@maneman/ui/Layout";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { typeLook } from "@maneman/ui/type";
-import { shell, written } from "../content.ts";
+import { shell } from "../content.ts";
 import { useMayCall } from "../lib/access.ts";
 import { firstSetting, NAV_GROUP_NAMES, NAV_GROUPS, settingsPath, TAB_ENTRIES, type NavKey } from "../route.ts";
 import { CityChips } from "./City.tsx";
@@ -25,10 +25,10 @@ export function MoreScreen() {
         );
         const settings = group === "admin" && setting !== null;
         if (shown.length === 0 && !settings) return null;
-        const name = written(NAV_GROUP_NAMES[group]);
+        const name = NAV_GROUP_NAMES[group];
         return (
           <section key={group} className={styles.group} aria-label={name}>
-            {name !== undefined && <h2 className={typeLook("label", styles.name)}>{name}</h2>}
+            <h2 className={typeLook("label", styles.name)}>{name}</h2>
             <ListRows>
               {shown.map((line) => (
                 <ListRow

@@ -29,6 +29,16 @@
     line-height: var(--lh-100);
   }
 
+  /* Beneath the figure, at the tile's foot with it. */
+  .note {
+    margin-top: calc(var(--sp-4) * -1);
+    overflow: hidden;
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .attention {
     color: var(--ui-attention);
   }

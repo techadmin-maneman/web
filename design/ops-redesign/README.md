@@ -12,7 +12,7 @@ These files supersede `design/phase2/Ops Console.dc.html` for layout alone. The 
 
 ## What is not taken from them
 
-- **Words.** Every heading, line, label, hint, empty state, name, price and figure in both files is a placeholder. The console keeps its own strings (`apps/ops/src/content.ts` and each screen's content). A slot the new layout adds, with no string of the console's to fill it, gets a content key whose value is `TODO(copy)`, listed in [COPY-TODO.md](COPY-TODO.md), and shows nothing until the owner writes it.
+- **Words.** Every heading, line, label, hint, empty state, name, price and figure in both files is a placeholder. The console keeps its own strings (`apps/ops/src/content.ts` and each screen's content). A slot the new layout adds, with no string of the console's to fill it, is written under the console's copy rules (the owner's ruling of 2 November 2026) and listed in [COPY-TODO.md](COPY-TODO.md) for review.
 - **Figures and states.** Each comes from the API. One the API does not return is left out, not drawn from the mock.
 - **Colours and sizes.** The files write raw hex and inline styles; the build draws in `@maneman/brand` tokens, through the `--ui-*` roles so the dark theme follows. The brief's table maps each design value to its token.
 

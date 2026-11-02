@@ -1,14 +1,15 @@
 // Inventory's home on Today (ADR 0227), in the header's city: the items below zero and out across its places, the
-// counts to do and the recalls open; beside Needs you, the places that need attention, the worst first.
+// counts to do and the recalls open; beside Needs you, the places that need attention, the worst first. Its sentence
+// is what is below zero or out.
 
 import type { ReactNode } from "react";
 import type { Stock, Tasks } from "../api.ts";
-import { written } from "../content.ts";
 import { counts } from "../content/counts.ts";
 import { quality } from "../content/quality.ts";
 import { stockPlaces } from "../content/stock-places.ts";
 import { stock as stockWords } from "../content/stock.ts";
 import { today as copy } from "../content/today.ts";
+import { useHeading } from "../frame/PageHead.tsx";
 import { useCity } from "../lib/city.ts";
 import { sectionOf } from "../route.ts";
 import { placeName, placesNeedingAttention, type PlaceNeeds } from "../stock/index.ts";
@@ -57,9 +58,16 @@ export function InventoryHome({ needs }: { readonly board: Tasks; readonly needs
   const stock = read === null ? null : inCity(read, city);
   const needing = stock === null ? null : placesNeedingAttention(stock);
   const sum = (field: "below" | "out") => (needing ?? []).reduce((total, place) => total + place[field], 0);
+  const placesWith = (field: "below" | "out") =>
+    copy.notes.places((needing ?? []).filter((place) => place[field] > 0).length);
+  useHeading(needing === null ? undefined : copy.greeting.inventory(sum("below"), sum("out")));
   const figures: Shown[] = [
-    needing === null ? null : { label: BELOW, value: sum("below"), tone: "warning", page: "stock" },
-    needing === null ? null : { label: OUT, value: sum("out"), tone: "warning", page: "stock" },
+    needing === null
+      ? null
+      : { label: BELOW, value: sum("below"), tone: "warning", note: placesWith("below"), page: "stock" },
+    needing === null
+      ? null
+      : { label: OUT, value: sum("out"), tone: "warning", note: placesWith("out"), page: "stock" },
     countTasks === null
       ? null
       : {
@@ -87,7 +95,7 @@ export function InventoryHome({ needs }: { readonly board: Tasks; readonly needs
           id="today-places"
           title={stockWords.attention.title}
           rows={stock === null || needing === null ? null : places(stock, needing)}
-          none={written(copy.noPlaces)}
+          none={copy.noPlaces}
         />
       }
     />
