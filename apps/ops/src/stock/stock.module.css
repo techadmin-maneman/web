@@ -26,11 +26,6 @@
   margin-left: var(--sp-8);
 }
 
-/* A count of none in Needs attention. */
-.none {
-  color: var(--ui-text-muted);
-}
-
 /* One place's columns: the item room for a long hair system name, the rest even. */
 .onePlace th:nth-child(1) {
   width: 36%;
@@ -54,15 +49,6 @@
   padding-left: var(--sp-24);
 }
 
-/* Needs attention: the place, then three counts. */
-.attention th:nth-child(1) {
-  width: 40%;
-}
-
-.attention th:nth-child(n + 2) {
-  width: 20%;
-}
-
 /* A consumable no longer offered, still held somewhere. */
 .retired {
   display: block;
@@ -74,4 +60,31 @@
 /* The views' tabs, above the view shown. */
 .views {
   margin-bottom: var(--sp-20);
+}
+
+/* The places needing attention (./OnHand.tsx), a card each, as many to a row as fit. */
+.attentionCards {
+  --local-card: 16rem; /* the narrowest a place's card runs, its name whole */
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--local-card), 1fr));
+  gap: var(--sp-12);
+  border: 0;
+  background: none;
+}
+
+.attentionCards > li {
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
+}
+
+/* A place's items narrowed: the search, then the chips, above the table. */
+.narrow {
+  margin: var(--sp-12) var(--form-inset);
+}
+
+.narrowChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
 }

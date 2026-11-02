@@ -16,7 +16,9 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useState } from "react";
-import { useHeaderSub } from "../frame/PageHead.tsx";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
+import { useCity } from "../lib/city.ts";
+import { MoneyFigures } from "./MoneyFigures.tsx";
 import { RowHead } from "@maneman/ui/RowHead";
 import { RefundPayment } from "../clients/index.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
@@ -189,12 +191,14 @@ function exportCsv(ledger: Ledger) {
 
 export function LedgerScreen() {
   const today = todayInIndia(apiNow());
+  const { city } = useCity();
   const [from, setFrom] = useState(() => addDays(today, -29));
   const [to, setTo] = useState(today);
-  const read = useCallback(() => ledgerApi.ledger(from, to <= from ? from : to), [from, to]);
+  const read = useCallback(() => ledgerApi.ledger(from, to <= from ? from : to, city), [from, to, city]);
   const [loaded, retry] = useLoad(read);
   return (
     <div className={form.screen}>
+      <MoneyFigures />
       <Toolbar label={copy.title}>
         <Field label={copy.from}>
           {(control) => (
@@ -220,7 +224,9 @@ export function LedgerScreen() {
             />
           )}
         </Field>
-        {loaded.state === "loaded" && (
+      </Toolbar>
+      {loaded.state === "loaded" && (
+        <PageActions>
           <Button
             variant="outline"
             size="small"
@@ -230,8 +236,8 @@ export function LedgerScreen() {
           >
             {copy.export}
           </Button>
-        )}
-      </Toolbar>
+        </PageActions>
+      )}
       {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (

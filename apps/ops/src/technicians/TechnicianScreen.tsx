@@ -1,5 +1,5 @@
-// One technician's page: their details, then their week, hours, leave, phones and kit, a tab at a time, so covering a sick
-// technician or a lost phone happens in one place. The roster is read once for the page; the Leave and Kit tabs read
+// One technician's page: their head with Call and their details behind Edit details, their figures, then their week,
+// hours, leave, phones and kit, a tab at a time, so covering a sick technician or a lost phone happens in one place. The roster is read once for the page; the Leave and Kit tabs read
 // what they show as they open. A technician switched off has no phone signed in and no leave to record, so their page
 // is their details alone.
 
@@ -12,11 +12,13 @@ import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { type ReturnedVisit, type Roster, type Technician, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
-import { useRecordTitle } from "../frame/PageHead.tsx";
 import { technicians } from "../content.ts";
 import { go, TECHNICIAN_TAB_NAMES, TECHNICIAN_TABS, technicianPath, type TechnicianTab } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Details } from "./TechnicianForms.tsx";
+import { TechnicianFigures, TechnicianHead, useBelowZero } from "./TechnicianHead.tsx";
+import { Badge } from "@maneman/ui/Badge";
+import { PageTitle } from "@maneman/ui/PageHeader";
 import { Returned } from "./TechnicianSwitch.tsx";
 import { Kit } from "./TechnicianKit.tsx";
 import { Hours } from "./TechnicianHours.tsx";
@@ -62,10 +64,13 @@ function TabPanel({
 function TechnicianTabs({
   technician,
   tab,
+  belowZero,
   onChange,
 }: {
   technician: Technician;
   tab: TechnicianTab;
+  /** How many kit items are below zero, counted on the Kit tab's name. */
+  belowZero: number | null;
   onChange: () => Promise<void>;
 }) {
   return (
@@ -74,18 +79,26 @@ function TechnicianTabs({
         {TECHNICIAN_TABS.map((each) => (
           <OpsLink key={each} className={TAB} to={technicianPath(technician.id, each)} current={each === tab}>
             {TECHNICIAN_TAB_NAMES[each]}
+            {each === "kit" && belowZero !== null && belowZero > 0 && (
+              <Badge tone="error" className={styles.tabCount}>
+                {belowZero}
+              </Badge>
+            )}
           </OpsLink>
         ))}
       </Tabs>
-      {tab === "kit" ? (
-        <TabPanel tab={tab} technician={technician} onChange={onChange} />
-      ) : (
-        <Panel titleId="technician-tab" title={TECHNICIAN_TAB_NAMES[tab]}>
-          <div className={tab === "hours" ? undefined : form.group}>
-            <TabPanel tab={tab} technician={technician} onChange={onChange} />
-          </div>
-        </Panel>
-      )}
+      {/* A tab's panel titled as the tab reads its title, and does not show it again. */}
+      <PageTitle.Provider value={TECHNICIAN_TAB_NAMES[tab]}>
+        {tab === "kit" ? (
+          <TabPanel tab={tab} technician={technician} onChange={onChange} />
+        ) : (
+          <Panel titleId="technician-tab" title={TECHNICIAN_TAB_NAMES[tab]}>
+            <div className={tab === "hours" ? undefined : form.group}>
+              <TabPanel tab={tab} technician={technician} onChange={onChange} />
+            </div>
+          </Panel>
+        )}
+      </PageTitle.Provider>
     </>
   );
 }
@@ -103,29 +116,39 @@ function TechnicianPage({
 }) {
   const { summary, active } = entry;
   const [switched, setSwitched] = useState<Switched | null>(null);
-  useRecordTitle(summary.name);
+  const belowZero = useBelowZero(summary.id);
   return (
     <div className={styles.page}>
-      <Details
-        technician={summary}
-        cities={cities}
-        active={active !== null}
-        onChange={onChange}
-        onSwitchedOff={async (visits) => {
-          setSwitched({ to: "off", visits });
-          await onChange();
-        }}
-        onSwitchedOn={async () => {
-          setSwitched({ to: "on" });
-          await onChange();
-        }}
-        onDeleted={() => {
-          go("/technicians");
-        }}
+      <TechnicianHead
+        summary={summary}
+        active={active}
+        details={(close) => (
+          <Details
+            technician={summary}
+            cities={cities}
+            active={active !== null}
+            onChange={onChange}
+            onSwitchedOff={async (visits) => {
+              // The drawer shuts, so the page says what went back on the board.
+              close();
+              setSwitched({ to: "off", visits });
+              await onChange();
+            }}
+            onSwitchedOn={async () => {
+              close();
+              setSwitched({ to: "on" });
+              await onChange();
+            }}
+            onDeleted={() => {
+              go("/technicians");
+            }}
+          />
+        )}
       />
       {switched?.to === "off" && <Returned visits={switched.visits} />}
       {switched?.to === "on" && <Toast>{technicians.switchOn.done(summary.name)}</Toast>}
-      {active !== null && <TechnicianTabs technician={active} tab={tab} onChange={onChange} />}
+      {active !== null && <TechnicianFigures summary={summary} belowZero={belowZero} />}
+      {active !== null && <TechnicianTabs technician={active} tab={tab} belowZero={belowZero} onChange={onChange} />}
     </div>
   );
 }

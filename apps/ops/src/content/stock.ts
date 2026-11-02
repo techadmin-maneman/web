@@ -29,6 +29,23 @@ export const stock = {
   attention: {
     title: "Needs attention",
     columns: ["Items below zero", "Items out", "Items low"],
+    /** Beneath a place's name: "4 below zero · 5 out · 2 low", what it has none of left out. */
+    counts: (below: number, out: number, low: number) =>
+      [
+        ...(below === 0 ? [] : [`${String(below)} below zero`]),
+        ...(out === 0 ? [] : [`${String(out)} out`]),
+        ...(low === 0 ? [] : [`${String(low)} low`]),
+      ].join(" · "),
+    show: "Show",
+  },
+  /** A place's items narrowed: every one, those low or out, or those with a lot expiring soon; and found by name. */
+  narrow: {
+    label: "Narrow the items",
+    all: "All items",
+    short: "Low or out",
+    expiring: "Expiring soon",
+    find: "Find an item",
+    none: "No item matches.",
   },
   totalsBy: "Show",
   /** With a handful of places, every one side by side. */

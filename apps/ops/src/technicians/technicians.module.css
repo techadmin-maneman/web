@@ -236,3 +236,17 @@
 .weekDay dd {
   margin: var(--sp-4) 0 0;
 }
+
+/* Call's handset, the size of the words beside it. */
+.icon {
+  flex-shrink: 0;
+}
+
+/* The four figures beneath the head (./TechnicianHead.tsx), and the Kit tab's count of what is below zero. */
+.figures {
+  margin-bottom: var(--sp-8);
+}
+
+.tabCount {
+  margin-left: var(--sp-8);
+}

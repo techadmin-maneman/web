@@ -88,6 +88,13 @@ export async function pageOf(page: Page, name: string, tab?: string) {
   return page.getByRole("main");
 }
 
+/** A technician's details, in the drawer Edit details opens on their page. */
+export async function detailsOf(page: Page, name: string) {
+  await pageOf(page, name);
+  await page.getByRole("button", { name: technicians.head.edit }).click();
+  return page.getByRole("dialog", { name });
+}
+
 /** Back to the roster from a technician's page. */
 export async function backToRoster(page: Page) {
   await page.getByRole("navigation", { name: shell.crumbs }).getByRole("link", { name: technicians.title }).click();

@@ -124,16 +124,16 @@ test("past six places, shows the warehouse and one place, picked, saying above w
   await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   await expect(page.getByLabel(stock.totalsBy)).toHaveValue("place:central");
 
-  // One control: each place by its name alone, among the totals; what needs attention is a table of its own above.
+  // One control: each place by its name alone, among the totals; what needs attention is a row of cards above.
   const show = page.getByLabel(stock.totalsBy);
   await expect(show.getByRole("option", { name: "Technician 5", exact: true })).toHaveCount(1);
   await expect(show.getByRole("option", { name: /low|below|zero|·/i })).toHaveCount(0);
   await expect(table.getByLabel(stockLabels.place)).toHaveCount(0);
-  const attention = page.getByRole("region", { name: stock.attention.title });
-  const five = attention.getByRole("row").filter({ hasText: "Technician 5" });
-  await expect(five.getByRole("cell").nth(0)).toHaveText("—");
-  await expect(five.getByRole("cell").nth(2)).toHaveText("1");
-  await five.getByRole("button", { name: "Technician 5" }).click();
+  // What needs attention is a card a place, saying what it is short of, the worst first.
+  const attention = page.getByRole("list", { name: stock.attention.title });
+  const five = attention.getByRole("button", { name: /^Technician 5/ });
+  await expect(five).toContainText(stock.attention.counts(0, 0, 1));
+  await five.click();
   await expect(show).toHaveValue(`place:${kits[4]?.id ?? ""}`);
   await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
