@@ -49,3 +49,8 @@ Each slot the redesign adds where the console had no words of its own. None wait
 | Messages   | Beneath the chat's name                    | Waiting on us · 38 min · reply by Mon 21 Sep, 11:42 am                | `care.thread.waiting`      |
 | Messages   | Our automatic messages, folded             | 3 automatic messages · Show them / Hide them                          | `care.thread.autos`        |
 | Messages   | The reply box's other use                  | Note for the team                                                     | `care.compose.noteMode`    |
+| Technician | Beside the name, and beneath it            | Working / On leave / Switched off; Trained to fit / Not trained to fit | `technicians.head`        |
+| Technician | The head's actions                         | Call, Edit details                                                    | `technicians.head.call`    |
+| Technician | The four figures                           | Visits to come; Last 90 days, 12 jobs; On time; Kit, 4 below zero      | `technicians.figures`      |
+| Stock      | Beneath a place's card                     | 4 below zero · 5 out · 2 low; Show                                    | `stock.attention.counts`   |
+| Stock      | A place's items narrowed                   | All items, Low or out, Expiring soon; Find an item; No item matches.  | `stock.narrow`             |

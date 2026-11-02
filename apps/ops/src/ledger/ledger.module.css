@@ -5,3 +5,8 @@
   text-align: right;
   white-space: nowrap;
 }
+
+/* The four figures above the ledger (./MoneyFigures.tsx). */
+.figures {
+  margin-bottom: var(--sp-8);
+}

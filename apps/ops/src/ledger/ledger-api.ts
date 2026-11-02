@@ -7,5 +7,9 @@ import type { paths } from "../api-schema.ts";
 export type Ledger = Success<paths["/api/payments/ledger"]["get"]>;
 
 export const ledgerApi = {
-  ledger: (from: string, to: string) => client.get("/api/payments/ledger", { query: { from, to } }),
+  ledger: (from: string, to: string, city: string | null) =>
+    client.get("/api/payments/ledger", { query: { from, to, ...(city === null ? {} : { city }) } }),
+  /** The day's money: collected, and refunds still on their way back. */
+  day: (date: string, city: string | null) =>
+    client.get("/api/payments", { query: { date, ...(city === null ? {} : { city }) } }),
 };

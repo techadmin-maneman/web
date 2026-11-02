@@ -26,11 +26,6 @@
   margin-left: var(--sp-8);
 }
 
-/* A count of none in Needs attention. */
-.none {
-  color: var(--ui-text-muted);
-}
-
 /* One place's columns: the item room for a long hair system name, the rest even. */
 .onePlace th:nth-child(1) {
   width: 36%;
@@ -52,15 +47,6 @@
 /* The state sits in from the figure it follows. */
 .onePlace :is(th, td):nth-child(3) {
   padding-left: var(--sp-24);
-}
-
-/* Needs attention: the place, then three counts. */
-.attention th:nth-child(1) {
-  width: 40%;
-}
-
-.attention th:nth-child(n + 2) {
-  width: 20%;
 }
 
 /* A consumable no longer offered, still held somewhere. */
