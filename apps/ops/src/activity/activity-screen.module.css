@@ -22,7 +22,7 @@
 
 /* A name, then what they are and where they did it, a line beneath. */
 .stack {
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .stack > * {

@@ -59,15 +59,25 @@
   text-align: center;
 }
 
-/* Who the chat is with, at the inbox's right; beneath the chat short of a desk's width. */
+/* Who the chat is with, at the inbox's right; beneath the chat short of a desk's width. One gap between its parts,
+   whatever margins they bring from elsewhere. */
 .client {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-12);
+  gap: var(--sp-16);
   min-width: 0;
   padding: var(--sp-16);
   overflow-y: auto;
   border-left: var(--hairline) solid var(--ui-line);
+}
+
+.client > * {
+  margin: 0;
+}
+
+/* Care's own actions across the column, as wide as the ways into the client's page above them. */
+.client > div > button {
+  flex: 1 1 100%;
 }
 
 @media (max-width: 1279px) {

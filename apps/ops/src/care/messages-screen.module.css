@@ -2,7 +2,7 @@
    side at a desk; the one with them beneath the chat short of a desk's width; and one beneath another on a phone. */
 
 .inbox {
-  --local-list: 18.75rem; /* the column of chats */
+  --local-list: 22rem; /* the column of chats: its five views on two lines */
   --local-client: 16rem; /* the column of who the chat is with */
   --local-room-above: 11rem; /* the frame's head and the page's above the box, which it leaves in view */
 
@@ -27,16 +27,11 @@
   border-bottom: var(--hairline) solid var(--ui-line);
 }
 
-/* The views, a chip each, in one row that scrolls sideways where it runs past the list's width. */
+/* The views, a chip each, every one in sight: they run on to a second line rather than out of the column. */
 .views {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-8);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.views > * {
-  flex-shrink: 0;
 }
 
 .search {
@@ -62,6 +57,12 @@
   min-width: 0;
   min-height: 0;
   border-top: var(--hairline) solid var(--ui-line);
+}
+
+/* A view with no chats says so, set in from the column's edge as the rows are. */
+.list > p {
+  margin: 0;
+  padding: var(--sp-16);
 }
 
 /* Before a chat is chosen, the line saying so, set in. */

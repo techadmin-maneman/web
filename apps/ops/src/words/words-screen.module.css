@@ -8,7 +8,6 @@
 }
 .table th,
 .table td {
-  vertical-align: top;
   padding-block: var(--sp-8);
 }
 .page {

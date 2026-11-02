@@ -59,14 +59,16 @@
 
 /* The client beside the chat: a short list of facts, then the ways into their page. */
 .panel {
-  margin-bottom: var(--sp-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
 }
 
 .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: var(--sp-4) var(--sp-12);
-  margin: 0 0 var(--sp-8);
+  margin: 0;
   font-size: var(--fs-13);
 }
 

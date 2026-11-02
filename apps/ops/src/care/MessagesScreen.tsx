@@ -32,7 +32,7 @@ const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed",
 /** How often the list is read again while it is in view, for new chats and the clients' replies. */
 const LIST_EVERY_MS = 20_000;
 
-/** The views, a chip each, in one row that scrolls sideways where it runs past the list's width. */
+/** The views, a chip each, every one in sight. */
 function ViewChoice({ view, onView }: { view: ConversationView; onView: (view: ConversationView) => void }) {
   return (
     <div className={styles.views} role="radiogroup" aria-label={copy.show}>
@@ -200,7 +200,7 @@ function Conversations({ view, search, tools }: { view: ConversationView; search
         {conversations.length === 0 ? (
           <Note>{copy.none}</Note>
         ) : (
-          <ListRows label={copy.chats}>
+          <ListRows label={copy.chats} inPanel>
             {conversations.map((conversation) => (
               <ConversationRow
                 key={conversation.id}
