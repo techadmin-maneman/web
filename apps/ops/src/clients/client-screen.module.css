@@ -2,8 +2,10 @@
 
 /* The tabs beside the column of figures, address, notes and Care person; below a desk's width, that column beneath. */
 .columns {
+  --local-aside: 18.75rem; /* the column of figures, address, notes and Care person */
+
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 18.75rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, var(--local-aside));
   gap: var(--sp-24);
   align-items: start;
 }
