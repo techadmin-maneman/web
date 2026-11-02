@@ -26,7 +26,7 @@ import {
   type Call,
   type OpsReply,
 } from "./fixtures.ts";
-import { IMRAN, READ_ROSTER, READ_WORK, pageOf, backToRoster } from "./technicians-fixtures.ts";
+import { IMRAN, READ_ROSTER, READ_WORK, detailsOf, backToRoster } from "./technicians-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings } from "../../apps/ops/src/content/settings.ts";
 
@@ -118,7 +118,7 @@ test("asks for a mobile it can read before it sends anything", async ({ page }) 
 test("changes a technician’s detail where it reads, sending only that one", async ({ page }) => {
   const { roster, reply } = rosterOf(TECHNICIANS);
   await openWith(page, { [CHANGE]: json({ id: IMRAN }) }, reply);
-  const main = await pageOf(page, "Imran Qureshi");
+  const main = await detailsOf(page, "Imran Qureshi");
   await expect(main.getByText("+91 98100 00001")).toBeVisible();
 
   await main.getByRole("button", { name: `${EDITING.change} ${opsCopy.technicians.details.zone}` }).click();
@@ -138,7 +138,7 @@ test("changes a technician’s detail where it reads, sending only that one", as
 
 test("moves a technician to another city, or to none", async ({ page }) => {
   await openWith(page, { [CHANGE]: json({ id: IMRAN }) });
-  const main = await pageOf(page, "Imran Qureshi");
+  const main = await detailsOf(page, "Imran Qureshi");
   const change = main.getByRole("button", { name: `${EDITING.change} ${opsCopy.technicians.details.city}` });
   await expect(change).toContainText("Gurgaon");
 
@@ -155,7 +155,7 @@ test("moves a technician to another city, or to none", async ({ page }) => {
 test("switches a technician off only once asked, and lists the visits they no longer hold", async ({ page }) => {
   const { roster, reply } = rosterOf(TECHNICIANS);
   await openWith(page, { [SWITCH_OFF]: json(SWITCHED_OFF) }, reply);
-  const main = await pageOf(page, "Imran Qureshi");
+  const main = await detailsOf(page, "Imran Qureshi");
 
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
   // Said before it is confirmed: the visits it leaves with nobody.
@@ -180,7 +180,9 @@ test("switches a technician off only once asked, and lists the visits they no lo
   };
   await main.getByRole("button", { name: opsCopy.technicians.switchOff.open }).click();
 
-  const returned = main.getByRole("status");
+  // The drawer shuts once switched, and the page says what went back on the board.
+  await expect(main).toBeHidden();
+  const returned = page.getByRole("main").getByRole("status");
   await expect(returned).toContainText("2 visits are back on the dispatch board.");
   await expect(returned).toContainText("Fri 24 Sep, 10 am · Rohit Malhotra");
   await expect(returned).toContainText(opsCopy.technicians.switchOff.noClient);
@@ -188,9 +190,9 @@ test("switches a technician off only once asked, and lists the visits they no lo
     "href",
     "/dispatch",
   );
-  await expect(main.getByRole("button", { name: "Switch Imran Qureshi back on" })).toBeVisible();
+  await expect(page.getByRole("main")).toContainText(opsCopy.technicians.head.off);
   // Switched off, they have no phone signed in and no leave to record: their page is their details alone.
-  await expect(main.getByRole("navigation", { name: /^Imran Qureshi:/ })).toBeHidden();
+  await expect(page.getByRole("main").getByRole("navigation", { name: /^Imran Qureshi:/ })).toBeHidden();
   expect(await axeViolations(page)).toEqual([]);
 
   // They are off the roster's table, and listed apart beneath it in the same columns.
@@ -208,8 +210,8 @@ test("lists the technicians switched off apart, and switches one back on", async
   await expect(off.getByRole("row").filter({ hasText: "Ravi Kumar" })).toHaveCount(1);
   await expect(page.getByRole("table").first().getByRole("row").filter({ hasText: "Ravi Kumar" })).toHaveCount(0);
 
-  const main = await pageOf(page, "Ravi Kumar");
-  await expect(main.getByRole("navigation", { name: /^Ravi Kumar:/ })).toBeHidden();
+  const main = await detailsOf(page, "Ravi Kumar");
+  await expect(page.getByRole("main").getByRole("navigation", { name: /^Ravi Kumar:/ })).toBeHidden();
   roster.current = {
     ...TECHNICIANS,
     technicians: [
@@ -233,7 +235,7 @@ test("lists the technicians switched off apart, and switches one back on", async
   await expect(page.getByRole("status").filter({ hasText: "Ravi Kumar can sign in again." })).toContainText(
     "Ravi Kumar can sign in again.",
   );
-  await expect(main.getByRole("navigation", { name: /^Ravi Kumar:/ })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("navigation", { name: /^Ravi Kumar:/ })).toBeVisible();
   await backToRoster(page);
   await expect(off).toBeHidden();
   await expect(page.getByRole("row").filter({ hasText: "Ravi Kumar" })).toBeVisible();
@@ -241,7 +243,7 @@ test("lists the technicians switched off apart, and switches one back on", async
 
 test("says so when the number they sign in with is another’s now", async ({ page }) => {
   await openWith(page, { [SWITCH_ON]: fails(409, "number_in_use") }, json({ ...TECHNICIANS, switched_off: [RAVI] }));
-  const main = await pageOf(page, "Ravi Kumar");
+  const main = await detailsOf(page, "Ravi Kumar");
   await main.getByRole("button", { name: "Switch Ravi Kumar back on" }).click();
 
   await expect(main.getByRole("alert")).toHaveText(opsCopy.technicians.errors.number_in_use_now);
@@ -250,7 +252,7 @@ test("says so when the number they sign in with is another’s now", async ({ pa
 test("deletes a technician added by mistake, once asked, and goes back to the roster", async ({ page }) => {
   const { roster, reply } = rosterOf(TECHNICIANS);
   await openWith(page, { [DELETE_IT]: json({ deleted: true }) }, reply);
-  const main = await pageOf(page, "Imran Qureshi");
+  const main = await detailsOf(page, "Imran Qureshi");
 
   await main.getByRole("button", { name: "Delete Imran Qureshi" }).click();
   await expect(main.getByText("Delete Imran Qureshi? This can’t be undone.")).toBeVisible();
@@ -263,7 +265,7 @@ test("deletes a technician added by mistake, once asked, and goes back to the ro
 
 test("says to switch off instead a technician with work on record", async ({ page }) => {
   await openWith(page, { [DELETE_IT]: fails(409, "in_use") });
-  const main = await pageOf(page, "Imran Qureshi");
+  const main = await detailsOf(page, "Imran Qureshi");
   await main.getByRole("button", { name: "Delete Imran Qureshi" }).click();
   await main.getByRole("button", { name: opsCopy.deleting.open, exact: true }).click();
 
@@ -273,7 +275,7 @@ test("says to switch off instead a technician with work on record", async ({ pag
 
 test("says plainly when the person’s access does not reach a switch", async ({ page }) => {
   await openWith(page, { [SWITCH_OFF]: fails(403, "not_permitted") });
-  const main = await pageOf(page, "Imran Qureshi");
+  const main = await detailsOf(page, "Imran Qureshi");
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
   await main.getByRole("button", { name: opsCopy.technicians.switchOff.open }).click();
 

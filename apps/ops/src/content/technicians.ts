@@ -42,6 +42,25 @@ export const technicians = {
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
   },
   /** Our words, all of them: the board draws the roster and no page for one technician. */
+  /** A technician's head: where they stand today beside their name, their facts beneath, and its actions. */
+  head: {
+    working: "Working",
+    onLeave: "On leave",
+    off: "Switched off",
+    trained: "Trained to fit",
+    notTrained: "Not trained to fit",
+    call: "Call",
+    edit: "Edit details",
+  },
+  /** The four figures beneath a technician's head. */
+  figures: {
+    toCome: "Visits to come",
+    jobs: (days: number) => `Last ${String(days)} days`,
+    jobCount: (jobs: number) => `${String(jobs)} ${jobs === 1 ? "job" : "jobs"}`,
+    onTime: "On time",
+    kit: "Kit",
+    belowZero: (items: number) => (items === 0 ? "None below zero" : `${String(items)} below zero`),
+  },
   page: {
     back: "All technicians",
     tabsLabel: (name: string) => `${name}: week, hours, leave, phones and kit`,
