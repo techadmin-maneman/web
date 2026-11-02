@@ -9,7 +9,8 @@ export const stockViews = {
   },
   demand: {
     title: "Next 4 weeks",
-    columns: ["Item", "City", "Booked visits use", "Held there"],
+    columns: ["Item", "City", "Booked visits use", "Held there"] as const,
+    find: "Find an item",
     none: "Nothing booked in the next four weeks uses stock.",
     noCity: "No city",
     noProfile: "No hair profile to match",

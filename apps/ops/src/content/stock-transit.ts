@@ -5,7 +5,9 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const stockTransit = {
   title: "In transit",
-  columns: ["Item", "How many", "From", "To", "Sent", ""],
+  columns: ["Item", "How many", "From", "To", "Sent"] as const,
+  /** The column of a transfer's buttons, named aloud only. */
+  actions: "Receive or send back",
   receive: "Receive",
   receiveLabel: (what: string, to: string) => `Receive ${what} at ${to}`,
   sendBack: "Send back",
