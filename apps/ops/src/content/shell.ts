@@ -1,5 +1,7 @@
 // The console's frame: its navigation by department, its header and the person signed in.
 
+import { TODO_COPY } from "./common.ts";
+
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
 export const DEPARTMENT_NAMES = {
   operations: "Operations",
@@ -62,23 +64,41 @@ export const shell = {
     growth: "Growth",
     reports: "Reports",
   },
+  /**
+   * The navigation's groups, in its order (../route.ts, NAV_GROUPS), as the redesign's brief names them, not its
+   * design files (design/ops-redesign/COPY-TODO.md).
+   */
+  navGroups: {
+    work: "Work",
+    people: "People",
+    business: "Running the business",
+    admin: DEPARTMENT_NAMES.admin,
+  },
+  /** The phone's last tab, and the page it opens: the rest of the navigation, and the city. */
+  more: "More",
   settings: "Settings",
   fold: "Collapse",
   unfold: "Expand",
   search: "Search",
-  searchKeys: "Ctrl K",
+  /** The key that takes the keyboard to the header's search, from anywhere but a box. */
+  searchKey: "/",
   crumbs: "Breadcrumb",
-  /** Go to anything, by Ctrl K or ⌘K (../components/CommandPalette.tsx). */
+  /** What the header's search finds (../frame/Search.tsx): clients, technicians, then pages. */
   palette: {
-    title: "Go to",
     label: "Page, technician or client",
-    found: "Found",
     none: "Nothing matches.",
-    client: (name: string, mobile: string) => `${name} · ${mobile}`,
+    clients: "Clients",
+    technicians: "Technicians",
+    pages: TODO_COPY,
     setting: (page: string) => `Settings · ${page}`,
-    technician: (name: string) => `Technician · ${name}`,
-    /** A client opened this session, offered before anything is typed. */
-    recent: (name: string) => `Recent · ${name}`,
+  },
+  /**
+   * The city every page is narrowed to, chosen in the header, read out with the city it shows; on a phone, the chips
+   * under Today's and Dispatch's titles, named alike.
+   */
+  city: {
+    name: "City",
+    label: (city: string) => `City: ${city}`,
   },
   /** A section's name in the navigation, read out with the count of tasks waiting in it. */
   waiting: (section: string, count: number, overdue: boolean) =>
@@ -101,6 +121,8 @@ export const shell = {
   /** Who is signed in, the theme, and the way out: Access's own session, which is the only one the console has. */
   account: {
     label: "Account",
+    /** The navigation's foot, read out with the name it shows. */
+    named: (name: string) => `Account, ${name}`,
     signOut: "Sign out",
     theme: "Theme",
     themes: { system: "System", light: "Light", dark: "Dark" },

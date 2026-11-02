@@ -15,9 +15,10 @@ import { PageHeader } from "@maneman/ui/PageHeader";
 import { Panel } from "@maneman/ui/Panel";
 import { Popover, PopoverChoice, PopoverHeading, PopoverItem, PopoverLink, PopoverNote } from "@maneman/ui/Popover";
 import { SearchInput } from "@maneman/ui/SearchInput";
+import { SearchMenu } from "@maneman/ui/SearchMenu";
 import { SettingRow, SettingValue } from "@maneman/ui/SettingRow";
 import { ChangeBar, SettingsLayout, SubNav } from "@maneman/ui/SettingsLayout";
-import { NavButton, NavGroup, NavItem, SideNav } from "@maneman/ui/SideNav";
+import { NavAccount, NavButton, NavGroup, NavItem, SideNav } from "@maneman/ui/SideNav";
 import { StatTile } from "@maneman/ui/StatTile";
 import { TabBar, TabBarItem } from "@maneman/ui/TabBar";
 import { rowRule, Table, type RuleTone } from "@maneman/ui/Table";
@@ -149,11 +150,32 @@ function List() {
   );
 }
 
-/** A picker: the city as a field, the places by kind, the chosen one ticked, a figure beside each. */
+/** A picker: the city as a field, the places by kind, the chosen one ticked, a figure beside each; and a search. */
 function Picker() {
   const [city, setCity] = useState<string>(words.cities[0]);
+  const [text, setText] = useState("");
+  const found = words.rows.filter((row) => text !== "" && row.title.toLowerCase().includes(text.toLowerCase()));
   return (
     <div className={styles.row}>
+      <SearchMenu
+        label={words.search}
+        value={text}
+        onChange={setText}
+        none={words.none}
+        keyHint="/"
+        groups={[
+          {
+            key: "rows",
+            name: words.panel,
+            results: found.map((row) => ({
+              key: row.title,
+              label: row.title,
+              detail: row.meta,
+              onChoose: () => undefined,
+            })),
+          },
+        ]}
+      />
       <Popover
         className={styles.picker}
         look="field"
@@ -247,7 +269,14 @@ function Navigation() {
             label={`${words.nav} ${String(folded)}`}
             folded={folded}
             head={<Caps>{words.nav}</Caps>}
-            foot={<NavButton icon={GLYPHS.fold} name={words.fold} onClick={() => undefined} />}
+            foot={
+              <>
+                <NavButton icon={GLYPHS.fold} name={words.fold} onClick={() => undefined} />
+                <NavAccount label={words.account} initials="PN" name={words.person} detail={words.signedIn}>
+                  {(close) => <PopoverItem onClick={close}>{words.toggle}</PopoverItem>}
+                </NavAccount>
+              </>
+            }
           >
             {words.navGroups.map((group, half) => (
               <NavGroup key={group} label={group}>

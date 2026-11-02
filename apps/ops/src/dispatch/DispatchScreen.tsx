@@ -10,6 +10,7 @@ import type { Board, BoardQuery } from "../api.ts";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { useCity } from "../lib/city.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { useAddressKeeps } from "./address.ts";
 import styles from "./dispatch-screen.module.css";
@@ -143,9 +144,20 @@ function BoardBody(props: {
   );
 }
 
+/**
+ * The week and the visit the board was asked for, for the city chosen in the header (ADR 0225), whatever an older
+ * link's address names.
+ */
+function useBoardQuery(asked: { from: string | null; visit: string | null }) {
+  const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: null, visit: asked.visit });
+  const { city } = useCity();
+  const withCity = useMemo(() => ({ ...query, city }), [query, city]);
+  return [withCity, setQuery] as const;
+}
+
 export function DispatchScreen() {
   const [asked] = useState(() => dispatchAsked(window.location.search));
-  const [query, setQuery] = useState<BoardQuery>({ from: asked.from, city: asked.city, visit: asked.visit });
+  const [query, setQuery] = useBoardQuery(asked);
   const [find, setFind] = useState(asked.find);
   const [over, set] = useOver();
   const { opened, changing, notice } = over;

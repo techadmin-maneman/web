@@ -1,6 +1,6 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, BOARD, fails, json, ROHIT, ROOM } from "./fixtures.ts";
+import { answer, BOARD, chooseCity, fails, json, ROHIT, ROOM, signedInLocally } from "./fixtures.ts";
 import {
   BOARD_PATH,
   READ_BOARD,
@@ -21,11 +21,11 @@ test("moves between weeks and cities, asking the route for each", async ({ page 
     const url = new URL(request.url());
     if (url.pathname === BOARD_PATH) asked.push(url.search);
   });
-  await open(page);
+  await open(page, { "GET /api/whoami": signedInLocally(["Gurgaon", "Delhi"]) });
 
   await page.getByRole("button", { name: opsCopy.dispatch.tools.next }).click();
   await expect.poll(() => asked.at(-1)).toBe("?from=2025-09-26");
-  await page.getByLabel(opsCopy.dispatch.tools.city, { exact: true }).selectOption("Delhi");
+  await chooseCity(page, "Delhi");
   await expect.poll(() => asked.at(-1)).toBe("?from=2025-09-26&city=Delhi");
   await page.getByRole("button", { name: opsCopy.dispatch.tools.thisWeek }).click();
   await expect.poll(() => asked.at(-1)).toBe("?city=Delhi");
@@ -60,9 +60,9 @@ test("opens the visit a link names, in its drawer, on the week the link asks for
 test("keeps its week, city, search and open visit in the address, so Back from a client finds it as it was", async ({
   page,
 }) => {
-  await open(page);
+  await open(page, { "GET /api/whoami": signedInLocally(["Gurgaon", "Delhi"]) });
   await page.getByRole("button", { name: opsCopy.dispatch.tools.next }).click();
-  await page.getByLabel(opsCopy.dispatch.tools.city, { exact: true }).selectOption("Delhi");
+  await chooseCity(page, "Delhi");
   await page.getByLabel(opsCopy.dispatch.tools.find).fill("Rohit");
   await press(page, opsCopy.dispatch.board.found(ROHIT_BLOCK));
   const kept = `?from=2025-09-26&city=Delhi&find=Rohit&visit=${ROHIT_JOB?.appointment_id ?? ""}`;
@@ -73,7 +73,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await page.goBack();
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
-  await expect(page.getByLabel(opsCopy.dispatch.tools.city, { exact: true })).toHaveValue("Delhi");
+  await expect(page.getByRole("banner").getByRole("button", { name: opsCopy.shell.city.label("Delhi") })).toBeVisible();
   await expect(page.getByLabel(opsCopy.dispatch.tools.find)).toHaveValue("Rohit");
 });
 

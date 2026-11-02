@@ -1,6 +1,6 @@
 // The console's parts for a phone and its pickers (packages/ui): the navigation's groups, the tab bar at a phone's
-// foot, a list's row in place of a table's, the rule a pressing row carries, a picker's choices, and a drawer's
-// actions pinned at its foot. What a screen reader is told is held here.
+// foot, a list's row in place of a table's, the rule a pressing row carries, a picker's choices, a drawer's actions
+// pinned at its foot, and the search with its results beneath. What a screen reader is told is held here.
 
 import { readFileSync } from "node:fs";
 import { act, createElement } from "react";
@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Drawer } from "../../packages/ui/Drawer.tsx";
 import { ListRow, ListRows } from "../../packages/ui/ListRow.tsx";
 import { Popover, PopoverChoice, PopoverHeading } from "../../packages/ui/Popover.tsx";
+import { SearchMenu } from "../../packages/ui/SearchMenu.tsx";
 import { NavGroup, NavItem, SideNav } from "../../packages/ui/SideNav.tsx";
 import { TabBar, TabBarItem } from "../../packages/ui/TabBar.tsx";
 import { rowRule } from "../../packages/ui/Table.tsx";
@@ -234,5 +235,102 @@ describe("a drawer's foot", () => {
   it("stays at the window's foot and fills the window on a phone", () => {
     expect(css("drawer.module.css")).toMatch(/\.foot \{[^}]*position: sticky;[^}]*bottom: 0/);
     expect(css("drawer.module.css")).toMatch(/max-width: 600px\)[\s\S]*\.drawer \{[^}]*height: 100dvh/);
+  });
+});
+
+describe("a search with its results beneath", () => {
+  let page: HTMLDivElement;
+  let root: Root;
+  let opened: string[] = [];
+
+  const draw = (value: string, groups: Parameters<typeof SearchMenu>[0]["groups"]) => {
+    act(() => {
+      root.render(
+        createElement(SearchMenu, {
+          label: "Page, technician or client",
+          value,
+          onChange: () => undefined,
+          groups,
+          none: "Nothing matches.",
+          keyHint: "/",
+        }),
+      );
+    });
+  };
+  const result = (name: string) => ({
+    key: name,
+    label: name,
+    onChoose: () => {
+      opened.push(name);
+    },
+  });
+
+  beforeEach(() => {
+    opened = [];
+    page = document.createElement("div");
+    document.body.append(page);
+    root = createRoot(page);
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    page.remove();
+  });
+
+  const box = () => page.querySelector<HTMLInputElement>('[role="combobox"]');
+  const key = (name: string) => {
+    act(() => {
+      box()?.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true }));
+    });
+  };
+
+  it("is a combobox named by its label, its panel shut until it takes the keyboard", () => {
+    draw("ro", [{ key: "clients", name: "Clients", results: [result("Rohit")] }]);
+    expect(box()?.getAttribute("aria-label") ?? page.querySelector("label")?.textContent).toContain("Page");
+    expect(box()?.getAttribute("aria-expanded")).toBe("false");
+    act(() => {
+      box()?.focus();
+    });
+    expect(box()?.getAttribute("aria-expanded")).toBe("true");
+    expect(page.querySelector('[role="listbox"]')?.textContent).toBe("ClientsRohit");
+  });
+
+  it("moves through the results with the arrow keys and opens the one moved to with Enter", () => {
+    draw("r", [
+      { key: "clients", name: "Clients", results: [result("Rohit"), result("Ravi")] },
+      { key: "pages", results: [result("Reports")] },
+    ]);
+    act(() => {
+      box()?.focus();
+    });
+    key("ArrowDown");
+    key("ArrowDown");
+    const active = box()?.getAttribute("aria-activedescendant") ?? "";
+    expect(page.querySelector(`[id="${active}"]`)?.textContent).toBe("Ravi");
+    key("Enter");
+    expect(opened).toEqual(["Ravi"]);
+  });
+
+  it("opens the first with Enter when none is moved to, and shuts on Escape", () => {
+    draw("r", [{ key: "clients", name: "Clients", results: [result("Rohit")] }]);
+    act(() => {
+      box()?.focus();
+    });
+    key("Escape");
+    expect(box()?.getAttribute("aria-expanded")).toBe("false");
+    key("Enter");
+    expect(opened).toEqual(["Rohit"]);
+  });
+
+  it("says so when the words find nothing, and draws no heading for a group without a name", () => {
+    draw("zz", [{ key: "pages", results: [] }]);
+    act(() => {
+      box()?.focus();
+    });
+    expect(page.textContent).toContain("Nothing matches.");
+    draw("re", [{ key: "pages", results: [result("Reports")] }]);
+    expect(page.querySelector('[role="group"]')?.hasAttribute("aria-labelledby")).toBe(false);
   });
 });

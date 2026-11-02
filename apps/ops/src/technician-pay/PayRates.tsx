@@ -4,7 +4,6 @@
 
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
-import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -15,7 +14,7 @@ import { type TechnicianPay } from "../api.ts";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { technicianPay } from "../content/technician-pay.ts";
-import { tables } from "../content.ts";
+import { useCity } from "../lib/city.ts";
 import { AddGrade, GradeRecord } from "./PayForms.tsx";
 import { rateLines } from "./pay-rates.ts";
 import shared from "./technician-pay.module.css";
@@ -88,40 +87,13 @@ function RatesTable(props: { pay: TechnicianPay; city: string | null; onOpen: (i
   );
 }
 
-/** The city the rates are shown for: every city's, or one city's with every city's standing in. */
-function CityChoice({ pay, city, onCity }: { pay: TechnicianPay; city: string; onCity: (city: string) => void }) {
-  return (
-    <div className={shared.tools}>
-      <Field label={copy.city}>
-        {(control) => (
-          <Select
-            {...control}
-            width="choice"
-            value={city}
-            onChange={(event) => {
-              onCity(event.target.value);
-            }}
-          >
-            <option value="">{tables.allCities}</option>
-            {pay.cities.map((each) => (
-              <option key={each} value={each}>
-                {each}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-    </div>
-  );
-}
-
 export function PayRates(props: { pay: TechnicianPay; mayAdd: boolean; onChanged: (pay: TechnicianPay) => void }) {
   const { pay } = props;
-  const [city, setCity] = useState("");
+  // The rates for the city chosen in the header (ADR 0225), every city's standing in where it has none of its own.
+  const { city: shown } = useCity();
   const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const opened = pay.grades.find((grade) => grade.id === open);
-  const shown = city === "" ? null : city;
   return (
     <>
       <PageActions>
@@ -146,7 +118,6 @@ export function PayRates(props: { pay: TechnicianPay; mayAdd: boolean; onChanged
           <Note>{copy.none}</Note>
         ) : (
           <>
-            <CityChoice pay={pay} city={city} onCity={setCity} />
             <RatesTable
               pay={pay}
               city={shown}

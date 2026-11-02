@@ -1,0 +1,5 @@
+/* The search on a phone's sheet (./Search.tsx): the box across the sheet's width. */
+
+.sheet {
+  --search-width: 100%;
+}

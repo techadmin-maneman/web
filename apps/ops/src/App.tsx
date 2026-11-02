@@ -7,6 +7,7 @@ import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Fragment, Suspense, useCallback, useEffect, useState, type ComponentType } from "react";
 import { ClosedScreen } from "./frame/ClosedScreen.tsx";
+import { MoreScreen } from "./frame/More.tsx";
 import { Shell } from "./frame/Shell.tsx";
 import { useMayCall } from "./lib/access.ts";
 import { PageRefresh } from "@maneman/ui/refresh";
@@ -121,6 +122,7 @@ const flushOf = (route: Route): boolean => route.page === "dispatch";
 function Page({ route }: { route: Route }) {
   const mayCall = useMayCall();
   if (!mayOpenRoute(mayCall, route)) return <ClosedScreen />;
+  if (route.page === "more") return <MoreScreen />;
   if (route.page === "settings") return <SettingsScreen tab={route.tab} />;
   if (route.page === "clients") {
     if (route.clientId === null) return <FindClientScreen />;

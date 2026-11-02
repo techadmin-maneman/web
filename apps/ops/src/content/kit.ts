@@ -95,6 +95,8 @@ export const kit = {
   more: "More",
   account: "Account",
   signedIn: "priya.nair@maneman.in",
+  person: "Priya Nair",
+  none: "Nothing matches.",
   signOut: "Sign out",
   remove: "Remove",
   nav: "Console",

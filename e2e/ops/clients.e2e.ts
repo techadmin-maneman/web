@@ -18,6 +18,7 @@ import {
   RECORD,
   TASKS,
   TASKS_READ_ON,
+  TECHNICIANS,
   type OpsReply,
 } from "./fixtures.ts";
 import {
@@ -111,23 +112,25 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
 });
 
 // Search lived on Clients alone, and a search's words went into the URL.
-test("finds a client from any page through Search, and keeps the words out of the URL", async ({ page }) => {
+test("finds a client from any page through the header's search, and keeps the words out of the URL", async ({
+  page,
+}) => {
   const asked: string[] = [];
   page.on("request", (request) => {
     if (request.url().includes("/clients/find")) asked.push((request.postDataJSON() as { text: string }).text);
   });
   await answer(page, {
     "GET /api/tasks": json(TASKS),
+    // Typed words look for technicians too.
+    "GET /api/technicians": json(TECHNICIANS),
     [FIND]: json({ clients: [FOUND], more: false }),
     [READ_RECORD]: json(RECORD),
     [READ_PIECES]: json(PIECES),
     [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
   });
   await page.goto("/tasks");
-  await page.keyboard.press("Control+k");
-  const palette = page.getByRole("dialog", { name: opsCopy.shell.palette.title });
-  await palette.getByLabel(opsCopy.shell.palette.label).fill("98100 0441");
-  await palette.getByRole("link", { name: opsCopy.shell.palette.client(FOUND.name, phoneWords(FOUND.mobile)) }).click();
+  await page.getByRole("combobox", { name: opsCopy.shell.palette.label }).fill("98100 0441");
+  await page.getByRole("option", { name: `${FOUND.name} ${phoneWords(FOUND.mobile)}` }).click();
 
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/history`);
@@ -146,6 +149,7 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
         grants: [],
         may_call: ["GET /api/clients/{id}", "POST /api/clients/find", "GET /api/clients/{id}/hair-profile"],
       },
+      cities: [],
     }),
     [READ_RECORD]: json(RECORD),
     [READ_PIECES]: json(PIECES),

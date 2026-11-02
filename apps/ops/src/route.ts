@@ -22,8 +22,8 @@ export const SECTIONS = [
   { page: "today", path: "/today", reads: "GET /api/tasks" },
   { page: "tasks", path: "/tasks", reads: "GET /api/tasks" },
   { page: "dispatch", path: "/dispatch", reads: "GET /api/dispatch" },
-  { page: "clients", path: "/clients", reads: "POST /api/clients/find" },
   { page: "messages", path: "/messages", reads: "GET /api/conversations" },
+  { page: "clients", path: "/clients", reads: "POST /api/clients/find" },
   { page: "technicians", path: "/technicians", reads: "GET /api/technicians" },
   { page: "stock", path: "/stock", reads: "GET /api/stock" },
   { page: "counts", path: "/counts", reads: "GET /api/count-tasks" },
@@ -60,8 +60,8 @@ export const NAV = [
   { entry: "today", pages: ["today"] },
   { entry: "tasks", pages: ["tasks"] },
   { entry: "dispatch", pages: ["dispatch"] },
-  { entry: "clients", pages: ["clients"] },
   { entry: "messages", pages: ["messages"] },
+  { entry: "clients", pages: ["clients"] },
   { entry: "technicians", pages: ["technicians"] },
   {
     entry: "inventory",
@@ -75,6 +75,22 @@ export const NAV = [
 
 export type NavEntry = (typeof NAV)[number];
 export type NavKey = NavEntry["entry"];
+
+/**
+ * The navigation's entries by kind of work, each group under its name (ADR 0225); Settings, at the foot of the last,
+ * is drawn by the navigation itself. A phone's tab bar holds the first group's, and More the rest.
+ */
+export const NAV_GROUPS = [
+  { group: "work", entries: ["today", "tasks", "dispatch", "messages"] },
+  { group: "people", entries: ["clients", "technicians"] },
+  { group: "business", entries: ["inventory", "requests", "money", "growth", "reports"] },
+  { group: "admin", entries: [] },
+] as const satisfies readonly { group: string; entries: readonly NavKey[] }[];
+
+export type NavGroupKey = (typeof NAV_GROUPS)[number]["group"];
+
+/** The entries a phone's tab bar holds, before More. */
+export const TAB_ENTRIES: readonly NavKey[] = NAV_GROUPS[0].entries;
 
 /** The navigation's entry a page is under. */
 export function navOf(page: Page): NavEntry {
@@ -164,16 +180,19 @@ export type TechnicianTab = (typeof TECHNICIAN_TABS)[number];
  *   /clients/:id/:tab       a client's page, a tab at a time
  *   /technicians/:id/:tab   a technician's page: their week, hours, leave, phones and kit
  *   /settings/:tab          one of Settings' pages
+ *   /more                   on a phone, the navigation the tab bar has no room for
  *
  * Anything else, "/" included, is where the console opens: Today, or the first page the person may open.
  */
 export type Route =
   | { readonly page: PlainPage }
+  | { readonly page: "more" }
   | { readonly page: "settings"; readonly tab: SettingsTab }
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab }
   | { readonly page: "technicians"; readonly technicianId: string | null; readonly tab: TechnicianTab };
 
 const TODAY: Route = { page: "today" };
+export const MORE_PATH = "/more";
 /** A path's tab, one of `tabs`, as a pattern's group; the tabs are words, so none needs escaping. */
 const oneOf = (tabs: readonly string[]): string => `(${tabs.join("|")})`;
 const ID = "([0-9a-f-]{36})";
@@ -234,6 +253,7 @@ function knownRoute(asked: string): Route | null {
   if (technician !== null) {
     return { page: "technicians", technicianId: technician[1] ?? null, tab: technicianTabOf(technician[2]) };
   }
+  if (path === MORE_PATH) return { page: "more" };
   const section = SECTIONS.find((each) => each.path === path);
   if (section === undefined || !isPlain(section.page)) return null;
   return { page: section.page };
@@ -352,6 +372,7 @@ export function firstSetting(mayCall: MayCall): SettingsTab | null {
 
 /** Whether the person may open any of a route's pages. */
 export function mayOpenRoute(mayCall: MayCall, route: Route): boolean {
+  if (route.page === "more") return true;
   if (route.page === "settings") return mayOpenSetting(mayCall, route.tab);
   return mayOpen(mayCall, route.page);
 }
@@ -396,6 +417,7 @@ export function redirectOf(path: string, mayCall: MayCall, hash = ""): string | 
 /** Each page's name, from content.ts; typed here, so one left unnamed fails the build. */
 export const SECTION_NAMES: Readonly<Record<Page, string>> = shell.sections;
 export const NAV_NAMES: Readonly<Record<NavKey, string>> = shell.nav;
+export const NAV_GROUP_NAMES: Readonly<Record<NavGroupKey, string>> = shell.navGroups;
 export const SETTINGS_PAGE_NAMES: Readonly<Record<SettingsTab, string>> = settingsPageNames;
 export const SETTINGS_GROUP_NAMES: Readonly<Record<SettingsGroup, string>> = settingsGroupNames;
 export const TECHNICIAN_TAB_NAMES: Readonly<Record<TechnicianTab, string>> = technicians.tabs;
@@ -405,6 +427,7 @@ export const TECHNICIAN_TAB_NAMES: Readonly<Record<TechnicianTab, string>> = tec
  * section. Never a client's name, which would then sit in the browser's history.
  */
 export function titleOf(route: Route): string {
+  if (route.page === "more") return shell.documentTitle([shell.more]);
   if (route.page === "settings") {
     return shell.documentTitle([SETTINGS_PAGE_NAMES[route.tab], shell.settings]);
   }

@@ -11,8 +11,6 @@
     flex-direction: column;
     flex-shrink: 0;
     width: var(--nav-width);
-    overflow-x: hidden;
-    overflow-y: auto;
     border-right: var(--hairline) solid var(--nav-rule);
     background: var(--nav-ground);
     color: var(--nav-text);
@@ -29,13 +27,18 @@
     color: var(--nav-text-current);
   }
 
+  /* The entries scroll, where the column is too short for them, between its head and its foot; the foot's panels open
+     over them. */
   .items {
     display: flex;
     flex: 1;
     flex-direction: column;
     gap: var(--sp-2);
+    min-height: 0;
     margin: 0;
     padding: var(--sp-12) var(--sp-8);
+    overflow-x: hidden;
+    overflow-y: auto;
     list-style: none;
   }
 
@@ -68,6 +71,46 @@
     gap: var(--sp-2);
     padding: var(--sp-8);
     border-top: var(--hairline) solid var(--nav-rule);
+  }
+
+  /* The person signed in: the foot's whole width, their initials in a square, their name over their e-mail. */
+  .account {
+    display: flex;
+    width: 100%;
+  }
+
+  .initials {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: var(--sp-32);
+    height: var(--sp-32);
+    background: var(--nav-current);
+    font-size: var(--fs-13);
+    color: var(--nav-text-current);
+  }
+
+  .person {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    font-size: var(--fs-13);
+    line-height: var(--lh-130);
+  }
+
+  .personName,
+  .personDetail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .personName {
+    color: var(--nav-text-current);
+  }
+
+  .personDetail {
+    color: var(--nav-label);
   }
 
   .item {
@@ -161,6 +204,7 @@
 
     .nav[data-folded="true"] .name,
     .nav[data-folded="true"] .groupLabel,
+    .nav[data-folded="true"] .person,
     .nav[data-folded="true"] .folds,
     .nav[data-folded="true"] .count {
       position: absolute;

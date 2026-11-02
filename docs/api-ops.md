@@ -56563,12 +56563,24 @@ Request body:
         "may_call"
       ],
       "additionalProperties": false
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Each city ops serve, or with a technician at work, in the console's order: what the header's picker offers.",
+      "example": [
+        "Gurgaon",
+        "Delhi"
+      ]
     }
   },
   "required": [
     "signed_in_as",
     "sign_out",
-    "staff"
+    "staff",
+    "cities"
   ],
   "additionalProperties": false
 }

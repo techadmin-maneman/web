@@ -60,7 +60,8 @@ test("reads a task down: what it is, then whose it is and when it is due beneath
   expect(await pageWidth(page)).toBeLessThanOrEqual(PHONE.width);
 });
 
-// The bar's Menu, Search and Mine were 32 px tall, and the settings' boxes and buttons 32 to 36: a desk's density.
+// The bar's Menu, Search and Mine were 32 px tall, and the settings' boxes and buttons 32 to 36: a desk's density. On a
+// phone the tab bar stands for the bar, and the page's head carries the search.
 test("gives the bar's controls, and a page's boxes and buttons, a finger's height", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await page.clock.setFixedTime(TASKS_READ_ON);
@@ -70,7 +71,7 @@ test("gives the bar's controls, and a page's boxes and buttons, a finger's heigh
   const short = await page.evaluate(() =>
     [
       ...document.querySelectorAll<HTMLElement>(
-        "header button, main button, main a, main input:not([type=checkbox]):not([type=radio]), main select",
+        "header button, nav a, main button, main a, main input:not([type=checkbox]):not([type=radio]), main select",
       ),
     ]
       .filter((control) => control.getBoundingClientRect().width > 0)
@@ -82,14 +83,13 @@ test("gives the bar's controls, and a page's boxes and buttons, a finger's heigh
       }),
   );
   expect(short).toEqual([]);
-  // Where the page sits has no room beside them, and ran under Search.
-  await expect(page.getByRole("banner").locator("nav li")).toHaveCount(3);
-  const spilt = await page
-    .getByRole("banner")
-    .evaluate((bar) =>
-      [...bar.children].filter((part) => part.scrollWidth > part.clientWidth + 1).map((part) => part.textContent),
-    );
-  expect(spilt).toEqual([]);
+  await expect(page.getByRole("banner")).toBeHidden();
+  await expect(page.getByRole("navigation", { name: opsCopy.shell.title })).toBeVisible();
+  // The title stops short of the search beside it.
+  const title = await page.getByRole("heading", { level: 1 }).boundingBox();
+  const search = await page.getByRole("main").getByRole("button", { name: opsCopy.shell.search }).boundingBox();
+  if (title === null || search === null) throw new Error("the head is not drawn");
+  expect(title.x + title.width).toBeLessThanOrEqual(search.x);
 });
 
 // Money's tabs ran off the screen with nothing to say there were more, and the page open was one of those cut off.

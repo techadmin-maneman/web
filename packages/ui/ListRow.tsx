@@ -48,6 +48,7 @@ export function ListRow({
   rule,
   to,
   onClick,
+  label,
 }: {
   readonly title: ReactNode;
   readonly meta?: ReactNode;
@@ -59,6 +60,8 @@ export function ListRow({
   readonly to?: string | undefined;
   /** What the row opens in place, as a drawer. */
   readonly onClick?: (() => void) | undefined;
+  /** Read out in place of its words, where a figure alone would not say what it counts; holds the title. */
+  readonly label?: string | undefined;
 }) {
   const inside = (
     <>
@@ -73,7 +76,7 @@ export function ListRow({
   if (to !== undefined)
     return (
       <li>
-        <Link className={classes(row, styles.opens)} to={to}>
+        <Link className={classes(row, styles.opens)} to={to} label={label}>
           {inside}
         </Link>
       </li>
@@ -81,7 +84,7 @@ export function ListRow({
   if (onClick !== undefined)
     return (
       <li>
-        <button type="button" className={classes(row, styles.opens)} onClick={onClick}>
+        <button type="button" className={classes(row, styles.opens)} aria-label={label} onClick={onClick}>
           {inside}
         </button>
       </li>

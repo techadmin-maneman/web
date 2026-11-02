@@ -25,8 +25,9 @@ import {
 } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
-import { tables, technicians } from "../content.ts";
+import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+import { useCity } from "../lib/city.ts";
 import { technicianPath } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
@@ -99,7 +100,7 @@ function columnsOf(figures: ReadonlyMap<string, TechnicianWork>): readonly Colum
   const [name, cityLabel, jobs, service, onTime, leave] = technicians.columns;
   return [
     { label: name, sort: (row) => row.name },
-    { label: cityLabel, sort: city, choice: city, all: tables.allCities },
+    { label: cityLabel, sort: city },
     { label: jobs, sort: (row) => figures.get(row.id)?.jobs ?? -1, figure: true },
     { label: service, sort: (row) => figures.get(row.id)?.average_minutes ?? -1, figure: true },
     { label: onTime, sort: (row) => onTimeShare(figures.get(row.id)) ?? -1, figure: true },
@@ -247,6 +248,7 @@ function Roster() {
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState<string | null>(null);
   const mayAdd = useAccess().mayCall("POST /api/technicians");
+  const { city } = useCity();
 
   if (loaded.state === "loading" || work.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed" || work.state === "failed") {
@@ -261,7 +263,11 @@ function Roster() {
     );
   }
 
-  const roster = fresh ?? loaded.value;
+  // Those of the city chosen in the header (ADR 0225), or everyone's.
+  const whole = fresh ?? loaded.value;
+  const inCity = <T extends { readonly city: string | null }>(list: readonly T[]): readonly T[] =>
+    city === null ? list : list.filter((each) => each.city === city);
+  const roster = { ...whole, technicians: inCity(whole.technicians), switched_off: inCity(whole.switched_off) };
   const figures = new Map(work.value.technicians.map((each) => [each.technician_id, each]));
   const readAgain = async () => {
     const answer = await techniciansApi.technicians();
