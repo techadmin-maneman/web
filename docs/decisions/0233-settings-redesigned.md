@@ -11,7 +11,7 @@ The last of the redesign's eight steps (ADR 0225): Settings. The design sets eac
 
 ## Decision
 
-1. **A rule of several figures stands in a panel of its own,** under its name, **its figures two to a row** at a desk (`SettingPairs`), each name above its value (`EditableRow`'s `stacked`); one beneath another short of a desk. The rules of one figure stay together in their subject's panel.
+1. **Every figure stands two to a row** at a desk (`SettingPairs`), its name above its value (`EditableRow`'s `stacked`); one beneath another short of a desk. A rule of several figures stands in a panel of its own, under its name; the rules of one figure stay together in their subject's panel.
 2. **Each value is still changed where it reads and saved on its own** (ADR 0212): no Save bar, and no box shows to someone who may only view.
 
 ## Where the build departs from the files, and why

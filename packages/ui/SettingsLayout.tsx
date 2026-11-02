@@ -3,6 +3,7 @@
 //
 //   <SettingsLayout menu={<SubNav label={copy.menu} groups={groups} />}>{page}</SettingsLayout>
 
+import { classes } from "./classes.ts";
 import { GLYPHS } from "@maneman/brand/icons";
 import { useId, useState, type ReactNode } from "react";
 import { Icon } from "./Icon.tsx";
@@ -91,9 +92,21 @@ export function SubNav({
 }
 
 /** A rule's rows two to a row at a desk, one beneath another short of it; each row's name stands above its value. */
-export function SettingPairs({ label, children }: { readonly label?: string; readonly children: ReactNode }) {
+export function SettingPairs({
+  label,
+  className,
+  children,
+}: {
+  readonly label?: string;
+  readonly className?: string | undefined;
+  readonly children: ReactNode;
+}) {
   return (
-    <div className={styles.pairs} role={label === undefined ? undefined : "group"} aria-label={label}>
+    <div
+      className={classes(styles.pairs, className)}
+      role={label === undefined ? undefined : "group"}
+      aria-label={label}
+    >
       {children}
     </div>
   );

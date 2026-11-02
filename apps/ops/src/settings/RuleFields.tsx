@@ -61,7 +61,7 @@ function FigureRow({ rule, figureKey, mayChange, onSaved }: RowProps & { readonl
     typeof rule.value === "number" ? figure : { ...rule.value, [figureKey]: figure };
   return (
     <EditableRow<string>
-      stacked={!single}
+      stacked
       id={single ? rule.name : undefined}
       label={single ? rule.title : keyLabel(rule, figureKey)}
       words={EDITING}
