@@ -33,8 +33,8 @@
     border-bottom: var(--hairline) solid var(--ui-line);
     font-weight: var(--weight-regular);
     text-align: left;
-    /* A row whose cells run to two lines reads along its first: a time beside a name and what they did. */
-    vertical-align: baseline;
+    /* Every cell centred on its row, a one-line figure level with a name and its number beneath. */
+    vertical-align: middle;
   }
 
   /* The first and last columns sit in from the panel's edge, as its title does. */
