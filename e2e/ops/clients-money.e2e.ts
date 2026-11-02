@@ -76,7 +76,7 @@ test("shows the code the client gave when booking, and starts the box from it", 
 test("offers no code on a visit already paid for", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(RECORD) });
   const row = visitRow(page, "25 Sep");
-  await expect(row.getByRole("cell").last()).toHaveText("—None");
+  await expect(row.locator(`td[data-label="${opsCopy.clients.visits.columns[5]}"]`)).toHaveText("—None");
   await expect(row.getByRole("button", { name: /discount code/ })).toHaveCount(0);
 });
 

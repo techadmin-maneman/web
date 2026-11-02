@@ -14,7 +14,7 @@ const copy = settingsCopy.consumables;
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/consumables": json(CONSUMABLES), ...extra });
   await page.goto("/items");
-  await expect(page.getByRole("heading", { level: 2, name: copy.title })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: copy.title, exact: true })).toBeVisible();
 }
 
 const posted = (page: Page, path: string) =>
@@ -34,17 +34,20 @@ const change = (record: ReturnType<Page["getByRole"]>, label: string) =>
   record.getByRole("button", { name: `${EDITING.change} ${label}` });
 
 test.describe("the list", () => {
-  test("gives each its cost, the levels it is low at, and whether it is offered", async ({ page }) => {
+  test("gives each its unit and cost, and whether it is offered, those retired folded apart", async ({ page }) => {
     await open(page);
     await expect(page).toHaveTitle("Items · Mane Man Ops");
 
     const tape = row(page, "Tape strips");
     await expect(tape).toContainText("strip");
     await expect(tape).toContainText("Rs. 12.50");
-    await expect(tape).toContainText("Kit 5 · warehouse 50");
+    // The levels it is low at are on its record and on Stock, not the list.
+    await expect(tape).not.toContainText("Kit 5");
     // In use says nothing: only a retirement is a state worth a word.
     await expect(tape).not.toContainText(copy.states.offered);
     await expect(row(page, "Solvent")).toContainText("In use until 1 Oct 2027");
+    await expect(row(page, "Shampoo sachet")).toBeHidden();
+    await page.getByText(copy.retiredConsumables, { exact: true }).click();
     await expect(row(page, "Shampoo sachet")).toContainText("Retired from 1 Sep 2027");
     // Tables are for finding: nothing in a row but the way to its record.
     await expect(tape.getByRole("button")).toHaveCount(1);
@@ -73,7 +76,7 @@ test.describe("the list", () => {
     await open(page, {
       "GET /api/consumables": json({ ...CONSUMABLES, consumables: [...CONSUMABLES.consumables, essential] }),
     });
-    const consumables = page.getByRole("region", { name: copy.title });
+    const consumables = page.getByRole("region", { name: copy.title, exact: true });
     const hairSystems = page.getByRole("region", { name: copy.hairSystems });
     await expect(consumables).not.toContainText(essential.name);
     await expect(hairSystems.getByRole("row").filter({ hasText: essential.name })).toContainText(copy.noCost);

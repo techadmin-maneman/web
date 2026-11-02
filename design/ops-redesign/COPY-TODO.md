@@ -61,3 +61,8 @@ Each slot the redesign adds where the console had no words of its own. None wait
 | Client     | Payments, the refund column, read aloud    | Refund                                                                | `clients.payments.refundColumn` |
 | Client     | History, with nothing done yet             | Nothing done on this record yet.                                      | `activity.recordEmpty`     |
 | Care numbers | With no chats, no remedies               | No chats in these days.; No remedies given in these days.             | `care.numbers.noReasons`   |
+| Technician | Hours, how far from home                   | Takes visits within; 45 min drive of home, the setting for everyone   | `technicians.hours.reach`  |
+| Items      | The lists' columns, and those retired      | Unit; Retired consumables; Retired hair systems                       | `settings.consumables`     |
+| Suppliers  | Those no longer bought from                | Retired suppliers                                                     | `settings.suppliers.retiredTitle` |
+| Client     | The visit buttons' column, read aloud      | Change                                                                | `clients.visits.actionsColumn` |
+| Tables     | A phone's order, where heads are not shown | Sort by; As listed; Jobs ↑ / Jobs ↓                                   | `packages/ui/words.ts`     |

@@ -3,7 +3,7 @@
 // the choice opens beside the page, so no box stands in the table.
 
 import { Field, Select } from "@maneman/ui/Field";
-import { TextButton } from "@maneman/ui/TextLink";
+import { RowButton } from "@maneman/ui/Button";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type ClientRecord } from "../api.ts";
@@ -18,6 +18,13 @@ type ClientVisit = ClientRecord["visits"]["past"][number];
 type Reason = NonNullable<ClientVisit["lost_reason"]>;
 
 const copy = clients.visits.lostReason;
+
+/** Beneath a closed consultation's state: the client's yes, or why they are not going ahead. */
+export function LostReasonLine({ visit }: { visit: ClientVisit }) {
+  if (visit.lost_reason !== null)
+    return <span className={styles.closedLine}>{copy.kept(visit.lost_reason.label)}</span>;
+  return visit.going_ahead === true ? <span className={styles.closedLine}>{copy.goingAhead}</span> : null;
+}
 
 /** The list to pick from, with the visit's own reason kept on it where ops have since taken that off. */
 const choicesFor = (reasons: readonly Reason[], kept: Reason | null): readonly Reason[] =>
@@ -42,7 +49,7 @@ export function LostReason({
     visit.type === "consultation" &&
     visit.outcome !== null &&
     access.mayCall("POST /api/visits/{id}/lost-reason");
-  if (!mayChange) return kept === null ? null : <span className={styles.closedLine}>{copy.kept(kept.label)}</span>;
+  if (!mayChange) return null;
 
   const set = async (code: string) => {
     setFailure(null);
@@ -54,19 +61,15 @@ export function LostReason({
     setChoosing(false);
     onChanged();
   };
-  const heardYes = visit.going_ahead === true ? copy.goingAhead : null;
-  const line = kept === null ? heardYes : copy.kept(kept.label);
   return (
     <>
-      {line !== null && <span className={styles.closedLine}>{line}</span>}
-      <TextButton
-        compact
+      <RowButton
         onClick={() => {
           setChoosing(true);
         }}
       >
         {kept === null ? copy.label : copy.change}
-      </TextButton>
+      </RowButton>
       {choosing && (
         <FormDrawer
           title={copy.label}

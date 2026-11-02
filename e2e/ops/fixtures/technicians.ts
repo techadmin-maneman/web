@@ -82,6 +82,7 @@ export const TECHNICIANS = {
     technician(3, "Faizan Ali", "FA", null, [], [], null),
   ],
   switched_off: [],
+  default_reach_min: 45,
   cities: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad", "Mumbai", "Bengaluru"],
 } satisfies Roster;
 

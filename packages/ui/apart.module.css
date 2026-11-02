@@ -1,13 +1,58 @@
-/* What is switched off, retired or paused, apart beneath the live list (./Apart.tsx). */
+/* What is switched off, retired or paused (./Apart.tsx): a panel of its own, folded, its head the way it opens. */
 
 @layer base, ui;
 
 @layer ui {
   .apart {
-    margin-top: var(--sp-24);
+    border: var(--hairline) solid var(--ui-line);
+    background: var(--ui-raised);
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-16);
+    min-height: var(--sp-48);
+    padding: var(--sp-8) var(--sp-20);
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .head::-webkit-details-marker {
+    display: none;
+  }
+
+  details[open] > .head {
+    border-bottom: var(--hairline) solid var(--ui-line);
   }
 
   .title {
-    margin: 0 var(--form-inset) var(--sp-8);
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .count {
+    font-size: var(--fs-14);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text-muted);
+  }
+
+  /* Pointing on while folded, and down once open. */
+  .sign {
+    color: var(--ui-text-muted);
+    transition: transform var(--duration-quick) var(--ease-house);
+  }
+
+  details[open] > .head .sign {
+    transform: rotate(90deg);
+  }
+
+  @media (hover: hover) {
+    .head:hover .title {
+      text-decoration: underline;
+      text-decoration-color: var(--ui-line);
+      text-underline-offset: var(--sp-4);
+    }
   }
 }

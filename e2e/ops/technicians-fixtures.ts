@@ -82,7 +82,12 @@ export async function open(page: Page, changed: Answers = {}): Promise<void> {
 
 /** Opens a technician's page from the roster by their name, on the tab named, or on their week. */
 export async function pageOf(page: Page, name: string, tab?: string) {
-  await page.getByRole("link", { name, exact: true }).click();
+  // One switched off is in the folded panel beneath the roster: it is opened first.
+  const link = page.getByRole("link", { name, exact: true });
+  const fold = page.getByText(technicians.switchedOff, { exact: true });
+  await expect(link.or(fold).first()).toBeVisible();
+  if (!(await link.isVisible())) await fold.click();
+  await link.click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   if (tab !== undefined) await page.getByRole("link", { name: tab, exact: true }).click();
   return page.getByRole("main");

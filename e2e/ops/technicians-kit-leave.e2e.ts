@@ -52,7 +52,8 @@ test("lists what their kit holds, marking what is low, with the way to Stock", a
   await expect(main.getByRole("row").filter({ hasText: "Solvent" })).toContainText("150 ml");
   await expect(main.getByRole("row").filter({ hasText: "Solvent" })).toContainText("Mon 20 Sep");
   await expect(main.getByText("40 ml")).toBeHidden();
-  await expect(main.getByRole("link", { name: opsCopy.technicians.kit.stock })).toHaveAttribute("href", "/stock");
+  // A movement is recorded on the tab itself, in the drawer Stock opens, starting at their kit.
+  await expect(page.getByRole("button", { name: stock.record.title })).toBeVisible();
 });
 
 test("says so when their kit holds nothing on record", async ({ page }) => {

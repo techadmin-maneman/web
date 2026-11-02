@@ -151,11 +151,6 @@ function People({ staff, onChanged }: PanelProps) {
         ) : (
           <EmptyState look="panel" line={copy.none} />
         )}
-        {staff.people.some((each) => !each.active) && (
-          <Apart id="staff-switched-off" title={copy.switchedOff}>
-            <PeopleTable people={staff.people.filter((each) => !each.active)} onOpen={opening} />
-          </Apart>
-        )}
         {said !== null && <Toast>{said}</Toast>}
         {person !== null && (
           <FormDrawer
@@ -179,6 +174,15 @@ function People({ staff, onChanged }: PanelProps) {
           </FormDrawer>
         )}
       </Panel>
+      {staff.people.some((each) => !each.active) && (
+        <Apart
+          id="staff-switched-off"
+          title={copy.switchedOff}
+          count={staff.people.filter((each) => !each.active).length}
+        >
+          <PeopleTable people={staff.people.filter((each) => !each.active)} onOpen={opening} />
+        </Apart>
+      )}
     </>
   );
 }

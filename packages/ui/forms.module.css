@@ -112,6 +112,12 @@
     margin-top: var(--sp-16);
   }
 
+  /* A panel has no room at its sides of its own (a drawer has): straight inside one, a form's fields stand in from
+     its edges as its title does. */
+  :where([data-panel]) > :is(.fields, .field) {
+    margin-inline: var(--form-inset);
+  }
+
   .field {
     min-width: var(--box-figure);
   }

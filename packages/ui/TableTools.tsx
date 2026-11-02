@@ -39,6 +39,44 @@ export function SortHeads<Row>({ view, className }: { view: TableView<Row>; clas
   });
 }
 
+/**
+ * The order on a phone, where the table's rows are cards or list rows and its heads are not shown: each column that
+ * sorts, either way, as the heads' arrows say. A desk sorts by the heads, so it draws none of this.
+ */
+function SortChoice<Row>({ view }: { view: TableView<Row> }) {
+  const sorting = view.columns.flatMap((column, at) => (column.sort === undefined ? [] : [{ column, at }]));
+  if (sorting.length === 0) return null;
+  const value = view.sorted === null ? "" : `${String(view.sorted.column)}:${view.sorted.direction}`;
+  return (
+    <Field label={copy.sortBy} labelHidden className={styles.phoneOnly}>
+      {(control) => (
+        <Select
+          {...control}
+          width="choice"
+          value={value}
+          onChange={(event) => {
+            const [column = "", direction] = event.currentTarget.value.split(":");
+            view.sortTo(
+              column === ""
+                ? null
+                : { column: Number(column), direction: direction === "descending" ? "descending" : "ascending" },
+            );
+          }}
+        >
+          <option value="">{copy.asListed}</option>
+          {sorting.flatMap(({ column, at }) =>
+            (["ascending", "descending"] as const).map((direction) => (
+              <option key={`${String(at)}:${direction}`} value={`${String(at)}:${direction}`}>
+                {copy.sortedAs(column.label, direction === "ascending")}
+              </option>
+            )),
+          )}
+        </Select>
+      )}
+    </Field>
+  );
+}
+
 /** The search and the lists that narrow the table on one row, and at its end, once narrowed, how many rows match. */
 export function Narrowing<Row>({
   view,
@@ -92,6 +130,7 @@ export function Narrowing<Row>({
             </Field>
           ),
       )}
+      <SortChoice view={view} />
       {children}
     </Toolbar>
   );

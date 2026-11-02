@@ -472,25 +472,38 @@
 
 /* Every list of a client's visits at the same widths, so overdue, to come and done line up one under another. */
 .visitTable th:nth-child(1) {
-  width: 17%;
+  width: 16%;
 }
 
 .visitTable th:nth-child(2) {
-  width: 15%;
+  width: 13%;
 }
 
 .visitTable th:nth-child(3) {
-  width: 16%;
+  width: 15%;
 }
 
 .visitTable th:nth-child(4) {
-  width: 16%;
+  width: 13%;
 }
 
 .visitTable th:nth-child(5) {
-  width: 21%;
+  width: 14%;
 }
 
 .visitTable th:nth-child(6) {
-  width: 15%;
+  width: 12%;
+}
+
+.visitTable th:nth-child(7) {
+  width: 17%;
+}
+
+/* A visit's own buttons at the row's end, side by side, running on to a second line where they must. */
+.visitActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sp-8);
+  white-space: nowrap;
 }

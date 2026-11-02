@@ -47,13 +47,16 @@ type Switched = { readonly to: "off"; readonly visits: readonly ReturnedVisit[] 
 function TabPanel({
   tab,
   technician,
+  everyone,
   onChange,
 }: {
   tab: TechnicianTab;
   technician: Technician;
+  /** Everyone's reach from Settings, for the Hours tab. */
+  everyone: number;
   onChange: () => Promise<void>;
 }) {
-  if (tab === "hours") return <Hours technician={technician} onChange={onChange} />;
+  if (tab === "hours") return <Hours technician={technician} everyone={everyone} onChange={onChange} />;
   if (tab === "leave") return <Leave technician={technician} />;
   if (tab === "phones") return <Phones technician={technician} />;
   if (tab === "kit") return <Kit technician={technician} />;
@@ -64,10 +67,12 @@ function TechnicianTabs({
   technician,
   tab,
   belowZero,
+  everyone,
   onChange,
 }: {
   technician: Technician;
   tab: TechnicianTab;
+  everyone: number;
   /** How many kit items are below zero, counted on the Kit tab's name. */
   belowZero: number | null;
   onChange: () => Promise<void>;
@@ -89,11 +94,11 @@ function TechnicianTabs({
       {/* A tab's panel titled as the tab reads its title, and does not show it again. */}
       <PageTitle.Provider value={TECHNICIAN_TAB_NAMES[tab]}>
         {tab === "kit" ? (
-          <TabPanel tab={tab} technician={technician} onChange={onChange} />
+          <TabPanel tab={tab} technician={technician} everyone={everyone} onChange={onChange} />
         ) : (
           <Panel titleId="technician-tab" title={TECHNICIAN_TAB_NAMES[tab]}>
             <div className={tab === "hours" ? undefined : styles.tabBody}>
-              <TabPanel tab={tab} technician={technician} onChange={onChange} />
+              <TabPanel tab={tab} technician={technician} everyone={everyone} onChange={onChange} />
             </div>
           </Panel>
         )}
@@ -105,11 +110,14 @@ function TechnicianTabs({
 function TechnicianPage({
   entry,
   cities,
+  everyone,
   tab,
   onChange,
 }: {
   entry: Entry;
   cities: readonly string[];
+  /** Everyone's reach from Settings, which the roster carries. */
+  everyone: number;
   tab: TechnicianTab;
   onChange: () => Promise<void>;
 }) {
@@ -147,7 +155,9 @@ function TechnicianPage({
       {switched?.to === "off" && <Returned visits={switched.visits} />}
       {switched?.to === "on" && <Toast>{technicians.switchOn.done(summary.name)}</Toast>}
       {active !== null && <TechnicianFigures summary={summary} belowZero={belowZero} />}
-      {active !== null && <TechnicianTabs technician={active} tab={tab} belowZero={belowZero} onChange={onChange} />}
+      {active !== null && (
+        <TechnicianTabs technician={active} tab={tab} belowZero={belowZero} everyone={everyone} onChange={onChange} />
+      )}
     </div>
   );
 }
@@ -179,7 +189,15 @@ export function TechnicianScreen({ technicianId, tab }: { technicianId: string; 
     const roster = fresh ?? loaded.value;
     const entry = entryOf(roster, technicianId);
     if (entry === null) return <NotOnRoster />;
-    return <TechnicianPage entry={entry} cities={roster.cities} tab={tab} onChange={readAgain} />;
+    return (
+      <TechnicianPage
+        entry={entry}
+        cities={roster.cities}
+        everyone={roster.default_reach_min}
+        tab={tab}
+        onChange={readAgain}
+      />
+    );
   };
 
   return <>{page()}</>;

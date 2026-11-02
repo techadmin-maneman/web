@@ -45,6 +45,8 @@
   overflow-wrap: anywhere;
 }
 
+/* Beneath the entries, in from the panel's edge as they are. */
 .older {
   align-self: flex-start;
+  margin: var(--sp-16) var(--form-inset);
 }

@@ -495,8 +495,8 @@ export const settings = {
   suppliers: {
     title: "Suppliers",
     columns: ["Supplier", "Country · currency", "Terms", "Warranty"],
-    /** Those no longer bought from, apart beneath those who are. */
-    retiredTitle: "Retired",
+    /** Those no longer bought from, folded in a panel beneath those who are. */
+    retiredTitle: "Retired suppliers",
     none: "No suppliers yet.",
     terms: (days: number) => (days === 0 ? "On delivery" : `${String(days)} days`),
     warranty: (days: number) => (days === 0 ? "None" : `${String(days)} days`),
@@ -614,22 +614,13 @@ export const settings = {
     consumableColumn: "Consumable",
     hairSystemColumn: "Hair system",
     costColumn: "Cost each",
-    levelsColumn: "Low at",
+    unitColumn: "Unit",
     /** The column a retirement shows in, named aloud only: in use, it is empty. */
     stateColumn: "Retirement",
     none: "No consumables yet.",
-    /** "Kit 5 · hub or stockroom 20 · warehouse 50", the levels each kind of place is low at. */
-    levels: (at: { kit: number | null; store: number | null; central: number | null }) => {
-      const parts = [
-        at.kit === null ? null : `kit ${String(at.kit)}`,
-        at.store === null ? null : `hub or stockroom ${String(at.store)}`,
-        at.central === null ? null : `warehouse ${String(at.central)}`,
-      ].filter((part) => part !== null);
-      const words = parts.join(" · ");
-      return words === "" ? "No level" : words.charAt(0).toUpperCase() + words.slice(1);
-    },
-    /** Items no longer offered, apart beneath those in use. */
-    retiredTitle: "Retired",
+    /** Items no longer offered, folded beneath those in use, each list's own. */
+    retiredConsumables: "Retired consumables",
+    retiredHairSystems: "Retired hair systems",
     states: {
       offered: "In use",
       retiring: (from: string) => `In use until ${from}`,
@@ -762,7 +753,7 @@ export const settings = {
     /** A record's Status: let in, or kept with their grants but let in nowhere. */
     active: "Active",
     inactive: "Switched off",
-    /** Those let in nowhere, listed apart beneath those who are. */
+    /** Those let in nowhere, folded in a panel beneath those who are. */
     switchedOff: "Switched off",
     /** The list with nobody on it yet: everyone who signs in still sees every section. */
     none: "Nobody added yet.",

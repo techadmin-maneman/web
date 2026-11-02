@@ -240,10 +240,11 @@ function LabelChoice(props: {
   onChange: (value: string) => void;
 }) {
   return (
-    <Field label={props.label} className={form.field}>
+    <Field label={props.label} labelHidden>
       {(control) => (
         <Select
           {...control}
+          width="choice"
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -268,17 +269,23 @@ export function Labels({ stock, focus }: { stock: Stock; focus: LabelsFor | null
   const at = { code, place };
   const access = useAccess();
   return (
-    <Panel titleId="stock-labels" title={copy.title} ref={panel}>
+    <Panel
+      titleId="stock-labels"
+      title={copy.title}
+      ref={panel}
+      actions={
+        <>
+          <LabelChoice
+            label={copy.item}
+            value={code}
+            options={stock.consumables.map((each) => [each.code, each.name] as const)}
+            onChange={setCode}
+          />
+          <LabelChoice label={copy.place} value={place} options={placeChoices(stock)} onChange={setPlace} />
+        </>
+      }
+    >
       {access.mayCall("GET /api/stock/units/{code}") && <LabelFound stock={stock} />}
-      <div className={form.fields}>
-        <LabelChoice
-          label={copy.item}
-          value={code}
-          options={stock.consumables.map((each) => [each.code, each.name] as const)}
-          onChange={setCode}
-        />
-        <LabelChoice label={copy.place} value={place} options={placeChoices(stock)} onChange={setPlace} />
-      </div>
       {consumable?.hair_system === true ? (
         <PieceLabels key={`${code}:${place}`} name={consumable.name} at={at} />
       ) : (

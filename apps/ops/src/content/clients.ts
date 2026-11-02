@@ -228,6 +228,8 @@ export const clients = {
     overdue: "Overdue",
     past: "Done",
     columns: ["Date", "Visit", "Technician", "Time", "Status", "Discount code"],
+    /** The column of a visit's own buttons, named aloud only. */
+    actionsColumn: "Change",
     onBoard: "See on the board",
     /** The link's whole name, since every row's says the same. */
     onBoardLabel: (visit: string) => `See the visit of ${visit} on the board`,
