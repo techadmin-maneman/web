@@ -61,6 +61,11 @@
     white-space: nowrap;
   }
 
+  /* A head over a column of figures stands right, over them (Table.tsx's alignHeads). */
+  .table thead th[data-figure] {
+    text-align: right;
+  }
+
   .table tbody tr:last-child > * {
     border-bottom: 0;
   }

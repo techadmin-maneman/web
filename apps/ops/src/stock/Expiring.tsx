@@ -6,6 +6,8 @@ import { Note } from "@maneman/ui/Note";
 import { Badge } from "@maneman/ui/Badge";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView } from "@maneman/ui/useTableView";
 import { listDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
@@ -26,24 +28,39 @@ export function expiringLots(stock: Stock) {
     .sort((a, b) => (a.expires_on ?? "").localeCompare(b.expires_on ?? ""));
 }
 
-export function Expiring({ stock }: { stock: Stock }) {
+type ExpiringLot = ReturnType<typeof expiringLots>[number];
+
+function ExpiringTable({ stock }: { stock: Stock }) {
   const words = stockViews.expiring;
+  const nameOf = (lot: ExpiringLot) => stock.consumables.find((each) => each.code === lot.code)?.name ?? lot.code;
+  const [item, lotHead, where, left, expires] = words.columns;
+  const view = useTableView(
+    expiringLots(stock),
+    [
+      { label: item, sort: nameOf, choice: nameOf },
+      { label: lotHead, sort: (lot: ExpiringLot) => lot.lot_code },
+      {
+        label: where,
+        sort: (lot: ExpiringLot) => placeName(stock, lot.place),
+        choice: (lot: ExpiringLot) => placeName(stock, lot.place),
+      },
+      { label: left, sort: (lot: ExpiringLot) => lot.quantity, figure: true },
+      { label: expires, sort: (lot: ExpiringLot) => lot.expires_on ?? "" },
+    ],
+    { search: (lot) => `${nameOf(lot)} ${lot.lot_code} ${placeName(stock, lot.place)}` },
+  );
   return (
-    <Panel titleId="stock-expiring" title={words.title}>
-      <Note>{words.within(stock.expiry_warning_days)}</Note>
+    <>
+      <Narrowing view={view} label={words.find} />
       <TableScroll labelledBy="stock-expiring">
-        <Table controls>
+        <Table>
           <thead>
             <tr>
-              {words.columns.map((column) => (
-                <th scope="col" key={column}>
-                  {column}
-                </th>
-              ))}
+              <SortHeads view={view} />
             </tr>
           </thead>
           <tbody>
-            {expiringLots(stock).map((lot) => {
+            {view.shown.map((lot) => {
               const consumable = stock.consumables.find((each) => each.code === lot.code);
               const expired = (lot.expires_on ?? "") < stock.today;
               return (
@@ -68,6 +85,17 @@ export function Expiring({ stock }: { stock: Stock }) {
           </tbody>
         </Table>
       </TableScroll>
+      <TableEnd view={view} />
+    </>
+  );
+}
+
+export function Expiring({ stock }: { stock: Stock }) {
+  const words = stockViews.expiring;
+  return (
+    <Panel titleId="stock-expiring" title={words.title}>
+      <Note>{words.within(stock.expiry_warning_days)}</Note>
+      <ExpiringTable stock={stock} />
     </Panel>
   );
 }

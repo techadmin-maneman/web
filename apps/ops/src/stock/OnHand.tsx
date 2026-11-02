@@ -12,6 +12,8 @@ import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { RowHead } from "@maneman/ui/RowHead";
 import { FIGURE, Table, TableScroll, type RuleTone } from "@maneman/ui/Table";
+import { SortHeads } from "@maneman/ui/TableTools";
+import { useTableView } from "@maneman/ui/useTableView";
 import { addDays, indiaDate, listDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { type Stock } from "../api.ts";
@@ -253,32 +255,38 @@ function OnePlace({ stock, place }: { stock: Stock; place: string }) {
   );
 }
 
+/** The place's items, each column sorting: an item's state, its soonest lot and its last count. */
 function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string; shown: Consumable[]; year: number }) {
+  const holding = (consumable: Consumable) => holdingOf(stock, consumable.code, place);
+  const view = useTableView(shown, [
+    { label: copy.consumable, sort: (each: Consumable) => each.name },
+    { label: copy.columns.held, sort: (each: Consumable) => holding(each)?.quantity ?? 0, figure: true },
+    { label: copy.columns.status, sort: (each: Consumable) => stateOf(stock, each, place)?.word ?? "" },
+    {
+      label: copy.columns.expires,
+      sort: (each: Consumable) => holding(each)?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? "",
+    },
+    { label: copy.columns.counted, sort: (each: Consumable) => holding(each)?.counted_at ?? "" },
+  ]);
   return (
-    <Table controls fixed className={styles.onePlace}>
+    <Table fixed className={styles.onePlace}>
       <thead>
         <tr>
-          <th scope="col">{copy.consumable}</th>
-          <th scope="col" className={FIGURE}>
-            {copy.columns.held}
-          </th>
-          <th scope="col">{copy.columns.status}</th>
-          <th scope="col">{copy.columns.expires}</th>
-          <th scope="col">{copy.columns.counted}</th>
+          <SortHeads view={view} />
         </tr>
       </thead>
       <tbody>
-        {shown.map((consumable) => {
-          const holding = holdingOf(stock, consumable.code, place);
-          const counted = holding?.counted_at ?? null;
+        {view.shown.map((consumable) => {
+          const held = holding(consumable);
+          const counted = held?.counted_at ?? null;
           return (
             <tr key={consumable.code}>
               <ItemName consumable={consumable} />
-              <td className={FIGURE}>{copy.held(holding?.quantity ?? 0, unitOf(stock, consumable.code))}</td>
+              <td className={FIGURE}>{copy.held(held?.quantity ?? 0, unitOf(stock, consumable.code))}</td>
               <td>
                 <StateBadge state={stateOf(stock, consumable, place)} />
               </td>
-              <Expires stock={stock} holding={holding} />
+              <Expires stock={stock} holding={held} />
               <td>{counted === null ? copy.neverCounted : listDate(indiaDate(counted), year)}</td>
             </tr>
           );
@@ -296,7 +304,7 @@ function EveryPlace({ stock }: { stock: Stock }) {
         <tr>
           <th scope="col">{copy.consumable}</th>
           {stock.places.map((place) => (
-            <th scope="col" key={place.id}>
+            <th scope="col" key={place.id} className={FIGURE}>
               {placeName(stock, place.id)}
             </th>
           ))}

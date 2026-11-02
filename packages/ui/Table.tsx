@@ -14,6 +14,36 @@ function spokenText(node: Node): string {
   return Array.from(node.childNodes).map(spokenText).join("");
 }
 
+/** How many of a column's rows are looked at to tell it is a column of figures. */
+const FIGURE_SAMPLE = 12;
+
+/**
+ * Sets a column's head right where its cells are figures, set right, so a head stands over its figures however the
+ * table was drawn. A phone's cards set every value right, so there the heads are left as they are.
+ */
+function alignHeads(table: HTMLTableElement): void {
+  const right = new Map<number, boolean>();
+  const rows = Array.from(table.tBodies).flatMap((body) => Array.from(body.rows).slice(0, FIGURE_SAMPLE));
+  for (const row of rows) {
+    let at = 0;
+    for (const cell of Array.from(row.cells)) {
+      const style = getComputedStyle(cell);
+      if (style.display === "flex") return;
+      if (cell.colSpan === 1 && cell.textContent.trim() !== "") {
+        right.set(at, (right.get(at) ?? true) && style.textAlign === "right");
+      }
+      at += cell.colSpan;
+    }
+  }
+  let at = 0;
+  for (const head of Array.from(table.tHead?.rows[0]?.cells ?? [])) {
+    const figures = head.colSpan === 1 && right.get(at) === true;
+    if (figures && head.dataset.figure === undefined) head.dataset.figure = "";
+    if (!figures && head.dataset.figure !== undefined) delete head.dataset.figure;
+    at += head.colSpan;
+  }
+}
+
 /** Names each body cell by its column's head (data-label), so a row read as a card says what each value is. */
 function nameCells(table: HTMLTableElement): void {
   const heads: string[] = [];
@@ -31,6 +61,7 @@ function nameCells(table: HTMLTableElement): void {
       }
     }
   }
+  alignHeads(table);
 }
 
 /**
