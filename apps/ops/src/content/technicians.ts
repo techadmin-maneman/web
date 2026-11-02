@@ -19,6 +19,11 @@ export const technicians = {
   /** The Leave column: away today until when, the first day of leave to come, or nothing. */
   away: (until: string) => `Away until ${until}`,
   from: (date: string) => `From ${date}`,
+  /** A phone's row, where the columns' names are not there to say what each part is. */
+  phone: {
+    onTime: (share: string) => `${share} on time`,
+    leaveFrom: (date: string) => `Leave from ${date}`,
+  },
   /** A zone a technician has none of, written as the design's tables write a gap. */
   unknown: "—",
   // The board draws no console without technicians.

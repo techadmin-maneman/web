@@ -7,6 +7,8 @@ import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
+import { ViewRows } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
@@ -75,6 +77,30 @@ function PartnerTable({ list, onOpen }: { list: PartnerList; onOpen: (id: string
   const view = useTableView(list.channels, COLUMNS, {
     search: (row) => `${row.name} ${row.code} ${row.discount_code ?? ""}`,
   });
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <>
+        <Narrowing view={view} label={copy.find} />
+        <ViewRows
+          rows={view.shown}
+          label={copy.title}
+          row={(partner) => ({
+            key: partner.id,
+            title: partner.paused_at === null ? partner.name : `${partner.name} · ${copy.paused}`,
+            meta: copy.phone.figures(partner.referred, partner.fitted),
+            end: rupees(partner.owed),
+            endTone: partner.owed > 0 ? "attention" : "muted",
+            label: copy.open(partner.name),
+            onClick: () => {
+              onOpen(partner.id);
+            },
+          })}
+        />
+        <TableEnd view={view} />
+      </>
+    );
+  }
   return (
     <>
       <Narrowing view={view} label={copy.find} />

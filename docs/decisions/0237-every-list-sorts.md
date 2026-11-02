@@ -26,6 +26,12 @@ tables sorted. Many put their figures right under heads set left, and some rows 
 5. **A row's buttons are `RowActions`** in an `ACTIONS` cell at its end; **a row's form opens in a drawer:** a returned
    piece's write-off, a technician's items on Usage.
 
+6. **On a phone the main lists are a list's rows** (`ViewRows`), drawn from the same sorted, narrowed rows as the
+   desk's table: the Technicians roster and those switched off, Items, a place's stock, Usage, Recalls, Cities, Staff,
+   Suppliers and Partners. Each row is a name over a line of what matters, one figure or state at its end; a tap opens
+   what the table's row opens. Tables whose every figure matters alike (Payments, Technician pay, Partner commission,
+   the short Settings lists) stay cards, ordered by Sort by.
+
 ## Consequences
 
 - Words added, in `design/ops-redesign/COPY-TODO.md`: each list's search, and the spoken names of action columns.

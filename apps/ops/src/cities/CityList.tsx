@@ -6,6 +6,8 @@ import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { ViewRows } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { Badge } from "@maneman/ui/Badge";
@@ -47,6 +49,30 @@ const COLUMNS: readonly Column<City>[] = [
 
 function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) => void }) {
   const view = useTableView(cities.cities, COLUMNS, { search: (city) => `${city.name} ${city.state ?? ""}` });
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <>
+        <Narrowing view={view} label={copy.find} />
+        <ViewRows
+          rows={view.shown}
+          label={copy.panel}
+          row={(city) => ({
+            key: city.name,
+            title: city.name,
+            meta: [city.state ?? copy.noState, city.zone ?? copy.noZone].join(" · "),
+            end: standingOf(city),
+            endTone: city.served && city.active && city.technicians === 0 ? "warning" : "muted",
+            label: copy.open(city.name),
+            onClick: () => {
+              onOpen(city.name);
+            },
+          })}
+        />
+        <TableEnd view={view} />
+      </>
+    );
+  }
   return (
     <>
       <Narrowing view={view} label={copy.find} />

@@ -6,6 +6,8 @@ import { Panel } from "@maneman/ui/Panel";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { ViewRows } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column, type TableView } from "@maneman/ui/useTableView";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -93,33 +95,54 @@ const TECHNICIAN_COLUMNS: readonly Column<Technician>[] = [
 
 function TechnicianTable({ usage, onOpen }: { usage: Usage; onOpen: (id: string) => void }) {
   const view = useTableView(usage.technicians, TECHNICIAN_COLUMNS, { search: (row) => row.name });
+  const phone = useIsPhone();
   return (
     <>
       <Narrowing view={view} label={copy.find} />
-      <Table>
-        <SortedHead view={view} />
-        <tbody>
-          {view.shown.map((technician) => (
-            <tr key={technician.technician_id}>
-              <RowHead meta={technician.flagged ? copy.flagged : undefined}>
-                <TextButton
-                  compact
-                  aria-label={copy.items(technician.name)}
-                  onClick={() => {
-                    onOpen(technician.technician_id);
-                  }}
-                >
-                  {technician.name}
-                </TextButton>
-              </RowHead>
-              <td className={FIGURE}>{technician.visits}</td>
-              <td className={FIGURE}>{roundRupees(technician.expected_value)}</td>
-              <td className={FIGURE}>{roundRupees(technician.used_value)}</td>
-              <td className={FIGURE}>{copy.over(technician.over_percent)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      {phone ? (
+        <ViewRows
+          rows={view.shown}
+          label={copy.technicians}
+          row={(technician) => ({
+            key: technician.technician_id,
+            title: technician.name,
+            meta: [copy.phone.visits(technician.visits), technician.flagged ? copy.flagged : null]
+              .filter((part) => part !== null)
+              .join(" · "),
+            end: copy.over(technician.over_percent),
+            endTone: technician.flagged ? "warning" : "plain",
+            label: copy.items(technician.name),
+            onClick: () => {
+              onOpen(technician.technician_id);
+            },
+          })}
+        />
+      ) : (
+        <Table>
+          <SortedHead view={view} />
+          <tbody>
+            {view.shown.map((technician) => (
+              <tr key={technician.technician_id}>
+                <RowHead meta={technician.flagged ? copy.flagged : undefined}>
+                  <TextButton
+                    compact
+                    aria-label={copy.items(technician.name)}
+                    onClick={() => {
+                      onOpen(technician.technician_id);
+                    }}
+                  >
+                    {technician.name}
+                  </TextButton>
+                </RowHead>
+                <td className={FIGURE}>{technician.visits}</td>
+                <td className={FIGURE}>{roundRupees(technician.expected_value)}</td>
+                <td className={FIGURE}>{roundRupees(technician.used_value)}</td>
+                <td className={FIGURE}>{copy.over(technician.over_percent)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
       <TableEnd view={view} />
     </>
   );
@@ -165,24 +188,41 @@ const PLACE_COLUMNS: readonly Column<Place>[] = [
 
 function PlaceTable({ usage }: { usage: Usage }) {
   const view = useTableView(usage.places, PLACE_COLUMNS, { search: (row) => row.place });
+  const phone = useIsPhone();
   return (
     <>
       <Narrowing view={view} label={copy.findPlace} />
-      <Table>
-        <SortedHead view={view} />
-        <tbody>
-          {view.shown.map((place) => (
-            <tr key={place.place_id}>
-              <RowHead meta={place.flagged ? copy.flagged : undefined}>{place.place}</RowHead>
-              <td className={FIGURE}>{roundRupees(place.left_value)}</td>
-              <td className={FIGURE}>{roundRupees(place.lost_value)}</td>
-              <td className={FIGURE}>{copy.percent(place.shrinkage_percent)}</td>
-              <td className={FIGURE}>{place.write_offs}</td>
-              <td className={FIGURE}>{copy.percent(place.count_accuracy_percent)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      {phone ? (
+        <ViewRows
+          rows={view.shown}
+          label={copy.places}
+          row={(place) => ({
+            key: place.place_id,
+            title: place.place,
+            meta: [copy.phone.lost(roundRupees(place.lost_value)), place.flagged ? copy.flagged : null]
+              .filter((part) => part !== null)
+              .join(" · "),
+            end: copy.percent(place.shrinkage_percent),
+            endTone: place.flagged ? "warning" : "plain",
+          })}
+        />
+      ) : (
+        <Table>
+          <SortedHead view={view} />
+          <tbody>
+            {view.shown.map((place) => (
+              <tr key={place.place_id}>
+                <RowHead meta={place.flagged ? copy.flagged : undefined}>{place.place}</RowHead>
+                <td className={FIGURE}>{roundRupees(place.left_value)}</td>
+                <td className={FIGURE}>{roundRupees(place.lost_value)}</td>
+                <td className={FIGURE}>{copy.percent(place.shrinkage_percent)}</td>
+                <td className={FIGURE}>{place.write_offs}</td>
+                <td className={FIGURE}>{copy.percent(place.count_accuracy_percent)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
       <TableEnd view={view} />
     </>
   );

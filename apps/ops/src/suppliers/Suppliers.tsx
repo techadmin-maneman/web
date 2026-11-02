@@ -8,6 +8,8 @@ import { PageActions } from "../frame/PageHead.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { ViewRows } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -42,6 +44,29 @@ const COLUMNS: readonly Column<Supplier>[] = [
 
 function SupplierTable(props: { rows: readonly Supplier[]; onOpen: (id: string) => void }) {
   const view = useTableView(props.rows, COLUMNS, { search: (row) => row.name });
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <>
+        <Narrowing view={view} label={copy.find} />
+        <ViewRows
+          rows={view.shown}
+          label={copy.title}
+          row={(supplier) => ({
+            key: supplier.id,
+            title: supplier.name,
+            meta: `${supplier.country} · ${supplier.currency} · ${copy.warranty(supplier.warranty_days)}`,
+            end: copy.terms(supplier.payment_terms_days),
+            label: copy.open(supplier.name),
+            onClick: () => {
+              props.onOpen(supplier.id);
+            },
+          })}
+        />
+        <TableEnd view={view} />
+      </>
+    );
+  }
   return (
     <>
       <Narrowing view={view} label={copy.find} />

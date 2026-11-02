@@ -9,6 +9,8 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { Panel } from "@maneman/ui/Panel";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
+import { ViewRows } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -45,7 +47,31 @@ function Recalls({ quality, opener, onOpen }: { quality: Quality; opener: RowOpe
   const view = useTableView(quality.recalls, COLUMNS, {
     search: (recall) => `${copy.number(recall.number)} ${recall.name} ${recall.lot_code}`,
   });
+  const phone = useIsPhone();
   if (quality.recalls.length === 0) return <EmptyState look="panel" line={copy.none} />;
+  if (phone) {
+    return (
+      <>
+        <Narrowing view={view} label={copy.find} />
+        <ViewRows
+          rows={view.shown}
+          label={copy.title}
+          row={(recall) => ({
+            key: recall.id,
+            title: `${copy.number(recall.number)} · ${recall.name}`,
+            meta: `${recall.lot_code} · ${plainDate(indiaDate(recall.raised_at))}`,
+            end: standingOf(recall),
+            endTone: recall.closed_at === null ? "attention" : "muted",
+            label: copy.view(copy.number(recall.number)),
+            onClick: () => {
+              onOpen(recall.id);
+            },
+          })}
+        />
+        <TableEnd view={view} />
+      </>
+    );
+  }
   return (
     <>
       <Narrowing view={view} label={copy.find} />

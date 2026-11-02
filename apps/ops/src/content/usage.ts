@@ -20,6 +20,11 @@ export const usage = {
   placeColumns: ["Place", "Left", "Lost", "Shrinkage", "Write-offs", "Counts right first time"] as const,
   findPlace: "Find a place",
   flagged: "Flagged",
+  /** A phone's row, where the columns' names are not there to say what each figure is. */
+  phone: {
+    visits: (count: number) => `${String(count)} ${count === 1 ? "visit" : "visits"}`,
+    lost: (value: string) => `${value} lost`,
+  },
   /** "+30%", "−20%", "0%" where it was just as expected, or a dash */
   over: (percent: number | null) => {
     if (percent === null) return "—";

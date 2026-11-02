@@ -63,10 +63,10 @@ export const states = {
 export const tables = {
   search: "Search",
   allOf: (column: string) => `${column}: All`,
-  /** A phone's choice of the order, where the heads that sort are not shown: "Jobs ↓", the arrows the heads draw. */
+  /** A phone's choice of the order, where the heads that sort are not shown: "Sort: Jobs ↓", the heads' arrows. */
   sortBy: "Sort by",
-  asListed: "As listed",
-  sortedAs: (column: string, ascending: boolean) => `${column} ${ascending ? "↑" : "↓"}`,
+  asListed: "Sort: As listed",
+  sortedAs: (column: string, ascending: boolean) => `Sort: ${column} ${ascending ? "↑" : "↓"}`,
   /** Every page's city list, unnarrowed, in the one wording. */
   allCities: "All cities",
   clear: "Clear",

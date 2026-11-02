@@ -12,6 +12,8 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
+import { ViewRows } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -79,6 +81,28 @@ const COLUMNS: readonly Column<Person>[] = [
 
 function PeopleTable({ people, onOpen }: { people: readonly Person[]; onOpen: (email: string) => void }) {
   const view = useTableView(people, COLUMNS, { search: (person) => `${person.email} ${accessOf(person)}` });
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <>
+        <Narrowing view={view} label={copy.find} />
+        <ViewRows
+          rows={view.shown}
+          label={copy.title}
+          row={(person) => ({
+            key: person.email,
+            title: person.email,
+            meta: person.grants.length === 0 ? copy.noAccess : person.grants.map(grantWords).join(" · "),
+            label: copy.open(person.email),
+            onClick: () => {
+              onOpen(person.email);
+            },
+          })}
+        />
+        <TableEnd view={view} />
+      </>
+    );
+  }
   return (
     <>
       <Narrowing view={view} label={copy.find} />

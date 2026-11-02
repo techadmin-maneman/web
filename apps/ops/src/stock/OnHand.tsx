@@ -13,6 +13,8 @@ import { Note } from "@maneman/ui/Note";
 import { RowHead } from "@maneman/ui/RowHead";
 import { FIGURE, Table, TableScroll, type RuleTone } from "@maneman/ui/Table";
 import { SortHeads } from "@maneman/ui/TableTools";
+import { ViewRows, type EndTone } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
 import { useTableView } from "@maneman/ui/useTableView";
 import { addDays, indiaDate, listDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -255,6 +257,12 @@ function OnePlace({ stock, place }: { stock: Stock; place: string }) {
   );
 }
 
+/** A phone row's end: the amount in the plain ink, a state in its own tone. */
+const endToneOf = (state: ReturnType<typeof stateOf>): EndTone => {
+  if (state === null) return "plain";
+  return state.tone === "error" ? "error" : "warning";
+};
+
 /** The place's items, each column sorting: an item's state, its soonest lot and its last count. */
 function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string; shown: Consumable[]; year: number }) {
   const holding = (consumable: Consumable) => holdingOf(stock, consumable.code, place);
@@ -268,6 +276,33 @@ function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string
     },
     { label: copy.columns.counted, sort: (each: Consumable) => holding(each)?.counted_at ?? "" },
   ]);
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <ViewRows
+        rows={view.shown}
+        label={copy.onHand}
+        row={(consumable) => {
+          const held = holding(consumable);
+          const state = stateOf(stock, consumable, place);
+          const soonest = held?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? null;
+          const counted = held?.counted_at ?? null;
+          return {
+            key: consumable.code,
+            title: consumable.name,
+            meta: [
+              soonest === null ? null : copy.phone.expires(listDate(soonest, year)),
+              counted === null ? copy.phone.notCounted : copy.phone.counted(listDate(indiaDate(counted), year)),
+            ]
+              .filter((part) => part !== null)
+              .join(" · "),
+            end: state === null ? copy.held(held?.quantity ?? 0, unitOf(stock, consumable.code)) : state.word,
+            endTone: endToneOf(state),
+          };
+        }}
+      />
+    );
+  }
   return (
     <Table fixed className={styles.onePlace}>
       <thead>
