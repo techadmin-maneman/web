@@ -10,6 +10,7 @@ import { roster, type RosterTechnician } from "../../domain/dispatch/technician-
 import { devicesByTechnician, outOfCodesToday } from "../../domain/dispatch/technicians.ts";
 import type { App } from "../../http/context.ts";
 import { json } from "../../http/openapi.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { reachesCity } from "../../policy/access.ts";
@@ -115,6 +116,10 @@ const TechniciansSchema = z
       description:
         "The cities the caller may give a technician, those their Operations MANAGE reaches, in display order.",
     }),
+    default_reach_min: z.number().int().openapi({
+      description:
+        "The business's reach from Settings, which a technician with no reach of their own takes (ADR 0223).",
+    }),
   })
   .strict()
   .openapi("Technicians");
@@ -132,7 +137,7 @@ const techniciansRoute = opsRoute({
 export function registerOpsField(app: App): void {
   app.openapi(techniciansRoute, async (c) => {
     // The phones and the leave are one read each for the whole roster, not one per technician.
-    const [roll, devices, leave, cities, reach, managed, toCome, weeks, homes, reaches] = await Promise.all([
+    const [roll, devices, leave, cities, reach, managed, toCome, weeks, homes, reaches, inputs] = await Promise.all([
       roster(c.env.DB),
       devicesByTechnician(c.env.DB, c.var.deps.now()),
       leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
@@ -143,6 +148,7 @@ export function registerOpsField(app: App): void {
       weeksOf(c.env.DB),
       homesOf(c.env.DB),
       reachesOf(c.env.DB),
+      opsInputs(c),
     ]);
     const everyone = roll.filter((technician) => reachesCity(reach, technician.city));
     const { settings } = c.var.config;
@@ -180,6 +186,9 @@ export function registerOpsField(app: App): void {
         reach_min: reaches.get(technician.id) ?? null,
       }));
     const switchedOff = everyone.filter((technician) => !technician.active).map(summaryOf);
-    return c.json({ technicians, switched_off: switchedOff, cities: given }, 200);
+    return c.json(
+      { technicians, switched_off: switchedOff, cities: given, default_reach_min: inputs.technicianReachMin },
+      200,
+    );
   });
 }

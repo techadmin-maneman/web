@@ -302,10 +302,13 @@ const drawnBoxes = (stock: Stock, draft: Draft) =>
 /** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 export function StockForm({
   stock,
+  at,
   kinds,
   onRecorded,
 }: {
   stock: Stock;
+  /** The place it starts at, a technician's kit: what a transfer brings it, what is counted or written off there. */
+  at?: string | undefined;
   kinds: readonly [Kind, ...Kind[]];
   onRecorded: (stock: Stock, recorded: { readonly kind: Kind; readonly code: string }) => void;
 }) {
@@ -317,9 +320,9 @@ export function StockForm({
     ...EMPTY,
     kind: kinds[0],
     code: offered[0]?.code ?? "",
-    from: first,
-    to: second ?? first,
-    place: first,
+    from: at === first ? (second ?? first) : first,
+    to: at ?? second ?? first,
+    place: at ?? first,
   }));
   const [step, setStep] = useState<Step>({ step: "editing" });
   const edit = (field: Exclude<keyof Draft, "units" | "waitForScan">) => (value: string) => {

@@ -9,7 +9,8 @@ import { NoValue } from "@maneman/ui/NoValue";
 import { Badge } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Button, RowButton } from "@maneman/ui/Button";
-import { rowRule, Table } from "@maneman/ui/Table";
+import { ACTIONS, rowRule, Table } from "@maneman/ui/Table";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { indiaClock, longDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -24,7 +25,7 @@ import styles from "./clients.module.css";
 import type { Booking } from "./BookOne.tsx";
 import { CancelVisit } from "./CancelVisit.tsx";
 import { CloseVisit } from "./CloseVisit.tsx";
-import { LostReason } from "./LostReason.tsx";
+import { LostReason, LostReasonLine } from "./LostReason.tsx";
 import { VisitCode } from "./VisitCode.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
 
@@ -100,7 +101,6 @@ function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: str
       {changes.map((change) => (
         <RowButton
           key={change}
-          beside
           ref={change === open ? opener : undefined}
           aria-label={change === "cancel" ? copy.cancel.openLabel(when) : copy.handClose.openLabel(when)}
           onClick={() => {
@@ -172,11 +172,16 @@ function VisitRow({
       <td>
         <StateBadge visit={visit} />
         <ClosedWithoutFollowUp visit={visit} />
-        <LostReason visit={visit} reasons={ahead ? null : lost} onChanged={changing.onChanged} />
-        {ahead && <ChangeVisit visit={visit} name={changing.name} onChanged={changing.onChanged} />}
+        <LostReasonLine visit={visit} />
       </td>
       <td>
         <VisitCode visit={visit} />
+      </td>
+      <td className={ACTIONS}>
+        <span className={styles.visitActions}>
+          <LostReason visit={visit} reasons={ahead ? null : lost} onChanged={changing.onChanged} />
+          {ahead && <ChangeVisit visit={visit} name={changing.name} onChanged={changing.onChanged} />}
+        </span>
       </td>
     </tr>
   );
@@ -290,6 +295,9 @@ export function VisitRecords({
                 {column}
               </th>
             ))}
+            <th scope="col">
+              <VisuallyHidden>{copy.actionsColumn}</VisuallyHidden>
+            </th>
           </tr>
         </thead>
         <tbody>

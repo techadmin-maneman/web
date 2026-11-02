@@ -12,17 +12,17 @@ import { Suspense, useState } from "react";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { type Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
-import { useAccess, type OpsCall } from "../lib/access.ts";
+import { useAccess } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
-import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
+import { placeName } from "./StockForm.tsx";
+import { RecordMovement } from "./RecordMovement.tsx";
 import type { LabelsFor } from "./Labels.tsx";
 import { Attention, firstShowing, Grouping, OnHand, type Showing } from "./OnHand.tsx";
 import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
-import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { PageActions } from "../frame/PageHead.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
@@ -46,14 +46,6 @@ function anyExpiring(stock: Stock): boolean {
 
 /** What is on its way, which loads only while something is. */
 const InTransit = lazyScreen(() => import("./InTransit.tsx").then((module) => module.InTransit));
-
-/** The call that records each movement. A delivery goes into the warehouse, which only national staff reach. */
-const RECORDING: Readonly<Record<Kind, OpsCall>> = {
-  delivery: "POST /api/stock/deliveries",
-  transfer: "POST /api/stock/transfers",
-  count: "POST /api/stock/counts",
-  write_off: "POST /api/stock/write-offs",
-};
 
 type Movement = Stock["movements"][number];
 
@@ -161,27 +153,18 @@ function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stoc
 }
 
 /** Recording a movement, from the page's head: a hair system's delivery answers where its labels are. */
-function RecordMovement(props: { stock: Stock; onRecorded: (after: Stock, labels: LabelsFor | null) => void }) {
-  const access = useAccess();
-  const [firstKind, ...otherKinds] = KINDS.filter((kind) => access.mayCall(RECORDING[kind]));
-  if (firstKind === undefined || props.stock.consumables.length === 0) return null;
+function RecordFromHead(props: { stock: Stock; onRecorded: (after: Stock, labels: LabelsFor | null) => void }) {
   return (
     <PageActions>
-      <DrawerButton primary label={copy.record.title}>
-        {(close) => (
-          <StockForm
-            stock={props.stock}
-            kinds={[firstKind, ...otherKinds]}
-            onRecorded={(after, recorded) => {
-              const hairSystem = after.consumables.some((each) => each.code === recorded.code && each.hair_system);
-              const labels =
-                recorded.kind === "delivery" && hairSystem ? { code: recorded.code, place: "central" } : null;
-              props.onRecorded(after, labels);
-              if (labels !== null) close();
-            }}
-          />
-        )}
-      </DrawerButton>
+      <RecordMovement
+        stock={props.stock}
+        onRecorded={(after, recorded, close) => {
+          const hairSystem = after.consumables.some((each) => each.code === recorded.code && each.hair_system);
+          const labels = recorded.kind === "delivery" && hairSystem ? { code: recorded.code, place: "central" } : null;
+          props.onRecorded(after, labels);
+          if (labels !== null) close();
+        }}
+      />
     </PageActions>
   );
 }
@@ -199,7 +182,7 @@ export function StockScreen() {
   const shown = views.includes(view) ? view : "onHand";
   return (
     <>
-      <RecordMovement
+      <RecordFromHead
         stock={current}
         onRecorded={(after, labels) => {
           setStock(after);

@@ -104,11 +104,6 @@ export function Suppliers() {
         {current.suppliers.some((each) => each.retired_at === null) && (
           <SupplierTable rows={current.suppliers.filter((each) => each.retired_at === null)} onOpen={opening} />
         )}
-        {current.suppliers.some((each) => each.retired_at !== null) && (
-          <Apart id="suppliers-retired" title={copy.retiredTitle}>
-            <SupplierTable rows={current.suppliers.filter((each) => each.retired_at !== null)} onOpen={opening} />
-          </Apart>
-        )}
         {said !== null && <Toast>{said}</Toast>}
         {opened !== undefined && (
           <FormDrawer
@@ -121,6 +116,15 @@ export function Suppliers() {
           </FormDrawer>
         )}
       </Panel>
+      {current.suppliers.some((each) => each.retired_at !== null) && (
+        <Apart
+          id="suppliers-retired"
+          title={copy.retiredTitle}
+          count={current.suppliers.filter((each) => each.retired_at !== null).length}
+        >
+          <SupplierTable rows={current.suppliers.filter((each) => each.retired_at !== null)} onOpen={opening} />
+        </Apart>
+      )}
     </>
   );
 }

@@ -85,11 +85,15 @@ export const technicians = {
     noHome: "Not set",
     setHome: "Set where their day starts",
     changeHome: "Change",
-    /** How far they go from home: their own, or the business's from Settings (docs/decisions/0223-reach-from-home.md). */
-    reach: "Reach from home",
-    reachValue: (minutes: number) => `${String(minutes)} min driving`,
-    /** No reach of their own: the business's, from Settings. An empty box returns them to it. */
-    businessReach: "The business’s",
+    /**
+     * How far from home they are offered visits: their own, or everyone's from Settings
+     * (docs/decisions/0223-reach-from-home.md). An empty box returns them to everyone's.
+     */
+    reach: "Takes visits within",
+    reachValue: (minutes: number) => `${String(minutes)} min drive of home`,
+    everyonesReach: (minutes: number) => `${String(minutes)} min drive of home, the setting for everyone`,
+    /** Everyone's, before the roster that says how far it is has been read. */
+    businessReach: "The setting for everyone",
     search: {
       label: "Search for a place",
       unavailable: "Search isn’t working right now. Try again shortly.",
@@ -122,7 +126,6 @@ export const technicians = {
     title: "Kit",
     columns: { item: "Item", held: "On hand", status: "Status", counted: "Last counted" },
     none: "Kit is empty.",
-    stock: "Record a movement in Stock",
   },
   phones: {
     /** A phone whose browser gave no label at login. */

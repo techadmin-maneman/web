@@ -1,19 +1,8 @@
 /*
  * Items' consumables (docs/decisions/0087-consumables-and-stock.md), drawn from what Settings already draws: its
- * panels, its table rows and a record's rows. These are the few things those lack: a unit beside a name, a retired
- * one read quieter, and retiring from a day asked in place.
+ * panels, its table rows and a record's rows. These are the few things those lack: the lists' shared widths, and
+ * retiring from a day asked in place.
  */
-
-/* What one is counted in, beneath its name in the table's first column. */
-/* Never broken: on a phone's card it runs on to a line of its own, whole. */
-.unit {
-  display: block;
-  overflow-wrap: normal;
-  white-space: nowrap;
-  font-size: var(--fs-13);
-  font-weight: var(--weight-regular);
-  color: var(--ui-text-muted);
-}
 
 /* Retiring from a day, asked in place at the record's foot: its day, what it does, and its buttons. */
 .asking {
@@ -29,22 +18,17 @@
 
 /* Every list on Items at the same widths, the hair systems' long names room to breathe. */
 .table th:nth-child(1) {
-  width: 44%;
+  width: 54%;
 }
 
 .table th:nth-child(2) {
-  width: 14%;
+  width: 12%;
 }
 
 .table th:nth-child(3) {
-  width: 26%;
-}
-
-.table th:nth-child(4) {
   width: 16%;
 }
 
-/* The levels sit in from the cost they follow. */
-.table :is(th, td):nth-child(3) {
-  padding-left: var(--sp-24);
+.table th:nth-child(4) {
+  width: 18%;
 }

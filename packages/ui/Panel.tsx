@@ -47,7 +47,7 @@ export function Panel({
   // A caller may pass `cond && <Button />`: false, null or "" is no action, and draws no empty head.
   const hasActions = actions !== undefined && actions !== null && actions !== false && actions !== "";
   return (
-    <section className={classes(styles.panel, className)} id={id} aria-labelledby={titleId} ref={ref}>
+    <section className={classes(styles.panel, className)} id={id} aria-labelledby={titleId} ref={ref} data-panel="">
       {/* A panel titled as its page draws a head only for its actions; its count goes with the title it hides. */}
       <div className={repeats && !hasActions ? undefined : styles.head} data-panel-head="">
         <h2

@@ -12248,12 +12248,17 @@
               "type": "string"
             },
             "description": "The cities the caller may give a technician, those their Operations MANAGE reaches, in display order."
+          },
+          "default_reach_min": {
+            "type": "integer",
+            "description": "The business's reach from Settings, which a technician with no reach of their own takes (ADR 0223)."
           }
         },
         "required": [
           "technicians",
           "switched_off",
-          "cities"
+          "cities",
+          "default_reach_min"
         ],
         "additionalProperties": false
       },

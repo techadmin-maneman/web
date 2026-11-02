@@ -48,14 +48,14 @@
     padding-right: var(--sp-20);
   }
 
-  /* The head stays in view as a long table scrolls under it. */
+  /* The column heads on a band of the page's ground, as the design draws them: centred in the band, a hairline under,
+     the names in the muted ink. The head stays in view as a long table scrolls under it. */
   .table thead th {
-    vertical-align: bottom;
     position: sticky;
     top: 0;
     z-index: var(--z-sticky);
-    border-bottom-color: var(--ui-line-control);
-    background: var(--ui-raised);
+    height: var(--sp-40);
+    background: var(--ui-ground);
     font-size: var(--fs-13);
     color: var(--ui-text-muted);
     white-space: nowrap;
@@ -143,6 +143,7 @@
   /* A row's own buttons, at its end (ACTIONS). */
   .actions {
     white-space: nowrap;
+    text-align: right;
   }
 
   /* Rows of controls (./Table.tsx's `controls`): the boxes and buttons in them make each row's height. */

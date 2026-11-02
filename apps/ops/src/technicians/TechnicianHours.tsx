@@ -12,6 +12,7 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { Checkbox, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { dayClock } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
+import { useLoad } from "@maneman/ui/useLoad";
 import { useRef, useState } from "react";
 import type { Technician } from "../api.ts";
 import { FormActions } from "@maneman/ui/FormActions";
@@ -175,15 +176,25 @@ function WeekRow(props: { technician: Technician; mayChange: boolean; onChange: 
   );
 }
 
+/** Their reach in words: their own, or everyone's with how far it is once the roster says. */
+function reachWords(own: number | null, everyone: number | null): string {
+  if (own !== null) return copy.reachValue(own);
+  return everyone === null ? copy.businessReach : copy.everyonesReach(everyone);
+}
+
 /** How far they go from home, their own or the business's, changed where it reads (docs/decisions/0223-reach-from-home.md). */
 function ReachRow(props: { technician: Technician; mayChange: boolean; onChange: () => Promise<void> }) {
   const { technician } = props;
+  // The roster the page has read already carries everyone's reach, so this answers at once.
+  const [roster] = useLoad(techniciansApi.technicians);
+  const everyone = roster.state === "loaded" ? roster.value.default_reach_min : null;
+  const value = reachWords(technician.reach_min, everyone);
   return (
     <EditableRow<string>
       label={copy.reach}
       words={EDITING}
       mayChange={props.mayChange}
-      value={technician.reach_min === null ? copy.businessReach : copy.reachValue(technician.reach_min)}
+      value={value}
       start={() => (technician.reach_min === null ? "" : String(technician.reach_min))}
       save={async (typed) => {
         const minutes = typed.trim() === "" ? null : Number(typed);
@@ -201,6 +212,7 @@ function ReachRow(props: { technician: Technician; mayChange: boolean; onChange:
           inputMode="numeric"
           min={10}
           max={180}
+          placeholder={everyone === null ? undefined : String(everyone)}
           value={typed}
           onChange={(event) => {
             setTyped(event.target.value);

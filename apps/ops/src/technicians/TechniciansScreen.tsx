@@ -95,10 +95,10 @@ function LeaveCell({ leave, today }: { leave: readonly Leave[]; today: string })
   return <span>{technicians.from(listDate(next.from, year))}</span>;
 }
 
-/** A row of either list: those switched off carry no leave. */
+/** A row of the roster, with the leave it shows. */
 type Listed = TechnicianSummary & { readonly leave?: readonly Leave[] };
 
-/** The columns both lists share, each sorting its own. */
+/** The roster's columns, each sorting its own. */
 function columnsOf(figures: ReadonlyMap<string, TechnicianWork>): readonly Column<Listed>[] {
   const city = (row: Listed) => row.city ?? "";
   const [name, cityLabel, jobs, service, onTime, leave] = technicians.columns;
@@ -112,19 +112,8 @@ function columnsOf(figures: ReadonlyMap<string, TechnicianWork>): readonly Colum
   ];
 }
 
-/**
- * One list's table, at the widths both lists share, so the one switched off lines up beneath the one at work. No city
- * is a warning only for those at work: it is why nothing can be booked on them.
- */
-function TechnicianTable({
-  view,
-  figures,
-  off = false,
-}: {
-  view: TableView<Listed>;
-  figures: ReadonlyMap<string, TechnicianWork>;
-  off?: boolean;
-}) {
+/** The roster's table. No city is a warning: it is why nothing can be booked on them. */
+function TechnicianTable({ view, figures }: { view: TableView<Listed>; figures: ReadonlyMap<string, TechnicianWork> }) {
   const today = todayInIndia(apiNow());
   return (
     <Table fixed className={styles.table}>
@@ -141,8 +130,8 @@ function TechnicianTable({
                 {technician.name}
               </OpsLink>
             </th>
-            <td className={classes(shared.city, technician.city === null && !off && shared.noCity)}>
-              {technician.city ?? (off ? <None /> : technicians.noCity)}
+            <td className={classes(shared.city, technician.city === null && shared.noCity)}>
+              {technician.city ?? technicians.noCity}
             </td>
             <td className={FIGURE}>{jobsOf(figures.get(technician.id)?.jobs)}</td>
             <td className={FIGURE}>
@@ -161,12 +150,39 @@ function TechnicianTable({
   );
 }
 
-/** Those switched off, beneath the table in its columns: they cannot sign in, and nothing is booked on them. */
-function SwitchedOff(props: { list: readonly TechnicianSummary[]; figures: ReadonlyMap<string, TechnicianWork> }) {
-  const view = useTableView<Listed>(props.list, columnsOf(props.figures));
+/** Those switched off, in a folded panel of their own: they cannot sign in, and nothing is booked on them. */
+function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
+  const [name, city] = technicians.columns;
+  const view = useTableView<TechnicianSummary>(
+    list,
+    [
+      { label: name, sort: (row) => row.name },
+      { label: city, sort: (row) => row.city ?? "" },
+    ],
+    { search: (row) => `${row.name} ${row.city ?? ""}` },
+  );
   return (
-    <Apart id="switched-off" title={technicians.switchedOff}>
-      <TechnicianTable off view={view} figures={props.figures} />
+    <Apart id="switched-off" title={technicians.switchedOff} count={list.length}>
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((technician) => (
+            <tr key={technician.id}>
+              <th scope="row" className={shared.name}>
+                <OpsLink className={textLinkLook({ compact: true })} to={technicianPath(technician.id)}>
+                  {technician.name}
+                </OpsLink>
+              </th>
+              <td>{technician.city ?? <None />}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
     </Apart>
   );
 }
@@ -279,47 +295,49 @@ function Roster() {
   };
 
   return (
-    <Panel titleId="roster" title={technicians.title}>
-      {mayAdd && (
-        <PageActions>
-          <Button
-            variant="primary"
-            size="small"
-            onClick={() => {
-              setAdded(null);
-              setAdding(true);
+    <>
+      <Panel titleId="roster" title={technicians.title}>
+        {mayAdd && (
+          <PageActions>
+            <Button
+              variant="primary"
+              size="small"
+              onClick={() => {
+                setAdded(null);
+                setAdding(true);
+              }}
+            >
+              {technicians.add.open}
+            </Button>
+          </PageActions>
+        )}
+        <Period from={work.value.from} to={work.value.to} />
+        {added !== null && <Toast>{technicians.add.added(added)}</Toast>}
+        {roster.technicians.length === 0 ? (
+          <EmptyState look="panel" line={technicians.empty} />
+        ) : (
+          <RosterTable
+            active={roster.technicians}
+            figures={figures}
+            period={<PeriodChoice counted={work.value} onFrom={setFrom} />}
+          />
+        )}
+        {adding && (
+          <AddTechnician
+            cities={roster.cities}
+            onAdded={async (name) => {
+              await readAgain();
+              setAdding(false);
+              setAdded(name);
             }}
-          >
-            {technicians.add.open}
-          </Button>
-        </PageActions>
-      )}
-      <Period from={work.value.from} to={work.value.to} />
-      {added !== null && <Toast>{technicians.add.added(added)}</Toast>}
-      {roster.technicians.length === 0 ? (
-        <EmptyState look="panel" line={technicians.empty} />
-      ) : (
-        <RosterTable
-          active={roster.technicians}
-          figures={figures}
-          period={<PeriodChoice counted={work.value} onFrom={setFrom} />}
-        />
-      )}
-      {roster.switched_off.length > 0 && <SwitchedOff list={roster.switched_off} figures={figures} />}
-      {adding && (
-        <AddTechnician
-          cities={roster.cities}
-          onAdded={async (name) => {
-            await readAgain();
-            setAdding(false);
-            setAdded(name);
-          }}
-          onClose={() => {
-            setAdding(false);
-          }}
-        />
-      )}
-    </Panel>
+            onClose={() => {
+              setAdding(false);
+            }}
+          />
+        )}
+      </Panel>
+      {roster.switched_off.length > 0 && <SwitchedOff list={roster.switched_off} />}
+    </>
   );
 }
 

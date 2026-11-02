@@ -28044,6 +28044,8 @@ export interface components {
             }[];
             /** @description The cities the caller may give a technician, those their Operations MANAGE reaches, in display order. */
             cities: string[];
+            /** @description The business's reach from Settings, which a technician with no reach of their own takes (ADR 0223). */
+            default_reach_min: number;
         };
         TechnicianLeave: {
             /** Format: uuid */
