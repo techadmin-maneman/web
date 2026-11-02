@@ -3,6 +3,7 @@
 // folded into one line; and the reply box at its foot. Who it is with is beside it (./ChatClient.tsx).
 
 import { Toast } from "@maneman/ui/Toast";
+import { classes } from "@maneman/ui/classes";
 import { TextButton } from "@maneman/ui/TextLink";
 import { Note } from "@maneman/ui/Note";
 import { typeLook } from "@maneman/ui/type";
@@ -23,8 +24,18 @@ const thread = copy.thread;
 /** How often an open chat is read again while it is in view, for the client's next message. */
 const THREAD_EVERY_MS = 10_000;
 
-/** Who the chat is with: the client's name, or the number we don't know. */
-export const whoOf = (conversation: Conversation): string => conversation.person?.name ?? conversation.mobile;
+/**
+ * Who the chat is with, as the list, its head and the column beside it all name them: one of our technicians, the
+ * client, or the number we don't know.
+ */
+export const whoOf = (conversation: Conversation): string =>
+  conversation.technician?.name ?? conversation.person?.name ?? conversation.mobile;
+
+/** Beneath what they wrote: their first name, or the number we don't know. */
+const themOf = (conversation: Conversation): string => {
+  const named = conversation.technician?.name ?? conversation.person?.name;
+  return named === undefined ? thread.client : (named.split(" ")[0] ?? named);
+};
 
 /** "Visit reminder" from "visit_reminder". */
 const kindName = (kind: string): string => {
@@ -35,13 +46,13 @@ const kindName = (kind: string): string => {
 /** "21 Sep, 11:42 am". */
 const whenOf = (at: string): string => `${shortDate(indiaDate(at))}, ${indiaClock(at)}`;
 
-/** Who said it: the client, our automatic reply, or the member of staff who wrote it. */
-function fromOf(item: Extract<ThreadItem, { kind: "in" | "out" | "note" }>): string {
-  if (item.kind === "in") return thread.client;
+/** Who said it: the person the chat is with, our automatic reply, or the member of staff who wrote it. */
+function fromOf(item: Extract<ThreadItem, { kind: "in" | "out" | "note" }>, them: string): string {
+  if (item.kind === "in") return them;
   return item.author === "auto" ? thread.autoReply : item.author;
 }
 
-function Item({ item }: { item: ThreadItem }) {
+function Item({ item, them }: { item: ThreadItem; them: string }) {
   if (item.kind === "auto") {
     const seen = [
       item.state === "queued" ? thread.queued : null,
@@ -54,27 +65,33 @@ function Item({ item }: { item: ThreadItem }) {
       </li>
     );
   }
-  const from = fromOf(item);
+  const said = `${fromOf(item, them)} · ${whenOf(item.at)}`;
+  if (item.kind === "note")
+    return (
+      <li className={styles.note}>
+        <span className={styles.when}>
+          {thread.note} · {said}
+        </span>
+        <span className={styles.text}>{item.text ?? thread.erased}</span>
+      </li>
+    );
   return (
     <li className={item.kind === "in" ? styles.theirs : styles.ours}>
-      <span className={styles.when}>
-        {item.kind === "note" ? `${thread.note} · ` : ""}
-        {from} · {whenOf(item.at)}
-      </span>
-      <span className={styles.text}>{item.text ?? thread.erased}</span>
+      <span className={classes(styles.bubble, styles.text)}>{item.text ?? thread.erased}</span>
+      <span className={styles.when}>{said}</span>
       {item.kind === "out" && item.delivery === "failed" && <span className={styles.failed}>{thread.notSent}</span>}
     </li>
   );
 }
 
 /** Our automatic messages in a row: one line saying how many, and each of them once asked for. */
-function AutoRun({ items }: { items: readonly ThreadItem[] }) {
+function AutoRun({ items, them }: { items: readonly ThreadItem[]; them: string }) {
   const [shown, setShown] = useState(false);
   if (items.length === 1 || shown)
     return (
       <>
         {items.map((item) => (
-          <Item key={keyOf(item)} item={item} />
+          <Item key={keyOf(item)} item={item} them={them} />
         ))}
         {items.length > 1 && (
           <li className={styles.autoRun}>
@@ -109,7 +126,7 @@ const keyOf = (item: ThreadItem): string =>
   `${item.kind}-${item.at}-${item.kind === "auto" ? item.message : (item.text ?? "")}`;
 
 /** The chat's items with each row of our automatic messages folded into one line. */
-function Items({ items }: { items: readonly ThreadItem[] }) {
+function Items({ items, them }: { items: readonly ThreadItem[]; them: string }) {
   const runs: ThreadItem[][] = [];
   for (const item of items) {
     const last = runs.at(-1);
@@ -120,9 +137,9 @@ function Items({ items }: { items: readonly ThreadItem[] }) {
     <ol className={styles.items}>
       {runs.map((run) =>
         run[0]?.kind === "auto" ? (
-          <AutoRun key={keyOf(run[0])} items={run} />
+          <AutoRun key={keyOf(run[0])} items={run} them={them} />
         ) : (
-          run.map((item) => <Item key={keyOf(item)} item={item} />)
+          run.map((item) => <Item key={keyOf(item)} item={item} them={them} />)
         ),
       )}
     </ol>
@@ -185,7 +202,7 @@ export function Thread({
         </div>
         {mayAct && <CloseChat conversationId={conversation.id} onThread={applied} />}
       </header>
-      {items.length === 0 ? <Note>{thread.empty}</Note> : <Items items={items} />}
+      {items.length === 0 ? <Note>{thread.empty}</Note> : <Items items={items} them={themOf(conversation)} />}
       {said !== null && <Toast>{said}</Toast>}
       {mayAct && (
         <Composer

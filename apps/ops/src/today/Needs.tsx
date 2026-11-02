@@ -1,5 +1,5 @@
-// Needs you, on each of Today's homes (ADR 0227): the home's tasks on the person's board, their own first, then the
-// longest overdue. Each row carries the rule of how late it is, what it is, whom it is about, when it is due and, on a
+// Needs you, on each of Today's homes (ADR 0227): the tasks on the person's board, their own first, then the longest
+// overdue. Each row carries the rule of how late it is, what it is, whom it is about, when it is due and, on a
 // desk, its one step, as Tasks' row ends with it; a phone's row opens where it is decided. A link to Tasks closes the
 // panel.
 
@@ -36,10 +36,9 @@ const keyOf = (waiting: Waiting): string => `${waiting.group}/${waiting.task.id}
 /** As many as one look takes in. */
 const NEEDS_SHOWN = 10;
 
-function needsOf(board: Tasks, lists: (group: Group) => boolean, me: string | null): Waiting[] {
+function needsOf(board: Tasks, me: string | null): Waiting[] {
   const mine = (waiting: Waiting) => (me !== null && waiting.task.owner === me ? 0 : 1);
   return board.groups
-    .filter((group) => lists(group.group))
     .flatMap((group) => group.tasks.map((task) => ({ group: group.group, task })))
     .sort((one, other) => mine(one) - mine(other) || Date.parse(one.task.due) - Date.parse(other.task.due))
     .slice(0, NEEDS_SHOWN);
@@ -84,14 +83,14 @@ function useSettled() {
   };
 }
 
-export function Needs({ board, lists }: { readonly board: Tasks; readonly lists: (group: Group) => boolean }) {
+export function Needs({ board }: { readonly board: Tasks }) {
   const now = new Date(apiNow());
   const phone = useIsPhone();
   const [signedIn] = useLoad(whoami);
   const access = useAccess();
   const settled = useSettled();
   const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as : null;
-  const needs = needsOf(board, lists, me).filter((waiting) => !settled.isClosed(keyOf(waiting)));
+  const needs = needsOf(board, me).filter((waiting) => !settled.isClosed(keyOf(waiting)));
   const actingOn = (row: Row): Acting => ({
     me,
     staff: board.staff,
@@ -105,7 +104,7 @@ export function Needs({ board, lists }: { readonly board: Tasks; readonly lists:
       settled.close(keyOf(row));
     },
   });
-  const count = board.groups.filter((group) => lists(group.group)).reduce((sum, group) => sum + group.count, 0);
+  const count = board.groups.reduce((sum, group) => sum + group.count, 0);
   const listed =
     needs.length === 0 ? (
       <EmptyState look="panel" line={copy.none} />

@@ -5,10 +5,8 @@
 
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { AddressSearch } from "@maneman/ui/AddressSearch";
-import { EditableRow } from "@maneman/ui/EditableRow";
+import { EditableRow, OpenRow } from "@maneman/ui/EditableRow";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
-import { ReadRow } from "@maneman/ui/RecordRows";
-import { TextButton } from "@maneman/ui/TextLink";
 import { Checkbox, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { dayClock } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -283,23 +281,14 @@ function HomeRow(props: { technician: Technician; mayChange: boolean; onChange: 
   };
   return (
     <>
-      <ReadRow
+      <OpenRow
         label={copy.home}
-        value={
-          <span className={styles.homeValue}>
-            {technician.home?.label ?? copy.noHome}
-            {props.mayChange && (
-              <TextButton
-                compact
-                onClick={() => {
-                  setOpen(true);
-                }}
-              >
-                {technician.home === null ? copy.setHome : copy.changeHome}
-              </TextButton>
-            )}
-          </span>
-        }
+        value={technician.home?.label ?? copy.noHome}
+        words={EDITING}
+        mayChange={props.mayChange}
+        onOpen={() => {
+          setOpen(true);
+        }}
       />
       {open && (
         <FormDrawer title={copy.home} onClose={close}>

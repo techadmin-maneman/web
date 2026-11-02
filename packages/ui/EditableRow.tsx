@@ -236,3 +236,35 @@ export function EditableRow<Draft>({
     </form>
   );
 }
+
+/**
+ * A value changed somewhere bigger than its row, as an address in a drawer: it reads, and opens, as an EditableRow's
+ * does, so every row of a record is changed the one way.
+ */
+export function OpenRow(props: {
+  readonly label: string;
+  readonly value: ReactNode;
+  readonly words: EditingWords;
+  readonly mayChange: boolean;
+  readonly onOpen: () => void;
+}) {
+  const stacked = useContext(StackedRows);
+  const valueButton = useRef<HTMLButtonElement>(null);
+  return (
+    <div className={classes(styles.row, stacked && styles.stacked)}>
+      <span className={styles.label}>{props.label}</span>
+      {props.mayChange ? (
+        <Reading
+          label={props.label}
+          value={props.value}
+          words={props.words}
+          saved={false}
+          valueButton={valueButton}
+          onOpen={props.onOpen}
+        />
+      ) : (
+        <span className={styles.value}>{props.value}</span>
+      )}
+    </div>
+  );
+}

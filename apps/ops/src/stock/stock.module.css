@@ -57,11 +57,6 @@
   color: var(--ui-text-muted);
 }
 
-/* The views' tabs, above the view shown. */
-.views {
-  margin-bottom: var(--sp-20);
-}
-
 /* The places needing attention (./OnHand.tsx), a card each, as many to a row as fit. */
 .attentionCards {
   --local-card: 16rem; /* the narrowest a place's card runs, its name whole */

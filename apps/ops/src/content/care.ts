@@ -49,9 +49,7 @@ export const care = {
     read: "read",
     queued: "waiting to send",
     close: "Close",
-    page: "Client’s page",
     notSent: "Not sent",
-    technician: "One of our technicians. Operations answer technicians.",
     technicianPage: "Technician’s page",
     /** The after-hours answer, kept in the chat under our number. */
     autoReply: "Automatic reply",
@@ -190,8 +188,8 @@ export const care = {
     city: "City",
     none: "None",
     noAddress: "No address yet",
-    /** "Thu 24 Sep, 12 pm · Service visit" */
-    visit: (when: string, kind: string) => (kind === "" ? when : `${when} · ${kind}`),
+    /** "Thu 24 Sep, 12 pm · Service visit": the dot held to the time, so a narrow column breaks after it. */
+    visit: (when: string, kind: string) => (kind === "" ? when : `${when}\u00a0· ${kind}`),
     links: {
       visits: "Book or move a visit",
       payments: "Payments and links",

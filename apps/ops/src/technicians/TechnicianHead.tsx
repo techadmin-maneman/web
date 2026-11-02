@@ -90,7 +90,7 @@ export function TechnicianFigures({ summary, belowZero }: { summary: TechnicianS
       ? Math.round((Date.parse(loaded.value.to) - Date.parse(loaded.value.from)) / DAY_MS)
       : null;
   return (
-    <Columns row className={styles.figures}>
+    <Columns row>
       <StatTile label={figures.toCome} value={summary.visits_to_come} />
       {work !== undefined && days !== null && (
         <StatTile label={figures.jobs(days)} value={figures.jobCount(work.jobs)} />

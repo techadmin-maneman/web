@@ -1,5 +1,6 @@
-// A technician's week on their own page (./TechnicianScreen.tsx): what they have done over the roster's period, then
-// their visits these seven days, a day at a time, as the dispatch board has them, with the way onto the board.
+// A technician's week on their own page (./TechnicianScreen.tsx): how long a visit takes them and the way onto the
+// board, then these seven days side by side, a card a day from today, each visit in its day as the board has it and
+// opening there.
 
 import { buttonLook } from "@maneman/ui/Button";
 import { PanelFailed } from "@maneman/ui/States";
@@ -35,48 +36,54 @@ function WorkStrip({ technicianId }: { technicianId: string }) {
   );
 }
 
-/** Their visits these seven days, from today, a line each under its day. */
+/** These seven days from today, a card each, its visits in it, each opening on the board. */
 function Visits({ technician }: { technician: TechnicianSummary }) {
-  const read = useCallback(() => techniciansApi.board(todayInIndia(apiNow())), []);
+  const today = todayInIndia(apiNow());
+  const read = useCallback(() => techniciansApi.board(today), [today]);
   const [loaded, retry] = useLoad(read);
   if (loaded.state === "loading") return null;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const row = loaded.value.technicians.find((each) => each.technician_id === technician.id);
-  const days = (row?.days ?? []).filter((day) => day.blocks.length > 0);
-  if (days.length === 0) return <p className={styles.none}>{copy.none}</p>;
+  // The board's own seven days, read from today, so a day is the board's whether or not they work it.
+  const { dates } = loaded.value;
   return (
     <dl className={styles.week}>
-      {days.map((day) => (
-        <div key={day.date} className={styles.weekDay}>
-          <dt>{shortDate(day.date)}</dt>
-          {day.blocks.map((block) => (
-            <dd key={block.appointment_id}>
-              {copy.visit(
-                indiaClock(block.starts_at),
-                block.client ?? dispatch.unknown,
-                block.type === null ? dispatch.unknown : dispatch.typeNames[block.type],
-              )}
-            </dd>
-          ))}
-        </div>
-      ))}
+      {dates.map((date) => {
+        const blocks = row?.days.find((day) => day.date === date)?.blocks ?? [];
+        return (
+          <div key={date} className={styles.weekDay}>
+            <dt>{shortDate(date)}</dt>
+            {blocks.map((block) => (
+              <dd key={block.appointment_id}>
+                <OpsLink className={styles.weekVisit} to={dispatchPath({ from: date, visit: block.appointment_id })}>
+                  {copy.visit(
+                    indiaClock(block.starts_at),
+                    block.client ?? dispatch.unknown,
+                    block.type === null ? dispatch.unknown : dispatch.typeNames[block.type],
+                  )}
+                </OpsLink>
+              </dd>
+            ))}
+          </div>
+        );
+      })}
     </dl>
   );
 }
 
 export function TechnicianWeek({ technician }: { technician: TechnicianSummary }) {
   return (
-    <>
-      <WorkStrip technicianId={technician.id} />
-      <Visits technician={technician} />
-      <div className={styles.actions}>
+    <section className={styles.weekTab} aria-label={technicians.tabs.week}>
+      <div className={styles.weekHead}>
+        <WorkStrip technicianId={technician.id} />
         <OpsLink
-          className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })}
+          className={buttonLook({ variant: "outline", size: "small", className: styles.weekOpen })}
           to={dispatchPath({ find: technician.name })}
         >
           {copy.open}
         </OpsLink>
       </div>
-    </>
+      <Visits technician={technician} />
+    </section>
   );
 }

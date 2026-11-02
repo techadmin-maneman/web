@@ -1,15 +1,4 @@
-/* What Today places: the homes' choice, then what needs the person beside the home's own list, wider to narrower. */
-
-/* The homes' choice: a chip each, running on to a second line on a phone rather than out of sight. */
-.homes {
-  display: flex;
-  gap: var(--sp-8);
-  flex-wrap: wrap;
-}
-
-.homes > * {
-  flex-shrink: 0;
-}
+/* What Today places: what needs the person beside the home's own list, wider to narrower. */
 
 /* Needs you and the home's list: side by side on a wide window, one over the other on a narrower one. */
 .panels {

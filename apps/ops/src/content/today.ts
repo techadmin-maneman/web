@@ -1,8 +1,6 @@
 // Today's words (../today/TodayScreen.tsx). Its homes take the words their figures already have where they are acted
 // on; the day's sentence and each tile's line beneath its figure are Today's own.
 
-import { DEPARTMENT_NAMES, shell } from "./shell.ts";
-
 const plural = (count: number, one: string, many: string): string => `${String(count)} ${count === 1 ? one : many}`;
 
 /** How long something has waited: "38 min", "5 h", "3 days". */
@@ -10,13 +8,6 @@ function waited(minutes: number): string {
   if (minutes < 60) return `${String(Math.max(0, minutes))} min`;
   if (minutes < 24 * 60) return `${String(Math.floor(minutes / 60))} h`;
   return plural(Math.floor(minutes / (24 * 60)), "day", "days");
-}
-
-/** Inventory's sentence: what is below zero first, then what is out. */
-function stockSentence(below: number, out: number): string {
-  if (below > 0) return `${plural(below, "item", "items")} below zero.`;
-  if (out > 0) return `${plural(out, "item", "items")} out of stock.`;
-  return "Every place is stocked.";
 }
 
 export const today = {
@@ -45,7 +36,6 @@ export const today = {
     city: (city: string | null, percent: number) =>
       city === null ? `${String(percent)}% booked today.` : `${city} is ${String(percent)}% booked today.`,
     finance: (collected: string) => `${collected} collected today.`,
-    inventory: stockSentence,
   },
   /** A tile's line beneath its figure. */
   notes: {
@@ -54,20 +44,8 @@ export const today = {
     oldest: (minutes: number) => `Oldest ${waited(minutes)}`,
     lastWeek: "Last 7 days",
     payments: (count: number) => plural(count, "payment", "payments"),
-    places: (count: number) => plural(count, "place", "places"),
   },
   waited,
-  /** The homes Today opens on, by the person's grants (ADR 0227), and the choice between them. */
-  homes: {
-    label: shell.nav.today,
-    names: {
-      dispatch: shell.nav.dispatch,
-      care: DEPARTMENT_NAMES.customer_care,
-      city: "City head",
-      finance: DEPARTMENT_NAMES.finance,
-      inventory: shell.nav.inventory,
-    },
-  },
   road: {
     title: "On the road today",
     late: "Running late",
@@ -83,5 +61,4 @@ export const today = {
   noPayments: "No payments yet today.",
   /** A side list's way to its page: "Open Dispatch". */
   openPage: (page: string) => `Open ${page}`,
-  noPlaces: "Every place is stocked.",
 };

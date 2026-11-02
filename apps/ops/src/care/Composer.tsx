@@ -4,7 +4,7 @@
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
-import { ToggleButton } from "@maneman/ui/ToggleButton";
+import { Segmented } from "@maneman/ui/Segmented";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -87,25 +87,10 @@ function ReasonChoice(props: { reason: CloseReason; onReason: (reason: CloseReas
 /** Whether what is typed goes to the client, or stays in the chat as a note for the team. */
 type Mode = "reply" | "note";
 
-/** Reply or note, a chip each, beneath the box. */
-function ModeChoice({ mode, onMode }: { mode: Mode; onMode: (mode: Mode) => void }) {
-  return (
-    <div className={styles.modes} role="radiogroup" aria-label={compose.label}>
-      {(["reply", "note"] as const).map((each) => (
-        <ToggleButton
-          key={each}
-          asRadio
-          pressed={mode === each}
-          onClick={() => {
-            onMode(each);
-          }}
-        >
-          {each === "reply" ? compose.label : compose.noteMode}
-        </ToggleButton>
-      ))}
-    </div>
-  );
-}
+const MODES: readonly (readonly [Mode, string])[] = [
+  ["reply", compose.label],
+  ["note", compose.noteMode],
+];
 
 /** What Send says, by what is being written. */
 const sendWords: Readonly<Record<Mode, string>> = { reply: compose.send, note: compose.note };
@@ -116,7 +101,7 @@ function saidOf(mode: Mode, thread: ChatThread): string {
   return lastFailed(thread) ? compose.failed : compose.sent;
 }
 
-/** The foot of a chat: quick replies over the box, then reply or note, and Send. */
+/** The foot of a chat: quick replies over one box, what is written in it over reply or note, and Send. */
 export function Composer(props: {
   readonly conversationId: string;
   /** Whose chat it is, for a quick reply's {name} and {next_visit}. */
@@ -146,12 +131,14 @@ export function Composer(props: {
   return (
     <div className={styles.compose}>
       <QuickReplyPick name={props.client.name} personId={props.client.personId} onPick={setText} />
-      <ReplyBox text={text} onText={setText} error={boxError(copy.errors, failure, "text")} />
-      <div className={styles.composeFoot}>
-        <ModeChoice mode={mode} onMode={setMode} />
-        <Button variant="primary" size="small" disabled={busy || text.trim() === ""} onClick={() => void send()}>
-          {busy ? compose.sending : sendWords[mode]}
-        </Button>
+      <div className={styles.composeBox} data-note={mode === "note" || undefined}>
+        <ReplyBox text={text} onText={setText} error={boxError(copy.errors, failure, "text")} />
+        <div className={styles.composeFoot}>
+          <Segmented label={compose.label} options={MODES} value={mode} onChange={setMode} />
+          <Button variant="primary" size="small" disabled={busy || text.trim() === ""} onClick={() => void send()}>
+            {busy ? compose.sending : sendWords[mode]}
+          </Button>
+        </div>
       </div>
       <Refused failed={failure} errors={copy.errors} boxes={["text"]} />
     </div>

@@ -1,11 +1,10 @@
-// A client's Care person in their chat (docs/decisions/0131-care-people.md): who looks after them, and for a Customer
-// Care manager, moving them to another of the team.
+// A client's Care person beside their chat (docs/decisions/0131-care-people.md): who looks after them, among the
+// client's facts, and for a Customer Care manager, moving them to another of the team.
 
 import { Toast } from "@maneman/ui/Toast";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
@@ -18,11 +17,10 @@ import styles from "./care.module.css";
 const { carePerson: words } = copy;
 
 /** A Care person by e-mail, and the first name clients know them by once a manager has set one. */
-interface Named {
+export interface Named {
   readonly email: string;
   readonly name: string | null;
 }
-
 /** By the first name clients know them by, where one is set; by e-mail until then. */
 const nameOf = (person: Named) => person.name ?? person.email;
 
@@ -88,40 +86,36 @@ function Team(props: {
   const load = useCallback(() => careApi.careTeam(), []);
   const [loaded] = useLoad(load);
   if (loaded.state !== "loaded") return null;
-  if (loaded.value.team.length === 0) return <Note>{words.noTeam}</Note>;
+  if (loaded.value.team.length === 0) return null;
   return <MoveTo personId={props.personId} team={loaded.value.team} now={props.now} onMoved={props.onMoved} />;
 }
 
-/** The Care person, and who covers them while they are off, until a manager moves the client. */
-const coveredOf = (now: Named, was: string | null, cover: string | null): string =>
-  cover !== null && now.email === was ? copy.coveredBy(nameOf(now), cover) : nameOf(now);
+/** The Care person as the facts beside a chat give them: who covers them while they are off, or none given yet. */
+export function careWords(now: Named | null, was: string | null, cover: string | null): string {
+  if (now === null) return words.none;
+  return cover !== null && now.email === was ? copy.coveredBy(nameOf(now), cover) : nameOf(now);
+}
 
-export function CarePerson(props: {
+/** For a Customer Care manager, moving the client to another of the team; said once moved. */
+export function CareMove(props: {
   readonly personId: string;
-  readonly email: string | null;
-  readonly name: string | null;
-  /** Who covers them today, while they are off. */
-  readonly coveredBy: string | null;
+  readonly now: Named | null;
+  readonly onMoved: (moved: Named) => void;
 }) {
-  const [now, setNow] = useState<Named | null>(props.email === null ? null : { email: props.email, name: props.name });
   const [said, setSaid] = useState<string | null>(null);
   const mayMove = useAccess().mayCall("POST /api/clients/{id}/care-person");
+  if (!mayMove) return null;
   return (
-    <div className={styles.carePerson}>
-      <Note>
-        {words.label}: {now === null ? words.none : coveredOf(now, props.email, props.coveredBy)}
-      </Note>
+    <>
       {said !== null && <Toast>{said}</Toast>}
-      {mayMove && (
-        <Team
-          personId={props.personId}
-          now={now?.email ?? null}
-          onMoved={(moved) => {
-            setNow(moved);
-            setSaid(words.moved(nameOf(moved)));
-          }}
-        />
-      )}
-    </div>
+      <Team
+        personId={props.personId}
+        now={props.now?.email ?? null}
+        onMoved={(moved) => {
+          props.onMoved(moved);
+          setSaid(words.moved(nameOf(moved)));
+        }}
+      />
+    </>
   );
 }

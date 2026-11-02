@@ -4,7 +4,7 @@
 
 import { Link } from "@maneman/ui/router";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
-import { useMayCall } from "../lib/access.ts";
+import { useMayCall, type OpsCall } from "../lib/access.ts";
 import {
   mayOpen,
   NAV,
@@ -15,8 +15,13 @@ import {
   type MayCall,
   type NavKey,
   type Page,
+  type Route,
   type SectionPath,
+  STOCK_VIEWS,
+  stockPath,
 } from "../route.ts";
+import { stock } from "../content/stock.ts";
+import { mayOpenView } from "../stock/views.ts";
 import type { Waiting } from "../tasks/decided.ts";
 
 /** One entry of the navigation, as the person may open it. */
@@ -61,19 +66,37 @@ export function navLines(
   });
 }
 
-/** The entry's pages as tabs at the head of one of them; nothing for an entry of one page. */
-export function GroupTabs({ page }: { readonly page: Page }) {
+/** Stock's views, a tab each in Inventory's row in Stock's place, as the person may open them. */
+function StockTabs({ route }: { readonly route: WorkRoute }) {
   const mayCall = useMayCall();
-  const entry = navOf(page);
+  const mayAsk = (call: OpsCall) => mayCall === null || mayCall.has(call);
+  return STOCK_VIEWS.filter((view) => mayOpenView(view, mayAsk)).map((view) => (
+    <Link key={view} className={TAB} to={stockPath(view)} current={route.page === "stock" && route.view === view}>
+      {stock.views.names[view]}
+    </Link>
+  ));
+}
+
+/** A page of work's route: one with a group's tabs over it, not Settings or More. */
+type WorkRoute = Exclude<Route, { readonly page: "more" | "settings" }>;
+
+/** The entry's pages as tabs at the head of one of them, Stock as its views; nothing for an entry of one page. */
+export function GroupTabs({ route }: { readonly route: WorkRoute }) {
+  const mayCall = useMayCall();
+  const entry = navOf(route.page);
   const open = (entry.pages as readonly Page[]).filter((each) => mayOpen(mayCall, each));
   if (open.length < 2) return null;
   return (
     <Tabs label={NAV_NAMES[entry.entry]}>
-      {open.map((each) => (
-        <Link key={each} className={TAB} to={sectionOf(each).path} current={each === page}>
-          {SECTION_NAMES[each]}
-        </Link>
-      ))}
+      {open.map((each) =>
+        each === "stock" ? (
+          <StockTabs key={each} route={route} />
+        ) : (
+          <Link key={each} className={TAB} to={sectionOf(each).path} current={each === route.page}>
+            {SECTION_NAMES[each]}
+          </Link>
+        ),
+      )}
     </Tabs>
   );
 }

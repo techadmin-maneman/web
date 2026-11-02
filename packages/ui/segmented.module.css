@@ -1,0 +1,37 @@
+/* A view of a few (./Segmented.tsx): the options in one quiet track, the chosen one raised out of it on the panel's
+   white with a hairline round it, its words in the full ink. */
+
+@layer base, ui;
+
+@layer ui {
+  .track {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    padding: var(--sp-2);
+    background: var(--ui-tint);
+  }
+
+  .segment {
+    min-height: calc(var(--control-height) - 2 * var(--sp-2));
+    padding: 0 var(--sp-12);
+    border: var(--hairline) solid transparent;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-14);
+    color: var(--ui-text-muted);
+    cursor: pointer;
+  }
+
+  .segment[aria-checked="true"] {
+    border-color: var(--ui-line);
+    background: var(--ui-raised);
+    color: var(--ui-text);
+  }
+
+  @media (hover: hover) {
+    .segment:not([aria-checked="true"]):hover {
+      color: var(--ui-text);
+    }
+  }
+}

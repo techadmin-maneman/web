@@ -83,6 +83,7 @@ async function show() {
     setHeading: () => undefined,
     setRecordHead: () => undefined,
     actions,
+    aside: null,
   };
   act(() => {
     root.render(createElement(PageHead, { value: head }, createElement(WindowTimes)));

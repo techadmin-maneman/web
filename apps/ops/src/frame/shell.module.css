@@ -110,8 +110,39 @@
  * that scrolls sideways is, may otherwise shrink to nothing once the page runs taller than the window: Stock's views
  * did, on Movements, leaving a line where their tabs were.
  */
-.page > * {
+.page > *,
+.lead > * {
   flex-shrink: 0;
+}
+
+/*
+ * A record's facts beside its head (PageHead's PageAside). Without them the frame and its lead are not drawn, their
+ * parts standing in the page as before; with them, on a desk, the head and the page at the left and the facts at the
+ * right from the head down. Short of a desk's width the facts stand beneath the page.
+ */
+.frame,
+.lead {
+  display: contents;
+}
+
+.aside:empty {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .frame:has(> .aside:not(:empty)) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--ops-aside);
+    gap: var(--sp-24);
+    align-items: start;
+  }
+
+  .frame:has(> .aside:not(:empty)) > .lead {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-20);
+    min-width: 0;
+  }
 }
 
 .head {

@@ -29,6 +29,10 @@ const ARJUN: Conversation = {
 const chatRow = (page: Page, who: string) =>
   page.getByRole("list", { name: copy.chats }).getByRole("button", { name: new RegExp(`^${who}`) });
 
+/** The Care person among the facts beside the chat open. */
+const carePerson = (page: import("@playwright/test").Page) =>
+  page.getByRole("complementary", { name: copy.panel.title }).locator(`dt:text-is("${copy.carePerson.label}") + dd`);
+
 test("lists the chats waiting on us, and opens one with our automatic messages in it", async ({ page }) => {
   await answer(page, {
     "GET /api/conversations": json({ conversations: [ARJUN], next_cursor: null }),
@@ -81,11 +85,11 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
   await expect(
     page.getByText(copy.thread.auto("Visit reminder", [copy.thread.delivered, copy.thread.read])),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: copy.thread.page })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: copy.panel.links.visits })).toHaveAttribute(
     "href",
     `/clients/${ARJUN.person?.id ?? ""}/visits`,
   );
-  await expect(page.getByText(`${copy.carePerson.label}: asha@maneman.test`)).toBeVisible();
+  await expect(carePerson(page)).toHaveText("asha@maneman.test");
 });
 
 test("names a Care person by the name clients know them by, once a manager has set one", async ({ page }) => {
@@ -96,7 +100,7 @@ test("names a Care person by the name clients know them by, once a manager has s
   });
   await page.goto("/messages");
   await chatRow(page, "Arjun Mehta").click();
-  await expect(page.getByText(`${copy.carePerson.label}: Asha`)).toBeVisible();
+  await expect(carePerson(page)).toHaveText("Asha");
 });
 
 // Four ways to search: Messages took a box and a Find; it now finds as it is typed.

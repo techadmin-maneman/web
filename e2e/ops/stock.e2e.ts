@@ -30,7 +30,9 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 }
 
 /** Opens one of the page's views by its tab. */
-const showView = (page: Page, name: string) => page.getByRole("button", { name, exact: true }).click();
+/** Stock's views are tabs of Inventory's own row, beside its other pages. */
+const inventoryTabs = (page: Page) => page.getByRole("navigation", { name: opsCopy.shell.nav.inventory });
+const showView = (page: Page, name: string) => inventoryTabs(page).getByRole("link", { name, exact: true }).click();
 
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
@@ -42,10 +44,10 @@ async function recording(page: Page) {
   return page.getByRole("dialog", { name: stock.record.title });
 }
 
-test("is a section of its own beside the technicians, titled by what it is", async ({ page }) => {
+test("is a section of its own beside the technicians, titled by what it is, on On hand", async ({ page }) => {
   await open(page);
   await expect(page).toHaveTitle("Stock · Mane Man Ops");
-  await expect(page.getByRole("navigation").getByRole("link", { name: stock.title })).toHaveAttribute(
+  await expect(inventoryTabs(page).getByRole("link", { name: stock.views.names["on-hand"] })).toHaveAttribute(
     "aria-current",
     "page",
   );
@@ -306,13 +308,13 @@ test("lists the latest movements, a job’s use under the technician who recorde
 test("keeps its views' tabs whole on a view taller than the window", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 480 });
   await open(page);
-  const views = page.getByRole("navigation", { name: stock.views.label });
+  const views = inventoryTabs(page);
   for (const view of [stock.views.names.movements, stock.views.names.places]) {
-    await views.getByRole("button", { name: view }).click();
-    await expect(views.getByRole("button", { name: view })).toHaveAttribute("aria-current", "true");
+    await views.getByRole("link", { name: view, exact: true }).click();
+    await expect(views.getByRole("link", { name: view, exact: true })).toHaveAttribute("aria-current", "page");
     expect((await views.boundingBox())?.height ?? 0).toBeGreaterThan(30);
   }
-  await views.getByRole("button", { name: stock.views.names.onHand }).click();
+  await views.getByRole("link", { name: stock.views.names["on-hand"], exact: true }).click();
   await expect(onHand(page)).toBeVisible();
 });
 

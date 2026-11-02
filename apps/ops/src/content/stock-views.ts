@@ -22,6 +22,7 @@ export const stockViews = {
   expiring: {
     title: "Expiring",
     within: (days: number) => `Within ${String(days)} days, soonest first`,
+    none: (days: number) => `Nothing expires within ${String(days)} days.`,
     columns: ["Item", "Lot", "Place", "How many", "Expires"] as const,
     find: "Find an item, lot or place",
     expired: "Expired",

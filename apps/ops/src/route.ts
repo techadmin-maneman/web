@@ -160,7 +160,7 @@ export const settingsPageOf = (tab: SettingsTab): SettingsPage => {
 };
 
 /** A section that is one page, with nothing beneath it. */
-export type PlainPage = Exclude<Page, "clients" | "technicians">;
+export type PlainPage = Exclude<Page, "clients" | "technicians" | "stock">;
 
 /**
  * The tabs of the design's eight that a client's page carries, in its order, after the Overview, which the board draws
@@ -183,6 +183,10 @@ const OPENING_TAB: ClientTab = "visits";
 export const TECHNICIAN_TABS = ["week", "hours", "leave", "phones", "kit"] as const;
 export type TechnicianTab = (typeof TECHNICIAN_TABS)[number];
 
+/** Stock's views, each a tab of Inventory's own beside its other pages: On hand at /stock, each other at its name. */
+export const STOCK_VIEWS = ["on-hand", "expiring", "movements", "labels", "places"] as const;
+export type StockView = (typeof STOCK_VIEWS)[number];
+
 /**
  * A page, as its path names it. Three sections have pages beneath them:
  *
@@ -198,7 +202,8 @@ export type Route =
   | { readonly page: "more" }
   | { readonly page: "settings"; readonly tab: SettingsTab }
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab }
-  | { readonly page: "technicians"; readonly technicianId: string | null; readonly tab: TechnicianTab };
+  | { readonly page: "technicians"; readonly technicianId: string | null; readonly tab: TechnicianTab }
+  | { readonly page: "stock"; readonly view: StockView };
 
 const TODAY: Route = { page: "today" };
 export const MORE_PATH = "/more";
@@ -208,6 +213,7 @@ const ID = "([0-9a-f-]{36})";
 const CLIENT_PATH = new RegExp(`^/clients(?:/${ID}(?:/${oneOf(CLIENT_TABS)})?)?$`);
 const SETTINGS_PATH = new RegExp(`^/settings(?:/${oneOf(SETTINGS_PAGES.map((each) => each.tab))})?$`);
 const TECHNICIAN_PATH = new RegExp(`^/technicians(?:/${ID}(?:/${oneOf(TECHNICIAN_TABS)})?)?$`);
+const STOCK_PATH = new RegExp(`^/stock(?:/${oneOf(STOCK_VIEWS.slice(1))})?$`);
 
 /**
  * Pages that moved, so a link or bookmark to one still lands: what was set up in each department, now in Settings; the
@@ -248,7 +254,9 @@ const settingsTabOf = (named: string | undefined): SettingsTab =>
 const technicianTabOf = (named: string | undefined): TechnicianTab =>
   TECHNICIAN_TABS.find((tab) => tab === named) ?? TECHNICIAN_TABS[0];
 
-const WITH_TABS: readonly Page[] = ["clients", "technicians"];
+const stockViewOf = (named: string | undefined): StockView => STOCK_VIEWS.find((view) => view === named) ?? "on-hand";
+
+const WITH_TABS: readonly Page[] = ["clients", "technicians", "stock"];
 const isPlain = (page: Page): page is PlainPage => !WITH_TABS.includes(page);
 
 /** The page a path names, or null for a path the console has no page at. */
@@ -262,6 +270,8 @@ function knownRoute(asked: string): Route | null {
   if (technician !== null) {
     return { page: "technicians", technicianId: technician[1] ?? null, tab: technicianTabOf(technician[2]) };
   }
+  const stock = STOCK_PATH.exec(path);
+  if (stock !== null) return { page: "stock", view: stockViewOf(stock[1]) };
   if (path === MORE_PATH) return { page: "more" };
   const section = SECTIONS.find((each) => each.path === path);
   if (section === undefined || !isPlain(section.page)) return null;
@@ -284,6 +294,9 @@ export const rulePath = (name: OpsSettingName): string => `${settingsPath(rulePa
 
 /** A client's page on the tab named, so a link lands on what it is about. */
 export const clientPath = (clientId: string, tab: ClientTab): string => `/clients/${clientId}/${tab}`;
+
+/** Stock, on On hand or the view named. */
+export const stockPath = (view: StockView): string => (view === "on-hand" ? "/stock" : `/stock/${view}`);
 
 /** A technician's page, on its opening tab or the one named. */
 export const technicianPath = (technicianId: string, tab: TechnicianTab = TECHNICIAN_TABS[0]): string =>

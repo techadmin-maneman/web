@@ -197,6 +197,7 @@
 :root {
   --ui-ground: var(--paper); /* a page */
   --ui-raised: var(--paper-light); /* a panel or a bar above the page */
+  --ui-tint: var(--paper-light); /* a quiet fill inside a panel: a track of views, a column of a list */
   --ui-shade: var(--paper-shade); /* a block's fill: loading, a pressed button, one not yet usable */
   --ui-box: var(--white); /* a field's box, a tick's, a switch's */
   --ui-box-off: var(--paper-light); /* a box that cannot be used */

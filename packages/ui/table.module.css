@@ -117,8 +117,11 @@
     font-weight: var(--weight-medium);
   }
 
+  /* Its line of detail a step below the name, at the body's leading, as a row head's line beneath a name is. */
   .openerMeta {
+    margin-top: var(--sp-2);
     font-size: var(--fs-13);
+    line-height: var(--lh-145);
     color: var(--ui-text-muted);
   }
 

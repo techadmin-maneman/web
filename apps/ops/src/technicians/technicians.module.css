@@ -49,11 +49,6 @@
   color: var(--ui-text-muted);
 }
 
-.none {
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
-}
-
 /* ---- A technician's page: their details, then a tab at a time ------------ */
 
 /* A technician's page: their details, their tabs, then the tab's panel, each the page's width. */
@@ -72,7 +67,7 @@
 
 .tabs {
   align-self: stretch;
-  margin-top: var(--sp-20);
+  margin-top: var(--sp-8);
 }
 
 /* ---- Their details, in the panel ----------------------------------------- */
@@ -204,32 +199,90 @@
   margin-top: var(--sp-8);
 }
 
-/* Above their week: their jobs over the roster's period and how long a visit takes them. */
+/* Their week, on the page's ground as the design draws it: how long a visit takes them and the board's way above, then
+   the seven days side by side. */
+.weekTab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+
+.weekHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8) var(--sp-16);
+}
+
+/* How long a visit takes them, and whether they run over. */
 .strip {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-16);
-  margin: 0 0 var(--sp-16);
+  margin: 0;
   font-size: var(--fs-14);
 }
 
-/* Their visits these seven days, a day to a line group. */
+.weekOpen {
+  margin-left: auto;
+}
+
+/* The seven days, a card each across the page, every card as tall as the fullest. */
 .week {
-  margin: 0 0 var(--sp-16);
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--sp-8);
+  margin: 0;
 }
 
 .weekDay {
-  padding: var(--sp-8) 0;
-  border-bottom: var(--hairline) solid var(--ui-line);
+  --local-day: 7.5rem; /* a day's card with room for two visits before the row grows */
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  min-height: var(--local-day);
+  padding: var(--sp-12);
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
 }
 
 .weekDay dt {
   font-size: var(--fs-13);
-  color: var(--ui-text-muted);
+  font-weight: var(--weight-medium);
 }
 
 .weekDay dd {
-  margin: var(--sp-4) 0 0;
+  margin: 0;
+}
+
+/* A visit in its day, on the quiet tint, opening it on the board. */
+.weekVisit {
+  display: block;
+  padding: var(--sp-8);
+  background: var(--ui-tint);
+  font-size: var(--fs-13);
+  color: var(--ui-text);
+  text-decoration: none;
+}
+
+.weekVisit:hover {
+  text-decoration: underline;
+}
+
+/* Short of a desk's width, the days one beneath another, those with nothing in them left out. */
+@media (max-width: 1023px) {
+  .week {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .weekDay {
+    min-height: 0;
+  }
+
+  .weekDay:not(:has(dd)) {
+    display: none;
+  }
 }
 
 /* Call's handset, the size of the words beside it. */
@@ -238,10 +291,6 @@
 }
 
 /* The four figures beneath the head (./TechnicianHead.tsx), and the Kit tab's count of what is below zero. */
-.figures {
-  margin-bottom: var(--sp-8);
-}
-
 .tabCount {
   margin-left: var(--sp-8);
 }

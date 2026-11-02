@@ -21,6 +21,7 @@ import {
   SECTION_NAMES,
   SECTIONS,
   settingsPath,
+  stockPath,
   SETTINGS_PAGE_NAMES,
   SETTINGS_PAGES,
   technicianPath,
@@ -107,11 +108,13 @@ describe("the ops console’s routes", () => {
     for (const page of SETTINGS_PAGES) expect(Object.keys(ROUTE_NEEDS), page.tab).toContain(page.reads);
   });
 
-  it("opens each of Settings' pages and a client’s tabs at their own paths", () => {
+  it("opens each of Settings' pages, Stock's views and a client’s tabs at their own paths", () => {
     expect(routeOf(settingsPath("closed-days"))).toEqual({ page: "settings", tab: "closed-days" });
     expect(routeOf("/settings/job-sheet")).toEqual({ page: "settings", tab: "job-sheet" });
     expect(routeOf("/settings/nowhere")).toEqual({ page: "today" });
-    expect(routeOf("/stock")).toEqual({ page: "stock" });
+    expect(routeOf("/stock")).toEqual({ page: "stock", view: "on-hand" });
+    expect(routeOf(stockPath("movements"))).toEqual({ page: "stock", view: "movements" });
+    expect(routeOf("/stock/on-hand")).toEqual({ page: "today" });
     expect(routeOf(`/clients/${CLIENT}/photos`)).toEqual({ page: "clients", clientId: CLIENT, tab: "photos" });
   });
 

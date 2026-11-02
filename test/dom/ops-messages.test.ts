@@ -45,6 +45,13 @@ const STRANGER: Conversation = {
   last_line: "Do you come to Noida?",
 };
 
+/** One of our technicians, on a number a client of ours has too: the chat is the technician's everywhere it is named. */
+const IMRAN: Conversation = {
+  ...ARJUN,
+  id: "ad3f1b6d-7a8c-4d9e-8f0a-5b6c7d8e9f0a",
+  technician: { id: "88000000-0000-4000-8000-000000000001", name: "Imran Qureshi" },
+  last_line: "Running ten minutes late.",
+};
 const LEAVE = { id: "7b0c8e3a-4d59-4a6b-8c7d-2e3f4a5b6c7d", from: "2026-10-20", to: "2026-10-22" };
 
 const LATE = {
@@ -155,7 +162,10 @@ beforeEach(() => {
       if (address.pathname === "/api/conversations") {
         const view = address.searchParams.get("view");
         return Promise.resolve(
-          Response.json({ conversations: view === "closed" ? [] : [ARJUN, STRANGER], next_cursor: null }),
+          Response.json({
+            conversations: view === "closed" ? [] : view === "waiting" ? [IMRAN] : [ARJUN, STRANGER],
+            next_cursor: null,
+          }),
         );
       }
       if (address.pathname === "/api/quick-replies") return Promise.resolve(Response.json({ replies: [LATE] }));
@@ -173,6 +183,10 @@ beforeEach(() => {
             credits: { visits: 2, earliest_expiry: null },
           }),
         );
+      }
+      if (address.pathname === `/api/conversations/${IMRAN.id}`) {
+        const said = { kind: "in", at: IMRAN.last_message_at, author: "client", text: IMRAN.last_line, delivery: null };
+        return Promise.resolve(Response.json({ conversation: IMRAN, items: [said] }));
       }
       if (address.pathname === `/api/conversations/${STRANGER.id}`) {
         return Promise.resolve(Response.json({ conversation: STRANGER, items: [] }));
@@ -255,6 +269,11 @@ async function showSettings() {
   await settle();
 }
 
+/** The Care person among the facts beside the chat open. */
+const carePersonFact = () =>
+  [...document.body.querySelectorAll("dt")].find((each) => each.textContent === copy.carePerson.label)
+    ?.nextElementSibling?.textContent;
+
 describe("the Messages page", () => {
   it("lists the chats waiting on us, a number we don’t know by that", async () => {
     await show();
@@ -272,7 +291,29 @@ describe("the Messages page", () => {
     });
     expect(document.body.querySelector(`section[aria-label="${copy.thread.title("Arjun Mehta")}"]`)).not.toBeNull();
     expect(document.body.textContent).toContain(copy.thread.auto("Visit reminder", [copy.thread.delivered]));
-    expect(document.body.textContent).toContain(copy.thread.client);
+    // Beneath what they wrote, who by their first name, and when.
+    expect(document.body.textContent).toContain("Arjun · ");
+  });
+
+  // The list named a technician, the chat's head and the column beside it the client sharing their number, with a line
+  // on how the console works and a client's free service visits.
+  it("names a technician's chat for the technician everywhere, beside their page and nothing of a client's", async () => {
+    await show();
+    await view("waiting");
+    expect(chatButton("Imran Qureshi")?.textContent).toContain(copy.technicianName("Imran Qureshi"));
+    await act(async () => {
+      chatButton("Imran Qureshi")?.click();
+      await answered();
+    });
+    const chat = document.body.querySelector(`section[aria-label="${copy.thread.title("Imran Qureshi")}"]`);
+    expect(chat?.querySelector("h3")?.textContent).toBe("Imran Qureshi");
+    expect(chat?.textContent).toContain("Imran · ");
+    const beside = document.body.querySelector(`aside[aria-label="${copy.panel.title}"]`);
+    expect(beside?.querySelector('a[href="/technicians/88000000-0000-4000-8000-000000000001"]')?.textContent).toBe(
+      copy.thread.technicianPage,
+    );
+    expect(beside?.textContent).not.toContain("Arjun");
+    expect(beside?.textContent).not.toContain(copy.remedy.open);
   });
 
   it("shows another view when one is chosen", async () => {
@@ -289,7 +330,7 @@ describe("the Messages page", () => {
       chatButton("Arjun Mehta")?.click();
       await answered();
     });
-    expect(document.body.textContent).toContain(`${copy.carePerson.label}: asha@maneman.test`);
+    expect(carePersonFact()).toBe("asha@maneman.test");
     await view("mine");
     expect(asked).toContain("/api/conversations?view=mine");
   });
@@ -300,7 +341,7 @@ describe("the Messages page", () => {
       chatButton("Arjun Mehta")?.click();
       await answered();
     });
-    expect(document.body.textContent).toContain(`${copy.carePerson.label}: asha@maneman.test`);
+    expect(carePersonFact()).toBe("asha@maneman.test");
     const choice = [...document.body.querySelectorAll("select")].find((each) =>
       [...each.options].some((option) => option.value === "ravi@maneman.test"),
     );
@@ -325,7 +366,7 @@ describe("the Messages page", () => {
       { path: "/api/clients/11111111-1111-4111-8111-111111111111/care-person", body: { email: "ravi@maneman.test" } },
     ]);
     expect(document.body.textContent).toContain(copy.carePerson.moved("ravi@maneman.test"));
-    expect(document.body.textContent).toContain(`${copy.carePerson.label}: ravi@maneman.test`);
+    expect(carePersonFact()).toBe("ravi@maneman.test");
   });
 
   it("fills a quick reply in with the client’s first name and next visit", async () => {

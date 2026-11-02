@@ -295,10 +295,25 @@ export function Leave({ technician }: { technician: TechnicianSummary }) {
     if (answer.ok) setFresh(answer.body.leave);
   };
 
+  const add =
+    !recording && mayRecord ? (
+      <Button
+        variant="outline"
+        size="small"
+        className={shared.quiet}
+        aria-label={copy.addLabel(technician.name)}
+        onClick={() => {
+          setRecorded(false);
+          setRecording(true);
+        }}
+      >
+        {copy.add}
+      </Button>
+    ) : null;
   return (
     <>
       {leave.length === 0 ? (
-        <EmptyState look="panel" line={copy.none} />
+        <EmptyState look="panel" line={copy.none} action={add} />
       ) : (
         <ul className={shared.leaveList}>
           {leave.map((period) => (
@@ -307,22 +322,7 @@ export function Leave({ technician }: { technician: TechnicianSummary }) {
         </ul>
       )}
       {recorded && <Toast>{copy.recorded}</Toast>}
-      {!recording && mayRecord && (
-        <div className={shared.actions}>
-          <Button
-            variant="outline"
-            size="small"
-            className={shared.quiet}
-            aria-label={copy.addLabel(technician.name)}
-            onClick={() => {
-              setRecorded(false);
-              setRecording(true);
-            }}
-          >
-            {copy.add}
-          </Button>
-        </div>
-      )}
+      {leave.length > 0 && add !== null && <div className={shared.actions}>{add}</div>}
       {recording && (
         <LeaveForm
           technician={technician}

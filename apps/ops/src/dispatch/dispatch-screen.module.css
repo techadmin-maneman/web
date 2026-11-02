@@ -26,9 +26,10 @@
   flex-direction: column;
   min-width: 0;
 }
-/* The board on a panel's ground and edge, in from the page's sides as the bars above it are. */
+/* The board on a panel's ground and edge, in from the page's sides as the bars above it are: as tall as its rows, up
+   to the room the window leaves it, then scrolling under its head. */
 .scroll {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   margin: 0 var(--sp-32) var(--sp-24);
   overflow: auto;

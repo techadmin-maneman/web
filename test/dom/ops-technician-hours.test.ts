@@ -145,6 +145,6 @@ describe("where the day starts", () => {
     expect(page.textContent).toContain(copy.noHome);
     show({ ...IMRAN, home: { label: "Sunrise Greens, Sector 65, Gurugram" } });
     expect(page.textContent).toContain("Sunrise Greens, Sector 65, Gurugram");
-    expect(button(copy.changeHome)).toBeDefined();
+    expect(page.querySelector(`button[aria-label="${EDITING.change} ${copy.home}"]`)).not.toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-// The head of a console page: where it sits (Breadcrumbs), its title in the serif, a line of figures beside the
+// The head of a console page: where it sits (Breadcrumbs), its title in the serif, a line of figures beneath the
 // title or the day and place above it, a record's initials, badges and facts where the page is one, the page's actions at the right, and its tabs beneath. Every page has it, so
 // every page reads alike.
 //
@@ -32,7 +32,7 @@ export function PageHeader({
   readonly mark?: ReactNode;
   /** Beside the title, before its figures: a record's badges. */
   readonly beside?: ReactNode;
-  /** Figures beside the title, a count or a week; never a sentence. */
+  /** Figures on a line beneath the title, a count or a week; never a sentence. */
   readonly meta?: ReactNode;
   /** A line beneath the title: a record's facts, side by side. */
   readonly under?: ReactNode;
@@ -54,7 +54,7 @@ export function PageHeader({
           {mark}
           <div className={styles.heading}>
             {over !== undefined && over !== null && <span className={styles.over}>{over}</span>}
-            <h1 className={typeLook("title-2", styles.title)} ref={titleRef} tabIndex={-1}>
+            <h1 className={typeLook("title-1", styles.title)} ref={titleRef} tabIndex={-1}>
               {title}
             </h1>
             {beside !== undefined && beside !== null && <span className={styles.beside}>{beside}</span>}

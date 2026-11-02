@@ -142,7 +142,7 @@ function RemedyFields(props: { personId: string; onGiven: (said: string) => void
 export function RemedyForm({ personId }: { readonly personId: string }) {
   const [said, setSaid] = useState<string | null>(null);
   return (
-    <div className={styles.closing}>
+    <div className={styles.action}>
       {said !== null && <Toast>{said}</Toast>}
       <DrawerButton label={copy.open}>
         {(close) => (
