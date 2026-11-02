@@ -52,7 +52,7 @@ describe("mm-api wrangler config", () => {
   it("refuses a Books organisation, refund account or Razorpay account that staging and production share", () => {
     const shared = api(["env.production.vars.ZOHO_BOOKS_ORG_ID", "60088931635"]);
     expect(shared).toContain('share ZOHO_BOOKS_ORG_ID "60088931635": staging needs a tenant of its own');
-    expect(api(["env.production.vars.RAZORPAY_KEY_ID", "rzp_test_Tf1Bf3ElRK6uNQ"])).toContain("share RAZORPAY_KEY_ID");
+    expect(api(["env.production.vars.RAZORPAY_KEY_ID", "rzp_test_TvFc2eEnPG73fO"])).toContain("share RAZORPAY_KEY_ID");
   });
 
   it("the committed deliberately broken fixture fails", () => {
