@@ -7,7 +7,11 @@ import { Apart } from "@maneman/ui/Apart";
 import { PageActions } from "../frame/PageHead.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { FIGURE, Table } from "@maneman/ui/Table";
+import { ViewRows } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
@@ -27,41 +31,76 @@ const loadSuppliers = () => suppliersApi.suppliers();
 
 type Supplier = SupplierList["suppliers"][number];
 
+const COLUMNS: readonly Column<Supplier>[] = [
+  { label: copy.columns.supplier, sort: (row) => row.name },
+  {
+    label: copy.columns.country,
+    sort: (row) => `${row.country} ${row.currency}`,
+    choice: (row) => `${row.country} · ${row.currency}`,
+  },
+  { label: copy.columns.terms, sort: (row) => row.payment_terms_days, figure: true },
+  { label: copy.columns.warranty, sort: (row) => row.warranty_days, figure: true },
+];
+
 function SupplierTable(props: { rows: readonly Supplier[]; onOpen: (id: string) => void }) {
+  const view = useTableView(props.rows, COLUMNS, { search: (row) => row.name });
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <>
+        <Narrowing view={view} label={copy.find} />
+        <ViewRows
+          rows={view.shown}
+          label={copy.title}
+          row={(supplier) => ({
+            key: supplier.id,
+            title: supplier.name,
+            meta: `${supplier.country} · ${supplier.currency} · ${copy.warranty(supplier.warranty_days)}`,
+            end: copy.terms(supplier.payment_terms_days),
+            label: copy.open(supplier.name),
+            onClick: () => {
+              props.onOpen(supplier.id);
+            },
+          })}
+        />
+        <TableEnd view={view} />
+      </>
+    );
+  }
   return (
-    <Table>
-      <thead>
-        <tr>
-          {copy.columns.map((column) => (
-            <th key={column} scope="col">
-              {column}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {props.rows.map((supplier) => (
-          <tr key={supplier.id}>
-            <RowHead>
-              <TextButton
-                compact
-                aria-label={copy.open(supplier.name)}
-                onClick={() => {
-                  props.onOpen(supplier.id);
-                }}
-              >
-                {supplier.name}
-              </TextButton>
-            </RowHead>
-            <td>
-              {supplier.country} · {supplier.currency}
-            </td>
-            <td>{copy.terms(supplier.payment_terms_days)}</td>
-            <td>{copy.warranty(supplier.warranty_days)}</td>
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {view.shown.map((supplier) => (
+            <tr key={supplier.id}>
+              <RowHead>
+                <TextButton
+                  compact
+                  aria-label={copy.open(supplier.name)}
+                  onClick={() => {
+                    props.onOpen(supplier.id);
+                  }}
+                >
+                  {supplier.name}
+                </TextButton>
+              </RowHead>
+              <td>
+                {supplier.country} · {supplier.currency}
+              </td>
+              <td className={FIGURE}>{copy.terms(supplier.payment_terms_days)}</td>
+              <td className={FIGURE}>{copy.warranty(supplier.warranty_days)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
   );
 }
 

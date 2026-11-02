@@ -16,20 +16,22 @@ const PHONE = { width: 390, height: 844 };
 
 const pageWidth = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth);
 
-const [, city, jobs] = opsCopy.technicians.columns;
-
-// The heads stood as a wrapped line above the cards; the order is chosen in the bar instead, the heads read aloud.
-test("reads a table's rows as cards, each value beside its column's name, the order chosen in the bar", async ({
-  page,
-}) => {
+// The roster ran as cards, each value beside its column's name, under a wrapped line of heads.
+test("reads the roster as a list's rows, the order chosen in the bar", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await openTechnicians(page);
-  const faizan = page.getByRole("row").filter({ hasText: "Faizan Ali" });
-  await expect(faizan.locator("td").first()).toHaveAttribute("data-label", city);
+  const rows = page.getByRole("list", { name: opsCopy.technicians.title }).getByRole("listitem");
+  const faizan = rows.filter({ hasText: "Faizan Ali" });
+  // No city, said in words beneath the name: nothing can be booked on them.
+  await expect(faizan).toContainText(opsCopy.technicians.noCity);
+  await expect(page.getByRole("table")).toHaveCount(0);
   expect((await faizan.boundingBox())?.width ?? 0).toBeLessThanOrEqual(PHONE.width);
   expect(await pageWidth(page)).toBeLessThanOrEqual(PHONE.width);
-  await page.getByRole("combobox", { name: tables.sortBy }).selectOption({ label: tables.sortedAs(jobs, true) });
-  await expect(page.getByRole("columnheader", { name: jobs })).toHaveAttribute("aria-sort", "ascending");
+  const [technician] = opsCopy.technicians.columns;
+  await page.getByRole("combobox", { name: tables.sortBy }).selectOption({ label: tables.sortedAs(technician, false) });
+  await expect(rows.first()).toContainText("Sandeep Yadav");
+  await page.getByRole("combobox", { name: tables.sortBy }).selectOption({ label: tables.sortedAs(technician, true) });
+  await expect(rows.first()).toContainText("Faizan Ali");
   expect(await axeViolations(page)).toEqual([]);
 });
 

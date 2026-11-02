@@ -142,7 +142,8 @@ export const care = {
       `Given: ${String(visits)} free service ${visits === 1 ? "visit" : "visits"}, on their account now.`,
     awaiting: "Above your limit, so a manager approves it first.",
     none: "No remedies in the last 30 days.",
-    columns: ["Client", "Free visits", "Why", "Given", "Status", "Note"],
+    columns: ["Client", "Free visits", "Why", "Given", "Status", "Note"] as const,
+    find: "Find a client",
     /** The last column, named aloud only: a manager's approve or decline. */
     decide: "Decide",
     states: { given: "Given", awaiting: "Awaiting approval", declined: "Declined" },
@@ -252,6 +253,7 @@ export const care = {
   /** The Care team, their days off and who covers whom (docs/decisions/0134-care-cover.md). */
   team: {
     title: "Care team",
+    find: "Find a member",
     columns: {
       member: "Member",
       name: "Name clients see",

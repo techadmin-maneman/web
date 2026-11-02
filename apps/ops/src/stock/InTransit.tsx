@@ -8,7 +8,10 @@ import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
+import { ACTIONS, FIGURE, RowActions, Table, TableScroll } from "@maneman/ui/Table";
+import { SortHeads } from "@maneman/ui/TableTools";
+import { useTableView } from "@maneman/ui/useTableView";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { boxError, errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -18,7 +21,6 @@ import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { PieceScans } from "./PieceScans.tsx";
 import { placeName } from "./StockForm.tsx";
-import styles from "./stock.module.css";
 import { unitOf } from "./holdings.ts";
 import { FormRefusal, Refusal } from "@maneman/ui/Refusal";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -118,18 +120,20 @@ function TransferRow(props: { stock: Stock; transfer: Transfer; onReceive: () =>
       </td>
       <td>{from}</td>
       <td>{to}</td>
-      <td className={FIGURE}>{shortDate(indiaDate(transfer.sent_at))}</td>
-      <td className={styles.held}>
-        {access.mayCall("POST /api/stock/transfers/{id}/receive") && (
-          <RowButton beside aria-label={copy.receiveLabel(what, to)} onClick={props.onReceive}>
-            {copy.receive}
-          </RowButton>
-        )}{" "}
-        {access.mayCall("POST /api/stock/transfers/{id}/send-back") && (
-          <RowButton beside aria-label={copy.sendBackLabel(what, from)} onClick={props.onSendBack}>
-            {copy.sendBack}
-          </RowButton>
-        )}
+      <td>{shortDate(indiaDate(transfer.sent_at))}</td>
+      <td className={ACTIONS}>
+        <RowActions>
+          {access.mayCall("POST /api/stock/transfers/{id}/receive") && (
+            <RowButton aria-label={copy.receiveLabel(what, to)} onClick={props.onReceive}>
+              {copy.receive}
+            </RowButton>
+          )}
+          {access.mayCall("POST /api/stock/transfers/{id}/send-back") && (
+            <RowButton aria-label={copy.sendBackLabel(what, from)} onClick={props.onSendBack}>
+              {copy.sendBack}
+            </RowButton>
+          )}
+        </RowActions>
       </td>
     </tr>
   );
@@ -139,6 +143,16 @@ export function InTransit({ stock, onChanged }: { stock: Stock; onChanged: (stoc
   const [receiving, setReceiving] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const transfer = stock.in_transit.find((each) => each.id === receiving);
+  const nameOf = (each: Transfer) =>
+    stock.consumables.find((consumable) => consumable.code === each.consumable_code)?.name ?? each.consumable_code;
+  const [item, many, from, to, sent] = copy.columns;
+  const view = useTableView(stock.in_transit, [
+    { label: item, sort: nameOf },
+    { label: many, sort: (each: Transfer) => each.quantity, figure: true },
+    { label: from, sort: (each: Transfer) => placeName(stock, each.from) },
+    { label: to, sort: (each: Transfer) => placeName(stock, each.to) },
+    { label: sent, sort: (each: Transfer) => each.sent_at },
+  ]);
   const sendBack = async (id: string) => {
     setFailure(null);
     const answer = await stockApi.sendBack(id);
@@ -151,15 +165,14 @@ export function InTransit({ stock, onChanged }: { stock: Stock; onChanged: (stoc
         <Table controls>
           <thead>
             <tr>
-              {copy.columns.map((column, index) => (
-                <th scope="col" key={index}>
-                  {column}
-                </th>
-              ))}
+              <SortHeads view={view} />
+              <th scope="col">
+                <VisuallyHidden>{copy.actions}</VisuallyHidden>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {stock.in_transit.map((each) => (
+            {view.shown.map((each) => (
               <TransferRow
                 key={each.id}
                 stock={stock}

@@ -8,7 +8,11 @@ import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { ACTIONS, Table } from "@maneman/ui/Table";
+import { NoValue } from "@maneman/ui/NoValue";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { SortHeads } from "@maneman/ui/TableTools";
+import { useTableView } from "@maneman/ui/useTableView";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
 import form from "@maneman/ui/forms.module.css";
@@ -28,20 +32,23 @@ export type Answer =
   | { readonly ok: true; readonly body: Detail }
   | { readonly ok: false; readonly code: string; readonly fields: readonly string[] };
 
-function Rows({ columns, rows }: { columns: readonly string[]; rows: readonly (readonly [string, ...string[]])[] }) {
+type Line = readonly [string, ...string[]];
+
+/** A recall's held stock, a place a row: each column sorts by its words. */
+function Rows({ columns, rows }: { columns: readonly string[]; rows: readonly Line[] }) {
+  const view = useTableView(
+    rows,
+    columns.map((label, at) => ({ label, sort: (row: Line) => row[at] ?? "" })),
+  );
   return (
-    <Table controls>
+    <Table>
       <thead>
         <tr>
-          {columns.map((column) => (
-            <th key={column} scope="col">
-              {column}
-            </th>
-          ))}
+          <SortHeads view={view} />
         </tr>
       </thead>
       <tbody>
-        {rows.map(([head, ...cells]) => (
+        {view.shown.map(([head, ...cells]) => (
           <tr key={`${head}-${cells.join("-")}`}>
             <RowHead>{head}</RowHead>
             {cells.map((cell, index) => (
@@ -86,24 +93,29 @@ function BookFree({ worn }: { worn: Worn }) {
 }
 
 function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }) {
+  const [client, piece, due] = copy.wornColumns;
+  const view = useTableView(worn, [
+    { label: client, sort: (each: Worn) => each.person },
+    { label: piece, sort: (each: Worn) => each.piece_code },
+    { label: due, sort: (each: Worn) => each.due_on ?? "" },
+  ]);
   return (
     <Table controls>
       <thead>
         <tr>
-          {copy.wornColumns.map((column, index) => (
-            <th key={index} scope="col">
-              {column}
-            </th>
-          ))}
+          <SortHeads view={view} />
+          <th scope="col">
+            <VisuallyHidden>{copy.bookFree}</VisuallyHidden>
+          </th>
         </tr>
       </thead>
       <tbody>
-        {worn.map((each) => (
+        {view.shown.map((each) => (
           <tr key={each.piece_id}>
             <RowHead>{each.person}</RowHead>
             <td>{each.piece_code}</td>
-            <td>{each.due_on === null ? "" : plainDate(each.due_on)}</td>
-            <td>{mayBook && <BookFree worn={each} />}</td>
+            <td>{each.due_on === null ? <NoValue /> : plainDate(each.due_on)}</td>
+            <td className={ACTIONS}>{mayBook && <BookFree worn={each} />}</td>
           </tr>
         ))}
       </tbody>

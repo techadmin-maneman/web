@@ -65,6 +65,12 @@ export const stock = {
   columns: { held: "On hand", status: "Status", expires: "Soonest expiry", counted: "Last counted" },
   noExpiry: "—",
   neverCounted: "Not yet",
+  /** A phone's row, where the columns' names are not there to say what each date is. */
+  phone: {
+    expires: (date: string) => `Expires ${date}`,
+    counted: (date: string) => `Counted ${date}`,
+    notCounted: "Not counted yet",
+  },
   expired: "Expired",
   expiresSoon: "Expires soon",
   /** A lot or a piece's label: "Expires 30 Nov 2027". */

@@ -6,7 +6,10 @@ import { plainDate } from "@maneman/web-kit/plain-date";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
-import { Table } from "@maneman/ui/Table";
+import { ACTIONS, FIGURE, Table } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -42,35 +45,50 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => Promise<v
   );
 }
 
+const serviceOf = (price: CityPrice) => `${copy.items[price.item]} · ${price.tier}`;
+
+/** Each column sorts; a city and a service each narrow the list. */
+const COLUMNS: readonly Column<CityPrice>[] = [
+  { label: copy.columns.city, sort: (price) => price.city, choice: (price) => price.city },
+  { label: copy.columns.service, sort: serviceOf, choice: (price) => copy.items[price.item] },
+  { label: copy.columns.before, sort: (price) => price.amount_ex_gst, figure: true },
+  { label: copy.columns.gst, sort: (price) => price.gst_percent, figure: true },
+  { label: copy.columns.from, sort: (price) => price.valid_from },
+];
+
 function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => Promise<void> }) {
   const mayWithdraw = useAccess().mayCall("DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}");
+  const view = useTableView(cities.prices, COLUMNS, { search: (price) => `${price.city} ${serviceOf(price)}` });
   if (cities.prices.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
-    <Table>
-      <thead>
-        <tr>
-          {copy.columns.map((column) => (
-            <th key={column} scope="col">
-              {column}
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+            <th scope="col">
+              <VisuallyHidden>{copy.columns.withdraw}</VisuallyHidden>
             </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {cities.prices.map((price) => (
-          <tr key={`${price.city}/${price.item}/${price.tier}/${price.valid_from}`}>
-            <RowHead>{price.city}</RowHead>
-            <td>
-              {copy.items[price.item]} · {price.tier}
-            </td>
-            <td>{rupees(price.amount_ex_gst)}</td>
-            <td>{price.gst_percent}%</td>
-            <td>{price.in_force ? copy.inForce : plainDate(price.valid_from)}</td>
-            <td>{mayWithdraw && price.valid_from > cities.today && <Withdraw price={price} onDone={onDone} />}</td>
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {view.shown.map((price) => (
+            <tr key={`${price.city}/${price.item}/${price.tier}/${price.valid_from}`}>
+              <RowHead>{price.city}</RowHead>
+              <td>{serviceOf(price)}</td>
+              <td className={FIGURE}>{rupees(price.amount_ex_gst)}</td>
+              <td className={FIGURE}>{price.gst_percent}%</td>
+              <td>{price.in_force ? copy.inForce : plainDate(price.valid_from)}</td>
+              <td className={ACTIONS}>
+                {mayWithdraw && price.valid_from > cities.today && <Withdraw price={price} onDone={onDone} />}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
   );
 }
 

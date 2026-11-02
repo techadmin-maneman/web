@@ -7,6 +7,8 @@ import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -26,6 +28,10 @@ const loadClaims = () => purchasingApi.claims();
 /** What a claim is worth: the credit given, else what was claimed at the order's price. */
 const valueOf = (claim: Claim) => inCurrency(claim.credit_amount ?? claim.unit_price * claim.quantity, claim.currency);
 
+/** Where a claim stands in words: its outcome once settled, else its state. */
+const standingOf = (claim: Claim) =>
+  claim.outcome === null ? copy.claims.states[claim.state] : copy.claims.outcomes[claim.outcome];
+
 function ClaimsTable({
   claims,
   supplierOf,
@@ -35,41 +41,61 @@ function ClaimsTable({
   supplierOf: (id: string) => string;
   onOpen: (id: string) => void;
 }) {
+  const [number, supplier, item, reason, status, value] = copy.claims.columns;
+  const columns: readonly Column<Claim>[] = [
+    { label: number, sort: (claim) => claim.number },
+    {
+      label: supplier,
+      sort: (claim) => supplierOf(claim.supplier_id),
+      choice: (claim) => supplierOf(claim.supplier_id),
+    },
+    { label: item, sort: (claim) => claim.name },
+    {
+      label: reason,
+      sort: (claim) => copy.claims.reasons[claim.reason],
+      choice: (claim) => copy.claims.reasons[claim.reason],
+    },
+    { label: status, sort: standingOf, choice: standingOf },
+    { label: value, sort: (claim) => claim.credit_amount ?? claim.unit_price * claim.quantity, figure: true },
+  ];
+  const view = useTableView(claims.claims, columns, {
+    search: (claim) => `${copy.claims.number(claim.number)} ${claim.name} ${claim.piece_code ?? ""}`,
+  });
   if (claims.claims.length === 0) return <EmptyState look="panel" line={copy.claims.none} />;
   return (
-    <Table controls>
-      <thead>
-        <tr>
-          {copy.claims.columns.map((column) => (
-            <th key={column} scope="col">
-              {column}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {claims.claims.map((claim) => (
-          <tr key={claim.id}>
-            <RowHead>
-              <TextButton
-                compact
-                aria-label={copy.claims.open(copy.claims.number(claim.number))}
-                onClick={() => {
-                  onOpen(claim.id);
-                }}
-              >
-                {copy.claims.number(claim.number)}
-              </TextButton>
-            </RowHead>
-            <td>{supplierOf(claim.supplier_id)}</td>
-            <td>{copy.claims.item(claim.name, claim.quantity, claim.piece_code)}</td>
-            <td>{copy.claims.reasons[claim.reason]}</td>
-            <td>{claim.outcome === null ? copy.claims.states[claim.state] : copy.claims.outcomes[claim.outcome]}</td>
-            <td className={FIGURE}>{valueOf(claim)}</td>
+    <>
+      <Narrowing view={view} label={copy.claims.find} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {view.shown.map((claim) => (
+            <tr key={claim.id}>
+              <RowHead>
+                <TextButton
+                  compact
+                  aria-label={copy.claims.open(copy.claims.number(claim.number))}
+                  onClick={() => {
+                    onOpen(claim.id);
+                  }}
+                >
+                  {copy.claims.number(claim.number)}
+                </TextButton>
+              </RowHead>
+              <td>{supplierOf(claim.supplier_id)}</td>
+              <td>{copy.claims.item(claim.name, claim.quantity, claim.piece_code)}</td>
+              <td>{copy.claims.reasons[claim.reason]}</td>
+              <td>{standingOf(claim)}</td>
+              <td className={FIGURE}>{valueOf(claim)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
   );
 }
 

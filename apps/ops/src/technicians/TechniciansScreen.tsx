@@ -11,6 +11,8 @@ import { Toast } from "@maneman/ui/Toast";
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { ViewRows } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
@@ -112,9 +114,51 @@ function columnsOf(figures: ReadonlyMap<string, TechnicianWork>): readonly Colum
   ];
 }
 
+/** Their leave in words for a phone's row: away until when, or from when; nothing with none to come. */
+function leaveWords(leave: readonly Leave[], today: string): string | null {
+  const next = leave[0];
+  if (next === undefined) return null;
+  const year = Number(today.slice(0, 4));
+  return next.from <= today
+    ? technicians.away(listDate(next.to, year))
+    : technicians.phone.leaveFrom(listDate(next.from, year));
+}
+
+/** On a phone, a technician a row: their name over their city, how often on time and any leave, their jobs at the end. */
+function TechnicianRows({ view, figures }: { view: TableView<Listed>; figures: ReadonlyMap<string, TechnicianWork> }) {
+  const today = todayInIndia(apiNow());
+  return (
+    <ViewRows
+      rows={view.shown}
+      label={technicians.title}
+      row={(technician) => {
+        const work = figures.get(technician.id);
+        const share = onTimeShare(work);
+        const meta = [
+          technician.city ?? technicians.noCity,
+          share === null || work === undefined
+            ? null
+            : technicians.phone.onTime(technicians.work.onTime(work.on_time_jobs, work.jobs)),
+          leaveWords(technician.leave ?? [], today),
+        ].filter((part) => part !== null);
+        return {
+          key: technician.id,
+          title: technician.name,
+          meta: meta.join(" · "),
+          end: work === undefined ? undefined : technicians.figures.jobCount(work.jobs),
+          rule: technician.city === null ? "warning" : undefined,
+          to: technicianPath(technician.id),
+        };
+      }}
+    />
+  );
+}
+
 /** The roster's table. No city is a warning: it is why nothing can be booked on them. */
 function TechnicianTable({ view, figures }: { view: TableView<Listed>; figures: ReadonlyMap<string, TechnicianWork> }) {
   const today = todayInIndia(apiNow());
+  const phone = useIsPhone();
+  if (phone) return <TechnicianRows view={view} figures={figures} />;
   return (
     <Table fixed className={styles.table}>
       <thead>
@@ -161,27 +205,41 @@ function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
     ],
     { search: (row) => `${row.name} ${row.city ?? ""}` },
   );
+  const phone = useIsPhone();
   return (
     <Apart id="switched-off" title={technicians.switchedOff} count={list.length}>
-      <Table>
-        <thead>
-          <tr>
-            <SortHeads view={view} />
-          </tr>
-        </thead>
-        <tbody>
-          {view.shown.map((technician) => (
-            <tr key={technician.id}>
-              <th scope="row" className={shared.name}>
-                <OpsLink className={textLinkLook({ compact: true })} to={technicianPath(technician.id)}>
-                  {technician.name}
-                </OpsLink>
-              </th>
-              <td>{technician.city ?? <None />}</td>
+      {phone ? (
+        <ViewRows
+          rows={view.shown}
+          label={technicians.switchedOff}
+          row={(technician) => ({
+            key: technician.id,
+            title: technician.name,
+            meta: technician.city ?? technicians.noCity,
+            to: technicianPath(technician.id),
+          })}
+        />
+      ) : (
+        <Table>
+          <thead>
+            <tr>
+              <SortHeads view={view} />
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {view.shown.map((technician) => (
+              <tr key={technician.id}>
+                <th scope="row" className={shared.name}>
+                  <OpsLink className={textLinkLook({ compact: true })} to={technicianPath(technician.id)}>
+                    {technician.name}
+                  </OpsLink>
+                </th>
+                <td>{technician.city ?? <None />}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
       <TableEnd view={view} />
     </Apart>
   );

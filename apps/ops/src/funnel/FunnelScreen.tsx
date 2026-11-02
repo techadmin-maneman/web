@@ -10,6 +10,8 @@ import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
+import { SortHeads } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -45,38 +47,49 @@ function Steps({ funnel }: { funnel: Funnel }) {
   );
 }
 
+type Channel = Funnel["channels"][number];
+
+const [channelHead, leadsHead, bookedHead, consultedHead, fittedHead] = copy.channels.columns;
+
+const CHANNEL_COLUMNS: readonly Column<Channel>[] = [
+  { label: channelHead, sort: (row) => row.channel },
+  { label: leadsHead, sort: (row) => row.leads, figure: true },
+  { label: bookedHead, sort: (row) => row.booked, figure: true },
+  { label: consultedHead, sort: (row) => row.consulted, figure: true },
+  { label: fittedHead, sort: (row) => row.fitted, figure: true },
+];
+
+function ChannelTable({ shown }: { shown: readonly Channel[] }) {
+  const view = useTableView(shown, CHANNEL_COLUMNS);
+  return (
+    <TableScroll labelledBy="funnel-channels">
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((each) => (
+            <tr key={each.channel}>
+              <RowHead>{each.channel}</RowHead>
+              <td className={FIGURE}>{quantity(each.leads)}</td>
+              <td className={FIGURE}>{copy.share(each.booked, each.leads)}</td>
+              <td className={FIGURE}>{copy.share(each.consulted, each.leads)}</td>
+              <td className={FIGURE}>{copy.share(each.fitted, each.leads)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </TableScroll>
+  );
+}
+
 function Channels({ funnel }: { funnel: Funnel }) {
   const shown = funnel.channels.filter((each) => each.leads > 0);
   return (
     <Panel titleId="funnel-channels" title={copy.channels.title}>
-      {shown.length === 0 ? (
-        <EmptyState look="panel" line={copy.channels.none} />
-      ) : (
-        <TableScroll labelledBy="funnel-channels">
-          <Table>
-            <thead>
-              <tr>
-                {copy.channels.columns.map((column, at) => (
-                  <th key={column} scope="col" className={at === 0 ? undefined : FIGURE}>
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((each) => (
-                <tr key={each.channel}>
-                  <RowHead>{each.channel}</RowHead>
-                  <td className={FIGURE}>{quantity(each.leads)}</td>
-                  <td className={FIGURE}>{copy.share(each.booked, each.leads)}</td>
-                  <td className={FIGURE}>{copy.share(each.consulted, each.leads)}</td>
-                  <td className={FIGURE}>{copy.share(each.fitted, each.leads)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </TableScroll>
-      )}
+      {shown.length === 0 ? <EmptyState look="panel" line={copy.channels.none} /> : <ChannelTable shown={shown} />}
     </Panel>
   );
 }

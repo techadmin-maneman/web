@@ -8,6 +8,8 @@ import { Panel } from "@maneman/ui/Panel";
 import { NoValue } from "@maneman/ui/NoValue";
 import { Badge } from "@maneman/ui/Badge";
 import { Table, TableScroll } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton } from "@maneman/ui/TextLink";
 import { classes } from "@maneman/ui/classes";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -57,47 +59,68 @@ function GradeOf({
   );
 }
 
+/** A technician's grade by its name, or none. */
+const gradeName = (pay: Pay, technician: PayTechnician) =>
+  pay.grades.find((each) => each.id === technician.grade_id)?.name ?? null;
+
+/** Each technician a row, sorting by name, city or grade, narrowed by city and by grade. */
+function PayTable({ pay, onOpen }: { pay: Pay; onOpen: (id: string) => void }) {
+  const columns: readonly Column<PayTechnician>[] = [
+    { label: copy.name, sort: (row) => row.name },
+    { label: copy.city, sort: (row) => row.city ?? "", choice: (row) => row.city ?? copy.noCity },
+    {
+      label: copy.grade,
+      sort: (row) => gradeName(pay, row) ?? "",
+      choice: (row) => gradeName(pay, row) ?? copy.noGrade,
+    },
+  ];
+  const view = useTableView(pay.technicians, columns, { search: (row) => row.name });
+  return (
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <TableScroll labelledBy="pay-technicians">
+        <Table className={classes(styles.table, styles.people)}>
+          <thead>
+            <tr>
+              <SortHeads view={view} />
+            </tr>
+          </thead>
+          <tbody>
+            {view.shown.map((technician) => (
+              <tr key={technician.id}>
+                <th scope="row">
+                  <TextButton
+                    compact
+                    aria-label={copy.open(technician.name)}
+                    onClick={() => {
+                      onOpen(technician.id);
+                    }}
+                  >
+                    {technician.name}
+                  </TextButton>
+                </th>
+                <td>{technician.city ?? <NoValue />}</td>
+                {/* With no grade, a warning: nothing they do is paid until they have one. */}
+                <td>{gradeName(pay, technician) ?? <Badge tone="warning">{copy.noGrade}</Badge>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableScroll>
+      <TableEnd view={view} />
+    </>
+  );
+}
+
 function PayTechnicians({ pay, onChanged }: { pay: Pay; onChanged: (pay: Pay) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const opened = pay.technicians.find((technician) => technician.id === open);
-  /** A technician's grade; with none, a warning: nothing they do is paid until they have one. */
-  const gradeOf = (technician: PayTechnician) =>
-    pay.grades.find((each) => each.id === technician.grade_id)?.name ?? <Badge tone="warning">{copy.noGrade}</Badge>;
   return (
     <Panel titleId="pay-technicians" title={copy.title}>
       {pay.technicians.length === 0 ? (
         <EmptyState look="panel" line={copy.none} />
       ) : (
-        <TableScroll labelledBy="pay-technicians">
-          <Table className={classes(styles.table, styles.people)}>
-            <thead>
-              <tr>
-                <th scope="col">{copy.name}</th>
-                <th scope="col">{copy.city}</th>
-                <th scope="col">{copy.grade}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pay.technicians.map((technician) => (
-                <tr key={technician.id}>
-                  <th scope="row">
-                    <TextButton
-                      compact
-                      aria-label={copy.open(technician.name)}
-                      onClick={() => {
-                        setOpen(technician.id);
-                      }}
-                    >
-                      {technician.name}
-                    </TextButton>
-                  </th>
-                  <td>{technician.city ?? <NoValue />}</td>
-                  <td>{gradeOf(technician)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </TableScroll>
+        <PayTable pay={pay} onOpen={setOpen} />
       )}
       {opened !== undefined && (
         <FormDrawer

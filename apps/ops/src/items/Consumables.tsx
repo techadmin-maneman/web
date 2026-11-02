@@ -10,6 +10,8 @@ import { Badge } from "@maneman/ui/Badge";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { ViewRows } from "@maneman/ui/ListRow";
+import { useIsPhone } from "../lib/media.ts";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
@@ -70,7 +72,31 @@ function ConsumableTable(props: {
   onOpen: (code: string) => void;
 }) {
   const view = useTableView(props.rows, COLUMNS(props.first), { search: (row) => row.name });
+  const phone = useIsPhone();
   if (props.rows.length === 0) return <EmptyState look="panel" line={props.none} />;
+  if (phone) {
+    return (
+      <>
+        <Narrowing view={view} label={copy.find} />
+        <ViewRows
+          rows={view.shown}
+          label={props.first}
+          row={(consumable) => ({
+            key: consumable.code,
+            title: consumable.name,
+            meta: consumable.retired_from === null ? consumable.unit : `${consumable.unit} · ${stateWords(consumable)}`,
+            end: consumable.unit_cost === 0 ? copy.noCost : rupees(consumable.unit_cost),
+            endTone: "plain",
+            label: copy.open(consumable.name),
+            onClick: () => {
+              props.onOpen(consumable.code);
+            },
+          })}
+        />
+        <TableEnd view={view} />
+      </>
+    );
+  }
   return (
     <>
       <Narrowing view={view} label={copy.find} />

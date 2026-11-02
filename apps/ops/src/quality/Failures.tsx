@@ -7,6 +7,8 @@ import { Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { SortHeads } from "@maneman/ui/TableTools";
+import { useTableView } from "@maneman/ui/useTableView";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
@@ -48,22 +50,25 @@ function WayChoice({ way, onWay }: { way: Way; onWay: (way: Way) => void }) {
   );
 }
 
-function Groups({ rates, way }: { rates: Rates; way: Way }) {
-  if (rates.by_code.length === 0) return <EmptyState look="panel" line={copy.noFailures} />;
-  const columns = [copy.ways[way], ...copy.failureColumns.slice(1)];
+type Group = Rates["by_code"][number];
+
+function GroupTable({ groups, way }: { groups: readonly Group[]; way: Way }) {
+  const [, fitted, failed, rate] = copy.failureColumns;
+  const view = useTableView(groups, [
+    { label: copy.ways[way], sort: (group: Group) => group.name },
+    { label: fitted, sort: (group: Group) => group.fitted, figure: true },
+    { label: failed, sort: (group: Group) => group.failed, figure: true },
+    { label: rate, sort: (group: Group) => group.rate_percent ?? -1, figure: true },
+  ]);
   return (
     <Table>
       <thead>
         <tr>
-          {columns.map((column, index) => (
-            <th key={column} scope="col" className={index === 0 ? undefined : FIGURE}>
-              {column}
-            </th>
-          ))}
+          <SortHeads view={view} />
         </tr>
       </thead>
       <tbody>
-        {groupsOf(rates, way).map((group) => (
+        {view.shown.map((group) => (
           <tr key={group.name}>
             <RowHead>{group.name}</RowHead>
             <td className={FIGURE}>{group.fitted}</td>
@@ -74,6 +79,11 @@ function Groups({ rates, way }: { rates: Rates; way: Way }) {
       </tbody>
     </Table>
   );
+}
+
+function Groups({ rates, way }: { rates: Rates; way: Way }) {
+  if (rates.by_code.length === 0) return <EmptyState look="panel" line={copy.noFailures} />;
+  return <GroupTable key={way} groups={groupsOf(rates, way)} way={way} />;
 }
 
 export function FailuresPanel() {

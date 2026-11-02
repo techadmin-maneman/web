@@ -3,6 +3,7 @@
 
 import type { Success } from "@maneman/web-kit/api";
 import { plainDate } from "@maneman/web-kit/plain-date";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table } from "@maneman/ui/Table";
@@ -12,7 +13,8 @@ import type { paths } from "../api-schema.ts";
 import { quality as copy } from "../content/quality.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { quantity } from "@maneman/web-kit/figures";
-import { ListTools } from "@maneman/ui/ListTools";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { RowHead } from "@maneman/ui/RowHead";
 import { qualityApi } from "./quality-api.ts";
 
@@ -24,39 +26,54 @@ const loadRisk = () => qualityApi.expiryRisk();
 const todo = (lot: Lot) =>
   lot.suggestion === "move" && lot.move_to !== null ? copy.moveTo(lot.move_to) : copy.suggestions[lot.suggestion];
 
+const [placeHead, itemHead, lotHead, expiresHead, leftHead, valueHead, todoHead] = copy.riskColumns;
+
+const COLUMNS: readonly Column<Lot>[] = [
+  { label: placeHead, sort: (lot) => lot.place, choice: (lot) => lot.place },
+  { label: itemHead, sort: (lot) => lot.name, choice: (lot) => lot.name },
+  { label: lotHead, sort: (lot) => lot.lot_code },
+  { label: expiresHead, sort: (lot) => lot.expires_on },
+  { label: leftHead, sort: (lot) => lot.quantity, figure: true },
+  { label: valueHead, sort: (lot) => lot.value, figure: true },
+  { label: todoHead, sort: todo, choice: todo },
+];
+
+function LotTable({ lots }: { lots: readonly Lot[] }) {
+  const view = useTableView(lots, COLUMNS, { search: (lot) => `${lot.place} ${lot.name} ${lot.lot_code}` });
+  return (
+    <>
+      <Narrowing view={view} label={copy.findLot} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((lot) => (
+            <tr key={`${lot.place_id}-${lot.lot_code}-${lot.consumable_code}`}>
+              <RowHead>{lot.place}</RowHead>
+              <td>{lot.name}</td>
+              <td>{lot.lot_code}</td>
+              <td>{plainDate(lot.expires_on)}</td>
+              <td className={FIGURE}>{quantity(lot.quantity)}</td>
+              <td className={FIGURE}>{roundRupees(lot.value)}</td>
+              <td>{todo(lot)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
+  );
+}
+
 function Lots({ risk }: { risk: Risk }) {
-  if (risk.lots.length === 0) return <Note>{copy.noRisk}</Note>;
+  if (risk.lots.length === 0) return <EmptyState look="panel" line={copy.noRisk} />;
   return (
     <>
       <Note>{copy.riskTotal(roundRupees(risk.total_value))}</Note>
-      <ListTools rows={risk.lots} textOf={(lot) => `${lot.place} ${lot.name} ${lot.lot_code}`} label={copy.findLot}>
-        {(shown) => (
-          <Table controls>
-            <thead>
-              <tr>
-                {copy.riskColumns.map((column) => (
-                  <th key={column} scope="col">
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((lot) => (
-                <tr key={`${lot.place_id}-${lot.lot_code}-${lot.consumable_code}`}>
-                  <RowHead>{lot.place}</RowHead>
-                  <td>{lot.name}</td>
-                  <td>{lot.lot_code}</td>
-                  <td>{plainDate(lot.expires_on)}</td>
-                  <td className={FIGURE}>{quantity(lot.quantity)}</td>
-                  <td className={FIGURE}>{roundRupees(lot.value)}</td>
-                  <td>{todo(lot)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
-      </ListTools>
+      <LotTable lots={risk.lots} />
     </>
   );
 }

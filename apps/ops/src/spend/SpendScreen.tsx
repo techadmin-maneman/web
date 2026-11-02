@@ -9,7 +9,12 @@ import { FormActions } from "@maneman/ui/FormActions";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { ACTIONS, FIGURE, Table } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { NoValue } from "@maneman/ui/NoValue";
+import { RowHead } from "@maneman/ui/RowHead";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullMonth } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
@@ -240,54 +245,68 @@ function SpendForm({
   );
 }
 
+const channelWords = (entry: SpendEntry) =>
+  entry.campaign === null ? copy.channels[entry.channel] : `${copy.channels[entry.channel]} · ${entry.campaign}`;
+
+const COLUMNS: readonly Column<SpendEntry>[] = [
+  { label: copy.columns.month, sort: (entry) => entry.month, choice: (entry) => fullMonth(entry.month) },
+  { label: copy.columns.city, sort: (entry) => entry.city ?? "", choice: (entry) => entry.city ?? copy.national },
+  { label: copy.columns.channel, sort: channelWords, choice: (entry) => copy.channels[entry.channel] },
+  { label: copy.columns.amount, sort: (entry) => entry.amount, figure: true },
+  { label: copy.columns.note, sort: (entry) => entry.note ?? "" },
+  { label: copy.columns.by, sort: (entry) => whoWords(entry.entered_by) },
+];
+
 function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean; onRemove: (id: string) => void }) {
+  const view = useTableView(props.entries, COLUMNS, {
+    search: (entry) => `${channelWords(entry)} ${entry.note ?? ""} ${entry.city ?? ""}`,
+  });
   if (props.entries.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
-    <Table controls>
-      <thead>
-        <tr>
-          {Object.values(copy.columns).map((column) => (
-            <th key={column} scope="col">
-              {column}
-            </th>
-          ))}
-          {props.mayRemove && <th scope="col" />}
-        </tr>
-      </thead>
-      <tbody>
-        {props.entries.map((entry) => (
-          <tr key={entry.id}>
-            <td>{fullMonth(entry.month)}</td>
-            <td>{entry.city ?? copy.national}</td>
-            <td>
-              {entry.campaign === null
-                ? copy.channels[entry.channel]
-                : `${copy.channels[entry.channel]} · ${entry.campaign}`}
-            </td>
-            <td>{rupees(entry.amount)}</td>
-            <td>{entry.note ?? ""}</td>
-            <td>{whoWords(entry.entered_by)}</td>
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
             {props.mayRemove && (
-              <td>
-                <RowButton
-                  beside
-                  aria-label={copy.removeLabel(
-                    fullMonth(entry.month),
-                    entry.city ?? copy.national,
-                    rupees(entry.amount),
-                  )}
-                  onClick={() => {
-                    props.onRemove(entry.id);
-                  }}
-                >
-                  {copy.remove}
-                </RowButton>
-              </td>
+              <th scope="col">
+                <VisuallyHidden>{copy.remove}</VisuallyHidden>
+              </th>
             )}
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {view.shown.map((entry) => (
+            <tr key={entry.id}>
+              <RowHead>{fullMonth(entry.month)}</RowHead>
+              <td>{entry.city ?? copy.national}</td>
+              <td>{channelWords(entry)}</td>
+              <td className={FIGURE}>{rupees(entry.amount)}</td>
+              <td>{entry.note ?? <NoValue />}</td>
+              <td>{whoWords(entry.entered_by)}</td>
+              {props.mayRemove && (
+                <td className={ACTIONS}>
+                  <RowButton
+                    aria-label={copy.removeLabel(
+                      fullMonth(entry.month),
+                      entry.city ?? copy.national,
+                      rupees(entry.amount),
+                    )}
+                    onClick={() => {
+                      props.onRemove(entry.id);
+                    }}
+                  >
+                    {copy.remove}
+                  </RowButton>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
   );
 }
 

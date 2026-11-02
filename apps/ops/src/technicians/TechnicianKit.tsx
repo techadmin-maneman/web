@@ -7,6 +7,8 @@ import { NoValue } from "@maneman/ui/NoValue";
 import { Panel } from "@maneman/ui/Panel";
 import { RecordMovement, StateBadge, stateOf } from "../stock/index.ts";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { SortHeads } from "@maneman/ui/TableTools";
+import { useTableView } from "@maneman/ui/useTableView";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { api, type Stock, type TechnicianSummary } from "../api.ts";
@@ -30,6 +32,36 @@ function KitRow({ kitStock, holding, place }: { kitStock: Stock; holding: Holdin
       <td>{consumable !== undefined && <StateBadge state={stateOf(kitStock, consumable, place)} />}</td>
       <td>{holding.counted_at === null ? <NoValue /> : shortDate(indiaDate(holding.counted_at))}</td>
     </tr>
+  );
+}
+
+/** What the kit holds, each column sorting: by item, how much, its state and when last counted. */
+function KitTable({ kitStock, held, place }: { kitStock: Stock; held: readonly Holding[]; place: string }) {
+  const consumableOf = (holding: Holding) => kitStock.consumables.find((each) => each.code === holding.consumable_code);
+  const nameOf = (holding: Holding) => consumableOf(holding)?.name ?? holding.consumable_code;
+  const stateWords = (holding: Holding) => {
+    const consumable = consumableOf(holding);
+    return consumable === undefined ? "" : (stateOf(kitStock, consumable, place)?.word ?? "");
+  };
+  const view = useTableView(held, [
+    { label: copy.columns.item, sort: nameOf },
+    { label: copy.columns.held, sort: (holding: Holding) => holding.quantity, figure: true },
+    { label: copy.columns.status, sort: stateWords },
+    { label: copy.columns.counted, sort: (holding: Holding) => holding.counted_at ?? "" },
+  ]);
+  return (
+    <Table fixed className={styles.kit}>
+      <thead>
+        <tr>
+          <SortHeads view={view} />
+        </tr>
+      </thead>
+      <tbody>
+        {view.shown.map((holding) => (
+          <KitRow key={holding.consumable_code} kitStock={kitStock} holding={holding} place={place} />
+        ))}
+      </tbody>
+    </Table>
   );
 }
 
@@ -57,23 +89,7 @@ export function Kit({ technician }: { technician: TechnicianSummary }) {
       {held.length === 0 ? (
         <EmptyState look="panel" line={copy.none} />
       ) : (
-        <Table fixed className={styles.kit}>
-          <thead>
-            <tr>
-              <th scope="col">{copy.columns.item}</th>
-              <th scope="col" className={FIGURE}>
-                {copy.columns.held}
-              </th>
-              <th scope="col">{copy.columns.status}</th>
-              <th scope="col">{copy.columns.counted}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {held.map((holding) => (
-              <KitRow key={holding.consumable_code} kitStock={kitStock} holding={holding} place={technician.id} />
-            ))}
-          </tbody>
-        </Table>
+        <KitTable kitStock={kitStock} held={held} place={technician.id} />
       )}
     </Panel>
   );

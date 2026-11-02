@@ -18,55 +18,64 @@ import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { CountClasses, type CountTasks } from "./CountClasses.tsx";
 import { CountTaskPanel, whatOf } from "./CountTask.tsx";
 import { StartCount } from "./StartCount.tsx";
-import { ListTools } from "@maneman/ui/ListTools";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { RowHead } from "@maneman/ui/RowHead";
 import { countsApi } from "./counts-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
 const loadTasks = () => countsApi.countTasks();
 
+type CountTask = CountTasks["tasks"][number];
+
+const [placeHead, whatHead, dueHead, statusHead] = copy.columns;
+
+const COLUMNS: readonly Column<CountTask>[] = [
+  { label: placeHead, sort: (task) => task.place, choice: (task) => task.place },
+  { label: whatHead, sort: whatOf },
+  { label: dueHead, sort: (task) => task.due_on },
+  { label: statusHead, sort: (task) => copy.states[task.state], choice: (task) => copy.states[task.state] },
+];
+
 function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpener }) {
+  const view = useTableView(countTasks.tasks, COLUMNS, { search: (task) => `${task.place} ${whatOf(task)}` });
   if (countTasks.tasks.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
-    <ListTools rows={countTasks.tasks} textOf={(task) => `${task.place} ${whatOf(task)}`} label={copy.find}>
-      {(shown) => (
-        <Table controls>
-          <thead>
-            <tr>
-              {copy.columns.map((column) => (
-                <th key={column} scope="col">
-                  {column}
-                </th>
-              ))}
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((task) => (
+            <tr key={task.id}>
+              <RowHead>
+                <TextButton
+                  compact
+                  aria-label={`${copy.open} ${copy.heading(task.place, whatOf(task))}`}
+                  {...opener(task.id)}
+                >
+                  {task.place}
+                </TextButton>
+              </RowHead>
+              <td>{whatOf(task)}</td>
+              <td>
+                {task.state !== "done" && task.due_on < todayInIndia(apiNow())
+                  ? copy.overdue(plainDate(task.due_on))
+                  : plainDate(task.due_on)}
+              </td>
+              <td>
+                <Badge tone={STATE_TONES[task.state]}>{copy.states[task.state]}</Badge>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {shown.map((task) => (
-              <tr key={task.id}>
-                <RowHead>
-                  <TextButton
-                    compact
-                    aria-label={`${copy.open} ${copy.heading(task.place, whatOf(task))}`}
-                    {...opener(task.id)}
-                  >
-                    {task.place}
-                  </TextButton>
-                </RowHead>
-                <td>{whatOf(task)}</td>
-                <td>
-                  {task.state !== "done" && task.due_on < todayInIndia(apiNow())
-                    ? copy.overdue(plainDate(task.due_on))
-                    : plainDate(task.due_on)}
-                </td>
-                <td>
-                  <Badge tone={STATE_TONES[task.state]}>{copy.states[task.state]}</Badge>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      )}
-    </ListTools>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
   );
 }
 

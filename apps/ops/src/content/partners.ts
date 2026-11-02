@@ -9,6 +9,11 @@ export const partners = {
   title: "Partners",
   none: "No partners yet.",
   add: "Add a partner",
+  find: "Find a partner",
+  /** A phone's row, where the columns' names are not there to say what each figure is. */
+  phone: {
+    figures: (referred: number, fitted: number) => `${String(referred)} referred · ${String(fitted)} fitted`,
+  },
   columns: {
     name: "Partner",
     link: "Link",

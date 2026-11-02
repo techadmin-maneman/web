@@ -7,7 +7,8 @@ export const quality = {
   title: "Quality",
   recalls: "Recalls",
   none: "No recalls.",
-  columns: ["Recall", "Item", "Lot", "Raised", "Status"],
+  columns: ["Recall", "Item", "Lot", "Raised", "Status"] as const,
+  find: "Find a recall, item or lot",
   /** "RC-0003" */
   number: (number: number) => `RC-${String(number).padStart(4, "0")}`,
   open: "Open",
@@ -24,7 +25,7 @@ export const quality = {
   heldColumns: ["Place", "Quantity"],
   noneHeld: "None held anywhere.",
   worn: "Who wears it",
-  wornColumns: ["Client", "Piece", "Due", ""],
+  wornColumns: ["Client", "Piece", "Due"] as const,
   /** A worn piece's replacement, booked at no charge; the button's whole name says whose. */
   bookFree: "Book, free",
   bookFreeLabel: (person: string) => `Book ${person}’s replacement, free`,
@@ -36,7 +37,7 @@ export const quality = {
   noFailures: "No pieces fitted from labelled stock yet.",
   failuresBy: "Group by",
   ways: { code: "Stock code", lot: "Lot", supplier: "Supplier", technician: "Technician" },
-  failureColumns: ["", "Fitted", "Failed", "Rate"],
+  failureColumns: ["", "Fitted", "Failed", "Rate"] as const,
   /** "12.5%", or a dash */
   rate: (percent: number | null) => (percent === null ? "—" : `${String(percent)}%`),
   risk: "Value at risk",
@@ -44,7 +45,7 @@ export const quality = {
   /** "Rs. 1,234 will expire before it is used." */
   riskTotal: (value: string) => `${value} will expire before it is used.`,
   noRisk: "Everything held will be used before it expires.",
-  riskColumns: ["Place", "Item", "Lot", "Expires", "Left over", "Value", "Actions"],
+  riskColumns: ["Place", "Item", "Lot", "Expires", "Left over", "Value", "What to do"] as const,
   suggestions: {
     write_off: "Write off",
     use_first: "Use first",

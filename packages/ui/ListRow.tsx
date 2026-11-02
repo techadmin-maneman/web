@@ -145,3 +145,26 @@ function RowBody({
     </div>
   );
 }
+
+/** One row's words, as `ListRow` takes them, and the key it is drawn by. */
+export type ViewRow = Parameters<typeof ListRow>[0] & { readonly key: string };
+
+/**
+ * A table's rows as a phone's list, drawn from the same rows the desk's table draws, sorted and narrowed alike: each
+ * row's name over a line of what matters, one figure or state at its end, a tap opening what the table's row opens.
+ */
+export function ViewRows<Row>(props: {
+  readonly rows: readonly Row[];
+  /** The list's name, read out, where no heading above it names it. */
+  readonly label?: string | undefined;
+  readonly row: (each: Row) => ViewRow;
+}) {
+  return (
+    <ListRows label={props.label} inPanel>
+      {props.rows.map((each) => {
+        const { key, ...row } = props.row(each);
+        return <ListRow key={key} {...row} />;
+      })}
+    </ListRows>
+  );
+}

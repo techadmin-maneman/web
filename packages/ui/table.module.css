@@ -61,6 +61,11 @@
     white-space: nowrap;
   }
 
+  /* A head over a column of figures stands right, over them (Table.tsx's alignHeads). */
+  .table thead th[data-figure] {
+    text-align: right;
+  }
+
   .table tbody tr:last-child > * {
     border-bottom: 0;
   }
@@ -146,6 +151,13 @@
     text-align: right;
   }
 
+  .rowActions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--sp-8);
+  }
+
   /* Rows of controls (./Table.tsx's `controls`): the boxes and buttons in them make each row's height. */
   .controls {
     margin-top: var(--sp-8);
@@ -206,6 +218,11 @@
   right: 0;
   box-shadow: calc(-1 * var(--hairline)) 0 0 var(--ui-line);
   background: var(--ui-raised);
+}
+
+/* Its head keeps the heads' band. */
+.scroll .table:has(td:last-child :is(button, a)) thead th:last-child {
+  background: var(--ui-ground);
 }
 
 /*

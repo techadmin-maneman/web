@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { UsageScreen } from "../../apps/ops/src/usage/UsageScreen.tsx";
 import { usage as copy } from "../../apps/ops/src/content/usage.ts";
 import { answered } from "./render-hook.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 import { contractChecked } from "./contract-fetch.ts";
 
 const USAGE = {
@@ -43,6 +44,7 @@ let root: Root;
 let answer: unknown;
 
 beforeEach(() => {
+  openDialogsAsJsdomCan();
   answer = USAGE;
   vi.stubGlobal(
     "fetch",
@@ -73,7 +75,7 @@ async function show() {
 }
 
 describe("the Usage page", () => {
-  it("sets technicians against expected and opens one to its items, and gives each place’s losses", async () => {
+  it("sets technicians against expected and opens one to its items in a drawer, and gives each place’s losses", async () => {
     await show();
     expect(page.textContent).toContain(copy.over(50));
     expect(page.textContent).toContain(copy.flagged);
@@ -82,7 +84,8 @@ describe("the Usage page", () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.items("Imran Qureshi")}"]`)?.click();
       await answered();
     });
-    expect(page.textContent).toContain("Solvent");
+    // A technician's items open in a drawer beside the list.
+    expect(document.querySelector("dialog")?.textContent).toContain("Solvent");
   });
 
   it("says when there is nothing to show", async () => {

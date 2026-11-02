@@ -9,6 +9,8 @@ import { Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullMonth, shortDate } from "@maneman/web-kit/dates";
@@ -176,31 +178,40 @@ function StatementRows({ statement, ...row }: { statement: PartnerStatement } & 
   );
 }
 
+const COLUMNS: readonly Column<PartnerStatement>[] = [
+  { label: columns.partner, sort: (row) => row.name },
+  { label: columns.fitted, sort: (row) => row.fitted, figure: true },
+  { label: columns.earned, sort: (row) => row.earned, figure: true },
+  { label: columns.takenBack, sort: (row) => row.taken_back_amount, figure: true },
+  { label: columns.due, sort: (row) => row.due, figure: true },
+  { label: columns.paid, sort: (row) => row.payout?.amount ?? -1, figure: true },
+  { label: columns.owed, sort: (row) => row.owed, figure: true },
+];
+
 function StatementsTable(row: RowProps) {
-  const figures = [columns.fitted, columns.earned, columns.takenBack, columns.due, columns.paid, columns.owed];
+  const view = useTableView(row.statements.statements, COLUMNS, { search: (statement) => statement.name });
   return (
-    <TableScroll labelledBy="partner-commission">
-      <Table controls className={styles.table}>
-        <thead>
-          <tr>
-            <th scope="col">{columns.partner}</th>
-            {figures.map((label) => (
-              <th key={label} scope="col" className={styles.figure}>
-                {label}
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <TableScroll labelledBy="partner-commission">
+        <Table controls className={styles.table}>
+          <thead>
+            <tr>
+              <SortHeads view={view} />
+              <th scope="col">
+                <VisuallyHidden>{columns.actions}</VisuallyHidden>
               </th>
+            </tr>
+          </thead>
+          <tbody>
+            {view.shown.map((statement) => (
+              <StatementRows key={statement.channel_id} statement={statement} {...row} />
             ))}
-            <th scope="col">
-              <VisuallyHidden>{columns.actions}</VisuallyHidden>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {row.statements.statements.map((statement) => (
-            <StatementRows key={statement.channel_id} statement={statement} {...row} />
-          ))}
-        </tbody>
-      </Table>
-    </TableScroll>
+          </tbody>
+        </Table>
+      </TableScroll>
+      <TableEnd view={view} />
+    </>
   );
 }
 

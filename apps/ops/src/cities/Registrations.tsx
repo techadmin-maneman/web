@@ -5,7 +5,10 @@
 import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
-import { Table } from "@maneman/ui/Table";
+import { ACTIONS, Table } from "@maneman/ui/Table";
+import { SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -107,6 +110,55 @@ function RegistrationForm({ onAdded, onCancel }: { onAdded: () => Promise<void>;
   );
 }
 
+type Registration = Cities["registrations"][number];
+
+const COLUMNS: readonly Column<Registration>[] = [
+  { label: copy.columns.state, sort: (row) => row.state_code },
+  { label: copy.columns.gstin, sort: (row) => row.gstin },
+  { label: copy.columns.branch, sort: (row) => row.books_branch_id ?? "" },
+];
+
+/** A state's registration a row, each column sorting, each removable where access allows. */
+function RegistrationTable({ cities, onRemoved }: { cities: Cities; onRemoved: () => Promise<void> }) {
+  const mayRemove = useAccess().mayCall("DELETE /api/gst-registrations/{state_code}");
+  const view = useTableView(cities.registrations, COLUMNS);
+  return (
+    <>
+      <Table>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+            <th scope="col">
+              <VisuallyHidden>{copy.columns.remove}</VisuallyHidden>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((registration) => (
+            <tr key={registration.state_code}>
+              <RowHead>{registration.state_code}</RowHead>
+              <td>{registration.gstin}</td>
+              <td>{registration.books_branch_id ?? copy.noBranch}</td>
+              <td className={ACTIONS}>
+                {mayRemove && (
+                  <DeleteAction
+                    name={registration.state_code}
+                    words={copy.removing}
+                    send={() => citiesApi.removeGstRegistration(registration.state_code)}
+                    refusal={(code) => errorText(copy.errors, { code })}
+                    onDeleted={onRemoved}
+                  />
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
+  );
+}
+
 export function Registrations({ cities, reread }: { cities: Cities; reread: () => Promise<void> }) {
   const access = useAccess();
   const [said, setSaid] = useState<string | null>(null);
@@ -138,37 +190,7 @@ export function Registrations({ cities, reread }: { cities: Cities; reread: () =
       {cities.registrations.length === 0 ? (
         <EmptyState look="panel" line={copy.none} />
       ) : (
-        <Table>
-          <thead>
-            <tr>
-              {copy.columns.map((column) => (
-                <th key={column} scope="col">
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {cities.registrations.map((registration) => (
-              <tr key={registration.state_code}>
-                <RowHead>{registration.state_code}</RowHead>
-                <td>{registration.gstin}</td>
-                <td>{registration.books_branch_id ?? copy.noBranch}</td>
-                <td>
-                  {access.mayCall("DELETE /api/gst-registrations/{state_code}") && (
-                    <DeleteAction
-                      name={registration.state_code}
-                      words={copy.removing}
-                      send={() => citiesApi.removeGstRegistration(registration.state_code)}
-                      refusal={(code) => errorText(copy.errors, { code })}
-                      onDeleted={saved(copy.removed)}
-                    />
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+        <RegistrationTable cities={cities} onRemoved={saved(copy.removed)} />
       )}
       {said !== null && <Toast>{said}</Toast>}
     </Panel>

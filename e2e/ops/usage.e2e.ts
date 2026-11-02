@@ -2,6 +2,7 @@
 // kit's losses.
 
 import { expect, test } from "../support.ts";
+import { CLOSE } from "../../packages/ui/words.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./fixtures.ts";
 import { usage as copy } from "../../apps/ops/src/content/usage.ts";
@@ -35,14 +36,17 @@ const USAGE = {
   ],
 } satisfies OpsReply<"/api/stock/usage">;
 
-test("opens a flagged technician to their items, beside each place’s losses", async ({ page }) => {
+test("opens a flagged technician to their items in a drawer, beside each place’s losses", async ({ page }) => {
   await answer(page, { "GET /api/stock/usage": json(USAGE) });
   await page.goto("/usage");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
   const technicians = page.getByRole("region", { name: copy.technicians });
   await expect(technicians.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText(copy.over(50));
   await technicians.getByRole("button", { name: copy.items("Imran Qureshi") }).click();
-  await expect(technicians.getByRole("row").filter({ hasText: "Solvent" })).toContainText("90");
+  // Their items open in a drawer beside the list.
+  const items = page.getByRole("dialog", { name: copy.items("Imran Qureshi") });
+  await expect(items.getByRole("row").filter({ hasText: "Solvent" })).toContainText("90");
+  await items.getByRole("button", { name: CLOSE }).click();
   await expect(page.getByRole("region", { name: copy.places })).toContainText(copy.percent(25));
   expect(await axeViolations(page)).toEqual([]);
 });

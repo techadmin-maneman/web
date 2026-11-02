@@ -10,6 +10,8 @@ import { Checkbox, DateInput, Field, Select } from "@maneman/ui/Field";
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { Note } from "@maneman/ui/Note";
 import { Table, TableScroll } from "@maneman/ui/Table";
+import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { useWrite } from "../lib/write.ts";
@@ -263,6 +265,44 @@ function MemberRow({ member, onOpen }: { member: CareMember; onOpen: () => void 
   );
 }
 
+const COLUMNS: readonly Column<CareMember>[] = [
+  { label: copy.columns.member, sort: (member) => member.email },
+  { label: copy.columns.name, sort: (member) => member.name ?? "" },
+  { label: copy.columns.clients, sort: (member) => member.clients, figure: true },
+  { label: copy.columns.daysOff, sort: (member) => member.weekly_off.length },
+  { label: copy.columns.leave, sort: (member) => member.leave[0]?.from ?? "" },
+  { label: copy.columns.today, sort: (member) => todayOf(member), choice: (member) => todayOf(member) },
+];
+
+/** The team a member a row, each column sorting, narrowed by where each is today. */
+function TeamTable({ team, onOpen }: { team: readonly CareMember[]; onOpen: (email: string) => void }) {
+  const view = useTableView(team, COLUMNS, { search: (member) => `${member.email} ${member.name ?? ""}` });
+  return (
+    <>
+      <Narrowing view={view} label={copy.find} />
+      <Table className={styles.table}>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((member) => (
+            <MemberRow
+              key={member.email}
+              member={member}
+              onOpen={() => {
+                onOpen(member.email);
+              }}
+            />
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
+  );
+}
+
 /** A member's record: what they are known as, their days off and leave, and who has their clients. */
 function MemberRecord(props: {
   member: CareMember;
@@ -342,37 +382,12 @@ export function CareTeam() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { team } = loaded.value;
   if (team.length === 0) return <EmptyState look="panel" line={care.carePerson.noTeam} />;
-  const columns = copy.columns;
   const me = team.find((member) => member.email === loaded.value.me);
   const opened = team.find((member) => member.email === open);
   return (
     <TableScroll labelledBy="care-team">
       {me !== undefined && <ShiftSwitch me={me} onDone={() => void reread()} />}
-      <Table className={styles.table}>
-        <thead>
-          <tr>
-            <th scope="col">{columns.member}</th>
-            <th scope="col">{columns.name}</th>
-            <th scope="col" className={styles.figure}>
-              {columns.clients}
-            </th>
-            <th scope="col">{columns.daysOff}</th>
-            <th scope="col">{columns.leave}</th>
-            <th scope="col">{columns.today}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {team.map((member) => (
-            <MemberRow
-              key={member.email}
-              member={member}
-              onOpen={() => {
-                setOpen(member.email);
-              }}
-            />
-          ))}
-        </tbody>
-      </Table>
+      <TeamTable team={team} onOpen={setOpen} />
       {opened !== undefined && (
         <FormDrawer
           title={opened.name ?? opened.email}

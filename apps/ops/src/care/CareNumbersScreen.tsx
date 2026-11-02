@@ -6,6 +6,8 @@ import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { BarChart } from "@maneman/ui/BarChart";
 import { Table, TableScroll } from "@maneman/ui/Table";
+import { SortHeads } from "@maneman/ui/TableTools";
+import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
@@ -108,31 +110,32 @@ function ByPerson({ numbers }: { numbers: CareNumbers }) {
   );
 }
 
+type PersonRow = CareNumbers["by_person"][number];
+
+const PEOPLE_COLUMNS: readonly Column<PersonRow>[] = [
+  { label: copy.columns.person, sort: (row) => row.email },
+  { label: copy.chats, sort: (row) => row.chats, figure: true },
+  { label: copy.firstReply, sort: (row) => row.median_minutes ?? -1, figure: true },
+  { label: copy.withinTarget, sort: (row) => row.within_target ?? -1, figure: true },
+];
+
 function PeopleTable({ numbers }: { numbers: CareNumbers }) {
+  const view = useTableView(numbers.by_person, PEOPLE_COLUMNS);
   return (
     <TableScroll labelledBy="care-numbers">
-      <Table controls className={shared.table}>
+      <Table className={shared.table}>
         <thead>
           <tr>
-            <th scope="col">{copy.columns.person}</th>
-            <th scope="col" className={shared.figure}>
-              {copy.chats}
-            </th>
-            <th scope="col" className={shared.figure}>
-              {copy.firstReply}
-            </th>
-            <th scope="col" className={shared.figure}>
-              {copy.withinTarget}
-            </th>
+            <SortHeads view={view} />
           </tr>
         </thead>
         <tbody>
-          {numbers.by_person.map((row) => (
+          {view.shown.map((row) => (
             <tr key={row.email}>
               <th scope="row" className={shared.who}>
                 {row.email}
               </th>
-              <td className={shared.figure}>{row.chats}</td>
+              <td className={shared.figure}>{quantity(row.chats)}</td>
               <td className={shared.figure}>{minutes(row.median_minutes)}</td>
               <td className={shared.figure}>{percent(row.within_target)}</td>
             </tr>

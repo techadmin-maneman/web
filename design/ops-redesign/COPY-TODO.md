@@ -66,3 +66,8 @@ Each slot the redesign adds where the console had no words of its own. None wait
 | Suppliers  | Those no longer bought from                | Retired suppliers                                                     | `settings.suppliers.retiredTitle` |
 | Client     | The visit buttons' column, read aloud      | Change                                                                | `clients.visits.actionsColumn` |
 | Tables     | A phone's order, where heads are not shown | Sort by; As listed; Jobs ↑ / Jobs ↓                                   | `packages/ui/words.ts`     |
+| Lists      | Each list's search                         | Find a city / a person / a supplier / a partner / an order or supplier… | each list's `find`      |
+| Lists      | Action columns, read aloud                 | Withdraw; Remove; Settle; Receive or send back                        | each list's columns     |
+| Quality    | Value at risk's last column                | What to do                                                            | `quality.riskColumns`      |
+| Phone rows | Beneath a name where no column says it     | 96% on time; Leave from 5 Nov; 2 visits; Rs. 400 lost; Expires 3 Dec; Counted 26 Nov; Not counted yet; 4 referred · 2 fitted | each list's `phone` |
+| Tables     | A phone's order                            | Sort: As listed; Sort: Jobs ↑                                         | `packages/ui/words.ts`     |
