@@ -57,7 +57,9 @@ function SortChoice<Row>({ view }: { view: TableView<Row> }) {
           onChange={(event) => {
             const [column = "", direction] = event.currentTarget.value.split(":");
             view.sortTo(
-              column === "" ? null : { column: Number(column), direction: direction === "descending" ? "descending" : "ascending" },
+              column === ""
+                ? null
+                : { column: Number(column), direction: direction === "descending" ? "descending" : "ascending" },
             );
           }}
         >
