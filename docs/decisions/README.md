@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0237. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0238. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -269,6 +269,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0234](0234-every-settings-page-aligned.md) Every Settings page in the redesign's look
 - [0235](0235-full-size-check-fixes.md) The redesign checked at full size, and what it changed
 - [0236](0236-second-design-pass.md) The second design pass: heads, folded lists, items, and each thing where it is used
+- [0237](0237-every-list-sorts.md) Every list sorts, a long one narrows, and its heads stand over their figures
 
 ## Every decision, oldest first
 
@@ -507,4 +508,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0233](0233-settings-redesigned.md) | Settings, to the November redesign | 2026-11-02 | accepted | [0234](0234-every-settings-page-aligned.md) |
 | [0234](0234-every-settings-page-aligned.md) | Every Settings page in the redesign's look | 2026-11-02 | accepted |  |
 | [0235](0235-full-size-check-fixes.md) | The redesign checked at full size, and what it changed | 2026-11-02 | accepted |  |
-| [0236](0236-second-design-pass.md) | The second design pass: heads, folded lists, items, and each thing where it is used | 2026-11-02 | accepted |  |
+| [0236](0236-second-design-pass.md) | The second design pass: heads, folded lists, items, and each thing where it is used | 2026-11-02 | accepted | [0237](0237-every-list-sorts.md) |
+| [0237](0237-every-list-sorts.md) | Every list sorts, a long one narrows, and its heads stand over their figures | 2026-11-02 | accepted |  |
