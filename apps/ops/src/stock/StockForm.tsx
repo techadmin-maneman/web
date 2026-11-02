@@ -299,6 +299,20 @@ function WhatMoved(props: {
 const drawnBoxes = (stock: Stock, draft: Draft) =>
   stockBoxes(draft.kind, draft.units.length > 0, (holdingOf(stock, draft.code, draft.place)?.lots.length ?? 0) > 0);
 
+/** The form as it opens: the first item still offered, at the place named, else the warehouse first where the
+ * caller's grants reach it, else their first place. */
+function startOf(stock: Stock, kind: Kind, at: string | undefined): Draft {
+  const [first = "", second] = placeChoices(stock).map(([value]) => value);
+  return {
+    ...EMPTY,
+    kind,
+    code: stock.consumables.find((each) => !each.retired)?.code ?? "",
+    from: at === first ? (second ?? first) : first,
+    to: at ?? second ?? first,
+    place: at ?? first,
+  };
+}
+
 /** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 export function StockForm({
   stock,
@@ -313,17 +327,7 @@ export function StockForm({
   onRecorded: (stock: Stock, recorded: { readonly kind: Kind; readonly code: string }) => void;
 }) {
   const places = placeChoices(stock);
-  // The warehouse first where the caller's grants reach it, else their first place.
-  const [first = "", second] = places.map(([value]) => value);
-  const offered = stock.consumables.filter((each) => !each.retired);
-  const [draft, setDraft] = useState<Draft>(() => ({
-    ...EMPTY,
-    kind: kinds[0],
-    code: offered[0]?.code ?? "",
-    from: at === first ? (second ?? first) : first,
-    to: at ?? second ?? first,
-    place: at ?? first,
-  }));
+  const [draft, setDraft] = useState<Draft>(() => startOf(stock, kinds[0], at));
   const [step, setStep] = useState<Step>({ step: "editing" });
   const edit = (field: Exclude<keyof Draft, "units" | "waitForScan">) => (value: string) => {
     // Pieces scanned belong to one stock code and one kind of movement.

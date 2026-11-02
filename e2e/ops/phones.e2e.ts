@@ -7,6 +7,7 @@ import { axeViolations } from "../a11y.ts";
 import { answer, BOARD, HELD, json, REFERRERS, TASKS, TASKS_READ_ON } from "./fixtures.ts";
 import { open as openTechnicians } from "./technicians-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { tables } from "../../packages/ui/words.ts";
 import { today } from "../../apps/ops/src/content/today.ts";
 import { quality } from "../../apps/ops/src/content/quality.ts";
 import { partners } from "../../apps/ops/src/content/partners.ts";
@@ -17,7 +18,8 @@ const pageWidth = (page: Page) => page.evaluate(() => document.documentElement.s
 
 const [, city, jobs] = opsCopy.technicians.columns;
 
-test("reads a table's rows as cards, each value beside its column's name, the heads still sorting", async ({
+// The heads stood as a wrapped line above the cards; the order is chosen in the bar instead, the heads read aloud.
+test("reads a table's rows as cards, each value beside its column's name, the order chosen in the bar", async ({
   page,
 }) => {
   await page.setViewportSize(PHONE);
@@ -26,7 +28,7 @@ test("reads a table's rows as cards, each value beside its column's name, the he
   await expect(faizan.locator("td").first()).toHaveAttribute("data-label", city);
   expect((await faizan.boundingBox())?.width ?? 0).toBeLessThanOrEqual(PHONE.width);
   expect(await pageWidth(page)).toBeLessThanOrEqual(PHONE.width);
-  await page.getByRole("button", { name: jobs }).click();
+  await page.getByRole("combobox", { name: tables.sortBy }).selectOption({ label: tables.sortedAs(jobs, true) });
   await expect(page.getByRole("columnheader", { name: jobs })).toHaveAttribute("aria-sort", "ascending");
   expect(await axeViolations(page)).toEqual([]);
 });

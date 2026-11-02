@@ -27,7 +27,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/ops/src/deletion-requests/DeletionsScreen.tsx": { fn: 85 },
   "apps/ops/src/dispatch/DispatchScreen.tsx": { fn: 116 },
   "apps/ops/src/referrals/ReferralsScreen.tsx": { fn: 103 },
-  "apps/ops/src/stock/StockForm.tsx": { fn: 90 },
+  "apps/ops/src/stock/StockForm.tsx": { fn: 83 },
   "apps/ops/src/tasks/TaskActions.tsx": { fn: 126 },
   "apps/ops/src/technicians/TechnicianForms.tsx": { fn: 89 },
   "apps/tech/src/camera/CaptureScreen.tsx": { fn: 120 },

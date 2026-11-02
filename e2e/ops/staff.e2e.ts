@@ -59,7 +59,12 @@ const row = (page: Page, email: string) =>
   page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open(email) }) });
 
 async function recordOf(page: Page, email: string) {
-  await page.getByRole("button", { name: copy.open(email) }).click();
+  // One switched off is in the folded panel beneath the list: it is opened first.
+  const opener = page.getByRole("button", { name: copy.open(email) });
+  const fold = page.getByText(settingsCopy.staff.switchedOff, { exact: true });
+  await expect(opener.or(fold).first()).toBeVisible();
+  if (!(await opener.isVisible())) await fold.click();
+  await opener.click();
   return page.getByRole("dialog", { name: email });
 }
 
@@ -70,9 +75,11 @@ test("lists each person with their access and whether they are let in", async ({
   const owner = row(page, "owner@maneman.in");
   await expect(owner).toContainText("Admin · Manage · National");
   await expect(owner).toContainText("Finance · Manage · National");
-  await expect(row(page, "noida.lead@maneman.in")).toContainText("Operations · Act · Noida");
-  // Someone switched off is listed apart, beneath those let in.
+  // Someone switched off is in a folded panel of their own, beneath those let in.
   const switchedOff = page.getByRole("region", { name: settingsCopy.staff.switchedOff });
+  await expect(row(page, "noida.lead@maneman.in")).toBeHidden();
+  await switchedOff.getByText(settingsCopy.staff.switchedOff, { exact: true }).click();
+  await expect(row(page, "noida.lead@maneman.in")).toContainText("Operations · Act · Noida");
   await expect(switchedOff.getByRole("row").filter({ hasText: "noida.lead@maneman.in" })).toHaveCount(1);
   await expect(switchedOff.getByRole("row").filter({ hasText: "owner@maneman.in" })).toHaveCount(0);
   await expect(page.getByText("a1b2c3d4.access")).toBeVisible();

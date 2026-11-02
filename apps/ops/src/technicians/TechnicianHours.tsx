@@ -12,7 +12,6 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { Checkbox, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { dayClock } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
-import { useLoad } from "@maneman/ui/useLoad";
 import { useRef, useState } from "react";
 import type { Technician } from "../api.ts";
 import { FormActions } from "@maneman/ui/FormActions";
@@ -183,11 +182,13 @@ function reachWords(own: number | null, everyone: number | null): string {
 }
 
 /** How far they go from home, their own or the business's, changed where it reads (docs/decisions/0223-reach-from-home.md). */
-function ReachRow(props: { technician: Technician; mayChange: boolean; onChange: () => Promise<void> }) {
-  const { technician } = props;
-  // The roster the page has read already carries everyone's reach, so this answers at once.
-  const [roster] = useLoad(techniciansApi.technicians);
-  const everyone = roster.state === "loaded" ? roster.value.default_reach_min : null;
+function ReachRow(props: {
+  technician: Technician;
+  everyone: number | null;
+  mayChange: boolean;
+  onChange: () => Promise<void>;
+}) {
+  const { technician, everyone } = props;
   const value = reachWords(technician.reach_min, everyone);
   return (
     <EditableRow<string>
@@ -316,7 +317,16 @@ function HomeRow(props: { technician: Technician; mayChange: boolean; onChange: 
   );
 }
 
-export function Hours({ technician, onChange }: { technician: Technician; onChange: () => Promise<void> }) {
+export function Hours({
+  technician,
+  everyone = null,
+  onChange,
+}: {
+  technician: Technician;
+  /** Everyone's reach from Settings, which the roster carries; null where it is not known. */
+  everyone?: number | null;
+  onChange: () => Promise<void>;
+}) {
   const access = useAccess();
   return (
     <section className={styles.part} aria-label={copy.title}>
@@ -327,6 +337,7 @@ export function Hours({ technician, onChange }: { technician: Technician; onChan
       />
       <ReachRow
         technician={technician}
+        everyone={everyone}
         mayChange={access.mayCall("POST /api/technicians/{id}/reach")}
         onChange={onChange}
       />

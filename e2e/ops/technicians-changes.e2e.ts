@@ -195,10 +195,11 @@ test("switches a technician off only once asked, and lists the visits they no lo
   await expect(page.getByRole("main").getByRole("navigation", { name: /^Imran Qureshi:/ })).toBeHidden();
   expect(await axeViolations(page)).toEqual([]);
 
-  // They are off the roster's table, and listed apart beneath it in the same columns.
+  // They are off the roster's table, and listed in the folded panel of those switched off.
   await backToRoster(page);
   await expect(page.getByRole("table").first().getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
   const off = page.getByRole("region", { name: settings.staff.inactive });
+  await off.getByText(settings.staff.inactive, { exact: true }).click();
   await expect(off.getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(1);
 });
 
@@ -206,7 +207,8 @@ test("lists the technicians switched off apart, and switches one back on", async
   const { roster, reply } = rosterOf({ ...TECHNICIANS, switched_off: [RAVI] });
   await openWith(page, { [SWITCH_ON]: json({ active: true }) }, reply);
   const off = page.getByRole("region", { name: settings.staff.inactive });
-  // Apart beneath, in the same columns: never among those at work.
+  // In a folded panel of its own: never among those at work.
+  await off.getByText(settings.staff.inactive, { exact: true }).click();
   await expect(off.getByRole("row").filter({ hasText: "Ravi Kumar" })).toHaveCount(1);
   await expect(page.getByRole("table").first().getByRole("row").filter({ hasText: "Ravi Kumar" })).toHaveCount(0);
 
