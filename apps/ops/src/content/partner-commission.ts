@@ -9,6 +9,7 @@ export const partnerCommission = {
   title: "Partner commission",
   /** The panel's own title, which the page's would repeat, as Technician pay's "Pay for the month" is. */
   monthTitle: "Commission for the month",
+  find: "Find a partner",
   month: "Month",
   soFar: (month: string) => `${month}, so far`,
   none: "Nothing this month.",

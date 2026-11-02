@@ -24,6 +24,7 @@ export const spend = {
   adding: "Adding…",
   none: "No spend recorded yet.",
   columns: { month: "Month", city: "City", channel: "Channel", amount: "Amount", note: "Note", by: "Added by" },
+  find: "Find a campaign or note",
   remove: "Remove",
   /** "Remove: October 2026 · Gurgaon · Rs. 12,345" */
   removeLabel: (month: string, city: string, amount: string) => `Remove: ${month} · ${city} · ${amount}`,
