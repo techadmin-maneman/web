@@ -263,8 +263,12 @@ test.describe("the rules", () => {
     await open(page, "/settings/field");
     const menu = page.getByRole("navigation", { name: shell.settings, exact: true });
     await expect(menu.getByRole("link", { name: settingsPageNames.field })).toHaveAttribute("aria-current", "page");
+    // The rules of one figure together under the subject; a rule of several, in a panel of its own beneath.
     const field = section(page, "Visits in the field");
-    await expect(field.getByRole("group")).toHaveText([/^Check-in radius/, /^No-show wait/, /^Phone clock limits/]);
+    await expect(field.getByRole("group")).toHaveText([/^Check-in radius/]);
+    for (const rule of [/^No-show wait/, /^Phone clock limits/]) {
+      await expect(page.getByRole("region", { name: rule }).getByRole("group", { name: rule })).toBeVisible();
+    }
     await expect(page.getByRole("button", { name: EDITING.save, exact: true })).toHaveCount(0);
 
     // Only the open page's group shows its pages; the rest open by their name.
@@ -304,7 +308,8 @@ test.describe("the rules", () => {
 
   test("links each late-fee rule to where it is priced, and the late fees back to the rule", async ({ page }) => {
     await open(page, "/settings/moves");
-    const charges = section(page, settingsCopy.rules.groups.moves);
+    // Each charge is a rule of several figures, in a panel of its own.
+    const charges = page.locator("#late_change_charge");
     await expect(charges.getByRole("link", { name: settingsCopy.rules.lateFees })).toHaveAttribute(
       "href",
       "/settings/services",

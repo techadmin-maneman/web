@@ -10,13 +10,21 @@
   border-top: var(--hairline) solid var(--ui-line);
 }
 
-/* A rule of several figures, named over its rows. */
-.ruleTitle {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20) var(--sp-4);
-  font-size: var(--fs-14);
-  font-weight: var(--weight-medium);
-  color: var(--ui-text);
+/* Rules of one figure two to a row: each draws the line beneath it, the last row none. */
+.singles > .rule {
+  border-top: 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.singles > .rule:last-child {
+  border-bottom: 0;
+}
+
+/* At a desk the last row is a pair: neither of it draws a line beneath. */
+@media (min-width: 1024px) {
+  .singles > .rule:nth-last-child(2):nth-child(odd) {
+    border-bottom: 0;
+  }
 }
 
 .refusal {

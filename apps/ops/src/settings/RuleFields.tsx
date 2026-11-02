@@ -5,6 +5,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { EditableRow } from "@maneman/ui/EditableRow";
+import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
@@ -60,6 +61,7 @@ function FigureRow({ rule, figureKey, mayChange, onSaved }: RowProps & { readonl
     typeof rule.value === "number" ? figure : { ...rule.value, [figureKey]: figure };
   return (
     <EditableRow<string>
+      stacked
       id={single ? rule.name : undefined}
       label={single ? rule.title : keyLabel(rule, figureKey)}
       words={EDITING}
@@ -101,6 +103,7 @@ function ChoiceRow({
   const current = rule.value[choiceKey] ?? "";
   return (
     <EditableRow<string>
+      stacked
       label={keyLabel(rule, choiceKey)}
       words={EDITING}
       mayChange={mayChange}
@@ -191,16 +194,22 @@ function AddKey({ rule, onSaved }: { readonly rule: NumberRule; readonly onSaved
 /** A rule's rows: a figure's or a choice's a row, and an open-keyed rule's way to name another key. */
 export function RuleRows({ rule, mayChange, onSaved }: RowProps) {
   if (rule.kind === "choice") {
-    return rule.keys.map((key) => (
-      <ChoiceRow key={key} rule={rule} choiceKey={key} mayChange={mayChange} onSaved={onSaved} />
-    ));
+    return (
+      <SettingPairs>
+        {rule.keys.map((key) => (
+          <ChoiceRow key={key} rule={rule} choiceKey={key} mayChange={mayChange} onSaved={onSaved} />
+        ))}
+      </SettingPairs>
+    );
   }
-  const keys = typeof rule.value === "number" ? [rule.name] : Object.keys(rule.value);
+  const single = typeof rule.value === "number";
+  const keys = single ? [rule.name] : Object.keys(rule.value);
+  const rows = keys.map((key) => (
+    <FigureRow key={key} rule={rule} figureKey={key} mayChange={mayChange} onSaved={onSaved} />
+  ));
   return (
     <>
-      {keys.map((key) => (
-        <FigureRow key={key} rule={rule} figureKey={key} mayChange={mayChange} onSaved={onSaved} />
-      ))}
+      {single ? rows : <SettingPairs>{rows}</SettingPairs>}
       {mayChange && rule.keys === "open" && <AddKey rule={rule} onSaved={onSaved} />}
     </>
   );

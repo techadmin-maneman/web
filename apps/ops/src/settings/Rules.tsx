@@ -3,6 +3,7 @@
 // figure at once, and says so beside it; a rule set by hand can be put back to its standard. A person who may only
 // look sees each value as it reads.
 
+import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { Button } from "@maneman/ui/Button";
 import { Stack } from "@maneman/ui/Layout";
 import { Note } from "@maneman/ui/Note";
@@ -96,7 +97,6 @@ function Rule({
       id={single ? undefined : rule.name}
       tabIndex={single ? undefined : -1}
     >
-      {!single && <h3 className={styles.ruleTitle}>{rule.title}</h3>}
       {pricedInPrices && (
         <Note>
           <OpsLink to={settingsPath("services")}>{copy.lateFees}</OpsLink>
@@ -108,7 +108,8 @@ function Rule({
   );
 }
 
-/** One subject's rules in a panel, each row saved on its own. */
+/** One subject's rules: those of one figure together in a panel, two to a row, and each rule of several figures in a
+ * panel of its own under its name, its figures two to a row; each row saved on its own. */
 function Group({
   section,
   allowed,
@@ -121,13 +122,28 @@ function Group({
   /** What the group shows above its rules. */
   readonly children?: ReactNode;
 }) {
+  const single = (rule: OpsSetting) => typeof rule.value === "number";
+  const singles = section.rules.filter(single);
   return (
-    <Panel id={section.id} titleId={`${section.id}-title`} title={GROUP_NAMES[section.id]}>
-      {children}
-      {section.rules.map((rule) => (
-        <Rule key={rule.name} rule={rule} allowed={allowed} onSaved={onSaved} />
-      ))}
-    </Panel>
+    <>
+      {(singles.length > 0 || children !== undefined) && (
+        <Panel id={section.id} titleId={`${section.id}-title`} title={GROUP_NAMES[section.id]}>
+          {children}
+          <SettingPairs className={styles.singles}>
+            {singles.map((rule) => (
+              <Rule key={rule.name} rule={rule} allowed={allowed} onSaved={onSaved} />
+            ))}
+          </SettingPairs>
+        </Panel>
+      )}
+      {section.rules
+        .filter((rule) => !single(rule))
+        .map((rule) => (
+          <Panel key={rule.name} titleId={`${rule.name}-title`} title={rule.title}>
+            <Rule rule={rule} allowed={allowed} onSaved={onSaved} />
+          </Panel>
+        ))}
+    </>
   );
 }
 
