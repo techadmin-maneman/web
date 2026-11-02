@@ -1,15 +1,20 @@
-// The board's day along the hours (./DispatchScreen.tsx), which it opens on: each technician's visits that day, done,
-// under way or late marked, and where their phone last put them; a visit opens its drawer. While a job is in hand,
-// each start it could take there is a button that places it, the start chosen (../lib/day-cells.ts).
+// The board's day along the hours (./DispatchScreen.tsx), which it opens on: the visits nobody is on, pinned at the top;
+// then each technician's visits that day in their kind's look, done, under way or late marked, beneath their name the
+// visits and hours booked and how full the day is, a day off as a band; the hour it is now marked down the day. A visit
+// opens its drawer. While a job is in hand, each start it could take is a button that places it (../lib/day-cells.ts).
 
-import { DayTimeline, type TimelineCell, type TimelineLook } from "@maneman/ui/DayTimeline";
-import { Field, Select } from "@maneman/ui/Field";
-import { TabButton, Tabs } from "@maneman/ui/Tabs";
+import {
+  DayTimeline,
+  type TimelineCell,
+  type TimelineKind,
+  type TimelineLook,
+  type TimelineRow,
+} from "@maneman/ui/DayTimeline";
 import { TextButton } from "@maneman/ui/TextLink";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { indiaClock, shortDate } from "@maneman/web-kit/dates";
-import type { Block, Board, BoardRow } from "../api.ts";
-import { dispatch } from "../content.ts";
+import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import type { Block, Board, BoardRow, Unassigned } from "../api.ts";
+import { dispatch, tasks } from "../content.ts";
 import { cellsOf, hourLabel, minuteOfDay, stepsOf } from "../lib/day-cells.ts";
 import type { Job, Target } from "./job.ts";
 import { minutesOf } from "./job.ts";
@@ -17,6 +22,18 @@ import type { InHand } from "./MoveBar.tsx";
 import styles from "./dispatch.module.css";
 
 const copy = dispatch.day;
+
+/** How long a step of the day is, in minutes (../lib/day-cells.ts). */
+const STEP_MINUTES = 30;
+
+const KIND_OF: Readonly<Record<NonNullable<Block["type"]>, TimelineKind>> = {
+  consultation: "consultation",
+  service: "service",
+  replacement: "replacement",
+  first_fit: "fit",
+};
+
+const kindOf = (type: Block["type"]): TimelineKind | undefined => (type === null ? undefined : KIND_OF[type]);
 
 type Start = NonNullable<ReturnType<InHand["startsAt"]>>[number];
 
@@ -95,6 +112,7 @@ function rowCells(props: Props, row: BoardRow, steps: readonly number[], visits:
       key,
       span: cell.span,
       look: ghostOf === undefined ? lookOf(block, props.now) : "proposed",
+      kind: ghostOf === undefined ? kindOf(block.type) : undefined,
       children: (
         <span className={styles.dayVisit}>
           <TextButton
@@ -113,6 +131,53 @@ function rowCells(props: Props, row: BoardRow, steps: readonly number[], visits:
       ),
     };
   });
+}
+
+/** The visits nobody is on that day, pinned at the top in the warning's tone; each opens its drawer. */
+function nobodyRow(props: Props, steps: readonly number[], jobs: readonly Unassigned[]): TimelineRow {
+  const spans = jobs.map((job) => {
+    const from = minuteOfDay(job.starts_at);
+    return { from, to: from + minutesOf(job.slots), job };
+  });
+  return {
+    key: "nobody",
+    head: tasks.groups.unassigned_visit,
+    meta: copy.nobodyMeta(jobs.length),
+    tone: "warning",
+    cells: cellsOf(steps, spans, []).map((cell): TimelineCell => {
+      const key = `nobody/${String(cell.from)}`;
+      if (cell.kind !== "busy") return { key, span: cell.span, look: "idle" };
+      const { job } = cell.busy;
+      const kind = job.type === null ? dispatch.unknown : dispatch.typeNames[job.type];
+      return {
+        key,
+        span: cell.span,
+        look: "unassigned",
+        children: (
+          <span className={styles.dayVisit}>
+            <TextButton
+              compact
+              onClick={(event) => {
+                props.onOpen({ kind: "unassigned", job }, event.currentTarget);
+              }}
+            >
+              {job.client ?? dispatch.unknown}
+            </TextButton>
+            <span className={styles.dayVisitWhat}>{`${indiaClock(job.starts_at)} · ${kind}`}</span>
+          </span>
+        ),
+      };
+    }),
+  };
+}
+
+/** The step it is now, on today's day; null on any other. */
+function nowStep(steps: readonly number[], date: string, now: number): string | null {
+  const iso = new Date(now).toISOString();
+  if (indiaDate(iso) !== date) return null;
+  const minute = minuteOfDay(iso);
+  const step = [...steps].reverse().find((each) => each <= minute);
+  return step === undefined || minute >= (steps.at(-1) ?? 0) + STEP_MINUTES ? null : String(step);
 }
 
 export function DayBoard(props: Props) {
@@ -141,18 +206,33 @@ export function DayBoard(props: Props) {
     }),
     ...ghosts.filter((ghost) => ghost.on === row.technician_id).map((ghost) => ghost.visit),
   ];
-  const steps = stepsOf(props.rows.flatMap(visitsOf));
-  const rows = props.rows.map((row) => {
+  const nobody = props.board.unassigned.filter((job) => (job.date ?? indiaDate(job.starts_at)) === props.date);
+  const nobodySpans = nobody.map((job) => {
+    const from = minuteOfDay(job.starts_at);
+    return { from, to: from + minutesOf(job.slots) };
+  });
+  const steps = stepsOf([...props.rows.flatMap(visitsOf), ...nobodySpans]);
+  const dayMinutes = steps.length * STEP_MINUTES;
+  const rows: TimelineRow[] = props.rows.map((row) => {
+    const visits = visitsOf(row).filter((visit) => visit.ghostOf === undefined);
+    const booked = visits.reduce((sum, visit) => sum + visit.to - visit.from, 0);
     const at = lastAt(blocksOf(row));
+    const away = props.board.leave.some(
+      (leave) =>
+        leave.technician_id === row.technician_id &&
+        leave.from <= props.date &&
+        props.date <= leave.to &&
+        leave.from_time === null,
+    );
     return {
       key: row.technician_id,
-      head: (
-        <span className={styles.dayHead}>
-          <span>{row.name}</span>
-          {at !== null && <span className={styles.dayVisitWhat}>{at}</span>}
-        </span>
-      ),
-      cells: rowCells(props, row, steps, visitsOf(row)),
+      head: row.name,
+      meta: at ?? copy.rowMeta(row.zone, visits.length, booked),
+      load: dayMinutes === 0 ? 0 : booked / dayMinutes,
+      cells:
+        away && visits.length === 0
+          ? [{ key: `${row.technician_id}/away`, span: steps.length, look: "leave", children: dispatch.board.away }]
+          : rowCells(props, row, steps, visitsOf(row)),
     };
   });
   const label = copy.label(shortDate(props.date));
@@ -165,7 +245,8 @@ export function DayBoard(props: Props) {
         label={label}
         labelledBy="day-board"
         steps={steps.map((minute) => ({ key: String(minute), label: hourLabel(minute) }))}
-        rows={rows}
+        rows={nobody.length === 0 ? rows : [nobodyRow(props, steps, nobody), ...rows]}
+        now={nowStep(steps, props.date, props.now)}
       />
     </>
   );
@@ -188,52 +269,4 @@ export const firstView = (asked: {
 export function shownDay(dates: readonly string[], chosen: string | null, today: string): string | undefined {
   if (chosen !== null && dates.includes(chosen)) return chosen;
   return dates.includes(today) ? today : dates[0];
-}
-
-/** Day or Week, and in the Day view, which of the week's days. */
-export function ViewChoice(props: {
-  readonly view: BoardView;
-  readonly onView: (view: BoardView) => void;
-  readonly dates: readonly string[];
-  readonly day: string | undefined;
-  readonly onDay: (day: string) => void;
-}) {
-  const views = dispatch.views;
-  return (
-    <div className={styles.viewChoice}>
-      <Tabs label={views.label}>
-        {(["day", "week"] as const).map((each) => (
-          <TabButton
-            key={each}
-            current={props.view === each}
-            onClick={() => {
-              props.onView(each);
-            }}
-          >
-            {views[each]}
-          </TabButton>
-        ))}
-      </Tabs>
-      {props.view === "day" && props.day !== undefined && (
-        <Field label={copy.choose} labelHidden>
-          {(control) => (
-            <Select
-              {...control}
-              width="choice"
-              value={props.day}
-              onChange={(event) => {
-                props.onDay(event.currentTarget.value);
-              }}
-            >
-              {props.dates.map((date) => (
-                <option key={date} value={date}>
-                  {shortDate(date)}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-      )}
-    </div>
-  );
 }

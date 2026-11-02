@@ -313,6 +313,19 @@ export const clients = {
       },
       book: "Book",
       booking: "Booking…",
+      /** The panel's three steps, numbered: "1. Visit". */
+      step: (number: number, name: string) => `${String(number)}. ${name}`,
+      time: "Time",
+      /** Each part of the day, over its starts. */
+      periods: { morning: "Morning", afternoon: "Afternoon", evening: "Evening" },
+      /** Beneath a day: how many starts are free. */
+      free: (starts: number) => (starts === 0 ? "Full" : `${String(starts)} free`),
+      full: "Full",
+      taken: "Taken",
+      addCode: "Add a discount code",
+      /** The panel's main action, once a time is chosen: "Book Tue 3 Nov, 2 pm". */
+      bookAt: (day: string, time: string) => `Book ${day}, ${time}`,
+      chooseTime: "Choose a time",
       /** "Service visit, Wed 23 Sep, morning, with Sandeep Rawat." */
       summary: (visit: string, day: string, time: string, technician: string) =>
         `${visit}, ${day}, ${time}, with ${technician}.`,

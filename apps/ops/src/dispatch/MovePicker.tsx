@@ -135,7 +135,9 @@ export function MovePicker({ job, to, starts, blackout, sending, clearingCheckIn
   const [reason, setReason] = useState<MoveReason | null>(null);
   // A start the Day view placed the job at stands, while the server still offers it.
   const placed = to.start !== undefined && starts.includes(to.start) ? to.start : undefined;
-  const [landsAt, setLandsAt] = useState<string | null>(placed ?? starts[0] ?? null);
+  // The start chosen in the sheet, else the one placed, once the server's starts have come, else the first.
+  const [chosen, setLandsAt] = useState<string | null>(null);
+  const landsAt = chosen !== null && starts.includes(chosen) ? chosen : (placed ?? starts[0] ?? null);
   const [blackoutReason, setBlackoutReason] = useState("");
   const copy = dispatch.move;
 

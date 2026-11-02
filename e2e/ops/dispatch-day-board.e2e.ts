@@ -15,8 +15,8 @@ test("opens on the day, a row of hours a technician, and places a job in hand at
 }) => {
   await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
   await page.goto("/dispatch");
-  const views = page.getByRole("navigation", { name: copy.views.label });
-  await expect(views.getByRole("button", { name: copy.views.day })).toHaveAttribute("aria-current", "true");
+  const views = page.getByRole("radiogroup", { name: copy.views.label });
+  await expect(views.getByRole("radio", { name: copy.views.day })).toBeChecked();
   const day = page.getByRole("table", { name: copy.day.label("Fri 19 Sep") });
   await expect(day.getByRole("rowheader")).toHaveCount(BOARD.technicians.length);
   expect(await axeViolations(page)).toEqual([]);
@@ -30,7 +30,7 @@ test("opens on the day, a row of hours a technician, and places a job in hand at
 
   // The week is a click away, and shows the week of cards.
   await page.keyboard.press("Escape");
-  await views.getByRole("button", { name: copy.views.week }).click();
+  await views.getByRole("radio", { name: copy.views.week }).click();
   await expect(page.getByRole("table", { name: copy.day.label("Fri 19 Sep") })).toHaveCount(0);
 });
 
@@ -89,4 +89,24 @@ test("draws a proposed move on the day it would go to, dashed, opening the visit
   expect(await axeViolations(page)).toEqual([]);
   await ghost.click();
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
+});
+
+// The design pins the day's visits nobody is on at the top, and offers who is free to take one.
+test("pins the visits nobody is on at the top, and assigns one to a technician free at its time", async ({ page }) => {
+  const [job] = BOARD.unassigned;
+  if (job === undefined) throw new Error("the board has no job in its tray");
+  const today = { ...job, date: "2025-09-19", starts_at: "2025-09-19T06:30:00.000Z" };
+  await answer(page, { [READ_BOARD]: json({ ...BOARD, unassigned: [today] }), [READ_ROOM]: json(ROOM) });
+  await page.goto("/dispatch");
+  const day = page.getByRole("table", { name: copy.day.label("Fri 19 Sep") });
+  await expect(day.getByRole("rowheader").first()).toContainText(opsCopy.tasks.groups.unassigned_visit);
+  const nobody = day.getByRole("row").filter({ has: page.getByRole("rowheader", { name: /^No technician/ }) });
+  await nobody.getByRole("button", { name: today.client ?? "", exact: true }).click();
+
+  const drawer = page.getByRole("dialog");
+  const free = drawer.getByRole("region", { name: copy.drawer.suggest.title });
+  await expect(free.getByRole("radio")).toHaveCount(3);
+  await expect(free.getByRole("radio").first()).toBeChecked();
+  await free.getByRole("button", { name: /^Assign / }).click();
+  await expect(page.getByRole("dialog").getByLabel(copy.move.start)).toHaveValue(today.starts_at);
 });

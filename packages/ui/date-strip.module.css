@@ -86,4 +86,9 @@
   .day:has(.radio:disabled) .weekday {
     color: var(--text-muted);
   }
+
+  /* A word beneath the number: how many starts are free, in its day's own colour, chosen or not. */
+  .note {
+    font-size: var(--fs-13);
+  }
 }

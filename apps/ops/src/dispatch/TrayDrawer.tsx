@@ -1,15 +1,18 @@
 // The board's tray, opened: a job nobody holds yet, read before it is put on a
 // technician. The client, the window asked beside the one offered, the visit's
-// details, the block drawer's two ways to the client, and Assign, which takes
-// the job up for the list of technicians' days to put it on.
+// details, who is free to take it, the block drawer's two ways to the client, and
+// Assign, which takes the job up for the list of technicians' days to put it on.
 
 import { badgeLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
+import { DescriptionList } from "@maneman/ui/DescriptionList";
+import { Suggestions } from "./Suggestions.tsx";
+import type { Target } from "./job.ts";
 import { Drawer } from "@maneman/ui/Drawer";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import type { Unassigned } from "../api.ts";
+import type { BoardRow, Unassigned } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { dispatch, CLOSE } from "../content.ts";
 import { clientPath } from "../route.ts";
@@ -22,10 +25,13 @@ interface Props {
   readonly each: Unassigned;
   /** Null when the person's access does not let them put a job on a technician. */
   readonly onAssign: (() => void) | null;
+  /** Puts it on a technician chosen of those free; null where the person may not. */
+  readonly onAssignTo: ((to: Target) => void) | null;
+  readonly technicians: readonly BoardRow[];
   readonly onClose: () => void;
 }
 
-export function TrayDrawer({ each, onAssign, onClose }: Props) {
+export function TrayDrawer({ each, onAssign, onAssignTo, technicians, onClose }: Props) {
   const copy = dispatch.drawer;
   const person = each.person;
   const referredBy = person === null ? null : person.referred_by;
@@ -49,42 +55,41 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
       aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[each.badge]}</span>}
       close={CLOSE}
       onDismiss={onClose}
+      foot={
+        <div className={styles.drawerActions}>
+          {onAssign !== null && (
+            <Button variant="outline" size="small" onClick={onAssign}>
+              {copy.assign}
+            </Button>
+          )}
+          {person !== null && (
+            <>
+              <ButtonLink
+                variant="outline"
+                size="small"
+                href={whatsappChat(person.mobile)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
+                {copy.whatsapp(firstNameOf(person.name))}
+              </ButtonLink>
+              <OpsLink
+                className={buttonLook({ variant: "outline", size: "small" })}
+                to={clientPath(person.id, "visits")}
+              >
+                {copy.openClient}
+              </OpsLink>
+            </>
+          )}
+        </div>
+      }
     >
-      <dl className={styles.rows}>
-        {rows.map((row) => (
-          <div className={styles.row} key={row.key}>
-            <dt>{row.key}</dt>
-            <dd>{row.value}</dd>
-          </div>
-        ))}
-      </dl>
+      {onAssignTo !== null && <Suggestions each={each} technicians={technicians} onAssign={onAssignTo} />}
+      <DescriptionList layout="list" items={rows.map((row) => ({ term: row.key, details: row.value }))} />
       {each.was_technician !== null && (
         <p className={styles.untoldLine}>{dispatch.tray.was(each.was_technician.name)}</p>
       )}
-      <div className={styles.drawerActions}>
-        {onAssign !== null && (
-          <Button variant="outline" size="small" onClick={onAssign}>
-            {copy.assign}
-          </Button>
-        )}
-        {person !== null && (
-          <>
-            <ButtonLink
-              variant="outline"
-              size="small"
-              href={whatsappChat(person.mobile)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
-              {copy.whatsapp(firstNameOf(person.name))}
-            </ButtonLink>
-            <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={clientPath(person.id, "visits")}>
-              {copy.openClient}
-            </OpsLink>
-          </>
-        )}
-      </div>
     </Drawer>
   );
 }

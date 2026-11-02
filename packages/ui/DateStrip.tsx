@@ -18,6 +18,8 @@ export interface StripDate {
   readonly open: boolean;
   /** A short mark beneath the number, as for a day with a window inside the notice. */
   readonly marked?: boolean;
+  /** A word beneath the number, as how many starts are free: "4 free", "Full". */
+  readonly note?: string | undefined;
 }
 
 export function DateStrip(props: {
@@ -57,6 +59,11 @@ export function DateStrip(props: {
             {day.number}
           </span>
           {day.marked === true && <span className={styles.mark} aria-hidden="true" />}
+          {day.note !== undefined && (
+            <span className={styles.note} aria-hidden="true">
+              {day.note}
+            </span>
+          )}
         </label>
       ))}
     </div>

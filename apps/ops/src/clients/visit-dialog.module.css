@@ -57,3 +57,33 @@
   min-height: var(--sp-48);
   resize: vertical;
 }
+
+/* Book a visit's steps (./BookSteps.tsx): each a name over what it asks, a gap between them; the kinds two to a row. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  margin-bottom: var(--sp-24);
+}
+
+.step {
+  margin: 0;
+}
+
+.kinds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-8);
+}
+
+/* Its foot: what is paid on the left, Book on the right. */
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-16);
+}
+
+.foot .pays {
+  margin: 0;
+}

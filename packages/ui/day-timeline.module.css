@@ -27,6 +27,44 @@
     font-size: var(--fs-14);
   }
 
+  .name,
+  .meta {
+    display: block;
+  }
+
+  .meta {
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  /* How much of the day is booked: a thin bar in the accent beneath the name. */
+  .load {
+    display: block;
+    width: 100%;
+    height: var(--rule-strong);
+    margin-top: var(--sp-8);
+    border: 0;
+    background: var(--ui-line);
+    appearance: none;
+  }
+
+  .load::-webkit-progress-bar {
+    background: var(--ui-line);
+  }
+
+  .load::-webkit-progress-value {
+    background: var(--ui-accent);
+  }
+
+  .load::-moz-progress-bar {
+    background: var(--ui-accent);
+  }
+
+  /* The row of visits nobody is on, pinned at the top: its name in the warning's tone. */
+  .warning .name {
+    color: var(--status-warning);
+  }
+
   .step {
     min-width: var(--sp-48);
     padding: var(--sp-4) 0;
@@ -73,9 +111,100 @@
     outline-offset: calc(var(--hairline) * -1);
   }
 
+  /* A visit by its kind: a consultation raised on a line, a service visit set back on the control's line, a
+     replacement shaded on the accent, a first fit in the strong fill. */
+  .consultation {
+    border-left-color: var(--ui-line);
+    background: var(--ui-raised);
+  }
+
+  .service {
+    border-left-color: var(--ui-line-control);
+    background: var(--ui-box-off);
+  }
+
+  .replacement {
+    border-left-color: var(--ui-accent);
+    background: var(--ui-shade);
+  }
+
+  .fit {
+    border-left-color: var(--ink-line-strong);
+    background: var(--ui-strong);
+    color: var(--ui-on-strong);
+  }
+
+  /* Done, whatever its kind: set back. A late one keeps its kind's fill on the warning's rule. */
+  .done.consultation,
+  .done.service,
+  .done.replacement,
+  .done.fit {
+    border-left-color: var(--status-done);
+    background: var(--ui-ground);
+    color: var(--ui-text-muted);
+  }
+
+  .late.consultation,
+  .late.service,
+  .late.replacement,
+  .late.fit {
+    border-left-color: var(--status-warning);
+  }
+
+  /* A visit nobody is on: dashed, in the warning's tone. */
+  .unassigned {
+    padding: var(--sp-4) var(--sp-8);
+    outline: var(--hairline) dashed var(--status-warning);
+    outline-offset: calc(var(--hairline) * -1);
+    color: var(--status-warning);
+  }
+
+  /* Leave, across the hours it takes: a hatched band, its word in the middle. */
+  .leave {
+    background: repeating-linear-gradient(-45deg, var(--ui-shade) 0 var(--sp-4), transparent var(--sp-4) var(--sp-8));
+    color: var(--ui-text-muted);
+    text-align: center;
+  }
+
+  /* The step it is now: a rule down the day in the warning's tone. */
+  .now {
+    box-shadow: inset var(--rule-strong) 0 0 0 var(--status-warning);
+  }
+
   .free,
   .chosen {
     text-align: center;
+  }
+
+  /* The key: a swatch of each kind's look beside its name, on one line where it fits. */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8) var(--sp-16);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-13);
+    color: var(--ui-text-soft);
+  }
+
+  .key {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+  }
+
+  .swatch {
+    width: var(--sp-12);
+    height: var(--sp-12);
+    padding: 0;
+    border: var(--hairline) solid var(--ui-line);
+    border-left: var(--rule-strong) solid var(--ui-line);
+  }
+
+  .swatch.unassigned {
+    padding: 0;
+    border: 0;
   }
 
   .chosen {

@@ -15,28 +15,6 @@
   flex-shrink: 0;
 }
 
-.rows {
-  margin: 0;
-}
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  padding: var(--sp-8) 0;
-  border-bottom: var(--hairline) solid var(--ui-line);
-  font-size: var(--fs-15);
-}
-
-.row dt {
-  color: var(--ui-text-muted);
-}
-
-.row dd {
-  margin: 0;
-  text-align: right;
-}
-
 /* A move the client has not heard of, behind the oxblood rule the no-show queue gives what needs doing. */
 .untold {
   display: flex;
@@ -106,9 +84,7 @@
   font-size: var(--fs-14);
 }
 
-/* The board's day along the hours (./DayBoard.tsx): a technician's name over where their phone last put them, and a
-   visit's client over its start and kind. */
-.dayHead,
+/* The board's day along the hours (./DayBoard.tsx): a visit's client over its start and kind. */
 .dayVisit {
   display: flex;
   flex-direction: column;
@@ -122,11 +98,53 @@
   white-space: nowrap;
 }
 
-/* Day or Week over the board, and the day the Day view shows beside it. */
-.viewChoice {
+/* The head's right: a step back and on with the day or week between, then Day or Week. */
+.controls,
+.stepper,
+.views {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-8) var(--sp-24);
-  padding: var(--sp-8) var(--sp-32);
+}
+
+.controls {
+  gap: var(--sp-16);
+}
+
+.stepper,
+.views {
+  gap: var(--sp-4);
+  white-space: nowrap;
+}
+
+/* On a narrow window the stepper and the views wrap as two, each on one line. */
+.controls {
+  flex-wrap: wrap;
+}
+
+/* The step back: the step on's chevron, turned to point back, as the shared pager turns its own. */
+.back svg {
+  transform: rotate(180deg);
+}
+
+/* Cancelling a visit: the drawer's last word, at the end of its row. */
+.cancel {
+  margin-left: auto;
+}
+
+/* Who could take a visit nobody is on (./Suggestions.tsx): the choices one over another in from the panel's edges,
+   then Assign. */
+.suggest {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-8);
+  margin: var(--sp-12) var(--note-inset) 0;
+}
+
+.suggest > * {
+  align-self: stretch;
+}
+
+.suggest > button {
+  align-self: flex-start;
 }

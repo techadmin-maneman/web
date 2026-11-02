@@ -47,10 +47,13 @@ export const dispatch = {
    * above the grid (docs/fidelity-method.md).
    */
   tools: {
-    label: "Week, city and search",
+    label: "Find on the board",
     previous: "Previous week",
     next: "Next week",
-    thisWeek: "This week",
+    previousDay: "Previous day",
+    nextDay: "Next day",
+    /** The key to the day's visits, read to a screen reader. */
+    key: "Key",
     city: "City",
     /** A technician's name or zone, or a visit's client, area or pincode. */
     find: "Find a technician, client or area",
@@ -58,7 +61,7 @@ export const dispatch = {
     nothingFound: (text: string) => `Nothing this week matches “${text}”.`,
   },
   /** The board's day along the hours, which it opens on, and its week of cards. */
-  views: { label: "View", day: "Day", week: "Week" },
+  views: { label: "View", day: "Day", week: "Week", technician: "Technician" },
   day: {
     choose: "Day",
     /** The timeline's name for a screen reader: "Visits on Thu 24 Sep". */
@@ -71,6 +74,28 @@ export const dispatch = {
     },
     /** A start the job in hand could take, which places it there: "11:30 am", read as "Place at 11:30 am with Imran". */
     placeLabel: (time: string, technician: string) => `Place at ${time} with ${technician}`,
+    /** Beneath a technician's name: where they work, their visits and the hours booked, "Sec 40–65 · 4 visits · 6 h booked". */
+    rowMeta: (zone: string | null, visits: number, minutes: number) =>
+      [
+        zone,
+        `${String(visits)} ${visits === 1 ? "visit" : "visits"}`,
+        `${String(Number((minutes / 60).toFixed(1)))} h booked`,
+      ]
+        .filter((part) => part !== null)
+        .join(" · "),
+    /** A visit past its start with nobody there yet. */
+    late: "Running late",
+    /** On a phone, over one technician's visits: "Imran Qureshi · 4 visits". */
+    phoneHead: (name: string, visits: number) => `${name} · ${String(visits)} ${visits === 1 ? "visit" : "visits"}`,
+    /** Beneath the row of visits nobody is on: how many. */
+    nobodyMeta: (visits: number) => `${String(visits)} ${visits === 1 ? "visit" : "visits"}`,
+    /** Beside the title: the day's visits, the technicians working, and those with nobody on them. */
+    sub: (visits: number, working: number, nobody: number) =>
+      [
+        `${String(visits)} ${visits === 1 ? "visit" : "visits"}`,
+        `${String(working)} ${working === 1 ? "technician" : "technicians"} working`,
+        ...(nobody === 0 ? [] : [`${String(nobody)} without a technician`]),
+      ].join(" · "),
   },
   board: {
     /** A block, for whoever is reading with a screen reader or moving by keyboard. */
@@ -205,7 +230,16 @@ export const dispatch = {
     moveAnyway: "Move anyway",
     /** The drawer's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
+    call: (firstName: string) => `Call ${firstName}`,
     openClient: "Open client",
+    /** Who could take a visit nobody is on, and the way to put it on the one chosen. */
+    suggest: {
+      title: "Free to take it",
+      free: (time: string) => `free at ${time}`,
+      away: (distance: string) => `${distance} away`,
+      assign: (name: string) => `Assign ${name}`,
+      none: "No one is free that day.",
+    },
     /** A move the client has not heard of, and why, which ops tell them of by phone (ADR 0069). */
     untold: {
       no_consent: (when: string, mobile: string) =>
