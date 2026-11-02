@@ -22,7 +22,7 @@
      lines wrap before the actions leave the row, until the row is a phone's. */
   .lead {
     display: flex;
-    flex: 1 1 20rem;
+    flex: 1 1 calc(var(--sp-64) * 5);
     align-items: center;
     gap: var(--sp-16);
     min-width: 0;

@@ -49,6 +49,11 @@
   color: var(--ui-text-muted);
 }
 
+.none {
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+}
+
 /* ---- A technician's page: their details, then a tab at a time ------------ */
 
 /* A technician's page: their details, their tabs, then the tab's panel, each the page's width. */

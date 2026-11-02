@@ -100,10 +100,6 @@
   margin-bottom: var(--sp-12);
 }
 
-.carePerson {
-  margin-bottom: var(--sp-12);
-}
-
 /* Writing in the chat: the reply box across, its buttons, then closing it with a reason. */
 .compose {
   display: flex;

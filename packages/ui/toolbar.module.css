@@ -18,7 +18,7 @@
   /* A search gives way first as the row narrows, down to a name's width, so the lists beside it keep its line; with
      room, it grows to the app's search width. */
   .toolbar > :has(input[type="search"]) {
-    flex: 1 1 12rem;
+    flex: 1 1 calc(var(--sp-64) * 3);
     max-width: var(--search-width);
   }
 
