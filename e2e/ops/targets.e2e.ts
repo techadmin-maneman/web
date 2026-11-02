@@ -44,7 +44,7 @@ test("sets a month’s target for a city, by measure", async ({ page }) => {
     },
   });
   await expect(page.getByRole("cell", { name: "40", exact: true })).toBeVisible();
-  await page.getByLabel(copy.city).selectOption("Bengaluru");
+  await page.getByRole("main").getByLabel(copy.city).selectOption("Bengaluru");
   await page.getByRole("button", { name: `${EDITING.change} ${copy.measures.revenue}` }).click();
   const revenue = page.getByRole("textbox", { name: copy.measures.revenue });
   await revenue.fill("500000");
