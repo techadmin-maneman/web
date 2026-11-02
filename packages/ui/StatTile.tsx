@@ -20,7 +20,7 @@ export function StatTile({
   readonly label: string;
   readonly value: string | number;
   readonly tone?: StatTone;
-  /** A short line beneath the figure: what it is made of, or the one to look at first. */
+  /** A short line beneath the figure: what it is made of, or the one to look at first. Empty, it keeps the line's room. */
   readonly note?: string | undefined;
   /** Where the figure is acted on; a tile without one is not a link. */
   readonly to?: string;

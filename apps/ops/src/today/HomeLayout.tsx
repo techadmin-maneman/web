@@ -9,6 +9,7 @@ import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Panel } from "@maneman/ui/Panel";
 import { StatTile, type StatTone } from "@maneman/ui/StatTile";
 import type { ReactNode } from "react";
+import { today as copy } from "../content/today.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { useMayCall } from "../lib/access.ts";
 import { useIsPhone } from "../lib/media.ts";
@@ -35,6 +36,8 @@ const toneOf = (figure: Figure): StatTone =>
 function Figures({ figures }: { figures: readonly Shown[] }) {
   const mayCall = useMayCall();
   const shown = figures.filter((figure): figure is Figure => figure !== null && mayOpen(mayCall, figure.page));
+  // Where one tile has a line beneath its figure, every tile keeps its room, so the figures stand level.
+  const noted = shown.some((figure) => figure.note !== undefined);
   return (
     <Columns row>
       {shown.map((figure) => (
@@ -43,7 +46,7 @@ function Figures({ figures }: { figures: readonly Shown[] }) {
           label={figure.label}
           value={figure.value}
           tone={toneOf(figure)}
-          note={figure.note}
+          note={figure.note ?? (noted ? "" : undefined)}
           to={sectionOf(figure.page).path}
         />
       ))}
@@ -81,7 +84,7 @@ export function AsideList(props: {
     <Panel
       titleId={props.id}
       title={props.title}
-      actions={<OpsLink to={sectionOf(props.page).path}>{SECTION_NAMES[props.page]}</OpsLink>}
+      actions={<OpsLink to={sectionOf(props.page).path}>{copy.openPage(SECTION_NAMES[props.page])}</OpsLink>}
     >
       {props.rows.length === 0 ? (
         <EmptyState look="panel" line={props.none ?? ""} />

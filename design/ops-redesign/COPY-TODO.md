@@ -22,5 +22,6 @@ Each slot the redesign adds where the console had no words of its own. None wait
 | Today      | How long a chat has waited                 | 38 min / 5 h / 3 days                                                 | `today.waited`             |
 | Today      | Finance's payments, with none today        | No payments yet today.                                                | `today.noPayments`         |
 | Today      | Inventory's places, with none to show      | Every place is stocked.                                               | `today.noPlaces`           |
+| Today      | A side list's way to its page              | Open Dispatch, Open Messages, Open Payments, Open Stock               | `today.openPage`           |
 | Tasks      | The four views                             | All, Mine, Unassigned, Overdue                                        | `tasks.filters.views`      |
 | Tasks      | The table's columns                        | What, Who, Due, Owner                                                 | `tasks.columns`            |

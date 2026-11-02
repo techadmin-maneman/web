@@ -81,5 +81,7 @@ export const today = {
   needs: "Needs you",
   none: "Nothing waiting.",
   noPayments: "No payments yet today.",
+  /** A side list's way to its page: "Open Dispatch". */
+  openPage: (page: string) => `Open ${page}`,
   noPlaces: "Every place is stocked.",
 };
