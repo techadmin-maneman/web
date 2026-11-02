@@ -150,6 +150,11 @@
     display: block;
   }
 
+  /* On a page drawn to the frame's edges, the chips stand in from them as its head does. */
+  .flushPage .chips {
+    padding: 0 var(--sp-16);
+  }
+
   /* The tab bar stands at the foot of the frame's column, beneath the page that scrolls. */
   .tabs {
     position: static;

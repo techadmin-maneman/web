@@ -27,7 +27,8 @@ test("moves between weeks and cities, asking the route for each", async ({ page 
   await expect.poll(() => asked.at(-1)).toBe("?from=2025-09-26");
   await chooseCity(page, "Delhi");
   await expect.poll(() => asked.at(-1)).toBe("?from=2025-09-26&city=Delhi");
-  await page.getByRole("button", { name: opsCopy.dispatch.tools.thisWeek }).click();
+  // The week between the steps (the answer here is always the same week) brings this week back.
+  await page.getByRole("button", { name: "19 to 25 Sep", exact: true }).click();
   await expect.poll(() => asked.at(-1)).toBe("?city=Delhi");
 });
 

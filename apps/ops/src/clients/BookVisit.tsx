@@ -1,9 +1,10 @@
-// Booking a visit for a client from the console: every kind, in a window someone is free in, with the technician ops
-// choose or whoever is free. A paid visit goes out as a payment link and is booked once the client pays, or, while
+// Booking a visit for a client from the console, in three numbered steps (./BookSteps.tsx): every kind, a day of the
+// fortnight, and a time someone is free at, with the technician ops choose or whoever is free. A paid visit goes out as a payment link and is booked once the client pays, or, while
 // online payment is off, is paid by UPI at the visit; anything else is booked at once (src/routes/ops/visits.ts). No board draws it (docs/fidelity-method.md).
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -185,45 +186,109 @@ function CodeBox({ code, busy, onCode }: { code: string; busy: boolean; onCode: 
   );
 }
 
-function BookingForm({
-  clientId,
-  prefill,
-  onBooked,
-}: {
-  clientId: string;
-  prefill: Prefill;
-  onBooked: (booked: VisitBooked) => void;
+/** The panel's foot: what is paid, and Book, which names the day and time once a time is chosen. */
+function BookFoot(props: {
+  line: string;
+  day: string | undefined;
+  chosen: string | null;
+  busy: boolean;
+  blocked: boolean;
 }) {
+  const { day, chosen } = props;
+  const label =
+    day === undefined || chosen === null ? copy.chooseTime : copy.bookAt(shortDate(day), indiaClock(chosen));
+  return (
+    <div className={shared.foot}>
+      <p className={shared.pays}>{props.line}</p>
+      <Button
+        variant="primary"
+        size="small"
+        type="submit"
+        busy={props.busy}
+        disabled={chosen === null || props.blocked}
+      >
+        {props.busy ? copy.booking : label}
+      </Button>
+    </div>
+  );
+}
+
+/** The free remake chosen, while it is still owed, and whether a code may be given: never with one, nor for a consultation. */
+function remakeAndCode(offered: VisitAvailability, covers: string, choice: Choice) {
+  const cover = offered.owed.some((each) => each.id === covers) ? covers : "";
+  return { cover, takesCode: kindOf(choice) !== "consultation" && cover === "" };
+}
+
+/** What ops have asked of the booking so far: the kind, the fortnight, the slot picked, a code and a free remake. */
+function useAsked(prefill: Prefill) {
   const [choice, setChoice] = useState<Choice>(prefill.choice);
   const [from, setFrom] = useState<string | undefined>(prefill.date);
   const asked = { date: prefill.date, window: prefill.window };
   const [picked, setPicked] = useState<Picked>({ tier: undefined, ...asked, start: undefined, technician: "" });
   const [code, setCode] = useState(prefill.code ?? "");
   const [covers, setCovers] = useState(prefill.covers ?? "");
+  return { choice, setChoice, from, setFrom, picked, setPicked, code, setCode, covers, setCovers };
+}
+
+/** A discount code's box, once asked for or handed on; until then, the way to ask for it. */
+function CodeOrAdd(props: { code: string; given: boolean; busy: boolean; onCode: (code: string) => void }) {
+  const [open, setOpen] = useState(props.given);
+  if (open) return <CodeBox code={props.code} busy={props.busy} onCode={props.onCode} />;
+  return (
+    <TextButton
+      compact
+      onClick={() => {
+        setOpen(true);
+      }}
+    >
+      {copy.addCode}
+    </TextButton>
+  );
+}
+
+/** The panel while it books: the three steps, what it may make good, a code, and its foot. */
+function BookingDrawer({
+  clientId,
+  name,
+  prefill,
+  onBooked,
+  onDismiss,
+}: {
+  clientId: string;
+  name: string;
+  prefill: Prefill;
+  onBooked: (booked: VisitBooked) => void;
+  onDismiss: () => void;
+}) {
+  const { choice, setChoice, from, setFrom, picked, setPicked, code, setCode, covers, setCovers } = useAsked(prefill);
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
   const [loaded, retry] = useAvailability(clientId, choice, picked.tier, from);
   const [refusedStarts, refuseStart] = useRefusedStarts(retry);
+  const frame = { titleId: "book-visit-title", title: copy.title(name), close: CLOSE, onDismiss };
 
   const choose = (next: Partial<Picked>) => {
     setFailed(null);
     setPicked((was) => ({ ...was, ...next }));
   };
-
-  if (loaded.state === "loading") return <p className={shared.note}>{copy.loading}</p>;
-  if (loaded.state === "failed") return <Unreadable onRetry={retry} />;
+  if (loaded.state !== "loaded")
+    return (
+      <Drawer {...frame}>
+        {loaded.state === "failed" ? <Unreadable onRetry={retry} /> : <p className={shared.note}>{copy.loading}</p>}
+      </Drawer>
+    );
 
   const offered = withoutRefused(loaded.value, refusedStarts);
   const slot = slotOf(offered, picked);
   const { day, start, window, technician } = slot;
-  const firstDay = offered.days[0]?.date;
-  const cover = offered.owed.some((each) => each.id === covers) ? covers : "";
-  const takesCode = kindOf(choice) !== "consultation" && cover === "";
+  // A time is chosen once ops pick one, or a window was asked for, as Tasks hands one on.
+  const chosen = picked.start !== undefined || picked.window !== undefined ? (start?.starts_at ?? null) : null;
+  const { cover, takesCode } = remakeAndCode(offered, covers, choice);
   const refused = shownRefusal(failed, choice, offered);
 
   const book = () =>
     once(async () => {
-      if (day === undefined || start === undefined || window === undefined) return;
+      if (day === undefined || start === undefined || window === undefined || chosen === null) return;
       setFailed(null);
       const answer = await clientsApi.bookVisit(
         visitOf({
@@ -242,17 +307,27 @@ function BookingForm({
       // A start refused as taken is not offered again here, and the days are read afresh for what is free now.
       else if (answer.code === "taken") {
         refuseStart(start.starts_at);
-        setPicked((was) => ({ ...was, start: undefined, technician: "" }));
+        setPicked((was) => ({ ...was, start: undefined, window: undefined, technician: "" }));
       }
       setFailed(answer.ok ? null : answer.code);
     });
 
   return (
-    <form
+    <Drawer
+      {...frame}
       onSubmit={(event) => {
         event.preventDefault();
         void book();
       }}
+      foot={
+        <BookFoot
+          line={replacesLine(choice, prefill) + payLine(choice, offered, cover !== "")}
+          day={day?.date}
+          chosen={chosen}
+          busy={busy}
+          blocked={refused === "no_profile"}
+        />
+      }
     >
       <WhatIsBooked
         choice={choice}
@@ -260,31 +335,18 @@ function BookingForm({
         busy={busy}
         onChoice={(next) => {
           setChoice(next);
-          choose({ tier: undefined });
+          choose({ tier: undefined, start: undefined });
         }}
         onTier={(tier) => {
           choose({ tier });
         }}
       />
-      <WhenAndWho slot={slot} busy={busy} onPick={choose} />
-      <StripButtons busy={busy} from={from} firstDay={firstDay} onFrom={setFrom} />
+      <WhenAndWho offered={offered} slot={slot} chosen={chosen} busy={busy} onPick={choose} />
+      <StripButtons busy={busy} from={from} firstDay={offered.days[0]?.date} onFrom={setFrom} />
       <CoverChoice owed={offered.owed} value={cover} busy={busy} onChoose={setCovers} />
-      {takesCode && <CodeBox code={code} busy={busy} onCode={setCode} />}
-      <p className={shared.pays}>{replacesLine(choice, prefill) + payLine(choice, offered, cover !== "")}</p>
-      <div className={shared.actions}>
-        <Button
-          variant="primary"
-          size="small"
-          className={shared.primary}
-          type="submit"
-          busy={busy}
-          disabled={day === undefined || start === undefined || refused === "no_profile"}
-        >
-          {busy ? copy.booking : copy.book}
-        </Button>
-      </div>
+      {takesCode && <CodeOrAdd code={code} given={prefill.code !== undefined} busy={busy} onCode={setCode} />}
       {refused !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: refused })} />}
-    </form>
+    </Drawer>
   );
 }
 
@@ -304,6 +366,18 @@ export function BookVisit({
   onClose: (booked: VisitBooked | null) => void;
 }) {
   const [booked, setBooked] = useState<VisitBooked | null>(null);
+  if (booked === null)
+    return (
+      <BookingDrawer
+        clientId={clientId}
+        name={name}
+        prefill={prefill}
+        onBooked={setBooked}
+        onDismiss={() => {
+          onClose(null);
+        }}
+      />
+    );
   return (
     <Drawer
       titleId="book-visit-title"
@@ -313,11 +387,7 @@ export function BookVisit({
         onClose(booked);
       }}
     >
-      {booked === null ? (
-        <BookingForm clientId={clientId} prefill={prefill} onBooked={setBooked} />
-      ) : (
-        <Booked booked={booked} />
-      )}
+      <Booked booked={booked} />
     </Drawer>
   );
 }

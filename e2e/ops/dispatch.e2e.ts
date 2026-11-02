@@ -16,7 +16,8 @@ import * as opsCopy from "../../apps/ops/src/content.ts";
 
 test("draws the week, every technician and the jobs on their days", async ({ page }) => {
   await open(page);
-  await expect(page.getByText("19 to 25 Sep")).toBeVisible();
+  // The week, beside the title and between the head's steps back and on.
+  await expect(page.getByRole("button", { name: "19 to 25 Sep", exact: true })).toBeVisible();
 
   const grid = page.getByRole("table");
   await expect(grid.getByRole("columnheader")).toHaveText([

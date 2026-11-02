@@ -4,10 +4,10 @@
 // 0069-dispatch-under-concurrency.md). The address keeps the week, city, search and visit (./address.ts).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { todayInIndia } from "@maneman/web-kit/dates";
+import { indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { Board, BoardQuery } from "../api.ts";
-import { useHeaderSub } from "../frame/PageHead.tsx";
+import type { Board, BoardQuery, BoardRow } from "../api.ts";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { useCity } from "../lib/city.ts";
@@ -28,7 +28,10 @@ import { NoticeLine } from "./NoticeLine.tsx";
 import { useOver, type Over } from "./over.ts";
 import { OpenedDrawer } from "./OpenedDrawer.tsx";
 import { DayRoutes } from "./DayRoutes.tsx";
-import { DayBoard, firstView, shownDay, ViewChoice, type BoardView } from "./DayBoard.tsx";
+import { BoardControls } from "./BoardControls.tsx";
+import { PhoneDay } from "./PhoneDay.tsx";
+import { useIsPhone } from "../lib/media.ts";
+import { DayBoard, firstView, shownDay, type BoardView } from "./DayBoard.tsx";
 import { isBlackout, kmFrom, startsFrom, daysFrom } from "./rooms.ts";
 import { useAskedVisit, useClientCalls } from "./useBoardCalls.ts";
 import { useMove, type Move } from "./useMove.ts";
@@ -42,9 +45,11 @@ function BoardOverlays(props: {
   set: ReturnType<typeof useOver>[1];
   access: ReturnType<typeof useAccess>;
   city: BoardQuery["city"];
+  technicians: readonly BoardRow[];
   drawer: {
     close: () => void;
     take: (job: Job, clearingCheckIn?: boolean) => void;
+    assign: (job: Job, to: Target) => void;
     told: (moveId: string, name: string) => Promise<void>;
     withdraw: (proposalId: string, name: string) => Promise<void>;
     restore: () => void;
@@ -63,6 +68,8 @@ function BoardOverlays(props: {
           access={access}
           onClose={drawer.close}
           onTake={drawer.take}
+          onAssignTo={drawer.assign}
+          technicians={props.technicians}
           onTold={(moveId, name) => {
             set.opened(null);
             void drawer.told(moveId, name).then(drawer.restore);
@@ -102,44 +109,70 @@ function BoardOverlays(props: {
   );
 }
 
-/** The board itself, by the day or the week, under its choice of the two; what the search keeps of it, or why none. */
+/** The day's line beside the title: its visits, the technicians working, and the visits nobody is on. */
+function daySub(board: Board, date: string): string {
+  const blocks = board.technicians.map((row) => row.days.find((day) => day.date === date)?.blocks ?? []);
+  const nobody = board.unassigned.filter((job) => (job.date ?? indiaDate(job.starts_at)) === date).length;
+  const visits = blocks.reduce((sum, each) => sum + each.length, 0);
+  return dispatch.day.sub(visits, blocks.filter((each) => each.length > 0).length, nobody);
+}
+
+/** The board itself, by the day or the week, the head's controls at its right; what the search keeps of it, or why none. */
 function BoardBody(props: {
   board: Board;
   search: ReturnType<typeof useSearch>;
-  asked: ReturnType<typeof dispatchAsked>;
+  view: BoardView;
+  onView: (view: BoardView) => void;
+  onWeek: (from: string | null) => void;
   inHand: InHand | null;
   onOpen: (job: Job, from: HTMLElement) => void;
   onLand: (to: Target) => void;
   onRoutes: ((date: string) => void) | null;
 }) {
-  const { board, search, inHand, onOpen, onLand } = props;
-  const [view, setView] = useState<BoardView>(() => firstView(props.asked));
+  const { board, search, view, inHand, onOpen, onLand } = props;
+  const phone = useIsPhone();
   const [day, setDay] = useState<string | null>(null);
-  const dayShown = shownDay(board.dates, day, todayInIndia(apiNow()));
+  const today = todayInIndia(apiNow());
+  const dayShown = shownDay(board.dates, day, today);
   const { rows } = search;
+  useHeaderSub(view === "day" && dayShown !== undefined ? daySub(board, dayShown) : weekOf(board.dates));
   return (
     <>
-      <ViewChoice view={view} onView={setView} dates={board.dates} day={dayShown} onDay={setDay} />
-      <div className={styles.scroll}>
-        {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
-        {board.technicians.length > 0 && rows.length === 0 && (
-          <EmptyState look="panel" line={dispatch.tools.nothingFound(search.settled.trim())} />
-        )}
-        {rows.length > 0 && view === "day" && dayShown !== undefined && (
-          <DayBoard
-            board={board}
-            rows={rows}
-            date={dayShown}
-            inHand={inHand}
-            now={apiNow()}
-            onOpen={onOpen}
-            onLand={onLand}
-          />
-        )}
-        {rows.length > 0 && view === "week" && (
-          <Grid board={board} rows={rows} found={search.found} onOpen={onOpen} onRoutes={props.onRoutes} />
-        )}
-      </div>
+      <PageActions>
+        <BoardControls
+          view={view}
+          onView={props.onView}
+          day={dayShown}
+          dates={board.dates}
+          today={today}
+          onDay={setDay}
+          onWeek={props.onWeek}
+        />
+      </PageActions>
+      {phone && rows.length > 0 && view === "day" && dayShown !== undefined ? (
+        <PhoneDay board={board} rows={rows} date={dayShown} now={apiNow()} onOpen={onOpen} />
+      ) : (
+        <div className={styles.scroll}>
+          {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
+          {board.technicians.length > 0 && rows.length === 0 && (
+            <EmptyState look="panel" line={dispatch.tools.nothingFound(search.settled.trim())} />
+          )}
+          {!phone && rows.length > 0 && view === "day" && dayShown !== undefined && (
+            <DayBoard
+              board={board}
+              rows={rows}
+              date={dayShown}
+              inHand={inHand}
+              now={apiNow()}
+              onOpen={onOpen}
+              onLand={onLand}
+            />
+          )}
+          {rows.length > 0 && view === "week" && (
+            <Grid board={board} rows={rows} found={search.found} onOpen={onOpen} onRoutes={props.onRoutes} />
+          )}
+        </div>
+      )}
     </>
   );
 }
@@ -155,16 +188,42 @@ function useBoardQuery(asked: { from: string | null; visit: string | null }) {
   return [withCity, setQuery] as const;
 }
 
-export function DispatchScreen() {
+/** The drawer's ways into a move: taking its job up to place, and putting a tray job on a technician chosen. */
+function drawerMoves(
+  take: (job: Job, from: HTMLElement | null, clearingCheckIn?: boolean) => void,
+  land: (to: Target) => void,
+  opener: { readonly current: HTMLElement | null },
+) {
+  return {
+    take: (job: Job, clearingCheckIn?: boolean) => {
+      take(job, opener.current, clearingCheckIn);
+    },
+    assign: (job: Job, to: Target) => {
+      take(job, opener.current, false);
+      land(to);
+    },
+  };
+}
+
+/** What the address asked of the board, and what is asked of it since: the week, the search, Day or Week. */
+function useAsked() {
   const [asked] = useState(() => dispatchAsked(window.location.search));
   const [query, setQuery] = useBoardQuery(asked);
   const [find, setFind] = useState(asked.find);
+  const [view, setView] = useState<BoardView>(() => firstView(asked));
+  const onWeek = (from: string | null) => {
+    setQuery({ ...query, from });
+  };
+  return { asked, query, setQuery, onWeek, find, setFind, view, setView };
+}
+
+export function DispatchScreen() {
+  const { asked, query, onWeek, find, setFind, view, setView } = useAsked();
   const [over, set] = useOver();
   const { opened, changing, notice } = over;
   const [move, setMove] = useState<Move | null>(null);
-  const { loaded, last, refresh, retry } = useBoard(query, move !== null || opened !== null || changing !== null);
+  const { loaded, refresh, retry } = useBoard(query, move !== null || opened !== null || changing !== null);
   const board = loaded.state === "loaded" ? loaded.value : null;
-  useHeaderSub(board === null ? undefined : weekOf(board.dates));
   const access = useAccess();
   /** What the drawer or the move was opened from, so the keyboard comes back to it. */
   const opener = useRef<HTMLElement | null>(null);
@@ -233,7 +292,7 @@ export function DispatchScreen() {
     <>
       <div className={styles.area} ref={area} tabIndex={-1}>
         <div className={styles.main}>
-          <Toolbar board={last} query={query} onQuery={setQuery} find={find} onFind={setFind} />
+          <Toolbar day={view === "day"} find={find} onFind={setFind} />
           {inHand !== null && (
             <MoveBar
               ref={bar}
@@ -252,7 +311,9 @@ export function DispatchScreen() {
             <BoardBody
               board={board}
               search={{ settled, rows, found }}
-              asked={asked}
+              view={view}
+              onView={setView}
+              onWeek={onWeek}
               inHand={inHand}
               onOpen={open}
               onLand={land}
@@ -268,11 +329,10 @@ export function DispatchScreen() {
         set={set}
         access={access}
         city={query.city}
+        technicians={board?.technicians ?? []}
         drawer={{
           close: closeDrawer,
-          take: (job, clearingCheckIn) => {
-            take(job, opener.current, clearingCheckIn);
-          },
+          ...drawerMoves(take, land, opener),
           told,
           withdraw,
           restore,

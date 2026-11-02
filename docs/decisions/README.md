@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0229. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0230. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -261,6 +261,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0226](0226-the-console-frame-redesigned.md) The console's frame, to the November redesign
 - [0227](0227-today-by-home-and-tasks-as-one-table.md) Today by home, and Tasks as one table
 - [0228](0228-the-header-city-within-a-persons-reach.md) The header's city, within a person's reach
+- [0229](0229-dispatch-and-booking-redesigned.md) Dispatch and booking, to the November redesign
 
 ## Every decision, oldest first
 
@@ -488,7 +489,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0222](0222-consumables-short-of-expected.md) | Consumables short of what a visit expects are said why, and checked | 2026-10-25 | accepted |  |
 | [0223](0223-reach-from-home.md) | Reach from home, drawn on the city's map and checked at the address | 2026-10-26 | accepted |  |
 | [0224](0224-demand-and-the-next-to-open.md) | Demand, and the next pincodes to open | 2026-10-26 | accepted |  |
-| [0225](0225-the-console-on-a-desk-and-a-phone.md) | The console on a desk and a phone, to the November redesign | 2026-11-02 | accepted | [0226](0226-the-console-frame-redesigned.md), [0227](0227-today-by-home-and-tasks-as-one-table.md) |
+| [0225](0225-the-console-on-a-desk-and-a-phone.md) | The console on a desk and a phone, to the November redesign | 2026-11-02 | accepted | [0226](0226-the-console-frame-redesigned.md), [0227](0227-today-by-home-and-tasks-as-one-table.md), [0229](0229-dispatch-and-booking-redesigned.md) |
 | [0226](0226-the-console-frame-redesigned.md) | The console's frame, to the November redesign | 2026-11-02 | accepted | [0228](0228-the-header-city-within-a-persons-reach.md) |
 | [0227](0227-today-by-home-and-tasks-as-one-table.md) | Today by home, and Tasks as one table | 2026-11-02 | accepted | [0228](0228-the-header-city-within-a-persons-reach.md) |
 | [0228](0228-the-header-city-within-a-persons-reach.md) | The header's city, within a person's reach | 2026-11-02 | accepted |  |
+| [0229](0229-dispatch-and-booking-redesigned.md) | Dispatch and booking, to the November redesign | 2026-11-02 | accepted |  |

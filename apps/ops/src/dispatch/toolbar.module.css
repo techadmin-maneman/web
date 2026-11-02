@@ -1,6 +1,5 @@
-/* The row above the grid (./Toolbar.tsx), set in from the board's edges and ruled off from it. */
+/* The row beneath the board's head (./Toolbar.tsx): the key and the search, set in from the board's edges. */
 
 .tools {
   padding: var(--sp-12) var(--sp-32);
-  border-bottom: var(--hairline) solid var(--ui-line);
 }

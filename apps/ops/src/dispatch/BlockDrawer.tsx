@@ -6,6 +6,8 @@ import { badgeLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
+import { DescriptionList } from "@maneman/ui/DescriptionList";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Drawer } from "@maneman/ui/Drawer";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -75,8 +77,77 @@ function rowsOf(block: BlockJob["block"]) {
   ];
 }
 
+/** The panel's actions at its foot: the ways to the client, moving the visit, and closing or cancelling it. */
+function Foot(props: Props) {
+  const { job, onMove, onMoveAnyway, change, onChange, onLetIn } = props;
+  const copy = dispatch.drawer;
+  const { block } = job;
+  const person = block.person;
+  return (
+    <div className={styles.drawerActions}>
+      {person !== null && (
+        <>
+          <ButtonLink variant="outline" size="small" href={`tel:${person.mobile}`}>
+            {copy.call(firstNameOf(person.name))}
+          </ButtonLink>
+          <ButtonLink
+            variant="outline"
+            size="small"
+            href={whatsappChat(person.mobile)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
+            {copy.whatsapp(firstNameOf(person.name))}
+          </ButtonLink>
+          <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={clientPath(person.id, "visits")}>
+            {copy.openClient}
+          </OpsLink>
+        </>
+      )}
+      {isMovable(block) && onMove !== null && (
+        <Button variant="outline" size="small" onClick={onMove}>
+          {copy.move}
+        </Button>
+      )}
+      {movesIfCheckInCleared(block) && onMoveAnyway !== null && (
+        <Button variant="outline" size="small" onClick={onMoveAnyway}>
+          {copy.moveAnyway}
+        </Button>
+      )}
+      {change === "close" && (
+        <Button
+          variant="outline"
+          size="small"
+          onClick={() => {
+            onChange(change);
+          }}
+        >
+          {copy.closeByHand}
+        </Button>
+      )}
+      {onLetIn !== null && (
+        <Button variant="outline" size="small" onClick={onLetIn}>
+          {copy.letIn}
+        </Button>
+      )}
+      {change === "cancel" && (
+        <TextButton
+          tone="danger"
+          className={styles.cancel}
+          onClick={() => {
+            onChange(change);
+          }}
+        >
+          {copy.cancel}
+        </TextButton>
+      )}
+    </div>
+  );
+}
+
 export function BlockDrawer(props: Props) {
-  const { job, onMove, onMoveAnyway, onTold, onWithdraw, change, onChange, onLetIn, onClose } = props;
+  const { job, onTold, onWithdraw, onClose } = props;
   const copy = dispatch.drawer;
   const { block } = job;
   const person = block.person;
@@ -94,15 +165,9 @@ export function BlockDrawer(props: Props) {
       aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge]}</span>}
       close={CLOSE}
       onDismiss={onClose}
+      foot={<Foot {...props} />}
     >
-      <dl className={styles.rows}>
-        {rows.map((row) => (
-          <div className={styles.row} key={row.key}>
-            <dt>{row.key}</dt>
-            <dd>{row.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <DescriptionList layout="list" items={rows.map((row) => ({ term: row.key, details: row.value }))} />
       <VisitStory visitId={block.appointment_id} clientId={person?.id ?? null} />
       {block.untold !== null && person !== null && (
         <div className={styles.untold}>
@@ -142,51 +207,6 @@ export function BlockDrawer(props: Props) {
         </div>
       )}
       {warning !== null && <p className={styles.untoldLine}>{warning}</p>}
-      <div className={styles.drawerActions}>
-        {person !== null && (
-          <>
-            <ButtonLink
-              variant="outline"
-              size="small"
-              href={whatsappChat(person.mobile)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
-              {copy.whatsapp(firstNameOf(person.name))}
-            </ButtonLink>
-            <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={clientPath(person.id, "visits")}>
-              {copy.openClient}
-            </OpsLink>
-          </>
-        )}
-        {isMovable(block) && onMove !== null && (
-          <Button variant="outline" size="small" onClick={onMove}>
-            {copy.move}
-          </Button>
-        )}
-        {movesIfCheckInCleared(block) && onMoveAnyway !== null && (
-          <Button variant="outline" size="small" onClick={onMoveAnyway}>
-            {copy.moveAnyway}
-          </Button>
-        )}
-        {change !== null && (
-          <Button
-            variant="outline"
-            size="small"
-            onClick={() => {
-              onChange(change);
-            }}
-          >
-            {change === "cancel" ? copy.cancel : copy.closeByHand}
-          </Button>
-        )}
-        {onLetIn !== null && (
-          <Button variant="outline" size="small" onClick={onLetIn}>
-            {copy.letIn}
-          </Button>
-        )}
-      </div>
     </Drawer>
   );
 }

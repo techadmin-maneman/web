@@ -7,6 +7,7 @@ import { CLOSE } from "../../apps/ops/src/content/common.ts";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DispatchScreen } from "../../apps/ops/src/dispatch/DispatchScreen.tsx";
+import { PageHead } from "../../apps/ops/src/frame/PageHead.tsx";
 import { CityPicker } from "../../apps/ops/src/frame/City.tsx";
 import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
@@ -65,6 +66,7 @@ afterEach(() => {
     root.unmount();
   });
   page.remove();
+  controls.remove();
   vi.unstubAllGlobals();
   window.history.replaceState(null, "", "/");
 });
@@ -73,11 +75,29 @@ async function settle() {
   await answered();
 }
 
+/** Where the board's head draws its controls, as the frame does at the head's right. */
+let controls: HTMLElement;
+
 async function openAt(path: string) {
   window.history.replaceState(null, "", path);
+  controls = document.createElement("div");
+  document.body.append(controls);
   act(() => {
-    // The board beside the header's city picker, which narrows it (ADR 0225).
-    root.render(createElement(Fragment, null, createElement(CityPicker), createElement(DispatchScreen)));
+    // The board beside the header's city picker, which narrows it (ADR 0225), in a head with room for its controls.
+    const head = {
+      setSub: () => undefined,
+      setOver: () => undefined,
+      setRecord: () => undefined,
+      setHeading: () => undefined,
+      actions: controls,
+    };
+    root.render(
+      createElement(
+        PageHead.Provider,
+        { value: head },
+        createElement(Fragment, null, createElement(CityPicker), createElement(DispatchScreen)),
+      ),
+    );
   });
   await settle();
   await settle();
@@ -130,7 +150,7 @@ describe("the dispatch board’s place in the address", () => {
     expect(asked()).toEqual({ from: "2025-09-19", city: "Delhi", find: "Rohit" });
 
     await settle();
-    press("Next week");
+    press("Next week", controls);
     expect(asked()).toEqual({ from: "2025-09-26", city: "Delhi", find: "Rohit" });
 
     await settle();
