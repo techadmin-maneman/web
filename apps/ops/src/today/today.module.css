@@ -1,13 +1,44 @@
-/* What Today draws: Care and Growth side by side, each part's tiles in from its panel's edges. */
+/* What Today places: the homes' choice, then what needs the person beside the home's own list, wider to narrower. */
 
-/* A part's tiles, set in from its panel's edges as its note is. */
-.tiles {
-  margin: var(--sp-16) var(--note-inset) 0;
+/* The homes' choice: one row, scrolled sideways on a phone where the homes run past its end, as the city's chips are. */
+.homes {
+  display: flex;
+  gap: var(--sp-8);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-/* Care and Growth: two parts of two tiles each, a half of the page apiece. */
-.pair {
+.homes > * {
+  flex-shrink: 0;
+}
+
+/* Needs you and the home's list: side by side on a wide window, one over the other on a narrower one. */
+.panels {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--ops-pair)), 1fr));
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
   gap: var(--sp-24);
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The way to Tasks at Needs you's foot, across the panel's middle. */
+.foot {
+  margin: var(--sp-12) var(--note-inset) 0;
+  text-align: center;
+}
+
+/* On a phone, Needs you as a section of the page: its name in small capitals over its list. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.label {
+  margin: 0;
 }

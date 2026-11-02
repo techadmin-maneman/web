@@ -89,6 +89,33 @@
   }
 
   /* A row's rule (Table.tsx's rowRule): a line down its first cell's edge in the tone of how pressing it is. */
+  /* A row's name that opens a drawer (RowOpener): what it is over a line of detail. */
+  .opener {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .openerTitle,
+  .openerMeta {
+    display: block;
+  }
+
+  .openerTitle {
+    font-weight: var(--weight-medium);
+  }
+
+  .openerMeta {
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
   .table tbody tr:is(.ruleAttention, .ruleWarning, .ruleError) > :first-child {
     box-shadow: inset var(--rule-strong) 0 0 0 var(--rule);
   }

@@ -7,6 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { ROUTE_NEEDS } from "../../../src/policy/console-routes.ts";
 import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
+import { enforce, listStaff, opsAs, person, type GrantCode } from "./staff-fixtures.ts";
 
 const ACCESS = { teamDomain: "maneman.cloudflareaccess.com", opsAudience: "ops-audience" };
 /** A fresh database lists nobody and does not enforce the list; with no bootstrap admin, every call goes ahead. */
@@ -28,6 +29,7 @@ describe("GET /api/whoami", () => {
       sign_out: "/cdn-cgi/access/logout",
       staff: NOT_LISTED,
       cities: [],
+      every_city: true,
     });
   });
 
@@ -38,6 +40,7 @@ describe("GET /api/whoami", () => {
       sign_out: null,
       staff: NOT_LISTED,
       cities: [],
+      every_city: true,
     });
   });
 
@@ -49,6 +52,19 @@ describe("GET /api/whoami", () => {
       "SELECT name FROM cities WHERE name IN ('Delhi', 'Gurgaon') ORDER BY sort, name",
     ).all<{ name: string }>();
     expect(cities).toEqual(order.results.map((row) => row.name));
+  });
+
+  it("offers a city head their one city, and a zone's head the cities of their zone", async () => {
+    await env.DB.prepare("UPDATE cities SET served = 1 WHERE name IN ('Delhi', 'Gurgaon', 'Mumbai')").run();
+    await enforce();
+    const citiesOf = async (email: string, grants: GrantCode[]) => {
+      await listStaff(email, grants);
+      return (await (await request(opsAs(person(email)), "/api/whoami")).json<{ cities: string[] }>()).cities;
+    };
+    expect(await citiesOf("delhi@maneman.in", ["operations:manage:city:Delhi"])).toEqual(["Delhi"]);
+    const zone = await citiesOf("ncr@maneman.in", ["finance:view:zone:NCR"]);
+    expect(zone).toEqual(expect.arrayContaining(["Delhi", "Gurgaon"]));
+    expect(zone).not.toContain("Mumbai");
   });
 
   it("is not a route of any other surface", async () => {

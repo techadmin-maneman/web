@@ -35,6 +35,13 @@ describe("a page's head", () => {
     expect(markup).toContain(">12</span>");
     expect(markup).toContain(">Add</button>");
   });
+
+  it("sets the day and place above a title that is a sentence on them", () => {
+    const sentence = renderToStaticMarkup(
+      createElement(PageHeader, { title: "Every visit has a technician.", over: "Monday 2 November · Gurgaon" }),
+    );
+    expect(sentence.indexOf("Monday 2 November")).toBeLessThan(sentence.indexOf("<h1"));
+  });
 });
 
 describe("where a page sits", () => {
@@ -168,6 +175,12 @@ describe("a figure's tile", () => {
 
   it("is not a link without one", () => {
     expect(renderToStaticMarkup(createElement(StatTile, { label: "Visits", value: 18 }))).toMatch(/^<div/);
+  });
+
+  it("carries a short line beneath the figure where it has one", () => {
+    const markup = renderToStaticMarkup(createElement(StatTile, { label: "Visits", value: 18, note: "6 done" }));
+    expect(markup.indexOf(">18<")).toBeLessThan(markup.indexOf(">6 done<"));
+    expect(renderToStaticMarkup(createElement(StatTile, { label: "Visits", value: 18 }))).not.toContain("6 done");
   });
 });
 

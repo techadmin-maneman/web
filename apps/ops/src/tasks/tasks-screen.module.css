@@ -1,14 +1,35 @@
-/* What ./TasksScreen.tsx alone draws; what it shares is in ./tasks.module.css. */
+/* Where ./TasksScreen.tsx places things: the board's parts one under another, the table's columns, and the notes. */
 
-/* The member of staff it is theirs, by first name, as the board writes "Priya". */
-.owner {
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
-  overflow-wrap: anywhere;
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
 }
 
-/* How long it has left, in words: "2 days left", "3 days overdue". */
-.due {
+/* What it is takes the most room, then whom; when it is due and whose, a narrow column each; then its step. */
+.table th:nth-child(1) {
+  width: 34%;
+}
+
+.table th:nth-child(2) {
+  width: 22%;
+}
+
+.table th:nth-child(3) {
+  width: 14%;
+}
+
+.table th:nth-child(4) {
+  width: 10%;
+}
+
+/* Each cell on the row's middle, as what it is runs to two lines. */
+.table :is(th, td) {
+  vertical-align: middle;
+}
+
+/* The step that settles it, at the row's end. */
+.step {
   text-align: right;
 }
 
@@ -17,4 +38,9 @@
   font-size: var(--fs-14);
   line-height: var(--lh-160);
   color: var(--ui-text-muted);
+}
+
+/* The way to the rest of the rows, beneath them, in from the panel's edges. */
+.more {
+  margin: var(--sp-12) var(--note-inset) 0;
 }

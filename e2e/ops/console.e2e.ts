@@ -16,12 +16,20 @@ const signedIn = (who: string, listed: boolean, mayCall: readonly string[]) =>
     sign_out: "/cdn-cgi/access/logout",
     staff: { enforced: true, listed, grants: [], may_call: mayCall },
     cities: [],
+    every_city: true,
   });
 
 const ONLY_SIGNED_IN = ["GET /api/health", "GET /api/whoami"];
 
 const navigation = (page: Page) => page.getByRole("navigation", { name: opsCopy.shell.title });
 const heading = (page: Page, name: string) => page.getByRole("heading", { level: 1, name });
+
+/** Today, named where the page sits: its title is a sentence on the day. */
+const onToday = (page: Page) =>
+  page
+    .getByRole("banner")
+    .getByRole("navigation", { name: opsCopy.shell.crumbs })
+    .getByText(opsCopy.shell.nav.today, { exact: true });
 
 async function expectNames(links: Locator, names: readonly string[]): Promise<void> {
   await expect(links).toHaveCount(names.length);
@@ -34,7 +42,7 @@ test("opens on Today, the work an entry a job by kind, Settings last, and what w
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/");
-  await expect(heading(page, opsCopy.shell.sections.today)).toBeVisible();
+  await expect(onToday(page)).toBeVisible();
   await expect(page).toHaveURL(/\/today$/);
   const { nav, settings, waiting } = opsCopy.shell;
   await expectNames(navigation(page).getByRole("link"), [
@@ -153,9 +161,10 @@ test("moves the keyboard to a new page’s heading, and offers a way past the na
 test("titles each page by what it is, and says where it sits", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Today · Mane Man Ops");
+  const crumbs = page.getByRole("banner").getByRole("navigation", { name: opsCopy.shell.crumbs });
+  await expect(crumbs.getByRole("listitem")).toHaveText([opsCopy.shell.nav.today]);
   await page.goto("/counts");
   await expect(page).toHaveTitle("Counts · Mane Man Ops");
-  const crumbs = page.getByRole("banner").getByRole("navigation", { name: opsCopy.shell.crumbs });
   await expect(crumbs.getByRole("listitem")).toHaveText([opsCopy.shell.nav.inventory, opsCopy.shell.sections.counts]);
   await page.goto("/settings/prices");
   await expect(page).toHaveTitle("Services and fees · Settings · Mane Man Ops");
@@ -229,7 +238,7 @@ test("leaves a click that asks for a new tab to the browser", async ({ page, con
   await page.goto("/");
   // Settled on /today first: the console opens before whoami answers, and is drawn again once / becomes /today, so a
   // click before then can land on a link that is being replaced.
-  await expect(heading(page, opsCopy.shell.sections.today)).toBeVisible();
+  await expect(onToday(page)).toBeVisible();
   await expect(page).toHaveURL(/\/today$/);
   // A click that lands as the navigation is drawn again opens nothing, so it is pressed again until a tab opens.
   let tab: Page | undefined;
@@ -243,7 +252,7 @@ test("leaves a click that asks for a new tab to the browser", async ({ page, con
   // The tab opens on about:blank before it loads the link. Its address is what the browser was asked for; waiting for
   // its whole page to load as well timed out on a busy runner with the address already right.
   await tab?.waitForURL(/\/funnel$/, { waitUntil: "commit" });
-  await expect(heading(page, opsCopy.shell.sections.today)).toBeVisible();
+  await expect(onToday(page)).toBeVisible();
   await expect(page).toHaveURL(/\/today$/);
 });
 
@@ -279,7 +288,7 @@ test("reaches mm-api as the ops surface, on its own host", async ({ page }) => {
 // Each page drew its own frame, so every move drew the navigation again.
 test("moves between pages without a reload, keeping its frame, and back", async ({ page }) => {
   await page.goto("/");
-  await expect(heading(page, opsCopy.shell.sections.today)).toBeVisible();
+  await expect(onToday(page)).toBeVisible();
   await navigation(page).evaluate((nav) => {
     nav.dataset.drawn = "once";
   });
@@ -288,7 +297,7 @@ test("moves between pages without a reload, keeping its frame, and back", async 
   expect(new URL(page.url()).pathname).toBe("/funnel");
   await expect(navigation(page)).toHaveAttribute("data-drawn", "once");
   await page.goBack();
-  await expect(heading(page, opsCopy.shell.sections.today)).toBeVisible();
+  await expect(onToday(page)).toBeVisible();
 });
 
 // Each page is a test of its own, so one that fails is named.

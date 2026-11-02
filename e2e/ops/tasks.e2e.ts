@@ -1,38 +1,40 @@
+// Tasks as one table (ADR 0227): every task the person's access reaches, the longest overdue first, narrowed to their
+// own, nobody's or the overdue; each row opens its drawer from anywhere on it, and ends with the step that settles it.
+
 import { expect, test } from "../support.ts";
 import { TASKS } from "./fixtures.ts";
-import { open, list, row, groupNames } from "./tasks-fixtures.ts";
+import { detail, list, open, row, rows } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
-// The groups were one 484 px column on a 1440 px screen, money between a call about a move and a job on a day off.
-test("stands each group under its department, in the navigation’s order, one beneath another", async ({ page }) => {
-  await open(page);
-  await expect(list(page).getByRole("heading", { level: 3 })).toHaveText([
-    opsCopy.tasks.departments.operations,
-    opsCopy.tasks.departments.customer_care,
-    opsCopy.tasks.departments.finance,
-    opsCopy.tasks.departments.growth,
-  ]);
-  await expect(groupNames(page)).toHaveText([
-    opsCopy.tasks.groups.replacement_order,
-    opsCopy.tasks.groups.number_change,
-    opsCopy.tasks.groups.erasure_request,
-    opsCopy.tasks.groups.no_show_decision,
-    opsCopy.tasks.groups.referral_review,
-  ]);
-  await expect(list(page).getByRole("listitem")).toHaveCount(8);
+const views = opsCopy.tasks.filters.views;
+const view = (page: import("@playwright/test").Page, name: string) =>
+  page
+    .getByRole("radiogroup", { name: opsCopy.tasks.filters.label })
+    .getByRole("radio", { name: new RegExp(`^${name}`) });
 
-  // Customer Care's two groups read down one list, each across the page.
-  const above = await groupNames(page).nth(1).boundingBox();
-  const below = await groupNames(page).nth(2).boundingBox();
-  if (above === null || below === null) throw new Error("the two groups are not drawn");
-  expect(below.x).toBeCloseTo(above.x, 0);
-  expect(below.y).toBeGreaterThan(above.y);
+test("lists every task in one table, the longest overdue first, each with the step that settles it", async ({
+  page,
+}) => {
+  await open(page);
+  await expect(rows(page)).toHaveCount(8);
+  await expect(rows(page).first()).toContainText("Kunal Mehta");
+  await expect(rows(page).first()).toContainText(opsCopy.tasks.groups.replacement_order);
+  await expect(row(page, "Karan Bose").getByRole("link", { name: "Decide in Referrals · Karan Bose" })).toBeVisible();
 });
 
-test("heads the list with how many have run over, and takes the keyboard to the first", async ({ page }) => {
+test("narrows to the person's own, nobody's or the overdue, each counted", async ({ page }) => {
   await open(page);
-  await page.getByRole("button", { name: "4 overdue, go to the first" }).click();
-  await expect(row(page, "Kunal Mehta")).toBeFocused();
+  await expect(view(page, views.all)).toHaveText(`${views.all}8`);
+  await expect(view(page, views.overdue)).toHaveText(`${views.overdue}4`);
+  await view(page, views.overdue).click();
+  await expect(view(page, views.overdue)).toBeChecked();
+  await expect(rows(page)).toHaveCount(4);
+  await view(page, views.nobody).click();
+  await expect(row(page, "Kunal Mehta")).toHaveCount(0);
+  await expect(row(page, "Deepak Rao")).toHaveCount(1);
+  await page.getByRole("searchbox", { name: opsCopy.tasks.filters.search }).fill("zzz");
+  await expect(view(page, views.nobody)).toHaveText(`${views.nobody}0`);
+  await expect(page.getByText(opsCopy.tasks.empty)).toBeVisible();
 });
 
 test("writes how long each has left in words, and marks what has run over", async ({ page }) => {
@@ -44,34 +46,24 @@ test("writes how long each has left in words, and marks what has run over", asyn
 });
 
 // On staging, 19 to 29 rows of one group pushed every other group out of sight.
-test("shows a group’s five longest waits, the rest on asking, and unfolds it for an overdue task past them", async ({
-  page,
-}) => {
+test("shows the fifty longest waits, the rest on asking", async ({ page }) => {
   const [first] = TASKS.groups;
   if (first === undefined) throw new Error("the board’s tasks have no group");
   const [template] = first.tasks;
   if (template === undefined) throw new Error("the board’s first group has no task");
-  const names = ["Amit", "Bharat", "Chirag", "Dev", "Eshan", "Farhan", "Gautam"];
-  const tasks = names.map((name, index) => ({
+  const many = Array.from({ length: 52 }, (_, index) => ({
     ...template,
-    id: `91000000-0000-4000-8000-00000000010${String(index)}`,
-    person: { id: `22000000-0000-4000-8000-00000000010${String(index)}`, name: `${name} Sharma` },
-    // The last is the one past its day.
-    due: name === "Gautam" ? "2027-09-18T18:30:00.000Z" : "2027-09-24T18:30:00.000Z",
+    id: `91000000-0000-4000-8000-${String(100 + index).padStart(12, "0")}`,
+    person: { id: `22000000-0000-4000-8000-${String(100 + index).padStart(12, "0")}`, name: `Client ${String(index)}` },
   }));
-  await open(page, { ...TASKS, overdue: 1, groups: [{ ...first, count: tasks.length, tasks }] });
-
-  await expect(list(page).getByRole("listitem")).toHaveCount(5);
-  await list(page).getByRole("button", { name: "Show 2 more · Replacement order" }).click();
-  await expect(list(page).getByRole("listitem")).toHaveCount(7);
-  const fewer = list(page).getByRole("button", { name: "Show fewer · Replacement order" });
-  await expect(fewer).toHaveAttribute("aria-expanded", "true");
-  await fewer.click();
-  await expect(list(page).getByRole("listitem")).toHaveCount(5);
-
-  await page.getByRole("button", { name: "1 overdue, go to the first" }).click();
-  await expect(list(page).getByRole("listitem")).toHaveCount(7);
-  await expect(row(page, "Gautam Sharma")).toBeFocused();
+  await open(page, { ...TASKS, groups: [{ ...first, count: many.length, tasks: many }] });
+  await expect(rows(page)).toHaveCount(50);
+  await list(page)
+    .getByRole("button", { name: opsCopy.tasks.more(2) })
+    .click();
+  await expect(rows(page)).toHaveCount(52);
+  await list(page).getByRole("button", { name: opsCopy.tasks.fewer }).click();
+  await expect(rows(page)).toHaveCount(50);
 });
 
 test("names the one fact each group turns on", async ({ page }) => {
@@ -82,4 +74,21 @@ test("names the one fact each group turns on", async ({ page }) => {
   await expect(row(page, "Karan Bose")).toContainText(opsCopy.referrals.queue.signals.monthly_cap);
   await expect(row(page, "Vikram Sethi")).toContainText(opsCopy.tasks.subs.number_change);
   await expect(row(page, "Ashish Gill")).toContainText(opsCopy.tasks.subs.erasure_request);
+});
+
+test("opens a task's drawer from anywhere on its row, but its client's name, which opens their page", async ({
+  page,
+}) => {
+  await open(page);
+  // The row's name reaches over the row: a click on its owner's cell lands on it.
+  await row(page, "Kunal Mehta").getByRole("cell").nth(2).click({ force: true });
+  const drawer = page.getByRole("dialog", { name: "Kunal Mehta" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer).toContainText(opsCopy.tasks.groups.replacement_order);
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(await detail(page, "Vikram Sethi")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await row(page, "Kunal Mehta").getByRole("link", { name: "Kunal Mehta", exact: true }).click();
+  await expect(page).toHaveURL(/\/clients\/22000000-0000-4000-8000-000000000002\/pieces$/);
 });

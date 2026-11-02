@@ -1,181 +1,78 @@
-// Today, dated: the figures that matter now, each a tile that opens where it is acted on; a part for each kind of work
-// the person's access reaches (./RoleParts.tsx); and the tasks that need them, their own first, then the longest
-// overdue. It reads the board the navigation reads and the day's routes; each tile is shown only to a person who may
-// open the page it leads to.
+// Today (ADR 0227): the person's home, chosen by their grants (./homes.ts). Its title is the home's sentence on the
+// day, the date and the header's city above it, and the choice of home beside it for a person with more than one; then
+// the home's figures, what needs them, and the home's own list.
 
-import { Columns, Stack } from "@maneman/ui/Layout";
-import { textLinkLook } from "@maneman/ui/TextLink";
-import { plainDate } from "@maneman/web-kit/plain-date";
-import { EmptyState } from "@maneman/ui/EmptyState";
-import { Panel } from "@maneman/ui/Panel";
-import { StatTile, type StatTone } from "@maneman/ui/StatTile";
-import { Table } from "@maneman/ui/Table";
-import { useLoad } from "@maneman/ui/useLoad";
-import { indiaDate, todayInIndia } from "@maneman/web-kit/dates";
-import { useCallback } from "react";
-import type { Task, TaskGroup, Tasks } from "../api.ts";
-import { OpsLink } from "../frame/Shell.tsx";
-import { tasks as taskWords } from "../content.ts";
-import { today as copy } from "../content/today.ts";
-import { useAccess, useMayCall, whoami } from "../lib/access.ts";
-import { useHeaderSub } from "../frame/PageHead.tsx";
-import { RoleParts } from "./RoleParts.tsx";
-import { Left } from "../lib/Left.tsx";
-import { decidedAt, subjectOf, taskClientPath } from "../lib/task-links.ts";
-import { useTaskBoard } from "../lib/waiting.ts";
-import { mayOpen, type Page, sectionOf } from "../route.ts";
+import { Stack } from "@maneman/ui/Layout";
 import { PanelLoading } from "@maneman/ui/States";
-import { todayApi } from "./today-api.ts";
+import { ToggleButton } from "@maneman/ui/ToggleButton";
+import { useLoad } from "@maneman/ui/useLoad";
 import { apiNow } from "@maneman/web-kit/clock";
+import { todayInIndia, weekdayDate } from "@maneman/web-kit/dates";
+import { useState, type ReactNode } from "react";
+import type { Tasks } from "../api.ts";
+import { tables } from "../content.ts";
+import { today as copy } from "../content/today.ts";
+import { PageActions, useHeaderOver } from "../frame/PageHead.tsx";
+import { whoami } from "../lib/access.ts";
+import { useCity } from "../lib/city.ts";
+import { useTaskBoard } from "../lib/waiting.ts";
+import { CareHome } from "./CareHome.tsx";
+import { CityHome } from "./CityHome.tsx";
+import { DispatchHome } from "./DispatchHome.tsx";
+import { FinanceHome } from "./FinanceHome.tsx";
+import { homeLists, homesOf, type Home } from "./homes.ts";
+import { InventoryHome } from "./InventoryHome.tsx";
+import { Needs } from "./Needs.tsx";
+import styles from "./today.module.css";
 
-type Group = TaskGroup["group"];
+type HomeProps = { readonly board: Tasks; readonly needs: ReactNode };
 
-/** How many the board holds in the groups named; none for a group the person is not shown. */
-const countOf = (board: Tasks, groups: readonly Group[]): number =>
-  board.groups.filter((each) => groups.includes(each.group)).reduce((sum, each) => sum + each.count, 0);
+const HOME_SCREENS: Readonly<Record<Home, (props: HomeProps) => ReactNode>> = {
+  dispatch: DispatchHome,
+  care: CareHome,
+  city: CityHome,
+  finance: FinanceHome,
+  inventory: InventoryHome,
+};
 
-/**
- * A tile: what it counts, the page it opens, and the tone a figure above nought takes. A tile counts the board's groups
- * it names, or one of the board's own totals.
- */
-interface Tile {
-  readonly key: keyof typeof copy.tiles;
-  readonly page: Page;
-  readonly counts: readonly Group[] | "overdue" | "open" | "low_stock";
-  readonly tone: StatTone;
-}
-
-const TILES: readonly Tile[] = [
-  { key: "unassigned", page: "dispatch", counts: ["unassigned_visit"], tone: "attention" },
-  { key: "overdue", page: "tasks", counts: "overdue", tone: "warning" },
-  { key: "open", page: "tasks", counts: "open", tone: "plain" },
-  { key: "chats", page: "messages", counts: ["unanswered_chat"], tone: "attention" },
-  { key: "lowStock", page: "stock", counts: "low_stock", tone: "attention" },
-  { key: "charges", page: "payments", counts: ["no_show_decision", "no_show_dispute"], tone: "plain" },
-  { key: "upi", page: "tasks", counts: ["upi_due"], tone: "attention" },
-];
-
-function figureOf(tile: Tile, board: Tasks): number {
-  if (tile.counts === "overdue") return board.overdue;
-  if (tile.counts === "low_stock") return board.low_stock_places;
-  if (tile.counts === "open") return board.groups.reduce((sum, each) => sum + each.count, 0);
-  return countOf(board, tile.counts);
-}
-
-/** How many visits today's routes hold, once they have loaded. */
-function VisitsToday() {
-  const date = indiaDate(new Date(apiNow()).toISOString());
-  const read = useCallback(() => todayApi.day(date), [date]);
-  const [loaded] = useLoad(read);
-  if (loaded.state !== "loaded") return null;
-  const visits = loaded.value.technicians.reduce((sum, technician) => sum + technician.stops.length, 0);
-  return <StatTile label={copy.tiles.visits} value={visits} to={sectionOf("dispatch").path} />;
-}
-
-function Figures({ board }: { board: Tasks }) {
-  const mayCall = useMayCall();
-  const access = useAccess();
-  // Where On the road today is drawn beneath, it counts today's visits first: not twice.
-  const visitsTile = access.mayCall("GET /api/dispatch/day") && !access.mayCall("GET /api/dispatch");
-  const shown = TILES.filter((tile) => mayOpen(mayCall, tile.page));
+function HomeChoice(props: { homes: readonly Home[]; home: Home; onChoose: (home: Home) => void }) {
   return (
-    <Columns row>
-      {visitsTile && <VisitsToday />}
-      {shown.map((tile) => {
-        const figure = figureOf(tile, board);
-        return (
-          <StatTile
-            key={tile.key}
-            label={copy.tiles[tile.key]}
-            value={figure}
-            tone={figure > 0 ? tile.tone : "plain"}
-            to={sectionOf(tile.page).path}
-          />
-        );
-      })}
-    </Columns>
-  );
-}
-
-interface Waiting {
-  readonly group: Group;
-  readonly task: Task;
-}
-
-/** The tasks the person may act on, the longest overdue first, as many as one look takes in. */
-const NEEDS_SHOWN = 10;
-
-function needsOf(board: Tasks, me: string | null): Waiting[] {
-  const mine = (waiting: Waiting) => (me !== null && waiting.task.owner === me ? 0 : 1);
-  return board.groups
-    .flatMap((group) => group.tasks.map((task) => ({ group: group.group, task })))
-    .sort((one, other) => mine(one) - mine(other) || Date.parse(one.task.due) - Date.parse(other.task.due))
-    .slice(0, NEEDS_SHOWN);
-}
-
-function Needs({ board }: { board: Tasks }) {
-  const now = new Date(apiNow());
-  const [signedIn] = useLoad(whoami);
-  const needs = needsOf(board, signedIn.state === "loaded" ? signedIn.value.signed_in_as : null);
-  return (
-    <Panel titleId="needs" title={copy.needs} count={needs.length}>
-      {needs.length === 0 ? (
-        <EmptyState look="panel" line={copy.none} />
-      ) : (
-        <Table>
-          <thead>
-            <tr>
-              <th scope="col">{copy.who}</th>
-              <th scope="col">{copy.what}</th>
-              <th scope="col">{copy.due}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {needs.map(({ group, task }) => {
-              const subject = subjectOf(group, task);
-              const where = decidedAt(group, task);
-              return (
-                <tr key={`${group} ${task.id}`}>
-                  <th scope="row">
-                    {task.person === null ? (
-                      subject
-                    ) : (
-                      <OpsLink className={textLinkLook({ compact: true })} to={taskClientPath(group, task.person.id)}>
-                        {subject}
-                      </OpsLink>
-                    )}
-                  </th>
-                  <td>
-                    {where === null ? (
-                      taskWords.groups[group]
-                    ) : (
-                      <OpsLink className={textLinkLook({ compact: true, tone: "muted" })} to={where}>
-                        {taskWords.groups[group]}
-                      </OpsLink>
-                    )}
-                  </td>
-                  <td>
-                    <Left due={task.due} now={now} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </Table>
-      )}
-    </Panel>
+    <div className={styles.homes} role="radiogroup" aria-label={copy.homes.label}>
+      {props.homes.map((each) => (
+        <ToggleButton
+          key={each}
+          asRadio
+          filled
+          pressed={each === props.home}
+          onClick={() => {
+            props.onChoose(each);
+          }}
+        >
+          {copy.homes.names[each]}
+        </ToggleButton>
+      ))}
+    </div>
   );
 }
 
 export function TodayScreen() {
   const board = useTaskBoard(true);
-  useHeaderSub(copy.day(plainDate(todayInIndia(apiNow()))));
-  if (board === null) return <PanelLoading />;
+  const { city } = useCity();
+  const [signedIn] = useLoad(whoami);
+  const [chosen, setChosen] = useState<Home | null>(null);
+  useHeaderOver(copy.day(weekdayDate(todayInIndia(apiNow())), city ?? tables.allCities));
+  if (board === null || signedIn.state !== "loaded") return <PanelLoading />;
+  const homes = homesOf(signedIn.value.staff);
+  const home = chosen !== null && homes.includes(chosen) ? chosen : (homes[0] ?? "dispatch");
+  const Screen = HOME_SCREENS[home];
   return (
     <Stack gap="24">
-      <Figures board={board} />
-      <RoleParts />
-      <Needs board={board} />
+      {homes.length > 1 && (
+        <PageActions>
+          <HomeChoice homes={homes} home={home} onChoose={setChosen} />
+        </PageActions>
+      )}
+      <Screen board={board} needs={<Needs board={board} lists={(group) => homeLists(home, homes, group)} />} />
     </Stack>
   );
 }

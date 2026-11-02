@@ -127,7 +127,10 @@ function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: 
   }, [heading, page, path]);
 }
 
-/** Where the page sits: its entry above a page of several, its section above a record, Settings' group above its page. */
+/**
+ * What stands above the page where it sits: its entry above a page of several, its section above a record, Settings'
+ * group above its page. The page's own name follows, alone where nothing stands above it.
+ */
 function crumbsOf(route: Route, record: string | undefined): Crumb[] {
   if (route.page === "more") return [];
   if (route.page === "settings") {
@@ -147,6 +150,15 @@ function pageTitleOf(route: Route, record: string | undefined): string {
   return route.page === "settings" ? SETTINGS_PAGE_NAMES[route.tab] : SECTION_NAMES[route.page];
 }
 
+/** What the open page has told its head (./PageHead.tsx): its figures, the day above it, its heading or record. */
+function useHeadTold() {
+  const [sub, setSub] = useState<string | undefined>();
+  const [over, setOver] = useState<string | undefined>();
+  const [heading, setHeading] = useState<string | undefined>();
+  const [record, setRecord] = useState<string | undefined>();
+  return { sub, over, heading, record, told: { setSub, setOver, setHeading, setRecord } };
+}
+
 /** The pages whose head, on a phone, carries the city as chips; elsewhere it is on More. */
 const CHIPS_ON: readonly Route["page"][] = ["today", "dispatch"];
 
@@ -161,14 +173,13 @@ interface Props {
 
 export function Shell({ route, flush = false, note = null, children }: Props) {
   const lapsed = useLapsed();
-  const heading = useRef<HTMLHeadingElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const main = useRef<HTMLElement>(null);
-  const [sub, setSub] = useState<string | undefined>();
-  const [record, setRecord] = useState<string | undefined>();
+  const { sub, over, heading, record, told } = useHeadTold();
   const [actions, setActions] = useState<HTMLElement | null>(null);
   const menu = useMenu();
   const phone = useIsPhone();
-  useFocusOnArrival(heading, main);
+  useFocusOnArrival(headingRef, main);
   const crumbs = crumbsOf(route, record);
   const title = pageTitleOf(route, record);
   return (
@@ -194,7 +205,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
             {menu.open ? shell.closeMenu : shell.menu}
           </Button>
           <div className={styles.crumbs}>
-            {crumbs.length > 0 && <Breadcrumbs label={shell.crumbs} crumbs={[...crumbs, { label: title }]} />}
+            <Breadcrumbs label={shell.crumbs} crumbs={[...crumbs, { label: title }]} />
           </div>
           <HeaderSearch className={styles.search} />
           <CityPicker className={styles.city} />
@@ -205,9 +216,10 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
         <main id="content" ref={main} tabIndex={-1} className={flush ? styles.flushPage : styles.page}>
           <PageHeader
             className={flush ? styles.flushHead : styles.head}
-            title={title}
-            titleRef={heading}
+            title={heading ?? title}
+            titleRef={headingRef}
             meta={sub}
+            over={over}
             actions={<div className={styles.actions} ref={setActions} />}
             tabs={
               route.page === "settings" || route.page === "more" || record !== undefined ? undefined : (
@@ -229,7 +241,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
               </InlineMessage>
             )}
           </div>
-          <PageHead value={{ setSub, setRecord, actions }}>
+          <PageHead value={{ ...told, actions }}>
             <PageTitle value={title}>{children}</PageTitle>
           </PageHead>
         </main>

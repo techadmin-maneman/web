@@ -1,11 +1,13 @@
-// A task's drawer, opened from its card on Tasks (./TasksScreen.tsx): what it is, whose it is and when it is due, the
-// way to where it is decided, and all else done on it here: the payment link, UPI, the call about a move, and taking,
-// giving or closing it.
+// A task's drawer, opened from its row on Tasks (./TasksScreen.tsx): what it is, whom it is about and whose it is; all
+// else done on it here, the payment link, UPI, the call about a move and leave; and at its foot, taking it, giving it to
+// someone or closing it, beside the step that settles it.
 
+import { buttonLook } from "@maneman/ui/Button";
+import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Drawer } from "@maneman/ui/Drawer";
-import { TextButton } from "@maneman/ui/TextLink";
+import { NoValue } from "@maneman/ui/NoValue";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useId, useState } from "react";
+import { useId } from "react";
 import { createPortal } from "react-dom";
 import type { Task, TaskGroup } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
@@ -13,8 +15,9 @@ import { CLOSE, tasks } from "../content.ts";
 import { useMayCall } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { mayFollow } from "../route.ts";
-import { decidedAt } from "../lib/task-links.ts";
+import { decidedAt, taskClientPath } from "../lib/task-links.ts";
 import { nameParts } from "../lib/who.ts";
+import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
 import { LeaveDecision } from "./LeaveDecision.tsx";
 import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
@@ -47,17 +50,27 @@ export interface Acting {
   readonly onClosed: () => void;
 }
 
-/** The way to where the task is decided, a card's one action, which the drawer repeats. */
-export function DecideLink({ group, task, subject }: { group: Group; task: Task; subject: string }) {
+/** The way to where the task is decided: a row's one action, outlined, and the drawer's main one, filled. */
+export function DecideLink({
+  group,
+  task,
+  subject,
+  primary = false,
+}: {
+  group: Group;
+  task: Task;
+  subject: string;
+  primary?: boolean;
+}) {
   const mayCall = useMayCall();
   const where = decidedAt(group, task);
   const action = tasks.decide[group];
   // Where the person may not open the section it is decided in, there is no way to it to offer.
   if (where === null || action === undefined || !mayFollow(mayCall, where)) return null;
   return (
-    <OpsLink className={shared.decide} to={where}>
+    <OpsLink className={buttonLook({ variant: primary ? "primary" : "outline", size: "compact" })} to={where}>
       {action}
-      {/* Every card of a group links the same words, so each says whose it is to a screen reader. */}
+      {/* Every row of a group links the same words, so each says whose it is to a screen reader. */}
       <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
     </OpsLink>
   );
@@ -69,66 +82,68 @@ interface Props {
   readonly subject: string;
   readonly now: Date;
   readonly acting: Acting;
+  readonly onDismiss: () => void;
 }
 
-function Body({ group, task, subject, acting }: Omit<Props, "now">) {
+function Facts({
+  group,
+  task,
+  subject,
+  owner,
+}: Omit<Props, "acting" | "onDismiss" | "now"> & { owner: string | null }) {
+  const who = task.person === null ? subject : <OpsLink to={taskClientPath(group, task.person.id)}>{subject}</OpsLink>;
   return (
-    <div className={shared.detail}>
-      <span className={shared.sub}>
-        {tasks.owner.label}
-        {acting.owner === null ? tasks.owner.nobody : ownerName(acting.owner)}
-      </span>
-      <DecideLink group={group} task={task} subject={subject} />
-      {group === "payment_owed" && <PaymentLinkActions task={task} subject={subject} />}
-      {(group === "upi_due" || group === "payment_owed") && (
-        <UpiPaymentAction task={task} subject={subject} onRecorded={acting.onClosed} />
-      )}
-      <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
-      <LeaveDecision group={group} task={task} onDecided={acting.onClosed} />
-      <TaskActions group={group} task={task} subject={subject} {...acting} />
-    </div>
+    <DescriptionList
+      className={shared.facts}
+      layout="list"
+      items={[
+        { term: tasks.columns.what, details: tasks.groups[group] },
+        { term: tasks.columns.who, details: who },
+        { term: tasks.columns.owner, details: owner === null ? <NoValue /> : ownerName(owner) },
+      ]}
+    />
   );
 }
 
-/** The card's Details, and its drawer while open. */
-export function TaskDetail({ group, task, subject, now, acting }: Props) {
-  const [open, setOpen] = useState(false);
+/** The task's drawer while it is open. */
+export function TaskDrawer({ group, task, subject, now, acting, onDismiss }: Props) {
   const titleId = useId();
-  const close = () => {
-    setOpen(false);
-  };
   // A task done here leaves the list: the drawer shuts first, so the list behind it can take the keyboard.
   const done = () => {
-    setOpen(false);
+    onDismiss();
     requestAnimationFrame(acting.onClosed);
   };
-  return (
-    <>
-      <TextButton
-        tone="muted"
-        compact
-        aria-expanded={open}
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        {tasks.details}
-        <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
-      </TextButton>
-      {open &&
-        createPortal(
-          <Drawer
-            titleId={titleId}
-            title={subject}
-            sub={subOf(task, now)}
-            aside={<Left due={task.due} now={now} />}
-            close={CLOSE}
-            onDismiss={close}
-          >
-            <Body group={group} task={task} subject={subject} acting={{ ...acting, onClosed: done }} />
-          </Drawer>,
-          document.body,
+  const settling = { ...acting, onClosed: done };
+  return createPortal(
+    <Drawer
+      titleId={titleId}
+      title={subject}
+      sub={subOf(task, now)}
+      aside={<Left due={task.due} now={now} />}
+      close={CLOSE}
+      onDismiss={onDismiss}
+      foot={
+        <div className={shared.foot}>
+          <div className={shared.footOwner}>
+            <TaskActions group={group} task={task} subject={subject} {...settling} />
+          </div>
+          <div className={shared.footStep}>
+            <DecideLink group={group} task={task} subject={subject} primary />
+            <BookFromTask task={task} subject={subject} primary onBooked={done} />
+          </div>
+        </div>
+      }
+    >
+      <div className={shared.detail}>
+        <Facts group={group} task={task} subject={subject} owner={acting.owner} />
+        {group === "payment_owed" && <PaymentLinkActions task={task} subject={subject} />}
+        {(group === "upi_due" || group === "payment_owed") && (
+          <UpiPaymentAction task={task} subject={subject} onRecorded={done} />
         )}
-    </>
+        <CallAboutMove group={group} task={task} subject={subject} onTold={done} />
+        <LeaveDecision group={group} task={task} onDecided={done} />
+      </div>
+    </Drawer>,
+    document.body,
   );
 }

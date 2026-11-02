@@ -56569,18 +56569,23 @@ Request body:
       "items": {
         "type": "string"
       },
-      "description": "Each city ops serve, or with a technician at work, in the console's order: what the header's picker offers.",
+      "description": "The cities the header's picker offers, in the console's order: each city ops serve or with a technician at work that the caller's grants reach, every one for a grant that reaches everywhere.",
       "example": [
         "Gurgaon",
         "Delhi"
       ]
+    },
+    "every_city": {
+      "type": "boolean",
+      "description": "Whether the caller's grants reach every city, so the picker offers them all at once; a person whose grants keep to one city has that city alone."
     }
   },
   "required": [
     "signed_in_as",
     "sign_out",
     "staff",
-    "cities"
+    "cities",
+    "every_city"
   ],
   "additionalProperties": false
 }

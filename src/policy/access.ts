@@ -127,6 +127,25 @@ export function placesReached(access: CallerAccess, department: Department, leve
   return { kind: "cities", cities };
 }
 
+/**
+ * Every place any of the caller's grants reaches, in any department, at View or above: the cities the console offers
+ * them to narrow to. A city head sees their one city, a zone's head the cities of their zone.
+ */
+export function placesSeen(access: CallerAccess): PlacesReached {
+  const each = DEPARTMENTS.map((department) => placesReached(access, department, "view"));
+  if (each.some((reached) => reached.kind === "everywhere")) return EVERYWHERE;
+  return {
+    kind: "cities",
+    cities: new Set(each.flatMap((reached) => (reached.kind === "cities" ? [...reached.cities] : []))),
+  };
+}
+
+/** The reach narrowed to one city asked: that city alone where it is within reach, nowhere where it is not. */
+export function narrowedTo(reached: PlacesReached, city: string | undefined): PlacesReached {
+  if (city === undefined) return reached;
+  return reachesCity(reached, city) ? { kind: "cities", cities: new Set([city]) } : NOWHERE;
+}
+
 /** Whether a record in this city is within reach. One with no city is reached only everywhere. */
 export function reachesCity(reached: PlacesReached, city: string | null): boolean {
   if (reached.kind === "everywhere") return true;

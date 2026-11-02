@@ -164,6 +164,7 @@ function Fields() {
             />
             <ToggleButton
               pressed={pressed}
+              count={8}
               onClick={() => {
                 setPressed(!pressed);
               }}

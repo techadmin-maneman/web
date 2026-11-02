@@ -2,6 +2,7 @@
 // its client where we know the number, and every message in it. A client who writes reopens their thread. A thread
 // reads our automatic messages from outbound_messages beside the chat, so nothing is copied.
 
+import { idWithinReach } from "../clients/places.ts";
 import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
 import { archivedMessages } from "./chat-archive.ts";
@@ -139,6 +140,8 @@ export interface InboxAsked {
   readonly search?: string | undefined;
   /** The thread the last page ended on, as `nextBefore` gave it. */
   readonly before?: string | undefined;
+  /** The city whose clients' threads alone are listed; every thread when left out. */
+  readonly city?: string | undefined;
 }
 
 interface InboxPage {
@@ -156,7 +159,7 @@ const placeOf = (row: ListRow) => `${row.last_message_at}_${row.id}`;
  */
 export async function listConversations(
   db: D1Database,
-  { view, me, search = "", before }: InboxAsked,
+  { view, me, search = "", before, city }: InboxAsked,
   context: InboxContext,
 ): Promise<InboxPage> {
   const covered = [...context.cover].filter(([, by]) => by === me).map(([off]) => off);
@@ -178,6 +181,7 @@ export async function listConversations(
            OR (?1 = 'mine' AND o.email IN (SELECT value FROM json_each(?3)) AND c.state <> 'closed'))
          AND (?5 = '' OR instr(lower(p.name), lower(?5)) > 0 OR (?6 <> '' AND instr(c.mobile_e164, ?6) > 0))
          AND (?7 IS NULL OR (c.last_message_at, c.id) < (?7, ?8))
+         AND ${idWithinReach("client", "c.person_id", "?9")}
        ORDER BY c.last_message_at DESC, c.id DESC LIMIT ?2`,
     )
     .bind(
@@ -189,6 +193,7 @@ export async function listConversations(
       digits,
       beforeAt,
       beforeId,
+      city === undefined ? null : JSON.stringify([city]),
     )
     .all<ListRow>();
   const page = results.slice(0, PAGE_THREADS);

@@ -12,6 +12,15 @@
     list-style: none;
   }
 
+  /* In a panel, its box is the panel's; a line beneath the last row where something follows it there. */
+  .inPanel {
+    border: 0;
+  }
+
+  .inPanel:not(:last-child) {
+    border-bottom: var(--hairline) solid var(--ui-line);
+  }
+
   .list > li + li {
     border-top: var(--hairline) solid var(--ui-line);
   }
@@ -32,6 +41,22 @@
     box-shadow: inset var(--rule-strong) 0 0 0 var(--rule, transparent);
   }
 
+  /* A row with an action of its own: the row, then the action at the right, both on the row's rule. */
+  .acting {
+    display: flex;
+    align-items: center;
+  }
+
+  .acting > .row {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .action {
+    flex-shrink: 0;
+    padding-right: var(--sp-16);
+  }
+
   .opens {
     cursor: pointer;
   }
@@ -50,6 +75,17 @@
 
   .error {
     --rule: var(--status-error);
+  }
+
+  /* One width down the list, so the words after it line up; what runs past it is cut short. */
+  .lead {
+    flex: 0 0 calc(var(--sp-64) + var(--sp-16));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--fs-13);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text-muted);
   }
 
   .words {

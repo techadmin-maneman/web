@@ -11,7 +11,9 @@ import {
   mayRunAccess,
   maySee,
   NATIONAL,
+  narrowedTo,
   placesReached,
+  placesSeen,
   reachesCity,
   takesIn,
   type Caller,
@@ -247,5 +249,37 @@ describe("the places a caller reaches", () => {
     expect(reachesCity(delhi, "Noida")).toBe(false);
     expect(reachesCity(delhi, null)).toBe(false);
     expect(reachesCity({ kind: "everywhere" }, null)).toBe(true);
+  });
+});
+
+describe("the cities the console offers a caller to narrow to", () => {
+  const enforced = (caller: Caller) => ({ enforced: true, caller, zoneOf: ZONES });
+  const seen = (caller: Caller) => {
+    const reached = placesSeen(enforced(caller));
+    return reached.kind === "everywhere" ? "everywhere" : [...reached.cities].sort();
+  };
+
+  it("are a city head's one city, and a zone's head every city of the zone, in any department", () => {
+    expect(seen(person(grant("operations", "manage", DELHI)))).toEqual(["Delhi"]);
+    expect(seen(person(grant("finance", "view", NCR), grant("customer_care", "act", MUMBAI)))).toEqual([
+      "Delhi",
+      "Faridabad",
+      "Ghaziabad",
+      "Gurgaon",
+      "Mumbai",
+      "Noida",
+    ]);
+  });
+
+  it("are everywhere where any grant is national", () => {
+    expect(seen(person(grant("operations", "view", DELHI), grant("growth", "view", NATIONAL)))).toBe("everywhere");
+  });
+
+  it("narrow a reach to the one city asked, never past it", () => {
+    const ncr = placesSeen(enforced(person(grant("finance", "view", NCR))));
+    expect(narrowedTo(ncr, "Delhi")).toEqual({ kind: "cities", cities: new Set(["Delhi"]) });
+    expect(narrowedTo(ncr, "Mumbai")).toEqual({ kind: "cities", cities: new Set() });
+    expect(narrowedTo(ncr, undefined)).toBe(ncr);
+    expect(narrowedTo({ kind: "everywhere" }, "Pune")).toEqual({ kind: "cities", cities: new Set(["Pune"]) });
   });
 });

@@ -117,6 +117,7 @@ test("does not offer the second approval to the manager who gave the first", asy
       signed_in_as: "ops@maneman.in",
       sign_out: null,
       cities: [],
+      every_city: true,
       staff: {
         enforced: false,
         listed: true,

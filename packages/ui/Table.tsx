@@ -1,6 +1,7 @@
 // The ops console's table: rows of --ops-row, the head's names small and muted over a rule and held in view as the
-// rows scroll, a row marked under the pointer, and a figure set right in figures of one width. A caller's class sets
-// the columns. On a phone each row is a card, every value beside its column's name (./table.module.css).
+// rows scroll, a row marked under the pointer, and a figure set right in figures of one width. A row opens where its
+// name does, a page or a drawer. A caller's class sets the columns. On a phone each row is a card, every value beside
+// its column's name (./table.module.css).
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { classes } from "./classes.ts";
@@ -98,6 +99,27 @@ export function TableScroll({ labelledBy, children }: { readonly labelledBy: str
     <div className={styles.scroll} tabIndex={0} role="group" aria-labelledby={labelledBy} data-table="">
       {children}
     </div>
+  );
+}
+
+/**
+ * The words in a row's head cell that open what the row is about in a drawer, what it is over a line of detail. As a
+ * row's name does, it reaches over the whole row, the row's other links and buttons above it (./table.module.css).
+ */
+export function RowOpener({
+  onOpen,
+  meta,
+  children,
+}: {
+  readonly onOpen: () => void;
+  readonly meta?: ReactNode;
+  readonly children: ReactNode;
+}) {
+  return (
+    <button type="button" className={styles.opener} aria-haspopup="dialog" onClick={onOpen}>
+      <span className={styles.openerTitle}>{children}</span>
+      {meta !== undefined && <span className={styles.openerMeta}>{meta}</span>}
+    </button>
   );
 }
 

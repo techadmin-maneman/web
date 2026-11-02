@@ -26,6 +26,13 @@
     min-width: 0;
   }
 
+  /* The day and place above a title that is a sentence on them, on a line of their own. */
+  .over {
+    flex-basis: 100%;
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
   .title {
     margin: 0;
     color: var(--ui-text);

@@ -76,7 +76,13 @@ async function show() {
   onTestFinished(() => {
     actions.remove();
   });
-  const head = { setSub: () => undefined, setRecord: () => undefined, actions };
+  const head = {
+    setSub: () => undefined,
+    setOver: () => undefined,
+    setRecord: () => undefined,
+    setHeading: () => undefined,
+    actions,
+  };
   act(() => {
     root.render(createElement(PageHead, { value: head }, createElement(WindowTimes)));
   });

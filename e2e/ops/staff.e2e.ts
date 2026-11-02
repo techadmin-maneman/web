@@ -224,6 +224,7 @@ const signedInAs = (email: string) =>
     signed_in_as: email,
     sign_out: null,
     cities: [],
+    every_city: true,
     staff: {
       enforced: false,
       listed: true,

@@ -48,6 +48,7 @@ beforeEach(() => {
             sign_out: null,
             staff: { enforced: false, listed: false, grants: [], may_call: Object.keys(ROUTE_NEEDS) },
             cities: ["Gurgaon", "Delhi"],
+            every_city: true,
           }),
         );
       }

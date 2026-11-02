@@ -19,15 +19,6 @@ export {
   review,
 } from "@maneman/ui/words";
 
-/**
- * A slot the redesign added whose words are still to be written (design/ops-redesign/COPY-TODO.md). It is drawn as
- * nothing until they are, so it never reaches a release (ADR 0225).
- */
-export const TODO_COPY = "TODO(copy)";
-
-/** The words, or nothing while they are still to be written. */
-export const written = (words: string): string | undefined => (words === TODO_COPY ? undefined : words);
-
 /** The public site's booking page, which a launch alert sends people to, as apps/app/src/content.ts has it. */
 export const BOOKING_URL: Readonly<Record<EnvironmentName, string>> = {
   local: "http://127.0.0.1:4321/book",

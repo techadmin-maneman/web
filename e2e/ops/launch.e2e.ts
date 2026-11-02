@@ -141,6 +141,7 @@ test("leads to the area’s name only those whose access reaches Service area", 
       may_call: ["GET /api/health", "GET /api/whoami", "GET /api/waitlist", "POST /api/pincodes/{pin}/launch"],
     },
     cities: [],
+    every_city: true,
   });
   await open(page, { "GET /api/whoami": growthInMumbai, [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
@@ -199,6 +200,7 @@ test("offers no way to add a pincode to one whose access does not reach it, and 
     signed_in_as: "growth@maneman.in",
     sign_out: "/cdn-cgi/access/logout",
     cities: [],
+    every_city: true,
     staff: {
       enforced: true,
       listed: true,

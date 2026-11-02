@@ -1,7 +1,5 @@
 // The console's frame: its navigation by department, its header and the person signed in.
 
-import { TODO_COPY } from "./common.ts";
-
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
 export const DEPARTMENT_NAMES = {
   operations: "Operations",
@@ -64,10 +62,7 @@ export const shell = {
     growth: "Growth",
     reports: "Reports",
   },
-  /**
-   * The navigation's groups, in its order (../route.ts, NAV_GROUPS), as the redesign's brief names them, not its
-   * design files (design/ops-redesign/COPY-TODO.md).
-   */
+  /** The navigation's groups, in its order (../route.ts, NAV_GROUPS). */
   navGroups: {
     work: "Work",
     people: "People",
@@ -89,7 +84,7 @@ export const shell = {
     none: "Nothing matches.",
     clients: "Clients",
     technicians: "Technicians",
-    pages: TODO_COPY,
+    pages: "Pages",
     setting: (page: string) => `Settings · ${page}`,
   },
   /**

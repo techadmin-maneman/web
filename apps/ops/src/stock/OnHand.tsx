@@ -82,9 +82,16 @@ function Held({ stock, consumable, place }: { stock: Stock; consumable: Consumab
   );
 }
 
-/** The places with something below zero, out or low, the worst first, and how many items each: a name shows it. */
-export function Attention({ stock, onShow }: { stock: Stock; onShow: (showing: Showing) => void }) {
-  const rows = stock.places
+export interface PlaceNeeds {
+  readonly place: Stock["places"][number];
+  readonly below: number;
+  readonly out: number;
+  readonly low: number;
+}
+
+/** The places with something below zero, out or low, the worst first, and how many items each; Today counts them too. */
+export function placesNeedingAttention(stock: Stock): PlaceNeeds[] {
+  return stock.places
     .map((place) => {
       const needs = stock.consumables.map((consumable) => stateOf(stock, consumable, place.id)?.need);
       const count = (need: State["need"]) => needs.filter((each) => each === need).length;
@@ -92,6 +99,11 @@ export function Attention({ stock, onShow }: { stock: Stock; onShow: (showing: S
     })
     .filter((row) => row.below + row.out + row.low > 0)
     .sort((one, other) => other.below - one.below || other.out - one.out || other.low - one.low);
+}
+
+/** The places with something below zero, out or low, the worst first, and how many items each: a name shows it. */
+export function Attention({ stock, onShow }: { stock: Stock; onShow: (showing: Showing) => void }) {
+  const rows = placesNeedingAttention(stock);
   if (rows.length === 0) return null;
   const figure = (count: number) => (count === 0 ? <span className={styles.none}>{copy.noExpiry}</span> : count);
   return (

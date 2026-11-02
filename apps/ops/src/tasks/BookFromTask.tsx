@@ -3,14 +3,13 @@
 // client's page books from, started from what the task holds; the task leaves the board once the visit is booked, and
 // stays while a payment link for it waits to be paid.
 
-import { TextButton } from "@maneman/ui/TextLink";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { BookVisit, type Prefill } from "../clients/index.ts";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode, type RefObject } from "react";
 import type { BookingWindow, Task } from "../api.ts";
 import { tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import styles from "./tasks.module.css";
 
 const WINDOWS: readonly string[] = ["morning", "afternoon", "evening"];
 const isWindow = (text: string | null): text is BookingWindow => text !== null && WINDOWS.includes(text);
@@ -41,14 +40,20 @@ function prefillOf(task: Task): Prefill | null {
   return null;
 }
 
+/** Whether the task is done by booking the client a visit. */
+export const booksFrom = (task: Task): boolean => task.person !== null && prefillOf(task) !== null;
+
 export function BookFromTask({
   task,
   subject,
+  primary = false,
   onBooked,
 }: {
   task: Task;
   /** Who the task heads with, which the button names to a screen reader. */
   subject: string;
+  /** The drawer's main action, filled; else a row's own, outlined. */
+  primary?: boolean;
   /** The visit is booked: the task is done. */
   onBooked: () => void;
 }) {
@@ -59,19 +64,17 @@ export function BookFromTask({
   const person = task.person;
   if (!mayBook || prefill === null || person === null) return null;
   return (
-    <span className={styles.acts}>
-      <TextButton
-        tone="muted"
-        compact
-        ref={opener}
-        aria-haspopup="dialog"
+    <>
+      <BookButton
+        primary={primary}
+        buttonRef={opener}
         onClick={() => {
           setOpen(true);
         }}
       >
         {prefill.covers === undefined ? tasks.book : tasks.bookFree}
         <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
-      </TextButton>
+      </BookButton>
       {open && (
         <BookVisit
           clientId={person.id}
@@ -84,6 +87,23 @@ export function BookFromTask({
           }}
         />
       )}
-    </span>
+    </>
+  );
+}
+
+/** The drawer's main action, or a row's own. */
+function BookButton(props: {
+  primary: boolean;
+  buttonRef: RefObject<HTMLButtonElement | null>;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  const shared = { ref: props.buttonRef, "aria-haspopup": "dialog", onClick: props.onClick } as const;
+  return props.primary ? (
+    <Button {...shared} variant="primary" size="compact">
+      {props.children}
+    </Button>
+  ) : (
+    <RowButton {...shared}>{props.children}</RowButton>
   );
 }

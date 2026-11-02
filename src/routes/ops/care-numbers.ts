@@ -6,6 +6,7 @@ import type { App } from "../../http/context.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { careNumbers } from "../../domain/care/care-numbers.ts";
+import { CityAsked } from "../schemas/city.ts";
 
 const PERIODS = ["7", "30", "90"] as const;
 
@@ -39,7 +40,7 @@ const numbersRoute = opsRoute({
   method: "get",
   path: "/api/care-numbers",
   summary: "Whether the same-day promise holds: reply times, same-day closes, the backlog, reasons and remedies",
-  request: { query: z.object({ days: z.enum(PERIODS).default("7") }) },
+  request: { query: z.object({ days: z.enum(PERIODS).default("7"), city: CityAsked }) },
   responses: {
     200: { description: "The numbers", ...json(NumbersSchema) },
   },
@@ -48,7 +49,13 @@ const numbersRoute = opsRoute({
 export function registerOpsCareNumbers(app: App): void {
   app.openapi(numbersRoute, async (c) => {
     const { careHours } = await opsInputs(c);
-    const days = Number(c.req.valid("query").days);
-    return c.json(await careNumbers(c.env.DB, days, careHours, c.var.deps.now()), 200);
+    const asked = c.req.valid("query");
+    const numbers = await careNumbers(c.env.DB, {
+      days: Number(asked.days),
+      hours: careHours,
+      now: c.var.deps.now(),
+      city: asked.city,
+    });
+    return c.json(numbers, 200);
   });
 }

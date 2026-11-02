@@ -111,9 +111,11 @@ export const kit = {
   pickerGroups: ["Stores", "Kits"] as const,
   pickerDetails: ["2 low", "1 below zero"] as const,
   rows: [
-    { title: "Replacement order", meta: "Meera Iyer · Gurgaon", end: "3 days late", tone: "warning" },
-    { title: "Address to confirm", meta: "Kunal Shah · Mumbai", end: "Today", tone: "attention" },
-    { title: "Service visit", meta: "Arif Khan · Gurgaon", end: "Tomorrow" },
+    { lead: "9:30 am", title: "Replacement order", meta: "Meera Iyer · Gurgaon", end: "3 days late", tone: "warning" },
+    { lead: "11:00 am", title: "Address to confirm", meta: "Kunal Shah · Mumbai", end: "Today", tone: "attention" },
+    { lead: "2:30 pm", title: "Service visit", meta: "Arif Khan · Gurgaon", end: "Tomorrow" },
   ] as const,
+  /** A row's own action, beside it on a desk. */
+  act: "Assign",
   fold: "Fold",
 } as const;

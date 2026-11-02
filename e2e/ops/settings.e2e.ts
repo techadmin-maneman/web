@@ -45,6 +45,7 @@ const VIEW_ONLY = json({
   signed_in_as: "viewer@maneman.in",
   sign_out: "/cdn-cgi/access/logout",
   cities: [],
+  every_city: true,
   staff: {
     enforced: true,
     listed: true,
