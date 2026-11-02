@@ -158,12 +158,14 @@ test("claims a returned piece inside its warranty, and writes off another with w
   await expect(page.getByRole("region", { name: copy.claims.title })).toContainText("CL-0002");
 
   await lateRow.getByRole("button", { name: copy.returns.writeOff }).click();
-  await lateRow.getByLabel(copy.returns.why).fill("Torn base");
-  await expect(lateRow.getByRole("button", { name: copy.returns.confirmWriteOff })).toBeDisabled();
-  await lateRow.getByLabel(copy.photo.writeOff).setInputFiles(TINY_JPEG);
-  await expect(lateRow.getByRole("img", { name: copy.photo.alt })).toBeVisible();
+  // Written off in a drawer beside the list, with why and a photograph.
+  const drawer = page.getByRole("dialog", { name: copy.returns.writeOffLabel(late.piece_code) });
+  await drawer.getByLabel(copy.returns.why).fill("Torn base");
+  await expect(drawer.getByRole("button", { name: copy.returns.confirmWriteOff })).toBeDisabled();
+  await drawer.getByLabel(copy.photo.writeOff).setInputFiles(TINY_JPEG);
+  await expect(drawer.getByRole("img", { name: copy.photo.alt })).toBeVisible();
   const writeOff = posted(page, "/api/returned-pieces/ret-2/write-off");
-  await lateRow.getByRole("button", { name: copy.returns.confirmWriteOff }).click();
+  await drawer.getByRole("button", { name: copy.returns.confirmWriteOff }).click();
   expect((await writeOff).postDataJSON()).toEqual({ reason: "Torn base", photo_id: PHOTO_ID });
   await expect(pieces).toContainText(copy.returns.none);
 });

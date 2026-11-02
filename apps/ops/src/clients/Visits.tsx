@@ -9,7 +9,7 @@ import { NoValue } from "@maneman/ui/NoValue";
 import { Badge } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Button, RowButton } from "@maneman/ui/Button";
-import { ACTIONS, rowRule, Table } from "@maneman/ui/Table";
+import { ACTIONS, RowActions, rowRule, Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { indiaClock, longDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
@@ -178,10 +178,10 @@ function VisitRow({
         <VisitCode visit={visit} />
       </td>
       <td className={ACTIONS}>
-        <span className={styles.visitActions}>
+        <RowActions>
           <LostReason visit={visit} reasons={ahead ? null : lost} onChanged={changing.onChanged} />
           {ahead && <ChangeVisit visit={visit} name={changing.name} onChanged={changing.onChanged} />}
-        </span>
+        </RowActions>
       </td>
     </tr>
   );

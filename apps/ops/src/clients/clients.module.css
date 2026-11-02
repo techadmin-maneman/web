@@ -498,12 +498,3 @@
 .visitTable th:nth-child(7) {
   width: 17%;
 }
-
-/* A visit's own buttons at the row's end, side by side, running on to a second line where they must. */
-.visitActions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--sp-8);
-  white-space: nowrap;
-}

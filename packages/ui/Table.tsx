@@ -129,6 +129,11 @@ export const FIGURE = styles.figure;
 /** The cell of a row's own buttons, as a payment's Refund: on a phone's card it stands at the edge, unnamed. */
 export const ACTIONS = styles.actions;
 
+/** A row's buttons, side by side at the row's end, running on to a second line where they must; in an ACTIONS cell. */
+export function RowActions({ children }: { readonly children: ReactNode }) {
+  return <span className={styles.rowActions}>{children}</span>;
+}
+
 /**
  * How pressing a row is, as a rule down its first edge: attention for what is due today, warning for what is overdue
  * or late, error for what failed. A row with none has no rule. ListRow draws the same rule on a phone.

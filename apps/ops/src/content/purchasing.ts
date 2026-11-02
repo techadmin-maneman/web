@@ -8,7 +8,8 @@ export const purchasing = {
   title: "Purchasing",
   orders: "Orders",
   // Open orders first, each group newest first, with the day it was drafted: the numbers are random to suppliers.
-  columns: ["Order", "Drafted", "Supplier", "Status", "Total", "Expected"],
+  columns: ["Order", "Drafted", "Supplier", "Status", "Total", "Expected"] as const,
+  find: "Find an order or supplier",
   none: "No orders yet.",
   /** "PO-0007" */
   number: (number: number) => `PO-${String(number).padStart(4, "0")}`,
@@ -140,7 +141,8 @@ export const purchasing = {
   },
   claims: {
     title: "Claims",
-    columns: ["Claim", "Supplier", "Item", "Reason", "Status", "Value"],
+    columns: ["Claim", "Supplier", "Item", "Reason", "Status", "Value"] as const,
+    find: "Find a claim or item",
     none: "No claims.",
     /** "CL-0007" */
     number: (number: number) => `CL-${String(number).padStart(4, "0")}`,
@@ -173,7 +175,13 @@ export const purchasing = {
   },
   returns: {
     title: "Returned pieces",
-    columns: ["Piece", "Item", "Returned", "Handed in at", "Warranty", ""],
+    columns: ["Piece", "Item", "Returned", "Handed in at", "Warranty"] as const,
+    /** The column of a piece's buttons, named aloud only. */
+    settle: "Settle",
+    find: "Find a piece or item",
+    noItem: "No item on record",
+    claimLabel: (piece: string) => `Claim for ${piece}`,
+    writeOffLabel: (piece: string) => `Write off ${piece}`,
     none: "Nothing to settle.",
     until: (date: string) => `Until ${date}`,
     ended: (date: string) => `Ended ${date}`,

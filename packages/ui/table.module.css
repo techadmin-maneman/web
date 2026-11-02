@@ -146,6 +146,13 @@
     text-align: right;
   }
 
+  .rowActions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--sp-8);
+  }
+
   /* Rows of controls (./Table.tsx's `controls`): the boxes and buttons in them make each row's height. */
   .controls {
     margin-top: var(--sp-8);

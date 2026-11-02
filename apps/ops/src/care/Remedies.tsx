@@ -6,7 +6,7 @@ import { Toast } from "@maneman/ui/Toast";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { NoValue } from "@maneman/ui/NoValue";
 import { RowHead } from "@maneman/ui/RowHead";
-import { ACTIONS, FIGURE, Table } from "@maneman/ui/Table";
+import { ACTIONS, FIGURE, RowActions, Table } from "@maneman/ui/Table";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import type { Success } from "@maneman/web-kit/api";
@@ -207,7 +207,7 @@ function RemediesTable(props: { remedies: readonly Remedy[]; mayDecide: boolean;
               <td>{remedy.note ?? <NoValue />}</td>
               <td className={ACTIONS}>
                 {mayDecide && remedy.state === "awaiting" && (
-                  <span className={styles.decide}>
+                  <RowActions>
                     <RowButton
                       aria-label={copy.approveLabel(remedy.person.name)}
                       onClick={() => void careApi.decideRemedy(remedy.id, true).then(retry)}
@@ -220,7 +220,7 @@ function RemediesTable(props: { remedies: readonly Remedy[]; mayDecide: boolean;
                     >
                       {copy.decline}
                     </RowButton>
-                  </span>
+                  </RowActions>
                 )}
               </td>
             </tr>
