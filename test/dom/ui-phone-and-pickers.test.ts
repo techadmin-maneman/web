@@ -375,7 +375,7 @@ describe("a table row that opens a drawer", () => {
 
   it("reaches over the whole row from its head, as a row's name does", () => {
     expect(css("table.module.css")).toMatch(
-      /\.table tbody th\[scope="row"\] :is\(a, button\):first-of-type::after \{\s+position: absolute;\s+inset: 0;/,
+      /\.table tbody th\[scope="row"\] :is\(a, button\):first-of-type:not\(dialog \*\)::after \{\s+position: absolute;\s+inset: 0;/,
     );
   });
 });

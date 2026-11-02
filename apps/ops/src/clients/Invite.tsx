@@ -2,7 +2,9 @@
 // client who came with none may have one attached, for a friend who booked away from the invite's page
 // (docs/decisions/0089-an-invite-is-not-lost.md).
 
+import { CancelButton } from "@maneman/ui/CancelButton";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { FormActions } from "@maneman/ui/FormActions";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import form from "@maneman/ui/forms.module.css";
@@ -20,7 +22,6 @@ import { clientPath } from "../route.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import shared from "./clients.module.css";
-import styles from "./invite.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
 
@@ -71,12 +72,59 @@ function Details({ invite, news }: { invite: ClientInvite; news: InviteNews | nu
   );
 }
 
+/** The invite's code and why it is attached, the drawer's two boxes. */
+function InviteFields(props: {
+  code: string;
+  reason: string;
+  disabled: boolean;
+  onCode: (code: string) => void;
+  onReason: (reason: string) => void;
+}) {
+  return (
+    <div className={form.fields}>
+      <Field label={copy.form.code} className={form.field}>
+        {(control) => (
+          <TextInput
+            {...control}
+            width="choice"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            maxLength={12}
+            value={props.code}
+            disabled={props.disabled}
+            onChange={(event) => {
+              props.onCode(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={copy.form.reason} className={form.field}>
+        {(control) => (
+          <TextArea
+            {...control}
+            rows={3}
+            maxLength={REASON_MAX_CHARS}
+            value={props.reason}
+            disabled={props.disabled}
+            onChange={(event) => {
+              props.onReason(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+    </div>
+  );
+}
+
 function AttachForm({
   clientId,
   onInvite,
+  onCancel,
 }: {
   clientId: string;
   onInvite: (invite: ClientInvite, news: InviteNews) => void;
+  onCancel: () => void;
 }) {
   const [code, setCode] = useState("");
   const [reason, setReason] = useState("");
@@ -104,49 +152,21 @@ function AttachForm({
 
   return (
     <form
-      className={shared.creditForm}
       onSubmit={(event) => {
         event.preventDefault();
         if (ready) void send();
       }}
     >
-      <Field label={copy.form.code}>
-        {(control) => (
-          <TextInput
-            {...control}
-            className={shared.numberField}
-            autoComplete="off"
-            autoCapitalize="characters"
-            spellCheck={false}
-            maxLength={12}
-            value={code}
-            disabled={sending}
-            onChange={(event) => {
-              setCode(event.target.value);
-            }}
-          />
-        )}
-      </Field>
-      <Field className={shared.inviteReason} label={copy.form.reason}>
-        {(control) => (
-          <TextArea
-            {...control}
-            className={styles.inviteReasonField}
-            maxLength={REASON_MAX_CHARS}
-            value={reason}
-            disabled={sending}
-            onChange={(event) => {
-              setReason(event.target.value);
-            }}
-          />
-        )}
-      </Field>
-      <Button variant="primary" size="small" className={shared.primary} type="submit" disabled={sending || !ready}>
-        {sending ? copy.form.saving : copy.form.save}
-      </Button>
+      <InviteFields code={code} reason={reason} disabled={sending} onCode={setCode} onReason={setReason} />
       {attaching.step === "failed" && (
         <Refusal className={shared.error} said={errorText(copy.form.errors, { code: attaching.code })} />
       )}
+      <FormActions>
+        <Button variant="primary" size="small" type="submit" disabled={sending || !ready}>
+          {sending ? copy.form.saving : copy.form.save}
+        </Button>
+        <CancelButton disabled={sending} onClick={onCancel} />
+      </FormActions>
     </form>
   );
 }
@@ -179,6 +199,7 @@ export function Invite({
                   close();
                   onInvite(attached, said);
                 }}
+                onCancel={close}
               />
             )}
           </DrawerButton>
