@@ -103,11 +103,6 @@
   margin-top: var(--sp-8);
 }
 
-/* A section's title within the page, in the serif every section takes: the technicians switched off, a home. */
-.sectionTitle {
-  margin: 0 0 var(--sp-8);
-}
-
 /* ---- One phone, and its revoke ------------------------------------------- */
 
 .phoneList {

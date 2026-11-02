@@ -1,10 +1,9 @@
-/* Where Tasks' views sit (./TaskFilters.tsx): one row, scrolled sideways on a phone where they run past its end. */
+/* Where Tasks' views sit (./TaskFilters.tsx): a chip each, running on to a second line rather than out of sight. */
 
 .views {
   display: flex;
   gap: var(--sp-8);
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
 }
 
 .views > * {

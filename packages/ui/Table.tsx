@@ -126,6 +126,9 @@ export function RowOpener({
 /** A column of figures, right aligned, as every board sets a count or an amount. */
 export const FIGURE = styles.figure;
 
+/** The cell of a row's own buttons, as a payment's Refund: on a phone's card it stands at the edge, unnamed. */
+export const ACTIONS = styles.actions;
+
 /**
  * How pressing a row is, as a rule down its first edge: attention for what is due today, warning for what is overdue
  * or late, error for what failed. A row with none has no rule. ListRow draws the same rule on a phone.

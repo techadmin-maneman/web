@@ -1,10 +1,9 @@
-/* The city chips on a phone (./City.tsx): one row, scrolled sideways where the cities run past its end. */
+/* The city chips on a phone (./City.tsx): every city in sight, running on to a second line. */
 
 .chips {
   display: flex;
   gap: var(--sp-8);
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
 }
 
 .chips > * {

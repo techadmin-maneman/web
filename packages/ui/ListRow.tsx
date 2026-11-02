@@ -77,7 +77,7 @@ export function ListRow({
   readonly onClick?: (() => void) | undefined;
   /** Read out in place of its words, where a figure alone would not say what it counts; holds the title. */
   readonly label?: string | undefined;
-  /** The row's one action, beside it, apart from what pressing the row opens: a desk's, which a phone leaves out. */
+  /** The row's one action, apart from what pressing the row opens: beside it at a desk, beneath it on a phone. */
   readonly action?: ReactNode;
   /** The row whose thing is open beside the list, as a chat is: raised, ruled in the ink, and said to be current. */
   readonly current?: boolean;

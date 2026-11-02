@@ -139,6 +139,11 @@
     white-space: nowrap;
   }
 
+  /* A row's own buttons, at its end (ACTIONS). */
+  .actions {
+    white-space: nowrap;
+  }
+
   /* Rows of controls (./Table.tsx's `controls`): the boxes and buttons in them make each row's height. */
   .controls {
     margin-top: var(--sp-8);
@@ -215,6 +220,11 @@
     display: block;
   }
 
+  /* A card is the screen's width: a table's least width at a desk would push each value past the panel's edge. */
+  .table[data-cards] {
+    min-width: 0;
+  }
+
   .table[data-cards] thead tr {
     display: flex;
     flex-wrap: wrap;
@@ -248,12 +258,14 @@
     border-bottom: 0;
   }
 
+  /* Its name at the left and its value at the right; a value too long for the line runs on to the next, at the right. */
   .table[data-cards] tbody :is(th, td) {
     position: static;
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
-    justify-content: space-between;
-    gap: var(--sp-12);
+    justify-content: flex-end;
+    gap: var(--sp-4) var(--sp-12);
     width: auto;
     max-width: none;
     height: auto;
@@ -267,6 +279,7 @@
 
   .table[data-cards] tbody :is(th, td)::before {
     flex: none;
+    margin-right: auto;
     content: attr(data-label);
     font-size: var(--fs-13);
     color: var(--ui-text-muted);
@@ -276,6 +289,47 @@
   .table[data-cards] tbody :is(th, td):first-child {
     justify-content: flex-start;
     text-align: left;
+  }
+
+  /* A total beneath the cards: its name at the left, its figure at the right edge as each card's figures are. */
+  .table[data-cards] tfoot {
+    display: block;
+  }
+
+  .table[data-cards] tfoot tr {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-12);
+    padding: var(--sp-12) var(--sp-16);
+    border-top: var(--hairline) solid var(--ui-line-control);
+  }
+
+  .table[data-cards] tfoot :is(th, td) {
+    height: auto;
+    padding: 0;
+    border: 0;
+  }
+
+  .table[data-cards] tfoot td:empty {
+    display: none;
+  }
+
+  /* A cell with nothing in it says nothing, not its column's name over a gap. */
+  .table[data-cards] tbody td:empty {
+    display: none;
+  }
+
+  /* A button's words are never broken: one too wide for the line goes to the next whole. The card's title, a name
+     that opens the row, runs on as words do. */
+  .table[data-cards] tbody :is(th, td):not(:first-child) button {
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+
+  /* A row's buttons (ACTIONS) name themselves, so they stand at the card's edge without their column's name. */
+  .table[data-cards] tbody td.actions::before {
+    content: none;
   }
 
   .table[data-cards] tbody :is(th, td):first-child::before {

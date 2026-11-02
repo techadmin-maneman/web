@@ -57,6 +57,21 @@
     padding-right: var(--sp-16);
   }
 
+  /* On a phone the action takes a line of its own beneath the row, so the row's words keep the width. */
+  @media (max-width: 600px) {
+    .acting {
+      flex-wrap: wrap;
+    }
+
+    .acting > .row {
+      flex-basis: 100%;
+    }
+
+    .action {
+      padding: 0 var(--sp-16) var(--sp-12);
+    }
+  }
+
   .opens {
     cursor: pointer;
   }
@@ -108,6 +123,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* A phone's row has no room to cut a line short in: what it says runs on to the next line. */
+  @media (max-width: 600px) {
+    .title,
+    .meta {
+      overflow: visible;
+      white-space: normal;
+    }
   }
 
   .title {

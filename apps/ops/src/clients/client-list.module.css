@@ -1,11 +1,10 @@
 /* What ./ClientList.tsx alone draws; what it shares is in ./clients.module.css. */
 /* Every client, beneath the search: how they are narrowed, the table, and its pages. */
-/* Where clients stand, a chip each, in one row that scrolls sideways where it runs past its end. */
+/* Where clients stand, a chip each, running on to a second line rather than out of sight. */
 .listStates {
   display: flex;
   gap: var(--sp-8);
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
 }
 
 .listStates > * {

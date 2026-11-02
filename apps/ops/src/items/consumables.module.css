@@ -5,8 +5,11 @@
  */
 
 /* What one is counted in, beneath its name in the table's first column. */
+/* Never broken: on a phone's card it runs on to a line of its own, whole. */
 .unit {
   display: block;
+  overflow-wrap: normal;
+  white-space: nowrap;
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
   color: var(--ui-text-muted);

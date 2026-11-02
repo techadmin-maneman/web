@@ -6,7 +6,7 @@ import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Panel } from "@maneman/ui/Panel";
 import { TextButton } from "@maneman/ui/TextLink";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
@@ -26,7 +26,7 @@ import { apiNow } from "@maneman/web-kit/clock";
 const loadTasks = () => countsApi.countTasks();
 
 function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpener }) {
-  if (countTasks.tasks.length === 0) return <Note>{copy.none}</Note>;
+  if (countTasks.tasks.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <ListTools rows={countTasks.tasks} textOf={(task) => `${task.place} ${whatOf(task)}`} label={copy.find}>
       {(shown) => (

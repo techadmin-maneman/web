@@ -4,6 +4,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { TextButton } from "@maneman/ui/TextLink";
 import { inCurrency, paiseFromRupees } from "@maneman/web-kit/money";
@@ -207,7 +208,7 @@ export function SupplierItems(props: Props) {
       <h3 id="supplier-items" className={styles.itemsTitle}>
         {words.title(supplier.name)}
       </h3>
-      {supplier.items.length === 0 && <Note>{words.none}</Note>}
+      {supplier.items.length === 0 && <EmptyState look="panel" line={words.none} />}
       <ul className={styles.itemList}>
         {supplier.items.map((item) => {
           const name = listed(item.consumable_code)?.name ?? item.consumable_code;

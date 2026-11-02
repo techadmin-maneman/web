@@ -3,7 +3,7 @@
 // (./StockMatch.tsx) and custom orders (./CustomOrders.tsx), each loaded when the tab first opens. Only the live
 // piece's replacement date is in brass.
 
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
@@ -77,7 +77,7 @@ function PieceTable({ clientId }: { clientId: string }) {
   return (
     <Panel titleId="client-pieces" title={copy.title}>
       {pieces.length === 0 ? (
-        <Note>{copy.empty}</Note>
+        <EmptyState look="panel" line={copy.empty} />
       ) : (
         <Table className={shared.table}>
           <thead>

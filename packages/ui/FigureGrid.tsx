@@ -13,6 +13,8 @@ export interface Figure {
   readonly label: string;
   readonly value: string;
   readonly tone?: FigureTone;
+  /** A value that is words, not a figure, as "No hair system fitted": set at the text's size, so it keeps its line. */
+  readonly words?: boolean;
 }
 
 export function FigureGrid({ figures }: { readonly figures: readonly Figure[] }) {
@@ -21,7 +23,9 @@ export function FigureGrid({ figures }: { readonly figures: readonly Figure[] })
       {figures.map((figure) => (
         <div key={figure.label} className={styles.figure}>
           <dt className={styles.label}>{figure.label}</dt>
-          <dd className={classes(styles.value, styles[figure.tone ?? "plain"])}>{figure.value}</dd>
+          <dd className={classes(styles.value, styles[figure.tone ?? "plain"], figure.words === true && styles.words)}>
+            {figure.value}
+          </dd>
         </div>
       ))}
     </dl>

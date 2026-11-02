@@ -100,8 +100,9 @@ test("refunds what is left of a payment from its ledger row, with why", async ({
   const payments = page.getByRole("region", { name: copy.payments.title, exact: true });
   const row = payments.getByRole("row").filter({ hasText: "Rohit Malhotra" });
   await row.getByRole("button", { name: clients.payments.refundLabel("Rs. 2,000") }).click();
-  await row.getByRole("textbox", { name: clients.payments.refundReason }).fill("Paid twice through the app");
-  await row.getByRole("button", { name: clients.payments.refundConfirm("Rs. 2,000") }).click();
+  const drawer = page.getByRole("dialog", { name: clients.payments.refundLabel("Rs. 2,000") });
+  await drawer.getByRole("textbox", { name: clients.payments.refundReason }).fill("Paid twice through the app");
+  await drawer.getByRole("button", { name: clients.payments.refundConfirm("Rs. 2,000") }).click();
   await expect(row.getByRole("status")).toHaveText(clients.payments.refundAsked("Rs. 2,000"));
   expect(sent).toEqual([{ reason: "Paid twice through the app" }]);
 });

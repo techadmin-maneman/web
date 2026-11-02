@@ -1,7 +1,7 @@
 // A technician's Kit tab: what their kit holds of each consumable, as the stock ledger counts it, each with the state
 // Stock gives it by the same rule (../stock/stock-state.tsx). Movements are recorded in Stock, which the tab links to.
 
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { NoValue } from "@maneman/ui/NoValue";
 import { Panel } from "@maneman/ui/Panel";
 import { StateBadge, stateOf } from "../stock/index.ts";
@@ -51,7 +51,7 @@ export function Kit({ technician }: { technician: TechnicianSummary }) {
       }
     >
       {held.length === 0 ? (
-        <Note>{copy.none}</Note>
+        <EmptyState look="panel" line={copy.none} />
       ) : (
         <Table fixed className={styles.kit}>
           <thead>

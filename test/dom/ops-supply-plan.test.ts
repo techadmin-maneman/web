@@ -6,6 +6,7 @@ import { act, createElement } from "react";
 import { openDialogsAsJsdomCan } from "./dialogs.ts";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { PageHead } from "../../apps/ops/src/frame/PageHead.tsx";
 import { SupplyPlanScreen } from "../../apps/ops/src/supply-plan/SupplyPlanScreen.tsx";
 import { supplyPlan as copy } from "../../apps/ops/src/content/supply-plan.ts";
 import { answered } from "./render-hook.ts";
@@ -95,9 +96,20 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** The page in a head with room for its actions, as the frame draws it: Draft again is the page's own. */
 async function show() {
+  const actions = document.createElement("div");
+  document.body.append(actions);
+  const head = {
+    setSub: () => undefined,
+    setOver: () => undefined,
+    setRecord: () => undefined,
+    setHeading: () => undefined,
+    setRecordHead: () => undefined,
+    actions,
+  };
   act(() => {
-    root.render(createElement(SupplyPlanScreen));
+    root.render(createElement(PageHead.Provider, { value: head }, createElement(SupplyPlanScreen)));
   });
   await answered();
 }

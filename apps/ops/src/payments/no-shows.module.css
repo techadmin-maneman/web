@@ -25,11 +25,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Each figure stands on the top line, whatever its own name runs to. */
+/* Each figure stands on the top line, whatever its own name runs to; past the card's width, on the next. */
 .figures {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--sp-32);
+  gap: var(--sp-16) var(--sp-32);
   margin: 0;
   padding: var(--sp-20) var(--sp-20) var(--sp-16);
   border-bottom: var(--hairline) solid var(--ui-line);

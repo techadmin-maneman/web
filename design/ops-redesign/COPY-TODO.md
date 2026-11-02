@@ -51,7 +51,13 @@ Each slot the redesign adds where the console had no words of its own. None wait
 | Messages   | The reply box's other use                  | Note for the team                                                     | `care.compose.noteMode`    |
 | Technician | Beside the name, and beneath it            | Working / On leave / Switched off; Trained to fit / Not trained to fit | `technicians.head`        |
 | Technician | The head's actions                         | Call, Edit details                                                    | `technicians.head.call`    |
-| Technician | The four figures                           | Visits to come; Last 90 days, 12 jobs; On time; Kit, 4 below zero      | `technicians.figures`      |
+| Technician | The four figures                           | Visits to come; Last 90 days, 12 jobs; On time; Kit below zero, 4      | `technicians.figures`      |
 | Stock      | Beneath a place's card                     | 4 below zero · 5 out · 2 low                                          | `stock.attention.counts`   |
 | Stock      | A place's items narrowed                   | All items, Low or out, Expiring soon; Find an item; No item matches.  | `stock.narrow`             |
 | Settings   | Staff, with nobody added                   | Nobody added yet.                                                     | `settings.staff.none`      |
+| Money      | Partner commission's panel                 | Commission for the month                                              | `partnerCommission.monthTitle` |
+| Supply plan | With no line to decide                    | To approve; Nothing to approve.                                       | `supplyPlan.toApprove`     |
+| Client     | Referrals, with no invite                  | No invite.; Attach an invite                                          | `clients.invite.attach`    |
+| Client     | Payments, the refund column, read aloud    | Refund                                                                | `clients.payments.refundColumn` |
+| Client     | History, with nothing done yet             | Nothing done on this record yet.                                      | `activity.recordEmpty`     |
+| Care numbers | With no chats, no remedies               | No chats in these days.; No remedies given in these days.             | `care.numbers.noReasons`   |

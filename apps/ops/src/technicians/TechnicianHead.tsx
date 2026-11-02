@@ -11,6 +11,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { GLYPHS } from "@maneman/brand/icons";
 import { apiNow } from "@maneman/web-kit/clock";
 import { todayInIndia } from "@maneman/web-kit/dates";
+import { quantity } from "@maneman/web-kit/figures";
 import { useCallback, useMemo, type ReactNode } from "react";
 import { api, type Technician, type TechnicianSummary } from "../api.ts";
 import { technicians } from "../content.ts";
@@ -98,7 +99,7 @@ export function TechnicianFigures({ summary, belowZero }: { summary: TechnicianS
         <StatTile label={figures.onTime} value={technicians.work.onTime(work.on_time_jobs, work.jobs)} />
       )}
       {belowZero !== null && (
-        <StatTile label={figures.kit} value={figures.belowZero(belowZero)} tone={belowZero > 0 ? "warning" : "plain"} />
+        <StatTile label={figures.kit} value={quantity(belowZero)} tone={belowZero > 0 ? "warning" : "plain"} />
       )}
     </Columns>
   );

@@ -4,6 +4,7 @@
 import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -34,7 +35,7 @@ function ClaimsTable({
   supplierOf: (id: string) => string;
   onOpen: (id: string) => void;
 }) {
-  if (claims.claims.length === 0) return <Note>{copy.claims.none}</Note>;
+  if (claims.claims.length === 0) return <EmptyState look="panel" line={copy.claims.none} />;
   return (
     <Table controls>
       <thead>

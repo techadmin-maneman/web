@@ -7,7 +7,7 @@ import { Toast } from "@maneman/ui/Toast";
 import { Apart } from "@maneman/ui/Apart";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Badge } from "@maneman/ui/Badge";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -66,7 +66,7 @@ function ConsumableTable(props: {
   none: string;
   onOpen: (code: string) => void;
 }) {
-  if (props.rows.length === 0) return <Note>{props.none}</Note>;
+  if (props.rows.length === 0) return <EmptyState look="panel" line={props.none} />;
   return (
     <ListTools rows={props.rows} textOf={(each) => each.name} label={copy.find}>
       {(shown) => (

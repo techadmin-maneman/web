@@ -6,6 +6,7 @@
 import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -15,13 +16,13 @@ import { useState } from "react";
 import form from "@maneman/ui/forms.module.css";
 import { stock } from "../content/stock.ts";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
+import { PageActions } from "../frame/PageHead.tsx";
 import { useAccess } from "../lib/access.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { LineState, PlanLineSteps, type Answer, type Line, type Plan } from "./PlanLine.tsx";
 import { Planning } from "./Planning.tsx";
 import { LineGroup } from "./LineGroup.tsx";
 import { Refusal } from "@maneman/ui/Refusal";
-import { FormActions } from "@maneman/ui/FormActions";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { ListTools } from "@maneman/ui/ListTools";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -151,13 +152,17 @@ export function SupplyPlanScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
-          {current.lines.length === 0 && <Note>{copy.none}</Note>}
+          {current.lines.length === 0 && (
+            <Panel titleId="plan-lines" title={copy.toApprove}>
+              <EmptyState look="panel" line={copy.none} />
+            </Panel>
+          )}
           <Lines lines={current.lines} kind="transfer" onAnswer={answered} />
           <Lines lines={current.lines} kind="order" onAnswer={answered} />
           {said !== null && <Toast>{said}</Toast>}
           {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
           {access.mayCall("POST /api/supply-plan/draft") && (
-            <FormActions>
+            <PageActions>
               <Button
                 variant="outline"
                 size="small"
@@ -169,7 +174,7 @@ export function SupplyPlanScreen() {
               >
                 {copy.draft}
               </Button>
-            </FormActions>
+            </PageActions>
           )}
           <Planning />
         </div>

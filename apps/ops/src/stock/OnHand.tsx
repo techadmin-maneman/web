@@ -8,6 +8,7 @@ import { SearchInput } from "@maneman/ui/SearchInput";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { RowHead } from "@maneman/ui/RowHead";
 import { FIGURE, Table, TableScroll, type RuleTone } from "@maneman/ui/Table";
@@ -244,7 +245,7 @@ function OnePlace({ stock, place }: { stock: Stock; place: string }) {
         onFind={setFound}
       />
       {shown.length === 0 ? (
-        <Note>{copy.narrow.none}</Note>
+        <EmptyState look="panel" line={copy.narrow.none} />
       ) : (
         <PlaceTable stock={stock} place={place} shown={shown} year={year} />
       )}

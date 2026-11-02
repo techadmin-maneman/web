@@ -2,7 +2,7 @@
 // use, by city, beside what each city holds, a shortfall marked; and the fits whose hair system is not in their city,
 // each a link to its visit's day on the board. Nothing here blocks a booking.
 
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Badge } from "@maneman/ui/Badge";
 import { Panel } from "@maneman/ui/Panel";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
@@ -34,7 +34,7 @@ export function Demand({ stock }: { stock: Stock }) {
       {loaded.state === "loaded" && (
         <>
           {loaded.value.demand.length === 0 ? (
-            <Note>{words.none}</Note>
+            <EmptyState look="panel" line={words.none} />
           ) : (
             <TableScroll labelledBy="stock-demand">
               <Table controls>

@@ -7,6 +7,8 @@ export const partnerCommission = {
   /** The payout refused, with the most one payment may be. */
   amountUpTo: (most: string) => `Enter whole rupees, up to ${most}.`,
   title: "Partner commission",
+  /** The panel's own title, which the page's would repeat, as Technician pay's "Pay for the month" is. */
+  monthTitle: "Commission for the month",
   month: "Month",
   soFar: (month: string) => `${month}, so far`,
   none: "Nothing this month.",

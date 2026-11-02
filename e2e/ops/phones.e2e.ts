@@ -93,18 +93,12 @@ test("gives the bar's controls, and a page's boxes and buttons, a finger's heigh
   expect(title.x + title.width).toBeLessThanOrEqual(search.x);
 });
 
-// Money's tabs ran off the screen with nothing to say there were more, and the page open was one of those cut off.
-test("fades a row of tabs where it runs on, and brings the open tab into view", async ({ page }) => {
+// Money's tabs ran off the screen, and the page open was one of those cut off.
+test("keeps every tab in a row in sight, running on to a second line", async ({ page }) => {
   await page.setViewportSize(PHONE);
-  await page.goto("/ledger");
-  const money = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.nav.money });
-  await expect(money).toHaveAttribute("data-more", "end");
   await page.goto("/partner-commission");
-  // Whole, but for the part of a pixel the row's last scroll can leave.
-  await expect(money.getByRole("link", { name: opsCopy.shell.sections["partner-commission"] })).toBeInViewport({
-    ratio: 0.99,
-  });
-  await expect(money).toHaveAttribute("data-more", "start");
+  const money = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.nav.money });
+  for (const tab of await money.getByRole("link").all()) await expect(tab).toBeInViewport({ ratio: 1 });
 });
 
 // The lot's box ran past the screen's edge, and a partner's link past its panel's.

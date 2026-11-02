@@ -4,14 +4,14 @@
 // and the service's list goes whole with it. An empty box is none.
 
 import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
+import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { amountOf } from "@maneman/web-kit/figures";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type Consumables, type ServiceUse } from "../api.ts";
 import { figureOrNone, FigureRow } from "@maneman/ui/RecordRows";
-import form from "@maneman/ui/forms.module.css";
 import { dispatch } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
@@ -33,7 +33,7 @@ const listedFor = (consumable: Consumables["consumables"][number], expected: Rea
 function ServiceChoice(props: { consumables: Consumables; chosen: string; onChoose: (key: string) => void }) {
   const { services } = props.consumables;
   return (
-    <Field label={words.service} className={form.field}>
+    <Field label={words.service} labelHidden>
       {(control) => (
         <Select
           {...control}
@@ -90,12 +90,15 @@ export function ServiceUsage({
   };
 
   return (
-    <Panel titleId="service-usage" title={words.title}>
-      <ServiceChoice consumables={consumables} chosen={chosen} onChoose={setChosen} />
+    <Panel
+      titleId="service-usage"
+      title={words.title}
+      actions={<ServiceChoice consumables={consumables} chosen={chosen} onChoose={setChosen} />}
+    >
       {listed.length === 0 ? (
-        <Note>{words.noneOffered}</Note>
+        <EmptyState look="panel" line={words.noneOffered} />
       ) : (
-        <div className={form.record}>
+        <SettingPairs>
           {listed.map((each) => {
             const quantity = expected.get(each.code) ?? null;
             return (
@@ -110,7 +113,7 @@ export function ServiceUsage({
               />
             );
           })}
-        </div>
+        </SettingPairs>
       )}
     </Panel>
   );

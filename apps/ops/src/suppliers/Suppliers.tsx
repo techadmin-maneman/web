@@ -5,7 +5,7 @@
 import { Toast } from "@maneman/ui/Toast";
 import { Apart } from "@maneman/ui/Apart";
 import { PageActions } from "../frame/PageHead.tsx";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -100,7 +100,7 @@ export function Suppliers() {
         )}
       </PageActions>
       <Panel titleId="suppliers" title={copy.title}>
-        {current.suppliers.length === 0 && <Note>{copy.none}</Note>}
+        {current.suppliers.length === 0 && <EmptyState look="panel" line={copy.none} />}
         {current.suppliers.some((each) => each.retired_at === null) && (
           <SupplierTable rows={current.suppliers.filter((each) => each.retired_at === null)} onOpen={opening} />
         )}

@@ -12,12 +12,6 @@
   display: contents;
 }
 
-.findHint {
-  margin: var(--sp-8) 0 var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
-}
-
 /* ---- The client's page --------------------------------------------------- */
 
 /* The design draws the head, the tabs and the pieces table across the page; photographs and consents are panels within it. */
@@ -206,6 +200,39 @@
   margin: 0;
 }
 
+/* In the page's narrow right column: each name over its value, in from the panel's edges as its title is. */
+.asideRows {
+  padding: var(--sp-8) var(--sp-20) var(--sp-12);
+}
+
+.asideRows .addressRow {
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.asideRows .addressRow .metaKey {
+  width: auto;
+}
+
+/* On a phone each value stands at the edge, as a card's values do. */
+@media (max-width: 600px) {
+  .addressRow {
+    justify-content: space-between;
+  }
+
+  .addressRow .metaKey {
+    width: auto;
+  }
+
+  .addressValue {
+    text-align: right;
+  }
+
+  .asideRows .addressValue {
+    text-align: left;
+  }
+}
+
 .sectionTitle {
   margin: 0 0 var(--sp-8);
 }
@@ -236,6 +263,11 @@
   display: flex;
   width: fit-content;
   margin-top: var(--sp-8);
+}
+
+/* Alone in its cell, it sits on the row's middle line as the cells beside it do. */
+.rowAction:first-child {
+  margin-top: 0;
 }
 
 .closedLine {
@@ -326,10 +358,11 @@
 
 /* ---- The photographs ----------------------------------------------------- */
 
+/* The tab's width and ground, as every other tab's panel. */
 .photos {
-  max-width: var(--ops-panel);
   border: var(--hairline) solid var(--ui-line);
   padding: var(--sp-24);
+  background: var(--ui-raised);
 }
 
 .eyebrow {
@@ -443,15 +476,15 @@
 
 /* Every list of a client's visits at the same widths, so overdue, to come and done line up one under another. */
 .visitTable th:nth-child(1) {
-  width: 14%;
+  width: 17%;
 }
 
 .visitTable th:nth-child(2) {
-  width: 16%;
+  width: 15%;
 }
 
 .visitTable th:nth-child(3) {
-  width: 22%;
+  width: 16%;
 }
 
 .visitTable th:nth-child(4) {
@@ -459,9 +492,9 @@
 }
 
 .visitTable th:nth-child(5) {
-  width: 18%;
+  width: 21%;
 }
 
 .visitTable th:nth-child(6) {
-  width: 14%;
+  width: 15%;
 }

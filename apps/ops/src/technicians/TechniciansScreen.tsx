@@ -2,6 +2,7 @@
 // a technician's skills, so Leave stands in the design's Skill column (docs/open-points.md, item 59). A name opens
 // their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
+import { quantity } from "@maneman/web-kit/figures";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { Panel } from "@maneman/ui/Panel";
@@ -76,6 +77,9 @@ function Service({ figures }: { figures: TechnicianWork | undefined }) {
 const onTimeShare = (figures: TechnicianWork | undefined): number | null =>
   figures === undefined || figures.jobs === 0 ? null : figures.on_time_jobs / figures.jobs;
 
+/** The jobs a technician has finished, grouped as every figure is, or a gap where none are counted. */
+const jobsOf = (jobs: number | undefined): ReactNode => (jobs === undefined ? <None /> : quantity(jobs));
+
 function OnTime({ figures }: { figures: TechnicianWork | undefined }) {
   if (figures === undefined || figures.jobs === 0) return <None />;
   return <>{technicians.work.onTime(figures.on_time_jobs, figures.jobs)}</>;
@@ -140,7 +144,7 @@ function TechnicianTable({
             <td className={classes(shared.city, technician.city === null && !off && shared.noCity)}>
               {technician.city ?? (off ? <None /> : technicians.noCity)}
             </td>
-            <td className={FIGURE}>{figures.get(technician.id)?.jobs ?? <None />}</td>
+            <td className={FIGURE}>{jobsOf(figures.get(technician.id)?.jobs)}</td>
             <td className={FIGURE}>
               <Service figures={figures.get(technician.id)} />
             </td>

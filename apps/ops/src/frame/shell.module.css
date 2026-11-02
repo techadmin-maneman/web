@@ -133,7 +133,7 @@
     display: none;
   }
 
-  /* The search and the person signed in at the top right, on the title's line; the head keeps clear of them. */
+  /* The search and the person signed in at the top right, on the title's line. */
   .phoneTools {
     position: absolute;
     top: var(--sp-16);
@@ -142,7 +142,8 @@
     gap: var(--sp-8);
   }
 
-  .head {
+  /* The title's line keeps clear of them; the tabs and lines beneath it take the head's whole width. */
+  :is(.head, .flushHead) > :first-child {
     padding-right: calc(var(--tap) * 2 + var(--sp-8) * 2);
   }
 
@@ -167,7 +168,7 @@
   }
 
   .flushHead {
-    padding: var(--sp-16) calc(var(--sp-16) + var(--tap) * 2 + var(--sp-8) * 2) var(--sp-12) var(--sp-16);
+    padding: var(--sp-16) var(--sp-16) var(--sp-12);
   }
 }
 

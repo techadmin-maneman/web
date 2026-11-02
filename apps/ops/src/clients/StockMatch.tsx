@@ -3,6 +3,7 @@
 // lacks; or that theirs is a custom order.
 
 import type { Success } from "@maneman/web-kit/api";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -21,7 +22,7 @@ function Lines({ match }: { match: Match }) {
   return (
     <>
       <Note>{copy.matched(match.name ?? match.code ?? "")}</Note>
-      {match.held.length === 0 && match.in_transit === 0 && <Note>{copy.noneHeld}</Note>}
+      {match.held.length === 0 && match.in_transit === 0 && <EmptyState look="panel" line={copy.noneHeld} />}
       {match.held.map((place) => (
         <Note key={place.place_id}>{copy.held(place.pieces, place.name, place.city)}</Note>
       ))}

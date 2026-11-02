@@ -1,12 +1,4 @@
-/* Partner commission: the month chosen above a table of partners, each row's actions at its end. */
-
-.tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: var(--sp-12) var(--sp-24);
-  margin: var(--sp-16) var(--sp-20) var(--sp-8);
-}
+/* Partner commission: a table of partners for the month chosen in the panel's head, each row's actions at its end. */
 
 .table {
   min-width: var(--ops-table-min);

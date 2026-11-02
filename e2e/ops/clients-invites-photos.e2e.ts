@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { CLIENT, fails, json, NEW_RECORD, PHOTOS, RECORD, type Call, type OpsReply } from "./fixtures.ts";
@@ -8,6 +9,15 @@ const ATTACH_INVITE: Call = `POST ${RECORD_PATH}/referral`;
 
 const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 
+/** The drawer the Invite panel's head opens, to attach one. */
+async function attachDrawer(page: Page) {
+  await page
+    .getByRole("region", { name: opsCopy.clients.invite.title })
+    .getByRole("button", { name: opsCopy.clients.invite.attach })
+    .click();
+  return page.getByRole("dialog", { name: opsCopy.clients.invite.attach });
+}
+
 // A friend who booked away from the invite's page earned their referrer nothing until ops could attach it (ADR 0089).
 test("says where the visits of the invite a client came with stand", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/referrals`);
@@ -15,7 +25,7 @@ test("says where the visits of the invite a client came with stand", async ({ pa
   await expect(invite).toContainText("RewardGiven");
   await expect(invite).toContainText("Since20 Oct 2026");
   await expect(invite.getByText(opsCopy.clients.invite.attachedBy)).toHaveCount(0);
-  await expect(invite.getByRole("button", { name: opsCopy.clients.invite.form.save })).toHaveCount(0);
+  await expect(invite.getByRole("button", { name: opsCopy.clients.invite.attach })).toHaveCount(0);
 });
 
 test("attaches an invite to a client who came with none, with why, and shows it as the API answers", async ({
@@ -34,13 +44,14 @@ test("attaches an invite to a client who came with none, with why, and shows it 
   });
   const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
   await expect(invite).toContainText(opsCopy.clients.invite.none);
+  const drawer = await attachDrawer(page);
   // The note forbade a fitted client, though one is allowed, held for review.
-  const attach = invite.getByRole("button", { name: opsCopy.clients.invite.form.save });
+  const attach = drawer.getByRole("button", { name: opsCopy.clients.invite.form.save });
   await expect(attach).toBeDisabled();
 
-  await invite.getByLabel(opsCopy.clients.invite.form.code).fill("rm4k7p");
+  await drawer.getByLabel(opsCopy.clients.invite.form.code).fill("rm4k7p");
   await expect(attach).toBeDisabled();
-  await invite.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
+  await drawer.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
   expect(await axeViolations(page)).toEqual([]);
   const sent = page.waitForRequest((request) => request.url().endsWith("/referral") && request.method() === "POST");
   await attach.click();
@@ -66,12 +77,12 @@ test.describe("says why an invite was not attached", () => {
         [READ_RECORD]: json(NEW_RECORD),
         [ATTACH_INVITE]: fails(code === "unknown_invite" ? 422 : 409, code),
       });
-      const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
-      await invite.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
-      await invite.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
-      await invite.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
-      await expect(invite.getByRole("alert")).toContainText(words);
-      await expect(invite.getByLabel(opsCopy.clients.invite.form.code)).toHaveValue("RM4K7P");
+      const drawer = await attachDrawer(page);
+      await drawer.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
+      await drawer.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
+      await drawer.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
+      await expect(drawer.getByRole("alert")).toContainText(words);
+      await expect(drawer.getByLabel(opsCopy.clients.invite.form.code)).toHaveValue("RM4K7P");
     });
   }
 
@@ -88,10 +99,10 @@ test.describe("says why an invite was not attached", () => {
         409,
       ),
     });
-    const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
-    await invite.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
-    await invite.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
-    await invite.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
+    const drawer = await attachDrawer(page);
+    await drawer.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
+    await drawer.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
+    await drawer.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
     await expect(page.getByRole("status").filter({ hasText: opsCopy.clients.invite.news.already_invited })).toHaveText(
       opsCopy.clients.invite.news.already_invited,
     );

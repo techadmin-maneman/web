@@ -27,6 +27,8 @@
     font-size: var(--fs-34);
     font-variant-numeric: tabular-nums;
     line-height: var(--lh-100);
+    /* A figure never breaks across lines: "Rs." over its amount reads as two. */
+    white-space: nowrap;
   }
 
   /* Beneath the figure, at the tile's foot with it. An empty line keeps its room, so the figures stand level. */
@@ -38,6 +40,17 @@
     color: var(--ui-text-muted);
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Two tiles to a phone's row: the figure smaller, and the tile closer about it, so an amount stays whole. */
+  @media (max-width: 600px) {
+    .tile {
+      padding: var(--sp-12) var(--sp-16);
+    }
+
+    .value {
+      font-size: var(--fs-24);
+    }
   }
 
   .attention {

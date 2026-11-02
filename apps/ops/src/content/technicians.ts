@@ -58,8 +58,8 @@ export const technicians = {
     jobs: (days: number) => `Last ${String(days)} days`,
     jobCount: (jobs: number) => `${quantity(jobs)} ${jobs === 1 ? "job" : "jobs"}`,
     onTime: "On time",
-    kit: "Kit",
-    belowZero: (items: number) => (items === 0 ? "None below zero" : `${String(items)} below zero`),
+    /** The design's "Kit, 4 below zero" figure first, so the tile's value is a figure a phone keeps whole. */
+    kit: "Kit below zero",
   },
   /** Our words, all of them: the board draws the roster and no page for one technician. */
   page: {

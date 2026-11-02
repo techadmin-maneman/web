@@ -4,7 +4,7 @@
 import { AreaSection } from "./AreaSection.tsx";
 
 import { Panel } from "@maneman/ui/Panel";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { areas } from "../content.ts";
@@ -20,7 +20,7 @@ export function NextToOpen() {
   const { pincodes } = loaded.value;
   return (
     <Panel titleId="next-to-open" title={copy.nextTitle}>
-      {pincodes.length === 0 && <Note>{copy.nextNone}</Note>}
+      {pincodes.length === 0 && <EmptyState look="panel" line={copy.nextNone} />}
       <ul className={shared.panelList}>
         {pincodes.map((each) => (
           <li key={each.pincode} className={shared.launchItem}>

@@ -120,7 +120,9 @@ export const care = {
     minutes: (value: number) => `${String(value)} min`,
     nothing: "—",
     reasons: "What chats were about",
+    noReasons: "No chats in these days.",
     remedies: "Remedies given",
+    noRemedies: "No remedies given in these days.",
     /** "Fit problem · 2 remedies, 3 free service visits" */
     remedied: (label: string, remedies: number, visits: number) =>
       `${label} · ${String(remedies)} ${remedies === 1 ? "remedy" : "remedies"}, ${String(visits)} free service ${visits === 1 ? "visit" : "visits"}`,

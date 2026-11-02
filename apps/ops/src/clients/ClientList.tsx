@@ -9,7 +9,7 @@ import { NoValue } from "@maneman/ui/NoValue";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { Panel } from "@maneman/ui/Panel";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { rowRule, Table, type RuleTone } from "@maneman/ui/Table";
 import { ListRow, ListRows, type EndTone } from "@maneman/ui/ListRow";
 import { useIsPhone } from "../lib/media.ts";
@@ -170,7 +170,7 @@ function Rows({ listed, needs }: { listed: Listed; needs: Needs }) {
   const today = todayInIndia(apiNow());
   const now = new Date(apiNow());
   const phone = useIsPhone();
-  if (listed.clients.length === 0) return <Note>{copy.none}</Note>;
+  if (listed.clients.length === 0) return <EmptyState look="panel" line={copy.none} />;
   if (phone) return <PhoneRows listed={listed} needs={needs} />;
   return (
     <div className={styles.listScroll}>

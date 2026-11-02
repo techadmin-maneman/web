@@ -3,35 +3,13 @@
 @layer base, ui;
 
 @layer ui {
-  /* One line of tabs, however many: past the room it scrolls sideways rather than wrap a tab onto two lines, with no
-     scrollbar under it; the fade at a cut-off end says there is more. */
-  /* Never squeezed by a column it stands in: scrolling sideways, it would otherwise shrink to nothing. */
+  /* Every tab in sight: past the row's room they run on to a second line, never off its edge. */
   .tabs {
     display: flex;
+    flex-wrap: wrap;
     flex-shrink: 0;
-    gap: var(--sp-24);
-    overflow-x: auto;
+    column-gap: var(--sp-24);
     border-bottom: var(--hairline) solid var(--ui-line);
-    scrollbar-width: none;
-  }
-
-  /* Where the row runs on past its edge, it fades there, so a tab cut off reads as more to come. */
-  .tabs[data-more="end"] {
-    mask-image: linear-gradient(to right, currentcolor calc(100% - var(--sp-32)), transparent);
-  }
-
-  .tabs[data-more="start"] {
-    mask-image: linear-gradient(to left, currentcolor calc(100% - var(--sp-32)), transparent);
-  }
-
-  .tabs[data-more="both"] {
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      currentcolor var(--sp-32),
-      currentcolor calc(100% - var(--sp-32)),
-      transparent
-    );
   }
 
   /* A tab as short as Kit still gives a 24 px target. */

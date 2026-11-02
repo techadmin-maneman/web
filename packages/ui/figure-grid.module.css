@@ -33,6 +33,13 @@
     color: var(--ui-text);
   }
 
+  /* Words where a figure would stand, at the text's size, so a row's figures keep their one line. */
+  .words {
+    font-family: inherit;
+    font-size: var(--fs-14);
+    line-height: var(--lh-145);
+  }
+
   .plain {
     color: var(--ui-text);
   }

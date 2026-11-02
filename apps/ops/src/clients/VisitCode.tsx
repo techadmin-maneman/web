@@ -26,6 +26,7 @@ const copy = clients.visits.code;
 
 type Step = "showing" | "entering" | "applying" | "removing";
 
+/** The code on a visit, or a dash; one that takes a code and has none shows the way to enter one instead. */
 function Shown({ code }: { code: VisitDiscountCode | null }) {
   if (code === null) return <NoValue />;
   const off = code.amount_off === null ? null : rupees(code.amount_off);
@@ -115,7 +116,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
   const requested = code === null ? visit.requested_code : null;
   return (
     <>
-      <Shown code={code} />
+      {!(mayEnter && code === null) && <Shown code={code} />}
       {requested !== null && <span className={shared.closedLine}>{copy.requested(requested)}</span>}
       {mayEnter && code === null && (
         <TextButton

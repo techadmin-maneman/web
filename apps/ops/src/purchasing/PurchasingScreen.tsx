@@ -8,7 +8,7 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { indiaDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { NoValue } from "@maneman/ui/NoValue";
@@ -49,7 +49,7 @@ const STATE_TONES: Readonly<Record<Orders["orders"][number]["state"], BadgeTone>
 
 function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) {
   const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;
-  if (orders.orders.length === 0) return <Note>{copy.none}</Note>;
+  if (orders.orders.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <Table controls>
       <thead>
