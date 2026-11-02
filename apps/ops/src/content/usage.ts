@@ -11,12 +11,14 @@ export const usage = {
   /** Above the table: each technician's use over what their visits expected, the furthest over first. */
   chart: "Used over expected",
   noTechnicians: "No visits done in these weeks.",
-  technicianColumns: ["Technician", "Visits", "Expected", "Used", "Over by"],
+  technicianColumns: ["Technician", "Visits", "Expected", "Used", "Over by"] as const,
+  find: "Find a technician",
   items: (name: string) => `Items of ${name}`,
-  itemColumns: ["Item", "Expected", "Used", "Over by"],
+  itemColumns: ["Item", "Expected", "Used", "Over by"] as const,
   places: "Losses",
   noPlaces: "Nothing left any place in these weeks.",
-  placeColumns: ["Place", "Left", "Lost", "Shrinkage", "Write-offs", "Counts right first time"],
+  placeColumns: ["Place", "Left", "Lost", "Shrinkage", "Write-offs", "Counts right first time"] as const,
+  findPlace: "Find a place",
   flagged: "Flagged",
   /** "+30%", "−20%", "0%" where it was just as expected, or a dash */
   over: (percent: number | null) => {
