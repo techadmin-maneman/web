@@ -3,11 +3,13 @@
 // changed where they read (docs/decisions/0212-editing-in-place.md); an emptied one is taken off. Beneath, every target
 // the month holds, to compare.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { whoWords } from "../lib/who.ts";
 import { Field, Select } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
+import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { Table } from "@maneman/ui/Table";
+import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
 import type { Success } from "@maneman/web-kit/api";
 import { fullMonth } from "@maneman/web-kit/dates";
@@ -43,7 +45,7 @@ function TargetChoice(props: {
   onChange: (value: string) => void;
 }) {
   return (
-    <Field label={props.label} className={form.field}>
+    <Field label={props.label} labelHidden>
       {(control) => (
         <Select
           {...control}
@@ -84,7 +86,7 @@ function CityTargets({ list, city, onSaved }: { list: Targets; city: string; onS
     return null;
   };
   return (
-    <div className={form.record}>
+    <SettingPairs>
       {list.measures.map((measure) => {
         const set = list.targets.find((each) => each.city === city && each.measure === measure)?.target ?? null;
         return (
@@ -98,13 +100,13 @@ function CityTargets({ list, city, onSaved }: { list: Targets; city: string; onS
           />
         );
       })}
-    </div>
+    </SettingPairs>
   );
 }
 
 /** Every target the month holds, to compare. */
 function TargetTable({ list }: { list: Targets }) {
-  if (list.targets.length === 0) return <Note>{copy.none}</Note>;
+  if (list.targets.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <Table>
       <thead>
@@ -138,23 +140,29 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const list = saved ?? loaded.value;
+  const shown = city ?? list.cities[0] ?? "";
   return (
     <>
-      <TargetChoice
-        label={copy.month}
-        value={list.month}
-        options={monthsBetween(list.first_month, list.last_month).map((each) => [each, fullMonth(each)])}
-        onChange={onMonth}
-      />
-      <TargetChoice
-        label={copy.city}
-        value={city ?? list.cities[0] ?? ""}
-        options={list.cities.map((each) => [each, each])}
-        onChange={setCity}
-      />
-      <CityTargets list={list} city={city ?? list.cities[0] ?? ""} onSaved={setSaved} />
-      <h3 className={form.ruleTitle}>{copy.all}</h3>
-      <TargetTable list={list} />
+      <Toolbar label={copy.title}>
+        <TargetChoice
+          label={copy.month}
+          value={list.month}
+          options={monthsBetween(list.first_month, list.last_month).map((each) => [each, fullMonth(each)])}
+          onChange={onMonth}
+        />
+        <TargetChoice
+          label={copy.city}
+          value={shown}
+          options={list.cities.map((each) => [each, each])}
+          onChange={setCity}
+        />
+      </Toolbar>
+      <Panel titleId="targets" title={shown}>
+        <CityTargets list={list} city={shown} onSaved={setSaved} />
+      </Panel>
+      <Panel titleId="targets-all" title={copy.all}>
+        <TargetTable list={list} />
+      </Panel>
     </>
   );
 }
@@ -163,9 +171,7 @@ export function TargetsScreen() {
   const [month, setMonth] = useState<string | null>(null);
   return (
     <div className={form.screen}>
-      <Panel titleId="targets" title={copy.title}>
-        <MonthTargets key={month ?? "now"} month={month} onMonth={setMonth} />
-      </Panel>
+      <MonthTargets key={month ?? "now"} month={month} onMonth={setMonth} />
     </div>
   );
 }

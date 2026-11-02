@@ -74,3 +74,11 @@
   font-size: var(--fs-14);
   color: var(--ui-text-muted);
 }
+
+/* A list in its own panel (./ListEditor.tsx): what it holds as far in as the panel's notes, a step beneath its head. */
+.body {
+  --note-inset: 0;
+
+  margin: 0 var(--form-inset);
+  padding: var(--sp-12) 0 var(--sp-16);
+}

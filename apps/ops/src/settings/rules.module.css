@@ -10,21 +10,9 @@
   border-top: var(--hairline) solid var(--ui-line);
 }
 
-/* Rules of one figure two to a row: each draws the line beneath it, the last row none. */
+/* Rules of one figure two to a row: the pairs draw the lines between them (SettingPairs). */
 .singles > .rule {
   border-top: 0;
-  border-bottom: var(--hairline) solid var(--ui-line);
-}
-
-.singles > .rule:last-child {
-  border-bottom: 0;
-}
-
-/* At a desk the last row is a pair: neither of it draws a line beneath. */
-@media (min-width: 1024px) {
-  .singles > .rule:nth-last-child(2):nth-child(odd) {
-    border-bottom: 0;
-  }
 }
 
 .refusal {

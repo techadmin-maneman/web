@@ -94,6 +94,24 @@
     }
   }
 
+  /* A flat menu's group: its name in small capitals, then its pages, a step between groups. */
+  .flatGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    padding-top: var(--sp-8);
+  }
+
+  .flatName {
+    padding: 0 var(--sp-12);
+    color: var(--ui-text-muted);
+  }
+
+  /* With no fold to step past, a page's name sits in line with its group's. */
+  .flatItem {
+    padding-left: calc(var(--sp-12) - var(--rule-strong));
+  }
+
   /* While a change waits, at the foot of the scrolling page. */
   .bar {
     position: sticky;
@@ -174,10 +192,18 @@
     }
   }
 
-  /* A rule's rows two to a row (./SettingsLayout.tsx's SettingPairs), a rule between each pair. */
+  /* Rows two to a row (./SettingsLayout.tsx's SettingPairs), a line beneath each but the last. */
   .pairs {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pairs > * {
+    border-bottom: var(--hairline) solid var(--ui-line);
+  }
+
+  .pairs > :last-child {
+    border-bottom: 0;
   }
 
   @media (min-width: 1024px) {

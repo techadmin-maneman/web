@@ -3,6 +3,7 @@
 // each technician a grade. No board draws it, so its panels are laid out as Settings' are; a row opens its record
 // beside the table (docs/decisions/0212-editing-in-place.md).
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { NoValue } from "@maneman/ui/NoValue";
 import { Badge } from "@maneman/ui/Badge";
@@ -10,7 +11,6 @@ import { Table, TableScroll } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { classes } from "@maneman/ui/classes";
 import { errorText } from "@maneman/web-kit/refusal";
-import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { type TechnicianPay as Pay } from "../api.ts";
@@ -66,7 +66,7 @@ function PayTechnicians({ pay, onChanged }: { pay: Pay; onChanged: (pay: Pay) =>
   return (
     <Panel titleId="pay-technicians" title={copy.title}>
       {pay.technicians.length === 0 ? (
-        <Note>{copy.none}</Note>
+        <EmptyState look="panel" line={copy.none} />
       ) : (
         <TableScroll labelledBy="pay-technicians">
           <Table className={classes(styles.table, styles.people)}>

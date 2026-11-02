@@ -764,6 +764,8 @@ export const settings = {
     inactive: "Switched off",
     /** Those let in nowhere, listed apart beneath those who are. */
     switchedOff: "Switched off",
+    /** The list with nobody on it yet: everyone who signs in still sees every section. */
+    none: "Nobody added yet.",
     add: "Add a person",
     /** A row's name, read as what pressing it does. */
     open: (email: string) => `Open ${email}`,

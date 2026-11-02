@@ -4,7 +4,8 @@
 // list, src/config/job-sheet.ts's stands.
 
 import { Field, Select } from "@maneman/ui/Field";
-import { Panel } from "@maneman/ui/Panel";
+import { Stack } from "@maneman/ui/Layout";
+import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { type JobSheet as Sheet, type VisitType } from "../api.ts";
@@ -13,7 +14,6 @@ import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { ListEditor, ListRead } from "./ListEditor.tsx";
-import form from "@maneman/ui/forms.module.css";
 import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.jobSheet;
@@ -49,9 +49,9 @@ export function JobSheet() {
   const checklist = current.checklists.find((each) => each.visit_type === kind);
 
   return (
-    <Panel titleId="job-sheet" title={copy.title}>
-      <div className={form.group}>
-        <Field label={copy.kind} className={form.field}>
+    <Stack>
+      <Toolbar label={copy.title}>
+        <Field label={copy.kind} labelHidden>
           {(control) => (
             <Select
               {...control}
@@ -70,7 +70,7 @@ export function JobSheet() {
             </Select>
           )}
         </Field>
-      </div>
+      </Toolbar>
       {checklist !== undefined && !mayChangeChecklists && (
         <ListRead title={copy.checklist(typeName(kind))} list={checklist} />
       )}
@@ -109,6 +109,6 @@ export function JobSheet() {
         onSaved={setSheet}
         longest={current.max_label}
       />
-    </Panel>
+    </Stack>
   );
 }

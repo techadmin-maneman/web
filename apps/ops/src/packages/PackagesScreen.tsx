@@ -2,6 +2,7 @@
 // what a first fit comes to and what it leaves us; a row opens its record beneath the list, where each value changes in
 // place (docs/decisions/0212-editing-in-place.md). Every write answers every package as it stands, so the page follows.
 
+import { PageActions } from "../frame/PageHead.tsx";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -187,24 +188,20 @@ export function PackagesScreen() {
   const opened = current.packages.find((each) => each.code === open);
   return (
     <div className={form.screen}>
-      <Panel
-        titleId="packages-title"
-        title={copy.title}
-        count={current.packages.length}
-        actions={
-          mayAdd && !adding ? (
-            <Button
-              variant="outline"
-              size="small"
-              onClick={() => {
-                setAdding(true);
-              }}
-            >
-              {copy.add}
-            </Button>
-          ) : undefined
-        }
-      >
+      {mayAdd && !adding && (
+        <PageActions>
+          <Button
+            variant="primary"
+            size="small"
+            onClick={() => {
+              setAdding(true);
+            }}
+          >
+            {copy.add}
+          </Button>
+        </PageActions>
+      )}
+      <Panel titleId="packages-title" title={copy.title} count={current.packages.length}>
         {adding && (
           <AddPackage
             onAdded={(body, code) => {

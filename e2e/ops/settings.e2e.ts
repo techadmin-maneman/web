@@ -271,13 +271,9 @@ test.describe("the rules", () => {
     }
     await expect(page.getByRole("button", { name: EDITING.save, exact: true })).toHaveCount(0);
 
-    // Only the open page's group shows its pages; the rest open by their name.
-    await expect(menu.getByRole("button", { name: settingsGroupNames.visits })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    await expect(menu.getByRole("link", { name: settingsPageNames.referrals })).toHaveCount(0);
-    await menu.getByRole("button", { name: settingsGroupNames.growth }).click();
+    // At a desk every group shows its pages under its name, as the console's own navigation does; nothing folds.
+    await expect(menu.getByRole("list", { name: settingsGroupNames.visits })).toBeVisible();
+    await expect(menu.getByRole("button", { name: settingsGroupNames.growth })).toHaveCount(0);
     await menu.getByRole("link", { name: settingsPageNames.referrals }).click();
     await expect(page).toHaveURL(/\/settings\/referrals$/);
     await expect(section(page, "Referrals")).toBeVisible();

@@ -1,13 +1,13 @@
 // Demand under Areas (docs/decisions/0224-demand-and-the-next-to-open.md): the pincodes to open next, by
 // those waiting and those who looked them up on the site, and how the last thirty days' launches went.
 
-import { Fieldset } from "@maneman/ui/Field";
+import { AreaSection } from "./AreaSection.tsx";
+
 import { Panel } from "@maneman/ui/Panel";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { areas } from "../content.ts";
-import form from "@maneman/ui/forms.module.css";
 import shared from "./areas.module.css";
 import { areasApi } from "./areas-api.ts";
 
@@ -41,7 +41,7 @@ export function RecentLaunches() {
   if (loaded.state !== "loaded") return null;
   const { launches } = loaded.value;
   return (
-    <Fieldset className={form.group} legend={copy.recentTitle} legendLook="title">
+    <AreaSection id="area-recent" title={copy.recentTitle}>
       {launches.length === 0 && <p className={shared.note}>{copy.recentNone}</p>}
       <ul className={shared.launchList}>
         {launches.map((each) => (
@@ -53,6 +53,6 @@ export function RecentLaunches() {
           </li>
         ))}
       </ul>
-    </Fieldset>
+    </AreaSection>
   );
 }

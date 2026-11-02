@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Word } from "../../apps/ops/src/api.ts";
 import { EDITING, review } from "../../apps/ops/src/content/common.ts";
 import { words as copy } from "../../apps/ops/src/content/words.ts";
+import { PageHead } from "../../apps/ops/src/frame/PageHead.tsx";
 import { WordsScreen } from "../../apps/ops/src/words/WordsScreen.tsx";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
@@ -76,9 +77,20 @@ afterEach(() => {
 
 const settle = () => answered();
 
+/** The page in a head with room for its actions, as the frame draws it: Publish the site is the page's own. */
 async function show() {
+  const actions = document.createElement("div");
+  document.body.append(actions);
+  const head = {
+    setSub: () => undefined,
+    setOver: () => undefined,
+    setRecord: () => undefined,
+    setHeading: () => undefined,
+    setRecordHead: () => undefined,
+    actions,
+  };
   act(() => {
-    root.render(createElement(WordsScreen));
+    root.render(createElement(PageHead.Provider, { value: head }, createElement(WordsScreen)));
   });
   await settle();
 }

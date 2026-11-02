@@ -2,12 +2,12 @@
 // closed in it, by kind and city, at the rate in force on each one's day, with the total, and the same as a CSV for
 // payroll. A visit no rate covered shows as such, so the gap is seen before anyone is paid.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { classes } from "@maneman/ui/classes";
-import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
@@ -147,7 +147,11 @@ export function PayStatement({ today }: { today: string }) {
       {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" &&
-        (loaded.value.lines.length === 0 ? <Note>{copy.none}</Note> : <StatementTable lines={loaded.value.lines} />)}
+        (loaded.value.lines.length === 0 ? (
+          <EmptyState look="panel" line={copy.none} />
+        ) : (
+          <StatementTable lines={loaded.value.lines} />
+        ))}
     </Panel>
   );
 }

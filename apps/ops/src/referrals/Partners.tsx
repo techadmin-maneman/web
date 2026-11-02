@@ -2,9 +2,9 @@
 // link, what its friend gets, its commission per fit, and what has come through it. A row opens its record beside the
 // list, where each term changes where it reads (docs/decisions/0212-editing-in-place.md).
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
-import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
@@ -121,7 +121,7 @@ export function Partners() {
       <Panel titleId="partners" title={copy.title}>
         {said !== null && <Toast>{said}</Toast>}
         {list.channels.length === 0 ? (
-          <Note>{copy.none}</Note>
+          <EmptyState look="panel" line={copy.none} />
         ) : (
           <PartnerTable
             list={list}

@@ -3,6 +3,7 @@
 // search across the pages and every rule; a page of policies draws its rule groups, and every other page is its own
 // screen, loaded the first time it opens.
 
+import { useIsBelowDesk } from "./lib/media.ts";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Note } from "@maneman/ui/Note";
 import { SearchInput } from "@maneman/ui/SearchInput";
@@ -106,8 +107,9 @@ function Menu({ tab }: { tab: SettingsTab }) {
   const query = typed.trim().toLocaleLowerCase("en-IN");
   const rules = useRules(query !== "" && pages.some((page) => "rules" in page));
   const groups = menuOf(pages, query === "" ? [] : rules, query, tab);
+  const belowDesk = useIsBelowDesk();
   return (
-    <SubNav label={shell.settings} groups={groups} unfolded={query !== ""}>
+    <SubNav label={shell.settings} groups={groups} unfolded={query !== ""} flat={!belowDesk}>
       <SearchInput label={copy.find} value={typed} maxLength={80} onChange={setTyped} />
       {groups.every((group) => group.items.length === 0) && <Note>{copy.noneFound}</Note>}
     </SubNav>

@@ -12,7 +12,8 @@ import { IconButton } from "@maneman/ui/IconButton";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
-import { useState } from "react";
+import { useId, useState } from "react";
+import { Panel } from "@maneman/ui/Panel";
 import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts";
 import { AddForm } from "@maneman/ui/AddForm";
 import { Refusal } from "@maneman/ui/Refusal";
@@ -60,18 +61,20 @@ const setLineOf = (list: EditedList): string =>
 
 /** The list as a person whose access does not let them change it reads it: its items, in their order. */
 export function ListRead({ title, list }: { title: string; list: EditedList }) {
+  const titleId = useId();
   return (
-    <div className={form.group}>
-      <h3 className={form.ruleTitle}>{title}</h3>
-      <p className={form.set}>{setLineOf(list)}</p>
-      <ol className={styles.items}>
-        {list.items.map((item) => (
-          <li className={styles.item} key={item.code}>
-            {item.label}
-          </li>
-        ))}
-      </ol>
-    </div>
+    <Panel titleId={titleId} title={title}>
+      <div className={styles.body}>
+        <p className={form.set}>{setLineOf(list)}</p>
+        <ol className={styles.items}>
+          {list.items.map((item) => (
+            <li className={styles.item} key={item.code}>
+              {item.label}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </Panel>
   );
 }
 
@@ -333,52 +336,51 @@ export function ListEditor(props: Props) {
   const lines: readonly Line[] = list.items;
   const off = list.retired;
   return (
-    <section className={form.group} aria-labelledby={`${props.id}-title`}>
-      <h3 id={`${props.id}-title`} className={form.ruleTitle}>
-        {title}
-      </h3>
-      <p className={form.set}>{setLineOf(list)}</p>
-      {withClient && <p className={form.set}>{copy.clientNote}</p>}
-      <ol className={styles.items}>
-        {list.items.map((item, index) => {
-          const name = item.label;
-          return (
-            <li className={styles.item} key={item.code}>
-              <ItemRow
-                item={item}
-                position={index + 1}
-                editor={props}
-                save={async (words) => {
-                  const answer = await send(
-                    lines.map((line, at) =>
-                      at === index ? { ...line, label: words.label, client: words.client } : line,
-                    ),
-                  );
-                  return answer.ok ? null : errorText(errors, answer);
-                }}
-              />
-              <Moves
-                name={name}
-                first={index === 0}
-                last={index === lines.length - 1}
-                busy={busy}
-                onUp={() => void press(moved(lines, index, index - 1))}
-                onDown={() => void press(moved(lines, index, index + 1))}
-                onRemove={() => void press(lines.filter((_, at) => at !== index))}
-              />
-            </li>
-          );
-        })}
-      </ol>
-      {said !== null && <Toast>{said}</Toast>}
-      {refused !== null && <Refusal className={form.error} said={refused} />}
-      <MoreItems
-        editor={props}
-        add={(words) => send([...lines, { code: null, label: words.label, client: words.client }])}
-      />
-      {off.length > 0 && (
-        <Removed off={off} shut={lines.length >= most || busy} onPutBack={(item) => void press([...lines, item])} />
-      )}
-    </section>
+    <Panel titleId={`${props.id}-title`} title={title}>
+      <div className={styles.body}>
+        <p className={form.set}>{setLineOf(list)}</p>
+        {withClient && <p className={form.set}>{copy.clientNote}</p>}
+        <ol className={styles.items}>
+          {list.items.map((item, index) => {
+            const name = item.label;
+            return (
+              <li className={styles.item} key={item.code}>
+                <ItemRow
+                  item={item}
+                  position={index + 1}
+                  editor={props}
+                  save={async (words) => {
+                    const answer = await send(
+                      lines.map((line, at) =>
+                        at === index ? { ...line, label: words.label, client: words.client } : line,
+                      ),
+                    );
+                    return answer.ok ? null : errorText(errors, answer);
+                  }}
+                />
+                <Moves
+                  name={name}
+                  first={index === 0}
+                  last={index === lines.length - 1}
+                  busy={busy}
+                  onUp={() => void press(moved(lines, index, index - 1))}
+                  onDown={() => void press(moved(lines, index, index + 1))}
+                  onRemove={() => void press(lines.filter((_, at) => at !== index))}
+                />
+              </li>
+            );
+          })}
+        </ol>
+        {said !== null && <Toast>{said}</Toast>}
+        {refused !== null && <Refusal className={form.error} said={refused} />}
+        <MoreItems
+          editor={props}
+          add={(words) => send([...lines, { code: null, label: words.label, client: words.client }])}
+        />
+        {off.length > 0 && (
+          <Removed off={off} shut={lines.length >= most || busy} onPutBack={(item) => void press([...lines, item])} />
+        )}
+      </div>
+    </Panel>
   );
 }

@@ -3,6 +3,7 @@
 // Every value changes where it reads (docs/decisions/0212-editing-in-place.md). A first fit, a service visit and a
 // replacement are a package's, set in Settings · Packages (docs/decisions/0211-packages.md).
 
+import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { NumberInput, TextInput } from "@maneman/ui/Field";
 import { Stack } from "@maneman/ui/Layout";
@@ -30,6 +31,40 @@ function keptBy(answer: Answer, onChanged: (catalogue: ServiceCatalogue) => void
   if (!answer.ok) return errorText(copy.errors, answer);
   onChanged(answer.body);
   return null;
+}
+
+/** How long a consultation runs, in minutes. */
+function LengthRow(props: {
+  readonly service: OpsService;
+  readonly mayChange: boolean;
+  readonly onChanged: (catalogue: ServiceCatalogue) => void;
+}) {
+  const { service } = props;
+  return (
+    <EditableRow<string>
+      label={copy.rows.length}
+      words={EDITING}
+      mayChange={props.mayChange}
+      value={copy.minutes(service.minutes)}
+      unit={copy.unit}
+      start={() => String(service.minutes)}
+      save={async (typed) =>
+        keptBy(await pricesApi.setServiceLength("consultation", service.tier, Number(typed)), props.onChanged)
+      }
+    >
+      {(control, typed, type) => (
+        <NumberInput
+          {...control}
+          width="figure"
+          inputMode="numeric"
+          value={typed}
+          onChange={(event) => {
+            type(event.target.value);
+          }}
+        />
+      )}
+    </EditableRow>
+  );
 }
 
 function Consultation(props: {
@@ -72,43 +107,24 @@ function Consultation(props: {
     </EditableRow>
   );
   return (
-    <>
+    <SettingPairs>
       {text("name", 60)}
       {text("description", 160)}
-      <EditableRow<string>
-        label={copy.rows.length}
-        words={EDITING}
-        mayChange={mayChange}
-        value={copy.minutes(service.minutes)}
-        unit={copy.unit}
-        start={() => String(service.minutes)}
-        save={async (typed) =>
-          keptBy(await pricesApi.setServiceLength("consultation", service.tier, Number(typed)), props.onChanged)
-        }
-      >
-        {(control, typed, type) => (
-          <NumberInput
-            {...control}
-            width="figure"
-            inputMode="numeric"
-            value={typed}
-            onChange={(event) => {
-              type(event.target.value);
-            }}
-          />
-        )}
-      </EditableRow>
-      <PriceRow
-        label={copy.rows.price}
-        item="consultation"
-        tier={service.tier}
-        prices={service.prices}
-        today={today}
-        mayChange={mayPrice}
-        onSaved={props.refresh}
-        unpriced={copy.unpriced}
-      />
-    </>
+      <LengthRow service={service} mayChange={mayChange} onChanged={props.onChanged} />
+      {/* A price and the prices to come after it, as one of the pairs. */}
+      <div>
+        <PriceRow
+          label={copy.rows.price}
+          item="consultation"
+          tier={service.tier}
+          prices={service.prices}
+          today={today}
+          mayChange={mayPrice}
+          onSaved={props.refresh}
+          unpriced={copy.unpriced}
+        />
+      </div>
+    </SettingPairs>
   );
 }
 
@@ -142,20 +158,22 @@ export function Services() {
             <OpsLink to={rulePath("late_change_charge")}>{copy.lateFeeRule}</OpsLink>
           </Note>
         )}
-        {current.late_fees.map((fee) => (
-          <div key={fee.item}>
-            <PriceRow
-              label={copy.lateFeeNames[fee.item]}
-              item={fee.item}
-              tier="standard"
-              prices={fee.prices}
-              today={current.today}
-              mayChange={mayPrice}
-              onSaved={refresh}
-              unpriced={copy.unpriced}
-            />
-          </div>
-        ))}
+        <SettingPairs>
+          {current.late_fees.map((fee) => (
+            <div key={fee.item}>
+              <PriceRow
+                label={copy.lateFeeNames[fee.item]}
+                item={fee.item}
+                tier="standard"
+                prices={fee.prices}
+                today={current.today}
+                mayChange={mayPrice}
+                onSaved={refresh}
+                unpriced={copy.unpriced}
+              />
+            </div>
+          ))}
+        </SettingPairs>
       </Panel>
     </Stack>
   );

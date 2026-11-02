@@ -3,6 +3,7 @@
 // the list (docs/decisions/0212-editing-in-place.md). The API narrows the list to the places its viewer may see, and
 // refuses a change beyond their own.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { Apart } from "@maneman/ui/Apart";
 import { PageActions } from "../frame/PageHead.tsx";
@@ -145,7 +146,11 @@ function People({ staff, onChanged }: PanelProps) {
         )}
       </PageActions>
       <Panel titleId="staff-people" title={copy.title}>
-        <PeopleTable people={staff.people.filter((each) => each.active)} onOpen={opening} />
+        {staff.people.some((each) => each.active) ? (
+          <PeopleTable people={staff.people.filter((each) => each.active)} onOpen={opening} />
+        ) : (
+          <EmptyState look="panel" line={copy.none} />
+        )}
         {staff.people.some((each) => !each.active) && (
           <Apart id="staff-switched-off" title={copy.switchedOff}>
             <PeopleTable people={staff.people.filter((each) => !each.active)} onOpen={opening} />
@@ -275,7 +280,7 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
       }
     >
       {staff.service_tokens.length === 0 ? (
-        <Note>{words.none}</Note>
+        <EmptyState look="panel" line={words.none} />
       ) : (
         <ul className={form.rules}>
           {staff.service_tokens.map((token) => (

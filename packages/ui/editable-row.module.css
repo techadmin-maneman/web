@@ -22,11 +22,12 @@
     border-bottom: 0;
   }
 
-  /* The name above the value, as rows two to a row stand. */
+  /* The name above the value, as rows two to a row stand; the pairs draw the lines between them. */
   .stacked {
     grid-template-columns: minmax(0, 1fr);
     row-gap: var(--sp-4);
     align-content: start;
+    border-bottom: 0;
   }
 
   .editing {

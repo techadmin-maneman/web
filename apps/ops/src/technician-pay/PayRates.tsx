@@ -2,13 +2,13 @@
 // A city with no rate of its own shows every city's, marked; a rate set to start later shows beneath the one in force.
 // A grade's row opens its record beside the table, where its name and its rates change where they read.
 
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { classes } from "@maneman/ui/classes";
-import { Note } from "@maneman/ui/Note";
 import { useState } from "react";
 import { type TechnicianPay } from "../api.ts";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
@@ -115,7 +115,7 @@ export function PayRates(props: { pay: TechnicianPay; mayAdd: boolean; onChanged
       <Panel titleId="pay-rates" title={copy.title}>
         {said !== null && <Toast>{said}</Toast>}
         {pay.grades.length === 0 ? (
-          <Note>{copy.none}</Note>
+          <EmptyState look="panel" line={copy.none} />
         ) : (
           <>
             <RatesTable

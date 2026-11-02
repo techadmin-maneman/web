@@ -3,8 +3,9 @@
 // file once its changes are shown. One that would message people waiting opens the launch panel first
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { AreaSection } from "./AreaSection.tsx";
 import { Toast } from "@maneman/ui/Toast";
-import { Checkbox, Fieldset } from "@maneman/ui/Field";
+import { Checkbox } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -16,7 +17,6 @@ import { type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { saveFile } from "../lib/save-file.ts";
-import form from "@maneman/ui/forms.module.css";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
@@ -118,7 +118,7 @@ function PincodeTable(props: {
 function AddBeneath(props: { cities: readonly string[]; onAdded: (rows: readonly ServedPincode[]) => void }) {
   const [added, setAdded] = useState<ServedPincode | null>(null);
   return (
-    <Fieldset className={form.group} legend={areas.add.title} legendLook="title">
+    <AreaSection id="area-add" title={areas.add.title}>
       <AddPincode
         pincode={null}
         cities={props.cities}
@@ -128,7 +128,7 @@ function AddBeneath(props: { cities: readonly string[]; onAdded: (rows: readonly
         }}
       />
       {added !== null && <Toast>{areas.add.added(added.pincode, added.city)}</Toast>}
-    </Fieldset>
+    </AreaSection>
   );
 }
 
@@ -155,8 +155,6 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   const [upload, setUpload] = useState<Upload | null>(null);
   const access = useAccess();
   const mayChange = access.mayCall("POST /api/service-area");
-  const mayAdd = access.mayCall("POST /api/pincodes");
-  const mayOpen = access.mayCall("POST /api/pincodes/from-directory");
   const saves = useAreaSaves(pincodes, setPincodes, () => {
     setChosen(new Set());
     setUpload(null);
@@ -192,40 +190,42 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   };
 
   return (
-    <Panel titleId="area" title={copy.title} actions={<DownloadCsv pincodes={pincodes} />}>
-      <CityTabs
-        pincodes={pincodes}
-        city={city}
-        onCity={(next) => {
-          setCity(next);
-          setChosen(new Set());
-        }}
-      />
-      {chosen.size > 0 && saves.asking === null && (
-        <ChosenBar
+    <>
+      <Panel titleId="area" title={copy.title} actions={<DownloadCsv pincodes={pincodes} />}>
+        <CityTabs
+          pincodes={pincodes}
           city={city}
-          chosen={inCity.filter((each) => chosen.has(each.pincode))}
-          onServe={serveChosen}
-          onPaused={(paused, until) => {
-            setPincodes((all) =>
-              all.map((each) => (paused.includes(each.pincode) ? { ...each, paused_until: until } : each)),
-            );
-          }}
-          onClear={() => {
+          onCity={(next) => {
+            setCity(next);
             setChosen(new Set());
           }}
         />
-      )}
-      {saves.asking !== null && (
-        <AskingCheck
-          asking={saves.asking}
-          busy={saves.saving.step === "saving"}
-          onSend={() => void saves.send(saves.asking?.changes ?? [])}
-          onCancel={saves.cancel}
-        />
-      )}
-      <SaveNotes saving={saves.saving} />
-      <PincodeTable view={view} chosen={mayChange ? chosen : null} onChosen={setChosen} onSave={saveRow} />
+        {chosen.size > 0 && saves.asking === null && (
+          <ChosenBar
+            city={city}
+            chosen={inCity.filter((each) => chosen.has(each.pincode))}
+            onServe={serveChosen}
+            onPaused={(paused, until) => {
+              setPincodes((all) =>
+                all.map((each) => (paused.includes(each.pincode) ? { ...each, paused_until: until } : each)),
+              );
+            }}
+            onClear={() => {
+              setChosen(new Set());
+            }}
+          />
+        )}
+        {saves.asking !== null && (
+          <AskingCheck
+            asking={saves.asking}
+            busy={saves.saving.step === "saving"}
+            onSend={() => void saves.send(saves.asking?.changes ?? [])}
+            onCancel={saves.cancel}
+          />
+        )}
+        <SaveNotes saving={saves.saving} />
+        <PincodeTable view={view} chosen={mayChange ? chosen : null} onChosen={setChosen} onSave={saveRow} />
+      </Panel>
       {mayChange && (
         <UploadFile
           upload={upload}
@@ -243,10 +243,27 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           }}
         />
       )}
-      <CityTools city={city} onChoose={setChosen} />
-      {mayOpen && <OpenCity cities={cities} onAdded={addRows} />}
-      {mayAdd && <AddBeneath cities={cities} onAdded={addRows} />}
-    </Panel>
+      <Beneath city={city} cities={cities} onChoose={setChosen} onAdded={addRows} />
+    </>
+  );
+}
+
+/** Beneath the pincodes, a panel each: the city's reach and launches, a city opened, a pincode added. */
+function Beneath(props: {
+  city: string;
+  cities: readonly string[];
+  onChoose: (pincodes: ReadonlySet<string>) => void;
+  onAdded: (rows: readonly ServedPincode[]) => void;
+}) {
+  const access = useAccess();
+  return (
+    <>
+      <CityTools city={props.city} onChoose={props.onChoose} />
+      {access.mayCall("POST /api/pincodes/from-directory") && (
+        <OpenCity cities={props.cities} onAdded={props.onAdded} />
+      )}
+      {access.mayCall("POST /api/pincodes") && <AddBeneath cities={props.cities} onAdded={props.onAdded} />}
+    </>
   );
 }
 
