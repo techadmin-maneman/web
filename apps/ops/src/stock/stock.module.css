@@ -73,6 +73,15 @@
   background: none;
 }
 
+/* Up to six at a desk, one even row, so none is left alone beneath the rest. */
+@media (min-width: 1024px) {
+  .attentionCards:not(:has(> li:nth-child(7))) {
+    grid-template-columns: none;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  }
+}
+
 .attentionCards > li {
   border: var(--hairline) solid var(--ui-line);
   background: var(--ui-raised);

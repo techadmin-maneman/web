@@ -36,7 +36,6 @@ export const stock = {
         ...(out === 0 ? [] : [`${String(out)} out`]),
         ...(low === 0 ? [] : [`${String(low)} low`]),
       ].join(" · "),
-    show: "Show",
   },
   /** A place's items narrowed: every one, those low or out, or those with a lot expiring soon; and found by name. */
   narrow: {

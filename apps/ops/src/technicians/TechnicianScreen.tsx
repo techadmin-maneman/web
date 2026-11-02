@@ -4,7 +4,6 @@
 // is their details alone.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
-import form from "@maneman/ui/forms.module.css";
 import { Panel } from "@maneman/ui/Panel";
 import { Toast } from "@maneman/ui/Toast";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
@@ -93,7 +92,7 @@ function TechnicianTabs({
           <TabPanel tab={tab} technician={technician} onChange={onChange} />
         ) : (
           <Panel titleId="technician-tab" title={TECHNICIAN_TAB_NAMES[tab]}>
-            <div className={tab === "hours" ? undefined : form.group}>
+            <div className={tab === "hours" ? undefined : styles.tabBody}>
               <TabPanel tab={tab} technician={technician} onChange={onChange} />
             </div>
           </Panel>

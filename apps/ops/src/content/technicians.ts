@@ -1,5 +1,6 @@
 // Technicians: the roster, a technician's page, their leave and phones, and the waiting list's line.
 
+import { quantity } from "@maneman/web-kit/figures";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 /**
@@ -55,7 +56,7 @@ export const technicians = {
   figures: {
     toCome: "Visits to come",
     jobs: (days: number) => `Last ${String(days)} days`,
-    jobCount: (jobs: number) => `${String(jobs)} ${jobs === 1 ? "job" : "jobs"}`,
+    jobCount: (jobs: number) => `${quantity(jobs)} ${jobs === 1 ? "job" : "jobs"}`,
     onTime: "On time",
     kit: "Kit",
     belowZero: (items: number) => (items === 0 ? "None below zero" : `${String(items)} below zero`),
@@ -113,11 +114,8 @@ export const technicians = {
     /** Their visits this week, a day at a time, as the board has them. */
     none: "No visits this week.",
     visit: (time: string, client: string, kind: string) => `${time} · ${client} · ${kind}`,
-    /** Beside the week: what they have done over the roster's period. */
-    jobs: (count: number, days: number) =>
-      `${String(count)} ${count === 1 ? "job" : "jobs"} in the last ${String(days)} days`,
+    /** Beside the week: how long their visit takes; their jobs and how often on time are the page's figures. */
     average: (time: string) => `Average visit ${time}`,
-    onTime: (share: string) => `${share} on time`,
     runsOver: "Runs over the planned length",
   },
   kit: {

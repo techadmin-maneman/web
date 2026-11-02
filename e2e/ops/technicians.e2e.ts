@@ -331,10 +331,12 @@ test("opens a technician's page on their week: their jobs and average, then each
   const theirs = BOARD.technicians.map((each, at) => (at === 0 ? { ...each, technician_id: IMRAN } : each));
   await open(page, { "GET /api/dispatch": json({ ...BOARD, technicians: theirs }) });
   const main = await pageOf(page, "Imran Qureshi");
+  // Their jobs and how often on time are the page's figures, above the tabs; the week keeps their average visit.
+  await expect(main).toContainText(opsCopy.technicians.figures.jobCount(48));
+  await expect(main).toContainText(opsCopy.technicians.work.onTime(46, 48));
   const week = main.getByRole("region", { name: opsCopy.technicians.tabs.week });
-  await expect(week).toContainText(opsCopy.technicians.week.jobs(48, 91));
   await expect(week).toContainText(opsCopy.technicians.week.average("1 h 24 min"));
-  await expect(week).toContainText(opsCopy.technicians.week.onTime(opsCopy.technicians.work.onTime(46, 48)));
+  await expect(week).not.toContainText(opsCopy.technicians.figures.jobCount(48));
   await expect(week.getByRole("definition").first()).toContainText("Rohit M.");
   await expect(week.getByRole("link", { name: opsCopy.technicians.week.open })).toBeVisible();
 });
