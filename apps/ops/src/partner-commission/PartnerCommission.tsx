@@ -181,11 +181,11 @@ function StatementRows({ statement, ...row }: { statement: PartnerStatement } & 
 const COLUMNS: readonly Column<PartnerStatement>[] = [
   { label: columns.partner, sort: (row) => row.name },
   { label: columns.fitted, sort: (row) => row.fitted, figure: true },
-  { label: columns.earned, sort: (row) => row.earned ?? -1, figure: true },
-  { label: columns.takenBack, sort: (row) => row.taken_back_amount ?? -1, figure: true },
-  { label: columns.due, sort: (row) => row.due ?? -1, figure: true },
+  { label: columns.earned, sort: (row) => row.earned, figure: true },
+  { label: columns.takenBack, sort: (row) => row.taken_back_amount, figure: true },
+  { label: columns.due, sort: (row) => row.due, figure: true },
   { label: columns.paid, sort: (row) => row.payout?.amount ?? -1, figure: true },
-  { label: columns.owed, sort: (row) => row.owed ?? -1, figure: true },
+  { label: columns.owed, sort: (row) => row.owed, figure: true },
 ];
 
 function StatementsTable(row: RowProps) {

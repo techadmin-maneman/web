@@ -78,7 +78,6 @@ export function Demand({ stock }: { stock: Stock }) {
   const words = stockViews.demand;
   const named = (code: string | null) =>
     code === null ? words.noProfile : (stock.consumables.find((each) => each.code === code)?.name ?? code);
-  const unit = (code: string) => unitOf(stock, code);
   return (
     <Panel titleId="stock-demand" title={words.title}>
       {loaded.state === "loading" && <PanelLoading />}

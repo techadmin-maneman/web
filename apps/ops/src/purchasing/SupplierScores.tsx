@@ -71,9 +71,7 @@ export function SupplierScores() {
       {loaded.state === "loaded" && loaded.value.suppliers.length === 0 && (
         <EmptyState look="panel" line={copy.scorecard.none} />
       )}
-      {loaded.state === "loaded" && loaded.value.suppliers.length > 0 && (
-        <ScoreTable scores={loaded.value.suppliers} />
-      )}
+      {loaded.state === "loaded" && loaded.value.suppliers.length > 0 && <ScoreTable scores={loaded.value.suppliers} />}
     </Panel>
   );
 }
