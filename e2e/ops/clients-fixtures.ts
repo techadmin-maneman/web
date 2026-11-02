@@ -2,6 +2,7 @@
 // opened with the API answering them, and the parts of the page each test reads.
 
 import type { Page } from "@playwright/test";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 import {
   answer,
   CLIENT,
@@ -79,6 +80,7 @@ export async function clientRoutes(page: Page, over: Answers = {}): Promise<void
     [READ_STOCK_MATCH]: json(NO_STOCK_MATCH),
     [READ_CUSTOM_ORDERS]: json(NO_CUSTOM_ORDERS),
     "GET /api/clients/{id}/notes": json({ notes: [] }),
+    "GET /api/conversations": json({ conversations: [], next_cursor: null }),
     "GET /api/clients/{id}/photos/{photo_id}": jpeg(await inkPhoto()),
     ...over,
   });
@@ -88,9 +90,6 @@ export async function openClient(page: Page, path: string, over: Answers = {}): 
   await clientRoutes(page, over);
   await page.goto(path);
 }
-
-/** The head's figures, by the name the board letters each with. The head's list is the page's first; Visits has the address's. */
-export const meta = (page: Page) => page.locator("dl").first().getByRole("definition");
 
 /** One of the client's tabs, apart from the navigation's section of the same name. */
 export const clientTab = (page: Page, name: string) =>
@@ -102,3 +101,21 @@ export const invitedBy = (page: Page) =>
     .getByRole("term")
     .filter({ hasText: /^Invited by$/ })
     .locator("+ dd");
+
+/** A row of the Visits tab's one table, by the day it names. */
+export const visitRow = (page: Page, day: string) =>
+  page
+    .getByRole("region", { name: opsCopy.clients.tabs[0].label, exact: true })
+    .getByRole("row")
+    .filter({ hasText: day });
+
+/** A figure at the right of the client's page, by its name. */
+export const glanceFigure = (page: Page, label: string) =>
+  page
+    .getByRole("region", { name: opsCopy.clients.glance.title })
+    .getByRole("term")
+    .filter({ hasText: new RegExp(`^${label}$`) })
+    .locator("+ dd");
+
+/** What waits on Tasks for the client, under the head. */
+export const openTasks = (page: Page) => page.getByRole("list", { name: opsCopy.clients.openTasks.title });

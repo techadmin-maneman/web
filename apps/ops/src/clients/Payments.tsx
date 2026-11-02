@@ -82,6 +82,10 @@ function CodeLine({ entry }: { entry: ClientPayment }) {
   return code === null ? null : <span className={styles.closedLine}>{code}</span>;
 }
 
+/** What they have paid, less what was refunded, in paise. */
+export const paidToDate = (payments: readonly ClientPayment[]): number =>
+  payments.reduce((sum, each) => sum + (each.kind === "payment" ? each.amount : -each.amount), 0);
+
 function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
   if (payments.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
@@ -111,6 +115,15 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
           </tr>
         ))}
       </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row" colSpan={2}>
+            {clients.glance.paid}
+          </th>
+          <td className={styles.figureCell}>{rupees(paidToDate(payments))}</td>
+          <td />
+        </tr>
+      </tfoot>
     </Table>
   );
 }
@@ -384,7 +397,8 @@ export function Payments({
   );
 }
 
-/** What the client paid and had back, the payment links they were sent, and each finished visit's invoice. */
+/** What the client paid and had back, with what that comes to; the payment links they were sent, and each finished
+ * visit's invoice, where there are any. */
 export function MoneyRecords({
   payments,
   links,
@@ -399,12 +413,16 @@ export function MoneyRecords({
       <Panel titleId="client-payments" title={copy.title}>
         <PaymentTable payments={payments} />
       </Panel>
-      <Panel titleId="client-links" title={linkCopy.title}>
-        <LinkTable links={links} />
-      </Panel>
-      <Panel titleId="client-invoices" title={invoiceCopy.title}>
-        <InvoiceTable invoices={invoices} />
-      </Panel>
+      {links.length > 0 && (
+        <Panel titleId="client-links" title={linkCopy.title}>
+          <LinkTable links={links} />
+        </Panel>
+      )}
+      {invoices.length > 0 && (
+        <Panel titleId="client-invoices" title={invoiceCopy.title}>
+          <InvoiceTable invoices={invoices} />
+        </Panel>
+      )}
     </>
   );
 }

@@ -15,7 +15,7 @@ import { clientsApi } from "./clients-api.ts";
 type Match = Success<paths["/api/clients/{id}/stock-match"]["get"]>;
 
 function Lines({ match }: { match: Match }) {
-  if (match.kind === "no_profile") return <Note>{copy.noProfile}</Note>;
+  if (match.kind === "no_profile") return null;
   if (match.kind === "incomplete") return <Note>{copy.incomplete(match.missing)}</Note>;
   if (match.kind === "custom") return <Note>{copy.custom}</Note>;
   return (
@@ -33,6 +33,8 @@ function Lines({ match }: { match: Match }) {
 export function StockMatch({ clientId }: { clientId: string }) {
   const load = useCallback(() => clientsApi.stockMatch(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
+  // With no hair profile there is nothing to match; the profile's own panel above says there is none.
+  if (loaded.state === "loaded" && loaded.value.kind === "no_profile") return null;
   return (
     <Panel titleId="stock-match" title={copy.title}>
       {loaded.state === "loading" && <PanelLoading />}

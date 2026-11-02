@@ -25293,7 +25293,18 @@ export interface components {
                 next_visit: string | null;
                 /** @description Whether a visit of theirs has begun and is not yet closed. */
                 under_way: boolean;
+                /** @description The package they are on, by name; null before they book a first fit or ops choose one. */
+                package: string | null;
+                /** @description What they have paid, less what was refunded, in paise. */
+                paid: number;
             }[];
+            /** @description How many in the city asked for stand where; on the first page, else null. */
+            counts: {
+                all: number;
+                lead: number;
+                fitted: number;
+                nothing_booked: number;
+            } | null;
             /** @description The next page of 50; null on the last. */
             next_cursor: string | null;
             /** @description The cities served that the caller reaches, by name. */

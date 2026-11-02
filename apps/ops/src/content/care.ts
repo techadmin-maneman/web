@@ -69,6 +69,10 @@ export const care = {
     closed: "Chat closed.",
     failed: "That didn’t send. Try again, or call the client.",
   },
+  /** A client's chat on their own page, where they have written to us or we to them. */
+  clientChat: {
+    none: "No messages yet.",
+  },
   carePerson: {
     label: "Care person",
     none: "Not given yet",

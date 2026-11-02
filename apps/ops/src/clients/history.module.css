@@ -25,8 +25,3 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
-
-.historyActivity {
-  margin: var(--sp-16) var(--note-inset);
-  font-size: var(--fs-14);
-}

@@ -12,7 +12,7 @@ import { Table } from "@maneman/ui/Table";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { type ActivityEntry } from "../api.ts";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { OpsLink } from "../frame/Shell.tsx";
@@ -190,6 +190,12 @@ function Log({ filters }: { filters: Filters }) {
       )}
     </>
   );
+}
+
+/** What was done on one client's record and by them, the latest first: their page's History tab. */
+export function RecordActivity({ person }: { person: string }) {
+  const filters = useMemo(() => ({ person }), [person]);
+  return <Log filters={filters} />;
 }
 
 /** Each filter set, a chip with its way off: a client or visit a link narrowed to, and what Filter chose. */

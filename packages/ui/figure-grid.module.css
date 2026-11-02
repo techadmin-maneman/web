@@ -1,0 +1,47 @@
+/* Figures two to a row inside a panel (./FigureGrid.tsx): each in the serif, its name beneath. */
+
+@layer base, ui;
+
+@layer ui {
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-20) var(--sp-24);
+    margin: 0;
+    /* As far in from a panel's edge as a note, and room beneath the last row. */
+    padding: var(--sp-16) var(--note-inset) var(--sp-20);
+  }
+
+  .figure {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--sp-4);
+    min-width: 0;
+  }
+
+  .label {
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  .value {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-24);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--lh-115);
+    color: var(--ui-text);
+  }
+
+  .plain {
+    color: var(--ui-text);
+  }
+
+  .attention {
+    color: var(--ui-attention);
+  }
+
+  .warning {
+    color: var(--ui-error);
+  }
+}

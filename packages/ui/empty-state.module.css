@@ -35,6 +35,40 @@
     color: var(--on-surface-muted);
   }
 
+  /* A record's tab with nothing yet: what is missing, why beneath, the next action at the right. */
+  .next {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-12) var(--sp-16);
+    padding: var(--sp-20);
+    border: var(--hairline) dashed var(--ui-line-control);
+  }
+
+  .nextWords {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    min-width: 0;
+  }
+
+  .nextWords p {
+    margin: 0;
+  }
+
+  .nextLine {
+    font-size: var(--fs-15);
+    font-weight: var(--weight-medium);
+    color: var(--ui-text);
+  }
+
+  .nextDetail {
+    font-size: var(--fs-14);
+    line-height: var(--lh-145);
+    color: var(--ui-text-muted);
+  }
+
   .panel {
     margin: 0;
     padding: var(--sp-16) var(--note-inset);

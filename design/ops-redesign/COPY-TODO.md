@@ -25,3 +25,24 @@ Each slot the redesign adds where the console had no words of its own. None wait
 | Today      | A side list's way to its page              | Open Dispatch, Open Messages, Open Payments, Open Stock               | `today.openPage`           |
 | Tasks      | The four views                             | All, Mine, Unassigned, Overdue                                        | `tasks.filters.views`      |
 | Tasks      | The table's columns                        | What, Who, Due, Owner                                                 | `tasks.columns`            |
+| Dispatch   | The search beside the key                  | Find on the board                                                     | `dispatch.tools.label`     |
+| Dispatch   | The head's steps                           | Previous day, Next day                                                | `dispatch.tools.previousDay` |
+| Dispatch   | Beneath a technician's name                | South · 3 visits · 4.5 h booked                                       | `dispatch.day.rowMeta`     |
+| Dispatch   | A technician's head on a phone             | Imran Qureshi · 3 visits                                              | `dispatch.day.phoneHead`   |
+| Dispatch   | Beneath the row nobody is on               | 2 visits                                                              | `dispatch.day.nobodyMeta`  |
+| Dispatch   | Who is free to take a visit                | Free to take it                                                       | `dispatch.drawer.suggest`  |
+| Book       | A step's heading                           | 1. Visit, 2. Day, 3. Time                                             | `clients.visits.book.step` |
+| Book       | The parts of a day                         | Morning, Afternoon, Evening                                           | `clients.visits.book.periods` |
+| Book       | Beneath a day in the strip                 | 4 free / Full                                                         | `clients.visits.book.free` |
+| Book       | A code, a word away                        | Add a discount code                                                   | `clients.visits.book.addCode` |
+| Book       | The foot's action                          | Choose a time / Book Tue 3 Nov, 2 pm                                  | `clients.visits.book.bookAt` |
+| Clients    | Beside the title                           | 4,603 clients · 312 fitted · 38 with a task open                      | `clients.list.sub`         |
+| Clients    | Two new columns                            | Stage, Needs                                                          | `clients.list.stage`       |
+| Clients    | The list's foot                            | 51–100 of 4,603                                                       | `clients.list.range`       |
+| Client     | The head's facts and badge                 | Client since Nov 2026 / Replacement overdue                           | `clients.head`             |
+| Client     | The head's call                            | Call                                                                  | `clients.head.call`        |
+| Client     | The right's figures                        | At a glance: Paid to date, Visits, Replace by, Free visits left       | `clients.glance`           |
+| Client     | Visits, with nothing to come               | Nothing booked / Service visit due 12 Nov. No free visits left.       | `clients.visits.nothingBooked` |
+| Client     | Its way to book                            | Book a service visit                                                  | `clients.visits.bookKind`  |
+| Client     | Messages, with no chat                     | No messages yet.                                                      | `care.clientChat.none`     |
+| Client     | The last tab                               | History                                                               | `clients.history.title`    |

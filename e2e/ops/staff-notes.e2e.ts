@@ -1,5 +1,6 @@
 // Staff's notes on a client: nothing on their page told the next member of staff what to bear in mind before a call or
-// a visit. Each note now sits under the head, with who wrote it and when, changed or taken off where it stands.
+// a visit. Each note now sits at the page's right, with who wrote it and when, changed or taken off where it stands,
+// and a box beneath to add one.
 
 import type { Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
@@ -40,10 +41,9 @@ test("writes a note on the client, changes it where it stands and takes it off, 
     },
   });
   const strip = page.getByRole("region", { name: copy.title });
-  await expect(strip).toContainText(copy.none);
-
-  await strip.getByRole("button", { name: copy.add }).click();
-  await strip.getByLabel(copy.label).fill(NOTE.body);
+  // Save waits for something to save.
+  await expect(strip.getByRole("button", { name: copy.save })).toHaveCount(0);
+  await strip.getByLabel(copy.add).fill(NOTE.body);
   await strip.getByRole("button", { name: copy.save }).click();
   await expect(strip.getByRole("listitem")).toHaveText([new RegExp(`^${NOTE.body}`)]);
   await expect(strip).toContainText(copy.by("Priya", "20 Sep 2027"));
@@ -56,7 +56,7 @@ test("writes a note on the client, changes it where it stands and takes it off, 
   await expect(strip.getByRole("listitem")).toHaveText([/^Prefers early mornings\./]);
 
   await strip.getByRole("button", { name: copy.takeOff }).click();
-  await expect(strip).toContainText(copy.none);
+  await expect(strip.getByRole("listitem")).toHaveCount(0);
   expect(sent).toEqual([
     { body: NOTE.body, replaces: null },
     { body: "Prefers early mornings.", replaces: NOTE.id },

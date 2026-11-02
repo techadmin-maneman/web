@@ -140,9 +140,30 @@ const listRoute = opsRoute({
                   }),
                   next_visit: z.union([z.iso.datetime(), z.null()]),
                   under_way: UnderWay,
+                  package: z.union([z.string(), z.null()]).openapi({
+                    description:
+                      "The package they are on, by name; null before they book a first fit or ops choose one.",
+                  }),
+                  paid: z
+                    .number()
+                    .int()
+                    .openapi({ description: "What they have paid, less what was refunded, in paise." }),
                 })
                 .strict(),
             ),
+            counts: z
+              .union([
+                z
+                  .object({
+                    all: z.number().int().nonnegative(),
+                    lead: z.number().int().nonnegative(),
+                    fitted: z.number().int().nonnegative(),
+                    nothing_booked: z.number().int().nonnegative(),
+                  })
+                  .strict(),
+                z.null(),
+              ])
+              .openapi({ description: "How many in the city asked for stand where; on the first page, else null." }),
             next_cursor: NextCursor.openapi({
               description: `The next page of ${String(CLIENTS_PER_PAGE)}; null on the last.`,
             }),
@@ -188,7 +209,10 @@ export function registerOpsClients(app: App): void {
           city: client.city,
           next_visit: client.nextVisit,
           under_way: client.underWay,
+          package: client.packageName,
+          paid: client.paid,
         })),
+        counts: listed.counts,
         next_cursor: listed.more ? cursorOf(String(page + 1)) : null,
         cities: served,
       },

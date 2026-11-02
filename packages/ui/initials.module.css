@@ -1,0 +1,17 @@
+/* A person's initials in a square (./Initials.tsx), in the serif, on the shade. */
+
+@layer base, ui;
+
+@layer ui {
+  .initials {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: var(--sp-48);
+    height: var(--sp-48);
+    background: var(--ui-shade);
+    font-family: var(--font-serif);
+    font-size: var(--fs-24);
+    color: var(--ui-text);
+  }
+}
