@@ -88,8 +88,6 @@ export const technicians = {
     useCity: "Their city’s hours",
     home: "Day starts from",
     noHome: "Not set",
-    setHome: "Set where their day starts",
-    changeHome: "Change",
     /**
      * How far from home they are offered visits: their own, or everyone's from Settings
      * (docs/decisions/0223-reach-from-home.md). An empty box returns them to everyone's.
@@ -120,8 +118,6 @@ export const technicians = {
   },
   week: {
     open: "Open on the board",
-    /** Their visits this week, a day at a time, as the board has them. */
-    none: "No visits this week.",
     visit: (time: string, client: string, kind: string) => `${time} · ${client} · ${kind}`,
     /** Beside the week: how long their visit takes; their jobs and how often on time are the page's figures. */
     average: (time: string) => `Average visit ${time}`,

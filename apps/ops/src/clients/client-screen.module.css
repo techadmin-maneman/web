@@ -1,15 +1,6 @@
 /* What ./ClientScreen.tsx alone places; what it shares is in ./clients.module.css. */
 
-/* The tabs beside the column of figures, address, notes and Care person; below a desk's width, that column beneath. */
-.columns {
-  --local-aside: 18.75rem; /* the column of figures, address, notes and Care person */
-
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, var(--local-aside));
-  gap: var(--sp-24);
-  align-items: start;
-}
-
+/* The tab open, and the column of figures, address, notes and Care person the frame sets beside the page (PageAside). */
 .main {
   display: flex;
   flex-direction: column;
@@ -22,10 +13,4 @@
   flex-direction: column;
   gap: var(--sp-16);
   min-width: 0;
-}
-
-@media (max-width: 1279px) {
-  .columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }

@@ -27,7 +27,7 @@ export function Panel({
   /** The heading's id, which names the section. */
   readonly titleId: string;
   readonly title: string;
-  /** How many it holds, as a queue says how many wait; none for a panel that is not a list. */
+  /** How many it holds, as a queue says how many wait; none for a panel that is not a list. Nought is not shown. */
   readonly count?: number;
   /** Opened beneath a list by one of its rows: its heading takes the keyboard as it draws. */
   readonly opened?: boolean;
@@ -59,7 +59,7 @@ export function Panel({
           {title}
         </h2>
         {repeats && <span className={styles.title} />}
-        {count !== undefined && !(repeats && !hasActions) && <span className={styles.count}>{count}</span>}
+        {count !== undefined && count > 0 && !(repeats && !hasActions) && <span className={styles.count}>{count}</span>}
         {actions}
       </div>
       {children}

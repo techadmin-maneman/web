@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
 import { ClientChat } from "../care/index.ts";
 import { OpsLink } from "../frame/Shell.tsx";
-import { PageActions, useRecordHead, useRecordTitle, type RecordHead } from "../frame/PageHead.tsx";
+import { PageActions, PageAside, useRecordHead, useRecordTitle, type RecordHead } from "../frame/PageHead.tsx";
 import { clients } from "../content.ts";
 import { rememberClient } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -224,22 +224,22 @@ function ClientPage({
       <Head record={record} booking={booking} />
       {booking.panel}
       <OpenTasks clientId={clientId} name={record.name} />
-      <div className={styles.columns}>
-        <TabBody
-          clientId={clientId}
-          tab={tab}
-          record={record}
-          booking={booking}
-          credits={credits}
-          onCredits={(next) => {
-            setAdjusted({ credits: next });
-          }}
-          attached={attached}
-          onAttached={setAttached}
-          onChanged={retry}
-          onErased={onErased}
-          photos={photos}
-        />
+      <TabBody
+        clientId={clientId}
+        tab={tab}
+        record={record}
+        booking={booking}
+        credits={credits}
+        onCredits={(next) => {
+          setAdjusted({ credits: next });
+        }}
+        attached={attached}
+        onAttached={setAttached}
+        onChanged={retry}
+        onErased={onErased}
+        photos={photos}
+      />
+      <PageAside>
         <ClientAside
           clientId={clientId}
           record={record}
@@ -249,7 +249,7 @@ function ClientPage({
             setGiven({ address });
           }}
         />
-      </div>
+      </PageAside>
     </div>
   );
 }

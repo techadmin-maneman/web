@@ -1,4 +1,13 @@
-/* The header's tasks given to the person signed in (./Mine.tsx): the count of those new to them, beside its name. */
+/* The header's tasks given to the person signed in (./Mine.tsx): a box the height of the search and the city picker
+   beside it, edged as they are; the count of those new to them beside its name. */
+
+.mine > button {
+  height: var(--field-height);
+  padding: 0 var(--sp-12);
+  border-color: var(--ui-line-control);
+  background: var(--ui-box);
+  font-size: var(--fs-14);
+}
 
 .count {
   margin-left: var(--sp-8);

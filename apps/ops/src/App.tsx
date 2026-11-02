@@ -93,7 +93,6 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   tasks: TasksScreen,
   dispatch: DispatchScreen,
   messages: MessagesScreen,
-  stock: StockScreen,
   counts: CountsScreen,
   purchasing: PurchasingScreen,
   "supply-plan": SupplyPlanScreen,
@@ -132,6 +131,7 @@ function Page({ route }: { route: Route }) {
     if (route.technicianId === null) return <TechniciansScreen />;
     return <TechnicianScreen technicianId={route.technicianId} tab={route.tab} />;
   }
+  if (route.page === "stock") return <StockScreen view={route.view} />;
   const Screen = SCREENS[route.page];
   return <Screen />;
 }

@@ -1,15 +1,17 @@
 // The board's head, at its right (./DispatchScreen.tsx): a step back and on, by the day or the week the view shows,
-// with the day or the week between, which brings today back; and Day or Week.
+// with the day or the week between, which brings today back, the three in one box; and Day or Week in one track.
 
 import { GLYPHS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { IconButton } from "@maneman/ui/IconButton";
-import { ToggleButton } from "@maneman/ui/ToggleButton";
+import { Segmented } from "@maneman/ui/Segmented";
 import { addDays, shortDate } from "@maneman/web-kit/dates";
 import { dispatch, noShows } from "../content.ts";
 import { weekOf } from "./board-view.ts";
 import type { BoardView } from "./DayBoard.tsx";
 import styles from "./dispatch.module.css";
+
+const VIEWS: readonly BoardView[] = ["day", "week"];
 
 interface Props {
   readonly view: BoardView;
@@ -70,21 +72,12 @@ export function BoardControls({ view, onView, day, dates, today, onDay, onWeek }
           }}
         />
       </div>
-      <div className={styles.views} role="radiogroup" aria-label={dispatch.views.label}>
-        {(["day", "week"] as const).map((each) => (
-          <ToggleButton
-            key={each}
-            asRadio
-            filled
-            pressed={view === each}
-            onClick={() => {
-              onView(each);
-            }}
-          >
-            {dispatch.views[each]}
-          </ToggleButton>
-        ))}
-      </div>
+      <Segmented
+        label={dispatch.views.label}
+        options={VIEWS.map((each) => [each, dispatch.views[each]] as const)}
+        value={view}
+        onChange={onView}
+      />
     </div>
   );
 }

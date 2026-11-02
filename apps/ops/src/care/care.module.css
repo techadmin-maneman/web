@@ -57,17 +57,11 @@
   margin-top: var(--sp-12);
 }
 
-/* The client beside the chat: a short list of facts, then the ways into their page. */
-.panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-12);
-}
-
+/* Who a chat is with, beside it: their facts, a label and its value a row, the values in one column. */
 .facts {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--sp-4) var(--sp-12);
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--sp-8) var(--sp-12);
   margin: 0;
   font-size: var(--fs-13);
 }
@@ -80,11 +74,22 @@
   margin: 0;
 }
 
-/* Each part of the client's page Care go to, a button a line, across the column. */
+/* What Care do for them, a button a line across the column, one gap between: the parts of their page, free service
+   visits and a matter for their city. */
 .panelLinks {
   display: flex;
   flex-direction: column;
   gap: var(--sp-8);
+}
+
+.panelLinks > * {
+  width: 100%;
+}
+
+/* One of Care's own actions in that stack, its button across the column as the links above it are. */
+.action {
+  display: flex;
+  flex-direction: column;
 }
 
 .quick {
@@ -92,10 +97,6 @@
 }
 
 .stranger {
-  margin-bottom: var(--sp-12);
-}
-
-.carePerson {
   margin-bottom: var(--sp-12);
 }
 
@@ -110,11 +111,27 @@
 
 .reply {
   flex: 1;
-  max-width: var(--ops-measure);
 }
 
 .box {
   width: 100%;
+}
+
+/* The reply as one box: what is written, its own edge gone, over a foot of reply or note and Send. A note's box is
+   shaded, as only the team sees it. */
+.composeBox {
+  border: var(--hairline) solid var(--ui-line-control);
+  background: var(--ui-box);
+}
+
+.composeBox[data-note] {
+  background: var(--ui-tint);
+}
+
+.composeBox textarea {
+  border: 0;
+  background: transparent;
+  resize: vertical;
 }
 
 .closing {
@@ -150,9 +167,6 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-8);
-}
-
-.modes {
-  display: flex;
-  gap: var(--sp-8);
+  padding: var(--sp-8);
+  border-top: var(--hairline) solid var(--ui-line);
 }

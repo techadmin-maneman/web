@@ -70,7 +70,7 @@ function MatterFields(props: { conversationId: string; onSent: (city: string) =>
 export function CityMatter({ conversationId }: { readonly conversationId: string }) {
   const [sentTo, setSentTo] = useState<string | null>(null);
   return (
-    <div className={styles.closing}>
+    <div className={styles.action}>
       {sentTo !== null && <Toast>{copy.sent(sentTo)}</Toast>}
       <DrawerButton label={copy.open}>
         {(close) => (

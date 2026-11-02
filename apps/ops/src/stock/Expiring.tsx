@@ -14,6 +14,7 @@ import { stockViews } from "../content/stock-views.ts";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 import { RowHead } from "@maneman/ui/RowHead";
+import { EmptyState } from "@maneman/ui/EmptyState";
 
 /** The lots that expire by the warning's end, soonest first, each where it is held. */
 export function expiringLots(stock: Stock) {
@@ -94,8 +95,14 @@ export function Expiring({ stock }: { stock: Stock }) {
   const words = stockViews.expiring;
   return (
     <Panel titleId="stock-expiring" title={words.title}>
-      <Note>{words.within(stock.expiry_warning_days)}</Note>
-      <ExpiringTable stock={stock} />
+      {expiringLots(stock).length === 0 ? (
+        <EmptyState look="panel" line={words.none(stock.expiry_warning_days)} />
+      ) : (
+        <>
+          <Note>{words.within(stock.expiry_warning_days)}</Note>
+          <ExpiringTable stock={stock} />
+        </>
+      )}
     </Panel>
   );
 }

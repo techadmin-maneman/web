@@ -1,5 +1,5 @@
-// Today: a home for each kind of work a person's grants reach (ADR 0227), with a choice between them where there are
-// several: the home's figures, what needs the person from their board, and the home's own list beside it.
+// Today: the one home a person's grants give them (ADR 0227, ADR 0238): the home's figures, what needs the person from
+// their board, and the home's own list beside it.
 
 import { expect, test } from "../support.ts";
 import { answer, BOARD, json, TASKS, type OpsReply } from "./fixtures.ts";
@@ -43,7 +43,20 @@ const WAITING = {
   next_cursor: null,
 } satisfies OpsReply<"/api/conversations">;
 
-const homes = (page: import("@playwright/test").Page) => page.getByRole("radiogroup", { name: copy.homes.label });
+/** Who is signed in, with one grant across the country, or in one city. */
+const signedIn = (department: "operations" | "customer_care", place: string | null = null) =>
+  json({
+    signed_in_as: "meera@maneman.in",
+    sign_out: null,
+    staff: {
+      enforced: true,
+      listed: true,
+      grants: [{ department, level: "act", geography: place === null ? "national" : "city", place }],
+      may_call: Object.keys(ROUTE_NEEDS),
+    },
+    cities: place === null ? ["Gurgaon", "Delhi"] : [place],
+    every_city: place === null,
+  } satisfies OpsReply<"/api/whoami">);
 
 test("opens on Dispatch's home: today's visits, those running late, and the visits still to come beside", async ({
   page,
@@ -52,9 +65,8 @@ test("opens on Dispatch's home: today's visits, those running late, and the visi
   await answer(page, { "GET /api/tasks": json(TASKS), "GET /api/dispatch": json(BOARD) });
   await page.goto("/today");
   await expect(page.getByText("Friday 19 September · All cities", { exact: true })).toBeVisible();
-  // While the Staff list is not enforced, every home is offered.
-  await expect(homes(page).getByRole("radio")).toHaveCount(5);
-  await expect(homes(page).getByRole("radio", { name: copy.homes.names.dispatch })).toBeChecked();
+  // While the Staff list is not enforced, everyone opens on Dispatch's home, with no choice of another.
+  await expect(page.getByRole("radiogroup")).toHaveCount(0);
 
   // A tile is named by its label, then its figure; a row beside it by its time first.
   const tile = (label: string) => page.getByRole("main").getByRole("link", { name: new RegExp(`^${label}`) });
@@ -67,26 +79,24 @@ test("opens on Dispatch's home: today's visits, those running late, and the visi
   const road = page.getByRole("region", { name: copy.road.title });
   await expect(road.getByRole("listitem")).toHaveCount(4);
   await expect(road.getByRole("listitem").first()).toContainText(copy.road.late);
-  // None of the board's tasks is Dispatch's: its replacements are Inventory's, its referrals Growth's.
-  await expect(page.getByRole("region", { name: copy.needs })).toContainText(copy.none);
+  // Needs you lists the person's whole board: stock's replacements too, as no other home takes them.
+  await expect(page.getByRole("region", { name: copy.needs })).toContainText(tasks.groups.replacement_order);
 });
 
-test("lists each home's own tasks under Needs you, and Care's replies and chats waiting on us", async ({ page }) => {
+test("opens Customer Care on Care's home: their board under Needs you, and the chats waiting on us", async ({
+  page,
+}) => {
   await page.clock.setFixedTime(NOON);
   await answer(page, {
+    "GET /api/whoami": signedIn("customer_care"),
     "GET /api/tasks": json(TASKS),
     "GET /api/dispatch": json(BOARD),
     "GET /api/care-numbers": json(CARE),
     "GET /api/conversations": json(WAITING),
   });
   await page.goto("/today");
-  await homes(page).getByRole("radio", { name: copy.homes.names.inventory }).click();
   const needs = page.getByRole("region", { name: copy.needs });
-  await expect(needs.getByRole("listitem").first()).toContainText(tasks.groups.replacement_order);
-
-  await homes(page).getByRole("radio", { name: copy.homes.names.care }).click();
   await expect(needs).toContainText(tasks.groups.number_change);
-  await expect(needs).not.toContainText(tasks.groups.replacement_order);
   await expect(page.getByRole("main").getByRole("link", { name: new RegExp(`^${copy.care.median}`) })).toContainText(
     copy.care.minutes(42),
   );
@@ -99,33 +109,16 @@ test("lists each home's own tasks under Needs you, and Care's replies and chats 
   await expect(chats).toContainText(care.overdue("11:30 am"));
 });
 
-test("offers a person whose grants are in one city the City head's home first, and only their own", async ({
-  page,
-}) => {
+test("opens a person whose grants are in one city on the City head's home", async ({ page }) => {
   await page.clock.setFixedTime(NOON);
   await answer(page, {
-    "GET /api/whoami": json({
-      signed_in_as: "meera@maneman.in",
-      sign_out: null,
-      staff: {
-        enforced: true,
-        listed: true,
-        grants: [{ department: "operations", level: "act", geography: "city", place: "Gurgaon" }],
-        may_call: Object.keys(ROUTE_NEEDS),
-      },
-      cities: ["Gurgaon"],
-      every_city: false,
-    } satisfies OpsReply<"/api/whoami">),
+    "GET /api/whoami": signedIn("operations", "Gurgaon"),
     "GET /api/tasks": json(TASKS),
     "GET /api/dispatch": json(BOARD),
   });
   await page.goto("/today");
-  await expect(homes(page).getByRole("radio")).toHaveText([
-    copy.homes.names.city,
-    copy.homes.names.dispatch,
-    copy.homes.names.inventory,
-  ]);
-  await expect(homes(page).getByRole("radio", { name: copy.homes.names.city })).toBeChecked();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/booked today\.$/);
+  await expect(page.getByRole("radiogroup")).toHaveCount(0);
 });
 
 test("offers a city head their one city in the header, and reads the board for it", async ({ page }) => {

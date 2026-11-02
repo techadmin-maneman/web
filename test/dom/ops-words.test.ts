@@ -88,6 +88,7 @@ async function show() {
     setHeading: () => undefined,
     setRecordHead: () => undefined,
     actions,
+    aside: null,
   };
   act(() => {
     root.render(createElement(PageHead.Provider, { value: head }, createElement(WordsScreen)));

@@ -65,6 +65,13 @@
     color: var(--status-warning);
   }
 
+  /* The hours' row on the band a table's heads stand on, the corner over the names with it. */
+  thead .corner,
+  .step {
+    height: var(--sp-40);
+    background: var(--ui-ground);
+  }
+
   .step {
     min-width: var(--sp-48);
     padding: var(--sp-4) 0;

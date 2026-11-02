@@ -18,9 +18,11 @@
     min-height: var(--sp-40);
   }
 
-  /* A record's initials, then the title and what goes with it. */
+  /* A record's initials, then the title and what goes with it, taking the row's room beside the actions: its own
+     lines wrap before the actions leave the row, until the row is a phone's. */
   .lead {
     display: flex;
+    flex: 1 1 calc(var(--sp-64) * 5);
     align-items: center;
     gap: var(--sp-16);
     min-width: 0;
@@ -46,6 +48,13 @@
     color: var(--ui-text);
   }
 
+  /* A phone's title a step smaller, beside the search and the account. */
+  @media (max-width: 600px) {
+    .title {
+      font-size: var(--fs-28);
+    }
+  }
+
   .beside {
     display: flex;
     flex-wrap: wrap;
@@ -64,7 +73,9 @@
     color: var(--ui-text-muted);
   }
 
+  /* The page's figures on a line of their own beneath its title, as the design sets a page's lead. */
   .meta {
+    flex-basis: 100%;
     font-size: var(--fs-14);
     font-variant-numeric: tabular-nums;
     color: var(--ui-text-muted);

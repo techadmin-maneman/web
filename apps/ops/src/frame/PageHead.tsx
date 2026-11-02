@@ -20,6 +20,8 @@ interface Head {
   readonly setRecordHead: (head: RecordHead | undefined) => void;
   /** Where the page's actions are drawn; null until the head is. */
   readonly actions: HTMLElement | null;
+  /** Where a record's column of facts is drawn, beside its head and all beneath it; null until the frame is. */
+  readonly aside: HTMLElement | null;
 }
 
 export const PageHead = createContext<Head>({
@@ -29,6 +31,7 @@ export const PageHead = createContext<Head>({
   setHeading: () => undefined,
   setRecordHead: () => undefined,
   actions: null,
+  aside: null,
 });
 
 /** Tells the head a value of the page's for as long as the page is open with it. */
@@ -76,4 +79,13 @@ export function useRecordHead(head: RecordHead | undefined): void {
 export function PageActions({ children }: { readonly children: ReactNode }) {
   const { actions } = useContext(PageHead);
   return actions === null ? null : createPortal(children, actions);
+}
+
+/**
+ * A record's column of facts, at the page's right from its head down, as a client's page sets its figures, address and
+ * notes beside it; beneath the page short of a desk's width.
+ */
+export function PageAside({ children }: { readonly children: ReactNode }) {
+  const { aside } = useContext(PageHead);
+  return aside === null ? null : createPortal(children, aside);
 }

@@ -81,4 +81,18 @@
   .panel:has(+ *) {
     padding-bottom: 0;
   }
+
+  /* The line and the way to add the first, on one row: the line at the left, the action at the right. */
+  .panelActing {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-8) var(--sp-16);
+    padding-right: var(--note-inset);
+  }
+
+  .panelActing > .panel {
+    padding-bottom: var(--sp-16);
+  }
 }

@@ -9,8 +9,9 @@ import { EmptyState } from "@maneman/ui/EmptyState";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
-import { TabButton, Tabs } from "@maneman/ui/Tabs";
+import { go } from "@maneman/ui/router";
 import { type Stock } from "../api.ts";
+import { stockPath, type StockView } from "../route.ts";
 import { stock as copy } from "../content/stock.ts";
 import { useAccess } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
@@ -23,6 +24,7 @@ import type { LabelsFor } from "./Labels.tsx";
 import { Attention, firstShowing, Grouping, OnHand, type Showing } from "./OnHand.tsx";
 import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
+import { mayOpenView } from "./views.ts";
 import { PageActions } from "../frame/PageHead.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
@@ -35,14 +37,6 @@ const Demand = lazyScreen(() => import("./Demand.tsx").then((module) => module.D
 
 /** The labels of pieces and lots, loaded for those who may print them. */
 const Labels = lazyScreen(() => import("./Labels.tsx").then((module) => module.Labels));
-
-/** Whether any lot within reach expires within the warning, so the Expiring panel is worth loading. */
-function anyExpiring(stock: Stock): boolean {
-  const until = new Date(Date.parse(`${stock.today}T00:00:00Z`) + stock.expiry_warning_days * 86_400_000).toISOString();
-  return stock.holdings.some((holding) =>
-    holding.lots.some((lot) => lot.expires_on !== null && lot.expires_on <= until.slice(0, 10)),
-  );
-}
 
 /** What is on its way, which loads only while something is. */
 const InTransit = lazyScreen(() => import("./InTransit.tsx").then((module) => module.InTransit));
@@ -107,20 +101,6 @@ function Movements({ stock }: { stock: Stock }) {
   );
 }
 
-/** The page's views, a tab each: what is held, what expires, what moved, the labels and the places. */
-type View = keyof typeof copy.views.names;
-
-/** The views a person may open: Expiring while a lot within reach expires soon, Labels and Places by access. */
-function viewsOf(stock: Stock, access: ReturnType<typeof useAccess>): readonly View[] {
-  return [
-    "onHand",
-    ...(anyExpiring(stock) ? (["expiring"] as const) : []),
-    "movements",
-    ...(access.mayCall("GET /api/stock/units") ? (["labels"] as const) : []),
-    ...(access.mayCall("POST /api/stock/places") ? (["places"] as const) : []),
-  ];
-}
-
 /** What each place holds, by place or in totals, and what is wanted and on its way. */
 function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stock) => void }) {
   const [showing, setShowing] = useState<Showing>(() => firstShowing(stock));
@@ -169,17 +149,19 @@ function RecordFromHead(props: { stock: Stock; onRecorded: (after: Stock, labels
   );
 }
 
-export function StockScreen() {
+/**
+ * Stock, at the view its address names (a tab of Inventory's own, ../frame/SectionGroups.tsx); On hand for one the
+ * person may not open.
+ */
+export function StockScreen({ view }: { view: StockView }) {
   const { loaded, retry, current, setStock } = useStock();
-  const [view, setView] = useState<View>("onHand");
   /** A hair system's delivery opens its labels at the warehouse, afresh each time. */
   const [labelsFor, setLabelsFor] = useState<{ readonly at: LabelsFor; readonly time: number } | null>(null);
   const access = useAccess();
   if (current === null) {
     return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <PanelLoading />;
   }
-  const views = viewsOf(current, access);
-  const shown = views.includes(view) ? view : "onHand";
+  const shown = mayOpenView(view, access.mayCall) ? view : "on-hand";
   return (
     <>
       <RecordFromHead
@@ -188,24 +170,11 @@ export function StockScreen() {
           setStock(after);
           if (labels === null) return;
           setLabelsFor({ at: labels, time: (labelsFor?.time ?? 0) + 1 });
-          setView("labels");
+          go(stockPath("labels"));
         }}
       />
-      <Tabs className={styles.views} label={copy.views.label}>
-        {views.map((each) => (
-          <TabButton
-            key={each}
-            current={each === shown}
-            onClick={() => {
-              setView(each);
-            }}
-          >
-            {copy.views.names[each]}
-          </TabButton>
-        ))}
-      </Tabs>
       <div className={styles.screen}>
-        {shown === "onHand" && <OnHandView stock={current} onChanged={setStock} />}
+        {shown === "on-hand" && <OnHandView stock={current} onChanged={setStock} />}
         {shown === "movements" && <Movements stock={current} />}
         <Suspense fallback={<PanelLoading />}>
           {shown === "expiring" && <Expiring stock={current} />}

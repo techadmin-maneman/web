@@ -93,7 +93,7 @@ function TechnicianTabs({
       </Tabs>
       {/* A tab's panel titled as the tab reads its title, and does not show it again. */}
       <PageTitle.Provider value={TECHNICIAN_TAB_NAMES[tab]}>
-        {tab === "kit" ? (
+        {tab === "kit" || tab === "week" ? (
           <TabPanel tab={tab} technician={technician} everyone={everyone} onChange={onChange} />
         ) : (
           <Panel titleId="technician-tab" title={TECHNICIAN_TAB_NAMES[tab]}>

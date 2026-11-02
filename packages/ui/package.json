@@ -58,6 +58,7 @@
     "./scanned": "./scanned.ts",
     "./SearchInput": "./SearchInput.tsx",
     "./SearchMenu": "./SearchMenu.tsx",
+    "./Segmented": "./Segmented.tsx",
     "./SelectCard": "./SelectCard.tsx",
     "./SettingRow": "./SettingRow.tsx",
     "./SettingsLayout": "./SettingsLayout.tsx",

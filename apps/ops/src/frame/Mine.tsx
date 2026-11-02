@@ -81,6 +81,7 @@ export function Mine() {
   const unseen = yours.filter((each) => !seen.has(keyOf(each))).length;
   return (
     <Popover
+      className={styles.mine}
       label={shell.mine.label(unseen)}
       align="end"
       button={

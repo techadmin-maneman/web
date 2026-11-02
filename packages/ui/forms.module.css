@@ -197,9 +197,12 @@
     white-space: nowrap;
   }
 
+  /* The line beneath a row's name at the body's leading, a step below the name, so the two lines read as two. */
   .rowHeadMeta {
     display: block;
+    margin-top: var(--sp-2);
     font-size: var(--fs-13);
+    line-height: var(--lh-145);
     font-weight: var(--weight-regular);
     color: var(--ui-text-muted);
   }

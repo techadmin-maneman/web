@@ -71,3 +71,4 @@ Each slot the redesign adds where the console had no words of its own. None wait
 | Quality    | Value at risk's last column                | What to do                                                            | `quality.riskColumns`      |
 | Phone rows | Beneath a name where no column says it     | 96% on time; Leave from 5 Nov; 2 visits; Rs. 400 lost; Expires 3 Dec; Counted 26 Nov; Not counted yet; 4 referred · 2 fitted | each list's `phone` |
 | Tables     | A phone's order                            | Sort: As listed; Sort: Jobs ↑                                         | `packages/ui/words.ts`     |
+| Stock      | Expiring, with nothing expiring            | Nothing expires within 30 days.                                       | `stockViews.expiring.none` |

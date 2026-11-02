@@ -5,6 +5,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { classes } from "@maneman/ui/classes";
 import { Toast } from "@maneman/ui/Toast";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { TextButton } from "@maneman/ui/TextLink";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { addressLine } from "@maneman/web-kit/address";
@@ -21,9 +22,10 @@ type SavedAddress = NonNullable<ClientRecord["address"]>;
 
 const copy = clients.visits;
 
+/** The address under the panel's title, which names it: its line unnamed but read out, then what goes with it. */
 function AddressRows({ address }: { address: SavedAddress }) {
   const rows = [
-    { key: copy.address, value: addressLine(address) },
+    { key: copy.address, value: addressLine(address), unnamed: true },
     ...(address.landmark === null ? [] : [{ key: copy.landmark, value: address.landmark }]),
     ...(address.access_notes === null ? [] : [{ key: copy.access, value: address.access_notes }]),
     ...(address.given_to_ops === null
@@ -39,7 +41,13 @@ function AddressRows({ address }: { address: SavedAddress }) {
     <dl className={classes(styles.address, styles.asideRows)}>
       {rows.map((row) => (
         <div className={styles.addressRow} key={row.key}>
-          <dt className={styles.metaKey}>{row.key}</dt>
+          {"unnamed" in row ? (
+            <dt>
+              <VisuallyHidden>{row.key}</VisuallyHidden>
+            </dt>
+          ) : (
+            <dt className={styles.metaKey}>{row.key}</dt>
+          )}
           <dd className={styles.addressValue}>{row.value}</dd>
         </div>
       ))}

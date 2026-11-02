@@ -11,14 +11,6 @@
   flex-direction: column;
 }
 
-/* Where their day starts, and the way to set it beside it. */
-.homeValue {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--sp-4) var(--sp-12);
-}
-
 .form {
   display: flex;
   flex-direction: column;

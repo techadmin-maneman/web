@@ -66,7 +66,7 @@
 .client {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-16);
+  gap: var(--sp-20);
   min-width: 0;
   padding: var(--sp-16);
   overflow-y: auto;
@@ -77,11 +77,6 @@
   margin: 0;
 }
 
-/* Care's own actions across the column, as wide as the ways into the client's page above them. */
-.client > div > button {
-  flex: 1 1 100%;
-}
-
 @media (max-width: 1279px) {
   .client {
     border-top: var(--hairline) solid var(--ui-line);
@@ -89,16 +84,14 @@
   }
 }
 
-/* What they said at the left and what we said at the right, each as wide as its words, to the same width at most. */
+/* What they said at the left and what we said at the right, each as wide as its words, to the same width at most;
+   who said it and when beneath the bubble, under its edge. */
 .theirs,
 .ours {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
   max-width: min(var(--ops-measure), var(--local-bubble));
-  padding: var(--sp-8) var(--sp-12);
-  border: var(--hairline) solid var(--ui-line);
-  background: var(--ui-raised);
 }
 
 .theirs {
@@ -107,6 +100,24 @@
 
 .ours {
   align-self: flex-end;
+  align-items: flex-end;
+}
+
+.bubble {
+  padding: var(--sp-8) var(--sp-12);
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
+}
+
+/* A note for the team: not a message, so no bubble; a rule at its left across the chat, who and when above it. */
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-2) 0 var(--sp-2) var(--sp-12);
+  border-left: var(--rule-strong) solid var(--ui-line);
+  font-size: var(--fs-13);
+  color: var(--ui-text-soft);
 }
 
 .auto {

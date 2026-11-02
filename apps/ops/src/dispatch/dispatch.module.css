@@ -100,8 +100,7 @@
 
 /* The head's right: a step back and on with the day or week between, then Day or Week. */
 .controls,
-.stepper,
-.views {
+.stepper {
   display: flex;
   align-items: center;
 }
@@ -110,10 +109,20 @@
   gap: var(--sp-16);
 }
 
-.stepper,
-.views {
-  gap: var(--sp-4);
+/* Back, the day or week shown, and on, joined in one box with a rule between each, as the design draws them. */
+.stepper {
+  gap: 0;
   white-space: nowrap;
+  border: var(--hairline) solid var(--ui-line-control);
+  background: var(--ui-box);
+}
+
+.stepper > * {
+  height: var(--control-height);
+}
+
+.stepper > * + * {
+  border-left: var(--hairline) solid var(--ui-line-control);
 }
 
 /* On a narrow window the stepper and the views wrap as two, each on one line. */

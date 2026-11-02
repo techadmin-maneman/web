@@ -15,6 +15,13 @@
     margin: var(--sp-12) var(--sp-20);
   }
 
+  /* A search gives way first as the row narrows, down to a name's width, so the lists beside it keep its line; with
+     room, it grows to the app's search width. */
+  .toolbar > :has(input[type="search"]) {
+    flex: 1 1 calc(var(--sp-64) * 3);
+    max-width: var(--search-width);
+  }
+
   /* Its boxes' labels are read, not shown, so nothing above them needs room. */
   .toolbar :is(input, select) {
     margin-top: 0;

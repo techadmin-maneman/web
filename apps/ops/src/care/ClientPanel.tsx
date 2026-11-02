@@ -1,5 +1,5 @@
 // The client beside their chat (docs/decisions/0140-the-client-panel.md): their next and last visit, free service
-// visits and city, with a link to each part of their page where Care book, move or take payment.
+// visits, city and Care person; and a link to each part of their page where Care book, move or take payment.
 
 import { buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -27,36 +27,38 @@ const LINKS: readonly (readonly [ClientTab, string])[] = [
   ["consents", copy.links.consents],
 ];
 
-export function ClientPanel({ personId }: { readonly personId: string }) {
+/** A button to each part of the client's page, one beneath another. */
+export function ClientLinks({ personId }: { readonly personId: string }) {
+  return LINKS.map(([tab, label]) => (
+    <OpsLink key={tab} className={buttonLook({ variant: "outline", size: "small" })} to={clientPath(personId, tab)}>
+      {label}
+    </OpsLink>
+  ));
+}
+
+export function ClientPanel({ personId, carePerson }: { readonly personId: string; readonly carePerson: string }) {
   const load = useCallback(() => api.client(personId), [personId]);
   const [loaded] = useLoad(load);
-  if (loaded.state !== "loaded" || isErased(loaded.value)) return null;
-  const record = loaded.value;
-  const [next] = record.visits.upcoming;
-  const [last] = record.visits.past;
+  const record = loaded.state === "loaded" && !isErased(loaded.value) ? loaded.value : null;
+  const [next] = record?.visits.upcoming ?? [];
+  const [last] = record?.visits.past ?? [];
+  // The Care person is the chat's own, so it stands while the client's record is read, or where it cannot be.
   return (
-    <section className={styles.panel} aria-label={copy.title}>
-      <dl className={styles.facts}>
-        <dt>{copy.next}</dt>
-        <dd>{next === undefined ? copy.none : visitLine(next)}</dd>
-        <dt>{copy.last}</dt>
-        <dd>{last === undefined ? copy.none : visitLine(last)}</dd>
-        <dt>{copy.credits}</dt>
-        <dd>{record.credits === null ? copy.none : record.credits.visits}</dd>
-        <dt>{copy.city}</dt>
-        <dd>{record.address?.city ?? copy.noAddress}</dd>
-      </dl>
-      <div className={styles.panelLinks}>
-        {LINKS.map(([tab, label]) => (
-          <OpsLink
-            key={tab}
-            className={buttonLook({ variant: "outline", size: "small" })}
-            to={clientPath(personId, tab)}
-          >
-            {label}
-          </OpsLink>
-        ))}
-      </div>
-    </section>
+    <dl className={styles.facts} aria-label={copy.title}>
+      {record !== null && (
+        <>
+          <dt>{copy.next}</dt>
+          <dd>{next === undefined ? copy.none : visitLine(next)}</dd>
+          <dt>{copy.last}</dt>
+          <dd>{last === undefined ? copy.none : visitLine(last)}</dd>
+          <dt>{copy.credits}</dt>
+          <dd>{record.credits === null ? copy.none : record.credits.visits}</dd>
+          <dt>{copy.city}</dt>
+          <dd>{record.address?.city ?? copy.noAddress}</dd>
+        </>
+      )}
+      <dt>{care.carePerson.label}</dt>
+      <dd>{carePerson}</dd>
+    </dl>
   );
 }

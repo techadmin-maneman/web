@@ -1,6 +1,7 @@
 // Nothing to show yet. On a page, the client app's design: one line in the serif and one beneath it, a glyph above
-// where Photos draws one, and a way on beneath. In a console panel or table, one muted line. Where a record's tab
-// has nothing yet, what is missing and why, in a box ruled in dashes, with the next action at its right.
+// where Photos draws one, and a way on beneath. In a console panel or table, one muted line, with the way to add the
+// first at its right where there is one. Where a record's tab has nothing yet, what is missing and why, in a box ruled
+// in dashes, with the next action at its right.
 
 import type { ReactNode } from "react";
 import { classes } from "./classes.ts";
@@ -17,7 +18,7 @@ export function EmptyState(
         readonly icon?: string;
         readonly action?: ReactNode;
       }
-    | { readonly look: "panel"; readonly line: ReactNode }
+    | { readonly look: "panel"; readonly line: ReactNode; readonly action?: ReactNode }
     | {
         readonly look: "next";
         readonly line: string;
@@ -25,7 +26,15 @@ export function EmptyState(
         readonly action?: ReactNode;
       },
 ) {
-  if (props.look === "panel") return <p className={styles.panel}>{props.line}</p>;
+  if (props.look === "panel") {
+    if (props.action === undefined || props.action === null) return <p className={styles.panel}>{props.line}</p>;
+    return (
+      <div className={styles.panelActing}>
+        <p className={styles.panel}>{props.line}</p>
+        {props.action}
+      </div>
+    );
+  }
   if (props.look === "next")
     return (
       <div className={styles.next}>

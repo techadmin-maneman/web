@@ -90,7 +90,7 @@ function Held({ stock, consumable, place }: { stock: Stock; consumable: Consumab
   );
 }
 
-export interface PlaceNeeds {
+interface PlaceNeeds {
   readonly place: Stock["places"][number];
   readonly below: number;
   readonly out: number;
@@ -98,7 +98,7 @@ export interface PlaceNeeds {
 }
 
 /** The places with something below zero, out or low, the worst first, and how many items each; Today counts them too. */
-export function placesNeedingAttention(stock: Stock): PlaceNeeds[] {
+function placesNeedingAttention(stock: Stock): PlaceNeeds[] {
   return stock.places
     .map((place) => {
       const needs = stock.consumables.map((consumable) => stateOf(stock, consumable, place.id)?.need);

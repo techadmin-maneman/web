@@ -179,6 +179,30 @@ function recordParts(record: string | undefined, head: RecordHead | undefined) {
 /** The pages whose head, on a phone, carries the city as chips; elsewhere it is on More. */
 const CHIPS_ON: readonly Route["page"][] = ["today", "dispatch"];
 
+/** The bar over every page: the menu on a narrow window, where the page sits, the search, the city and Mine. */
+function Bar({ menu, crumbs }: { menu: ReturnType<typeof useMenu>; crumbs: ReturnType<typeof crumbsOf> }) {
+  return (
+    <header className={styles.bar}>
+      <Button
+        variant="quiet"
+        size="small"
+        className={styles.menu}
+        aria-expanded={menu.open}
+        aria-controls={NAV_ID}
+        onClick={menu.toggle}
+      >
+        {menu.open ? shell.closeMenu : shell.menu}
+      </Button>
+      <div className={styles.crumbs}>
+        <Breadcrumbs label={shell.crumbs} crumbs={crumbs} />
+      </div>
+      <HeaderSearch className={styles.search} />
+      <CityPicker className={styles.city} />
+      <Mine />
+    </header>
+  );
+}
+
 interface Props {
   readonly route: Route;
   /** The dispatch board fills the frame beneath its head to its edges, where every other page is padded. */
@@ -194,6 +218,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
   const main = useRef<HTMLElement>(null);
   const { sub, over, heading, record, recordHead, told } = useHeadTold();
   const [actions, setActions] = useState<HTMLElement | null>(null);
+  const [aside, setAside] = useState<HTMLElement | null>(null);
   const menu = useMenu();
   const phone = useIsPhone();
   useFocusOnArrival(headingRef, main);
@@ -210,58 +235,47 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
       </SkipLink>
       <Navigation route={route} open={menu.open} className={styles.nav} />
       <div className={styles.body}>
-        <header className={styles.bar}>
-          <Button
-            variant="quiet"
-            size="small"
-            className={styles.menu}
-            aria-expanded={menu.open}
-            aria-controls={NAV_ID}
-            onClick={menu.toggle}
-          >
-            {menu.open ? shell.closeMenu : shell.menu}
-          </Button>
-          <div className={styles.crumbs}>
-            <Breadcrumbs label={shell.crumbs} crumbs={[...crumbs, { label: title }]} />
-          </div>
-          <HeaderSearch className={styles.search} />
-          <CityPicker className={styles.city} />
-          <Mine />
-        </header>
+        <Bar menu={menu} crumbs={[...crumbs, { label: title }]} />
         {lapsed && <Lapsed />}
         <NotListed />
         <main id="content" ref={main} tabIndex={-1} className={flush ? styles.flushPage : styles.page}>
-          <PageHeader
-            className={flush ? styles.flushHead : styles.head}
-            title={heading ?? title}
-            titleRef={headingRef}
-            meta={sub}
-            over={over}
-            {...recordParts(record, recordHead)}
-            actions={<div className={styles.actions} ref={setActions} />}
-            tabs={
-              route.page === "settings" || route.page === "more" || record !== undefined ? undefined : (
-                <GroupTabs page={route.page} />
-              )
-            }
-          />
-          {phone && (
-            <div className={styles.phoneTools}>
-              <PhoneSearch />
-              <Account />
+          {/* Two columns only where a record sets its facts beside its head (PageAside); otherwise neither is drawn. */}
+          <div className={styles.frame}>
+            <div className={styles.lead}>
+              <PageHeader
+                className={flush ? styles.flushHead : styles.head}
+                title={heading ?? title}
+                titleRef={headingRef}
+                meta={sub}
+                over={over}
+                {...recordParts(record, recordHead)}
+                actions={<div className={styles.actions} ref={setActions} />}
+                tabs={
+                  route.page === "settings" || route.page === "more" || record !== undefined ? undefined : (
+                    <GroupTabs route={route} />
+                  )
+                }
+              />
+              {phone && (
+                <div className={styles.phoneTools}>
+                  <PhoneSearch />
+                  <Account />
+                </div>
+              )}
+              {phone && CHIPS_ON.includes(route.page) && <CityChips className={styles.chips} />}
+              <div aria-live="polite">
+                {note !== null && (
+                  <InlineMessage tone="note" className={styles.note}>
+                    {note}
+                  </InlineMessage>
+                )}
+              </div>
+              <PageHead value={{ ...told, actions, aside }}>
+                <PageTitle value={title}>{children}</PageTitle>
+              </PageHead>
             </div>
-          )}
-          {phone && CHIPS_ON.includes(route.page) && <CityChips className={styles.chips} />}
-          <div aria-live="polite">
-            {note !== null && (
-              <InlineMessage tone="note" className={styles.note}>
-                {note}
-              </InlineMessage>
-            )}
+            <div className={styles.aside} ref={setAside} />
           </div>
-          <PageHead value={{ ...told, actions }}>
-            <PageTitle value={title}>{children}</PageTitle>
-          </PageHead>
         </main>
         {phone && <PhoneTabs route={route} className={styles.tabs} />}
       </div>
