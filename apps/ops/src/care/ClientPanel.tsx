@@ -1,8 +1,7 @@
 // The client beside their chat (docs/decisions/0140-the-client-panel.md): their next and last visit, free service
 // visits and city, with a link to each part of their page where Care book, move or take payment.
 
-import { Note } from "@maneman/ui/Note";
-import { textLinkLook } from "@maneman/ui/TextLink";
+import { buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
@@ -47,13 +46,17 @@ export function ClientPanel({ personId }: { readonly personId: string }) {
         <dt>{copy.city}</dt>
         <dd>{record.address?.city ?? copy.noAddress}</dd>
       </dl>
-      <Note>
+      <div className={styles.panelLinks}>
         {LINKS.map(([tab, label]) => (
-          <OpsLink key={tab} className={textLinkLook({ className: styles.link })} to={clientPath(personId, tab)}>
+          <OpsLink
+            key={tab}
+            className={buttonLook({ variant: "outline", size: "small" })}
+            to={clientPath(personId, tab)}
+          >
             {label}
           </OpsLink>
         ))}
-      </Note>
+      </div>
     </section>
   );
 }

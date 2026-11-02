@@ -213,6 +213,22 @@ afterEach(() => {
 
 const settle = () => answered();
 
+/** Chooses a view by its chip. */
+async function view(name: keyof typeof copy.views) {
+  await act(async () => {
+    [...document.body.querySelectorAll<HTMLButtonElement>('[role="radio"]')]
+      .find((each) => each.textContent.trim() === copy.views[name])
+      ?.click();
+    await answered();
+  });
+}
+
+/** A chat in the list, by who it is with, as its row reads first. */
+const chatButton = (who: string): HTMLButtonElement | null =>
+  [...document.body.querySelectorAll<HTMLButtonElement>(`ul[aria-label="${copy.chats}"] button`)].find((each) =>
+    each.textContent.includes(who),
+  ) ?? null;
+
 async function show() {
   act(() => {
     root.render(createElement(MessagesScreen));
@@ -246,52 +262,42 @@ describe("the Messages page", () => {
     expect(document.body.textContent).toContain("Arjun Mehta");
     expect(document.body.textContent).toContain(ARJUN.last_line);
     expect(document.body.textContent).toContain(copy.unknown);
-    expect(document.body.textContent).toContain(copy.overdue(""));
   });
 
   it("opens a chat with our automatic messages in it, and how far each got", async () => {
     await show();
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      chatButton("Arjun Mehta")?.click();
       await answered();
     });
-    expect(document.body.textContent).toContain(copy.thread.title("Arjun Mehta"));
+    expect(document.body.querySelector(`section[aria-label="${copy.thread.title("Arjun Mehta")}"]`)).not.toBeNull();
     expect(document.body.textContent).toContain(copy.thread.auto("Visit reminder", [copy.thread.delivered]));
     expect(document.body.textContent).toContain(copy.thread.client);
   });
 
   it("shows another view when one is chosen", async () => {
     await show();
-    const select = document.body.querySelector("select");
-    await act(async () => {
-      if (select !== null) {
-        select.value = "closed";
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-      await answered();
-    });
+    await view("closed");
     expect(asked).toContain("/api/conversations?view=closed");
     expect(document.body.textContent).toContain(copy.none);
   });
 
-  it("shows each chat’s Care person, and asks for my clients' chats as Mine", async () => {
+  // Each chat's Care person sat in its row; it now stands beside the chat open, with the client.
+  it("shows the chat's Care person beside it, and asks for my clients' chats as Mine", async () => {
     await show();
-    expect(document.body.textContent).toContain("asha@maneman.test");
-    const select = document.body.querySelector("select");
     await act(async () => {
-      if (select !== null) {
-        select.value = "mine";
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-      }
+      chatButton("Arjun Mehta")?.click();
       await answered();
     });
+    expect(document.body.textContent).toContain(`${copy.carePerson.label}: asha@maneman.test`);
+    await view("mine");
     expect(asked).toContain("/api/conversations?view=mine");
   });
 
   it("moves the client to another of the Care team", async () => {
     await show();
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      chatButton("Arjun Mehta")?.click();
       await answered();
     });
     expect(document.body.textContent).toContain(`${copy.carePerson.label}: asha@maneman.test`);
@@ -325,17 +331,13 @@ describe("the Messages page", () => {
   it("fills a quick reply in with the client’s first name and next visit", async () => {
     await show();
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      chatButton("Arjun Mehta")?.click();
       await answered();
     });
-    const pick = [...document.body.querySelectorAll("select")].find((each) =>
-      [...each.options].some((option) => option.value === LATE.id),
-    );
+    // Each quick reply is a chip over the reply box.
+    const chips = document.body.querySelector(`[role="group"][aria-label="${copy.quick.pick}"]`);
     await act(async () => {
-      if (pick !== undefined) {
-        pick.value = LATE.id;
-        pick.dispatchEvent(new Event("change", { bubbles: true }));
-      }
+      [...(chips?.querySelectorAll("button") ?? [])].find((each) => each.textContent.trim() === LATE.title)?.click();
       await answered();
     });
     const box = [...document.body.querySelectorAll("textarea")].find((each) => each.maxLength === 4096);
@@ -377,7 +379,7 @@ describe("the Messages page", () => {
   it("gives free visits from the chat, with why", async () => {
     await show();
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      chatButton("Arjun Mehta")?.click();
       await answered();
     });
     const press = async (label: string) => {
@@ -418,7 +420,7 @@ describe("the Messages page", () => {
   it("shows the client beside the chat, with the ways into their page", async () => {
     await show();
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      chatButton("Arjun Mehta")?.click();
       await answered();
     });
     const panel = document.body.querySelector(`[aria-label="${copy.panel.title}"]`);
@@ -430,7 +432,7 @@ describe("the Messages page", () => {
   it("sends a matter from the chat to the client’s city", async () => {
     await show();
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      chatButton("Arjun Mehta")?.click();
       await answered();
     });
     const press = async (label: string) => {
@@ -447,7 +449,13 @@ describe("the Messages page", () => {
         box.dispatchEvent(new Event("input", { bubbles: true }));
       }
     });
-    await press(copy.cityMatter.send);
+    // The chat's own Send is beside it; the matter's is in the client's column.
+    await act(async () => {
+      [...document.body.querySelectorAll(`aside[aria-label="${copy.panel.title}"] button`)]
+        .find((each) => each.textContent.trim() === copy.cityMatter.send)
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await answered();
+    });
     expect(posted.at(-1)).toEqual({
       path: `/api/conversations/${ARJUN.id}/city-matter`,
       body: { note: "Needs a re-fit." },
@@ -474,7 +482,7 @@ describe("the Messages page", () => {
     const panel = () => document.body.querySelector(`section[aria-label="${copy.stranger.title}"]`) ?? page;
     const named = (text: string) =>
       [...panel().querySelectorAll("button")].find((each) => each.textContent.trim() === text);
-    await click(document.body.querySelector(`button[aria-label="${copy.openLabel(STRANGER.mobile)}"]`));
+    await click(chatButton(copy.unknown));
     expect(document.body.textContent).toContain(copy.stranger.title);
     type(panel().querySelector<HTMLInputElement>('input[maxlength="60"]') ?? undefined, "Arjun");
     await click(named(copy.stranger.search));
@@ -616,7 +624,7 @@ describe("the Messages page", () => {
   it("replies from our number, adds a note, and closes the chat with what it was about", async () => {
     await show();
     await act(async () => {
-      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      chatButton("Arjun Mehta")?.click();
       await answered();
     });
     const box = document.body.querySelector("textarea");
@@ -635,7 +643,14 @@ describe("the Messages page", () => {
     await press(copy.compose.send);
     expect(posted).toEqual([{ path: `/api/conversations/${ARJUN.id}/replies`, body: { text: "Yes, 6 pm works." } }]);
     expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.compose.sent);
+    // Close chat, in the chat's head, opens a drawer asking what it was about, with its own Close chat.
     await press(copy.compose.closeChat);
+    await act(async () => {
+      [...document.body.querySelectorAll("dialog button")]
+        .find((each) => each.textContent.trim() === copy.compose.closeChat)
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await answered();
+    });
     expect(posted.at(-1)).toEqual({ path: `/api/conversations/${ARJUN.id}/close`, body: { reason: "other" } });
     expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.compose.closed);
   });

@@ -1,6 +1,8 @@
-// A person's initials in a square, before their name where a page is theirs: "RM" for Rohit Malhotra. It says
+// A person's initials in a square, before their name where a page is theirs, or small before it in a list: "RM" for
+// Rohit Malhotra. It says
 // nothing the name beside it does not, so a screen reader passes over it.
 
+import { classes } from "./classes.ts";
 import styles from "./initials.module.css";
 
 /** The first letters of the first two words of a name, or the first two letters of a name of one word. */
@@ -9,9 +11,9 @@ export function initialsOf(name: string): string {
   return (second === "" ? first.slice(0, 2) : `${first.slice(0, 1)}${second.slice(0, 1)}`).toUpperCase();
 }
 
-export function Initials({ name }: { readonly name: string }) {
+export function Initials({ name, small = false }: { readonly name: string; readonly small?: boolean }) {
   return (
-    <span className={styles.initials} aria-hidden="true">
+    <span className={classes(styles.initials, small && styles.small)} aria-hidden="true">
       {initialsOf(name)}
     </span>
   );

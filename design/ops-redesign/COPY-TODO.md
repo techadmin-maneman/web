@@ -46,3 +46,6 @@ Each slot the redesign adds where the console had no words of its own. None wait
 | Client     | Its way to book                            | Book a service visit                                                  | `clients.visits.bookKind`  |
 | Client     | Messages, with no chat                     | No messages yet.                                                      | `care.clientChat.none`     |
 | Client     | The last tab                               | History                                                               | `clients.history.title`    |
+| Messages   | Beneath the chat's name                    | Waiting on us · 38 min · reply by Mon 21 Sep, 11:42 am                | `care.thread.waiting`      |
+| Messages   | Our automatic messages, folded             | 3 automatic messages · Show them / Hide them                          | `care.thread.autos`        |
+| Messages   | The reply box's other use                  | Note for the team                                                     | `care.compose.noteMode`    |

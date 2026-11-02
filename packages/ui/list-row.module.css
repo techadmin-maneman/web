@@ -65,6 +65,13 @@
     outline-offset: var(--focus-inset);
   }
 
+  /* The row whose thing is open beside the list, on the page's ground, its rule in the ink unless its tone says more. */
+  .current {
+    --rule: var(--ui-strong);
+
+    background: var(--ui-ground);
+  }
+
   .attention {
     --rule: var(--ui-accent);
   }

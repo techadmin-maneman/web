@@ -14,4 +14,10 @@
     font-size: var(--fs-24);
     color: var(--ui-text);
   }
+
+  .small {
+    width: var(--sp-36);
+    height: var(--sp-36);
+    font-size: var(--fs-14);
+  }
 }
