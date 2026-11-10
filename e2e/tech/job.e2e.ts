@@ -1,7 +1,7 @@
-// The job card and the evidence chain at the door: arrive, wait, and
-// either start the job or close it as a no-show. A charge-bearing close is
-// never one unconfirmed tap, a started job offers nothing but its next step,
-// and the wait counts whether or not the phone has signal.
+// The job and At the door (docs/decisions/0243-job-and-the-door.md): check in, wait, and either start the visit or close
+// it as a no-show. A charge-bearing close is never one unconfirmed tap, and it waits for the WhatsApp's state, a call
+// and the door's photograph as well as the wait. A started job offers nothing but its next step, and the wait counts
+// whether or not the phone has signal.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
@@ -11,15 +11,30 @@ import { fakeTech } from "./fake-tech.ts";
 import { atTheDoor, pageScrolls } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
-/** The one gold action at the foot of the screen, which the evidence chain hands on stage by stage. */
+const door = techCopy.notHome.door;
+
+/** The action bar at the foot of the screen, which the job hands on stage by stage. */
 const foot = (page: Page) => page.locator("main > div").last().getByRole("button");
 
-/** Opens the card and checks in at the door. */
+/** Opens the job and checks in at the door, which opens At the door. */
 async function arrive(page: Page): Promise<void> {
   await atTheDoor(page);
   await page.goto(`/jobs/${JOB_ID}`);
   await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
-  await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: door.title })).toBeVisible();
+}
+
+/** What a no-show needs besides the wait: the call made from the door, and its photograph. */
+async function gatherEvidence(page: Page): Promise<void> {
+  // A tel: link the browser cannot follow; the tap is what the phone keeps.
+  await page.getByRole("link", { name: door.call("Rohit") }).dispatchEvent("click");
+  await expect(page.getByText(/^Called /)).toBeVisible();
+  await page.getByRole("button", { name: door.take, exact: true }).click();
+  const shutter = page.getByRole("button", { name: techCopy.notHome.camera.shutter });
+  await expect(shutter).toBeEnabled({ timeout: 10_000 });
+  await expect(page.getByText(techCopy.notHome.camera.prompt)).toBeVisible();
+  await shutter.click();
+  await expect(page.getByText(door.taken, { exact: true })).toBeVisible();
 }
 
 test("sends Navigate to a route any phone opens, by the pin when the address has one", async ({ page }) => {
@@ -33,18 +48,36 @@ test("sends Navigate to a route any phone opens, by the pin when the address has
   await expect(navigate).toHaveAttribute("target", "_blank");
 });
 
-// "WhatsApp Rohan" broke over two lines beside "Call Rohan".
-test("calls and messages the client from two one-word buttons, each naming the client to a screen reader", async ({
+test("gives Navigate, Call and Message as three tiles of one height, each naming the client to a screen reader", async ({
   page,
 }) => {
   await fakeTech(page);
   await page.goto(`/jobs/${JOB_ID}`);
   const call = page.getByRole("link", { name: techCopy.job.call("Rohit"), exact: true });
-  const whatsApp = page.getByRole("link", { name: techCopy.job.whatsApp("Rohit"), exact: true });
-  await expect(call).toHaveText(techCopy.job.callShort);
-  await expect(whatsApp).toHaveText(techCopy.job.whatsAppShort);
-  const heights = await Promise.all([call, whatsApp].map((link) => link.evaluate((each) => each.clientHeight)));
-  expect(heights[0]).toBe(heights[1]);
+  const tiles = [
+    page.getByRole("link", { name: techCopy.job.navigate }),
+    call,
+    page.getByRole("button", { name: techCopy.job.message("Rohit"), exact: true }),
+  ];
+  await expect(call).toHaveAttribute("href", "tel:+919810000000");
+  const heights = await Promise.all(tiles.map((tile) => tile.evaluate((each) => each.clientHeight)));
+  expect(new Set(heights).size).toBe(1);
+});
+
+test("sends the client an update from the Message sheet, once, and says what went", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("button", { name: techCopy.job.message("Rohit") }).click();
+
+  const sheet = page.getByRole("dialog", { name: techCopy.job.tell.title("Rohit") });
+  await sheet.getByRole("button", { name: techCopy.job.tell.minute(30) }).click();
+  await sheet.getByRole("button", { name: techCopy.job.tell.onTheWay(30) }).click();
+  await expect(page.getByText(techCopy.job.tell.sent(techCopy.job.tell.onTheWay(30)))).toBeVisible();
+  await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/updates")).length).toBe(1);
+  expect(fake.writes.find((write) => write.path.endsWith("/updates"))?.body).toEqual({
+    preset: "on_the_way",
+    minutes: 30,
+  });
 });
 
 test("says a job that is no longer theirs is off their list, with the way back to Today at the top", async ({
@@ -60,7 +93,7 @@ test("says a job that is no longer theirs is off their list, with the way back t
   await expect(page).toHaveURL(/\/$/);
 });
 
-test("sends Navigate to the typed address when it was saved without a pin", async ({ page }) => {
+test("sends Navigate to the typed address when it was saved without a pin, and says it has none", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.pin = false;
   await page.goto(`/jobs/${JOB_ID}`);
@@ -69,9 +102,12 @@ test("sends Navigate to the typed address when it was saved without a pin", asyn
     "href",
     "https://www.google.com/maps/dir/?api=1&destination=Tower%20C%2C%2014th%20floor%2C%20Sector%2065%2C%20Gurgaon%20122018",
   );
+  await expect(page.getByRole("img", { name: techCopy.job.map.noPin })).toBeVisible();
 });
 
-test("shows the flat, floor, tower, building and landmark, and a way to reach the client", async ({ page }) => {
+test("shows the flat, floor, tower, building and landmark, the way in with Copy, and the client's note", async ({
+  page,
+}) => {
   const fake = await fakeTech(page);
   fake.address = {
     line1: "Emerald Heights",
@@ -81,22 +117,20 @@ test("shows the flat, floor, tower, building and landmark, and a way to reach th
     flat: "1402",
     landmark: "Opposite the water tank",
   };
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto(`/jobs/${JOB_ID}`);
 
   // As the client app writes it, narrowest first (apps/app/src/profile/AddressSection.tsx).
   await expect(page.getByText("1402, 14th floor, C, Emerald Heights, Sector 65, Gurgaon 122018")).toBeVisible();
-  // As the client typed it, under its own label, never "Near Opposite the water tank".
-  await expect(page.getByText(techCopy.job.landmark, { exact: true })).toBeVisible();
+  // As the client typed it, never "Near Opposite the water tank".
   await expect(page.getByText("Opposite the water tank", { exact: true })).toBeVisible();
   await expect(page.getByText(/Near Opposite/)).toHaveCount(0);
   // A map finds the building, not the flat.
   await expect(page.getByRole("link", { name: techCopy.job.navigate })).toHaveAttribute("href", /destination=28\.39/);
 
-  await expect(page.getByRole("link", { name: "Call Rohit" })).toHaveAttribute("href", "tel:+919810000000");
-  await expect(page.getByRole("link", { name: "WhatsApp Rohit" })).toHaveAttribute(
-    "href",
-    "https://wa.me/919810000000",
-  );
+  await page.getByRole("button", { name: techCopy.job.copyWayIn }).click();
+  await expect(page.getByRole("status").filter({ hasText: techCopy.job.copied })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("Gate code 4417 · visitor bay B");
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -133,19 +167,19 @@ test("says what a first fit was paid for, apart from the hair profile, and warns
 });
 
 // Waiting at the door for the client, the job reads so on Today, which the day's list alone never says.
-test("marks a job they checked in at as at the door on Today", async ({ page }) => {
+test("marks a job they checked in at as at the door on Today, and opens At the door from the job", async ({ page }) => {
   await fakeTech(page);
-  await atTheDoor(page);
-  await page.goto(`/jobs/${JOB_ID}`);
-  await foot(page).click();
-  await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
+  await arrive(page);
 
   await page.goto("/");
   await expect(page.getByText(techCopy.job.states.atTheDoor)).toBeVisible();
+  await page.goto(`/jobs/${JOB_ID}`);
+  await foot(page).click();
+  await expect(page.getByRole("heading", { level: 1, name: door.title })).toBeVisible();
 });
 
-// On a slow network the card said Loading… each time it opened, though the phone held it.
-test("opens a card the phone holds at once on a slow network", async ({ page }) => {
+// On a slow network the job said Loading… each time it opened, though the phone held it.
+test("opens a job the phone holds at once on a slow network", async ({ page }) => {
   const fake = await fakeTech(page);
   await page.goto(`/jobs/${JOB_ID}`);
   await expect(page.getByRole("link", { name: "Call Rohit" })).toBeVisible();
@@ -154,7 +188,7 @@ test("opens a card the phone holds at once on a slow network", async ({ page }) 
   await expect(page.getByRole("link", { name: "Call Rohit" })).toBeVisible({ timeout: 2000 });
 });
 
-test("gives a consultation’s card the hair profile and no piece", async ({ page }) => {
+test("gives a consultation the hair profile and no piece", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "consultation";
   fake.profile = ROHITS_PROFILE;
@@ -183,22 +217,21 @@ test("opens a consultation’s Options: each package and what it costs, and the 
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("checks in at the door, and records the time and the distance (board B5)", async ({ page }) => {
+test("checks in at the door, and records the time and the distance", async ({ page }) => {
   const fake = await fakeTech(page);
   // Booked to start ten minutes ago, so the wait runs from the check-in, whatever time of day the test runs.
   fake.startsAt = new Date(Date.now() - 10 * 60_000).toISOString();
   await atTheDoor(page);
   await page.goto(`/jobs/${JOB_ID}`);
 
-  await expect(page.getByText(techCopy.notHome.arrived.step)).toBeVisible();
-  // The radius ops set, not a fixed 200 m.
-  await expect(page.getByText("Tap at the door. We record the time and check you are within 150 m.")).toBeVisible();
-  // The one action sits at the foot of the card, where every screen keeps it.
+  // The radius ops set, said above the one action at the foot.
+  await expect(page.getByText("Check in within 150 m of the door.")).toBeVisible();
   await expect(foot(page)).toHaveText(techCopy.notHome.arrived.action);
   await foot(page).click();
 
-  await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
-  await expect(page.getByText(/left of 15 minutes/)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: door.title })).toBeVisible();
+  await expect(page.getByText(door.waitingFor("Rohit"))).toBeVisible();
+  await expect(page.getByText(door.of(15))).toBeVisible();
   // Checked in after the booked start, the wait runs from the check-in: never "the booked start" for a moment.
   await expect(page.getByText(/the booked start/)).toHaveCount(0);
   const checkIn = fake.writes.find((write) => write.path.endsWith("/checkin"));
@@ -209,7 +242,9 @@ test("checks in at the door, and records the time and the distance (board B5)", 
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("refuses a check-in from away, and says how far, with no way to close a no-show", async ({ page }) => {
+test("refuses a check-in from away, and says how far, with Try again and no way to close a no-show", async ({
+  page,
+}) => {
   const fake = await fakeTech(page);
   fake.checkIn = { passed: false, distance_m: 1400 };
   await atTheDoor(page, 28.42, 77.12);
@@ -217,55 +252,46 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
 
   await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
   await expect(page.getByText(techCopy.notHome.failed.title)).toBeVisible();
-  await expect(page.getByText("You are 1.4 km from the address.")).toBeVisible();
-  await expect(page.getByText(/^Go to the door and tap again\. Still refused\? Call ops\./)).toBeVisible();
-  await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toHaveCount(0);
-  // The evidence chain draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
-  await expect(page.getByRole("button", { name: techCopy.notHome.failed.action })).toBeVisible();
-  await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
+  await expect(page.getByText(/You are 1\.4 km from the address\. Go to the door and tap again\./)).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
+  await expect(page.getByRole("button", { name: door.close })).toHaveCount(0);
+  await expect(foot(page)).toHaveText(techCopy.job.retry);
 
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("keeps Close as no-show dim and outlined beside the gold Start job until the wait has run", async ({ page }) => {
+test("keeps Close as no-show off until the wait has run, and says what it waits on", async ({ page }) => {
   const fake = await fakeTech(page);
   // Booked to start ten minutes ago, so the wait runs from the check-in, whatever time of day the test runs.
   fake.startsAt = new Date(Date.now() - 10 * 60_000).toISOString();
   fake.waitLeftMs = 4_000;
   await arrive(page);
 
-  const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
+  const close = page.getByRole("button", { name: door.close });
   await expect(close).toBeDisabled();
+  await expect(page.getByText(door.waitFirst)).toBeVisible();
   await expect(foot(page)).toHaveText(techCopy.job.start);
-  // No WhatsApp reached them, so the wait asks for a call before the close.
-  await expect(page.getByRole("link", { name: techCopy.notHome.waiting.callFirst("Rohit") })).toHaveAttribute(
-    "href",
-    /^tel:/,
-  );
-  // One gold action per screen: Close as no-show is never the same button as Start job.
-  const gold = await close.evaluate((button) => getComputedStyle(button).backgroundColor);
-  expect(gold).not.toBe("rgb(201, 163, 99)");
 
-  await expect(close).toBeEnabled({ timeout: 15_000 });
-  expect(await close.evaluate((button) => getComputedStyle(button).backgroundColor)).not.toBe("rgb(201, 163, 99)");
-  // The wait's end is said, not only drawn.
-  await expect(page.getByRole("status").filter({ hasText: techCopy.notHome.waiting.over })).toBeAttached();
+  // The wait's end is said, not only drawn; then the call and the photograph are what is missing.
+  await expect(page.getByRole("status").filter({ hasText: door.over })).toBeAttached({ timeout: 15_000 });
+  await expect(page.getByText(door.evidenceFirst)).toBeVisible();
+  await expect(close).toBeDisabled();
 });
 
-test("asks before closing as a no-show, since ops may charge the client", async ({ page }) => {
+test("asks before closing as a no-show, since ops decide on the charge", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.waitLeftMs = 1_000;
   fake.reminderDelivered = new Date().toISOString();
   await arrive(page);
+  await expect(page.getByText(/^Delivered /)).toBeVisible();
+  await gatherEvidence(page);
 
-  const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
+  const close = page.getByRole("button", { name: door.close });
   await expect(close).toBeEnabled({ timeout: 10_000 });
-  await expect(page.getByRole("link", { name: techCopy.notHome.waiting.callFirst("Rohit") })).toHaveCount(0);
   await close.click();
 
   const sheet = page.getByRole("dialog", { name: techCopy.notHome.confirm.title });
-  await expect(sheet).toBeVisible();
-  await expect(sheet).toContainText("The client may be charged");
+  await expect(sheet).toContainText(techCopy.notHome.confirm.prepaid("Rohit"));
   // It opens on the safe answer, so one stray Enter charges nobody.
   await expect(sheet.getByRole("button", { name: techCopy.notHome.confirm.no })).toBeFocused();
   expect(await axeViolations(page)).toEqual([]);
@@ -276,56 +302,52 @@ test("asks before closing as a no-show, since ops may charge the client", async 
   expect(fake.writes.filter((write) => write.path.endsWith("/no-show"))).toHaveLength(0);
 
   await close.click();
-  await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.waiting.close }).click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.confirm.yes }).click();
 
-  // The evidence chain's close: the evidence ops rule on, and what happens next.
+  // The close: the evidence ops rule on, and what happens next.
   await expect(page.getByRole("heading", { name: "Rohit M. · no-show" })).toBeVisible();
   await expect(page.getByText(techCopy.closeOut.noShow.ops)).toBeVisible();
   await expect(page.getByText(techCopy.closeOut.noShow.checkedIn)).toBeVisible();
   await expect(page.getByText("40 m")).toBeVisible();
-  await expect(page.getByText(/^Delivered /)).toBeVisible();
   await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/no-show")).length).toBe(1);
   expect(await axeViolations(page)).toEqual([]);
 });
 
 // A no-show once carried nothing of the door: no note, and no photograph to settle a dispute with.
-test("sends a note and a photograph of the door with the close, the photograph up first", async ({ page }) => {
+test("sends a note and the door's photograph with the close, the photograph up first", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.waitLeftMs = 1_000;
   fake.reminderDelivered = new Date().toISOString();
   await arrive(page);
 
-  await page.getByLabel(techCopy.notHome.door.note).fill("Rang twice; the gate was locked.");
-  await page.getByRole("button", { name: techCopy.notHome.door.photo }).click();
-  const take = page.getByRole("button", { name: techCopy.notHome.door.shutter });
-  await expect(take).toBeEnabled({ timeout: 10_000 });
-  await take.click();
-  await expect(page.getByText(techCopy.notHome.door.taken)).toBeVisible();
+  await page.getByLabel(door.note).fill("Rang twice; the gate was locked.");
+  await gatherEvidence(page);
   expect(await axeViolations(page)).toEqual([]);
 
-  const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
+  const close = page.getByRole("button", { name: door.close });
   await expect(close).toBeEnabled({ timeout: 10_000 });
   await close.click();
-  await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.waiting.close }).click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.confirm.yes }).click();
   await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/no-show")).length).toBe(1);
   const sent = fake.writes.find((write) => write.path.endsWith("/no-show"))?.body;
   expect(sent).toEqual({ note: "Rang twice; the gate was locked.", door_photo: fake.doorPhotos[0] });
 });
 
-test("a no-show the API refuses as early stays open on the card, and never reads as done", async ({ page }) => {
+test("a no-show the API refuses as early stays open at the door, and never reads as done", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.waitLeftMs = 1_000;
   fake.tooEarly = true;
   await arrive(page);
+  await gatherEvidence(page);
 
-  const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
+  const close = page.getByRole("button", { name: door.close });
   await expect(close).toBeEnabled({ timeout: 10_000 });
   await close.click();
-  await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.waiting.close }).click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.confirm.yes }).click();
 
-  // The phone's clock ran ahead of ours: nothing was recorded, and the card says so.
-  await expect(page.getByText(techCopy.notHome.waiting.early)).toBeVisible();
-  await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
+  // The phone's clock ran ahead of ours: nothing was recorded, and the screen says so.
+  await expect(page.getByText(door.early)).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}/door$`));
   expect(fake.writes.filter((write) => write.path.endsWith("/no-show"))).toHaveLength(0);
 
   // And the close-out, opened by hand, does not claim the job was done.
@@ -339,7 +361,7 @@ test("a no-show the API refuses as early stays open on the card, and never reads
   await expect(page.getByText(/uploads? failed$/)).toHaveCount(0);
 });
 
-test("a phone that lost its copy of the check-in still counts the wait and can close the no-show", async ({ page }) => {
+test("a phone that lost its copy of the check-in still counts the wait at the door", async ({ page }) => {
   const fake = await fakeTech(page);
   // Checked in on another store — the browser, before the app was installed — a minute and more ago.
   const checkedIn = new Date(Date.now() - 16 * 60_000);
@@ -350,17 +372,15 @@ test("a phone that lost its copy of the check-in still counts the wait and can c
     distance_m: 40,
   };
   await page.goto(`/jobs/${JOB_ID}`);
+  await expect(foot(page)).toHaveText(techCopy.job.atTheDoor);
+  await foot(page).click();
 
-  await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
   await expect(page.getByText(/^No signal/)).toHaveCount(0);
-  await expect(page.getByText("0:00")).toBeVisible();
-  await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toBeEnabled();
+  await expect(page.getByText("15:00")).toBeVisible();
+  await expect(page.getByText(door.evidenceFirst)).toBeVisible();
 });
 
-test("with no signal the wait still counts down from the tap, and says what closing needs", async ({
-  page,
-  context,
-}) => {
+test("with no signal the wait still counts from the tap, and says what closing needs", async ({ page, context }) => {
   const fake = await fakeTech(page);
   // Booked for an hour ago, so the wait counts from the tap whatever the time of day the test runs.
   fake.startsAt = new Date(Date.now() - 60 * 60_000).toISOString();
@@ -373,14 +393,14 @@ test("with no signal the wait still counts down from the tap, and says what clos
   await context.setOffline(true);
   await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
 
-  await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
-  await expect(page.getByText(/^1[45]:\d\d$/)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: door.title })).toBeVisible();
+  await expect(page.getByText(/^0:0\d$/)).toBeVisible();
   await expect(page.getByText(/^No signal\. The wait counts from your tap/)).toBeVisible();
   // Ours has to hold the check-in for the wait as well (ADR 0065), so the close waits for signal.
-  await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toBeDisabled();
+  await expect(page.getByRole("button", { name: door.close })).toBeDisabled();
 });
 
-test("a started job offers only its next step: no check-in, no no-show, no second Start job", async ({ page }) => {
+test("a started job offers only its next step: no check-in, no door, no second Start visit", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.progress = {
     ...fake.progress,
@@ -393,16 +413,19 @@ test("a started job offers only its next step: no check-in, no no-show, no secon
   await page.goto(`/jobs/${JOB_ID}`);
 
   await expect(foot(page)).toHaveText(techCopy.job.continueJob);
-  await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: techCopy.job.atTheDoor })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
   await expect(page.getByText(techCopy.job.states.inProgress)).toBeVisible();
 
+  // At the door, opened by hand, goes back to the job: the visit is under way.
+  await page.goto(`/jobs/${JOB_ID}/door`);
+  await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
   await foot(page).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
 });
 
-test("a closed job reads as closed, with no gold Continue", async ({ page }) => {
+test("a closed job reads as closed, with View summary", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.progress = {
     ...fake.progress,
@@ -415,7 +438,7 @@ test("a closed job reads as closed, with no gold Continue", async ({ page }) => 
 
   await expect(page.getByText("Closed out · done")).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.job.continueJob })).toHaveCount(0);
-  await page.getByRole("button", { name: techCopy.job.seeCloseOut }).click();
+  await page.getByRole("button", { name: techCopy.job.viewSummary }).click();
   await expect(page.getByRole("heading", { name: "Rohit M. · done" })).toBeVisible();
 });
 
@@ -425,18 +448,15 @@ test("tomorrow’s job shows its day, and cannot be checked in to today", async 
   await atTheDoor(page);
   await page.goto(`/jobs/${TOMORROW_JOB_ID}`);
 
-  await expect(page.getByText(/^Tomorrow · 10–10:30 am · service visit · 1 h 30 min$/)).toBeVisible();
+  await expect(page.getByText(/^Tomorrow · 10–10:30 am · service visit · no charge$/)).toBeVisible();
   await expect(page.getByText(techCopy.job.notToday.tomorrow)).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
 });
 
-test("walks the six steps of a service visit and closes it out (boards B1 to B4)", async ({ page }) => {
+test("walks the steps of a service visit and closes it out", async ({ page }) => {
   const fake = await fakeTech(page);
-  await atTheDoor(page);
-  await page.goto(`/jobs/${JOB_ID}`);
-
-  await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
+  await arrive(page);
   await page.getByRole("button", { name: techCopy.job.start }).click();
 
   // Step 1: the before set.
@@ -463,7 +483,7 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   await page.getByRole("button", { name: "One more tape strips" }).click();
   await page.getByRole("button", { name: techCopy.steps.next }).click();
 
-  // Step 5: the after set. A service visit has no piece step; the API leaves it out.
+  // Step 4: the after set. A service visit has no piece step; the API leaves it out.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.after })).toBeVisible();
   await expect(capture).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
@@ -472,7 +492,7 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   }
   await page.getByRole("button", { name: techCopy.steps.outcome.done }).click();
 
-  // Step 6: the outcome, with nothing chosen for them.
+  // Step 5: the outcome, with nothing chosen for them.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.choose })).toBeDisabled();
   await page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true }).click();
@@ -496,25 +516,23 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
 test.describe("on a 360 × 640 phone", () => {
   test.use({ viewport: { width: 360, height: 640 } });
 
-  test("keeps I have arrived, then Start job, at the foot of a long card, its head in view", async ({ page }) => {
+  test("keeps Check in, then Start visit, at the foot of a long screen, its head in view", async ({ page }) => {
     const fake = await fakeTech(page);
     fake.pieces = [ROHITS_PIECE];
     fake.lastVisit = true;
     await atTheDoor(page);
     await page.goto(`/jobs/${JOB_ID}`);
 
-    const heading = page.getByRole("heading", { level: 1, name: "Rohit M." });
     await expect(foot(page)).toHaveText(techCopy.notHome.arrived.action);
     await expect(foot(page)).toBeInViewport({ ratio: 1 });
-    await expect(heading).toBeInViewport({ ratio: 1 });
-    // Only the card scrolls, between the head and the foot: never the page.
+    await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeInViewport({ ratio: 1 });
+    // Only the body scrolls, between the head and the foot: never the page.
     expect(await pageScrolls(page)).toBe(false);
 
     await foot(page).click();
-    await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: door.title })).toBeInViewport({ ratio: 1 });
     await expect(foot(page)).toHaveText(techCopy.job.start);
     await expect(foot(page)).toBeInViewport({ ratio: 1 });
-    await expect(heading).toBeInViewport({ ratio: 1 });
     expect(await pageScrolls(page)).toBe(false);
   });
 });

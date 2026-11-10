@@ -1,50 +1,28 @@
-/* The client's record on the job's card (./ClientRecord.tsx), on the ink: the alerts edged in the error's colour, the
-   handoff note with its visit's photographs in one row, and the way to the client's history. */
+/* The client's record on the job (./ClientRecord.tsx), in the new look: the alerts in a problem card, the handoff note
+   with its visit's photographs in one row, and the row to the client's history. */
 
 .record {
-  padding: var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
+  padding: var(--sp-24) var(--screen-gutter) 0;
 }
 
 .alerts {
-  padding: var(--sp-16);
-  border: var(--rule-strong) solid var(--error-on-ink);
-}
-
-.alertsTitle {
-  margin: 0;
-  font-size: var(--fs-17);
-  font-weight: var(--weight-medium);
-  color: var(--error-on-ink);
+  margin-bottom: var(--sp-24);
 }
 
 .alertList {
-  margin: var(--sp-8) 0 0;
+  margin: 0;
   padding-left: var(--sp-20);
-  font-size: var(--fs-17);
-  line-height: var(--lh-160);
-  color: var(--paper);
+  font-size: var(--fs-15);
 }
 
 .handoff {
-  margin-top: var(--sp-16);
-}
-
-.handoffHead {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-4) var(--sp-12);
-  justify-content: space-between;
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
+  margin-bottom: var(--sp-16);
 }
 
 .handoffNote {
   margin: var(--sp-8) 0 0;
-  font-size: var(--fs-17);
-  line-height: var(--lh-160);
-  color: var(--paper);
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
 }
 
 .photos {
@@ -58,14 +36,9 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  background: var(--ink-deep);
+  background: var(--placeholder);
 }
 
 .history {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tech-min);
-  margin-top: var(--sp-12);
-  font-size: var(--fs-17);
-  color: var(--paper);
+  margin: 0;
 }

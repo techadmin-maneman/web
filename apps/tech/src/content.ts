@@ -374,36 +374,44 @@ export const job = {
   tomorrow: "Tomorrow",
   // The board writes "1 slot"; the visit's length says more.
   minutes: lengthOf,
+  /** The map's place at the top: the drive there when the day's list knows it; an address with no pin says so. */
+  map: {
+    label: "Map with a pin at the client’s address",
+    noPin: "No map pin for this address",
+    line: (drive: number | null) => (drive === null ? "Map" : `Map · ${String(drive)} min drive`),
+  },
   navigate: "Navigate",
-  // The design draws no landmark; the client types it as they like, so it shows as typed.
-  landmark: "Landmark",
-  // The design draws no client's note; the client leaves one in their app.
-  clientNote: (who: string, note: string) => `${who}’s note: ${note}`,
-  // The board draws no way to reach the client from the card. The buttons say the act; a screen reader hears whom.
+  /** The way in, from the access notes (owner): copied whole, for a gate's keypad. */
+  copyWayIn: "Copy the way in",
+  copied: "Copied",
+  noteFrom: (who: string) => `Note from ${who}: `,
+  // The buttons say the act; a screen reader hears whom.
   callShort: "Call",
   call: (who: string) => `Call ${who}`,
+  messageShort: "Message",
+  message: (who: string) => `Message ${who}`,
   /** A word to the client from our number (docs/decisions/0145-technician-presets.md). */
   tell: {
-    open: (who: string) => `Send ${who} an update`,
-    title: (who: string) => `Update ${who}`,
+    title: (who: string) => `Message ${who}`,
     close: "Close",
     minutes: "Minutes",
     minute: (minutes: number) => `${String(minutes)} min`,
-    onTheWay: (minutes: number) => `On my way · ${String(minutes)} min`,
+    onTheWay: (minutes: number) => `On my way, ${String(minutes)} min`,
     late: (minutes: number) => `Running ${String(minutes)} min late`,
     fromUs: "Sent on WhatsApp from Mane Man’s number.",
     sentAt: (time: string) => `Sent at ${time}`,
-    sent: (who: string, time: string) => `${who} updated at ${time}.`,
+    /** "Sent: on my way, 20 min", under the actions. */
+    sent: (what: string) => `Sent: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
     noWhatsApp: (who: string) => `${who} doesn’t take WhatsApp updates. Call instead.`,
   },
-  whatsAppShort: "WhatsApp",
-  whatsApp: (who: string) => `WhatsApp ${who}`,
-  start: "Start job",
+  checkIn: "Check in",
+  atTheDoor: "At the door",
+  start: "Start visit",
   continueJob: "Continue",
+  viewSummary: "View summary",
   // The board draws no job's state on its card or its row.
   states: { inProgress: "In progress", closed: "Closed out", atTheDoor: "At the door" },
   closedAs: (outcome: string) => `Closed out · ${outcome}`,
-  seeCloseOut: "See the close-out",
   notToday: {
     tomorrow: "This job is tomorrow. Arrive and start it on the day.",
     other: "This job isn’t today’s. Arrive and start it on its day.",
@@ -447,19 +455,14 @@ export const job = {
   backToToday: "Back to today",
 } as const;
 
-/** The evidence chain when the client is not home. */
+/** Checking in at the door, and the no-show's evidence while the client does not answer. */
 export const notHome = {
   arrived: {
-    step: "1 · Arrived",
-    // The board writes 200 m; the radius is ops' to set, and a card kept by an earlier build has none.
+    // The radius is ops' to set, and a card kept by an earlier build has none.
     body: (radiusM: number | null) =>
-      radiusM === null
-        ? "Tap at the door. We record the time and check you are at the address."
-        : `Tap at the door. We record the time and check you are within ${String(radiusM)} m.`,
-    action: "I have arrived",
-    // The board draws no check-in before its time.
+      radiusM === null ? "Check in at the door." : `Check in within ${String(radiusM)} m of the door.`,
+    action: "Check in",
     opensAt: (time: string) => `Check-in opens at ${time}.`,
-    // The board draws no screen for a phone that will not give its position.
     noPosition: "This phone won’t give its position. Check its permissions, then tap again.",
     // An address saved without a building picked from the map has no pin: the check-in records the time alone.
     noPin: "No map pin: the check-in records the time only.",
@@ -467,56 +470,65 @@ export const notHome = {
   failed: {
     title: "Check-in failed",
     away: (km: string) => `You are ${km} from the address.`,
-    // The board draws a distance; an address with no coordinates has none (ADR 0036).
+    // An address with no coordinates has none (ADR 0036).
     unmeasured: "We couldn’t measure how far you are from the address.",
     body: "Go to the door and tap again. Still refused? Call ops.",
     action: "Try again",
   },
-  waiting: {
-    step: "2 · Waiting",
-    left: (minutes: number) => `left of ${String(minutes)} minutes`,
-    // The board draws no arrival before the booked start.
+  /** At the door, after the check-in. */
+  door: {
+    title: "At the door",
+    checkedIn: (who: string, time: string) => `${who} · checked in ${time}`,
+    waitingFor: (who: string) => `Waiting for ${who}`,
+    of: (minutes: number) => `of ${String(minutes)} min`,
+    booked: (time: string) => `Booked for ${time}`,
     fromStart: (time: string) => `The wait starts at ${time}, the booked start.`,
-    // The board draws the wait running, not the moment it ends.
     over: "The wait is over.",
-    // The board draws the check running, not one waiting for signal. The API counts the wait from when
-    // the check-in reaches it as well as from the tap (ADR 0065), so a no-show cannot close before it has.
+    // The API counts the wait from when the check-in reaches it as well as from the tap (ADR 0065), so a no-show
+    // cannot close before it has.
     fromTap: "No signal. The wait counts from your tap; closing needs signal.",
-    // The board draws no no-show refused.
     early: "The wait isn’t over yet. Try again in a minute.",
+    needed: "Needed for a no-show",
+    whatsApp: (who: string) => `WhatsApp to ${who}`,
+    delivered: (time: string) => `Delivered ${time}`,
+    notDelivered: "Sent, not delivered",
+    onItsWay: "Sending now",
+    noneSent: "Not sent",
+    call: (who: string) => `Call ${who}`,
+    callAction: "Call",
+    called: (time: string) => `Called ${time}`,
+    notCalled: "Not called",
+    photo: "Photo of the door",
+    taken: "Taken",
+    notTaken: "Not taken",
+    take: "Take",
+    retake: "Retake",
+    note: "Note for ops (optional)",
+    waitFirst: "Available when the wait ends",
+    evidenceFirst: "Call and take the door photo first",
     close: "Close as no-show",
-    // The board's "Rohit messaged on WhatsApp" reads as if the client wrote, so the receipt names them
-    // as who it went to. The board draws only the delivered one.
-    delivered: (who: string, time: string) => `WhatsApp to ${who}: delivered ${time}.`,
-    notDelivered: (who: string) => `WhatsApp to ${who}: sent, not delivered.`,
-    onItsWay: (who: string) => `Telling ${who} you’re here.`,
-    noneSent: (who: string) => `No WhatsApp went to ${who}.`,
-    callFirst: (who: string) => `Call ${who} before you close`,
     theClient: "the client",
   },
-  /** What the technician adds at the door, which goes with the close for ops to rule on. */
-  door: {
-    note: "Note (optional)",
-    photo: "Photo of the door",
-    taken: "Door photo taken",
-    again: "Take again",
-    shutter: "Take",
+  /** The single-shot camera for the door. */
+  camera: {
+    prompt: "Door and flat number in the frame",
+    shutter: "Take photo",
     cancel: "Cancel",
     view: "The camera’s view of the door",
     noCamera: "The camera wouldn’t open.",
+    again: "Try again",
     missed: "That didn’t take. Try again.",
   },
-  // The board draws no confirmation. Closing as a no-show can bring the client a charge.
+  // Closing as a no-show can bring the client a charge.
   confirm: {
     title: "Close as a no-show?",
-    body: "The client may be charged. Close only if no one has answered.",
+    prepaid: (who: string) => `${who} is prepaid. Ops decide on the charge.`,
     // Nothing was paid ahead, so there is nothing to keep: free, or paid at the visit.
     bodyNothingPaid: "Ops are told nobody was home. Close only if no one has answered.",
     yes: "Close as no-show",
     no: "Not yet",
   },
   appears: {
-    // The board's "appears" screen, which names the client, not a pronoun.
     title: "Client’s here",
     atTheDoor: (who: string) => `${who} is at the door`,
     body: "The timer stops. Nothing is charged.",

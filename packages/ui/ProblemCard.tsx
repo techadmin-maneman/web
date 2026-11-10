@@ -7,10 +7,13 @@ import type { ReactNode } from "react";
 import { classes } from "./classes.ts";
 import styles from "./problem-card.module.css";
 
+const HEADINGS = { 2: "h2", 3: "h3" } as const;
+
 export function ProblemCard({
   title,
   onOpen,
   live = false,
+  level,
   className,
   children,
 }: {
@@ -22,6 +25,8 @@ export function ProblemCard({
    * button, which is never said as an alert, so `live` counts only without `onOpen`.
    */
   readonly live?: boolean;
+  /** Its title as a heading in the screen's outline, where a reader jumps to it: a client's alerts before a visit. */
+  readonly level?: 2 | 3;
   readonly className?: string | undefined;
   /** What happened and what to do, in a line or two. */
   readonly children?: ReactNode;
@@ -33,9 +38,12 @@ export function ProblemCard({
     </>
   );
   if (onOpen === undefined) {
+    // Not a button, so its parts may be blocks: a heading, a list.
+    const Title = level === undefined ? "div" : HEADINGS[level];
     return (
       <div className={classes(styles.card, className)} role={live ? "alert" : undefined}>
-        {body}
+        <Title className={styles.title}>{title}</Title>
+        {children !== undefined && <div className={styles.body}>{children}</div>}
       </div>
     );
   }

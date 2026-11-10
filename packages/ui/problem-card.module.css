@@ -24,6 +24,7 @@
   }
 
   .title {
+    margin: 0;
     font-size: var(--fs-15);
     font-weight: var(--action-weight);
     line-height: var(--lh-130);

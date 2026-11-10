@@ -432,6 +432,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         fake.progress = { ...fake.progress, steps_done: [...fake.progress.steps_done, "profile"] };
         return reply(route, 202, { event_id: eventId ?? "", replayed: false, progress: fake.progress });
       }
+      // A word to the client from the job (docs/decisions/0145-technician-presets.md).
+      if (path.endsWith("/updates")) return reply(route, 200, { sent: true });
       if (path.endsWith("/no-show")) {
         fake.progress = { ...fake.progress, outcome: "no_show" };
         return reply(route, 200, {

@@ -1,19 +1,18 @@
-// A job's screen: its head — back, the client, when and what, the
-// badge — a body that scrolls, and the one action fixed at the foot, where a
-// gloved thumb finds it on every screen.
+// A job's screen in the new look (docs/decisions/0243-job-and-the-door.md): a head with the way back, whose screen it
+// is and the line beneath, a body that scrolls, and the bar at the foot holding the screen's actions, with the line
+// that says what one still waits on.
 
-import { badgeLook } from "@maneman/ui/Caps";
-import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
+import { ActionBar } from "@maneman/ui/ActionBar";
+import { IconButton } from "@maneman/ui/IconButton";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
-import { badges, job as copy } from "../content.ts";
+import { badgesLower, job as copy } from "../content.ts";
 import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { arrival, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
-import frame from "../frame/frame.module.css";
 import styles from "./card-frame.module.css";
 
 /** The day, written only when it is not today: "Tomorrow", or "Fri 27 Sep". */
@@ -24,47 +23,55 @@ function dayOf(date: string): string | null {
   return shortDate(date);
 }
 
-/** "Tomorrow · 10–10:30 am · service · 90 min", the line beneath the name: the client's arrival window first. */
-function whenOf(job: Job): string {
-  const kind = kindNameLower(job);
-  const length = job.minutes === null ? null : copy.minutes(job.minutes);
-  const parts = [dayOf(job.date), arrival(job), kind, length];
+/** "9:30–10 am · service visit · prepaid", the line beneath the name, with the day first when it is not today. */
+export function whenOf(job: Job): string {
+  const parts = [dayOf(job.date), arrival(job), kindNameLower(job), badgesLower[job.badge]];
   return copy.when(parts.filter((part): part is string => part !== null));
 }
 
-function nameOf(job: Job): string {
-  if (job.client !== null) return job.client.name;
-  return kindName(job);
-}
+/** The client's name, or the visit's kind where the API withholds the client until the day before. */
+export const nameOf = (job: Job): string => job.client?.name ?? kindName(job);
 
-/** `foot` is the screen's one action, or null for a screen that has none. */
-export function CardFrame({ job, foot, children }: { job: Job; foot: ReactNode; children: ReactNode }) {
-  const heading = useScreen(nameOf(job));
+export function CardFrame({
+  title,
+  sub,
+  back = "/",
+  foot,
+  helper,
+  children,
+}: {
+  readonly title: string;
+  readonly sub: string;
+  /** Where the way back goes: Today, unless the screen opened from the job's. */
+  readonly back?: string;
+  /** The bar's actions, given the helper line's id for each it describes; null for a screen with none. */
+  readonly foot: ReactNode | ((helperId: string | undefined) => ReactNode);
+  /** What an action still waits on, above it. */
+  readonly helper?: ReactNode;
+  readonly children: ReactNode;
+}) {
+  const heading = useScreen(title);
   return (
-    <main className={frame.screen}>
-      <header className={frame.head}>
+    <main className={styles.screen} data-look="light">
+      <header className={styles.head}>
         <IconButton
           className={styles.back}
           d={ICONS.back}
           size="lg"
-          weight="heavy"
           label={copy.back}
           onClick={() => {
-            go("/");
+            go(back);
           }}
         />
-        <div className={styles.headWho}>
+        <div className={styles.who}>
           <h1 className={styles.name} ref={heading} tabIndex={-1}>
-            {nameOf(job)}
+            {title}
           </h1>
-          <p className={styles.when}>{whenOf(job)}</p>
+          <p className={styles.when}>{sub}</p>
         </div>
-        <span className={badgeLook("onInk", styles.badge)}>{badges[job.badge]}</span>
       </header>
-
       <div className={styles.body}>{children}</div>
-
-      {foot !== null && <div className={frame.foot}>{foot}</div>}
+      {foot !== null && <ActionBar helper={helper}>{foot}</ActionBar>}
     </main>
   );
 }

@@ -14,6 +14,8 @@ export interface KeptDay {
 export interface KeptArrival {
   readonly job_id: string;
   readonly arrival: CheckIn;
+  /** When the technician tapped Call at the door, which a no-show needs; a record kept before it was asked has none. */
+  readonly called_at?: number;
 }
 
 /** When the technician took the outcome, which the close-out's duration runs to, and what was chosen, which it repeats. */

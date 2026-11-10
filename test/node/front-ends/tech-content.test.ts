@@ -185,8 +185,8 @@ describe("a locked card", () => {
 // The door said "within 200 m" whatever radius ops had set.
 describe("the door", () => {
   it("says the radius ops set, and no number on a card kept without one", () => {
-    expect(notHome.arrived.body(350)).toBe("Tap at the door. We record the time and check you are within 350 m.");
-    expect(notHome.arrived.body(null)).toBe("Tap at the door. We record the time and check you are at the address.");
+    expect(notHome.arrived.body(350)).toBe("Check in within 350 m of the door.");
+    expect(notHome.arrived.body(null)).toBe("Check in at the door.");
   });
 });
 

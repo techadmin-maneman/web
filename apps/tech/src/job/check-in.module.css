@@ -1,0 +1,9 @@
+/* A check-in that failed (./CheckIn.tsx): what was measured and what to do, then the way to ops. */
+
+.failed {
+  padding: var(--sp-20) var(--screen-gutter) 0;
+}
+
+.reach {
+  margin-top: var(--sp-12);
+}

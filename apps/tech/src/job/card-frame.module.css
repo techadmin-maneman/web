@@ -1,38 +1,59 @@
-/* What ./CardFrame.tsx alone draws; what it shares is in ./job.module.css. */ /*
- * The job card, and the evidence chain beneath it. The screen
- * is the phone's height: the head at the top, the one action fixed at the
- * foot, and the card scrolling between them.
- */
+/* A job's screen in the new look (./CardFrame.tsx): the phone's height, the head at the top, the bar at the foot, the
+   body scrolling between them. */
 
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--ui-ground);
+  color: var(--ui-text);
+}
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-4);
+  align-items: center;
+  min-height: var(--sp-64);
+  padding: var(--sp-8) var(--screen-gutter);
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+/* A gloved thumb's target, as every control in this app is (../styles/tokens.css). */
 .back {
   --icon-button-size: var(--tech-min);
 
   margin-left: calc(-1 * var(--sp-12));
-  color: var(--paper);
+  color: var(--ui-text);
 }
-.headWho {
+
+.who {
+  flex: 1;
   min-width: 0;
 }
+
 .name {
   margin: 0;
-  font-size: var(--fs-18);
-  font-weight: var(--weight-regular);
-  color: var(--paper);
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
 }
+
 .name:focus {
   outline: none;
 }
+
 .when {
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--ink-muted);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
 }
-.badge {
-  flex-shrink: 0;
-  align-self: flex-start;
-  margin-left: auto;
-}
+
 .body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  padding-bottom: var(--sp-24);
 }

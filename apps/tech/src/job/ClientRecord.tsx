@@ -1,9 +1,11 @@
-// The client's record on the job's card (docs/decisions/0242-client-record.md): their alerts, which every technician
-// reads before they start, the note the last technician left with that visit's after photographs, and the way to
-// their history. They belong to the client, not the job, so a job given to another technician brings them along. The
+// The client's record on the job (docs/decisions/0242-client-record.md): their alerts, which every technician reads
+// before they start, the note the last technician left with that visit's after photographs, and the way to their
+// history. They belong to the client, not the job, so a job given to another technician brings them along. The
 // photographs are the API's to give, never kept on the phone.
 
-import { Link } from "@maneman/ui/router";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
+import { ProblemCard } from "@maneman/ui/ProblemCard";
+import { SectionHead } from "@maneman/ui/SectionHead";
 import type { Job } from "../api.ts";
 import { clientRecord as copy } from "../content.ts";
 import { dayMonth } from "../lib/when.ts";
@@ -13,23 +15,21 @@ export function ClientRecord({ job }: { job: Job }) {
   return (
     <section className={styles.record}>
       {job.client_alerts.length > 0 && (
-        <div className={styles.alerts} role="note" aria-labelledby={`alerts-${job.id}`}>
-          <h2 className={styles.alertsTitle} id={`alerts-${job.id}`}>
-            {copy.alerts}
-          </h2>
+        <ProblemCard className={styles.alerts} title={copy.alerts} level={2}>
           <ul className={styles.alertList}>
             {job.client_alerts.map((alert) => (
               <li key={alert.id}>{alert.body}</li>
             ))}
           </ul>
-        </div>
+        </ProblemCard>
       )}
       {job.handoff !== null && (
         <div className={styles.handoff}>
-          <p className={styles.handoffHead}>
-            <span>{copy.handoff}</span>
-            <span>{copy.handoffBy(job.handoff.technician, dayMonth(job.handoff.date))}</span>
-          </p>
+          <SectionHead
+            title={copy.handoff}
+            size="list"
+            end={copy.handoffBy(job.handoff.technician, dayMonth(job.handoff.date))}
+          />
           <p className={styles.handoffNote}>{job.handoff.note}</p>
           {job.handoff.photos.length > 0 && (
             <div className={styles.photos}>
@@ -40,9 +40,9 @@ export function ClientRecord({ job }: { job: Job }) {
           )}
         </div>
       )}
-      <Link className={styles.history} to={`/jobs/${job.id}/history`}>
-        {copy.history}
-      </Link>
+      <ListRows className={styles.history}>
+        <ListRow title={copy.history} to={`/jobs/${job.id}/history`} />
+      </ListRows>
     </section>
   );
 }

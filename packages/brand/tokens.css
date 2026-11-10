@@ -56,8 +56,7 @@
   /* ---- Colour: the technician app's light ground --------------------------
      The redesign's table (docs/prompts/tech-redesign.md, "Design tokens"), under its own names. Navy and brass are
      the brand's own ink and brass. Only the technician app draws these, through its look's roles
-     (apps/tech/src/styles/look.css). The rest of the table comes with the screens that draw it: the wash, the mist,
-     the placeholder and the camera's chrome. */
+     (apps/tech/src/styles/look.css). The rest of the table comes with the screens that draw it: the wash. */
   --navy-900: var(--ink); /* primary buttons, titles, section rules, what is chosen, a job on the day view */
   --navy-700: #33435f; /* the primary action pressed, and edges on the camera's dark */
   --brass-500: var(--brass); /* the one thing a screen marks: the step under way, the now-line, the wait */
@@ -70,6 +69,10 @@
   --stone: #8c939e; /* a radio's or a box's edge not chosen, a chevron, a field's edge (3:1, WCAG 1.4.11) */
   --disabled: #eef0f2; /* a button not usable yet */
   --error: #b42318; /* errors, what has expired, SOS, the client's alerts: a functional colour, not the brand's */
+  --placeholder: #eceef1; /* where a map or a photograph will be */
+  --mist-300: #a9b2c1; /* words beneath words on the camera's dark */
+  --camera-900: #0b0f16; /* the camera's chrome: its head and its shutter's bar */
+  --camera-700: #3b3f46; /* the camera's view before a picture shows in it */
 
   /* ---- Colour: the hero's scrims, from --ink-night ----------------------- */
   --hero-scrim: rgba(11, 18, 32, 0.3);

@@ -1,0 +1,120 @@
+/* At the door (./DoorScreen.tsx), in the new look: the wait's figure and its brass bar, then what a no-show needs, a
+   ring for each thing still to do and a navy tick for each done. */
+
+.wait {
+  padding: var(--sp-24) var(--screen-gutter) 0;
+}
+
+.waitingFor {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.timer {
+  display: flex;
+  gap: var(--sp-8);
+  align-items: baseline;
+  margin: var(--sp-8) 0 0;
+}
+
+.elapsed {
+  font-size: var(--fs-40);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-100);
+  color: var(--ui-strong);
+}
+
+.of {
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}
+
+.bar {
+  margin-top: var(--sp-16);
+}
+
+.line {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.section {
+  padding: var(--sp-24) var(--screen-gutter) 0;
+}
+
+.list {
+  margin: 0 0 var(--sp-16);
+  padding: 0;
+  list-style: none;
+}
+
+.needed {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.ring,
+.tick {
+  flex-shrink: 0;
+  width: var(--sp-24);
+  height: var(--sp-24);
+  border-radius: 50%;
+}
+
+.ring {
+  border: var(--rule-strong) solid var(--stone);
+}
+
+/* Done: navy, with the tick in its words' colour. */
+.tick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-strong);
+  color: var(--ui-on-strong);
+}
+
+.neededWords {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.neededTitle {
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.neededState {
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+.close {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--sp-16);
+}
+
+.closeHelper {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+.early {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-error);
+}

@@ -54,6 +54,7 @@
     "./Panel": "./Panel.tsx",
     "./PhotoCapture": "./PhotoCapture.tsx",
     "./ProblemCard": "./ProblemCard.tsx",
+    "./Shutter": "./Shutter.tsx",
     "./Progress": "./Progress.tsx",
     "./Popover": "./Popover.tsx",
     "./router": "./router.tsx",

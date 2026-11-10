@@ -33,9 +33,8 @@ test("puts the client's alerts and the last technician's note on the card, and o
   };
   await page.goto(`/jobs/${JOB_ID}`);
 
-  const alerts = page.getByRole("note", { name: copy.alerts });
-  await expect(alerts.getByRole("heading", { name: copy.alerts })).toBeVisible();
-  await expect(alerts).toContainText("Allergic to latex.");
+  await expect(page.getByRole("heading", { level: 2, name: copy.alerts })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Allergic to latex." })).toBeVisible();
   await expect(page.getByText("Edge lifting at the left temple.")).toBeVisible();
   await expect(page.getByText(copy.handoffBy("Imran", "1 Sep"))).toBeVisible();
   const photo = page.getByRole("img", { name: copy.photo("front") });

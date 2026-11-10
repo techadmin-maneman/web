@@ -51,7 +51,7 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
   await page.goto(`/jobs/${id}`);
   await expect(page.getByRole("heading", { level: 1, name: day.client })).toBeVisible();
   await page.getByRole("button", { name: notHome.arrived.action }).click();
-  await expect(page.getByText(notHome.waiting.step)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: notHome.door.title })).toBeVisible();
 
   // The order is the API's to keep: an outcome before the job has started is refused, whatever a phone sends.
   const early = await page.evaluate(

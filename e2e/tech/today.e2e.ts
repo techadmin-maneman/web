@@ -219,7 +219,9 @@ test("scrolls the whole day on a screen shorter than it, down to tomorrow, above
   expect((row?.y ?? 0) + (row?.height ?? 0)).toBeLessThanOrEqual(bar?.y ?? 0);
 });
 
-test("every target on every screen is at least the design’s 48 px, and the primary action is 64", async ({ page }) => {
+test("every target on every screen is at least the design’s 48 px, and the primary action the brief’s 56", async ({
+  page,
+}) => {
   const fake = await fakeTech(page);
   fake.type = "replacement";
   fake.pieces = [ROHITS_PIECE];
@@ -228,7 +230,8 @@ test("every target on every screen is at least the design’s 48 px, and the pri
   await expect(arrive).toBeVisible();
 
   const box = await arrive.boundingBox();
-  expect(box?.height).toBe(64);
+  // The new look's primary action (docs/prompts/tech-redesign.md, "Spacing": 52 to 56 px).
+  expect(box?.height).toBe(56);
   expect(Math.round(box?.width ?? 0)).toBe(390 - 40);
 
   // "Nothing under 48 px", on Today, the card, the queue and each of the steps.
