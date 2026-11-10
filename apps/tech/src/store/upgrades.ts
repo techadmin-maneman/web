@@ -3,6 +3,7 @@
 // never edited: some phone somewhere has not run it yet. A record an earlier build kept is put into today's shape
 // here, once, and never as it is read.
 
+import { CENTIMETRES, inchesOf } from "@maneman/web-kit/hair-profile";
 import type { Job, JobState, JobSummary } from "../api.ts";
 import type { KeptArrival, KeptClosure, KeptDay, KeptStart } from "./records.ts";
 import type { Queued } from "./replay.ts";
@@ -111,6 +112,31 @@ function moved(record: JobsRecord): [string, KeptDay | Job | KeptArrival | KeptC
     case "start_at_check_in":
       return ["starts", { job_id: record.job_id, starts_at: record.starts_at }];
   }
+}
+
+/** Each of the head's measurements in centimetres, by its twin in inches. */
+const TWIN_IN_INCHES = new Map<string, string>(Object.entries(CENTIMETRES));
+
+/** One of the head's figures an earlier build kept in centimetres, in inches: a number, or a figure as typed. */
+const figureInInches = (figure: unknown): unknown => {
+  if (typeof figure === "number") return inchesOf(figure);
+  if (typeof figure !== "string" || figure.trim() === "" || Number.isNaN(Number(figure))) return figure;
+  return String(inchesOf(Number(figure)));
+};
+
+/**
+ * What an earlier build kept with the head in centimetres, a fit spec or a form's figures, with it in inches, to one
+ * decimal. A figure it kept in inches as well, from a card the API gave in both, stays as the API gave it.
+ */
+function headInInches(kept: object): object {
+  const fields = Object.keys(kept);
+  return Object.fromEntries(
+    Object.entries(kept).flatMap(([field, figure]) => {
+      const inches = TWIN_IN_INCHES.get(field);
+      if (inches === undefined) return [[field, figure]];
+      return fields.includes(inches) ? [] : [[inches, figureInInches(figure)]];
+    }),
+  );
 }
 
 /**
@@ -230,6 +256,29 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       // What an earlier build wrote, which may lack the field this step adds.
       const card = value as Omit<Job, "arrives_by"> & Partial<Pick<Job, "arrives_by">>;
       return card.arrives_by === undefined ? { ...card, arrives_by: arrivesBy(card) } : null;
+    });
+  },
+  // Version 8: the head is measured in inches (docs/decisions/0240-consultation-rules-and-inches.md). A profile an
+  // earlier build kept in centimetres, on a card, in a form half filled in or in a write still to send, is put in
+  // inches, so none of it opens blank, or is sent back so.
+  (_db, upgrade) => {
+    eachAgain(upgrade.objectStore("cards"), (value) => {
+      // What an earlier build wrote, whose profile may give the head in centimetres.
+      const card = value as { readonly profile?: { readonly fit: object } | null };
+      if (card.profile === undefined || card.profile === null) return null;
+      return { ...card, profile: { ...card.profile, fit: headInInches(card.profile.fit) } };
+    });
+    eachAgain(upgrade.objectStore("device"), (value) => {
+      // What an earlier build wrote: a profile's draft may hold the head's figures as typed in centimetres.
+      const record = value as { readonly key: string; readonly fit?: { readonly figures: object } };
+      if (record.key !== "profile_draft" || record.fit === undefined) return null;
+      return { ...record, fit: { ...record.fit, figures: headInInches(record.fit.figures) } };
+    });
+    eachAgain(upgrade.objectStore("outbox"), (value) => {
+      // What an earlier build queued: a profile's write may send the head in centimetres.
+      const queued = value as { readonly kind: string; readonly body: { readonly fit?: object } | null };
+      if (queued.kind !== "profile" || queued.body?.fit === undefined) return null;
+      return { ...queued, body: { ...queued.body, fit: headInInches(queued.body.fit) } };
     });
   },
 ];

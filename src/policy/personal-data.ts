@@ -3,6 +3,8 @@
 // what erasing them does to it. test/node/database/personal-data.test.ts runs the export and the erasure against the migrated
 // schema and fails on a table or a column added without an answer here, or an answer the code does not keep.
 
+import { CENTIMETRES, MEASUREMENTS } from "./hair-profile.ts";
+
 interface PersonalTable {
   /** The columns the client's data export leaves out. Every other column of the table is in it. */
   readonly leftOut: readonly string[];
@@ -27,12 +29,8 @@ const OUR_KEYS = "Our own keys to the record, which say nothing about the client
 
 const HAIR_PROFILE_FIELDS = [
   "norwood_stage",
-  "head_circumference_cm",
-  "front_to_nape_cm",
-  "ear_to_ear_cm",
-  "temple_to_temple_cm",
-  "base_width_in",
-  "base_length_in",
+  ...Object.keys(MEASUREMENTS),
+  ...Object.keys(CENTIMETRES),
   "colour",
   "grey_percent",
   "density_percent",
@@ -223,8 +221,9 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     erasure: { blanks: ["text", "response"], why: "The words go; that a concern was raised and answered stays." },
   },
   hair_profiles: {
-    leftOut: ["id", "person_id", "appointment_id", "event_id", "technician_id", "staff"],
-    whyLeftOut: "Our keys, and who recorded each version; the export says whether a technician or ops did.",
+    leftOut: ["id", "person_id", "appointment_id", "event_id", "technician_id", "staff", ...Object.keys(CENTIMETRES)],
+    whyLeftOut:
+      "Our keys, and who recorded each version; the export says whether a technician or ops did. The head's measurements in centimetres too, which it gives in inches.",
     erasure: {
       blanks: HAIR_PROFILE_FIELDS,
       why: "Every version's fit spec and history go; who recorded each, and when, stay.",

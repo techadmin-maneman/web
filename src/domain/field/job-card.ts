@@ -93,8 +93,8 @@ interface JobDetail extends JobSummary {
   /** The day-before WhatsApp, or the arrival one, that went or is going to the client, and when it reached their phone. */
   readonly reminder: { readonly state: ReminderState; readonly delivered_at: string | null } | null;
   /**
-   * On a one visit and a consultation, the products by name: the first fit's services offered that day, which the
-   * one visit's client chooses from and the profile step names.
+   * On a visit that takes the profile (a consultation, a one visit and a first fit), the products by name: the first
+   * fit's services offered that day, which the one visit's client chooses from and the profile step names.
    */
   readonly products: Product[];
   /** On a one visit closed as done, the link the client pays by, and whether they have. */

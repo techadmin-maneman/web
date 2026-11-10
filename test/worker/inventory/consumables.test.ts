@@ -220,14 +220,24 @@ describe("deleting a consumable", () => {
 });
 
 describe("what each service is expected to use", () => {
-  it("lists every service the price book prices, the standard four to begin with", async () => {
+  it("lists every service the price book prices that uses the kit: no consultation, which uses nothing", async () => {
     const { services } = await listed();
     expect(services.map(({ visit_type, tier }) => `${visit_type}/${tier}`)).toEqual([
-      "consultation/standard",
       "first_fit/standard",
       "service/standard",
       "replacement/standard",
     ]);
+  });
+
+  it("refuses to set what a consultation uses", async () => {
+    await add(TAPE);
+    const answer = await post("/api/service-usage", {
+      visit_type: "consultation",
+      tier: "standard",
+      items: [{ code: "tape_strips", quantity: 1 }],
+    });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["visit_type"] } });
   });
 
   it("sets a service's whole list, and a consumable left out next time is expected no more", async () => {
@@ -291,7 +301,6 @@ describe("what each service is expected to use", () => {
     });
     // In the console's order: each kind's services together, the standard one first.
     expect(services.map((each) => each.name)).toEqual([
-      "Consultation",
       "First fit",
       "Premium first fit",
       "Service visit",

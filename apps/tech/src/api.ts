@@ -53,7 +53,8 @@ type PhotoTaken = Schema["TechnicianPhotoTaken"];
 export type HairProfile = Schema["HairProfile"];
 export type FitSpec = Schema["HairFitSpec"];
 export type History = Schema["HairHistory"];
-export type ProfileRequest = Schema["TechnicianProfileRequest"];
+/** The profile as this build sends it: the head in inches, which the API takes centimetres for from the build before. */
+export type ProfileRequest = Omit<Schema["TechnicianProfileRequest"], "fit"> & { fit: FitSpec };
 export type ChecklistRequest = Schema["ChecklistRequest"];
 export type PieceFitted = Schema["PieceFitted"];
 export type PieceDeclined = Schema["PieceDeclined"];

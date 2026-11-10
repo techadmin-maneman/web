@@ -52,10 +52,10 @@ type Code = (typeof CODES)[number];
 /** The fit spec in the order the technician's phone takes it. */
 const FIT_ROWS: readonly (Code | Figure)[] = [
   "norwood_stage",
-  "head_circumference_cm",
-  "front_to_nape_cm",
-  "ear_to_ear_cm",
-  "temple_to_temple_cm",
+  "head_circumference_in",
+  "front_to_nape_in",
+  "ear_to_ear_in",
+  "temple_to_temple_in",
   "base_width_in",
   "base_length_in",
   "colour",

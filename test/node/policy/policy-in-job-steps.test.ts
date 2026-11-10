@@ -36,8 +36,10 @@ describe("the steps of a job", () => {
     expect(stepsFor("first_fit")).toContain("piece");
   });
 
-  it("photographs a consultation before and not after, unless it fits a piece", () => {
-    expect(stepsFor("consultation")).toEqual(["before_photos", "checklist", "consumables", "outcome"]);
+  it("photographs a consultation before and not after, and uses nothing from the kit, unless it fits a piece", () => {
+    expect(stepsFor("consultation")).toEqual(["before_photos", "checklist", "outcome"]);
+    expect(takesStep("consumables", "consultation")).toBe(false);
+    expect(takesStep("consumables", "consultation", true)).toBe(true);
     expect(takesStep("after_photos", "consultation")).toBe(false);
     expect(takesStep("before_photos", "consultation")).toBe(true);
     // A consultation and fit in one visit fits a piece, so it is photographed after as a first fit is.
@@ -45,11 +47,14 @@ describe("the steps of a job", () => {
     for (const type of ["first_fit", "service", "replacement"] as const) {
       expect(takesStep("after_photos", type)).toBe(true);
     }
-    // Its outcome follows the consumables.
-    const toConsumables = done("check_in", "start", "before_photos", "checklist", "consumables");
+    // Its outcome follows the checklist.
+    const toChecklist = done("check_in", "start", "before_photos", "checklist");
     expect(
-      stepBefore({ kind: "outcome", type: "consultation", done: toConsumables, body: { outcome: "done" } }),
+      stepBefore({ kind: "outcome", type: "consultation", done: toChecklist, body: { outcome: "done" } }),
     ).toBeNull();
+    expect(
+      stepBefore({ kind: "outcome", type: "consultation", done: done("check_in", "start", "before_photos"), body: {} }),
+    ).toBe("checklist");
   });
 
   it("takes no step before the one ahead of it, so a job sheet cannot close from an empty screen", () => {

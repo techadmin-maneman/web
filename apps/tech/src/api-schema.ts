@@ -3714,7 +3714,7 @@ export interface components {
                 state: "on_its_way" | "sent" | "delivered";
                 delivered_at: string | null;
             } | null;
-            /** @description The steps this visit type runs, in order; a consultation's and a one visit's take the profile. */
+            /** @description The steps this visit type runs, in order; a consultation's, a one visit's and a first fit's take the profile. */
             steps: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome" | "profile")[];
             /** @description This kind of visit's checklist, as ops set it in the console, in its order. */
             checklist: components["schemas"]["JobSheetItem"][];
@@ -3728,7 +3728,7 @@ export interface components {
             consumables: components["schemas"]["TechnicianConsumable"][];
             /** @description On a visit that fits a piece, the hair systems the technician's kit holds, by name, with the spec each is matched to the client's hair profile by. Empty for any other visit. */
             kit_hair_systems: components["schemas"]["KitHairSystem"][];
-            /** @description On a one visit and a consultation, the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit. */
+            /** @description On a visit that takes the hair profile (a consultation, a one visit and a first fit), the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit. */
             products: components["schemas"]["TechnicianProduct"][];
             /** @description On a one visit closed as done with the client fitted, its payment link; else null. */
             payment_link: {
@@ -3835,14 +3835,14 @@ export interface components {
         HairFitSpecRead: {
             /** @enum {string|null} */
             norwood_stage: "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | null;
-            /** @description In centimetres, 40 to 70, to one decimal. */
-            head_circumference_cm: number | null;
-            /** @description In centimetres, 20 to 50, to one decimal. */
-            front_to_nape_cm: number | null;
-            /** @description In centimetres, over the top, 20 to 50, to one decimal. */
-            ear_to_ear_cm: number | null;
-            /** @description In centimetres, 20 to 50, to one decimal. */
-            temple_to_temple_cm: number | null;
+            /** @description In inches, 15.5 to 28, to one decimal. */
+            head_circumference_in: number | null;
+            /** @description In inches, 7.5 to 20, to one decimal. */
+            front_to_nape_in: number | null;
+            /** @description In inches, over the top, 7.5 to 20, to one decimal. */
+            ear_to_ear_in: number | null;
+            /** @description In inches, 7.5 to 20, to one decimal. */
+            temple_to_temple_in: number | null;
             /** @description In inches, 2 to 12, to one decimal. */
             base_width_in: number | null;
             /** @description In inches, 2 to 14, to one decimal. */
@@ -3868,19 +3868,39 @@ export interface components {
             attachment: "tape" | "glue" | "both" | null;
             /** @description The product's name, never its price. */
             product_name: string | null;
+            /**
+             * @deprecated
+             * @description head_circumference_in in centimetres, for one release.
+             */
+            head_circumference_cm?: number | null;
+            /**
+             * @deprecated
+             * @description front_to_nape_in in centimetres, for one release.
+             */
+            front_to_nape_cm?: number | null;
+            /**
+             * @deprecated
+             * @description ear_to_ear_in in centimetres, for one release.
+             */
+            ear_to_ear_cm?: number | null;
+            /**
+             * @deprecated
+             * @description temple_to_temple_in in centimetres, for one release.
+             */
+            temple_to_temple_cm?: number | null;
         };
         /** @description Every field is sent, null where it was not taken. */
         HairFitSpec: {
             /** @enum {string|null} */
             norwood_stage: "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | null;
-            /** @description In centimetres, 40 to 70, to one decimal. */
-            head_circumference_cm: number | null;
-            /** @description In centimetres, 20 to 50, to one decimal. */
-            front_to_nape_cm: number | null;
-            /** @description In centimetres, over the top, 20 to 50, to one decimal. */
-            ear_to_ear_cm: number | null;
-            /** @description In centimetres, 20 to 50, to one decimal. */
-            temple_to_temple_cm: number | null;
+            /** @description In inches, 15.5 to 28, to one decimal. */
+            head_circumference_in: number | null;
+            /** @description In inches, 7.5 to 20, to one decimal. */
+            front_to_nape_in: number | null;
+            /** @description In inches, over the top, 7.5 to 20, to one decimal. */
+            ear_to_ear_in: number | null;
+            /** @description In inches, 7.5 to 20, to one decimal. */
+            temple_to_temple_in: number | null;
             /** @description In inches, 2 to 12, to one decimal. */
             base_width_in: number | null;
             /** @description In inches, 2 to 14, to one decimal. */
@@ -4052,10 +4072,66 @@ export interface components {
         };
         /** @description The client's whole profile as it stands now: the card's latest, changed where the technician changed it. Each is a new version. */
         TechnicianProfileRequest: {
-            fit: components["schemas"]["HairFitSpec"];
+            fit: components["schemas"]["HairFitSpecWrite"];
             history: components["schemas"]["HairHistory"] | null;
             /** @description The id of the version the form started from: the latest as it was read; null where there was none. */
             based_on: string | null;
+        };
+        /** @description Every field is sent, null where it was not taken; the head in inches, or in centimetres for one release. */
+        HairFitSpecWrite: {
+            /** @enum {string|null} */
+            norwood_stage: "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | null;
+            /** @description In inches, 15.5 to 28, to one decimal. */
+            head_circumference_in?: number | null;
+            /** @description In inches, 7.5 to 20, to one decimal. */
+            front_to_nape_in?: number | null;
+            /** @description In inches, over the top, 7.5 to 20, to one decimal. */
+            ear_to_ear_in?: number | null;
+            /** @description In inches, 7.5 to 20, to one decimal. */
+            temple_to_temple_in?: number | null;
+            /** @description In inches, 2 to 12, to one decimal. */
+            base_width_in: number | null;
+            /** @description In inches, 2 to 14, to one decimal. */
+            base_length_in: number | null;
+            /**
+             * @description The suppliers' colour code, #1B written 1B.
+             * @enum {string|null}
+             */
+            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
+            grey_percent: number | null;
+            /** @description In per cent. */
+            density_percent: 80 | 100 | 120 | 140 | null;
+            /** @enum {string|null} */
+            wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
+            /** @enum {string|null} */
+            hairline: "natural" | "receded" | "straight" | "widows_peak" | null;
+            /** @description The product, by the tier of its first-fit service: one the services table holds, retired or not. */
+            product: string | null;
+            /**
+             * @description Tape, glue, or both.
+             * @enum {string|null}
+             */
+            attachment: "tape" | "glue" | "both" | null;
+            /**
+             * @deprecated
+             * @description head_circumference_in in centimetres, for one release.
+             */
+            head_circumference_cm?: number | null;
+            /**
+             * @deprecated
+             * @description front_to_nape_in in centimetres, for one release.
+             */
+            front_to_nape_cm?: number | null;
+            /**
+             * @deprecated
+             * @description ear_to_ear_in in centimetres, for one release.
+             */
+            ear_to_ear_cm?: number | null;
+            /**
+             * @deprecated
+             * @description temple_to_temple_in in centimetres, for one release.
+             */
+            temple_to_temple_cm?: number | null;
         };
         OutcomeRequest: {
             /** @enum {string} */

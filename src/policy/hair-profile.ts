@@ -1,8 +1,8 @@
 // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md): the fit spec a piece is made to, and the
 // history of what they have tried.
 //
-// The technician records it at a consultation and at a consultation and fit in one visit, ops correct it in the
-// console, and every change is a new version (src/domain/clients/hair-profiles.ts). The history is recorded with the fit
+// The technician records it at a consultation, at a consultation and fit in one visit and at a first fit, ops correct
+// it in the console, and every change is a new version (src/domain/clients/hair-profiles.ts). The history is recorded with the fit
 // spec, on no consent of its own: it is what the client has told us.
 //
 // The lists below are codes; their words are each app's. There is no CHECK on them in the database, so a new code
@@ -36,18 +36,39 @@ export const REMEDIES = ["none", "minoxidil", "finasteride", "transplant", "othe
 export type Remedy = (typeof REMEDIES)[number];
 
 /**
- * Each measurement's range, taken to one decimal: the head's in centimetres, the base's in inches, as suppliers order
- * it. Wide enough for any head or base, and narrow enough that centimetres typed for inches are refused.
+ * Each measurement's range in inches, taken to one decimal: the head's as the base's, as suppliers order it
+ * (docs/decisions/0240-consultation-rules-and-inches.md). Wide enough for any head or base, and
+ * narrow enough that centimetres typed for inches are refused.
  */
 export const MEASUREMENTS = {
-  head_circumference_cm: { min: 40, max: 70 },
-  front_to_nape_cm: { min: 20, max: 50 },
-  ear_to_ear_cm: { min: 20, max: 50 },
-  temple_to_temple_cm: { min: 20, max: 50 },
+  head_circumference_in: { min: 15.5, max: 28 },
+  front_to_nape_in: { min: 7.5, max: 20 },
+  ear_to_ear_in: { min: 7.5, max: 20 },
+  temple_to_temple_in: { min: 7.5, max: 20 },
   base_width_in: { min: 2, max: 12 },
   base_length_in: { min: 2, max: 14 },
 } as const;
 export type Measurement = keyof typeof MEASUREMENTS;
+
+/**
+ * The head's measurements in centimetres, as a phone or console of the release before sends and reads them, each
+ * with its twin in inches, the range it is checked in. Taken and given for one release, then gone with their columns.
+ */
+export const CENTIMETRES = {
+  head_circumference_cm: "head_circumference_in",
+  front_to_nape_cm: "front_to_nape_in",
+  ear_to_ear_cm: "ear_to_ear_in",
+  temple_to_temple_cm: "temple_to_temple_in",
+} as const satisfies Record<string, Measurement>;
+export type Centimetre = keyof typeof CENTIMETRES;
+
+const CM_PER_INCH = 2.54;
+
+/** Centimetres in inches, to one decimal. */
+export const inchesOf = (cm: number): number => Math.round((cm / CM_PER_INCH) * 10) / 10;
+
+/** Inches in centimetres, to one decimal. */
+export const centimetresOf = (inches: number): number => Math.round(inches * CM_PER_INCH * 10) / 10;
 
 export const GREY_PERCENT = { min: 0, max: 100 } as const;
 
@@ -57,9 +78,12 @@ export const SKIN_AND_ALLERGIES_MAX = 200;
 /** The earliest year a transplant is taken to have been done in. */
 export const FIRST_TRANSPLANT_YEAR = 1970;
 
-/** The visits the technician records the profile at; a one visit declined is a consultation. */
+/**
+ * The visits the technician records the profile at: a consultation, a consultation and fit in one visit (a declined
+ * one is a consultation), and a first fit, where the head is measured again before the piece goes on.
+ */
 export function takesProfile(type: VisitType, oneVisit: boolean): boolean {
-  return oneVisit || type === "consultation";
+  return oneVisit || type === "consultation" || type === "first_fit";
 }
 
 interface History {

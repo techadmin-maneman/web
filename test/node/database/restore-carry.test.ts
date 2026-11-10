@@ -116,6 +116,26 @@ describe("the carry-back file", () => {
     expect(() => carryBack(writesToConsents)).toThrow("consents is only ever added to, and a trigger on people");
   });
 
+  it("takes a trigger on a table that refuses a delete that only changes its own rows, as blanking one does", () => {
+    const blanksConsents = lines(
+      EXPORT,
+      "CREATE TRIGGER consents_blanked AFTER UPDATE OF person_id ON consents",
+      "BEGIN",
+      "  UPDATE consents SET person_id = NULL WHERE id = NEW.id;",
+      "END;",
+    );
+    expect(carryBack(blanksConsents).addOnly).toContain("consents");
+    // Changing them from another table's trigger is still refused: nothing matches them again after it fires.
+    const fromPeople = lines(
+      EXPORT,
+      "CREATE TRIGGER people_renamed_consents AFTER UPDATE OF name ON people",
+      "BEGIN",
+      "  UPDATE consents SET person_id = NEW.id WHERE person_id = OLD.id;",
+      "END;",
+    );
+    expect(() => carryBack(fromPeople)).toThrow("consents is only ever added to, and a trigger on people");
+  });
+
   it("counts a trigger's UPDATE and DELETE as writes, but not an upsert's DO UPDATE", () => {
     const moreTriggers = lines(
       EXPORT,

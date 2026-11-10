@@ -16,6 +16,7 @@ import { allServices, serviceOf } from "../booking/services.ts";
 import { freshCode } from "../../lib/slug.ts";
 import { insertRow } from "../../lib/sql.ts";
 import { type Refusal, refusal } from "../../lib/refusal.ts";
+import { takesStep } from "../../policy/in-job-steps.ts";
 
 export interface Consumable {
   readonly code: string;
@@ -318,13 +319,14 @@ interface UsageService extends Service {
 }
 
 /**
- * Every service the console holds, in its order, retired ones too: a visit sold before its service was retired is
- * still done, and its technician's steppers still start at what the service uses. A service's expected use is
- * checked against these rows; consumable_usage has no foreign key to them, since its table came first
- * (migrations 0049 and 0050).
+ * Every service the console holds that uses the kit, in its order, retired ones too: a visit sold before its service
+ * was retired is still done, and its technician's steppers still start at what the service uses. A consultation uses
+ * nothing (docs/decisions/0240-consultation-rules-and-inches.md). A service's expected use is checked against these
+ * rows; consumable_usage has no foreign key to them, since its table came first (migrations 0049 and 0050).
  */
 export async function servicesForUse(db: D1Database): Promise<UsageService[]> {
-  return (await allServices(db)).map((service) => ({
+  const usingKit = (await allServices(db)).filter((service) => takesStep("consumables", service.kind));
+  return usingKit.map((service) => ({
     visitType: service.kind,
     tier: service.tier,
     name: service.name,
@@ -375,8 +377,9 @@ export async function expectedUse(db: D1Database): Promise<Expected[]> {
 /**
  * Sets what one service is expected to use, the whole list at once, with its
  * audit entry: a consumable left out is expected no more. Refused for a
- * service the console does not hold, a consumable nobody added, or one named
- * twice, each by the field a form can point at. A retired service may still be
+ * consultation, which uses nothing, a service the console does not hold, a
+ * consumable nobody added, or one named twice, each by the field a form can
+ * point at. A retired service may still be
  * set: a visit sold before it was retired is still done.
  */
 export async function setExpectedUse(
@@ -384,6 +387,7 @@ export async function setExpectedUse(
   input: { readonly service: Service; readonly items: readonly { code: string; quantity: number }[] } & Written,
 ): Promise<{ readonly ok: true } | Refusal<"invalid_request">> {
   const { service, items } = input;
+  if (!takesStep("consumables", service.visitType)) return refusal("invalid_request", ["visit_type"]);
   if ((await serviceOf(db, service.visitType, service.tier)) === null) return refusal("invalid_request", ["tier"]);
   // A hair system is fitted to the client, not used by the service: the piece step takes it (piece-use.ts).
   const { results } = await db

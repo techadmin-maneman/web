@@ -13,7 +13,7 @@
 //   /jobs/:id/checklist      step 2
 //   /jobs/:id/consumables    step 3
 //   /jobs/:id/piece          step 4, a replacement's and a first fit's only
-//   /jobs/:id/profile        the client's hair profile, a consultation's and a one visit's only (no board; ADR 0106)
+//   /jobs/:id/profile        the client's hair profile: a consultation's, a one visit's and a first fit's (ADR 0106)
 //   /jobs/:id/after-photos   step 5 (the camera again)
 //   /jobs/:id/outcome        step 6
 //   /jobs/:id/done           the close-out

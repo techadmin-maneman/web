@@ -17,10 +17,11 @@ import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import {
   BasedOnSchema,
-  FitSpecSchema,
+  FitSpecWriteSchema,
   HairProfileSchema,
   HairProfileVersionSchema,
   HistorySchema,
+  fitInInches,
 } from "../schemas/hair-profile.ts";
 import { clientInReach } from "../../http/staff-access.ts";
 
@@ -42,7 +43,7 @@ const ClientHairProfileSchema = z
   .openapi("ClientHairProfile");
 
 const CorrectionSchema = z
-  .object({ fit: FitSpecSchema, history: z.union([HistorySchema, z.null()]), based_on: BasedOnSchema })
+  .object({ fit: FitSpecWriteSchema, history: z.union([HistorySchema, z.null()]), based_on: BasedOnSchema })
   .strict()
   .openapi("HairProfileCorrection", { description: "The whole profile as it now stands, sent as a new version." });
 
@@ -104,7 +105,7 @@ export function registerOpsHairProfile(app: App): void {
     const written = await correctByOps(c.env.DB, {
       personId: id,
       staff: staff.id,
-      fit,
+      fit: fitInInches(fit),
       history,
       basedOn: based_on,
       now: deps.now(),

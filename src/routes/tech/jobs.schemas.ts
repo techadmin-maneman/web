@@ -4,7 +4,7 @@ import { z } from "@hono/zod-openapi";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
 import { REMINDER_STATES } from "../../domain/field/job-card.ts";
 import { CARD_STEPS } from "../../policy/in-job-steps.ts";
-import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
+import { BasedOnSchema, FitSpecWriteSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
 import { PieceSchema } from "./pieces.ts";
 import { AddressSchema, JobSummarySchema } from "../schemas/tech-jobs.ts";
 
@@ -155,7 +155,8 @@ export const JobDetailSchema = JobSummarySchema.extend({
         "The day-before or arrival WhatsApp to the client: on its way, sent, or delivered and when; null when none went, as when one was skipped or failed.",
     }),
   steps: z.array(z.enum(CARD_STEPS)).openapi({
-    description: "The steps this visit type runs, in order; a consultation's and a one visit's take the profile.",
+    description:
+      "The steps this visit type runs, in order; a consultation's, a one visit's and a first fit's take the profile.",
   }),
   checklist: z
     .array(JobSheetItemSchema)
@@ -185,9 +186,9 @@ export const JobDetailSchema = JobSummarySchema.extend({
   }),
   products: z.array(ProductSchema).openapi({
     description:
-      "On a one visit and a consultation, the products by name and never by price: the first fit's services " +
-      "offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. " +
-      "Empty for any other visit.",
+      "On a visit that takes the hair profile (a consultation, a one visit and a first fit), the products by name " +
+      "and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's " +
+      "client chooses from and the profile names. Empty for any other visit.",
   }),
   payment_link: z
     .union([
@@ -316,7 +317,7 @@ export const NoShowSchema = z
   .openapi("NoShowClose");
 
 export const ProfileRequestSchema = z
-  .object({ fit: FitSpecSchema, history: z.union([HistorySchema, z.null()]), based_on: BasedOnSchema })
+  .object({ fit: FitSpecWriteSchema, history: z.union([HistorySchema, z.null()]), based_on: BasedOnSchema })
   .strict()
   .openapi("TechnicianProfileRequest", {
     description:
