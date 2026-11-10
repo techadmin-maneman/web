@@ -23,6 +23,22 @@ and the visit beneath, the visit's steps as a bar under it with "Step n of N" an
 3. **The consumables step's one tap "Used as expected" goes**: its action is "Next" as every step's is, and "Pick why"
    is the line above it.
 4. **The close-out takes the new look's colours now**, since it shares the steps' sheet; its redraw is PR 7's.
+5. **The guided tasks are the job's checklist, one item a screen** (`apps/tech/src/steps/Checklist.tsx`): Task n of N,
+   the title, where the reference photograph goes, the numbered instructions and what to watch for, with the client's
+   alerts above and the item's Done. The words are draft, in a data file apart from the screens for the training lead
+   to edit (`apps/tech/src/visit/tasks.ts`), keyed by the job sheet's item; an item it has none for shows its label.
+   Tick all stays, for a routine visit.
+6. **The outcome takes the note for the next technician and an alert**, each sent with the close only when written
+   (ADR 0242). No voice note.
+7. **Where the steps keep what they had**:
+   - The consumables' reason is one for the step, as the API keeps it (ADR 0222), said under the counts, not a chip
+     under each item.
+   - Colour and style is the hair profile step's second part, as it was, and shares its place in the bar; the history
+     stays its third.
+   - The consultation's Options stays on its job, open at any point of the visit, and the one visit's decision stays at
+     the head of the hair system step, the API's piece event.
+   - Matching the hair system to a profile measured with no signal is PR 7's, with the rest of the offline work: the
+     profile the phone sends and the one the card reads are typed apart, and laying one over the other needs care.
 
 ## Consequences
 
