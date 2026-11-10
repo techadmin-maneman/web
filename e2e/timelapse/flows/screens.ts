@@ -210,11 +210,7 @@ export async function techJobOnScreen(
       for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
       await page.getByRole("button", { name: stepWords.next }).click();
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.consumables })).toBeVisible();
-      // Counts left as the visit expects them say so on the button.
-      await page
-        .getByRole("button", { name: stepWords.consumables.asExpected })
-        .or(page.getByRole("button", { name: stepWords.next }))
-        .click();
+      await page.getByRole("button", { name: stepWords.next }).click();
       await expect(page.getByRole("heading", { level: 1, name: captureWords.after })).toBeVisible();
       await photograph(page);
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.outcome })).toBeVisible();

@@ -29,7 +29,7 @@ export const NOT_LOOKED: Looked = { state: "none" };
 /** A field on the ink, labelled as the technician board labels its boxes. */
 function InkField(props: { label: string; children: (control: FieldControl) => ReactNode }) {
   return (
-    <Field onInk label={props.label} look={{ label: shared.fieldLabel }}>
+    <Field label={props.label} look={{ label: shared.fieldLabel }}>
       {props.children}
     </Field>
   );
@@ -58,7 +58,6 @@ export function ChoiceList({
         {options.map((option) => (
           <ToggleButton
             key={option.id}
-            onInk
             className={shared.choice}
             pressed={choice === option.id}
             onClick={() => {
@@ -97,7 +96,6 @@ export function KitPieces({
         {choices.map(({ hairSystem, matches }) => (
           <ToggleButton
             key={hairSystem.code}
-            onInk
             className={shared.choice}
             pressed={stock === hairSystem.code}
             onClick={() => {
@@ -140,7 +138,7 @@ function PieceList({ pieces, onPick }: { pieces: readonly ClientPiece[]; onPick:
       {pieces.map((piece) => (
         <li key={piece.piece_code}>
           <Button
-            variant="outlineOnInk"
+            variant="outline"
             size="control"
             className={shared.pick}
             onClick={() => {
@@ -166,7 +164,7 @@ function Picker(props: {
   return (
     <>
       <Button
-        variant="outlineOnInk"
+        variant="outline"
         size="control"
         className={shared.second}
         aria-expanded={props.open}
@@ -185,7 +183,7 @@ function ScanButton({ onCode }: { onCode: (code: string) => void }) {
   return (
     <>
       <Button
-        variant="outlineOnInk"
+        variant="outline"
         size="control"
         className={shared.second}
         aria-pressed={scanning}
@@ -228,7 +226,6 @@ export function LabelField(props: {
     <>
       <div className={shared.field}>
         <Field
-          onInk
           label={copy.piece.label}
           error={malformed ? copy.piece.malformed : null}
           look={{ label: shared.fieldLabel, error: shared.hint }}
@@ -236,7 +233,6 @@ export function LabelField(props: {
           {(control) => (
             <TextInput
               {...control}
-              onInk
               icon={GLYPHS.tag}
               className={styles.labelInput}
               value={code}
@@ -252,7 +248,7 @@ export function LabelField(props: {
         </Field>
         <ScanButton onCode={props.onCode} />
         <Button
-          variant="outlineOnInk"
+          variant="outline"
           size="control"
           className={shared.second}
           disabled={!isLabel(code) || props.looking}
@@ -312,7 +308,6 @@ export function BaseAndLot(props: {
         {(control) => (
           <TextInput
             {...control}
-            onInk
             className={shared.box64}
             value={props.base}
             autoComplete="off"
@@ -327,7 +322,6 @@ export function BaseAndLot(props: {
         {(control) => (
           <TextInput
             {...control}
-            onInk
             className={shared.box64}
             value={props.lot}
             autoCapitalize="characters"
@@ -363,7 +357,6 @@ export function OldPiece(props: {
         {(control) => (
           <TextInput
             {...control}
-            onInk
             className={shared.box64}
             value={props.code}
             placeholder={copy.piece.placeholder}
@@ -381,7 +374,6 @@ export function OldPiece(props: {
         {(control) => (
           <TextInput
             {...control}
-            onInk
             className={shared.box64}
             value={props.reason}
             autoComplete="off"

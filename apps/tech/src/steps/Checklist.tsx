@@ -66,7 +66,6 @@ function Ticking({
       title={titleOf(job, declined)}
       at={done.length}
       of={items.length}
-      action={copy.next}
       ready={all}
       unfinished={copy.checklist.unfinished}
       notice={refused === null ? null : copy.corrected.other}
@@ -78,7 +77,7 @@ function Ticking({
     >
       {!all && items.length > 1 && (
         <Button
-          variant="outlineOnInk"
+          variant="outline"
           size="control"
           className={styles.tickAll}
           onClick={() => {

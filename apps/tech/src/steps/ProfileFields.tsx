@@ -59,7 +59,6 @@ export function Chips<T extends string | number>({
           return (
             <ToggleButton
               key={option.id}
-              onInk
               asRadio={!many}
               className={styles.chip}
               pressed={on}
@@ -92,7 +91,6 @@ export function Figure({
 }) {
   return (
     <Field
-      onInk
       className={styles.figure}
       label={label}
       error={invalid ? hint : null}
@@ -101,7 +99,6 @@ export function Figure({
       {(control) => (
         <TextInput
           {...control}
-          onInk
           className={shared.box64}
           value={value}
           inputMode="decimal"

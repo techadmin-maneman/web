@@ -75,7 +75,6 @@ function Pair<T extends string | boolean>(props: {
       {props.options.map((option) => (
         <ToggleButton
           key={String(option.value)}
-          onInk
           className={shared.choice}
           pressed={props.chosen === option.value}
           onClick={() => {
@@ -96,7 +95,6 @@ function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | n
       {props.reasons.map((one) => (
         <li key={one.id}>
           <ToggleButton
-            onInk
             className={styles.reason}
             pressed={props.picked === one.id}
             onClick={() => {
@@ -179,7 +177,6 @@ function Choosing({
   return (
     <StepFrame
       title={copy.titles.outcome}
-      action={copy.next}
       ready={ready}
       unfinished={stillToChoose(choice, unanswered)}
       notice={refused === null ? null : copy.corrected.other}

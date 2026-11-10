@@ -45,6 +45,6 @@
   }
 
   .wordsDone {
-    color: var(--ink-muted);
+    color: var(--ui-text-quiet);
   }
 }

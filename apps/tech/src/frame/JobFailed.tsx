@@ -28,8 +28,8 @@ export function JobFailed({
   readonly onPaper?: boolean;
 }) {
   return (
-    <main className={classes(frame.screen, onPaper && light.failedScreen)} data-look={onPaper ? "light" : undefined}>
-      <header className={classes(frame.head, onPaper && light.failedHead)}>
+    <main className={classes(frame.screen, onPaper && light.paperScreen)} data-look={onPaper ? "light" : undefined}>
+      <header className={classes(frame.head, onPaper && light.paperHead)}>
         <IconButton d={ICONS.back} size="lg" weight="heavy" label={copy.backToToday} onClick={toToday} />
       </header>
       <div className={styles.body}>

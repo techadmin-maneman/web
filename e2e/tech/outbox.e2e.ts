@@ -11,6 +11,7 @@ import { fakeTech, type Fake } from "./fake-tech.ts";
 import { atTheDoor, heldOnPhone, keptOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { askToSignOut, openPending } from "./tabs.ts";
+import { stepAction } from "./steps-fixtures.ts";
 
 /**
  * Opens the day, checks in at the door, then takes the signal away. The app
@@ -71,15 +72,15 @@ async function workTheJob(page: Page): Promise<void> {
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
   for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await page.getByRole("button", { name: "One more tape strips" }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.after })).toBeVisible();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
   await page.getByRole("button", { name: techCopy.capture.finish, exact: true }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
 }
 
 // A whole job worked with no signal, from Start job to the outcome, reaches the API in the order it was

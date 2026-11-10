@@ -9,6 +9,7 @@ import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE } from "./fix
 import { fakeTech, type Fake } from "./fake-tech.ts";
 import { holding, startedThrough, writesTo, checklistItems } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { stepAction } from "./steps-fixtures.ts";
 
 test.describe("the piece (board B3, step 4)", () => {
   async function onThePiece(page: Page): Promise<Fake> {
@@ -31,10 +32,12 @@ test.describe("the piece (board B3, step 4)", () => {
     await label.fill("mm-std-7193 c");
     await expect(label).toHaveValue("MM-STD-7193-C");
     // Not in the kit, so it is checked before the fit goes on.
-    await expect(page.getByRole("button", { name: techCopy.steps.piece.uncheckedAction })).toBeDisabled();
+    await expect(page.getByText(techCopy.steps.piece.uncheckedAction, { exact: true })).toBeVisible();
+    await expect(stepAction(page)).toBeDisabled();
 
     await label.fill("MM-STD-71");
-    await expect(page.getByRole("button", { name: techCopy.steps.piece.checkFirst })).toBeDisabled();
+    await expect(page.getByText(techCopy.steps.piece.checkFirst, { exact: true })).toBeVisible();
+    await expect(stepAction(page)).toBeDisabled();
     await expect(page.getByText(techCopy.steps.piece.malformed)).toBeVisible();
   });
 
@@ -117,7 +120,7 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(choices.first()).toHaveAttribute("aria-pressed", "true");
     expect(await axeViolations(page)).toEqual([]);
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-5120-A");
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({ piece_code: "MM-STD-5120-A", stock_code: "hs_exact" });
@@ -151,13 +154,14 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await label.fill("MM-ESS-0000008-J");
     await expect(page.getByRole("alert")).toHaveText(techCopy.steps.piece.expired);
-    await expect(page.getByRole("button", { name: techCopy.steps.piece.expiredAction })).toBeDisabled();
+    await expect(page.getByText(techCopy.steps.piece.expiredAction, { exact: true })).toBeVisible();
+    await expect(stepAction(page)).toBeDisabled();
 
     await label.fill("mm-ess-0000007-h");
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot })).toHaveValue("HS-1");
     const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
     await expect(kit.getByRole("button").first()).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-ESS-0000007-H",
@@ -192,7 +196,7 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await expect(page.getByText(techCopy.steps.piece.offline)).toBeVisible();
     await expect(page.getByText(/We do not know that label/)).toHaveCount(0);
-    await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeEnabled();
+    await expect(stepAction(page)).toBeEnabled();
   });
 
   test("will not record another client’s piece", async ({ page }) => {
@@ -201,7 +205,8 @@ test.describe("the piece (board B3, step 4)", () => {
     await page.getByRole("button", { name: techCopy.steps.piece.look }).click();
 
     await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.notThisClient })).toBeVisible();
-    await expect(page.getByRole("button", { name: techCopy.steps.piece.notThisClientAction })).toBeDisabled();
+    await expect(page.getByText(techCopy.steps.piece.notThisClientAction, { exact: true })).toBeVisible();
+    await expect(stepAction(page)).toBeDisabled();
     // The other piece's base and lot stay off this job.
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.base, exact: true })).toHaveValue("");
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot, exact: true })).toHaveValue("");
@@ -224,7 +229,7 @@ test.describe("the piece (board B3, step 4)", () => {
     await page.getByRole("textbox", { name: techCopy.steps.piece.old.reason }).fill("Lifted at the front");
     expect(await axeViolations(page)).toEqual([]);
 
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
     await expect(
       page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.replacement }),
     ).toBeVisible();
@@ -273,13 +278,14 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("asks the client’s choice first, by name, and sends the product with the piece fitted", async ({ page }) => {
     const fake = await onTheChoice(page);
-    await expect(page.getByRole("button", { name: techCopy.oneVisit.chooseFirst })).toBeDisabled();
+    await expect(page.getByText(techCopy.oneVisit.chooseFirst, { exact: true })).toBeVisible();
+    await expect(stepAction(page)).toBeDisabled();
     expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
     await expect(page.getByRole("button", { name: "Mane Man Natural" })).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
@@ -295,7 +301,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(page.getByText(techCopy.oneVisit.declinedNote)).toBeVisible();
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({ declined: true });
@@ -305,7 +311,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   test("runs the consultation’s checklist alone once the client decided against the fit", async ({ page }) => {
     const fake = await onTheChoice(page);
     await page.getByRole("button", { name: techCopy.oneVisit.declined, exact: true }).click();
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
 
     await expect(
       page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.consultation }),
@@ -314,7 +320,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(items).toHaveCount(3);
     await expect(page.getByRole("button", { name: /Adhesive applied/ })).toHaveCount(0);
     for (const item of await items.all()) await item.click();
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
 
     await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);
     expect(writesTo(fake, "checklist")[0]?.body).toEqual({
@@ -326,7 +332,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await onTheChoice(page);
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
 
     await expect(page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist })).toBeVisible();
     await expect(checklistItems(page)).toHaveCount(9);
@@ -343,7 +349,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(page.getByLabel(techCopy.oneVisit.code.label)).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
 
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
     await expect(page.getByText("Rohit M. · free consultation")).toBeVisible();
     // Declined, the client is not going ahead with the fit, and the close says so.
     expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: false });

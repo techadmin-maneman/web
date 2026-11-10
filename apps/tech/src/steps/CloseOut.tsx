@@ -20,7 +20,9 @@ import { JobFailed } from "../frame/JobFailed.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { type Heard, keptArrival, keptClosed, keptOutcome, keptStates } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
+import { classes } from "@maneman/ui/classes";
 import frame from "../frame/frame.module.css";
+import light from "../frame/light.module.css";
 import shared from "./steps.module.css";
 import styles from "./close-out.module.css";
 
@@ -141,7 +143,7 @@ export function CloseOut({ id }: { id: string }) {
   const job = loaded.value;
   if (outcome === null) {
     return (
-      <main className={frame.screen}>
+      <main className={classes(frame.screen, light.paperScreen)} data-look="light">
         <Failed
           message={copy.notClosed}
           retry={copy.backToJob}
@@ -163,7 +165,7 @@ export function CloseOut({ id }: { id: string }) {
   const later = day.state === "loaded" ? nextAfter(day.value, job, states ?? NOTHING_HEARD) : null;
 
   return (
-    <main className={frame.screen}>
+    <main className={classes(frame.screen, light.paperScreen)} data-look="light">
       <section className={shared.close}>
         <p className={capsLook(shared.closeLabel)}>{copy.label}</p>
         <Icon className={shared.closeTick} d={outcome === "done" ? ICONS.tick : ICONS.minus} size="xl" weight="heavy" />
@@ -186,9 +188,9 @@ export function CloseOut({ id }: { id: string }) {
         )}
       </section>
 
-      <div className={frame.foot}>
+      <div className={classes(frame.foot, light.paperFoot)}>
         <Button
-          variant="gold"
+          variant="primary"
           size="action"
           className={frame.action}
           onClick={() => {

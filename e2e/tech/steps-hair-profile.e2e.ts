@@ -8,8 +8,9 @@ import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ROHITS_PROFILE, type HairProfile } from "./fixtures.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
 import { deviceRecordOnPhone } from "./on-phone.ts";
-import { startedThrough, writesTo, gilded } from "./steps-fixtures.ts";
+import { startedThrough, writesTo, brassMarks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { stepAction } from "./steps-fixtures.ts";
 
 // The client's hair profile, which no board draws: the fit spec, then the history, sent as one write, on no consent
 // of its own (docs/decisions/0106-a-clients-hair-profile.md).
@@ -24,7 +25,7 @@ test.describe("the client’s hair profile", () => {
     return fake;
   }
 
-  const next = (page: Page) => page.getByRole("button", { name: techCopy.steps.next });
+  const next = (page: Page) => stepAction(page);
 
   test("takes the fit spec, then the history, and sends them as one", async ({ page }) => {
     const fake = await atTheProfile(page);
@@ -60,7 +61,7 @@ test.describe("the client’s hair profile", () => {
     await page.getByRole("radio", { name: techCopy.profile.densities["120"] }).click();
     await page.getByRole("radio", { name: "Mane Man Natural" }).click();
     await page.getByRole("radio", { name: techCopy.profile.attachments.tape, exact: true }).click();
-    expect(await gilded(page)).toEqual(["Next"]);
+    expect(await brassMarks(page)).toBe(1);
     await next(page).click();
 
     await expect(page.getByRole("heading", { level: 1, name: techCopy.profile.history.title })).toBeVisible();
@@ -134,7 +135,8 @@ test.describe("the client’s hair profile", () => {
 
   test("keeps Next dim until the Norwood stage is chosen", async ({ page }) => {
     await atTheProfile(page);
-    await expect(page.getByRole("button", { name: techCopy.profile.chooseStage })).toBeDisabled();
+    await expect(page.getByText(techCopy.profile.chooseStage, { exact: true })).toBeVisible();
+    await expect(stepAction(page)).toBeDisabled();
     await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
     await expect(next(page)).toBeEnabled();
   });
@@ -162,7 +164,8 @@ test.describe("the client’s hair profile", () => {
     await circumference.fill("90");
     await expect(circumference).toHaveAccessibleDescription("15.5–28");
     const named = techCopy.profile.checkFigure(techCopy.profile.measurements.head_circumference_in);
-    await expect(page.getByRole("button", { name: named })).toBeDisabled();
+    await expect(page.getByText(named, { exact: true })).toBeVisible();
+    await expect(stepAction(page)).toBeDisabled();
     await circumference.fill("22.6");
     await expect(next(page)).toBeEnabled();
   });

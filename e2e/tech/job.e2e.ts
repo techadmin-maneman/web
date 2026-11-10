@@ -10,6 +10,7 @@ import { JOB_ID, ROHITS_PIECE, ROHITS_PROFILE, TOMORROW_JOB_ID } from "./fixture
 import { fakeTech } from "./fake-tech.ts";
 import { atTheDoor, pageScrolls } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { stepAction } from "./steps-fixtures.ts";
 
 const door = techCopy.notHome.door;
 
@@ -514,17 +515,18 @@ test("walks the steps of a service visit and closes it out", async ({ page }) =>
 
   // Step 2: the checklist, which will not let the job on until it is finished.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  await expect(page.getByRole("button", { name: techCopy.steps.checklist.unfinished })).toBeDisabled();
+  await expect(page.getByText(techCopy.steps.checklist.unfinished, { exact: true })).toBeVisible();
+  await expect(stepAction(page)).toBeDisabled();
   for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
   expect(await axeViolations(page)).toEqual([]);
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
 
   // Step 3: the consumables' steppers, no keyboard anywhere.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await expect(page.locator("input")).toHaveCount(0);
   await page.getByRole("button", { name: "One more tape strips" }).click();
   await page.getByRole("button", { name: "One more tape strips" }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
 
   // Step 4: the after set. A service visit has no piece step; the API leaves it out.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.after })).toBeVisible();
@@ -537,11 +539,13 @@ test("walks the steps of a service visit and closes it out", async ({ page }) =>
 
   // Step 5: the outcome, with nothing chosen for them.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
-  await expect(page.getByRole("button", { name: techCopy.steps.outcome.choose })).toBeDisabled();
+  await expect(page.getByText(techCopy.steps.outcome.choose, { exact: true })).toBeVisible();
+  await expect(stepAction(page)).toBeDisabled();
   await page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true }).click();
-  await expect(page.getByRole("button", { name: techCopy.steps.outcome.pickReason })).toBeDisabled();
+  await expect(page.getByText(techCopy.steps.outcome.pickReason, { exact: true })).toBeVisible();
+  await expect(stepAction(page)).toBeDisabled();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
 
   // The close-out.
   await expect(page.getByText("Rohit M. · partly done")).toBeVisible();

@@ -264,11 +264,10 @@ function HistoryFields({
           />
         </div>
       )}
-      <Field onInk className={shared.field} label={copy.history.skin} look={{ label: shared.fieldLabel }}>
+      <Field className={shared.field} label={copy.history.skin} look={{ label: shared.fieldLabel }}>
         {(control) => (
           <TextInput
             {...control}
-            onInk
             className={shared.box64}
             value={form.skin}
             maxLength={200}
@@ -321,7 +320,6 @@ function ProfileForm({
       <StepFrame
         key="measure"
         title={stepsCopy.titles.profile}
-        action={stepsCopy.next}
         ready={holding === null}
         unfinished={holding ?? copy.checkFigures}
         notice={notice}
@@ -341,7 +339,6 @@ function ProfileForm({
       <StepFrame
         key="match"
         title={copy.match.title}
-        action={stepsCopy.next}
         ready={spec !== null && staged}
         unfinished={grey === null ? copy.checkFigures : copy.checkFigure(grey)}
         notice={notice}
@@ -361,7 +358,6 @@ function ProfileForm({
     <StepFrame
       key="history"
       title={copy.history.title}
-      action={stepsCopy.next}
       ready={spec !== null && said !== null}
       unfinished={copy.checkFigures}
       onBack={() => {

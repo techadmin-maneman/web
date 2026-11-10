@@ -155,6 +155,7 @@ const REDRAWN = [
   "apps/tech/src/camera/CaptureScreen.tsx",
   "apps/tech/src/camera/FramingGuide.tsx",
   "apps/tech/src/visit/",
+  "apps/tech/src/steps/",
   "apps/tech/src/frame/light.module.css",
 ];
 const slashed = (file: string) => file.replace(/\\/g, "/");

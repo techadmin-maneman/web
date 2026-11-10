@@ -55,7 +55,7 @@ function Figure({ name, count, onChange }: { name: string; count: number; onChan
   if (typing === null) {
     return (
       <Button
-        variant="outlineOnInk"
+        variant="outline"
         size="control"
         className={shared.number}
         aria-label={copy.consumables.type(name)}
@@ -68,11 +68,10 @@ function Figure({ name, count, onChange }: { name: string; count: number; onChan
     );
   }
   return (
-    <Field label={copy.consumables.type(name)} labelHidden onInk>
+    <Field label={copy.consumables.type(name)} labelHidden>
       {(control) => (
         <NumberInput
           {...control}
-          onInk
           autoFocus
           className={shared.number}
           inputMode="numeric"
@@ -91,10 +90,6 @@ function Figure({ name, count, onChange }: { name: string; count: number; onChan
     </Field>
   );
 }
-
-/** Whether every count still stands at what the service expects: the routine visit's one tap on. */
-const asExpected = (offered: readonly Offered[], counts: ReadonlyMap<string, number>): boolean =>
-  offered.some((each) => each.expected > 0) && offered.every((each) => (counts.get(each.code) ?? 0) === each.expected);
 
 /** What a refused step sent, by code, so the technician corrects it rather than counting again. */
 function sentBefore(refused: Queued | null): Map<string, number> | null {
@@ -179,7 +174,7 @@ function Picks({
       {others.map((each) => (
         <li key={each.code}>
           <Button
-            variant="outlineOnInk"
+            variant="outline"
             size="control"
             className={shared.pick}
             aria-label={copy.consumables.addOne(each.name)}
@@ -201,12 +196,6 @@ const usedOf = (shown: readonly string[], counts: ReadonlyMap<string, number>) =
     const quantity = counts.get(code) ?? 0;
     return quantity > 0 ? [{ code, quantity }] : [];
   });
-
-/** The step's button: why first where a reason is owed, the routine visit's one tap where all is as expected. */
-const actionOf = (waiting: boolean, expected: boolean): string => {
-  if (waiting) return copy.consumables.pickWhy;
-  return expected ? copy.consumables.asExpected : copy.next;
-};
 
 /** Whether the step owes a reason (src/policy/consumable-shortfall.ts), and the one picked, held to what is counted. */
 function useWhyShort(job: Job, used: readonly { readonly code: string; readonly quantity: number }[]) {
@@ -264,8 +253,8 @@ function Counting({
   return (
     <StepFrame
       title={copy.titles.consumables}
-      action={actionOf(why.waiting, asExpected(offered, counts))}
       ready={!why.waiting}
+      unfinished={copy.consumables.pickWhy}
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
       onAction={() => {
@@ -292,7 +281,7 @@ function Counting({
       {others.length > 0 && (
         <div className={shared.field}>
           <Button
-            variant="outlineOnInk"
+            variant="outline"
             size="control"
             className={shared.second}
             aria-expanded={adding}
