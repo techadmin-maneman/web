@@ -100,12 +100,13 @@ describe("ci.yml on a pull request", () => {
     expect(run).toEqual(declared);
 
     const browser = jobOf(CI, "browser");
-    expect(browser.strategy?.matrix?.shard).toEqual([1, 2]);
-    expect(
-      browser.steps?.some((step) => step.run?.trim() === "npm run test:e2e -- --shard=${{ matrix.shard }}/2"),
-    ).toBe(true);
+    expect(browser.strategy?.matrix?.part).toEqual([1, 2, 3, 4, "lighthouse"]);
+    const tests = browser.steps?.find(
+      (step) => step.run?.trim() === "npm run test:e2e -- --shard=${{ matrix.part }}/4",
+    );
+    expect(tests?.if).toBe("matrix.part != 'lighthouse'");
     const lighthouse = browser.steps?.find((step) => step.run?.trim() === "npm run lighthouse");
-    expect(lighthouse?.if).toBe("matrix.shard == 1");
+    expect(lighthouse?.if).toBe("matrix.part == 'lighthouse'");
   });
 
   it("names the job a later run looks for before it takes the full suite as passed", () => {
