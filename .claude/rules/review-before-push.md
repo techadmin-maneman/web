@@ -10,33 +10,35 @@ are the one exception to working without agents.
    - `ui-guard`, given the screenshots' paths and the design file the screens follow
    - `security-reviewer`
    - `reviewer`, given the brief and the plan the change answers to
-3. Fix every finding they return as CHANGES REQUIRED or FAIL, and commit. A fix is a new change, so each reviewer looks
-   again, told what it found and what changed since (`git diff <the commit it passed>..HEAD`):
+3. Fix what they return as CHANGES REQUIRED or FAIL, and commit. A finding is left unfixed only where its reviewer
+   agrees, on its next look, that it can wait and still gives PASS; the PR's note says which, and why. A fix is a new
+   change, so each reviewer looks again, told the commit it last reviewed and what it found:
    - `reviewer` reviews every fix in full: a fix is always a change of logic.
-   - `ui-guard` reviews the change again only where the fix touches what is drawn (`apps/`, `packages/ui`,
-     `packages/brand`, `site/`, `design/`); otherwise it confirms that nothing drawn changed since its PASS.
-   - `security-reviewer` reviews it again only where the fix touches what runs or ships (code, migrations, scripts,
-     hooks, CI, dependencies, configuration); otherwise it confirms that nothing it covers changed since its PASS.
-
-   A confirmation is that reviewer's PASS for the change as it now stands. A finding left unfixed is said in the PR's
-   note, with why.
-
-4. Record each verdict as the reviewer gave it, for the change as it now stands:
-   `node .claude/hooks/review-gate.mjs record <ui|security|logic> <PASS|FAIL> "<one line>"`.
+   - `ui-guard` and `security-reviewer`, where their last verdict was PASS, review the change again only where the fix
+     touches their part (what is drawn: `apps/`, `packages/ui`, `packages/brand`, `site/`, `design/`; what runs or
+     ships: code, migrations, scripts, hooks, CI, dependencies, configuration); otherwise they confirm that nothing in
+     it changed since their PASS, and that confirmation is their PASS for the change as it now stands.
+   - Where their last verdict was not PASS, they first check each of their findings is resolved, then review the
+     change as it now stands.
+4. Record each verdict as the reviewer gave it, with the key it gave (each reviewer runs
+   `node .claude/hooks/review-gate.mjs key` before it reads, and ends its report with that key):
+   `node .claude/hooks/review-gate.mjs record <ui|security|logic> <PASS|FAIL> <key> "<one line>"`.
+   It refuses a key that is not the change now checked out, so an edit made after a review cannot take its verdict.
    Never record a PASS a reviewer did not give, and never carry one over from an earlier version of the change.
-5. Push. Git's pre-push hook holds every branch or tag the push sends until all three are PASS for its change, however
-   the push is started in Git Bash or PowerShell and from whichever worktree. Merging main into the branch keeps them
-   unless the merge changes the branch's own lines or the lines beside them; any other edit, a space included, needs
-   them again. WSL's git does not run the hook, so a push through WSL is refused.
+5. `git fetch origin`, then push. Git's pre-push hook holds every branch or tag the push sends, but one main already
+   holds, until all three are PASS for its change, however the push is started in Git Bash or PowerShell and from
+   whichever worktree; it also holds a push while origin/main is behind the remote's main. Merging main into the
+   branch keeps the reviews unless the merge changes the branch's own lines or the lines beside them; any other edit,
+   a space included, needs them again. WSL's git does not run the hook, so a push through WSL is refused.
 
 ## The gate
 
-Install it once per clone, and again whenever `.claude/hooks/review-gate.mjs` changes:
+Install it in each checkout the agent works in, and again whenever `.claude/hooks/review-gate.mjs` changes:
 `node .claude/hooks/review-gate.mjs install`. It copies the gate into the repository's own git folder
 (`.git/claude-gate`), where switching branches cannot remove it, points git's hooks there, and adds its tool-call
-guard to `.claude/settings.local.json`, which no branch carries. Until it is installed as it stands, a push is
-refused. The guard also refuses any command that would step around the hook: `--no-verify`, another hooks path,
-clearing `CLAUDECODE`, a git alias, or writing to the gate's files. Its cases are in
+guard to the checkout's `.claude/settings.local.json`, which no branch carries. Until it is installed as it stands, a
+push is refused. The guard also refuses any command that would step around the hook: `--no-verify`, another hooks
+path, clearing `CLAUDECODE`, setting a git alias, or writing to the gate's files. Its cases are in
 `test/node/tooling/review-gate.test.ts`.
 
 The gate holds the coding agent, whose shells Claude Code marks with `CLAUDECODE=1`, to this rule in ordinary work.

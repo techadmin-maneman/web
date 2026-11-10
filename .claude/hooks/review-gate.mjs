@@ -7,7 +7,7 @@
 //     cannot remove it; points git's hooks there; and adds the tool-call guard to .claude/settings.local.json. Run it
 //     once per clone, and again whenever this file changes (the guard says so).
 //
-//   node .claude/hooks/review-gate.mjs record <ui|security|logic> <PASS|FAIL> [note]
+//   node .claude/hooks/review-gate.mjs record <ui|security|logic> <PASS|FAIL> <key> [note]
 //     records one review's verdict for the checked-out branch's change as it stands.
 //
 //   node .claude/hooks/review-gate.mjs key [commit]
@@ -27,7 +27,7 @@
 
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -121,13 +121,27 @@ function readStamp(path) {
   }
 }
 
-function record([kind, verdict, ...note]) {
-  if (!KINDS.includes(kind) || !["PASS", "FAIL"].includes(verdict)) {
-    console.error("usage: node .claude/hooks/review-gate.mjs record <ui|security|logic> <PASS|FAIL> [note]");
+/**
+ * A verdict, recorded against the key the reviewer read (`key`, which each reviewer gives with its verdict), and only
+ * while that is still the change checked out: an edit made after the review cannot take its verdict with it.
+ */
+function record([kind, verdict, reviewed, ...note]) {
+  if (
+    !KINDS.includes(kind) ||
+    !["PASS", "FAIL"].includes(verdict) ||
+    !/^([0-9a-f]{40}|nothing-changed)$/.test(reviewed ?? "")
+  ) {
+    console.error(
+      "usage: node .claude/hooks/review-gate.mjs record <ui|security|logic> <PASS|FAIL> <the key the reviewer gave> [note]",
+    );
     process.exit(1);
   }
   const cwd = process.cwd();
   const key = changeKey(cwd);
+  if (reviewed !== key) {
+    console.error(`The change has moved since it was reviewed (reviewed ${reviewed}, now ${key}): review it again.`);
+    process.exit(1);
+  }
   const path = stampPath(cwd, key);
   mkdirSync(dirname(path), { recursive: true });
   const stamp = readStamp(path);
@@ -152,12 +166,26 @@ const installedDir = (cwd) => {
   return common === null ? null : join(common, GATE_FOLDER);
 };
 
-/** Whether the gate is installed for this repository as this copy of it stands. */
+/** This checkout's own settings, which no branch carries, and the guard command they hold. */
+const localSettingsPath = (cwd) => join(git(cwd, ["rev-parse", "--show-toplevel"]), ".claude", "settings.local.json");
+const guardCommand = (dir) => `node "${join(dir, "review-gate.mjs").replace(/\\/g, "/")}" || exit 2`;
+
+/** A settings file's JSON, a byte-order mark (as PowerShell writes one) taken off; empty where there is none. */
+function readSettings(path) {
+  return existsSync(path) ? JSON.parse(readFileSync(path, "utf8").replace(/^﻿/, "")) : {};
+}
+
+/** Whether the gate is installed for this repository and checkout as this copy of it stands. */
 function installed(cwd) {
   const dir = installedDir(cwd);
   if (dir === null || !existsSync(join(dir, "pre-push")) || !existsSync(join(dir, "review-gate.mjs"))) return false;
   try {
     if (!same(resolve(cwd, git(cwd, ["config", "--get", "core.hooksPath"])), dir)) return false;
+    if (
+      !JSON.stringify(readSettings(localSettingsPath(cwd))).includes(JSON.stringify(guardCommand(dir)).slice(1, -1))
+    ) {
+      return false;
+    }
   } catch {
     return false;
   }
@@ -168,20 +196,22 @@ function install() {
   const cwd = process.cwd();
   const dir = installedDir(cwd);
   if (dir === null) throw new Error("not in a git repository");
+  // The settings are read first, so one that cannot be read stops the install before anything is changed.
+  const settingsPath = localSettingsPath(cwd);
+  const settings = readSettings(settingsPath);
   mkdirSync(dir, { recursive: true });
   copyFileSync(HERE, join(dir, "review-gate.mjs"));
   writeFileSync(join(dir, "pre-push"), PRE_PUSH, { mode: 0o755 });
   git(cwd, ["config", "core.hooksPath", dir.replace(/\\/g, "/")]);
-  // The tool-call guard, in this checkout's own settings, which no branch carries: a switch of branch leaves it.
-  const top = git(cwd, ["rev-parse", "--show-toplevel"]);
-  const settingsPath = join(top, ".claude", "settings.local.json");
-  const settings = existsSync(settingsPath) ? JSON.parse(readFileSync(settingsPath, "utf8")) : {};
+  // The tool-call guard, in this checkout's own settings: a switch of branch leaves it.
   settings.hooks ??= {};
   const kept = (settings.hooks.PreToolUse ?? []).filter((entry) => !JSON.stringify(entry).includes(GATE_FOLDER));
-  const guard = `node "${join(dir, "review-gate.mjs").replace(/\\/g, "/")}" || exit 2`;
   settings.hooks.PreToolUse = [
     ...kept,
-    { matcher: [...SHELL_TOOLS, ...FILE_TOOLS].join("|"), hooks: [{ type: "command", command: guard, timeout: 60 }] },
+    {
+      matcher: [...SHELL_TOOLS, ...FILE_TOOLS].join("|"),
+      hooks: [{ type: "command", command: guardCommand(dir), timeout: 60 }],
+    },
   ];
   mkdirSync(dirname(settingsPath), { recursive: true });
   writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
@@ -206,9 +236,8 @@ function unreviewed(cwd, updates) {
   for (const line of lines) {
     const [localRef, localSha, remoteRef] = line.trim().split(/\s+/);
     if (localSha === undefined || remoteRef === undefined) continue;
-    // A deletion sends no change, and a tag on what main already holds opens nothing new.
-    if (NOTHING.test(localSha)) continue;
-    if (remoteRef.startsWith("refs/tags/") && isOnMain(cwd, localSha)) continue;
+    // A deletion sends no change, and a branch or a tag on what main already holds sends nothing new.
+    if (NOTHING.test(localSha) || isOnMain(cwd, localSha)) continue;
     const key = changeKey(cwd, localSha);
     const stamp = readStamp(stampPath(cwd, key));
     const missing = KINDS.filter((kind) => stamp[kind]?.verdict !== "PASS");
@@ -242,7 +271,7 @@ async function prePush() {
       "Push held until the change has passed its three reviews. Missing or failed:",
       ...refused.map((reason) => `  ${reason}`),
       "Run the reviews in .claude/rules/review-before-push.md, fix what they find, then record each verdict:",
-      "  node .claude/hooks/review-gate.mjs record <ui|security|logic> PASS",
+      "  node .claude/hooks/review-gate.mjs record <ui|security|logic> PASS <the key the reviewer gave>",
     ].join("\n"),
   );
   process.exit(1);
@@ -253,7 +282,7 @@ async function prePush() {
 /** The word push as a command uses it: not in pre-push, a path, or Push-Location. */
 const PUSH = /(?<![\w./-])push\b(?!-)/;
 /** What the gate lives in, or keeps its settings in, by name. */
-const GATE_FILES = /claude-gate|settings\.local\.json|\.git[\\/]+config\b|\.git[\\/]+hooks\b/i;
+const GATE_FILES = /claude-gate|claude-reviews|settings\.local\.json|\.git[\\/]+config\b|\.git[\\/]+hooks\b/i;
 /** A command that writes, as a word of its own: `node` runs Node, where `test/node/` or `--chmod` is not one. */
 const WRITES =
   /(?<![\w./\\-])(rm|del|erase|mv|move|ren|rename|rmdir|cp|copy|xcopy|robocopy|install|ln|touch|tee|truncate|sed|perl|python3?|ruby|node|deno|bun|chmod|attrib|icacls|Remove-Item|Move-Item|Rename-Item|Copy-Item|Set-Content|Add-Content|Out-File|New-Item|Clear-Content)(?![\w./\\-])|>/i;
@@ -266,13 +295,22 @@ export function refusal(command, cwd) {
   const unredirected = plain.replace(/\d*>>?(&\d+|\s*[^\s;&|]+)?/g, " ");
   const stepsAround =
     /--no-v(e(r(i(fy?)?)?)?)?\b/.test(plain) ||
-    /\b(CLAUDECODE|NODE_OPTIONS|NODE_PATH)\b/.test(plain) ||
+    // The hook unsets what node would load first, so only the agent's own mark is the guard's to keep.
+    /\bCLAUDECODE\b/.test(plain) ||
     /GIT_CONFIG_|GIT_DIR\b|GIT_COMMON_DIR\b/.test(plain) ||
     /-c\s*core\.hooks/i.test(plain) ||
-    /\bconfig\b[^;&|\n]*core\.hookspath\s*(=|\s+[^\s;&|-])/i.test(unredirected) ||
-    (/core\.hookspath/i.test(plain) &&
-      /(--|\b)(unset|unset-all|replace-all|add|remove-section|rename-section|set|edit)\b/i.test(unredirected)) ||
-    /\bconfig\b[^;&|\n]*\balias\./i.test(plain) ||
+    // A config command that names the hooks path and gives it a value or changes it; one that only reads it is fine.
+    unredirected
+      .split(/[;&|\n]/)
+      .some(
+        (part) =>
+          /\bconfig\b/.test(part) &&
+          /core\.hookspath/i.test(part) &&
+          (/core\.hookspath\s*(=|\s+[^\s-])/i.test(part) ||
+            /(--|\b)(unset|unset-all|replace-all|add|remove-section|rename-section|set|edit)\b/i.test(part)),
+      ) ||
+    (/\bconfig\b[^;&|\n]*\balias\./i.test(plain) &&
+      !/\bconfig\s+(--\S+\s+)*(--get|--get-all|--list|-l|get|list)\b/i.test(plain)) ||
     /\b(send-pack|remote-https?|receive-pack)\b/.test(plain) ||
     (GATE_FILES.test(plain) &&
       WRITES.test(unredirected.replace(/\bnode\s+\S*review-gate\.mjs\s+(record|key|install)\b/g, ""))) ||
@@ -312,8 +350,17 @@ async function toolCall() {
   process.exit(2);
 }
 
-// Run as a script, not imported: a path's case may differ on Windows.
-if (process.argv[1] !== undefined && resolve(process.argv[1]).toLowerCase() === HERE.toLowerCase()) {
+/** Whether this file was run as a script rather than imported: by its real path, through a junction or not. */
+function runAsScript() {
+  if (process.argv[1] === undefined) return false;
+  try {
+    return realpathSync(process.argv[1]).toLowerCase() === realpathSync(HERE).toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+if (import.meta.main ?? runAsScript()) {
   const [mode, ...rest] = process.argv.slice(2);
   if (mode === "record") record(rest);
   else if (mode === "key") console.log(changeKey(process.cwd(), rest[0]));

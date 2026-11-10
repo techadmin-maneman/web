@@ -21,3 +21,5 @@ On a second look, after a fix, you are told what you found and the commit you re
    - anything in the diff outside the change's scope
 5. Do not report style the linters do not enforce, and do not ask for abstraction, defensive code or tests of impossible cases.
 6. End with PASS or CHANGES REQUIRED.
+
+Before you read the change, run `node .claude/hooks/review-gate.mjs key` (it only reads). End your report with that key on its own line, as `key: <the key>`, after your verdict: the verdict is recorded against it, and only while it is still the change checked out.

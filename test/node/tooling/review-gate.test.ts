@@ -3,9 +3,9 @@
 // that stops a command stepping around that hook. Each repository here is a throwaway one in the system's temp folder.
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 
 const GATE = resolve(".claude/hooks/review-gate.mjs");
@@ -99,10 +99,17 @@ describe("git's pre-push hook", () => {
     return folder;
   }
 
-  /** A push of the branch, from the agent's shell or a person's: git's own exit code. */
-  const push = (folder: string, agent: boolean, ref = "feat") =>
-    spawnSync("git", ["push", "-q", "origin", ref], { cwd: folder, env: { ...PERSON, CLAUDECODE: agent ? "1" : "" } })
-      .status;
+  /** A push, from the agent's shell or a person's: git's own exit code. */
+  const push = (folder: string, agent: boolean, ...args: string[]) =>
+    spawnSync("git", ["push", "-q", "origin", ...(args.length > 0 ? args : ["feat"])], {
+      cwd: folder,
+      env: { ...PERSON, CLAUDECODE: agent ? "1" : "" },
+    }).status;
+
+  const reviewAll = (folder: string) => {
+    const key = gate(folder, "key");
+    for (const kind of ["ui", "security", "logic"]) gate(folder, "record", kind, "PASS", key);
+  };
 
   it("holds the agent's push of a change not yet reviewed, and lets a person's through", () => {
     const folder = wired();
@@ -112,19 +119,123 @@ describe("git's pre-push hook", () => {
 
   it("lets the agent's push through once all three reviews have passed, and holds it again after an edit", () => {
     const folder = wired();
-    gate(folder, "record", "ui", "PASS");
-    gate(folder, "record", "security", "PASS");
+    const key = gate(folder, "key");
+    gate(folder, "record", "ui", "PASS", key);
+    gate(folder, "record", "security", "PASS", key);
     expect(push(folder, true)).not.toBe(0);
-    gate(folder, "record", "logic", "PASS");
+    gate(folder, "record", "logic", "PASS", key);
     expect(push(folder, true)).toBe(0);
     commitFile(folder, "f.txt", TWELVE.replace("c\n", "C\n").replace("l\n", "l \n"));
     expect(push(folder, true)).not.toBe(0);
   });
 
-  it("holds a tag on a commit main does not hold", () => {
+  it("holds a tag on a commit main does not hold, and lets one on main through", () => {
     const folder = wired();
     git(folder, "tag", "unreviewed");
     expect(push(folder, true, "refs/tags/unreviewed")).not.toBe(0);
+    git(folder, "tag", "released", "main");
+    git(folder, "tag", "-a", "-m", "release", "annotated", "main");
+    expect(push(folder, true, "refs/tags/released", "refs/tags/annotated")).toBe(0);
+  });
+
+  it("lets through a branch main already holds, and a deletion", () => {
+    const folder = wired();
+    expect(push(folder, true, "main:refs/heads/fresh")).toBe(0);
+    expect(push(folder, false)).toBe(0);
+    expect(push(folder, true, "--delete", "feat")).toBe(0);
+  });
+
+  it("holds a push while origin/main is behind the remote's main, and lets it through once fetched", () => {
+    const folder = wired();
+    reviewAll(folder);
+    const reviewedMain = git(folder, "rev-parse", "origin/main");
+    git(folder, "switch", "-q", "main");
+    commitFile(folder, "g.txt", "main moved\n");
+    git(folder, "push", "-q", "origin", "main");
+    git(folder, "update-ref", "refs/remotes/origin/main", reviewedMain);
+    git(folder, "switch", "-q", "feat");
+    expect(push(folder, true)).not.toBe(0);
+    git(folder, "fetch", "-q", "origin");
+    expect(push(folder, true)).toBe(0);
+  });
+
+  it("holds a push from a linked worktree until its change is reviewed there", () => {
+    const folder = wired();
+    const worktree = join(folder, "..", `${basename(folder)}-worktree`);
+    made.push(worktree);
+    git(folder, "worktree", "add", "-q", "-b", "side", worktree, "feat");
+    commitFile(worktree, "f.txt", TWELVE.replace("c\n", "C\n").replace("e\n", "E\n"));
+    expect(push(worktree, true, "side")).not.toBe(0);
+    reviewAll(worktree);
+    expect(push(worktree, true, "side")).toBe(0);
+  });
+});
+
+describe("recording a verdict", () => {
+  it("takes only the key the reviewer read, and refuses it once the change has moved on", () => {
+    const folder = repository();
+    commitFile(folder, "f.txt", TWELVE.replace("c\n", "C\n"));
+    const read = gate(folder, "key");
+    const recordAs = (...key: string[]) =>
+      spawnSync(process.execPath, [GATE, "record", "ui", "PASS", ...key], { cwd: folder }).status;
+    expect(recordAs(read)).toBe(0);
+    commitFile(folder, "f.txt", TWELVE.replace("c\n", "C\n").replace("d\n", "D\n"));
+    expect(recordAs(read)).toBe(1);
+    expect(recordAs()).toBe(1);
+  });
+});
+
+describe("installing the gate", () => {
+  it("gives the same files twice over, and keeps the checkout's other settings", () => {
+    const folder = repository();
+    mkdirSync(join(folder, ".claude"));
+    const mine = { permissions: { allow: ["Bash(ls)"] }, hooks: { PostToolUse: [{ matcher: "Edit", hooks: [] }] } };
+    // A byte-order mark first, as PowerShell 5.1 writes one.
+    writeFileSync(
+      join(folder, ".claude", "settings.local.json"),
+      `${String.fromCharCode(0xfeff)}${JSON.stringify(mine)}`,
+    );
+    gate(folder, "install");
+    const once = readFileSync(join(folder, ".claude", "settings.local.json"), "utf8");
+    gate(folder, "install");
+    expect(readFileSync(join(folder, ".claude", "settings.local.json"), "utf8")).toBe(once);
+    const settings = JSON.parse(once) as {
+      permissions: unknown;
+      hooks: { PreToolUse: unknown[]; PostToolUse: unknown };
+    };
+    expect(settings.permissions).toEqual(mine.permissions);
+    expect(settings.hooks.PostToolUse).toEqual(mine.hooks.PostToolUse);
+    expect(settings.hooks.PreToolUse).toHaveLength(1);
+  });
+
+  it("refuses a push from the gate's own repository until it is installed as the checkout's copy stands", () => {
+    const folder = repository();
+    mkdirSync(join(folder, ".claude", "hooks"), { recursive: true });
+    const own = join(folder, ".claude", "hooks", "review-gate.mjs");
+    copyFileSync(GATE, own);
+    const guard = () =>
+      spawnSync(process.execPath, [own], {
+        input: JSON.stringify({ tool_input: { command: "git push" }, cwd: folder }),
+      }).status;
+    expect(guard()).toBe(2);
+    execFileSync(process.execPath, [own, "install"], { cwd: folder, env: PERSON });
+    expect(guard()).toBe(0);
+    writeFileSync(own, `${readFileSync(own, "utf8")}\n// changed\n`);
+    expect(guard()).toBe(2);
+    execFileSync(process.execPath, [own, "install"], { cwd: folder, env: PERSON });
+    expect(guard()).toBe(0);
+    git(folder, "config", "core.hooksPath", join(folder, "elsewhere"));
+    expect(guard()).toBe(2);
+  });
+
+  it("guards a command run through a junction to the gate as through its real path", () => {
+    const link = join(mkdtempSync(join(tmpdir(), "review-gate-link-")), "hooks");
+    made.push(dirname(link));
+    symlinkSync(dirname(GATE), link, "junction");
+    const status = spawnSync(process.execPath, [join(link, "review-gate.mjs")], {
+      input: JSON.stringify({ tool_input: { command: "git push --no-verify" }, cwd: process.cwd() }),
+    }).status;
+    expect(status).toBe(2);
   });
 });
 
@@ -142,6 +253,8 @@ describe("the tool-call guard", () => {
     "node .claude/hooks/review-gate.mjs install",
     "node .claude/hooks/review-gate.mjs record ui PASS",
     "git checkout HEAD -- test/node/apps/tech/a.ts && node .git/claude-gate/review-gate.mjs key",
+    "NODE_OPTIONS=--max-old-space-size=4096 npm run lint",
+    "git config --get alias.ship",
   ])("lets %s run", (command) => {
     expect(guard({ tool_input: { command } })).toBe(0);
   });
@@ -153,7 +266,6 @@ describe("the tool-call guard", () => {
     "git commit --no-verify -m x",
     "CLAUDECODE= git push",
     "env -u CLAUDECODE git push",
-    "NODE_OPTIONS=--import=x git push",
     "git -c core.hooksPath=/dev/null push",
     "git config core.hooksPath /tmp/elsewhere",
     "git config --global core.hooksPath x",
