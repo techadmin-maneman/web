@@ -9,9 +9,6 @@ import { firstNameOf } from "../../lib/names.ts";
 import { stateOf } from "./tech-jobs.ts";
 import { statusIn, VISIT_ENDED } from "../../config/statuses.ts";
 
-/** How many of the client's visits the screen goes back. */
-const VISITS_SHOWN = 20;
-
 /** The front first, then the other angles in the order they are taken. */
 const ANGLE_ORDER =
   "CASE p.angle WHEN 'front' THEN 0 WHEN 'top' THEN 1 WHEN 'left' THEN 2 WHEN 'right' THEN 3 ELSE 4 END";
@@ -37,7 +34,7 @@ export interface HistoryVisit {
   readonly note: string | null;
   readonly photos: HistoryPhoto[];
   readonly consumables: { readonly name: string; readonly quantity: number }[];
-  /** The label of the piece fitted at it. */
+  /** The label of the piece its last piece step fitted. */
   readonly piece: string | null;
 }
 
@@ -59,7 +56,7 @@ export async function clientHistory(
        LEFT JOIN technicians t ON t.id = a.technician_id
        WHERE a.person_id = ?1 AND a.id <> ?2 AND a.deleted_at IS NULL AND a.window_start < ?3
          AND ${statusIn("a.status", VISIT_ENDED)}
-       ORDER BY a.window_start DESC LIMIT ${String(VISITS_SHOWN)}`,
+       ORDER BY a.window_start DESC`,
     )
     .bind(job.personId, job.id, job.startsAt)
     .all<VisitRow>();
@@ -86,14 +83,21 @@ export async function clientHistory(
       .bind(ids),
     db
       .prepare(
-        `SELECT appointment_id, name, quantity FROM consumables_used
-         WHERE appointment_id IN (SELECT value FROM json_each(?1)) ORDER BY rowid`,
+        `SELECT u.appointment_id, u.name, u.quantity FROM consumables_used u
+         WHERE u.appointment_id IN (SELECT value FROM json_each(?1))
+           AND u.job_event_id = (SELECT e.id FROM job_events e
+             WHERE e.appointment_id = u.appointment_id AND e.kind = 'consumables' AND e.superseded = 0
+             ORDER BY e.received_at DESC, e.rowid DESC LIMIT 1)
+         ORDER BY u.rowid`,
       )
       .bind(ids),
     db
       .prepare(
-        `SELECT appointment_id, piece_code FROM pieces
-         WHERE appointment_id IN (SELECT value FROM json_each(?1)) AND deleted_at IS NULL`,
+        `SELECT e.appointment_id, p.piece_code FROM job_events e
+         JOIN pieces p ON p.appointment_id = e.appointment_id AND p.piece_code = json_extract(e.body, '$.piece_code')
+           AND p.deleted_at IS NULL
+         WHERE e.appointment_id IN (SELECT value FROM json_each(?1)) AND e.kind = 'piece' AND e.superseded = 0
+         ORDER BY e.received_at DESC, e.rowid DESC`,
       )
       .bind(ids),
   ]);

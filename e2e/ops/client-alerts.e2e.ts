@@ -5,7 +5,7 @@
 import type { Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { CLIENT, json, type OpsReply } from "./fixtures.ts";
+import { CLIENT, fails, json, type OpsReply } from "./fixtures.ts";
 import { openClient } from "./clients-fixtures.ts";
 import { clients } from "../../apps/ops/src/content.ts";
 
@@ -58,4 +58,15 @@ test("raises an alert for the technicians and takes it off, each saying who and 
   await strip.getByRole("button", { name: copy.takeOff }).first().click();
   await expect(strip.getByRole("listitem")).toHaveText([/^Dog at the gate\./]);
   expect(sent).toEqual([{ body: "Allergic to latex." }]);
+});
+
+test("says when an alert could not be taken off, and keeps it in the list", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}`, {
+    "GET /api/clients/{id}/alerts": json({ alerts: [FROM_A_VISIT] }),
+    "POST /api/clients/{id}/alerts/{alert_id}/take-off": fails(403, "not_permitted"),
+  });
+  const strip = page.getByRole("region", { name: copy.title });
+  await strip.getByRole("button", { name: copy.takeOff }).click();
+  await expect(strip.getByRole("alert")).toHaveText(copy.errors.not_permitted);
+  await expect(strip.getByRole("listitem")).toHaveText([/^Dog at the gate\./]);
 });

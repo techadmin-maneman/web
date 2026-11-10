@@ -72,14 +72,17 @@ function AddAlert({ onSave }: { onSave: (body: string) => Promise<string | null>
 function AlertList({ clientId, initial }: { clientId: string; initial: readonly Alert[] }) {
   const mayWrite = useAccess().mayCall("POST /api/clients/{id}/alerts");
   const [alerts, setAlerts] = useState(initial);
+  const [takeOffRefused, setTakeOffRefused] = useState<string | null>(null);
   const raise = async (body: string) => {
     const answer = await clientsApi.raiseClientAlert(clientId, body);
     if (!answer.ok) return errorText(copy.errors, answer);
     setAlerts(answer.body.alerts);
     return null;
   };
+  // An alert that stays on is read in red before every visit, so a take-off that failed says so.
   const takeOff = async (alert: string) => {
     const answer = await clientsApi.takeOffClientAlert(clientId, alert);
+    setTakeOffRefused(answer.ok ? null : errorText(copy.errors, answer));
     if (answer.ok) setAlerts(answer.body.alerts);
   };
   return (
@@ -100,6 +103,11 @@ function AlertList({ clientId, initial }: { clientId: string; initial: readonly 
           </li>
         ))}
       </ul>
+      {takeOffRefused !== null && (
+        <div className={styles.addNote}>
+          <Refusal said={takeOffRefused} />
+        </div>
+      )}
       {mayWrite && <AddAlert onSave={raise} />}
     </>
   );

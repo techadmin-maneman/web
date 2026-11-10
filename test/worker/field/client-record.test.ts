@@ -11,6 +11,9 @@ import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtur
 import { aPerson, aVisit } from "../fixtures/index.ts";
 
 const EARLIER = "22222222-2222-4222-8222-222222222299";
+const OLDER = "22222222-2222-4222-8222-222222222298";
+const LATER = "22222222-2222-4222-8222-222222222297";
+const OPEN = "22222222-2222-4222-8222-222222222296";
 const PHOTO = "44444444-4444-4444-8444-444444444441";
 
 beforeEach(async () => {
@@ -122,6 +125,23 @@ describe("the job card", () => {
   });
 });
 
+describe("the handoff on the card", () => {
+  it("is the latest note left at an earlier visit, whoever left it", async () => {
+    const job = await working("service");
+    await anEarlierVisit();
+    await aVisit({ id: OLDER, person_id: PERSON, status: "completed", window_start: "2026-08-01T05:00:00.000Z" });
+    await env.DB.batch([
+      env.DB.prepare("UPDATE handoff_notes SET technician_id = ?1").bind(SAMEER),
+      env.DB.prepare(
+        `INSERT INTO handoff_notes (appointment_id, person_id, technician_id, body, written_at)
+         VALUES (?1, ?2, ?3, 'An older note.', '2026-08-01T05:00:00.000Z')`,
+      ).bind(OLDER, PERSON, IMRAN),
+    ]);
+    const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<Record<string, unknown>>();
+    expect(card).toMatchObject({ handoff: { note: "Edge lifting at the left temple.", technician: "Sameer" } });
+  });
+});
+
 describe("the client's history", () => {
   it("is each visit closed before the job, newest first, with its note, photographs, and result", async () => {
     const job = await working("service");
@@ -162,6 +182,50 @@ describe("the client's history", () => {
     await aPerson({ id: "p-other" });
     await env.DB.prepare("UPDATE appointments SET person_id = 'p-other' WHERE id = ?1").bind(EARLIER).run();
     expect((await job.get(`/api/tech/jobs/${JOB}/history-photos/${PHOTO}`)).status).toBe(404);
+  });
+
+  it("leaves out the job's own visit, a later one and one not closed, and lists the rest newest first", async () => {
+    const job = await working("service");
+    await anEarlierVisit();
+    await aVisit({ id: OLDER, person_id: PERSON, status: "completed", window_start: "2026-08-01T05:00:00.000Z" });
+    await aVisit({ id: LATER, person_id: PERSON, status: "completed", window_start: "2026-09-25T05:00:00.000Z" });
+    await aVisit({ id: OPEN, person_id: PERSON, status: "scheduled", window_start: "2026-09-10T05:00:00.000Z" });
+    const { visits } = await (
+      await job.get(`/api/tech/jobs/${JOB}/client-history`)
+    ).json<{ visits: { id: string }[] }>();
+    expect(visits.map((visit) => visit.id)).toEqual([EARLIER, OLDER]);
+  });
+
+  it("gives a closed visit's result and what its last consumables step used, not every step sent", async () => {
+    const job = await working("service");
+    await job.workTo("consumables");
+    const used = (quantity: number, event: string) =>
+      job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [{ name: "Walker tape", quantity }] }, event);
+    expect((await used(2, "event-consumables-01")).status).toBe(202);
+    expect((await used(3, "event-consumables-02")).status).toBe(202);
+    await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    expect((await outcome(job, { outcome: "done" })).status).toBe(202);
+    // The day's next job of the client's, Imran's too, reads the closed one as history.
+    await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(JOB).run();
+    await aVisit({ id: LATER, person_id: PERSON, window_start: "2026-09-21T10:30:00.000Z", technician_id: IMRAN });
+
+    const answer = await job.get(`/api/tech/jobs/${LATER}/client-history`);
+    expect(await answer.json()).toMatchObject({
+      visits: [{ id: JOB, result: "done", consumables: [{ name: "Walker tape", quantity: 3 }] }],
+    });
+  });
+
+  it("gives the piece its last piece step fitted, not the one it named before", async () => {
+    const job = await working("replacement");
+    await job.workTo("piece");
+    const piece = (code: string, event: string) => job.post(`/api/tech/jobs/${JOB}/piece`, { piece_code: code }, event);
+    expect((await piece("MM-STD-5520-A", "event-piece-01")).status).toBe(202);
+    expect((await piece("MM-STD-5521-A", "event-piece-02")).status).toBe(202);
+    await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(JOB).run();
+    await aVisit({ id: LATER, person_id: PERSON, window_start: "2026-09-21T10:30:00.000Z", technician_id: IMRAN });
+
+    const answer = await job.get(`/api/tech/jobs/${LATER}/client-history`);
+    expect(await answer.json()).toMatchObject({ visits: [{ id: JOB, piece: "MM-STD-5521-A" }] });
   });
 
   it("serves no photograph of a visit after the job's", async () => {

@@ -25,8 +25,8 @@ and 2); the owner ruled there is no voice note.
 3. **Both come with the outcome**, as `handoff_note` and `client_alert`, and are kept in their own tables, never in the
    job's event, so the event's body stays what the close decided.
 4. **The history is `GET /api/tech/jobs/{id}/client-history`:** the client's alerts, and their visits closed before
-   the job, newest first, at most twenty, each with its technician by first name, how it closed, its note, its after
-   photographs, what was used and the piece fitted. It is answered for the technician's own job once it unlocks, as its
+   the job, newest first, every one, each with its technician by first name, how it closed, its note, its after
+   photographs, what its last consumables step used and the piece its last piece step fitted. It is answered for the technician's own job once it unlocks, as its
    card is; its photographs are served one at a time under the same rule, never cached
    (`/api/tech/jobs/{id}/history-photos/{photo_id}`).
 5. **Neither is in the client's data export, and an erasure deletes both:** they are our notes on the client, as
