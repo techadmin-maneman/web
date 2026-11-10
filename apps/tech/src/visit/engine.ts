@@ -8,8 +8,7 @@ import type { Job } from "../api.ts";
 import { visit as copy } from "../content.ts";
 import type { InJobStep } from "../route.ts";
 
-export type ScreenId =
-  "before_photos" | "tasks" | "hair_profile" | "hair_system" | "consumables" | "after_photos" | "outcome";
+type ScreenId = "before_photos" | "tasks" | "hair_profile" | "hair_system" | "consumables" | "after_photos" | "outcome";
 
 export interface Screen {
   readonly id: ScreenId;
@@ -62,9 +61,4 @@ export function screensOf(job: Pick<Job, "type" | "one_visit" | "steps">): Scree
   return PLANS[plan]
     .filter((id) => onCard.has(EVENTS[id]))
     .map((id) => ({ id, event: EVENTS[id], title: titleOf(id, plan) }));
-}
-
-/** The screen that feeds an event. */
-export function screenFor(job: Pick<Job, "type" | "one_visit" | "steps">, event: InJobStep): Screen | null {
-  return screensOf(job).find((screen) => screen.event === event) ?? null;
 }

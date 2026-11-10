@@ -27,7 +27,16 @@ import { useJob } from "../lib/useDay.ts";
 import { clock, countdown, todayInIndia } from "../lib/when.ts";
 import { go, redirect, stepPath } from "../route.ts";
 import { keepCalled, keepClosed, keptArrival, keptCalled } from "../store/jobs.ts";
-import { events, frames, keepDoorFrame, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
+import {
+  checkInRefusedAsEarly,
+  events,
+  frames,
+  keepDoorFrame,
+  queue,
+  refusedAsEarly,
+  replay,
+  type Queued,
+} from "../store/outbox.ts";
 import { CardFrame, nameOf } from "../frame/CardFrame.tsx";
 import { useCheckIn } from "./CheckIn.tsx";
 import { whatsAppState } from "./receipt.ts";
@@ -244,7 +253,12 @@ function checkedInAt(job: Job, queued: readonly Queued[]): number | null {
   return queued.find((event) => event.job_id === job.id && event.kind === "check_in")?.queued_at ?? null;
 }
 
-function AtTheDoor({ job, queued }: { job: Job; queued: readonly Queued[] }) {
+/**
+ * Whether At the door is not this job's now, sending the technician back to the job when it is not: the visit begun or
+ * closed, a check-in measured too far or refused as early, or none made. A no-show on its way keeps it; so does a
+ * check-in landing, which for a moment reads as neither the card's nor the phone's.
+ */
+function useAway(job: Job, queued: readonly Queued[]): boolean {
   const { here, known, failed } = useCheckIn(job, queued);
   const stage = stageOf(job, queued, todayInIndia());
   // A no-show still on its way closes the job on the phone first; its own close goes on to the summary, or stays here
@@ -256,10 +270,20 @@ function AtTheDoor({ job, queued }: { job: Job; queued: readonly Queued[] }) {
   useEffect(() => {
     if (here) setWasHere(true);
   }, [here]);
-  const away = (stage !== "door" && !closing) || failed !== null || (known && !here && !wasHere);
+  // A check-in the API refused as early is no check-in: the job says when it opens.
+  const away =
+    (stage !== "door" && !closing) ||
+    failed !== null ||
+    checkInRefusedAsEarly(queued, job.id) ||
+    (known && !here && !wasHere);
   useEffect(() => {
     if (away) redirect(`/jobs/${job.id}`);
   }, [away, job.id]);
+  return away;
+}
+
+function AtTheDoor({ job, queued }: { job: Job; queued: readonly Queued[] }) {
+  const away = useAway(job, queued);
   const { wait, calledAt, photographed, again } = useDoor(job, queued);
   const [shooting, setShooting] = useState(false);
   const [starting, once] = useOneAtATime();

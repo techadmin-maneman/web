@@ -79,11 +79,23 @@ test("marks a step the API refused as needing a fix, in red on the plan", async 
     await expect(page.getByText(`${String(angle)} of 5`, { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
+  // The set goes up: the API takes four photographs and refuses the front one.
+  await expect.poll(() => fake.photos.length).toBe(4);
 
   await page.goto(`/jobs/${JOB_ID}/plan`);
-  await expect(page.getByText(plan.needsFix).first()).toBeVisible();
+  await expect(page.getByText(plan.needsFix).first()).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("list", { name: plan.title }).getByRole("listitem").first()).toHaveText(
     new RegExp(`^Before photos\\s*${plan.needsFix}$`),
   );
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("says on the camera that there is no signal, and keeps taking photographs", async ({ page, context }) => {
+  await fakeTech(page);
+  await page.goto(`/jobs/${JOB_ID}/before-photos`);
+  await expect(page.getByRole("button", { name: techCopy.capture.take })).toBeEnabled();
+  await context.setOffline(true);
+  await expect(page.getByText(techCopy.today.offline.bar)).toBeVisible();
+  await page.getByRole("button", { name: techCopy.capture.take }).click();
+  await expect(page.getByText("1 of 5", { exact: true })).toBeVisible();
 });

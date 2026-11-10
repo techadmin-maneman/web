@@ -409,6 +409,10 @@ test("a phone that lost its copy of the check-in still counts the wait at the do
   await expect(page.getByText(/^No signal/)).toHaveCount(0);
   await expect(page.getByText("15:00")).toBeVisible();
   await expect(page.getByText(door.evidenceFirst)).toBeVisible();
+
+  // The call is kept though the phone holds no check-in of its own, and with the photograph the close opens.
+  await gatherEvidence(page);
+  await expect(page.getByRole("button", { name: door.close })).toBeEnabled();
 });
 
 test("with no signal the wait still counts from the tap, and says what closing needs", async ({ page, context }) => {
@@ -429,6 +433,14 @@ test("with no signal the wait still counts from the tap, and says what closing n
   await expect(page.getByText(/^No signal\. The wait counts from your tap/)).toBeVisible();
   // Ours has to hold the check-in for the wait as well (ADR 0065), so the close waits for signal.
   await expect(page.getByRole("button", { name: door.close })).toBeDisabled();
+
+  // Signal back: the check-in lands, and At the door stays open through it.
+  fake.online = true;
+  await context.setOffline(false);
+  await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/checkin")).length).toBe(1);
+  await expect(page.getByText(/^No signal\. The wait counts from your tap/)).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: door.title })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}/door$`));
 });
 
 test("a started job offers only its next step: no check-in, no door, no second Start visit", async ({ page }) => {

@@ -30,7 +30,7 @@ function position(): Promise<GeolocationPosition> {
 }
 
 /** Whether the API's clock is still before `at`; the screen is drawn again the moment it is not. */
-export function useBefore(at: number): boolean {
+function useBefore(at: number): boolean {
   const [before, setBefore] = useState(() => apiNow() < at);
   useEffect(() => {
     const left = at - apiNow();
@@ -64,11 +64,17 @@ export interface CheckIn {
 export function useCheckIn(job: Job, queued: readonly Queued[]): CheckIn {
   const [noPosition, setNoPosition] = useState(false);
   const [busy, once] = useOneAtATime();
-  const readArrival = useCallback(() => keptArrival(job.id), [job.id]);
+  // Each read says which outbox it was made after: a failure kept before a retry landed is not the retry's answer.
+  const readArrival = useCallback(
+    async () => ({ arrival: await keptArrival(job.id), after: queued }),
+    [job.id, queued],
+  );
   const [read] = useAsync(readArrival, queued);
-  const arrival = valueOr(read, null);
+  const answer = valueOr(read, null);
+  const arrival = answer?.arrival ?? null;
   const here = checkedIn(job, queued) || arrival?.passed === true;
-  const failed = !here && arrival?.passed === false ? { distance: arrival.distance_m } : null;
+  const failed =
+    !here && answer?.after === queued && arrival?.passed === false ? { distance: arrival.distance_m } : null;
   const notYet = useBefore(Date.parse(job.checkin_from));
 
   const arrive = () =>
