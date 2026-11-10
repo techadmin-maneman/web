@@ -58,13 +58,17 @@ interface OutcomeSent {
   readonly choice: OutcomeRequest["outcome"];
   /** A partial's reason, when the card still offers it. */
   readonly reason: string | null;
+  /** The note for the next technician and the alert, as written; empty where none was. */
+  readonly note: string;
+  readonly alert: string;
 }
 
 /** The outcome the refused step sent, or null where there is none to start from. */
 export function outcomeSent(refused: Queued | null, offered: readonly string[]): OutcomeSent | null {
   const sent: Unchecked<PartialOutcome> | null = fieldsOf(refused?.body);
-  if (sent?.outcome === "done") return { choice: "done", reason: null };
-  if (sent?.outcome !== "partial") return null;
+  if (sent?.outcome !== "done" && sent?.outcome !== "partial") return null;
+  const notes = { note: textOf(sent.handoff_note), alert: textOf(sent.client_alert) };
+  if (sent.outcome === "done") return { choice: "done", reason: null, ...notes };
   const reason = typeof sent.reason === "string" && offered.includes(sent.reason) ? sent.reason : null;
-  return { choice: "partial", reason };
+  return { choice: "partial", reason, ...notes };
 }

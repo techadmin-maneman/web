@@ -34,7 +34,10 @@ function titleOf(job: Job, declined: boolean): string {
   return job.type === null ? copy.titles.checklist : copy.checklistTitles[job.type];
 }
 
-/** The list once the job is in hand: a refused list starts as it was ticked, else as the phone kept it. */
+/**
+ * The list once the job is in hand: a refused list starts as it was ticked, else as the phone kept it, and one already
+ * finished opens on its last task, ready to send.
+ */
 function Ticking({
   job,
   declined,
@@ -64,7 +67,7 @@ function Ticking({
     put("device", { key: "checklist_draft", job_id: job.id, done }).catch(() => undefined);
   }, [job.id, done]);
 
-  const [at, setAt] = useState(0);
+  const [at, setAt] = useState(() => (all ? items.length - 1 : 0));
   const item = items[Math.min(at, items.length - 1)];
   const last = at >= items.length - 1;
   const toggle = (id: string) => {
@@ -73,6 +76,7 @@ function Ticking({
   return (
     <StepFrame
       title={titleOf(job, declined)}
+      page={at}
       action={last ? undefined : visit.nextTask}
       ready={!last || all}
       unfinished={copy.checklist.unfinished}
@@ -92,15 +96,7 @@ function Ticking({
     >
       <Alerts job={job} />
       {item !== undefined && (
-        <Task
-          item={item}
-          at={at}
-          total={items.length}
-          done={done.includes(item.id)}
-          onToggle={() => {
-            toggle(item.id);
-          }}
-        />
+        <Task item={item} at={at} total={items.length} done={done.includes(item.id)} onToggle={toggle} />
       )}
       {!all && items.length > 1 && (
         <Button
@@ -135,7 +131,7 @@ function Task(props: {
   at: number;
   total: number;
   done: boolean;
-  onToggle: () => void;
+  onToggle: (id: string) => void;
 }) {
   const words = taskFor(props.item);
   return (
@@ -162,9 +158,15 @@ function Task(props: {
           <p className={styles.watchLine}>{words.watch}</p>
         </div>
       )}
-      <ul className={styles.list}>
+      <ul className={styles.taskDone}>
         <li>
-          <CheckRow done={props.done} tickWeight="heavy" onToggle={props.onToggle}>
+          <CheckRow
+            done={props.done}
+            tickWeight="heavy"
+            onToggle={() => {
+              props.onToggle(props.item.id);
+            }}
+          >
             {props.item.label}
           </CheckRow>
         </li>

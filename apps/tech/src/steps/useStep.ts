@@ -16,6 +16,12 @@ import { correct, queue, replay, type Queued } from "../store/outbox.ts";
 
 const LOADING: KeptLoad<Job> = { state: "loading" };
 
+/** A close without the note for the next technician and the alert, which only the API keeps. */
+function decidedOf(body: OutcomeRequest): OutcomeRequest {
+  const { handoff_note: _note, client_alert: _alert, ...decided } = body;
+  return decided;
+}
+
 interface Standing<K extends InJobStep> {
   /** Loading until the outbox has been read as well, so a step being put right starts from what it sent. */
   readonly loaded: KeptLoad<Job>;
@@ -54,8 +60,9 @@ export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
       setFinishing(true);
       if (refused === null) await queue(step, id, body, job.starts_at);
       else await correct(refused.seq, body);
-      // The duration the close-out shows runs from Start job to the outcome, and nothing gives it back.
-      if (step === "outcome") await keepClosed(id, apiNow(), body as OutcomeRequest);
+      // The duration the close-out shows runs from Start job to the outcome, and nothing gives it back. The close's
+      // words about the client go to the API alone: the phone keeps what was decided, not what was written.
+      if (step === "outcome") await keepClosed(id, apiNow(), decidedOf(body as OutcomeRequest));
       void replay();
 
       const sent = done(job, waiting.events);
@@ -76,8 +83,9 @@ export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
       redirect(`/jobs/${id}/done`);
     });
 
+  // A step goes back to the visit's plan, which lists every step and opens any of them.
   const back = () => {
-    go(`/jobs/${id}`);
+    go(`/jobs/${id}/plan`);
   };
 
   return { loaded: leaves ? LOADING : loaded, retry, refused, queued: waiting.events, finish, closeWith, back };

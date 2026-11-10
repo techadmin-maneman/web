@@ -7,7 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { atTheDoor, deviceRecordOnPhone, heldOnPhone, pageScrolls, queuedOnPhone } from "./on-phone.ts";
+import { atTheDoor, deviceRecordOnPhone, heldOnPhone, pageScrolls, queuedOnPhone, recordOnPhone } from "./on-phone.ts";
 import { holding, startedThrough, writesTo, checklistItems, brassMarks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { stepAction } from "./steps-fixtures.ts";
@@ -476,6 +476,12 @@ test("leaves a note for the next technician and an alert with the close, only wh
   await expect
     .poll(() => writesTo(fake, "outcome").at(-1)?.body)
     .toEqual({ outcome: "done", handoff_note: "Edge lifting at the left temple.", client_alert: "Allergic to latex." });
+  // Once sent, the phone keeps what was decided, and none of what was written about the client.
+  await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
+  const kept = await recordOnPhone(page, "closures", JOB_ID);
+  expect(kept).toContain('"outcome":"done"');
+  expect(kept).not.toContain("handoff_note");
+  expect(kept).not.toContain("client_alert");
 });
 
 test("guides each task with its words, what to watch for, and the client's alerts above it", async ({ page }) => {

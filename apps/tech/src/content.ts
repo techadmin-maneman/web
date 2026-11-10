@@ -645,7 +645,7 @@ export const steps = {
   },
   checklist: {
     // The board's dim bar while the list is unfinished.
-    unfinished: "Finish the list to continue",
+    unfinished: "Finish the tasks to continue",
     all: "Tick all: everything was done",
   },
   consumables: {
@@ -737,6 +737,8 @@ export const steps = {
     nextNote: "Note for the next technician",
     alert: "Alert for every visit",
     alertHint: "Read before every visit, until ops take it off.",
+    /** A one visit closed as done texts the client the payment link. */
+    sendLinkAndClose: "Send link and close",
     // The board draws Done chosen already; nothing is chosen for the technician here.
     choose: "Choose Done or Partly done",
     pickReason: "Pick a reason to continue",

@@ -104,9 +104,12 @@ test.describe("the client’s hair profile", () => {
     await page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_in }).fill("22.6");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_width_in }).fill("8");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_length_in }).fill("10");
+    // Each part names the part after it.
+    await expect(next(page)).toHaveText(techCopy.visit.next(techCopy.profile.match.title));
     await next(page).click();
     await page.getByRole("radio", { name: "Mane Man Natural" }).click();
     await page.getByRole("radio", { name: techCopy.profile.attachments.tape, exact: true }).click();
+    await expect(next(page)).toHaveText(techCopy.visit.next(techCopy.profile.history.title));
     await next(page).click();
     await page.getByRole("textbox", { name: techCopy.profile.history.skin }).fill("Dry at the crown");
     // The draft is written as it is typed; a slow phone may still be writing the last of it.

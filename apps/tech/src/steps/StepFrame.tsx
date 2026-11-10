@@ -31,21 +31,24 @@ import styles from "./step-frame.module.css";
 /** The slide's 300 ms and a little: a second tap of a gloved double tap lands inside it. */
 const SETTLE_MS = 350;
 
+const ARRIVING = Symbol("arriving");
+
 /**
- * Whether the screen has finished arriving. Until it has, its action is marked unavailable to assistive technology
- * and ignores a tap, without being drawn dim: a tap meant for the screen before must not finish this one.
+ * Whether the screen, or the page of it now showing, has finished arriving. Until it has, its action is marked
+ * unavailable to assistive technology and ignores a tap, without being drawn dim: a tap meant for the page before must
+ * not finish this one.
  */
-function useSettled(): boolean {
-  const [settled, setSettled] = useState(false);
+function useSettled(page: unknown): boolean {
+  const [settledOn, setSettledOn] = useState<unknown>(ARRIVING);
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSettled(true);
+      setSettledOn(page);
     }, SETTLE_MS);
     return () => {
       clearTimeout(timer);
     };
-  }, []);
-  return settled;
+  }, [page]);
+  return Object.is(settledOn, page);
 }
 
 /** Where the visit stands, from the step's address and the card the phone keeps: no step needs to say where it is. */
@@ -53,7 +56,7 @@ interface Where {
   readonly job: Job;
   readonly at: number;
   readonly states: readonly StepState[];
-  /** The step after this one, by its name; null on the last. */
+  /** The step the visit goes to after this one, by its name: the first after it not yet sent; null where none is. */
   readonly next: string | null;
 }
 
@@ -73,7 +76,8 @@ function useWhere(): Where | null {
     if (index === here) return "current";
     return sent.has(screen.event) ? "done" : "todo";
   });
-  return { job, at: here + 1, states, next: screens[here + 1]?.title ?? null };
+  const next = screens.slice(here + 1).find((screen) => screen.event !== route.step && !sent.has(screen.event));
+  return { job, at: here + 1, states, next: next?.title ?? null };
 }
 
 /** The visit's steps as a bar, with which one this is, opening the visit's plan. */
@@ -92,7 +96,7 @@ function StepBar({ where }: { where: Where }) {
   );
 }
 
-/** "Next: <the step after>", "Close visit" on the last, or plain Next where the visit's place is not known. */
+/** "Next: <the step it goes to>", "Close visit" where none is left, or plain Next where the visit's place is not known. */
 function labelOf(where: Where | null): string {
   if (where === null) return copy.next;
   return where.next === null ? visit.close : visit.next(where.next);
@@ -102,6 +106,7 @@ export function StepFrame({
   title,
   at,
   of,
+  page,
   action,
   ready,
   unfinished,
@@ -114,6 +119,8 @@ export function StepFrame({
   /** How far through this screen's own work it is: items done, tasks seen. */
   readonly at?: number;
   readonly of?: number;
+  /** Which page of the step is showing, where it has several: the action waits for each to arrive. */
+  readonly page?: number | string;
   /** The action's words where they are not "Next: <the step after>": the outcome's, say. */
   readonly action?: string;
   /** False keeps the action in place and dims it, with `unfinished` above it saying what is missing. */
@@ -126,7 +133,7 @@ export function StepFrame({
   readonly children: ReactNode;
 }) {
   const heading = useScreen(title);
-  const settled = useSettled();
+  const settled = useSettled(page);
   const { offline } = useSession();
   const where = useWhere();
   const label = action ?? labelOf(where);

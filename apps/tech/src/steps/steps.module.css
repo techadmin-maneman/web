@@ -334,3 +334,10 @@
   font-size: var(--fs-15);
   line-height: var(--lh-145);
 }
+
+/* The task's Done, a full-width row like every list's: it takes back the gutter the task sits in. */
+.taskDone {
+  margin: var(--sp-16) calc(-1 * var(--screen-gutter)) 0;
+  padding: 0;
+  list-style: none;
+}

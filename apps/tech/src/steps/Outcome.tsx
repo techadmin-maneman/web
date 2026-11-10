@@ -125,11 +125,12 @@ function doneOf(asked: boolean, notGoingAhead: boolean, lost: string | null): Ou
 
 /**
  * What the close leaves on the client's record (docs/prompts/tech-redesign.md, "Outcome"): a note for whoever takes the
- * client's next visit, and an alert read before every visit. Each goes with the close only when written.
+ * client's next visit, and an alert read before every visit. Each goes with the close only when written; a refused
+ * close starts from what it said.
  */
-function useCloseNotes() {
-  const [note, setNote] = useState("");
-  const [alert, setAlert] = useState("");
+function useCloseNotes(sent: { readonly note: string; readonly alert: string } | null) {
+  const [note, setNote] = useState(sent?.note ?? "");
+  const [alert, setAlert] = useState(sent?.alert ?? "");
   const add = (body: OutcomeRequest): OutcomeRequest => ({
     ...body,
     ...(note.trim() === "" ? {} : { handoff_note: note.trim() }),
@@ -207,7 +208,7 @@ function Choosing({
   const [codeChecking, setCodeChecking] = useState(false);
   const [goingAhead, setGoingAhead] = useState<boolean | null>(null);
   const [lost, setLost] = useState<string | null>(null);
-  const notes = useCloseNotes();
+  const notes = useCloseNotes(sent);
 
   const closesOneVisit = job.one_visit && choice === "done";
   const declined = clientChoice !== null && "declined" in clientChoice;
@@ -220,10 +221,13 @@ function Choosing({
   // A code being checked would change the link closing the visit sends: Next waits for it.
   const doneReady = !unanswered && (!mustSayWhy || lost !== null);
   const ready = !codeChecking && (choice === "done" ? doneReady : choice === "partial" && reason !== null);
+  // The words follow the choice: a one visit closed as done sends the client its payment link.
+  const sendsLink = closesOneVisit && !declined;
 
   return (
     <StepFrame
       title={copy.titles.outcome}
+      action={sendsLink ? copy.outcome.sendLinkAndClose : undefined}
       ready={ready}
       unfinished={stillToChoose(choice, unanswered)}
       notice={refused === null ? null : copy.corrected.other}

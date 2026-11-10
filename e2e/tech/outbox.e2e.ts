@@ -348,7 +348,9 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
 
-  // Nothing has gone up, and the queue says so: no bar full of frames that are only waiting.
+  // Nothing has gone up, and the queue says so: no bar full of frames that are only waiting. The way back from the
+  // step after is the visit's plan, then the job, then Today.
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await openPending(page);
@@ -391,7 +393,9 @@ test("counts a set as sent only as its photographs go up", async ({ page, contex
     await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
-  // Every move here is a link inside the app: with no signal there is no navigation.
+  // Every move here is a link inside the app: with no signal there is no navigation. From a step, the way back is the
+  // visit's plan, then the job, then Today.
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await openPending(page);

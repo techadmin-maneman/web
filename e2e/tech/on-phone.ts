@@ -49,23 +49,31 @@ export function heldOnPhone(
 
 /** One of the phone's own device records, by its key, as JSON; null when it holds none. */
 export function deviceRecordOnPhone(page: Page, key: string): Promise<string | null> {
-  return page.evaluate(async (wanted) => {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open("mm-tech");
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-      request.onerror = () => {
-        reject(new Error("no store"));
-      };
-    });
-    return new Promise<string | null>((resolve) => {
-      const request = db.transaction("device", "readonly").objectStore("device").get(wanted) as IDBRequest<unknown>;
-      request.onsuccess = () => {
-        resolve(request.result === undefined ? null : JSON.stringify(request.result));
-      };
-    });
-  }, key);
+  return recordOnPhone(page, "device", key);
+}
+
+/** One record of one of the phone's stores, as JSON; null where there is none. */
+export function recordOnPhone(page: Page, store: string, key: string): Promise<string | null> {
+  return page.evaluate(
+    async ({ name, wanted }) => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("mm-tech");
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error("no store"));
+        };
+      });
+      return new Promise<string | null>((resolve) => {
+        const request = db.transaction(name, "readonly").objectStore(name).get(wanted) as IDBRequest<unknown>;
+        request.onsuccess = () => {
+          resolve(request.result === undefined ? null : JSON.stringify(request.result));
+        };
+      });
+    },
+    { name: store, wanted: key },
+  );
 }
 
 /** The angles of the frames the phone holds, in the order the store keeps them. */
