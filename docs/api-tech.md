@@ -7789,7 +7789,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "visits"
   ],
   "additionalProperties": false,
-  "description": "The client's visits closed before this job, newest first, at most twenty."
+  "description": "The client's visits closed before this job, newest first, every one."
 }
 ```
 

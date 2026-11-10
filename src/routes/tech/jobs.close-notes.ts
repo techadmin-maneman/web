@@ -4,7 +4,7 @@
 import { z } from "@hono/zod-openapi";
 import { alertAtClose } from "../../domain/clients/client-alerts.ts";
 import { noteAtClose } from "../../domain/clients/handoff-notes.ts";
-import { eventByClientId } from "../../domain/field/job-events.ts";
+import { closedAt, eventByClientId } from "../../domain/field/job-events.ts";
 import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { closeNotesLand } from "../../policy/in-job-steps.ts";
@@ -24,7 +24,10 @@ export async function keepCloseNotes(
   const now = c.var.deps.now();
   if (accepted.replayed) {
     const close = await eventByClientId(c.env.DB, job.id, accepted.event_id);
-    if (close?.kind !== "outcome" || close.superseded || !closeNotesLand(new Date(close.occurredAt), now)) return;
+    if (close?.kind !== "outcome" || close.superseded) return;
+    // From when the close reached us, as a correction's hour runs: a close held offline is sent again at once.
+    const closed = await closedAt(c.env.DB, job.id);
+    if (closed === null || !closeNotesLand(closed, now)) return;
   }
   const { technicianId } = technicianOf(c);
   const kept = { personId: job.personId, appointmentId: job.id, technicianId, now };

@@ -85,5 +85,5 @@ export const ClientHistorySchema = z
   .object({ alerts: TechnicianAlertsSchema, visits: z.array(HistoryVisitSchema) })
   .strict()
   .openapi("TechnicianClientHistory", {
-    description: "The client's visits closed before this job, newest first, at most twenty.",
+    description: "The client's visits closed before this job, newest first, every one.",
   });

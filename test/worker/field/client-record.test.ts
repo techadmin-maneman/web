@@ -7,6 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { captureLogs, markDatabase, NOW } from "../helpers.ts";
 import { MINUTE_MS } from "../../../src/lib/durations.ts";
+import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
 import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 import { aPerson, aVisit } from "../fixtures/index.ts";
 
@@ -92,6 +93,22 @@ describe("what a close leaves on the client's record", () => {
       results: [{ body: "Use the softer tape." }],
     });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM client_alerts").first()).toEqual({ n: 0 });
+  });
+
+  it("keeps the note of a close held offline, sent again within the hour after it reached us", async () => {
+    const at = (minutes: number) => new Date(NOW.getTime() + minutes * MINUTE_MS);
+    let now = at(70);
+    const job = await working("service", { now: () => now });
+    await job.workTo("outcome");
+    // Closed at 1:20 pm with no signal; it reached us at 3 pm, and the answer was lost.
+    const heldOffline = uuidv7(at(80).getTime());
+    now = at(180);
+    expect((await outcome(job, { outcome: "done" }, heldOffline)).status).toBe(202);
+    now = at(181);
+    expect((await outcome(job, { outcome: "done", client_alert: "Allergic to latex." }, heldOffline)).status).toBe(202);
+    expect(await env.DB.prepare("SELECT body FROM client_alerts").all()).toMatchObject({
+      results: [{ body: "Allergic to latex." }],
+    });
   });
 
   it("refuses a note past its length", async () => {

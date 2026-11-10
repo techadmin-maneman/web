@@ -4177,7 +4177,7 @@ export interface components {
                 url: string;
             }[];
         } | null;
-        /** @description The client's visits closed before this job, newest first, at most twenty. */
+        /** @description The client's visits closed before this job, newest first, every one. */
         TechnicianClientHistory: {
             /** @description The client's alerts still on, newest first. */
             alerts: components["schemas"]["TechnicianClientAlert"][];

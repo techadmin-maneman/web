@@ -52,7 +52,7 @@ export type StepBody = Record<string, unknown> | { invalid: string[] } | { label
 /**
  * One in-job step: check it, land it once, and record what it does with the event.
  * What a step keeps of its own, `afterRecorded` does once it has landed, first time
- * or replayed, and must do the same however often it is called.
+ * or replayed, told which; called again, it changes nothing it kept the first time.
  */
 export async function step(
   c: Ctx,
