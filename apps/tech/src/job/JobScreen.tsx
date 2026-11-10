@@ -4,10 +4,11 @@
 // offers nothing to press on with and says what changed; one on another day says when it can be worked.
 
 import { Button } from "@maneman/ui/Button";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
-import { closeOut as closeOutCopy, job as copy, whatStopped } from "../content.ts";
+import { closeOut as closeOutCopy, job as copy, visit as visitCopy, whatStopped } from "../content.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { nextStep, outcomeOf, stageOf, type Stage } from "../lib/progress.ts";
@@ -16,7 +17,7 @@ import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { apiDate, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
 import type { Queued } from "../store/outbox.ts";
-import { CardFrame, nameOf, whenOf } from "./CardFrame.tsx";
+import { CardFrame, nameOf, whenOf } from "../frame/CardFrame.tsx";
 import { CheckInFailed, useCheckIn } from "./CheckIn.tsx";
 import { JobCard } from "./JobCard.tsx";
 import styles from "./job-screen.module.css";
@@ -139,6 +140,11 @@ export function JobScreen({ id }: { id: string }) {
         </ProblemCard>
       )}
       {line !== null && <p className={styles.state}>{line}</p>}
+      {stage === "started" && (
+        <ListRows className={styles.plan}>
+          <ListRow title={visitCopy.allSteps} to={`/jobs/${job.id}/plan`} />
+        </ListRows>
+      )}
       <JobCard job={job} />
     </CardFrame>
   );

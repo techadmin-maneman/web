@@ -122,6 +122,8 @@ export interface Fake {
   /** The client's alerts and the last technician's note on the card; none unless a test gives them. */
   alerts: Card["client_alerts"];
   handoff: Card["handoff"];
+  /** Whether there is a photograph to compare each angle with, before the visit and after it. */
+  compare: boolean;
   /** The client's history, as GET /api/tech/jobs/{id}/client-history answers. */
   history: TechReply<"/api/tech/jobs/{id}/client-history">;
   /** The technician's asks for leave, as GET /api/tech/leave answers; an ask adds one, with ops. */
@@ -265,6 +267,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     alerts: [],
     handoff: null,
     history: { alerts: [], visits: [] },
+    compare: false,
     photos: [],
     doorPhotos: [],
     thumbnails: [],
@@ -491,6 +494,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
     if (path === `/api/tech/jobs/${JOB_ID}/client-history`) return reply(route, 200, fake.history);
+    if (path.startsWith(`/api/tech/jobs/${JOB_ID}/compare/`)) {
+      if (!fake.compare) return refuse(route, 404, "not_found");
+      assertInContract("tech", method, path, 200);
+      return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
+    }
     if (path.startsWith(`/api/tech/jobs/${JOB_ID}/history-photos/`)) {
       assertInContract("tech", method, path, 200);
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });

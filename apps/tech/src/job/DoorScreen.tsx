@@ -28,7 +28,7 @@ import { clock, countdown, todayInIndia } from "../lib/when.ts";
 import { go, redirect, stepPath } from "../route.ts";
 import { keepCalled, keepClosed, keptArrival, keptCalled } from "../store/jobs.ts";
 import { events, frames, keepDoorFrame, queue, refusedAsEarly, replay, type Queued } from "../store/outbox.ts";
-import { CardFrame, nameOf } from "./CardFrame.tsx";
+import { CardFrame, nameOf } from "../frame/CardFrame.tsx";
 import { useCheckIn } from "./CheckIn.tsx";
 import { whatsAppState } from "./receipt.ts";
 import styles from "./door.module.css";

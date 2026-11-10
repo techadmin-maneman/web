@@ -27,8 +27,9 @@ other steps.
    does not, since the API would refuse it out of order. The job opens it once the visit has begun.
 4. **The photographs are a camera screen of their own**, in the camera's chrome: the title with the angles taken, the
    torch, the view with its guide and the angle's prompt, the five angles in a strip with the one to take in brass,
-   Retake, the shutter, and "Saved on phone". Phone storage full is a red bar with the shutter off; a camera that will
-   not open says so and offers the set without photographs, which ops are told of, as before.
+   Retake, the shutter, and "Saved on phone". Phone storage full is a red bar; the shutter stays usable, unlike the
+   brief's, since the phone learns it has room again only by keeping a photograph. A camera that will not open says
+   so and offers the set without photographs, which ops are told of, as before.
 5. **Compare** lays a photograph over the top half of the view: before the visit, the client's last after photograph of
    that angle; after it, this visit's own before photograph. Both come from the API,
    `GET /api/tech/jobs/{id}/compare/{phase}/{angle}`, under the job's own rule, and are never kept (no-store); with no

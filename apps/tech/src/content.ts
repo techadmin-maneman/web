@@ -571,7 +571,13 @@ export const capture = {
   retake: "Retake",
   /** Not drawn: what a screen reader calls a tile, a tap on which takes that angle again. */
   retakeAngle: (angle: string) => `Take ${angle} again`,
-  take: "Capture",
+  take: "Take photo",
+  /** "3 of 5", beneath the step's name. */
+  of: (taken: number) => `${String(taken)} of 5`,
+  saved: "Saved on phone",
+  /** Compare: the last visit's after photograph before the visit, this visit's before one after it. */
+  compareWith: { before: "Compare with last visit", after: "Compare with before" },
+  compareImage: { before: (angle: string) => `Last visit, ${angle}`, after: (angle: string) => `Before, ${angle}` },
   torch: "Torch",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   // The board writes Top's guide alone; the other four are ours.
@@ -583,13 +589,15 @@ export const capture = {
     hair: "Hair · close in, sharp focus",
   } satisfies Record<Angle, string>,
   // The board draws neither a refused camera nor the finished set.
-  unavailable: "This phone won’t open its camera. Check its permissions, then try again.",
+  unavailableTitle: "Camera access is off",
+  unavailable: "Turn on camera access for Mane Man in the phone’s settings, then try again.",
   retry: "Try again",
   // The board draws no capture that failed.
   missed: "That photo didn’t save. Take it again.",
   blank: "That photo came out blank. Take it again.",
   // A camera that will not open does not stop the job: the set goes without its photographs, and ops look at it.
-  withoutPhotos: "Go on without photos",
+  withoutPhotos: "Continue without photos",
+  opsTold: "Ops are told the photos are missing.",
   done: "All five are on the phone.",
   finish: "Done",
   // The board draws no set the API refused.

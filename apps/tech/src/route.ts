@@ -12,6 +12,7 @@
 //   /jobs/:id/options        a consultation's packages and prices, and the client's try-on looks
 //   /jobs/:id/history        the client's alerts and their earlier visits (ADR 0242)
 //   /jobs/:id/door           at the door once checked in: the wait and a no-show's evidence (ADR 0243)
+//   /jobs/:id/plan           the visit's screens, done, under way and to do (ADR 0244)
 //   /jobs/:id/before-photos  step 1, the five before angles
 //   /jobs/:id/checklist      step 2
 //   /jobs/:id/consumables    step 3
@@ -55,6 +56,7 @@ export type Route =
   | { readonly page: "options"; readonly id: string }
   | { readonly page: "history"; readonly id: string }
   | { readonly page: "door"; readonly id: string }
+  | { readonly page: "plan"; readonly id: string }
   | { readonly page: "step"; readonly id: string; readonly step: InJobStep }
   | { readonly page: "done"; readonly id: string };
 
@@ -78,6 +80,7 @@ export function routeOf(path: string): Route {
   if (third === "options") return { page: "options", id: second };
   if (third === "history") return { page: "history", id: second };
   if (third === "door") return { page: "door", id: second };
+  if (third === "plan") return { page: "plan", id: second };
   const step = STEP_OF.get(third);
   return step === undefined ? TODAY : { page: "step", id: second, step };
 }

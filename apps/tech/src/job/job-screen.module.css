@@ -12,3 +12,7 @@
   font-size: var(--fs-15);
   font-weight: var(--weight-semibold);
 }
+
+.plan {
+  margin: var(--sp-8) var(--screen-gutter) 0;
+}

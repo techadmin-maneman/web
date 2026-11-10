@@ -1,19 +1,87 @@
 /*
- * The viewfinder with its framing guide, the five angle tiles, and
- * Retake beside Capture at the foot. The head and the foot's place come from
- * the step frame every board B screen shares (apps/tech/src/steps/steps.module.css).
+ * The before and after photographs (./CaptureScreen.tsx), in the camera's chrome as the brief draws it: the head, the
+ * view with its guide, then the dock with the five angles, Retake, the shutter and "Saved on phone". The guide's
+ * lines are in the drawing's own units (its viewBox is 320 by 420).
  */
 
-/* The framing guide's lines, in the drawing's own units (its viewBox is 320 by 420), as the camera draws them. */
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--camera-900);
+  color: var(--white-000);
+}
+
+.top {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-8);
+  align-items: center;
+  padding: var(--sp-4) var(--sp-16);
+}
+
+.back {
+  --icon-button-size: var(--tech-min);
+
+  color: var(--white-000);
+}
+
+.titles {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-16);
+  font-weight: var(--weight-semibold);
+}
+
+.title:focus {
+  outline: none;
+}
+
+.count {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--mist-300);
+}
+
+.torch {
+  flex-shrink: 0;
+}
+
+.compareBar {
+  display: flex;
+  flex-shrink: 0;
+  padding: 0 var(--sp-16) var(--sp-8);
+}
+
+.compareToggle {
+  flex: 1;
+}
+
+/* Storage full, or a set the API refused: the error's bar under the head. */
+.alertBar {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--sp-8) var(--sp-16);
+  background: var(--error);
+  color: var(--white-000);
+  font-size: var(--fs-14);
+}
+
 .stage {
   position: relative;
   display: flex;
   flex: 1;
   align-items: center;
   justify-content: center;
-  min-height: var(--preview-h);
+  min-height: 0;
   overflow: hidden;
-  background: var(--ink-frame);
+  background: var(--camera-700);
 }
 
 .view {
@@ -24,7 +92,6 @@
   object-fit: cover;
 }
 
-/* The guide the board draws over the camera: the head's outline, the hairline and the corners. */
 .frame {
   position: absolute;
   inset: 0;
@@ -35,89 +102,114 @@
 }
 
 .head {
-  stroke: var(--ink-line);
+  stroke: var(--white-000);
   stroke-width: var(--rule-strong);
 }
 
 .hairline {
   --local-guide-hairline: 2.5;
-  stroke: var(--paper);
+  stroke: var(--white-000);
   stroke-width: var(--local-guide-hairline);
 }
 
 .corners {
   --local-guide-corners: 3;
-  stroke: var(--paper);
+  stroke: var(--white-000);
   stroke-width: var(--local-guide-corners);
 }
 
-/* The angle's words on the capture's own ground, so they read over whatever the camera sees. */
-.guide {
+/* The photograph compared with, over the top half of the view. */
+.compare {
   position: absolute;
-  bottom: var(--sp-20);
-  margin: 0 var(--sp-20);
-  padding: var(--sp-8) var(--sp-16);
-  font-size: var(--fs-17);
-  text-align: center;
-  color: var(--paper);
-  background: var(--ink-frame);
+  top: 0;
+  right: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  object-fit: cover;
+  border-bottom: var(--rule-strong) solid var(--white-000);
 }
 
-/* The torch, over the camera's top right corner, clear of the guide's corners. */
-.torch {
+.compareHidden {
+  display: none;
+}
+
+/* The angle's prompt over whatever the camera sees, on the chrome's own ground. */
+.prompt {
   position: absolute;
-  top: var(--sp-12);
-  right: var(--sp-12);
+  right: 0;
+  bottom: var(--sp-16);
+  left: 0;
+  width: fit-content;
+  max-width: calc(100% - var(--sp-32));
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-12);
+  border-radius: var(--ui-radius-box);
+  background: var(--camera-900);
+  font-size: var(--fs-15);
+  text-align: center;
 }
 
 .unavailable {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--sp-16);
-  align-items: center;
-  padding: var(--sp-24) var(--sp-20);
+  align-items: stretch;
+  width: 100%;
+  padding: var(--sp-40) var(--sp-24);
+  background: var(--camera-900);
+}
+
+.unavailableTitle {
+  margin: 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
 }
 
 .unavailableLine {
   margin: 0;
-  font-size: var(--fs-17);
-  line-height: var(--lh-160);
-  text-align: center;
-  color: var(--paper);
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+  color: var(--mist-300);
+}
+
+.dock {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--sp-12);
+  padding: var(--sp-12) var(--sp-16) calc(var(--sp-24) + env(safe-area-inset-bottom));
 }
 
 .tiles {
   display: grid;
-  flex-shrink: 0;
   grid-template-columns: repeat(5, 1fr);
   gap: var(--sp-8);
   margin: 0;
-  padding: var(--sp-16) var(--sp-20);
-  border-top: var(--hairline) solid var(--ink-rule);
+  padding: 0;
   list-style: none;
 }
 
 .tile {
+  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  position: relative;
+  height: var(--sp-64);
   overflow: hidden;
-  aspect-ratio: 3 / 4;
   padding-bottom: var(--sp-4);
-  border: var(--hairline) solid var(--ink-line);
-  background: var(--ink-frame);
+  border: var(--rule-strong) solid var(--navy-700);
+  border-radius: var(--ui-radius-box);
+  background: var(--camera-700);
 }
 
-/* An angle taken: raised, with the ink's own line where the board draws gold; the angle to take now is edged in paper. */
-.tile[data-state="done"] {
-  border-color: var(--ink-line-strong);
-  background: var(--ink-raised);
-}
-
+/* The angle to take now, in the brass the brief keeps for the one thing a screen marks. */
 .tile[data-state="now"] {
-  border-color: var(--paper);
+  border-color: var(--brass-500);
+}
+
+.tile[data-state="done"] {
+  border-color: var(--white-000);
 }
 
 /* A tile's photograph, under its name; the tile's tap takes that angle again. */
@@ -127,7 +219,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: var(--dim);
 }
 
 .tileRetake {
@@ -140,50 +231,32 @@
   border: 0;
   background: none;
   font: inherit;
+  color: inherit;
   cursor: pointer;
 }
 
 .tileLabel {
   position: relative;
   padding: 0 var(--sp-4);
-  background: var(--ink-frame);
-  font-size: var(--fs-14);
-  color: var(--paper);
+  border-radius: var(--ui-radius-box);
+  background: var(--camera-900);
+  font-size: var(--fs-13);
 }
 
-/* An angle still to take, lighter than the board's #8C96A8 so it clears 7:1 on the tile (ADR 0025, "The technician boards"). */
-.tile[data-state="todo"] .tileLabel {
-  color: var(--ink-soft);
-}
-
-/* The one place a screen has two actions: Retake beside the full-width Capture, at the foot. */
-.shutter {
-  display: flex;
+.controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   gap: var(--sp-12);
+  align-items: center;
 }
 
-/* Retake is drawn in the medium weight beside Capture, though it is outlined. */
 .retake {
-  flex-shrink: 0;
-  width: var(--tech-retake);
-  padding: 0;
-  font-weight: var(--weight-medium);
+  justify-self: start;
 }
 
-.take {
-  flex: 1;
-}
-
-/* The photograph of the door, taken in the no-show's wait (./DoorCamera.tsx): the view, then Take and Cancel. */
-.door {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-12);
-}
-
-.doorView {
-  position: relative;
-  aspect-ratio: 3 / 4;
-  overflow: hidden;
-  background: var(--ink-frame);
+.saved {
+  justify-self: end;
+  font-size: var(--fs-13);
+  color: var(--mist-300);
+  text-align: right;
 }

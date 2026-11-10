@@ -61,6 +61,7 @@ const LIGHT_PAIRINGS: readonly Pairing[] = [
   { text: "--ink-500", ground: "--placeholder", where: "the map’s line beneath its pin" },
   { text: "--ink-900", ground: "--placeholder", where: "the map’s pin" },
   { text: "--white-000", ground: "--camera-700", where: "the camera’s view when it will not open" },
+  { text: "--mist-300", ground: "--camera-900", where: "the camera’s count, its lines beneath, Saved on phone" },
 ];
 
 /** The roles the new look gives the shared parts, each as the brief's colour it takes. */
@@ -135,8 +136,8 @@ const REDRAWN = [
   "apps/tech/src/me/",
   "apps/tech/src/job/client-history.module.css",
   "apps/tech/src/job/ClientHistoryScreen.tsx",
-  "apps/tech/src/job/card-frame.module.css",
-  "apps/tech/src/job/CardFrame.tsx",
+  "apps/tech/src/frame/card-frame.module.css",
+  "apps/tech/src/frame/CardFrame.tsx",
   "apps/tech/src/job/check-in.module.css",
   "apps/tech/src/job/CheckIn.tsx",
   "apps/tech/src/job/client-record.module.css",
@@ -151,6 +152,10 @@ const REDRAWN = [
   "apps/tech/src/job/TellClient.tsx",
   "apps/tech/src/camera/door-camera.module.css",
   "apps/tech/src/camera/DoorCamera.tsx",
+  "apps/tech/src/camera/capture.module.css",
+  "apps/tech/src/camera/CaptureScreen.tsx",
+  "apps/tech/src/camera/FramingGuide.tsx",
+  "apps/tech/src/visit/",
   "apps/tech/src/frame/light.module.css",
 ];
 const slashed = (file: string) => file.replace(/\\/g, "/");
