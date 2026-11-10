@@ -40,7 +40,7 @@ import {
   type HistoryForm,
   type Measurement,
 } from "@maneman/web-kit/hair-profile";
-import { BaseInCentimetres, Chips, Figure, type Option } from "./ProfileFields.tsx";
+import { Chips, Figure, type Option } from "./ProfileFields.tsx";
 import { useDraft, type Draft as DraftOf } from "./drafts.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -52,10 +52,10 @@ type Page = "measure" | "match" | "history";
 type Draft = DraftOf<"profile_draft">;
 
 const HEAD: readonly Measurement[] = [
-  "head_circumference_cm",
-  "front_to_nape_cm",
-  "ear_to_ear_cm",
-  "temple_to_temple_cm",
+  "head_circumference_in",
+  "front_to_nape_in",
+  "ear_to_ear_in",
+  "temple_to_temple_in",
 ];
 const BASE: readonly Measurement[] = ["base_width_in", "base_length_in"];
 
@@ -160,7 +160,6 @@ function MeasureFields({ form, onChange }: { form: FitForm; onChange: (form: Fit
           {copy.sections.base}
         </h2>
         <div className={styles.figures}>{BASE.map(figure)}</div>
-        <BaseInCentimetres width={typed.base_width_in} length={typed.base_length_in} />
       </section>
     </>
   );

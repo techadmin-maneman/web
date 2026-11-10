@@ -577,6 +577,10 @@ export interface Rows {
     readonly remedies: string | null;
     readonly transplant_year: number | null;
     readonly skin_and_allergies: string | null;
+    readonly head_circumference_in: number | null;
+    readonly front_to_nape_in: number | null;
+    readonly ear_to_ear_in: number | null;
+    readonly temple_to_temple_in: number | null;
   };
   readonly hair_systems: {
     readonly code: string;

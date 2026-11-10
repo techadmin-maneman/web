@@ -4,7 +4,7 @@ import { z } from "@hono/zod-openapi";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
 import { REMINDER_STATES } from "../../domain/field/job-card.ts";
 import { CARD_STEPS } from "../../policy/in-job-steps.ts";
-import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
+import { BasedOnSchema, FitSpecWriteSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
 import { PieceSchema } from "./pieces.ts";
 import { AddressSchema, JobSummarySchema } from "../schemas/tech-jobs.ts";
 
@@ -316,7 +316,7 @@ export const NoShowSchema = z
   .openapi("NoShowClose");
 
 export const ProfileRequestSchema = z
-  .object({ fit: FitSpecSchema, history: z.union([HistorySchema, z.null()]), based_on: BasedOnSchema })
+  .object({ fit: FitSpecWriteSchema, history: z.union([HistorySchema, z.null()]), based_on: BasedOnSchema })
   .strict()
   .openapi("TechnicianProfileRequest", {
     description:

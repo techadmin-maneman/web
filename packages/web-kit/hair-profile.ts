@@ -98,10 +98,10 @@ export function fitFormOf(fit: FitSpec | null): FitForm {
       attachment: fit?.attachment ?? null,
     },
     figures: {
-      head_circumference_cm: typedOf(fit?.head_circumference_cm ?? null),
-      front_to_nape_cm: typedOf(fit?.front_to_nape_cm ?? null),
-      ear_to_ear_cm: typedOf(fit?.ear_to_ear_cm ?? null),
-      temple_to_temple_cm: typedOf(fit?.temple_to_temple_cm ?? null),
+      head_circumference_in: typedOf(fit?.head_circumference_in ?? null),
+      front_to_nape_in: typedOf(fit?.front_to_nape_in ?? null),
+      ear_to_ear_in: typedOf(fit?.ear_to_ear_in ?? null),
+      temple_to_temple_in: typedOf(fit?.temple_to_temple_in ?? null),
       base_width_in: typedOf(fit?.base_width_in ?? null),
       base_length_in: typedOf(fit?.base_length_in ?? null),
       grey_percent: typedOf(fit?.grey_percent ?? null),
@@ -112,10 +112,10 @@ export function fitFormOf(fit: FitSpec | null): FitForm {
 /** Each figure as the API would take it. */
 export function typedFigures(figures: Figures): Record<FigureName, Typed> {
   return {
-    head_circumference_cm: figureOf(figures.head_circumference_cm, MEASUREMENTS.head_circumference_cm),
-    front_to_nape_cm: figureOf(figures.front_to_nape_cm, MEASUREMENTS.front_to_nape_cm),
-    ear_to_ear_cm: figureOf(figures.ear_to_ear_cm, MEASUREMENTS.ear_to_ear_cm),
-    temple_to_temple_cm: figureOf(figures.temple_to_temple_cm, MEASUREMENTS.temple_to_temple_cm),
+    head_circumference_in: figureOf(figures.head_circumference_in, MEASUREMENTS.head_circumference_in),
+    front_to_nape_in: figureOf(figures.front_to_nape_in, MEASUREMENTS.front_to_nape_in),
+    ear_to_ear_in: figureOf(figures.ear_to_ear_in, MEASUREMENTS.ear_to_ear_in),
+    temple_to_temple_in: figureOf(figures.temple_to_temple_in, MEASUREMENTS.temple_to_temple_in),
     base_width_in: figureOf(figures.base_width_in, MEASUREMENTS.base_width_in),
     base_length_in: figureOf(figures.base_length_in, MEASUREMENTS.base_length_in),
     grey_percent: wholeOf(figures.grey_percent, GREY_PERCENT),
@@ -123,10 +123,10 @@ export function typedFigures(figures: Figures): Record<FigureName, Typed> {
 }
 
 const FIGURE_NAMES: readonly FigureName[] = [
-  "head_circumference_cm",
-  "front_to_nape_cm",
-  "ear_to_ear_cm",
-  "temple_to_temple_cm",
+  "head_circumference_in",
+  "front_to_nape_in",
+  "ear_to_ear_in",
+  "temple_to_temple_in",
   "base_width_in",
   "base_length_in",
   "grey_percent",
@@ -146,10 +146,10 @@ export function fitOf(form: FitForm): FitSpec | null {
   if (Object.values(typed).includes("invalid")) return null;
   return {
     ...form.choices,
-    head_circumference_cm: sent(typed.head_circumference_cm),
-    front_to_nape_cm: sent(typed.front_to_nape_cm),
-    ear_to_ear_cm: sent(typed.ear_to_ear_cm),
-    temple_to_temple_cm: sent(typed.temple_to_temple_cm),
+    head_circumference_in: sent(typed.head_circumference_in),
+    front_to_nape_in: sent(typed.front_to_nape_in),
+    ear_to_ear_in: sent(typed.ear_to_ear_in),
+    temple_to_temple_in: sent(typed.temple_to_temple_in),
     base_width_in: sent(typed.base_width_in),
     base_length_in: sent(typed.base_length_in),
     grey_percent: sent(typed.grey_percent),

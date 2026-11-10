@@ -1299,7 +1299,7 @@ Indexes:
 
 Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
 
-Made by `0064_hair_profiles.sql`.
+Made by `0064_hair_profiles.sql`; changed by `0202_consultation_rules_and_inches.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -1327,6 +1327,10 @@ Made by `0064_hair_profiles.sql`.
 | `remedies` | TEXT | yes |  |  | The history: remedies tried (a JSON array of codes), a transplant's year, skin conditions and allergies. |
 | `transplant_year` | INTEGER | yes |  |  |  |
 | `skin_and_allergies` | TEXT | yes |  |  |  |
+| `head_circumference_in` | REAL | yes |  |  |  |
+| `front_to_nape_in` | REAL | yes |  |  |  |
+| `ear_to_ear_in` | REAL | yes |  |  |  |
+| `temple_to_temple_in` | REAL | yes |  |  |  |
 
 Indexes:
 

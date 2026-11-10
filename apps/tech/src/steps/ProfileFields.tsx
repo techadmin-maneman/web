@@ -1,12 +1,10 @@
 // The hair profile's fields (./Profile.tsx): a field's choices as one group named by its title, a figure typed with
-// the range it must be in, and the base in centimetres beside its inches.
+// the range it must be in.
 
 import { Field, TextInput } from "@maneman/ui/Field";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
-import type { Typed } from "@maneman/web-kit/hair-profile";
 import { useId, type KeyboardEvent } from "react";
-import { profile as copy } from "../content.ts";
 import shared from "./steps.module.css";
 import styles from "./profile-fields.module.css";
 
@@ -76,15 +74,6 @@ export function Chips<T extends string | number>({
       </div>
     </section>
   );
-}
-
-const CM_PER_INCH = 2.54;
-
-/** The base, once both its figures are typed, in centimetres too: the head beside it is measured in them. */
-export function BaseInCentimetres({ width, length }: { width: Typed; length: Typed }) {
-  if (typeof width !== "number" || typeof length !== "number") return null;
-  const cm = (inches: number) => (inches * CM_PER_INCH).toFixed(1);
-  return <p className={styles.inCentimetres}>{copy.baseInCentimetres(cm(width), cm(length))}</p>;
 }
 
 /** One figure, typed; the range it must be in is said beneath it only once it is outside it. */

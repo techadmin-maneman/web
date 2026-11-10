@@ -7,13 +7,21 @@
 //
 // The history is health information, recorded with the fit spec. This file and the export are all
 // that read it; nothing here logs it, audits it or hands it to a queue, so it never reaches Zoho CRM or Books.
+//
+// The head is measured in inches (docs/decisions/0240-consultation-rules-and-inches.md). Until its centimetre columns
+// go, every version is written in both, so the release before still reads it right, and a version only that release
+// wrote is read in inches from its centimetres.
 
 import type { VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import {
+  CENTIMETRES,
+  centimetresOf,
   historyProblems,
+  inchesOf,
   type Attachment,
+  type Centimetre,
   type Colour,
   type Density,
   type Hairline,
@@ -29,10 +37,10 @@ import { storedJson } from "../../lib/stored-json.ts";
 
 export interface FitSpec {
   readonly norwood_stage: NorwoodStage | null;
-  readonly head_circumference_cm: number | null;
-  readonly front_to_nape_cm: number | null;
-  readonly ear_to_ear_cm: number | null;
-  readonly temple_to_temple_cm: number | null;
+  readonly head_circumference_in: number | null;
+  readonly front_to_nape_in: number | null;
+  readonly ear_to_ear_in: number | null;
+  readonly temple_to_temple_in: number | null;
   readonly base_width_in: number | null;
   readonly base_length_in: number | null;
   readonly colour: Colour | null;
@@ -45,6 +53,9 @@ export interface FitSpec {
   readonly attachment: Attachment | null;
 }
 
+/** The head's measurements in centimetres too, which the release before reads; gone with their columns. */
+type InCentimetres = Record<Centimetre, number | null>;
+
 export interface History {
   readonly remedies: Remedy[];
   readonly transplant_year: number | null;
@@ -55,7 +66,7 @@ export interface HairProfile {
   /** The version's own ID, which a write names as the one it started from. */
   readonly id: string;
   readonly recorded_at: string;
-  readonly fit: FitSpec & { readonly product_name: string | null };
+  readonly fit: FitSpec & InCentimetres & { readonly product_name: string | null };
   readonly history: History | null;
 }
 
@@ -84,10 +95,10 @@ type Correction =
 /** The fit spec's columns, in the order the table and the API name them. */
 const FIT_COLUMNS = [
   "norwood_stage",
-  "head_circumference_cm",
-  "front_to_nape_cm",
-  "ear_to_ear_cm",
-  "temple_to_temple_cm",
+  "head_circumference_in",
+  "front_to_nape_in",
+  "ear_to_ear_in",
+  "temple_to_temple_in",
   "base_width_in",
   "base_length_in",
   "colour",
@@ -101,25 +112,27 @@ const FIT_COLUMNS = [
 
 const HISTORY_COLUMNS = ["remedies", "transplant_year", "skin_and_allergies"] as const;
 
-type VersionRow = FitSpec & {
-  id: string;
-  created_at: string;
-  appointment_id: string | null;
-  technician_name: string | null;
-  staff: string | null;
-  window_start: string | null;
-  visit_type: VisitType | null;
-  product_name: string | null;
-  /** A JSON array of codes. */
-  remedies: string | null;
-  transplant_year: number | null;
-  skin_and_allergies: string | null;
-};
+const CENTIMETRE_COLUMNS = Object.keys(CENTIMETRES) as Centimetre[];
+
+type VersionRow = FitSpec &
+  InCentimetres & {
+    id: string;
+    created_at: string;
+    appointment_id: string | null;
+    technician_name: string | null;
+    staff: string | null;
+    window_start: string | null;
+    visit_type: VisitType | null;
+    product_name: string | null;
+    /** A JSON array of codes. */
+    remedies: string | null;
+    transplant_year: number | null;
+    skin_and_allergies: string | null;
+  };
 
 const SELECT_VERSIONS = `
   SELECT h.id, h.created_at, h.appointment_id, h.staff, t.name AS technician_name, a.window_start,
-    a.type AS visit_type, s.name AS product_name, ${FIT_COLUMNS.map((column) => `h.${column}`).join(", ")},
-    ${HISTORY_COLUMNS.map((column) => `h.${column}`).join(", ")}
+    a.type AS visit_type, s.name AS product_name, ${[...FIT_COLUMNS, ...CENTIMETRE_COLUMNS, ...HISTORY_COLUMNS].map((column) => `h.${column}`).join(", ")}
   FROM hair_profiles h
   LEFT JOIN technicians t ON t.id = h.technician_id
   LEFT JOIN appointments a ON a.id = h.appointment_id
@@ -267,7 +280,9 @@ async function latestIdOf(db: D1Database, personId: string): Promise<string | nu
 
 /** An erasure's: every version of the person's profile blanked, field by field, the record of who took each kept. */
 export function blankProfiles(db: D1Database, personId: string): D1PreparedStatement {
-  const blanked = [...FIT_COLUMNS, ...HISTORY_COLUMNS].map((column) => `${column} = NULL`).join(", ");
+  const blanked = [...FIT_COLUMNS, ...CENTIMETRE_COLUMNS, ...HISTORY_COLUMNS]
+    .map((column) => `${column} = NULL`)
+    .join(", ");
   return db.prepare(`UPDATE hair_profiles SET ${blanked} WHERE person_id = ?1`).bind(personId);
 }
 
@@ -277,7 +292,7 @@ export async function exportedProfiles(db: D1Database, personId: string): Promis
   return versions.reverse().map((version) => ({
     recorded_at: version.recorded_at,
     recorded_by: version.recorded_by.kind,
-    ...version.fit,
+    ...Object.fromEntries(Object.entries(version.fit).filter(([field]) => !(field in CENTIMETRES))),
     ...(version.history ?? {}),
   }));
 }
@@ -340,6 +355,7 @@ function insertVersion(
     "staff",
     "created_at",
     ...FIT_COLUMNS,
+    ...CENTIMETRE_COLUMNS,
     ...HISTORY_COLUMNS,
   ];
   const values = [
@@ -351,6 +367,10 @@ function insertVersion(
     staff,
     version.now.toISOString(),
     ...FIT_COLUMNS.map((column) => version.fit[column]),
+    ...CENTIMETRE_COLUMNS.map((column) => {
+      const inches = version.fit[CENTIMETRES[column].inches];
+      return inches === null ? null : centimetresOf(inches);
+    }),
     history === null ? null : JSON.stringify(history.remedies),
     history?.transplant_year ?? null,
     history?.skin_and_allergies ?? null,
@@ -374,9 +394,17 @@ function insertVersion(
     .bind(...values, whileLatestIs);
 }
 
+/** A head measurement in inches, from its centimetres where only the release before wrote it. */
+const inInches = (inches: number | null, cm: number | null): number | null =>
+  inches ?? (cm === null ? null : inchesOf(cm));
+
 function fitOf(row: VersionRow): HairProfile["fit"] {
   return {
     norwood_stage: row.norwood_stage,
+    head_circumference_in: inInches(row.head_circumference_in, row.head_circumference_cm),
+    front_to_nape_in: inInches(row.front_to_nape_in, row.front_to_nape_cm),
+    ear_to_ear_in: inInches(row.ear_to_ear_in, row.ear_to_ear_cm),
+    temple_to_temple_in: inInches(row.temple_to_temple_in, row.temple_to_temple_cm),
     head_circumference_cm: row.head_circumference_cm,
     front_to_nape_cm: row.front_to_nape_cm,
     ear_to_ear_cm: row.ear_to_ear_cm,

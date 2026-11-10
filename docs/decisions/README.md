@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0240. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0241. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -131,6 +131,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0191](0191-a-replaced-piece-comes-off.md) A replaced piece comes off
 - [0222](0222-consumables-short-of-expected.md) Consumables short of what a visit expects are said why, and checked
 - [0239](0239-technician-light-look.md) The technician app's new look: white, navy and Plex, screen by screen
+- [0240](0240-consultation-rules-and-inches.md) A consultation uses nothing from the kit, a first fit takes the profile, and the head is measured in inches
 
 ### Money and Books
 
@@ -514,3 +515,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0237](0237-every-list-sorts.md) | Every list sorts, a long one narrows, and its heads stand over their figures | 2026-11-02 | accepted |  |
 | [0238](0238-third-design-pass.md) | Third design pass: one home, the chat's column, a record's facts beside its head, Inventory's one row of tabs | 2026-11-02 | accepted |  |
 | [0239](0239-technician-light-look.md) | The technician app's new look: white, navy and Plex, screen by screen | 2026-11-10 | accepted |  |
+| [0240](0240-consultation-rules-and-inches.md) | A consultation uses nothing from the kit, a first fit takes the profile, and the head is measured in inches | 2026-11-10 | accepted |  |

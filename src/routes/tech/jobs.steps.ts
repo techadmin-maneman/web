@@ -12,6 +12,7 @@ import { keepShortfall } from "../../domain/field/consumable-shortfalls.ts";
 import { needsReason, shortfallOf, type Shortfall } from "../../policy/consumable-shortfall.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { profileLanded, recordAtVisit } from "../../domain/clients/hair-profiles.ts";
+import { fitInInches } from "../schemas/hair-profile.ts";
 import {
   answerBeforeLanding,
   kindsLanded,
@@ -50,7 +51,7 @@ import {
   outcomeRoute,
   noShowRoute,
 } from "./jobs.routes.ts";
-import { ProfileRecordedSchema } from "./jobs.schemas.ts";
+import { EVENT_ID_HEADER, ProfileRecordedSchema, type AcceptedSchema } from "./jobs.schemas.ts";
 import {
   type Ctx,
   namedJob,
@@ -253,7 +254,9 @@ function registerSteps(app: App): void {
   // By code, or by name from a phone that queued the step before codes. A retired consumable is still taken:
   // it was used. What was used comes out of the technician's kit as the step lands, once however often it does. A
   // hair system is the piece step's, never this one's.
-  app.openapi(consumablesRoute, (c) => {
+  app.openapi(consumablesRoute, async (c) => {
+    const ignored = await stepNotTaken(c);
+    if (ignored !== null) return c.json(ignored, 202);
     const { items, short_reason: reason } = c.req.valid("json");
     let shortfall: Shortfall = { short: [], nothing: false };
     return step(
@@ -357,7 +360,7 @@ function registerProfileAndOutcome(app: App): void {
       appointmentId: job.id,
       technicianId,
       eventId,
-      fit,
+      fit: fitInInches(fit),
       history,
       basedOn: based_on,
       now: deps.now(),
@@ -414,6 +417,24 @@ async function tellOfOlderBase(c: Ctx, personId: string, versionId: string): Pro
     message: ALERT_WORDS.hair_profile_from_older({ client: personId, version: versionId }),
     link: `/clients/${personId}/pieces`,
   });
+}
+
+/**
+ * A consultation's consumables, from a phone that queued the step before a consultation took none
+ * (docs/decisions/0240-consultation-rules-and-inches.md): answered as landed, and nothing recorded or taken from the
+ * kit, so no phone is stuck on a refusal. Null for a job that takes the step. For one release, then refused.
+ */
+async function stepNotTaken(c: Ctx): Promise<z.infer<typeof AcceptedSchema> | null> {
+  const job = await namedJob(c, c.req.param("id") ?? "");
+  if (job === null || takesStep("consumables", job.type, job.oneVisit !== null)) return null;
+  const { noShowWaitMin } = await opsInputs(c);
+  return {
+    event_id: c.req.header(EVENT_ID_HEADER) ?? "",
+    replayed: false,
+    write_state: "written",
+    fsm_write_state: "written",
+    progress: await progressOf(c.env.DB, job, noShowWaitMin),
+  };
 }
 
 /** The profile step's answer: the event, whether it had landed before, and where the job stands. */

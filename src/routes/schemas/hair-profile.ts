@@ -1,11 +1,14 @@
 // A client's hair profile as the API takes and gives it (docs/decisions/0106-a-clients-hair-profile.md): the fit
 // spec and the history the technician's profile step sends, which ops' correction sends too, and the profile the
 // technician's card and the client's page in the console read. The lists and ranges are src/policy/hair-profile.ts.
+// The head is measured in inches; for one release a phone or console of the build before may still send and read it
+// in centimetres (docs/decisions/0240-consultation-rules-and-inches.md).
 
 import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import {
   ATTACHMENTS,
+  CENTIMETRES,
   COLOURS,
   DENSITIES,
   GREY_PERCENT,
@@ -15,13 +18,13 @@ import {
   REMEDIES,
   SKIN_AND_ALLERGIES_MAX,
   WAVES,
-  type Measurement,
+  inchesOf,
+  type Centimetre,
 } from "../../policy/hair-profile.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
 
 /** A measurement in its range, to one decimal; null where it was not taken. */
-const measured = (measurement: Measurement, unit: string) => {
-  const { min, max } = MEASUREMENTS[measurement];
+const measured = ({ min, max }: { readonly min: number; readonly max: number }, unit: string) => {
   return z
     .number()
     .min(min)
@@ -36,12 +39,12 @@ const listed = <T extends readonly [string, ...string[]]>(codes: T) => z.enum(co
 export const FitSpecSchema = z
   .object({
     norwood_stage: listed(NORWOOD_STAGES),
-    head_circumference_cm: measured("head_circumference_cm", "centimetres"),
-    front_to_nape_cm: measured("front_to_nape_cm", "centimetres"),
-    ear_to_ear_cm: measured("ear_to_ear_cm", "centimetres, over the top"),
-    temple_to_temple_cm: measured("temple_to_temple_cm", "centimetres"),
-    base_width_in: measured("base_width_in", "inches"),
-    base_length_in: measured("base_length_in", "inches"),
+    head_circumference_in: measured(MEASUREMENTS.head_circumference_in, "inches"),
+    front_to_nape_in: measured(MEASUREMENTS.front_to_nape_in, "inches"),
+    ear_to_ear_in: measured(MEASUREMENTS.ear_to_ear_in, "inches, over the top"),
+    temple_to_temple_in: measured(MEASUREMENTS.temple_to_temple_in, "inches"),
+    base_width_in: measured(MEASUREMENTS.base_width_in, "inches"),
+    base_length_in: measured(MEASUREMENTS.base_length_in, "inches"),
     colour: listed(COLOURS).openapi({ description: "The suppliers' colour code, #1B written 1B." }),
     grey_percent: z.number().int().min(GREY_PERCENT.min).max(GREY_PERCENT.max).nullable(),
     density_percent: z
@@ -57,6 +60,58 @@ export const FitSpecSchema = z
   })
   .strict()
   .openapi("HairFitSpec", { description: "Every field is sent, null where it was not taken." });
+
+/** One of the head's measurements in centimetres, in the range it had: the build before's, for one release. */
+const centimetres = (cm: Centimetre) =>
+  measured(CENTIMETRES[cm], "centimetres")
+    .optional()
+    .openapi({ deprecated: true, description: `${CENTIMETRES[cm].inches} in centimetres, for one release.` });
+
+const IN_CENTIMETRES = {
+  head_circumference_cm: centimetres("head_circumference_cm"),
+  front_to_nape_cm: centimetres("front_to_nape_cm"),
+  ear_to_ear_cm: centimetres("ear_to_ear_cm"),
+  temple_to_temple_cm: centimetres("temple_to_temple_cm"),
+};
+
+/**
+ * The fit spec a write sends: the head in inches, or from a phone or console of the build before in centimetres, each
+ * measurement in one of them. fitInInches gives it as the fit spec.
+ */
+export const FitSpecWriteSchema = FitSpecSchema.partial({
+  head_circumference_in: true,
+  front_to_nape_in: true,
+  ear_to_ear_in: true,
+  temple_to_temple_in: true,
+})
+  .extend(IN_CENTIMETRES)
+  .strict()
+  .superRefine((fit, context) => {
+    for (const [cm, { inches }] of Object.entries(CENTIMETRES)) {
+      const given = [fit[inches], fit[cm as Centimetre]].filter((figure) => figure !== undefined);
+      if (given.length !== 1) context.addIssue({ code: "custom", path: [inches], message: "in inches or centimetres" });
+    }
+  })
+  .openapi("HairFitSpecWrite", {
+    description:
+      "Every field is sent, null where it was not taken; the head in inches, or in centimetres for one release.",
+  });
+
+/** The fit spec a write sent, the head in inches: centimetres from the build before taken in inches, to one decimal. */
+export function fitInInches(fit: z.infer<typeof FitSpecWriteSchema>): z.infer<typeof FitSpecSchema> {
+  const { head_circumference_cm, front_to_nape_cm, ear_to_ear_cm, temple_to_temple_cm, ...rest } = fit;
+  const inches = (sent: number | null | undefined, cm: number | null | undefined): number | null => {
+    if (sent !== undefined) return sent;
+    return cm === undefined || cm === null ? null : inchesOf(cm);
+  };
+  return {
+    ...rest,
+    head_circumference_in: inches(rest.head_circumference_in, head_circumference_cm),
+    front_to_nape_in: inches(rest.front_to_nape_in, front_to_nape_cm),
+    ear_to_ear_in: inches(rest.ear_to_ear_in, ear_to_ear_cm),
+    temple_to_temple_in: inches(rest.temple_to_temple_in, temple_to_temple_cm),
+  };
+}
 
 export const HistorySchema = z
   .object({
@@ -75,6 +130,7 @@ export const HistorySchema = z
 
 const FitSpecReadSchema = FitSpecSchema.extend({
   product_name: z.union([z.string(), z.null()]).openapi({ description: "The product's name, never its price." }),
+  ...IN_CENTIMETRES,
 }).openapi("HairFitSpecRead");
 
 /** The version a write's form started from, so a write from an older copy is not taken for the latest silently. */

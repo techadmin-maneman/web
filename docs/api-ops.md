@@ -38710,41 +38710,41 @@ Request body:
         null
       ]
     },
-    "head_circumference_cm": {
+    "head_circumference_in": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 40,
-      "maximum": 70,
-      "description": "In centimetres, 40 to 70, to one decimal."
+      "minimum": 15.5,
+      "maximum": 28,
+      "description": "In inches, 15.5 to 28, to one decimal."
     },
-    "front_to_nape_cm": {
+    "front_to_nape_in": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "In centimetres, 20 to 50, to one decimal."
+      "minimum": 7.5,
+      "maximum": 20,
+      "description": "In inches, 7.5 to 20, to one decimal."
     },
-    "ear_to_ear_cm": {
+    "ear_to_ear_in": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "In centimetres, over the top, 20 to 50, to one decimal."
+      "minimum": 7.5,
+      "maximum": 20,
+      "description": "In inches, over the top, 7.5 to 20, to one decimal."
     },
-    "temple_to_temple_cm": {
+    "temple_to_temple_in": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "In centimetres, 20 to 50, to one decimal."
+      "minimum": 7.5,
+      "maximum": 20,
+      "description": "In inches, 7.5 to 20, to one decimal."
     },
     "base_width_in": {
       "type": [
@@ -38880,14 +38880,54 @@ Request body:
         }
       ],
       "description": "The product's name, never its price."
+    },
+    "head_circumference_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 40,
+      "maximum": 70,
+      "description": "head_circumference_in in centimetres, for one release.",
+      "deprecated": true
+    },
+    "front_to_nape_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "front_to_nape_in in centimetres, for one release.",
+      "deprecated": true
+    },
+    "ear_to_ear_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "ear_to_ear_in in centimetres, for one release.",
+      "deprecated": true
+    },
+    "temple_to_temple_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "temple_to_temple_in in centimetres, for one release.",
+      "deprecated": true
     }
   },
   "required": [
     "norwood_stage",
-    "head_circumference_cm",
-    "front_to_nape_cm",
-    "ear_to_ear_cm",
-    "temple_to_temple_cm",
+    "head_circumference_in",
+    "front_to_nape_in",
+    "ear_to_ear_in",
+    "temple_to_temple_in",
     "base_width_in",
     "base_length_in",
     "colour",
@@ -38925,41 +38965,41 @@ Request body:
         null
       ]
     },
-    "head_circumference_cm": {
+    "head_circumference_in": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 40,
-      "maximum": 70,
-      "description": "In centimetres, 40 to 70, to one decimal."
+      "minimum": 15.5,
+      "maximum": 28,
+      "description": "In inches, 15.5 to 28, to one decimal."
     },
-    "front_to_nape_cm": {
+    "front_to_nape_in": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "In centimetres, 20 to 50, to one decimal."
+      "minimum": 7.5,
+      "maximum": 20,
+      "description": "In inches, 7.5 to 20, to one decimal."
     },
-    "ear_to_ear_cm": {
+    "ear_to_ear_in": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "In centimetres, over the top, 20 to 50, to one decimal."
+      "minimum": 7.5,
+      "maximum": 20,
+      "description": "In inches, over the top, 7.5 to 20, to one decimal."
     },
-    "temple_to_temple_cm": {
+    "temple_to_temple_in": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "In centimetres, 20 to 50, to one decimal."
+      "minimum": 7.5,
+      "maximum": 20,
+      "description": "In inches, 7.5 to 20, to one decimal."
     },
     "base_width_in": {
       "type": [
@@ -39088,10 +39128,10 @@ Request body:
   },
   "required": [
     "norwood_stage",
-    "head_circumference_cm",
-    "front_to_nape_cm",
-    "ear_to_ear_cm",
-    "temple_to_temple_cm",
+    "head_circumference_in",
+    "front_to_nape_in",
+    "ear_to_ear_in",
+    "temple_to_temple_in",
     "base_width_in",
     "base_length_in",
     "colour",
@@ -39308,7 +39348,7 @@ Request body:
   "type": "object",
   "properties": {
     "fit": {
-      "$ref": "#/components/schemas/HairFitSpec"
+      "$ref": "#/components/schemas/HairFitSpecWrite"
     },
     "history": {
       "anyOf": [
@@ -39340,6 +39380,246 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "The whole profile as it now stands, sent as a new version."
+}
+```
+
+### HairFitSpecWrite
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "norwood_stage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VII",
+        null
+      ]
+    },
+    "head_circumference_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 15.5,
+      "maximum": 28,
+      "description": "In inches, 15.5 to 28, to one decimal."
+    },
+    "front_to_nape_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 7.5,
+      "maximum": 20,
+      "description": "In inches, 7.5 to 20, to one decimal."
+    },
+    "ear_to_ear_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 7.5,
+      "maximum": 20,
+      "description": "In inches, over the top, 7.5 to 20, to one decimal."
+    },
+    "temple_to_temple_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 7.5,
+      "maximum": 20,
+      "description": "In inches, 7.5 to 20, to one decimal."
+    },
+    "base_width_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 12,
+      "description": "In inches, 2 to 12, to one decimal."
+    },
+    "base_length_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 14,
+      "description": "In inches, 2 to 14, to one decimal."
+    },
+    "colour": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1B",
+        null
+      ],
+      "description": "The suppliers' colour code, #1B written 1B."
+    },
+    "grey_percent": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "density_percent": {
+      "anyOf": [
+        {
+          "type": "number",
+          "enum": [
+            80
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            100
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            140
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In per cent."
+    },
+    "wave": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "straight",
+        "slight_wave",
+        "wavy",
+        "curly",
+        null
+      ]
+    },
+    "hairline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "natural",
+        "receded",
+        "straight",
+        "widows_peak",
+        null
+      ]
+    },
+    "product": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The product, by the tier of its first-fit service: one the services table holds, retired or not."
+    },
+    "attachment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "tape",
+        "glue",
+        "both",
+        null
+      ],
+      "description": "Tape, glue, or both."
+    },
+    "head_circumference_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 40,
+      "maximum": 70,
+      "description": "head_circumference_in in centimetres, for one release.",
+      "deprecated": true
+    },
+    "front_to_nape_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "front_to_nape_in in centimetres, for one release.",
+      "deprecated": true
+    },
+    "ear_to_ear_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "ear_to_ear_in in centimetres, for one release.",
+      "deprecated": true
+    },
+    "temple_to_temple_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "temple_to_temple_in in centimetres, for one release.",
+      "deprecated": true
+    }
+  },
+  "required": [
+    "norwood_stage",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent",
+    "wave",
+    "hairline",
+    "product",
+    "attachment"
+  ],
+  "additionalProperties": false,
+  "description": "Every field is sent, null where it was not taken; the head in inches, or in centimetres for one release."
 }
 ```
 

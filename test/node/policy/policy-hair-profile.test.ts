@@ -10,6 +10,9 @@ import {
   HAIRLINES,
   historyProblems,
   MEASUREMENTS,
+  CENTIMETRES,
+  centimetresOf,
+  inchesOf,
   NORWOOD_STAGES,
   REMEDIES,
   SKIN_AND_ALLERGIES_MAX,
@@ -30,10 +33,10 @@ describe("a client's hair profile", () => {
   it("records the fit spec: Norwood stage, measurements, base, colour, density, wave, hairline and attachment", () => {
     expect(NORWOOD_STAGES).toEqual(["I", "II", "III", "IV", "V", "VI", "VII"]);
     expect(Object.keys(MEASUREMENTS)).toEqual([
-      "head_circumference_cm",
-      "front_to_nape_cm",
-      "ear_to_ear_cm",
-      "temple_to_temple_cm",
+      "head_circumference_in",
+      "front_to_nape_in",
+      "ear_to_ear_in",
+      "temple_to_temple_in",
       "base_width_in",
       "base_length_in",
     ]);
@@ -44,7 +47,18 @@ describe("a client's hair profile", () => {
     expect(ATTACHMENTS).toEqual(["tape", "glue", "both"]);
     // A range a head or a base can have, never one a typo can reach.
     for (const range of Object.values(MEASUREMENTS)) expect(range.min).toBeLessThan(range.max);
-    expect(MEASUREMENTS.head_circumference_cm.min).toBeGreaterThan(MEASUREMENTS.base_length_in.max);
+    expect(MEASUREMENTS.head_circumference_in.min).toBeGreaterThan(MEASUREMENTS.base_length_in.max);
+  });
+
+  it("measures the head in inches, and turns the build before's centimetres into them to one decimal", () => {
+    expect(inchesOf(57.5)).toBe(22.6);
+    expect(inchesOf(36)).toBe(14.2);
+    expect(centimetresOf(22.6)).toBe(57.4);
+    // Every centimetre the build before took lands inside the range in inches.
+    for (const { inches, min, max } of Object.values(CENTIMETRES)) {
+      expect(inchesOf(min)).toBeGreaterThanOrEqual(MEASUREMENTS[inches].min);
+      expect(inchesOf(max)).toBeLessThanOrEqual(MEASUREMENTS[inches].max);
+    }
   });
 
   it("takes the remedies tried, none said alone and each named once, with short notes on skin and allergies", () => {
@@ -61,23 +75,18 @@ describe("a client's hair profile", () => {
     expect(SKIN_AND_ALLERGIES_MAX).toBeLessThanOrEqual(200);
   });
 
-  it("is recorded at a consultation and at a one-visit fit", () => {
+  it("is recorded at a consultation, a one-visit fit and a first fit", () => {
     expect(takesProfile("consultation", false)).toBe(true);
     expect(takesProfile("first_fit", true)).toBe(true);
     // A one visit the client declined is a consultation, and it was measured all the same.
     expect(takesProfile("consultation", true)).toBe(true);
-    expect(takesProfile("first_fit", false)).toBe(false);
+    // A first fit measures the head again before the piece goes on.
+    expect(takesProfile("first_fit", false)).toBe(true);
     expect(takesProfile("service", false)).toBe(false);
     expect(takesProfile("replacement", false)).toBe(false);
     // The card puts it just before the after photographs: on a one visit, once the product is chosen and fitted. A
     // consultation takes no after set, so there it comes just before the outcome.
-    expect(cardStepsFor("consultation", false)).toEqual([
-      "before_photos",
-      "checklist",
-      "consumables",
-      "profile",
-      "outcome",
-    ]);
+    expect(cardStepsFor("consultation", false)).toEqual(["before_photos", "checklist", "profile", "outcome"]);
     expect(cardStepsFor("first_fit", true)).toEqual([
       "before_photos",
       "piece",
@@ -87,6 +96,7 @@ describe("a client's hair profile", () => {
       "after_photos",
       "outcome",
     ]);
+    expect(cardStepsFor("first_fit", false)).toEqual(cardStepsFor("first_fit", true));
     expect(cardStepsFor("service", false)).toEqual(stepsFor("service"));
   });
 
