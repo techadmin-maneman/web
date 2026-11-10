@@ -7,7 +7,7 @@
     width: calc(var(--sp-64) + var(--sp-8));
     height: calc(var(--sp-64) + var(--sp-8));
     padding: var(--sp-4);
-    border: var(--sp-4) solid var(--white-000);
+    border: calc(var(--rule-strong) * 2) solid var(--white-000);
     border-radius: 50%;
     background: transparent;
     cursor: pointer;
@@ -15,7 +15,7 @@
   }
 
   .shutter:active {
-    transform: scale(0.92);
+    transform: scale(var(--press-scale));
   }
 
   .shutter:disabled {

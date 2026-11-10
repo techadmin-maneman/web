@@ -278,6 +278,37 @@ test("keeps Close as no-show off until the wait has run, and says what it waits 
   await expect(close).toBeDisabled();
 });
 
+test("keeps Close as no-show off with the call alone, and keeps the call through a reload", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.waitLeftMs = 1_000;
+  await arrive(page);
+  const close = page.getByRole("button", { name: door.close });
+  await expect(page.getByText(door.evidenceFirst)).toBeVisible({ timeout: 10_000 });
+
+  await page.getByRole("link", { name: door.call("Rohit") }).dispatchEvent("click");
+  await expect(page.getByText(/^Called /)).toBeVisible();
+  await expect(close).toBeDisabled();
+  await expect(page.getByText(door.evidenceFirst)).toBeVisible();
+
+  // The call is kept on the phone: a reload still has it, and the photograph alone is now what is missing.
+  await page.reload();
+  await expect(page.getByText(/^Called /)).toBeVisible();
+  await expect(close).toBeDisabled();
+});
+
+test("keeps Close as no-show off with the photograph alone", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.waitLeftMs = 1_000;
+  await arrive(page);
+  await page.getByRole("button", { name: door.take, exact: true }).click();
+  const shutter = page.getByRole("button", { name: techCopy.notHome.camera.shutter });
+  await expect(shutter).toBeEnabled({ timeout: 10_000 });
+  await shutter.click();
+  await expect(page.getByText(door.taken, { exact: true })).toBeVisible();
+  await expect(page.getByText(door.evidenceFirst)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("button", { name: door.close })).toBeDisabled();
+});
+
 test("asks before closing as a no-show, since ops decide on the charge", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.waitLeftMs = 1_000;

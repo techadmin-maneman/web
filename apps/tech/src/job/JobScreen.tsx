@@ -3,7 +3,9 @@
 // checked in; Continue once the visit has begun; View summary once it has closed. A job ops changed under the phone
 // offers nothing to press on with and says what changed; one on another day says when it can be worked.
 
+import { GLYPHS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
 import type { ReactNode } from "react";
@@ -142,7 +144,7 @@ export function JobScreen({ id }: { id: string }) {
       {line !== null && <p className={styles.state}>{line}</p>}
       {stage === "started" && (
         <ListRows className={styles.plan}>
-          <ListRow title={visitCopy.allSteps} to={`/jobs/${job.id}/plan`} />
+          <ListRow title={visitCopy.allSteps} to={`/jobs/${job.id}/plan`} end={<Icon d={GLYPHS.chevron} size="sm" />} />
         </ListRows>
       )}
       <JobCard job={job} />

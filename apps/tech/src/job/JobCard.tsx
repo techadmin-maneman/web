@@ -194,7 +194,11 @@ export function JobCard({ job }: { job: Job }) {
       <ProfileSection profile={job.profile} />
       {job.type === "consultation" ? (
         <ListRows className={styles.rowList}>
-          <ListRow title={optionsCopy.link} to={`/jobs/${job.id}/options`} />
+          <ListRow
+            title={optionsCopy.link}
+            to={`/jobs/${job.id}/options`}
+            end={<Icon d={GLYPHS.chevron} size="sm" />}
+          />
         </ListRows>
       ) : (
         <PieceSection job={job} />

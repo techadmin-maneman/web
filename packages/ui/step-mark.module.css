@@ -1,0 +1,35 @@
+/* Where one thing of a list stands (./StepMark.tsx): a disc or a ring, the one other place a mark is round. */
+
+@layer base, ui;
+
+@layer ui {
+  .done,
+  .now,
+  .todo,
+  .fix {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--sp-24);
+    height: var(--sp-24);
+    border-radius: 50%;
+  }
+
+  .done {
+    background: var(--ui-strong);
+    color: var(--ui-on-strong);
+  }
+
+  .now {
+    border: var(--rule-strong) solid var(--ui-accent);
+  }
+
+  .todo {
+    border: var(--rule-strong) solid var(--ui-line-control);
+  }
+
+  .fix {
+    border: var(--rule-strong) solid var(--ui-error);
+  }
+}

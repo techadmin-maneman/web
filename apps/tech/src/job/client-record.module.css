@@ -2,7 +2,11 @@
    with its visit's photographs in one row, and the row to the client's history. */
 
 .record {
-  padding: var(--sp-24) var(--screen-gutter) 0;
+  padding-top: var(--sp-24);
+}
+
+.inset {
+  padding: 0 var(--screen-gutter);
 }
 
 .alerts {
@@ -37,8 +41,4 @@
   aspect-ratio: 1;
   object-fit: cover;
   background: var(--placeholder);
-}
-
-.history {
-  margin: 0;
 }

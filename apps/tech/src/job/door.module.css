@@ -1,5 +1,5 @@
-/* At the door (./DoorScreen.tsx), in the new look: the wait's figure and its brass bar, then what a no-show needs, a
-   ring for each thing still to do and a navy tick for each done. */
+/* At the door (./DoorScreen.tsx), in the new look: the wait's figure and its brass bar, then what a no-show needs,
+   each with its mark. */
 
 .wait {
   padding: var(--sp-24) var(--screen-gutter) 0;
@@ -58,27 +58,6 @@
   align-items: center;
   padding: var(--sp-12) 0;
   border-bottom: var(--hairline) solid var(--ui-line);
-}
-
-.ring,
-.tick {
-  flex-shrink: 0;
-  width: var(--sp-24);
-  height: var(--sp-24);
-  border-radius: 50%;
-}
-
-.ring {
-  border: var(--rule-strong) solid var(--stone);
-}
-
-/* Done: navy, with the tick in its words' colour. */
-.tick {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ui-strong);
-  color: var(--ui-on-strong);
 }
 
 .neededWords {

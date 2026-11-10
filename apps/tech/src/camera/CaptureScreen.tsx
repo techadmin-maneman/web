@@ -1,8 +1,7 @@
 // The before and after photographs (docs/prompts/tech-redesign.md, "Photos"; docs/decisions/0244-the-visit-engine.md):
 // a camera screen of its own, five angles with a head-shape guide and each angle's prompt, the angle to take outlined
 // in brass, Retake, the torch, Compare, and "Saved on phone". Frames go from the camera to a canvas and into
-// IndexedDB, never the gallery, and wait there until the outbox has uploaded them (./capture.ts, ../store/outbox.ts;
-// docs/decisions/0053-the-technician-app-offline.md).
+// IndexedDB, never the gallery, and wait there until the outbox has uploaded them (./capture.ts, ../store/outbox.ts).
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -15,11 +14,14 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
 import { capture as copy, storage } from "../content.ts";
+import { NoSignal } from "../frame/Banners.tsx";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
+import { buzz } from "../lib/haptics.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { go } from "../route.ts";
+import { useOnline } from "../session.ts";
 import { useStep } from "../steps/index.ts";
 import { isStorageFull, onStorageFull } from "../store/db.ts";
 import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } from "../store/outbox.ts";
@@ -165,7 +167,10 @@ function promptOf(missed: "missed" | "blank" | null, angle: Angle | undefined): 
   return angle === undefined ? copy.done : copy.guides[angle];
 }
 
-/** The camera's head: the way back to the job, the step's name with the angles taken, and the torch. */
+/**
+ * The camera's head: the way back to the visit's plan, as from every step, the step's name with the angles taken, and
+ * the torch; beneath it, with no signal, the bar that says the photographs are kept.
+ */
 function CameraHead(props: {
   id: string;
   title: string;
@@ -173,25 +178,29 @@ function CameraHead(props: {
   stream: MediaStream | null;
   heading: (element: HTMLHeadingElement | null) => void;
 }) {
+  const online = useOnline();
   return (
-    <header className={styles.top}>
-      <IconButton
-        className={styles.back}
-        d={ICONS.back}
-        size="lg"
-        label={copy.back}
-        onClick={() => {
-          go(`/jobs/${props.id}`);
-        }}
-      />
-      <div className={styles.titles}>
-        <h1 className={styles.title} ref={props.heading} tabIndex={-1}>
-          {props.title}
-        </h1>
-        <p className={styles.count}>{copy.of(props.taken)}</p>
-      </div>
-      <Torch stream={props.stream} />
-    </header>
+    <>
+      <header className={styles.top}>
+        <IconButton
+          className={styles.back}
+          d={ICONS.back}
+          size="lg"
+          label={copy.back}
+          onClick={() => {
+            go(`/jobs/${props.id}/plan`);
+          }}
+        />
+        <div className={styles.titles}>
+          <h1 className={styles.title} ref={props.heading} tabIndex={-1}>
+            {props.title}
+          </h1>
+          <p className={styles.count}>{copy.of(props.taken)}</p>
+        </div>
+        <Torch stream={props.stream} />
+      </header>
+      {!online && <NoSignal />}
+    </>
   );
 }
 
@@ -247,10 +256,9 @@ function useView(stream: MediaStream | null) {
 }
 
 export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
-  const step = phase === "before" ? "before_photos" : "after_photos";
   const title = phase === "before" ? copy.before : copy.after;
   const heading = useScreen(title);
-  const { loaded, retry, refused, finish } = useStep(id, step);
+  const { loaded, retry, refused, finish } = useStep(id, phase === "before" ? "before_photos" : "after_photos");
   const [camera, reopen] = useCamera(openCamera);
   const stream = camera.state === "open" ? camera.stream : null;
   const { video, attach, ready, setReady } = useView(stream);
@@ -272,6 +280,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
       try {
         const frame = await captureFrame(video.current);
         const frameId = await keepFrame({ jobId: id, angle, phase, frame: frame.photo.blob, small: frame.small.blob });
+        buzz();
         setMissed(null);
         setTaken((already) => [...already.filter((one) => one.angle !== angle), { angle, frameId, sending: false }]);
       } catch (error) {
@@ -297,7 +306,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const canCompare = comparable !== null && comparable === compareUrl;
   return (
     <div className={styles.look} data-look="light">
-      <main className={styles.screen}>
+      <main className={styles.screen} data-chrome="camera">
         <CameraHead id={id} title={title} taken={taken.length} stream={stream} heading={heading} />
         {canCompare && (
           <div className={styles.compareBar}>

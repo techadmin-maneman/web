@@ -13,7 +13,8 @@ export interface KeptDay {
 /** What a check-in measured: the distance, the radius, and when the no-show wait ends. No later call gives it back. */
 export interface KeptArrival {
   readonly job_id: string;
-  readonly arrival: CheckIn;
+  /** None where the phone holds only the call from the door: a check-in still on its way, or made on another phone. */
+  readonly arrival?: CheckIn;
   /** When the technician tapped Call at the door, which a no-show needs; a record kept before it was asked has none. */
   readonly called_at?: number;
 }

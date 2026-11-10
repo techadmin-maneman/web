@@ -55,6 +55,7 @@
     "./PhotoCapture": "./PhotoCapture.tsx",
     "./ProblemCard": "./ProblemCard.tsx",
     "./Shutter": "./Shutter.tsx",
+    "./StepMark": "./StepMark.tsx",
     "./Progress": "./Progress.tsx",
     "./Popover": "./Popover.tsx",
     "./router": "./router.tsx",

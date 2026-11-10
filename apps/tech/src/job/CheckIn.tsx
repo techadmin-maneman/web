@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Job } from "../api.ts";
 import { notHome as copy } from "../content.ts";
 import { ReachOps } from "../frame/ReachOps.tsx";
+import { buzz } from "../lib/haptics.ts";
 import { checkedIn } from "../lib/progress.ts";
 import { clock, metres } from "../lib/when.ts";
 import { go } from "../route.ts";
@@ -82,6 +83,7 @@ export function useCheckIn(job: Job, queued: readonly Queued[]): CheckIn {
       }
       const at = new Date(apiNow()).toISOString();
       const body = { lat: fix.coords.latitude, lng: fix.coords.longitude, accuracy_m: fix.coords.accuracy, at };
+      buzz();
       await queue("check_in", job.id, body, job.starts_at);
       await replay();
       // Measured too far stays here to say so; passed, or waiting for signal, is at the door.

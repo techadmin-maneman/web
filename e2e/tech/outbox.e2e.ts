@@ -201,6 +201,9 @@ test("warns when the phone will not promise to keep the queue, and says how long
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
+  // From a step, the way back is the visit’s plan, then the job.
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
 
   await expect(page.getByText(techCopy.atRisk.title)).toBeVisible();
@@ -225,6 +228,9 @@ test("says nothing about keeping the queue when the phone has promised to", asyn
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
+  // From a step, the way back is the visit’s plan, then the job.
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
 
   await expect(page.getByText(techCopy.today.sync.offline(1))).toBeVisible();
@@ -243,6 +249,9 @@ test("accounts plainly for what has not reached us, and says what changed on a s
 
   // Today says what is waiting, without a number of bytes or a spinner. Every
   // move here is a link inside the app: with no signal there is no navigation.
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  // From a step, the way back is the visit’s plan, then the job.
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
@@ -409,6 +418,9 @@ test("asks before a sign-out would lose unsent work, sends it first if asked, an
   fake.online = false;
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  // From a step, the way back is the visit’s plan, then the job.
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   // Nothing answered, so the phone reads as offline, and says what it holds.

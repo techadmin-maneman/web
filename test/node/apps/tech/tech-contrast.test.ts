@@ -33,7 +33,6 @@ const PAIRINGS: readonly Pairing[] = [
   { text: "--ink-deep", ground: "--gilt", where: "the one primary action" },
   { text: "--ink-deep", ground: "--paper", where: "the offline banner, a ticked box (ADR 0025, item 59)" },
   { text: "--ink-tag", ground: "--ink-disabled", where: "an action not usable yet" },
-  { text: "--paper", ground: "--ink-frame", where: "the capture screen, when the camera will not open" },
   { text: "--ink-soft", ground: "--ink-frame", where: "the capture guide, an angle not taken yet" },
   { text: "--paper", ground: "--ink-raised", where: "an angle taken, a chosen outcome" },
 ];

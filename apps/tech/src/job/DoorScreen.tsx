@@ -1,15 +1,14 @@
 // At the door (docs/prompts/tech-redesign.md, "At the door"; docs/decisions/0243-job-and-the-door.md): once checked in,
 // the no-show's wait on the API's clock with its brass bar, and what a no-show needs: the WhatsApp delivered, a call
 // made, a photograph of the door. Close as no-show waits for all of them and asks first, since it can bring the client
-// a charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). Start visit is the screen's one action.
+// a charge. Start visit is the screen's one action.
 
-import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
-import { Icon } from "@maneman/ui/Icon";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { ProgressLine } from "@maneman/ui/Progress";
 import { SectionHead } from "@maneman/ui/SectionHead";
+import { StepMark } from "@maneman/ui/StepMark";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -21,7 +20,8 @@ import { notHome as copy, job as jobCopy } from "../content.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { callLink } from "../lib/navigate.ts";
-import { stageOf, theWait } from "../lib/progress.ts";
+import { buzz } from "../lib/haptics.ts";
+import { outcomeOf, stageOf, theWait } from "../lib/progress.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useJob } from "../lib/useDay.ts";
 import { clock, countdown, todayInIndia } from "../lib/when.ts";
@@ -114,9 +114,7 @@ function Timer({ job, wait, who }: { job: Job; wait: Wait; who: string }) {
 function Needed(props: { done: boolean; title: string; state: string; action?: ReactNode }) {
   return (
     <li className={styles.needed}>
-      <span className={props.done ? styles.tick : styles.ring} aria-hidden="true">
-        {props.done && <Icon d={ICONS.tick} size="xs" weight="heavy" />}
-      </span>
+      <StepMark state={props.done ? "done" : "todo"} />
       <span className={styles.neededWords}>
         <span className={styles.neededTitle}>{props.title}</span>
         <span className={styles.neededState}>{props.state}</span>
@@ -196,7 +194,7 @@ function CloseNoShow({ job, who, ready, helper }: { job: Job; who: string; ready
       await keepClosed(job.id);
       go(`/jobs/${job.id}/done`);
     });
-  const nothingPaid = job.badge === "free" || job.badge === "at_visit";
+  const prepaid = job.badge === "prepaid";
   return (
     <>
       <Field label={copy.door.note}>
@@ -227,7 +225,7 @@ function CloseNoShow({ job, who, ready, helper }: { job: Job; who: string; ready
       {confirming && (
         <ConfirmSheet
           title={copy.confirm.title}
-          body={nothingPaid ? copy.confirm.bodyNothingPaid : copy.confirm.prepaid(who)}
+          body={prepaid ? copy.confirm.prepaid(who) : copy.confirm.bodyNothingPaid}
           yes={copy.confirm.yes}
           no={copy.confirm.no}
           onYes={close}
@@ -247,13 +245,18 @@ function checkedInAt(job: Job, queued: readonly Queued[]): number | null {
 }
 
 function AtTheDoor({ job, queued }: { job: Job; queued: readonly Queued[] }) {
-  const { here, known } = useCheckIn(job, queued);
+  const { here, known, failed } = useCheckIn(job, queued);
   const stage = stageOf(job, queued, todayInIndia());
   // A no-show still on its way closes the job on the phone first; its own close goes on to the summary, or stays here
   // when the API refuses it as early.
-  const closing = stage === "closed" && job.progress.outcome === null;
-  // Until the phone's own answer is read, a check-in still on its way may yet say they are here.
-  const away = (stage !== "door" && !closing) || (known && !here);
+  const closing = job.progress.outcome === null && outcomeOf(job, queued) === "no_show";
+  // Once here, a check-in landing for a moment reads as neither the card's nor the phone's: only one measured too far
+  // sends them back. Opened without one, the first read does.
+  const [wasHere, setWasHere] = useState(false);
+  useEffect(() => {
+    if (here) setWasHere(true);
+  }, [here]);
+  const away = (stage !== "door" && !closing) || failed !== null || (known && !here && !wasHere);
   useEffect(() => {
     if (away) redirect(`/jobs/${job.id}`);
   }, [away, job.id]);
@@ -311,6 +314,7 @@ function AtTheDoor({ job, queued }: { job: Job; queued: readonly Queued[] }) {
       {shooting && (
         <DoorCamera
           onTaken={(photo) => {
+            buzz();
             void keepDoorFrame(job.id, photo).then(() => {
               setShooting(false);
               again();

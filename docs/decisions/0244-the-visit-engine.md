@@ -39,3 +39,7 @@ other steps.
 
 - The steps not yet redrawn keep their frame until PR 6, which gives every step the new head, the step bar and "All
   steps".
+- With the hair profile before the hair system, the hair system step still matches the kit to the card's profile, so
+  a profile measured with no signal is not yet the one matched. PR 6, which redraws both, matches to the profile the
+  phone holds.
+- The camera's way back is the visit's plan, as every step's is.

@@ -56,7 +56,34 @@ test("compares the angle to take with the last visit's, over the top half of the
 
 test("offers no Compare where there is nothing to compare with", async ({ page }) => {
   await fakeTech(page);
+  const answered = page.waitForResponse((response) => response.url().includes("/compare/before/front"));
   await page.goto(`/jobs/${JOB_ID}/before-photos`);
+  expect((await answered).status()).toBe(404);
   await expect(page.getByRole("button", { name: techCopy.capture.take })).toBeEnabled();
   await expect(page.getByRole("button", { name: techCopy.capture.compareWith.before })).toHaveCount(0);
+});
+
+test("marks a step the API refused as needing a fix, in red on the plan", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.refusedPhoto = "before-front";
+  fake.progress = {
+    ...fake.progress,
+    checked_in_at: new Date(Date.now() - 20 * 60_000).toISOString(),
+    started_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+  };
+  await page.goto(`/jobs/${JOB_ID}/before-photos`);
+  const shutter = page.getByRole("button", { name: techCopy.capture.take });
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await expect(shutter).toBeEnabled();
+    await shutter.click();
+    await expect(page.getByText(`${String(angle)} of 5`, { exact: true })).toBeVisible();
+  }
+  await page.getByRole("button", { name: techCopy.capture.finish }).click();
+
+  await page.goto(`/jobs/${JOB_ID}/plan`);
+  await expect(page.getByText(plan.needsFix).first()).toBeVisible();
+  await expect(page.getByRole("list", { name: plan.title }).getByRole("listitem").first()).toHaveText(
+    new RegExp(`^Before photos\\s*${plan.needsFix}$`),
+  );
+  expect(await axeViolations(page)).toEqual([]);
 });

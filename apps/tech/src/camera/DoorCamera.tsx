@@ -5,6 +5,7 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { Dialog } from "@maneman/ui/Dialog";
 import { IconButton } from "@maneman/ui/IconButton";
 import { Shutter } from "@maneman/ui/Shutter";
 import { useCamera } from "@maneman/ui/useCamera";
@@ -47,8 +48,8 @@ export function DoorCamera({ onTaken, onCancel }: { onTaken: (photo: Blob) => vo
       }
     });
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby={titleId} data-look="light">
-      <div className={styles.screen}>
+    <Dialog labelledBy={titleId} className={styles.overlay} canClose onDismiss={onCancel}>
+      <div className={styles.screen} data-chrome="camera">
         <header className={styles.head}>
           <IconButton className={styles.close} d={ICONS.cross} size="lg" label={copy.cancel} onClick={onCancel} />
           <h2 className={styles.title} id={titleId} ref={heading} tabIndex={-1}>
@@ -88,6 +89,6 @@ export function DoorCamera({ onTaken, onCancel }: { onTaken: (photo: Blob) => vo
           <Shutter label={copy.shutter} disabled={camera.state === "refused" || !ready || busy} onTake={take} />
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 }

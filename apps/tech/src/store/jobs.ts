@@ -39,7 +39,7 @@ export type Heard = JobState & { readonly arrived: boolean };
 /** Where each job of the days the phone holds stood when last heard of, by job. */
 export async function keptStates(): Promise<Map<string, Heard>> {
   const arrivals = await all("arrivals");
-  const arrived = new Set(arrivals.filter((row) => row.arrival.passed).map((row) => row.job_id));
+  const arrived = new Set(arrivals.filter((row) => row.arrival?.passed === true).map((row) => row.job_id));
   const states = new Map<string, Heard>();
   for (const day of await all("days")) {
     for (const job of day.jobs) states.set(job.id, { ...job.progress, arrived: arrived.has(job.id) });
@@ -70,10 +70,9 @@ export async function keptArrival(jobId: string): Promise<CheckIn | null> {
   return (await get("arrivals", jobId))?.arrival ?? null;
 }
 
-/** That the technician called the client from the door, once they had checked in: part of a no-show's evidence. */
+/** That the technician called the client from the door: part of a no-show's evidence, kept with the check-in's. */
 export async function keepCalled(jobId: string, at: number = apiNow()): Promise<void> {
-  const kept = await get("arrivals", jobId);
-  if (kept !== null) await put("arrivals", { ...kept, called_at: at });
+  await put("arrivals", { ...((await get("arrivals", jobId)) ?? { job_id: jobId }), called_at: at });
 }
 
 export async function keptCalled(jobId: string): Promise<number | null> {

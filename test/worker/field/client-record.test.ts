@@ -299,4 +299,36 @@ describe("the photograph an angle is compared with", () => {
     await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
     expect((await job.get(`/api/tech/jobs/${JOB}/compare/before/front`)).status).toBe(404);
   });
+
+  it("compares with no photograph of another client's visit, a later visit or one deleted", async () => {
+    const job = await working("service");
+    await anEarlierVisit();
+    const before = () => job.get(`/api/tech/jobs/${JOB}/compare/before/front`);
+    await aPerson({ id: "p-other" });
+    await env.DB.prepare("UPDATE appointments SET person_id = 'p-other' WHERE id = ?1").bind(EARLIER).run();
+    expect((await before()).status).toBe(404);
+    await env.DB.prepare(
+      "UPDATE appointments SET person_id = ?2, window_start = '2026-09-25T05:00:00.000Z' WHERE id = ?1",
+    )
+      .bind(EARLIER, PERSON)
+      .run();
+    expect((await before()).status).toBe(404);
+    await env.DB.prepare(
+      "UPDATE appointments SET window_start = '2026-09-01T05:00:00.000Z', deleted_at = ?2 WHERE id = ?1",
+    )
+      .bind(EARLIER, NOW.toISOString())
+      .run();
+    expect((await before()).status).toBe(404);
+  });
+
+  it("compares with nothing for a job still locked", async () => {
+    const job = await working("service");
+    await anEarlierVisit();
+    await env.DB.prepare(
+      "UPDATE appointments SET window_start = '2026-09-22T07:30:00.000Z', window_end = '2026-09-22T09:00:00.000Z' WHERE id = ?1",
+    )
+      .bind(JOB)
+      .run();
+    expect((await job.get(`/api/tech/jobs/${JOB}/compare/before/front`)).status).toBe(404);
+  });
 });

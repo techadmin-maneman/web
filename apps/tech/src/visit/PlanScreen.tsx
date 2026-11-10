@@ -2,11 +2,10 @@
 // of the visit, done, under way or to do, how many are done, the visit's time gone and when it should finish. A step
 // the API refused needs a fix, said in red. A screen done or under way opens from here; one to do waits its turn.
 
-import { ICONS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
 import { ProgressLine } from "@maneman/ui/Progress";
+import { StepMark, type MarkState } from "@maneman/ui/StepMark";
 import type { Job } from "../api.ts";
 import { visit as copy } from "../content.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
@@ -23,16 +22,7 @@ import type { Queued } from "../store/outbox.ts";
 import { screensOf } from "./engine.ts";
 import styles from "./plan.module.css";
 
-type State = "done" | "now" | "todo" | "fix";
-
-/** Done, a navy tick; under way, the brass ring; to do, the stone ring; refused, the error's. */
-function Marker({ state }: { state: State }) {
-  return (
-    <span className={styles[state]} aria-hidden="true">
-      {state === "done" && <Icon d={ICONS.tick} size="xs" weight="heavy" />}
-    </span>
-  );
-}
+type State = MarkState;
 
 const STATE_WORDS: Record<State, string> = {
   done: copy.plan.states.done,
@@ -41,15 +31,27 @@ const STATE_WORDS: Record<State, string> = {
   fix: copy.plan.needsFix,
 };
 
-/** How much of the visit's time has gone, from Start visit to its booked end. */
-function TimeGone({ job }: { job: Job }) {
+/** When the visit began: the card's start, or the tap on Start visit still on the phone. */
+function startedAt(job: Job, queued: readonly Queued[]): number | null {
+  if (job.progress.started_at !== null) return Date.parse(job.progress.started_at);
+  return queued.find((event) => event.job_id === job.id && event.kind === "start")?.queued_at ?? null;
+}
+
+/** How much of the visit's time has gone, from Start visit to its booked end, and when it should finish. */
+function TimeGone({ job, queued }: { job: Job; queued: readonly Queued[] }) {
   const now = useMinute();
-  if (job.progress.started_at === null || job.ends_at === null) return null;
-  const started = Date.parse(job.progress.started_at);
-  const share = (now.getTime() - started) / Math.max(1, Date.parse(job.ends_at) - started);
+  if (job.ends_at === null) return null;
+  const started = startedAt(job, queued);
+  const ends = Date.parse(job.ends_at);
   return (
     <>
-      <ProgressLine className={styles.bar} value={share} tone="accent" />
+      {started !== null && (
+        <ProgressLine
+          className={styles.bar}
+          value={(now.getTime() - started) / Math.max(1, ends - started)}
+          tone="accent"
+        />
+      )}
       <p className={styles.finish}>{copy.plan.finishBy(clock(job.ends_at))}</p>
     </>
   );
@@ -78,7 +80,7 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
     >
       <section className={styles.head}>
         <p className={styles.count}>{copy.plan.done(doneCount, screens.length)}</p>
-        <TimeGone job={job} />
+        <TimeGone job={job} queued={queued} />
       </section>
       {toFix.length > 0 && (
         <ProblemCard className={styles.fixCard} title={copy.plan.needsFix}>
@@ -91,7 +93,7 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
           return (
             <ListRow
               key={screen.id}
-              mark={<Marker state={state} />}
+              mark={<StepMark state={state} />}
               title={screen.title}
               end={STATE_WORDS[state]}
               endTone={state === "fix" ? "error" : "muted"}

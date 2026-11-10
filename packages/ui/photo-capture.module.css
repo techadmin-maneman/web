@@ -165,7 +165,7 @@
   }
 
   .shutter:active {
-    transform: scale(0.92);
+    transform: scale(var(--press-scale));
   }
 
   .shutter:disabled {

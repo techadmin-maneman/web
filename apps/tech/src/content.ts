@@ -381,7 +381,7 @@ export const job = {
     line: (drive: number | null) => (drive === null ? "Map" : `Map · ${String(drive)} min drive`),
   },
   navigate: "Navigate",
-  /** The way in, from the access notes (owner): copied whole, for a gate's keypad. */
+  /** The way in, from the access notes: copied whole, for a gate's keypad. */
   copyWayIn: "Copy the way in",
   copied: "Copied",
   noteFrom: (who: string) => `Note from ${who}: `,
