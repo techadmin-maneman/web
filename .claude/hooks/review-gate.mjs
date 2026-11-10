@@ -20,10 +20,11 @@
 //   As a PreToolUse hook: refuses a command that would step around the pre-push hook, and a push before the gate is
 //     installed as it stands.
 //
-// A change is the diff from its merge base with origin/main to the commit pushed: its lines exactly (git's patch id,
-// whitespace kept, three lines of context), and its binary files by their contents. Merging main into the branch keeps
-// the key unless the merge changes the branch's own lines or the lines beside them; any other edit needs the reviews
-// again.
+// A change is everything the push sends of the branch's own: the diff from its merge base with origin/main to the
+// commit pushed, and each of the branch's own commits, its diff and its message. A diff counts by its lines exactly
+// (git's patch id, whitespace kept, three lines of context) and its binary files by their contents. Merging main into
+// the branch keeps the key unless the merge changes the branch's own lines or the lines beside them; any other edit, a
+// reworded message included, needs the reviews again.
 
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -83,9 +84,10 @@ function diffIdentity(cwd, range, tip) {
 }
 
 /**
- * A change's key: the commit's diff from where it left main, and each of the branch's own commits on the way, since a
- * push sends every commit (a secret one commit adds and the next takes away is still sent). Main's commits, and the
- * commits that merge it in, are not the branch's own.
+ * A change's key: the commit's diff from where it left main, and each of the branch's own commits on the way, its diff
+ * and its message, since a push sends every commit as it is (a secret one commit adds and the next takes away is still
+ * sent, and so is one in a message reworded after a review). Main's commits, and the commits that merge it in, are not
+ * the branch's own.
  */
 export function changeKey(cwd, commit = "HEAD") {
   const base = git(cwd, ["merge-base", "origin/main", commit]);
@@ -94,7 +96,10 @@ export function changeKey(cwd, commit = "HEAD") {
     .split("\n")
     .filter(Boolean);
   if (whole === "" && own.length === 0) return "nothing-changed";
-  const each = own.map((sha) => diffIdentity(cwd, `${sha}^..${sha}`, sha));
+  const each = own.map((sha) => {
+    const message = gitBytes(cwd, ["log", "-1", "--format=%B", sha]);
+    return `${diffIdentity(cwd, `${sha}^..${sha}`, sha)}\n${createHash("sha256").update(message).digest("hex")}`;
+  });
   return createHash("sha256")
     .update([whole, ...each].join("\n--\n"))
     .digest("hex")
@@ -332,7 +337,7 @@ export function refusal(command, cwd) {
           !/\bconfig\s+(--\S+\s+)*(--get|--get-all|--list|-l|get|list)\b/i.test(part),
       ) ||
     // A config file pulled in from elsewhere could carry its own hooks path.
-    /\binclude(if)?\.|--config-env/i.test(plain) ||
+    /(-c\s*|\bconfig\b[^;&|\n]*)\binclude(if)?\.|--config-env/i.test(plain) ||
     /\b(send-pack|remote-https?|receive-pack)\b/.test(plain) ||
     (GATE_FILES.test(plain) &&
       WRITES.test(unredirected.replace(/\bnode\s+\S*review-gate\.mjs\s+(record|key|install)\b/g, ""))) ||

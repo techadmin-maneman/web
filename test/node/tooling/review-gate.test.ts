@@ -87,6 +87,14 @@ describe("a change's key", () => {
     expect(gate(secretGone, "key")).not.toBe(gate(clean, "key"));
   });
 
+  it("changes when a commit's message is reworded, as the push sends the message too", () => {
+    const folder = repository();
+    commitFile(folder, "f.txt", TWELVE.replace("c\n", "C\n"));
+    const reviewed = gate(folder, "key");
+    git(folder, "commit", "-q", "--amend", "-m", "change, reworded");
+    expect(gate(folder, "key")).not.toBe(reviewed);
+  });
+
   it("does not depend on the user's own diff settings", () => {
     const folder = repository();
     commitFile(folder, "f.txt", TWELVE.replace("c\n", "C\n"));
@@ -267,6 +275,7 @@ describe("the tool-call guard", () => {
     "git config --get core.hooksPath",
     "git config --get core.hooksPath 2>/dev/null",
     "grep -n hookspath .claude/hooks/review-gate.mjs",
+    "grep -rn include.path src",
     "cat .git/claude-gate/pre-push",
     "node .claude/hooks/review-gate.mjs install",
     "node .claude/hooks/review-gate.mjs record ui PASS",
