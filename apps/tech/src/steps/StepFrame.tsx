@@ -67,6 +67,8 @@ function useWhere(): Where | null {
   const screens = screensOf(job);
   const sent = done(job, events);
   const here = screens.findIndex((screen) => screen.event === route.step);
+  // A step the card's visit has no screen for, as a card kept from before the visit's type changed: no bar to draw.
+  if (here < 0) return null;
   const states = screens.map((screen, index): StepState => {
     if (index === here) return "current";
     return sent.has(screen.event) ? "done" : "todo";
@@ -88,6 +90,12 @@ function StepBar({ where }: { where: Where }) {
       </span>
     </Link>
   );
+}
+
+/** "Next: <the step after>", "Close visit" on the last, or plain Next where the visit's place is not known. */
+function labelOf(where: Where | null): string {
+  if (where === null) return copy.next;
+  return where.next === null ? visit.close : visit.next(where.next);
 }
 
 export function StepFrame({
@@ -121,7 +129,7 @@ export function StepFrame({
   const settled = useSettled();
   const { offline } = useSession();
   const where = useWhere();
-  const label = action ?? (where?.next === null || where === null ? visit.close : visit.next(where.next));
+  const label = action ?? labelOf(where);
   return (
     <main className={styles.screen} data-look="light">
       <header className={styles.head}>

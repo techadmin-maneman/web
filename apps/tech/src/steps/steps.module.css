@@ -76,7 +76,6 @@
   min-width: var(--tech-stepper);
   height: var(--tech-stepper);
   padding: 0;
-  font-family: var(--font-serif);
   font-size: var(--fs-22);
   font-variant-numeric: lining-nums;
   text-align: center;
@@ -242,9 +241,8 @@
 
 .closeWho {
   margin: var(--sp-16) 0 var(--sp-16);
-  font-family: var(--font-serif);
   font-size: var(--fs-28);
-  font-weight: var(--weight-regular);
+  font-weight: var(--weight-semibold);
   line-height: var(--lh-115);
   color: var(--ui-text);
 }

@@ -57,6 +57,11 @@
   --screen-gutter: var(--sp-20);
   --action-height: var(--btn-lg);
   --action-text: var(--fs-16);
+  /* A section's small capitals (packages/ui/Caps.tsx) as the brief's section titles: Plex's semibold, as written. */
+  --caps-font: var(--font-plex);
+  --caps-weight: var(--weight-semibold);
+  --caps-variant: normal;
+  --caps-tracking: normal;
   /* A control at the app's gloved 48 px (./tokens.css), past the brief's 44. */
   --control-height: var(--tech-min);
   --control-text: var(--fs-15);
