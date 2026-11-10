@@ -1,10 +1,11 @@
 // The app's pages, by path. Links change the path without a reload; the Worker
 // answers every path with the app, so a page can be opened directly.
 //
-//   /                        today's jobs, tomorrow collapsed
+//   /                        Today: the day's next job, the rest of the day, and tomorrow (a tab)
 //   /waiting                 what has not reached us: the photo sets and the queued writes
-//   /kit                     the technician's kit (docs/decisions/0164-the-kit-screen.md)
-//   /week                    their next six days, a day at a time
+//   /kit                     the technician's kit (docs/decisions/0164-the-kit-screen.md; a tab)
+//   /week                    their next six days, a day at a time (the Schedule tab)
+//   /me                      Me: their month, their leave, what waits to send, ops, and signing out (a tab)
 //   /month                   their visits this month, and what they earned
 //   /leave                   their asks for leave, and a new one
 //   /jobs/:id                one job's card, and the evidence chain
@@ -47,6 +48,7 @@ export type Route =
   | { readonly page: "week" }
   | { readonly page: "month" }
   | { readonly page: "leave" }
+  | { readonly page: "me" }
   | { readonly page: "job"; readonly id: string }
   | { readonly page: "options"; readonly id: string }
   | { readonly page: "step"; readonly id: string; readonly step: InJobStep }
@@ -63,6 +65,7 @@ export function routeOf(path: string): Route {
     if (first === "week") return { page: "week" };
     if (first === "month") return { page: "month" };
     if (first === "leave") return { page: "leave" };
+    if (first === "me") return { page: "me" };
     return first === "kit" ? { page: "kit" } : TODAY;
   }
   if (first !== "jobs" || !UUID.test(second)) return TODAY;

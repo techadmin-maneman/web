@@ -6,10 +6,12 @@
 // safe answer, so a stray Enter or a tap already on its way keeps the work.
 //
 // Neither answer is gold: the screen's one primary action is behind it. It is drawn on the ink-night ground, as the
-// technician app draws its questions.
+// technician app's older screens draw their questions, or on paper (`onPaper`), as its new look does, where the safe
+// answer comes first, filled.
 
 import { useId, useLayoutEffect, useRef } from "react";
 import { Button } from "./Button.tsx";
+import { classes } from "./classes.ts";
 import { Sheet } from "./Sheet.tsx";
 import styles from "./confirm-sheet.module.css";
 
@@ -20,6 +22,7 @@ export function ConfirmSheet({
   no,
   onYes,
   onNo,
+  onPaper = false,
 }: {
   readonly title: string;
   readonly body: string;
@@ -27,6 +30,7 @@ export function ConfirmSheet({
   readonly no: string;
   readonly onYes: () => void;
   readonly onNo: () => void;
+  readonly onPaper?: boolean;
 }) {
   const titleId = useId();
   const safe = useRef<HTMLButtonElement>(null);
@@ -38,17 +42,30 @@ export function ConfirmSheet({
 
   return (
     <Sheet labelledBy={titleId} rises={false} outsideTapCloses={false} onCancel={onNo}>
-      <div className={styles.sheet}>
+      <div className={classes(styles.sheet, onPaper && styles.paper)}>
         <h2 className={styles.title} id={titleId}>
           {title}
         </h2>
         <p className={styles.body}>{body}</p>
-        <Button variant="dangerOnInk" size="action" className={styles.yes} onClick={onYes}>
-          {yes}
-        </Button>
-        <Button ref={safe} variant="outlineOnInk" size="action" className={styles.no} onClick={onNo}>
-          {no}
-        </Button>
+        {onPaper ? (
+          <>
+            <Button ref={safe} variant="primary" size="action" className={styles.no} onClick={onNo}>
+              {no}
+            </Button>
+            <Button variant="danger" size="action" className={styles.yes} onClick={onYes}>
+              {yes}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="dangerOnInk" size="action" className={styles.yes} onClick={onYes}>
+              {yes}
+            </Button>
+            <Button ref={safe} variant="outlineOnInk" size="action" className={styles.no} onClick={onNo}>
+              {no}
+            </Button>
+          </>
+        )}
       </div>
     </Sheet>
   );

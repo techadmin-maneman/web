@@ -96,7 +96,7 @@ export const AddressSchema = z
   ])
   .openapi({ description: "Null until the day before the visit; the API enforces it, not the screen." });
 
-/** A job on the day's list: its address too, for Navigate, and the next job still to do from it. */
+/** A job on the day's list: its address too, for Navigate, the next job still to do from it, and the drive to it. */
 const DayJobSchema = JobSummarySchema.extend({
   address: AddressSchema,
   next: z
@@ -113,6 +113,16 @@ const DayJobSchema = JobSummarySchema.extend({
       z.null(),
     ])
     .openapi({ description: "The day's next job still to do; null for the last, and for a job already closed." }),
+  drive_minutes: z.union([z.number().int(), z.null()]).openapi({
+    description:
+      "The drive to it by our estimate: from the job before, or from the technician's home for the day's first. " +
+      "Null for a job closed, and for the day's first where the technician's home has no pin.",
+  }),
+  leave_by: z.union([z.iso.datetime(), z.null()]).openapi({
+    description:
+      "When to leave for it, to start on time. Null for a job closed, and for the day's first where the technician's " +
+      "home has no pin.",
+  }),
 }).openapi("TechnicianDayJob");
 
 export const JobsSchema = z

@@ -29,7 +29,6 @@ describe("gold", () => {
   it("marks only the technician app's one primary action, beside the mark", () => {
     expect(gilded([...stylesheets("apps/tech/src"), "packages/ui/button.module.css"])).toEqual([
       "apps/tech/src/login/login.module.css .mark",
-      "apps/tech/src/today/today.module.css .mark",
       "packages/ui/button.module.css .gold",
     ]);
   });

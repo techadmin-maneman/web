@@ -6,15 +6,18 @@ import { ops as copy } from "../content.ts";
 import { classes } from "@maneman/ui/classes";
 import styles from "./reach-ops.module.css";
 
-export function ReachOps({ className }: { readonly className?: string }) {
+export function ReachOps({ className, onPaper = false }: { readonly className?: string; readonly onPaper?: boolean }) {
+  // On paper the new look's control is a thumb's 44 px; ops is reached at the action's height.
+  const variant = onPaper ? "outline" : "outlineOnInk";
+  const size = onPaper ? "action" : "control";
   return (
     <div className={classes(styles.reach, className)}>
-      <ButtonLink variant="outlineOnInk" size="control" href={`tel:+${OPS_NUMBER}`}>
+      <ButtonLink variant={variant} size={size} href={`tel:+${OPS_NUMBER}`}>
         {copy.call}
       </ButtonLink>
       <ButtonLink
-        variant="outlineOnInk"
-        size="control"
+        variant={variant}
+        size={size}
         href={whatsappChat(OPS_NUMBER)}
         target="_blank"
         rel="noopener noreferrer"

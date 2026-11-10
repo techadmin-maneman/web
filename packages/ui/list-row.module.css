@@ -7,7 +7,7 @@
   .list {
     margin: 0;
     padding: 0;
-    border: var(--hairline) solid var(--ui-line);
+    border: var(--list-edge);
     background: var(--ui-raised);
     list-style: none;
   }
@@ -99,15 +99,21 @@
     --rule: var(--status-error);
   }
 
+  /* A row whose thing is done with: ruled in the ink, as the technician's closed jobs are. */
+  .done {
+    --rule: var(--ui-strong);
+  }
+
   /* One width down the list, so the words after it line up; what runs past it is cut short. */
   .lead {
     flex: 0 0 calc(var(--sp-64) + var(--sp-16));
+    align-self: var(--row-lead-align);
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: var(--fs-13);
+    white-space: var(--row-lead-wrap);
+    font-size: var(--row-lead-text);
     font-variant-numeric: tabular-nums;
-    color: var(--ui-text-muted);
+    color: var(--row-lead-colour);
   }
 
   .words {
@@ -135,12 +141,12 @@
   }
 
   .title {
-    font-size: var(--fs-14);
-    font-weight: var(--weight-medium);
+    font-size: var(--row-title-text);
+    font-weight: var(--row-title-weight);
   }
 
   .meta {
-    font-size: var(--fs-13);
+    font-size: var(--row-meta-text);
     color: var(--ui-text-muted);
   }
 

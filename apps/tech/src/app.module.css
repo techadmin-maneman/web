@@ -4,3 +4,14 @@
   flex: 1;
   background: var(--ink-deep);
 }
+
+/*
+ * A top-level screen, above the tab bar: as tall as what it holds, so the column scrolls it, and its foot clear of the
+ * bar and the home indicator.
+ */
+.tabbed {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  padding-bottom: calc(var(--sp-64) + env(safe-area-inset-bottom));
+}

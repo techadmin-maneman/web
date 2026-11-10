@@ -29,7 +29,7 @@ import {
 } from "../../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
-import { firstRelease, seventhRelease, sixthRelease, thirdRelease } from "./tech-first-release.ts";
+import { eighthRelease, firstRelease, seventhRelease, sixthRelease, thirdRelease } from "./tech-first-release.ts";
 
 afterEach(async () => {
   vi.unstubAllGlobals();
@@ -64,6 +64,8 @@ const summary = (id: string, date: string) =>
     progress: { started_at: null, outcome: null },
     address: null,
     next: null,
+    drive_minutes: null,
+    leave_by: null,
   }) as JobSummary;
 
 const card = (id: string, date: string) =>
@@ -452,6 +454,28 @@ describe("a hair profile kept before the head was measured in inches", () => {
     await seventhRelease({ cards: [{ ...card("a", TODAY), profile, v: 2 }], device: [], outbox: [] });
     expect((await keptJob("a"))?.profile?.fit).toMatchObject({ head_circumference_in: 22.7 });
     expect((await keptJob("a"))?.profile?.fit).not.toHaveProperty("head_circumference_cm");
+  });
+});
+
+describe("a card kept several builds back", () => {
+  it("takes every step's change in one upgrade: its arrival window and its profile in inches", async () => {
+    const { arrives_by: _card, ...earlier } = card("a", TODAY);
+    const fit = { norwood_stage: "IV", head_circumference_cm: 57.5, base_width_in: 8 };
+    const profile = { id: "v1", recorded_at: "2026-11-01T00:00:00.000Z", fit, history: null };
+    await sixthRelease({ days: [], cards: [{ ...earlier, profile, v: 2 }] });
+    expect(await keptJob("a")).toMatchObject({
+      arrives_by: `${TODAY}T04:30:00.000Z`,
+      profile: { fit: { norwood_stage: "IV", head_circumference_in: 22.6, base_width_in: 8 } },
+    });
+  });
+});
+
+describe("a day kept before its rows carried their drive", () => {
+  it("says no drive and no time to leave until the day is read again", async () => {
+    const { drive_minutes: _drive, leave_by: _leave, ...row } = summary("a", TODAY);
+    await eighthRelease([{ date: TODAY, jobs: [row], v: 2 }]);
+    const [kept] = (await keptDay(TODAY)) ?? [];
+    expect(kept).toMatchObject({ drive_minutes: null, leave_by: null });
   });
 });
 

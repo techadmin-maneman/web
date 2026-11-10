@@ -27,6 +27,7 @@
   }
 
   .tab {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -43,6 +44,14 @@
   .tab[aria-current="page"] {
     color: var(--nav-text-current);
     font-weight: var(--weight-medium);
+  }
+
+  /* The current tab's mark along its top, in the app's own colour for it; none unless the app sets one. */
+  .tab[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    inset: 0 var(--sp-16) auto;
+    border-top: var(--rule-strong) solid var(--tab-mark);
   }
 
   .tab:focus-visible {

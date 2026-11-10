@@ -1,58 +1,31 @@
-// The day's jobs in order, tomorrow collapsed below. The
-// offline banner sits above them when the phone has no signal, and its empty
-// state stands in when nothing is booked.
-//
-// Sign out wipes the phone, so it always asks first: with work on it that has
-// not reached us, it offers to send it. With no signal the session stays open
-// and nothing is wiped, and it says so (apps/tech/src/App.tsx).
+// Today (docs/prompts/tech-redesign.md, "Today"), in the new look (docs/decisions/0239-technician-light-look.md): the
+// date, how many jobs are left, and whether the phone's work has reached us; what needs dealing with first; the next
+// job with the way there; the rest of the day; and tomorrow. Sign out is on Me.
 
-import { Tile } from "@maneman/ui/Tile";
-import { capsLook } from "@maneman/ui/Caps";
-import { APP_ICONS, GLYPHS, ICONS } from "@maneman/brand/icons";
-import { Button } from "@maneman/ui/Button";
-import { Icon } from "@maneman/ui/Icon";
-import { Mark } from "@maneman/ui/Mark";
-import { Link } from "@maneman/ui/router";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
+import { ProblemCard } from "@maneman/ui/ProblemCard";
 import { shortDate } from "@maneman/web-kit/dates";
-import { useEffect, useState, type Ref } from "react";
+import { useCallback, useEffect, useState, type Ref } from "react";
 import type { JobSummary } from "../api.ts";
-import { Offline } from "../frame/Banners.tsx";
-import { ReachOps } from "../frame/ReachOps.tsx";
-import {
-  atRisk as atRiskCopy,
-  job as jobCopy,
-  kit as kitCopy,
-  leave as leaveCopy,
-  leaving as leavingCopy,
-  month as monthCopy,
-  queue as queueCopy,
-  titles,
-  today as copy,
-  week as weekCopy,
-} from "../content.ts";
-import { rowState, type RowState } from "../lib/progress.ts";
-import { useRefreshTick } from "../lib/useRefreshTick.ts";
+import { NoSignal } from "../frame/Banners.tsx";
+import { Failed, Loading } from "../frame/States.tsx";
+import { SyncLabel } from "../frame/SyncLabel.tsx";
+import { atRisk as atRiskCopy, titles, today as copy } from "../content.ts";
+import { rowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
+import { useRefreshTick } from "../lib/useRefreshTick.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { apiDate, clock, dayAfter, dayBefore, runsOver, todayInIndia, where } from "../lib/when.ts";
+import { clock, dayAfter, dayBefore, todayInIndia } from "../lib/when.ts";
+import { kindName } from "../lib/kind.ts";
+import { nextOf, titleOf } from "../lib/today.ts";
+import { go } from "../route.ts";
 import { useSession } from "../session.ts";
-import { Failed, Loading } from "../frame/States.tsx";
 import { type Heard, keptStates } from "../store/jobs.ts";
-import { replay, type Queued } from "../store/outbox.ts";
-import { photoSets } from "../lib/sets.ts";
-import { JobFoot, JobRow } from "./JobRow.tsx";
+import type { Queued } from "../store/outbox.ts";
+import { LaterToday, Tomorrow } from "./LaterToday.tsx";
+import { NextJob } from "./NextJob.tsx";
 import styles from "./today.module.css";
-
-/** Where a sign-out has got to: asking about unsent work, waiting on the API, or refused for want of signal. */
-type Leaving = "asking" | "going" | "stayed" | null;
-
-const ROW_STATES: Readonly<Record<RowState, string>> = {
-  closed: jobCopy.states.closed,
-  in_progress: jobCopy.states.inProgress,
-  at_the_door: jobCopy.states.atTheDoor,
-};
 
 /** Yesterday's jobs not yet closed that the phone has work for: begun, or with steps still to send. */
 const stillOpen = (jobs: readonly JobSummary[], queued: readonly Queued[]): JobSummary[] =>
@@ -60,10 +33,6 @@ const stillOpen = (jobs: readonly JobSummary[], queued: readonly Queued[]): JobS
     (job) =>
       job.status === "dispatched" || job.status === "in_progress" || queued.some((event) => event.job_id === job.id),
   );
-
-/** The client's name from the day's list, else from the card the phone kept, for a day kept before the list had names. */
-const clientOf = (job: JobSummary, kept: ReadonlyMap<string, string>): string | undefined =>
-  job.client_name ?? kept.get(job.id);
 
 const NOTHING_HEARD: ReadonlyMap<string, Heard> = new Map();
 
@@ -74,315 +43,119 @@ const NOTHING_HEARD: ReadonlyMap<string, Heard> = new Map();
 const useHeard = (watch: unknown): ReadonlyMap<string, Heard> => valueOr(useAsync(keptStates, watch)[0], NOTHING_HEARD);
 
 /** Each day's cards kept on the phone as they come fresh from the API, so a basement opens them; the names they hold. */
-function useKeptCards(...days: readonly ReturnType<typeof useDay>[0][]): ReadonlyMap<string, string> {
-  const [cards, setCards] = useState(0);
-  const names = useNames(cards);
+function useKeptCards(...days: readonly ReturnType<typeof useDay>[0][]): {
+  readonly names: ReadonlyMap<string, string>;
+  readonly round: number;
+} {
+  const [round, setRound] = useState(0);
+  const names = useNames(round);
   const [today, tomorrow] = days;
   useEffect(() => {
     if (today?.state === "loaded" && !today.fromPhone) {
       void keepCards(today.value).then(() => {
-        setCards((round) => round + 1);
+        setRound((was) => was + 1);
       });
     }
   }, [today]);
   useEffect(() => {
     if (tomorrow?.state === "loaded" && !tomorrow.fromPhone) {
       void keepCards(tomorrow.value).then(() => {
-        setCards((round) => round + 1);
+        setRound((was) => was + 1);
       });
     }
   }, [tomorrow]);
-  return names;
+  return { names, round };
 }
 
-/** The day's next job still to do: not closed, by the row's own reading of it. */
-const nextOpen = (jobs: readonly JobSummary[], closed: (job: JobSummary) => boolean): JobSummary | undefined =>
-  jobs.find((job) => !closed(job));
-
-/** The mark and the way to sign out; then the date, how many jobs, and where the next one is. */
-function Head(props: {
-  readonly initials: string;
-  readonly leaving: boolean;
-  readonly onSignOut: () => void;
-  readonly date: string;
-  readonly loaded: boolean;
-  readonly jobs: readonly JobSummary[];
-  readonly next: JobSummary | undefined;
-  readonly heading: Ref<HTMLHeadingElement>;
-}) {
-  const { next } = props;
+/** The date, how many jobs are still to do, and whether the phone's work has reached us. */
+function Head(props: { readonly date: string; readonly title: string; readonly heading: Ref<HTMLHeadingElement> }) {
   return (
     <header className={styles.head}>
-      <div className={styles.top}>
-        <Mark className={styles.mark} />
-        <Button
-          variant="outlineOnInk"
-          size="small"
-          className={styles.account}
-          disabled={props.leaving}
-          onClick={props.onSignOut}
-        >
-          <span className={styles.initials}>{props.initials}</span>
-          <span className={styles.signOut}>{copy.signOut}</span>
-        </Button>
+      <div>
+        <p className={styles.date}>{shortDate(props.date)}</p>
+        <h1 className={styles.count} ref={props.heading} tabIndex={-1}>
+          {props.title}
+        </h1>
       </div>
-      <p className={styles.date}>{shortDate(props.date)}</p>
-      <h1 className={styles.count} ref={props.heading} tabIndex={-1}>
-        {props.loaded && props.jobs.length === 0 ? copy.empty.title : copy.jobs(props.jobs.length)}
-      </h1>
-      {props.jobs.length > 0 && (
-        <p className={styles.first}>
-          {next === undefined ? copy.allDone : copy.next(clock(next.starts_at), where(next.sector))}
-        </p>
-      )}
+      <SyncLabel />
     </header>
   );
 }
 
-/** The question before a sign-out wipes the phone: with unsent work it offers to send it first. */
-function LeavePrompt(props: {
-  readonly unsentSets: number;
-  readonly unsentActions: number;
-  readonly onStay: () => void;
-  readonly onSend: () => void;
-  readonly onLeave: () => void;
-}) {
-  const unsent = props.unsentSets + props.unsentActions > 0;
-  return (
-    <div className={styles.leave} role="alert">
-      <p className={styles.leaveTitle}>
-        {unsent ? leavingCopy.unsent(props.unsentSets, props.unsentActions) : leavingCopy.confirm}
-      </p>
-      <p className={styles.leaveBody}>{unsent ? leavingCopy.body : leavingCopy.confirmBody}</p>
-      <div className={styles.leaveActions}>
-        <Button variant="outlineOnInk" size="small" onClick={unsent ? props.onSend : props.onStay}>
-          {unsent ? leavingCopy.send : leavingCopy.stay}
-        </Button>
-        <Button variant="outlineOnInk" size="small" onClick={props.onLeave}>
-          {unsent ? leavingCopy.anyway : copy.signOut}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/** Nothing booked today: when tomorrow starts, where it has jobs. */
-function EmptyDay({ tomorrowJobs }: { readonly tomorrowJobs: readonly JobSummary[] }) {
-  const [next] = tomorrowJobs;
-  return (
-    <div className={styles.empty}>
-      <p className={capsLook(styles.emptyLabel)}>{copy.empty.label}</p>
-      <p className={styles.emptyBody}>
-        {next === undefined ? copy.empty.none : copy.empty.tomorrow(tomorrowJobs.length, clock(next.starts_at))}
-      </p>
-    </div>
-  );
-}
-
-/** The day's jobs, each with how far it has got, the way there and the drive on to the next. */
-function Jobs(props: {
-  readonly jobs: readonly JobSummary[];
-  readonly names: ReadonlyMap<string, string>;
+/** Yesterday's jobs still open, as a card at the top: each can be finished and sent. */
+function LeftOpen(props: {
+  readonly date: string;
   readonly queued: readonly Queued[];
-  readonly heard: ReadonlyMap<string, Heard>;
+  readonly names: ReadonlyMap<string, string>;
 }) {
-  const now = apiDate();
-  return (
-    <ul className={styles.list}>
-      {props.jobs.map((job, index) => {
-        const state = rowState(job, props.queued, props.heard.get(job.id));
-        const next = props.jobs
-          .slice(index + 1)
-          .find((later) => later.status !== "completed" && later.status !== "terminated");
-        return (
-          <li key={job.id}>
-            <JobRow
-              job={job}
-              client={clientOf(job, props.names)}
-              state={state === null ? null : ROW_STATES[state]}
-              closed={state === "closed"}
-            />
-            {state !== "closed" && (
-              <JobFoot job={job} next={next} over={state === "in_progress" && runsOver(job, now)} />
-            )}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-/** Tomorrow's jobs, collapsed below today's until opened. */
-function Tomorrow(props: Omit<Parameters<typeof Jobs>[0], "jobs"> & { readonly jobs: readonly JobSummary[] }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <Tile
-        className={styles.tomorrow}
-        aria-expanded={open}
-        onClick={() => {
-          setOpen((was) => !was);
-        }}
-      >
-        <span>{copy.tomorrow(props.jobs.length)}</span>
-        <Icon className={styles.tomorrowIcon} d={ICONS.selectArrow} size="sm" weight="heavy" />
-      </Tile>
-      {open && <Jobs {...props} />}
-    </>
-  );
-}
-
-/** Yesterday's jobs not yet closed, above today's, so their work can be finished and sent. */
-function LeftOpen(props: Omit<Parameters<typeof Jobs>[0], "jobs"> & { readonly date: string }) {
   const [yesterday] = useDay(dayBefore(props.date));
   const jobs = yesterday.state === "loaded" ? stillOpen(yesterday.value, props.queued) : [];
-  if (jobs.length === 0) return null;
-  return (
-    <section aria-labelledby="today-left-open">
-      <h2 className={capsLook(styles.leftOpen)} id="today-left-open">
-        {copy.leftOpen(jobs.length)}
-      </h2>
-      <Jobs jobs={jobs} names={props.names} queued={props.queued} heard={props.heard} />
-    </section>
-  );
-}
-
-/**
- * What is still on the phone: the way to the queue while anything waits; and where the phone would not promise to keep
- * its store and there is work in it, the warning, which is about this queue, not the phone (apps/tech/src/store/persist.ts).
- */
-function OnThePhone(props: { readonly sending: number; readonly unsentSets: number; readonly atRisk: boolean }) {
-  const { sending, unsentSets } = props;
-  return (
-    <>
-      {(sending > 0 || unsentSets > 0) && (
-        <Link className={styles.waiting} to="/waiting">
-          <Icon d={APP_ICONS.uploadQueue} size="md" className={styles.waitingIcon} weight="heavy" />
-          <span className={styles.waitingLine}>
-            {unsentSets > 0 ? queueCopy.waiting(unsentSets) : queueCopy.events(sending)}
-          </span>
-        </Link>
-      )}
-      {props.atRisk && (
-        <div className={styles.atRisk} role="status">
-          <p className={styles.atRiskTitle}>{atRiskCopy.title}</p>
-          <p className={styles.atRiskBody}>{atRiskCopy.body}</p>
-        </div>
-      )}
-    </>
-  );
-}
-
-/** The technician's other pages, beneath the day: their week, their month, their leave and their kit. */
-function Elsewhere() {
-  return (
-    <>
-      <Link className={styles.waiting} to="/week">
-        <Icon d={GLYPHS.board} size="md" className={styles.waitingIcon} weight="heavy" />
-        <span className={styles.waitingLine}>{weekCopy.link}</span>
-      </Link>
-      <Link className={styles.waiting} to="/month">
-        <Icon d={GLYPHS.bars} size="md" className={styles.waitingIcon} weight="heavy" />
-        <span className={styles.waitingLine}>{monthCopy.link}</span>
-      </Link>
-      <Link className={styles.waiting} to="/leave">
-        <Icon d={GLYPHS.clock} size="md" className={styles.waitingIcon} weight="heavy" />
-        <span className={styles.waitingLine}>{leaveCopy.link}</span>
-      </Link>
-      <Link className={styles.waiting} to="/kit">
-        <Icon d={GLYPHS.tag} size="md" className={styles.waitingIcon} weight="heavy" />
-        <span className={styles.waitingLine}>{kitCopy.link}</span>
-      </Link>
-    </>
-  );
+  return jobs.map((job) => (
+    <ProblemCard
+      key={job.id}
+      title={copy.leftOpen(clock(job.starts_at), job.client_name ?? props.names.get(job.id) ?? kindName(job))}
+      onOpen={() => {
+        go(`/jobs/${job.id}`);
+      }}
+    >
+      {copy.leftOpenBody}
+    </ProblemCard>
+  ));
 }
 
 export function TodayScreen() {
-  const { me, offline, atRisk, signOut } = useSession();
+  const { offline, atRisk } = useSession();
   const date = todayInIndia();
   const tick = useRefreshTick();
   const [day, retry] = useDay(date, tick);
   const [tomorrow] = useDay(dayAfter(date), tick);
   const waiting = useOutbox();
-  const [leaving, setLeaving] = useState<Leaving>(null);
-
-  const unsentSets = photoSets(waiting.frames, waiting.events).length;
-  const unsentActions = waiting.events.length;
-  // What is still on its way: a job whose queue stopped says so in the banner above every screen.
-  const sending = waiting.events.filter((event) => event.state === "waiting").length;
   const heard = useHeard(waiting);
   const heading = useScreen(titles.today);
-
-  // Signal back: the sign-out that waited for it can be tried again, so the line saying it could not goes.
-  useEffect(() => {
-    if (!offline) setLeaving((was) => (was === "stayed" ? null : was));
-  }, [offline]);
-
-  async function leave(): Promise<void> {
-    setLeaving("going");
-    if ((await signOut()) === "still-signed-in") setLeaving("stayed");
-  }
+  const { names, round } = useKeptCards(day, tomorrow);
 
   const jobs = day.state === "loaded" ? day.value : [];
   const tomorrowJobs = tomorrow.state === "loaded" ? tomorrow.value : [];
-  const names = useKeptCards(day, tomorrow);
-  const next = nextOpen(jobs, (job) => rowState(job, waiting.events, heard.get(job.id)) === "closed");
+  const stateOf = useCallback(
+    (job: JobSummary) => rowState(job, waiting.events, heard.get(job.id)),
+    [waiting.events, heard],
+  );
+  const states = new Map(jobs.map((job) => [job.id, stateOf(job)]));
+  const next = nextOf(jobs, states);
+  const rest = jobs.filter((job) => job !== next);
+  const after = rest.find(
+    (job) => next !== undefined && job.starts_at > next.starts_at && states.get(job.id) !== "closed",
+  );
+  const unsentOnPhone = waiting.events.length + waiting.frames.length > 0;
 
   return (
-    <main className={styles.screen}>
-      <Head
-        initials={me.initials}
-        leaving={leaving === "going"}
-        onSignOut={() => {
-          setLeaving("asking");
-        }}
-        date={date}
-        loaded={day.state === "loaded"}
-        jobs={jobs}
-        next={next}
-        heading={heading}
-      />
+    <main className={styles.screen} data-look="light">
+      <Head date={date} title={titleOf(jobs, states, day.state === "loaded")} heading={heading} />
+      {offline && <NoSignal />}
 
-      {leaving === "asking" && (
-        <LeavePrompt
-          unsentSets={unsentSets}
-          unsentActions={unsentActions}
-          onStay={() => {
-            setLeaving(null);
-          }}
-          onSend={() => {
-            setLeaving(null);
-            void replay();
-          }}
-          onLeave={() => void leave()}
+      <div className={styles.problems}>
+        <LeftOpen date={date} queued={waiting.events} names={names} />
+        {atRisk && unsentOnPhone && <ProblemCard title={atRiskCopy.title}>{atRiskCopy.body}</ProblemCard>}
+      </div>
+
+      {day.state === "loading" && <Loading onPaper />}
+      {day.state === "failed" && (
+        <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={day.requestId} onPaper />
+      )}
+
+      {next !== undefined && (
+        <NextJob
+          job={next}
+          state={states.get(next.id) ?? null}
+          client={next.client_name ?? names.get(next.id)}
+          after={after}
+          cards={round}
         />
       )}
-      {leaving === "stayed" && (
-        <p className={styles.stayed} role="status">
-          {leavingCopy.stayed}
-        </p>
+      {day.state === "loaded" && (
+        <LaterToday jobs={rest} states={states} names={names} queued={waiting.events} heard={heard} />
       )}
-
-      {offline && <Offline />}
-
-      <OnThePhone
-        sending={sending}
-        unsentSets={unsentSets}
-        atRisk={atRisk && waiting.events.length + waiting.frames.length > 0}
-      />
-
-      {day.state === "loading" && <Loading />}
-      {day.state === "failed" && (
-        <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={day.requestId} />
-      )}
-
-      <LeftOpen date={date} names={names} queued={waiting.events} heard={heard} />
-      {day.state === "loaded" && jobs.length === 0 && <EmptyDay tomorrowJobs={tomorrowJobs} />}
-      {jobs.length > 0 && <Jobs jobs={jobs} names={names} queued={waiting.events} heard={heard} />}
-      {tomorrowJobs.length > 0 && <Tomorrow jobs={tomorrowJobs} names={names} queued={waiting.events} heard={heard} />}
-
-      <Elsewhere />
-      <ReachOps className={styles.ops} />
+      <Tomorrow jobs={tomorrowJobs} loaded={tomorrow.state === "loaded"} />
     </main>
   );
 }

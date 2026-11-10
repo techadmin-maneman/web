@@ -3,7 +3,7 @@
 // park, so each drive is as long as the distance.
 
 import { describe, expect, it } from "vitest";
-import { nextJobs } from "../../../src/policy/next-job.ts";
+import { drivesTo, nextJobs } from "../../../src/policy/next-job.ts";
 import { DRIVE_ESTIMATE } from "../../../src/policy/drive-estimate.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 
@@ -38,5 +38,34 @@ describe("the next job", () => {
 
   it("is nothing for a job already closed", () => {
     expect(nextJobs([job("10:00", 0, "completed"), job("13:00", 25)], RULES)[0]).toBeNull();
+  });
+});
+
+describe("the drive to each job", () => {
+  const at = (time: string) => new Date(`2026-10-22T${time}:00+05:30`).toISOString();
+
+  it("is from home to the day's first, and from the job before to each after it, and says when to leave", () => {
+    const [first, second] = drivesTo([job("10:00", 20), job("13:00", 45)], north(0), RULES);
+    expect(first).toEqual({ drive_minutes: 20, leave_by: at("09:40") });
+    expect(second).toEqual({ drive_minutes: 25, leave_by: at("12:35") });
+  });
+
+  it("is from a job done as from any other, never less than the shortest drive, and that where a pin is missing", () => {
+    const [, second, third] = drivesTo(
+      [job("10:00", 0, "completed"), job("13:00", 5), job("16:00", null)],
+      null,
+      RULES,
+    );
+    // Five kilometres is less than the shortest drive, ten minutes.
+    expect(second).toEqual({ drive_minutes: 10, leave_by: at("12:50") });
+    expect(third).toEqual({ drive_minutes: 10, leave_by: at("15:50") });
+  });
+
+  it("is nothing for a job already closed, nor for the day's first from a home with no pin", () => {
+    const [first, second] = drivesTo([job("10:00", 0, "completed"), job("13:00", 25)], null, RULES);
+    expect(first).toBeNull();
+    expect(second?.drive_minutes).toBe(25);
+    // Booking counts no drive from nowhere, and the phone shows no figure it would have to invent.
+    expect(drivesTo([job("10:00", 0)], null, RULES)[0]).toBeNull();
   });
 });

@@ -4,12 +4,14 @@
 
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
+import { classes } from "@maneman/ui/classes";
 import { Stopped, StorageFull } from "./frame/Banners.tsx";
 import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { OptionsScreen } from "./job/OptionsScreen.tsx";
 import { KitScreen } from "./kit/KitScreen.tsx";
 import { LeaveScreen } from "./mine/LeaveScreen.tsx";
+import { MeScreen } from "./me/MeScreen.tsx";
 import { MonthScreen } from "./mine/MonthScreen.tsx";
 import { WeekScreen } from "./mine/WeekScreen.tsx";
 import { OutboxContext, useOutboxSubscription } from "./lib/useOutbox.ts";
@@ -19,6 +21,7 @@ import { SignIn } from "./login/SignIn.tsx";
 import { routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext, useOnline, type Session } from "./session.ts";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
+import { drawnLight, hasTabs, Tabs } from "./frame/Tabs.tsx";
 import { Loading } from "./frame/States.tsx";
 import { Checklist } from "./steps/Checklist.tsx";
 import { CloseOut } from "./steps/CloseOut.tsx";
@@ -29,6 +32,7 @@ import { Profile } from "./steps/Profile.tsx";
 import { TodayScreen } from "./today/TodayScreen.tsx";
 import { WaitingScreen } from "./waiting/WaitingScreen.tsx";
 import styles from "./app.module.css";
+import light from "./frame/light.module.css";
 
 function pageFor(route: Route) {
   switch (route.page) {
@@ -44,6 +48,8 @@ function pageFor(route: Route) {
       return <MonthScreen />;
     case "leave":
       return <LeaveScreen />;
+    case "me":
+      return <MeScreen />;
     case "job":
       return <JobScreen id={route.id} />;
     case "options":
@@ -74,15 +80,25 @@ function pageFor(route: Route) {
 function SignedIn({ session, path }: { session: Session; path: string }) {
   const waiting = useOutboxSubscription();
   const route = routeOf(path);
+  const tabbed = hasTabs(route.page);
   return (
     <SessionContext value={session}>
       <OutboxContext value={waiting}>
         <StorageFull />
-        <UpdateReady copy={update} resting={route.page === "today"} onInk />
+        <UpdateReady copy={update} resting={route.page === "today"} onInk={!drawnLight(route.page)} />
         {/* A job's work stopped reaching us, said above every screen; the waiting screen says it job by job. */}
         {route.page !== "waiting" && <Stopped />}
         {/* Keyed by the path, so each screen opens at its top with its own data, and one that failed stays behind. */}
-        <ErrorBoundary key={path}>{pageFor(route)}</ErrorBoundary>
+        {tabbed ? (
+          <>
+            <div className={drawnLight(route.page) ? classes(styles.tabbed, light.ground) : styles.tabbed}>
+              <ErrorBoundary key={path}>{pageFor(route)}</ErrorBoundary>
+            </div>
+            <Tabs page={route.page} />
+          </>
+        ) : (
+          <ErrorBoundary key={path}>{pageFor(route)}</ErrorBoundary>
+        )}
       </OutboxContext>
     </SessionContext>
   );

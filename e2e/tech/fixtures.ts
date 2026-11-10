@@ -128,6 +128,9 @@ const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NO
   address: placed("Tower C, 14th floor", "Sector 65", { lat: 28.39, lng: 77.07 }),
   // Vikram's at 11:30, 20 minutes away: done by 11 for the wrap-up and the drive.
   next: { drive_minutes: 20, finish_by: at(date, "05:30") },
+  // 18 minutes from home: leave by 9:12.
+  drive_minutes: 18,
+  leave_by: at(date, "03:42"),
 });
 
 const secondJob = (date: string): Job => ({
@@ -152,6 +155,8 @@ const secondJob = (date: string): Job => ({
   progress: NOT_BEGUN,
   address: placed("House 12", "DLF Phase 4", null),
   next: { drive_minutes: 25, finish_by: at(date, "07:55") },
+  drive_minutes: 20,
+  leave_by: at(date, "05:40"),
 });
 
 /** This afternoon's first fit, its card still locked as the list shows it, until 6 pm tomorrow. */
@@ -177,6 +182,8 @@ const lockedJob = (date: string): Job => ({
   progress: NOT_BEGUN,
   address: null,
   next: null,
+  drive_minutes: 25,
+  leave_by: at(date, "08:05"),
 });
 
 /** Tomorrow's one job, unlocked since 6 pm today: its card is open, and its door is not. */
@@ -204,6 +211,8 @@ const tomorrowsJob = (today: string): Job => {
     progress: NOT_BEGUN,
     address: placed("Tower C, 14th floor", "Sector 50", null),
     next: null,
+    drive_minutes: 18,
+    leave_by: at(date, "04:12"),
   };
 };
 
@@ -214,6 +223,13 @@ export function jobsToday(date: string, type: VisitType = "service", progress = 
 
 export function jobsTomorrow(today: string): Job[] {
   return [tomorrowsJob(today)];
+}
+
+/** Yesterday's 11:30, begun and never closed: Vikram's, still open on the phone the next morning. */
+export function jobsYesterday(today: string): Job[] {
+  const date = dayBefore(today);
+  const begun = at(date, "06:10");
+  return [{ ...secondJob(date), day: "past", status: "in_progress", progress: { started_at: begun, outcome: null } }];
 }
 
 export const CHECKLIST: Card["checklist"] = [
@@ -353,7 +369,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
   const type = options.type ?? "service";
   const oneVisit = options.oneVisit === true;
   // A card carries no next job: the day's list does.
-  const { next: _next, ...job } = firstJob(date, type, oneVisit);
+  const { next: _next, drive_minutes: _drive, leave_by: _leave, ...job } = firstJob(date, type, oneVisit);
   return {
     ...job,
     starts_at: options.startsAt ?? job.starts_at,
@@ -407,7 +423,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
 
 /** A job further out: time, type and sector only, as the day-before unlock leaves it. */
 export function lockedCard(date: string): Card {
-  const { next: _next, ...job } = lockedJob(date);
+  const { next: _next, drive_minutes: _drive, leave_by: _leave, ...job } = lockedJob(date);
   return {
     ...job,
     address: null,
@@ -438,6 +454,6 @@ export function lockedCard(date: string): Card {
 /** Tomorrow's card: unlocked, so the address is there, and on a day that is not today. */
 export function tomorrowCard(today: string): Card {
   // The card's own address, and no next job, which only the day's list carries.
-  const { address: _address, next: _next, ...job } = tomorrowsJob(today);
+  const { address: _address, next: _next, drive_minutes: _drive, leave_by: _leave, ...job } = tomorrowsJob(today);
   return { ...card(today, NOTHING_DONE), ...job, progress: NOTHING_DONE };
 }

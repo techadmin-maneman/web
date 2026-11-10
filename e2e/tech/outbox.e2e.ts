@@ -10,6 +10,7 @@ import { JOB_ID, todayInIndia } from "./fixtures.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
 import { atTheDoor, heldOnPhone, keptOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { askToSignOut, openPending } from "./tabs.ts";
 
 /**
  * Opens the day, checks in at the door, then takes the signal away. The app
@@ -206,7 +207,7 @@ test("warns when the phone will not promise to keep the queue, and says how long
   expect(await axeViolations(page)).toEqual([]);
 
   // And the queue itself names how long the work has been on the phone alone.
-  await page.getByRole("link", { name: /1 action waiting/ }).click();
+  await openPending(page);
   await expect(page.getByText(techCopy.atRisk.title)).toBeVisible();
   await expect(page.getByText(/^Waiting since /)).toBeVisible();
 
@@ -226,7 +227,7 @@ test("says nothing about keeping the queue when the phone has promised to", asyn
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
 
-  await expect(page.getByRole("link", { name: /1 action waiting/ })).toBeVisible();
+  await expect(page.getByText(techCopy.today.sync.offline(1))).toBeVisible();
   await expect(page.getByText(techCopy.atRisk.title)).toHaveCount(0);
 });
 
@@ -245,8 +246,8 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
-  await expect(page.getByRole("link", { name: /1 action waiting/ })).toBeVisible();
-  await page.getByRole("link", { name: /1 action waiting/ }).click();
+  await expect(page.getByText(techCopy.today.sync.offline(1))).toBeVisible();
+  await openPending(page);
   await expect(page.getByRole("heading", { name: techCopy.queue.title })).toBeVisible();
   await expect(page.getByText("Rohit M.")).toBeVisible();
 
@@ -264,10 +265,12 @@ test("accounts plainly for what has not reached us, and says what changed on a s
 
   // Not only here: every screen says so, and the card offers nothing to press on with.
   await page.getByRole("button", { name: techCopy.queue.back }).click();
+  // Today's head says a write failed, in the error's colour, not that all is synced.
+  await expect(page.getByText(/^\d+ uploads? failed$/)).toBeVisible();
   await expect(
     page.getByRole("alert").filter({ hasText: `9:30 am service visit · Sector 65: ${movedToSameer}` }),
   ).toBeVisible();
-  await page.getByRole("listitem").filter({ hasText: "Rohit M." }).click();
+  await page.getByText("Rohit M.").first().click();
   await expect(page.getByRole("heading", { level: 2, name: techCopy.job.changed.title })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.job.continueJob })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
@@ -338,7 +341,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   // Nothing has gone up, and the queue says so: no bar full of frames that are only waiting.
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
-  await page.getByRole("link", { name: /photo set waiting/ }).click();
+  await openPending(page);
   await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
   await expect(page.getByText("Before photos · 0 of 5 sent")).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.queue.retry })).toHaveCount(0);
@@ -381,7 +384,7 @@ test("counts a set as sent only as its photographs go up", async ({ page, contex
   // Every move here is a link inside the app: with no signal there is no navigation.
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
-  await page.getByRole("link", { name: /photo set waiting/ }).click();
+  await openPending(page);
 
   await expect(page.getByText("Before photos · 0 of 5 sent")).toBeVisible();
   const width = await page.locator("[data-bar] > div").evaluate((bar) => bar.getBoundingClientRect().width);
@@ -408,11 +411,11 @@ test("asks before a sign-out would lose unsent work, sends it first if asked, an
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
-  await expect(page.getByRole("link", { name: /1 action waiting/ })).toBeVisible();
+  // Nothing answered, so the phone reads as offline, and says what it holds.
+  await expect(page.getByText(techCopy.today.sync.offline(1))).toBeVisible();
 
   // One tap on Sign out no longer wipes the phone: it says what would be lost.
-  const account = page.getByRole("button", { name: /Sign out$/ });
-  await account.click();
+  await askToSignOut(page);
   await expect(page.getByText("1 action not sent yet")).toBeVisible();
   await expect(page.getByText(techCopy.leaving.body)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
@@ -424,11 +427,11 @@ test("asks before a sign-out would lose unsent work, sends it first if asked, an
 
   // Signal again: send first, and only then sign out, with nothing left to lose.
   fake.online = true;
-  await account.click();
+  await page.getByRole("button", { name: techCopy.me.signOut, exact: true }).click();
   await page.getByRole("button", { name: techCopy.leaving.send }).click();
-  await expect(page.getByRole("link", { name: /action waiting/ })).toHaveCount(0);
+  await expect(page.getByText(techCopy.today.sync.synced)).toBeVisible();
   expect(fake.writes.at(-1)?.path).toBe(`/api/tech/jobs/${JOB_ID}/start`);
-  await account.click();
-  await page.getByRole("alert").getByRole("button", { name: techCopy.today.signOut }).click();
+  await page.getByRole("button", { name: techCopy.me.signOut, exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.me.signOut, exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
 });

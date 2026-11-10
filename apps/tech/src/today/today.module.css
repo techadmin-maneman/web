@@ -1,341 +1,201 @@
 /*
- * The day's jobs, the empty state, and the line to what has
- * not yet reached us; the offline banner is the one every screen shares
- * (../components/banner.module.css). Ink ground, off-white text, gold on the
- * banner alone — this screen has no primary action.
+ * Today (./TodayScreen.tsx), in the new look (../styles/look.css): the head with the date, the count and the sync
+ * label; the problem cards; the next job, its time large; the rest of the day as rows; and tomorrow's line. The
+ * prototype's sizes: the count 28, the next job's time 34, its name 20, its lines 15; a row's lines 17 and 14.
  */
 
 .screen {
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--ink-deep);
+  padding-bottom: var(--sp-16);
 }
 
 .head {
-  flex-shrink: 0;
-  padding: var(--sp-16) var(--sp-20) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.top {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.mark {
-  width: var(--tech-mark);
-  height: auto;
-  fill: var(--gilt);
-}
-
-/* The Prototype's chip: the technician's initials, and the way out. */
-.account {
   gap: var(--sp-12);
-  padding: 0 var(--sp-16);
-}
-
-.initials {
-  font-family: var(--font-serif);
-  font-size: var(--fs-17);
-  color: var(--paper);
-}
-
-.signOut {
-  font-size: var(--fs-17);
-  color: var(--ink-soft);
-}
-
-.account:focus-visible,
-.tomorrow:focus-visible,
-.waiting:focus-visible,
-.row:focus-visible,
-.closedRow:focus-visible {
-  outline: var(--focus-width) solid var(--focus-colour);
-  outline-offset: calc(-1 * var(--focus-offset));
-}
-
-.count {
-  margin: var(--sp-4) 0 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-app-title-long);
-  font-weight: var(--weight-regular);
-  line-height: var(--lh-115);
-  color: var(--paper);
-}
-
-.count:focus {
-  outline: none;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--sp-16) var(--screen-gutter) var(--sp-12);
 }
 
 .date {
-  margin: var(--sp-20) 0 0;
-  font-size: var(--fs-15);
-  color: var(--ink-muted);
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
 }
 
-.first {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-17);
-  color: var(--ink-soft);
+.count {
+  margin: 0;
+  font-size: var(--fs-28);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-115);
 }
 
-.waiting {
+.problems {
   display: flex;
+  flex-direction: column;
   gap: var(--sp-12);
-  align-items: center;
-  min-height: var(--tech-min);
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
+  padding: 0 var(--screen-gutter);
+}
+
+.problems:not(:empty) {
+  padding-bottom: var(--sp-16);
+}
+
+/* The next job: its line, its time large, the client, the visit and the place; then its actions. */
+.next {
+  padding: var(--sp-8) var(--screen-gutter) var(--sp-24);
+}
+
+.nextLink {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  color: var(--ui-text);
   text-decoration: none;
 }
 
-.waitingIcon {
-  flex-shrink: 0;
-  color: var(--paper);
-}
-
-.waitingLine {
-  font-size: var(--fs-17);
-  color: var(--paper);
-}
-
-/*
- * Sign out, asked about with work still on the phone: the same outlined
- * caution as below, with its two ways on as the app's outlined buttons. Neither
- * is gold — there is still no primary action on this screen.
- */
-.leave {
-  flex-shrink: 0;
-  padding: var(--sp-16) var(--sp-20) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.leaveTitle,
-.stayed {
-  margin: 0;
-  font-size: var(--fs-17);
+.nextLine {
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
   line-height: var(--lh-145);
-  color: var(--paper);
+  color: var(--ui-attention);
 }
 
-.leaveBody {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-}
-
-.leaveActions {
+.nextWhen {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-12);
+  gap: var(--sp-8);
+  align-items: baseline;
+}
+
+.nextTime {
+  font-size: var(--fs-34);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-115);
+}
+
+.nextLength {
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}
+
+.nextWho {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.nextWhat {
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.nextWhere {
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+}
+
+/* A job under way that runs into the next: said in the error's colour, under where it is. */
+.nextOver {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-145);
+  color: var(--ui-error);
+}
+
+.nextActions {
+  display: flex;
+  gap: var(--sp-8);
   margin-top: var(--sp-16);
 }
 
-.stayed {
-  flex-shrink: 0;
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-/* A caution, not a failure: an outlined block, with none of the banner's gold. */
-.atRisk {
-  flex-shrink: 0;
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.atRiskTitle {
-  margin: 0;
-  font-size: var(--fs-17);
-  color: var(--paper);
-}
-
-.atRiskBody {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-}
-
-.list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* A job row: 88 px, the time down the left, everything else beside it. A closed one is quieter. */
-.row,
-.closedRow {
-  display: flex;
-  gap: var(--sp-16);
-  align-items: center;
-  min-height: var(--tech-row);
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-  text-decoration: none;
-}
-
-.closedRow .time,
-.closedRow .who,
-.closedRow .type,
-.closedRow .state {
-  color: var(--ink-muted);
-}
-
-.when {
-  flex-shrink: 0;
-  width: var(--tech-time);
-}
-
-.time {
-  display: block;
-  font-size: var(--fs-17);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  color: var(--paper);
-}
-
-.length {
-  display: block;
-  margin-top: var(--sp-4);
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
-}
-
-.what {
-  flex: 1;
-  min-width: 0;
-}
-
-/* On a narrow phone the badge drops beneath the type whole, rather than each breaking into a ragged column. */
-.kind {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-4) var(--sp-8);
-  align-items: center;
-}
-
-.type {
-  letter-spacing: var(--tracking-12);
-  font-size: var(--fs-15);
-  color: var(--ink-soft);
-}
-
-/* The job in hand stands out in paper, where the board has it gold (ADR 0025, item 59). */
-.list > li:first-child .row .type {
-  color: var(--paper);
-}
-
-/* The one visit's badge, on a line of its own under the kind. */
-.badgeLine {
-  flex-basis: 100%;
-}
-
-.who {
-  display: block;
-  margin-top: var(--sp-4);
-  font-size: var(--fs-18);
-  color: var(--paper);
-}
-
-.where {
-  display: block;
-  margin-top: var(--sp-4);
-  font-size: var(--fs-15);
-  color: var(--ink-soft);
-}
-
-/* Where the job stands, once it has begun. */
-.state {
-  display: block;
-  margin-top: var(--sp-4);
-  font-size: var(--fs-15);
-  color: var(--paper);
-}
-
-.chevron {
-  flex-shrink: 0;
-  color: var(--ink-muted);
-}
-
-.tomorrow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: var(--tap-row);
-  padding: var(--sp-20);
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: var(--fs-17);
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-
-.leftOpen {
-  margin: var(--sp-24) var(--sp-20) var(--sp-8);
-  color: var(--ink-muted);
-}
-
-.tomorrowIcon {
-  color: var(--ink-muted);
-}
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-16);
-  justify-content: center;
-  margin: var(--sp-20);
-  padding: var(--sp-24) var(--sp-20);
-  border: var(--hairline) solid var(--ink-rule);
-}
-
-.emptyLabel {
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
-}
-
-.emptyBody {
-  margin: 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-}
-
-/* Call ops and WhatsApp ops, at the foot of the day. */
-.ops {
-  padding: var(--sp-16) var(--sp-20) var(--sp-24);
-}
-
-/* Beneath a row: Navigate and the drive to the next job, then a job running over, in the row's own gutter. */
-.foot {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-8) var(--sp-16);
-  align-items: center;
-  padding: 0 var(--sp-20) var(--sp-16);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
 .navigate {
+  flex: 1;
   gap: var(--sp-8);
 }
 
-.drive {
-  font-size: var(--fs-15);
-  color: var(--ink-soft);
+/* Message and Call: icons alone, as wide as they are tall. */
+.square {
+  flex: 0 0 var(--action-height);
+  padding: 0;
 }
 
-.over {
-  flex-basis: 100%;
-  margin: 0;
+/* The rest of the day: the section's head with Day view, then the rows across the column's width. */
+.later {
+  padding: 0 var(--screen-gutter);
+}
+
+.dayView {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tech-min);
   font-size: var(--fs-15);
-  color: var(--paper);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
+}
+
+/* The rows inside the gutter, as the prototype draws them: a done row's rule on the gutter's line. */
+.rows {
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.rowTime {
+  display: block;
+  font-weight: var(--weight-semibold);
+}
+
+.rowLength,
+.rowLine {
+  display: block;
+  color: var(--ui-text-soft);
+}
+
+.rowLength {
+  font-size: var(--fs-14);
+}
+
+/* How a job closed, in the ink, beside its rule. */
+.rowClosed {
+  display: block;
+  font-weight: var(--weight-semibold);
+  color: var(--ui-strong);
+}
+
+/* A job done with: its time and name quieter, so the eye goes to what is left. */
+.quiet {
+  color: var(--ui-text-soft);
+}
+
+.chevron {
+  color: var(--ui-text-soft);
+}
+
+.none {
+  margin: var(--sp-12) 0;
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}
+
+/* Tomorrow, in a line under a hairline, opening the Schedule. */
+.tomorrow {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--tech-min);
+  padding: var(--sp-12) var(--screen-gutter);
+  color: var(--ui-text-soft);
+  font-size: var(--fs-15);
+  text-decoration: none;
+}
+
+.tomorrow strong {
+  color: var(--ui-text);
 }

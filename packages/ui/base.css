@@ -122,6 +122,20 @@
     --nav-label: var(--ink-muted);
     --nav-rule: var(--ink-rule);
     --nav-mark: var(--gilt);
+    /* The tab bar's mark on its current tab (./TabBar.tsx): none, unless the app draws one. */
+    --tab-mark: transparent;
+    /* A list of rows on a phone (./ListRow.tsx): its edge, and its rows' lead column, title and second line. */
+    --list-edge: var(--hairline) solid var(--ui-line);
+    --row-lead-text: var(--fs-13);
+    --row-lead-colour: var(--ui-text-muted);
+    --row-lead-wrap: nowrap;
+    --row-lead-align: auto;
+    --row-title-text: var(--fs-14);
+    --row-title-weight: var(--weight-medium);
+    --row-meta-text: var(--fs-13);
+    /* A sheet's panel (./Sheet.tsx): the paper, unless the app's look sets its own. */
+    --sheet-ground: var(--paper);
+    --sheet-text: var(--text);
   }
 
   body {

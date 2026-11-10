@@ -52,8 +52,8 @@
     min-height: 0;
     padding: var(--sp-24) var(--sp-20) calc(var(--sp-24) + env(safe-area-inset-bottom));
     overflow-y: auto;
-    background: var(--paper);
-    color: var(--text);
+    background: var(--sheet-ground);
+    color: var(--sheet-text);
   }
 
   .frame::backdrop {

@@ -22,7 +22,7 @@ const BOTTOMS = [
   ],
   ["apps/tech/src/login/login.module.css", ".screen", "Send the code and Sign in"],
   ["packages/ui/confirm-sheet.module.css", ".sheet", "a question's two answers"],
-  ["apps/tech/src/today/today.module.css", ".screen", "the last job of the day"],
+  ["apps/tech/src/app.module.css", ".tabbed", "the last of a tabbed screen, Today's tomorrow and Me's ops"],
   ["apps/tech/src/waiting/waiting.module.css", ".screen", "the last thing waiting to send"],
   ["packages/ui/tab-bar.module.css", ".bar", "the console's tabs on a phone"],
   ["packages/ui/drawer.module.css", ".foot", "a drawer's actions"],

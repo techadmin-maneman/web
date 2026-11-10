@@ -110,3 +110,27 @@ export function seventhRelease(kept: {
     };
   });
 }
+
+/** A database as the build before a day's rows carried their drive left it, at version 8, holding these days. */
+export function eighthRelease(days: readonly object[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE, 8);
+    request.onupgradeneeded = (event) => {
+      const upgrade = request.transaction;
+      if (upgrade === null) return;
+      for (const step of UPGRADES.slice(event.oldVersion, 8)) step(request.result, upgrade);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction("days", "readwrite");
+      for (const day of days) transaction.objectStore("days").put(day);
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onabort = () => {
+        reject(new Error("could not seed the eighth release’s days"));
+      };
+    };
+  });
+}

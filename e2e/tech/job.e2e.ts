@@ -332,6 +332,11 @@ test("a no-show the API refuses as early stays open on the card, and never reads
   await page.goto(`/jobs/${JOB_ID}/done`);
   await expect(page.getByText("Rohit M. · done")).toHaveCount(0);
   await expect(page.getByText(techCopy.closeOut.notClosed)).toBeVisible();
+
+  // Nor does Today's head call it a failed upload: it is tried again when its time comes.
+  await page.goto("/");
+  await expect(page.getByText(techCopy.today.sync.synced)).toBeVisible();
+  await expect(page.getByText(/uploads? failed$/)).toHaveCount(0);
 });
 
 test("a phone that lost its copy of the check-in still counts the wait and can close the no-show", async ({ page }) => {
