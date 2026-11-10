@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-11-10
 - Topic: Field work
+- Amends [0106](0106-a-clients-hair-profile.md), which stands except on where the profile is taken and the head's unit
 
 ## Context
 
@@ -40,7 +41,8 @@ is rolled back.
    - a version only the previous release wrote is read in inches from its centimetres;
    - the API takes the head in centimetres from the build before (`FitSpecWriteSchema`), each measurement in one unit
      or the other, and gives it in both;
-   - the data export gives inches alone, and an erasure blanks both.
+   - the data export gives inches alone, and an erasure blanks both; while the previous release still runs, a
+     trigger blanks each inch column when that release's erasure blanks its centimetres.
 5. **The ranges in inches:** head circumference 15.5 to 28; front to nape, ear to ear and temple to temple 7.5 to 20.
    Every centimetre figure the old ranges took lands inside them, and centimetres typed for inches stay refused.
 
@@ -48,6 +50,9 @@ is rolled back.
 
 - One decimal in inches is 2.5 mm, where one in centimetres was 1 mm. A figure taken in centimetres and turned into
   inches and back can move by a millimetre (57.5 cm is 22.6 in, then 57.4 cm).
-- After a production release has run this code, a later PR drops the four centimetre columns, their trigger lines and
-  the API's centimetre fields, and refuses a consultation's consumables step.
+- After a production release has run this code, a later PR drops the four centimetre columns, their trigger lines,
+  the trigger that blanks the inches with them and the API's centimetre fields, and refuses a consultation's
+  consumables step.
+- A technician app that kept a profile in centimetres, on a card, in a draft or in a write still to send, has it put in
+  inches when it opens this build (`apps/tech/src/store/upgrades.ts`, version 8).
 - The technician app no longer shows the base in centimetres beneath its inches.

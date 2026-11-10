@@ -257,8 +257,8 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO discount_code_uses (id, code_id, person_id, hold_id, given_by, given_by_id, created_at)
      VALUES ('du1', 'dc1', 'p1', 'h1', 'client', 'p1', '${AT}')`,
   `INSERT INTO hair_profiles (id, person_id, appointment_id, technician_id, created_at, norwood_stage,
-     head_circumference_cm, colour, skin_and_allergies)
-     VALUES ('hp1', 'p1', 'ap1', 't1', '${AT}', '4', 57.5, 'black', 'None known')`,
+     head_circumference_in, head_circumference_cm, colour, skin_and_allergies)
+     VALUES ('hp1', 'p1', 'ap1', 't1', '${AT}', '4', 22.6, 57.4, 'black', 'None known')`,
   `INSERT INTO slot_times (id, applies_from, unit_starts, day_end, set_by, set_at)
      VALUES ('st1', '2026-10-01', '["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00"]', '19:00',
              'ops@example.com', '${AT}')`,
@@ -311,8 +311,8 @@ export const WRITTEN_SINCE_T: readonly string[] = [
   `UPDATE appointments SET status = 'completed' WHERE id = 'ap2'`,
   `INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) VALUES ('v2', 'ap2', 'done', '${SINCE}')`,
   // Their erasure's blanking of their hair profile, and their discount priced and then taken off.
-  `UPDATE hair_profiles SET norwood_stage = NULL, head_circumference_cm = NULL, colour = NULL, skin_and_allergies = NULL
-     WHERE id = 'hp1'`,
+  `UPDATE hair_profiles SET norwood_stage = NULL, head_circumference_in = NULL, head_circumference_cm = NULL,
+     colour = NULL, skin_and_allergies = NULL WHERE id = 'hp1'`,
   `UPDATE discount_code_uses SET amount_off = 211864, removed_at = '${SINCE}', removed_by = 'ops',
      removed_by_id = 'ops@example.com' WHERE id = 'du1'`,
   `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)

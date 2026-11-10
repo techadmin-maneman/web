@@ -38886,40 +38886,32 @@ Request body:
         "number",
         "null"
       ],
-      "minimum": 40,
-      "maximum": 70,
-      "description": "head_circumference_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "head_circumference_in in centimetres, for one release."
     },
     "front_to_nape_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "front_to_nape_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "front_to_nape_in in centimetres, for one release."
     },
     "ear_to_ear_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "ear_to_ear_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "ear_to_ear_in in centimetres, for one release."
     },
     "temple_to_temple_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "temple_to_temple_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "temple_to_temple_in in centimetres, for one release."
     }
   },
   "required": [
@@ -39570,40 +39562,32 @@ Request body:
         "number",
         "null"
       ],
-      "minimum": 40,
-      "maximum": 70,
-      "description": "head_circumference_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "head_circumference_in in centimetres, for one release."
     },
     "front_to_nape_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "front_to_nape_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "front_to_nape_in in centimetres, for one release."
     },
     "ear_to_ear_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "ear_to_ear_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "ear_to_ear_in in centimetres, for one release."
     },
     "temple_to_temple_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "temple_to_temple_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "temple_to_temple_in in centimetres, for one release."
     }
   },
   "required": [

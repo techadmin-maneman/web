@@ -139,17 +139,51 @@ describe("the technician's profile step", () => {
   });
 
   it.each([
-    ["in both inches and centimetres", { ...FIT, head_circumference_cm: 57.5 }],
-    ["in neither", FIT_BUT_THE_HEAD],
-  ])("refuses a head measured %s", async (_, fit) => {
+    ["in both inches and centimetres", { ...FIT, head_circumference_cm: 57.5 }, ["fit.head_circumference_in"]],
+    [
+      "in neither",
+      FIT_BUT_THE_HEAD,
+      ["fit.head_circumference_in", "fit.front_to_nape_in", "fit.ear_to_ear_in", "fit.temple_to_temple_in"],
+    ],
+    [
+      "in centimetres outside the range in inches",
+      { ...FIT_IN_CENTIMETRES, head_circumference_cm: 90 },
+      ["fit.head_circumference_cm"],
+    ],
+  ])("refuses a head measured %s", async (_, fit, fields) => {
     const job = await consultation();
     const answer = await job.post(PROFILE, fromPhone(fit, null), "event-profile-01");
 
     expect(answer.status).toBe(400);
-    expect(await answer.json()).toMatchObject({
-      error: { fields: ["fit.head_circumference_in"] },
-    });
+    expect(await answer.json()).toMatchObject({ error: { fields } });
     expect((await versions()).results).toEqual([]);
+  });
+
+  it("gives a version only the release before wrote, in centimetres, in inches", async () => {
+    const job = await consultation();
+    await env.DB.prepare(
+      `INSERT INTO hair_profiles (id, person_id, staff, created_at, head_circumference_cm, front_to_nape_cm)
+       VALUES ('00000000-0000-4000-8000-0000000000aa', ?1, 'ops@maneman.in', ?2, 57.5, 36)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    expect(await card(job)).toMatchObject({
+      profile: {
+        fit: {
+          head_circumference_in: 22.6,
+          front_to_nape_in: 14.2,
+          ear_to_ear_in: null,
+          head_circumference_cm: 57.5,
+        },
+      },
+    });
+  });
+
+  it("takes back the centimetres it gave, from a console or phone of the build before", async () => {
+    const job = await consultation();
+    // 15.5 inches, the least, is 39.4 centimetres: below the build before's 40, and taken all the same.
+    const fit = { ...FIT_IN_CENTIMETRES, head_circumference_cm: 39.4 };
+    expect((await job.post(PROFILE, fromPhone(fit, null), "event-profile-01")).status).toBe(202);
   });
 
   it("is not a step of a service visit, and its card still carries the latest profile", async () => {

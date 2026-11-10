@@ -5,6 +5,7 @@
 
 import {
   ATTACHMENTS,
+  CENTIMETRES,
   COLOURS,
   DENSITIES,
   FIRST_TRANSPLANT_YEAR,
@@ -14,6 +15,7 @@ import {
   NORWOOD_STAGES,
   REMEDIES,
   WAVES,
+  inchesOf,
   type Attachment,
   type Colour,
   type Density,
@@ -24,7 +26,7 @@ import {
   type Wave,
 } from "@rules/policy/hair-profile.ts";
 
-export { COLOURS, DENSITIES, FIRST_TRANSPLANT_YEAR, GREY_PERCENT, MEASUREMENTS, REMEDIES };
+export { CENTIMETRES, COLOURS, DENSITIES, FIRST_TRANSPLANT_YEAR, GREY_PERCENT, MEASUREMENTS, REMEDIES, inchesOf };
 export type { Measurement, Remedy };
 
 /** The fit spec as the API takes it: null wherever nothing was recorded. */

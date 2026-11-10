@@ -83,6 +83,28 @@ describe("migration 0202", () => {
     db.close();
   });
 
+  it("blanks each inch twin when the release before's erasure blanks the centimetres alone", () => {
+    const db = staging();
+    apply(db, THIS);
+
+    db.prepare(
+      `UPDATE hair_profiles SET head_circumference_cm = NULL, front_to_nape_cm = NULL, ear_to_ear_cm = NULL,
+         temple_to_temple_cm = NULL, base_width_in = NULL WHERE id = 'v2'`,
+    ).run();
+    expect(
+      db
+        .prepare(
+          `SELECT id, head_circumference_in, front_to_nape_in, ear_to_ear_in, temple_to_temple_in
+           FROM hair_profiles ORDER BY id`,
+        )
+        .all(),
+    ).toEqual([
+      { id: "v1", head_circumference_in: 22.6, front_to_nape_in: 14.2, ear_to_ear_in: 13.2, temple_to_temple_in: null },
+      { id: "v2", head_circumference_in: null, front_to_nape_in: null, ear_to_ear_in: null, temple_to_temple_in: null },
+    ]);
+    db.close();
+  });
+
   it("takes away what a consultation was expected to use, and leaves every other service's", () => {
     const db = staging();
     apply(db, THIS);

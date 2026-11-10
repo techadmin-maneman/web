@@ -116,6 +116,17 @@ describe("the carry-back file", () => {
     expect(() => carryBack(writesToConsents)).toThrow("consents is only ever added to, and a trigger on people");
   });
 
+  it("takes a trigger that only changes a row of a table that refuses a delete, as blanking it does", () => {
+    const blanksConsents = lines(
+      EXPORT,
+      "CREATE TRIGGER consents_blanked AFTER UPDATE OF person_id ON consents",
+      "BEGIN",
+      "  UPDATE consents SET person_id = NULL WHERE id = NEW.id;",
+      "END;",
+    );
+    expect(carryBack(blanksConsents).addOnly).toContain("consents");
+  });
+
   it("counts a trigger's UPDATE and DELETE as writes, but not an upsert's DO UPDATE", () => {
     const moreTriggers = lines(
       EXPORT,

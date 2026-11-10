@@ -29,11 +29,8 @@ const INSERT_ROW = /^INSERT INTO "(\w+)" \(([^)]*)\) VALUES/;
 const INSERT_INTO = /^INSERT INTO "\w+"/;
 const TRIGGER_HEADER =
   /^CREATE TRIGGER (?:IF NOT EXISTS )?"?\w+"?\s+(?:(BEFORE|AFTER|INSTEAD\s+OF)\s+)?(DELETE|INSERT|UPDATE)\b[\s\S]*?\bON\s+"?(\w+)"?/i;
-const WRITES = [
-  /\b(?:INSERT|REPLACE)\s+(?:OR\s+\w+\s+)?INTO\s+"?(\w+)"?/gi,
-  /\bUPDATE\s+(?:OR\s+\w+\s+)?"?(\w+)"?\s+SET\b/gi,
-  /\bDELETE\s+FROM\s+"?(\w+)"?/gi,
-];
+const ADDS = /\b(?:INSERT|REPLACE)\s+(?:OR\s+\w+\s+)?INTO\s+"?(\w+)"?/gi;
+const WRITES = [ADDS, /\bUPDATE\s+(?:OR\s+\w+\s+)?"?(\w+)"?\s+SET\b/gi, /\bDELETE\s+FROM\s+"?(\w+)"?/gi];
 
 export interface ForeignKey {
   /** The table pointed at. */
@@ -73,6 +70,8 @@ interface Trigger {
   readonly table: string;
   readonly refusesDelete: boolean;
   readonly writesTo: readonly string[];
+  /** The tables it adds rows to, of those it writes to. */
+  readonly addsTo: readonly string[];
 }
 
 interface Export {
@@ -113,7 +112,8 @@ function triggerOf(statement: string): Trigger | null {
   const refusesDelete =
     timing.toUpperCase() === "BEFORE" && event.toUpperCase() === "DELETE" && /\bRAISE\s*\(/i.test(body);
   const writesTo = WRITES.flatMap((pattern) => [...body.matchAll(pattern)].map((match) => match[1] ?? ""));
-  return { table, refusesDelete, writesTo };
+  const addsTo = [...body.matchAll(ADDS)].map((match) => match[1] ?? "");
+  return { table, refusesDelete, writesTo, addsTo };
 }
 
 function readExport(exported: string): Export {
@@ -143,10 +143,13 @@ function readExport(exported: string): Export {
 /** The export's CREATE TABLE statements, for its tables' keys (scripts/lib/schema-keys.ts). */
 export const createTablesIn = (exported: string): readonly string[] => readExport(exported).schema;
 
-/** A trigger's rows in a table that is only ever added to could never be taken out again, so the carry would be wrong. */
+/**
+ * A trigger's rows added to a table that is only ever added to could never be taken out again, so the carry would be
+ * wrong. One that only changes a row there, as blanking it does, adds none.
+ */
 function refuseTriggersIntoAddOnly(triggers: readonly Trigger[], addOnly: ReadonlySet<string>): void {
   for (const trigger of triggers) {
-    const target = trigger.writesTo.find((table) => addOnly.has(table));
+    const target = trigger.addsTo.find((table) => addOnly.has(table));
     if (target === undefined) continue;
     throw new Error(
       `${target} is only ever added to, and a trigger on ${trigger.table} writes to it: ` +

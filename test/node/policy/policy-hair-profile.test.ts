@@ -54,10 +54,12 @@ describe("a client's hair profile", () => {
     expect(inchesOf(57.5)).toBe(22.6);
     expect(inchesOf(36)).toBe(14.2);
     expect(centimetresOf(22.6)).toBe(57.4);
-    // Every centimetre the build before took lands inside the range in inches.
-    for (const { inches, min, max } of Object.values(CENTIMETRES)) {
-      expect(inchesOf(min)).toBeGreaterThanOrEqual(MEASUREMENTS[inches].min);
-      expect(inchesOf(max)).toBeLessThanOrEqual(MEASUREMENTS[inches].max);
+    // Every centimetre the build before took (40 to 70 round the head, 20 to 50 over it) lands inside its range in
+    // inches.
+    for (const [cm, inches] of Object.entries(CENTIMETRES)) {
+      const [least, most] = cm === "head_circumference_cm" ? [40, 70] : [20, 50];
+      expect(inchesOf(least)).toBeGreaterThanOrEqual(MEASUREMENTS[inches].min);
+      expect(inchesOf(most)).toBeLessThanOrEqual(MEASUREMENTS[inches].max);
     }
   });
 

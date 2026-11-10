@@ -51,15 +51,15 @@ export const MEASUREMENTS = {
 export type Measurement = keyof typeof MEASUREMENTS;
 
 /**
- * The head's measurements in centimetres, as a phone or console of the release before sends and reads them, each with
- * its inch twin and its old range. Taken and given for one release, then gone with their columns.
+ * The head's measurements in centimetres, as a phone or console of the release before sends and reads them, each
+ * with its twin in inches, the range it is checked in. Taken and given for one release, then gone with their columns.
  */
 export const CENTIMETRES = {
-  head_circumference_cm: { inches: "head_circumference_in", min: 40, max: 70 },
-  front_to_nape_cm: { inches: "front_to_nape_in", min: 20, max: 50 },
-  ear_to_ear_cm: { inches: "ear_to_ear_in", min: 20, max: 50 },
-  temple_to_temple_cm: { inches: "temple_to_temple_in", min: 20, max: 50 },
-} as const satisfies Record<string, { inches: Measurement; min: number; max: number }>;
+  head_circumference_cm: "head_circumference_in",
+  front_to_nape_cm: "front_to_nape_in",
+  ear_to_ear_cm: "ear_to_ear_in",
+  temple_to_temple_cm: "temple_to_temple_in",
+} as const satisfies Record<string, Measurement>;
 export type Centimetre = keyof typeof CENTIMETRES;
 
 const CM_PER_INCH = 2.54;

@@ -1337,7 +1337,7 @@ Indexes:
 - `hair_profiles_by_event`: unique on (`appointment_id`, `event_id`)
 - `hair_profiles_by_person`: on (`person_id`, `created_at`)
 
-Triggers: `hair_profiles_no_delete`, `hair_profiles_only_blanked`.
+Triggers: `hair_profiles_inches_blanked`, `hair_profiles_no_delete`, `hair_profiles_only_blanked`.
 
 ## hair_systems
 

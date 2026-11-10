@@ -6214,7 +6214,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "items": {
         "$ref": "#/components/schemas/TechnicianProduct"
       },
-      "description": "On a one visit and a consultation, the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit."
+      "description": "On a visit that takes the hair profile (a consultation, a one visit and a first fit), the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit."
     },
     "payment_link": {
       "anyOf": [
@@ -6975,40 +6975,32 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "number",
         "null"
       ],
-      "minimum": 40,
-      "maximum": 70,
-      "description": "head_circumference_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "head_circumference_in in centimetres, for one release."
     },
     "front_to_nape_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "front_to_nape_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "front_to_nape_in in centimetres, for one release."
     },
     "ear_to_ear_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "ear_to_ear_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "ear_to_ear_in in centimetres, for one release."
     },
     "temple_to_temple_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "temple_to_temple_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "temple_to_temple_in in centimetres, for one release."
     }
   },
   "required": [
@@ -8117,40 +8109,32 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "number",
         "null"
       ],
-      "minimum": 40,
-      "maximum": 70,
-      "description": "head_circumference_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "head_circumference_in in centimetres, for one release."
     },
     "front_to_nape_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "front_to_nape_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "front_to_nape_in in centimetres, for one release."
     },
     "ear_to_ear_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "ear_to_ear_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "ear_to_ear_in in centimetres, for one release."
     },
     "temple_to_temple_cm": {
       "type": [
         "number",
         "null"
       ],
-      "minimum": 20,
-      "maximum": 50,
-      "description": "temple_to_temple_in in centimetres, for one release.",
-      "deprecated": true
+      "deprecated": true,
+      "description": "temple_to_temple_in in centimetres, for one release."
     }
   },
   "required": [

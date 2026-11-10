@@ -3728,7 +3728,7 @@ export interface components {
             consumables: components["schemas"]["TechnicianConsumable"][];
             /** @description On a visit that fits a piece, the hair systems the technician's kit holds, by name, with the spec each is matched to the client's hair profile by. Empty for any other visit. */
             kit_hair_systems: components["schemas"]["KitHairSystem"][];
-            /** @description On a one visit and a consultation, the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit. */
+            /** @description On a visit that takes the hair profile (a consultation, a one visit and a first fit), the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit. */
             products: components["schemas"]["TechnicianProduct"][];
             /** @description On a one visit closed as done with the client fitted, its payment link; else null. */
             payment_link: {

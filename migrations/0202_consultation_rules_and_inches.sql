@@ -51,3 +51,16 @@ WHEN NEW.id IS NOT OLD.id OR NEW.person_id IS NOT OLD.person_id OR NEW.appointme
 BEGIN
   SELECT RAISE(ABORT, 'a hair profile is never changed, only blanked');
 END;
+
+-- The release before, while it still runs, blanks the centimetres alone in an erasure: each inch twin goes with them.
+-- It goes with the centimetre columns.
+CREATE TRIGGER hair_profiles_inches_blanked
+AFTER UPDATE OF head_circumference_cm, front_to_nape_cm, ear_to_ear_cm, temple_to_temple_cm ON hair_profiles
+BEGIN
+  UPDATE hair_profiles SET
+    head_circumference_in = iif(NEW.head_circumference_cm IS NULL, NULL, head_circumference_in),
+    front_to_nape_in = iif(NEW.front_to_nape_cm IS NULL, NULL, front_to_nape_in),
+    ear_to_ear_in = iif(NEW.ear_to_ear_cm IS NULL, NULL, ear_to_ear_in),
+    temple_to_temple_in = iif(NEW.temple_to_temple_cm IS NULL, NULL, temple_to_temple_in)
+  WHERE id = NEW.id;
+END;

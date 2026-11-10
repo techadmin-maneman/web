@@ -55,9 +55,10 @@ export function takesStep(step: JobStep, type: VisitType, oneVisit = false): boo
 }
 
 /**
- * The client's hair profile, a screen of the card at a consultation and a one visit (src/policy/hair-profile.ts). It
- * lands in its own table, not as a job event, so the order the API holds a phone's events to leaves it out, and a
- * phone that never sends it holds nothing back (docs/decisions/0106-a-clients-hair-profile.md).
+ * The client's hair profile, a screen of the card at a consultation, a one visit and a first fit
+ * (src/policy/hair-profile.ts). It lands in its own table, not as a job event, so the order the API holds a phone's
+ * events to leaves it out, and a phone that never sends it holds nothing back
+ * (docs/decisions/0106-a-clients-hair-profile.md).
  */
 export const PROFILE_STEP = "profile";
 

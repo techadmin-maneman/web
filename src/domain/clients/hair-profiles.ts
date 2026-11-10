@@ -368,7 +368,7 @@ function insertVersion(
     version.now.toISOString(),
     ...FIT_COLUMNS.map((column) => version.fit[column]),
     ...CENTIMETRE_COLUMNS.map((column) => {
-      const inches = version.fit[CENTIMETRES[column].inches];
+      const inches = version.fit[CENTIMETRES[column]];
       return inches === null ? null : centimetresOf(inches);
     }),
     history === null ? null : JSON.stringify(history.remedies),

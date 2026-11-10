@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, request } from "../helpers.ts";
-import { JOB, working, type Working } from "../job-fixtures.ts";
+import { JOB, SAMEER, working, type Working } from "../job-fixtures.ts";
 
 let job: Working;
 
@@ -108,5 +108,15 @@ describe("a consultation, which uses nothing from the kit", () => {
     ).first();
     expect(recorded).toEqual({ events: 0, used: 0, moved: 0 });
     expect(await shortTasks()).toEqual([]);
+  });
+
+  it("refuses the technician it was taken from, as any step, and tells them nothing more of it", async () => {
+    await env.DB.prepare("UPDATE appointments SET type = 'consultation', technician_id = ?2 WHERE id = ?1")
+      .bind(JOB, SAMEER)
+      .run();
+    const answer = await step({ items: [] });
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "superseded", fields: ["technician"] } });
   });
 });

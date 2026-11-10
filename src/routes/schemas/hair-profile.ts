@@ -61,22 +61,27 @@ export const FitSpecSchema = z
   .strict()
   .openapi("HairFitSpec", { description: "Every field is sent, null where it was not taken." });
 
-/** One of the head's measurements in centimetres, in the range it had: the build before's, for one release. */
-const centimetres = (cm: Centimetre) =>
-  measured(CENTIMETRES[cm], "centimetres")
+/**
+ * One of the head's measurements in centimetres, the build before's, for one release: as given, the inches to one
+ * decimal, and as taken, to one decimal and checked in inches.
+ */
+const centimetres = (cm: Centimetre, taken: boolean) =>
+  (taken ? z.number().multipleOf(0.1) : z.number())
+    .nullable()
     .optional()
-    .openapi({ deprecated: true, description: `${CENTIMETRES[cm].inches} in centimetres, for one release.` });
+    .openapi({ deprecated: true, description: `${CENTIMETRES[cm]} in centimetres, for one release.` });
 
-const IN_CENTIMETRES = {
-  head_circumference_cm: centimetres("head_circumference_cm"),
-  front_to_nape_cm: centimetres("front_to_nape_cm"),
-  ear_to_ear_cm: centimetres("ear_to_ear_cm"),
-  temple_to_temple_cm: centimetres("temple_to_temple_cm"),
-};
+const inCentimetres = (taken: boolean) => ({
+  head_circumference_cm: centimetres("head_circumference_cm", taken),
+  front_to_nape_cm: centimetres("front_to_nape_cm", taken),
+  ear_to_ear_cm: centimetres("ear_to_ear_cm", taken),
+  temple_to_temple_cm: centimetres("temple_to_temple_cm", taken),
+});
 
 /**
  * The fit spec a write sends: the head in inches, or from a phone or console of the build before in centimetres, each
- * measurement in one of them. fitInInches gives it as the fit spec.
+ * measurement in one of them, and centimetres in the range of the inches they become. fitInInches gives it as the fit
+ * spec.
  */
 export const FitSpecWriteSchema = FitSpecSchema.partial({
   head_circumference_in: true,
@@ -84,12 +89,17 @@ export const FitSpecWriteSchema = FitSpecSchema.partial({
   ear_to_ear_in: true,
   temple_to_temple_in: true,
 })
-  .extend(IN_CENTIMETRES)
+  .extend(inCentimetres(true))
   .strict()
   .superRefine((fit, context) => {
-    for (const [cm, { inches }] of Object.entries(CENTIMETRES)) {
-      const given = [fit[inches], fit[cm as Centimetre]].filter((figure) => figure !== undefined);
+    for (const [cm, inches] of Object.entries(CENTIMETRES)) {
+      const sent = fit[cm as Centimetre];
+      const given = [fit[inches], sent].filter((figure) => figure !== undefined);
       if (given.length !== 1) context.addIssue({ code: "custom", path: [inches], message: "in inches or centimetres" });
+      const { min, max } = MEASUREMENTS[inches];
+      if (typeof sent === "number" && (inchesOf(sent) < min || inchesOf(sent) > max)) {
+        context.addIssue({ code: "custom", path: [cm], message: `${String(min)} to ${String(max)} inches` });
+      }
     }
   })
   .openapi("HairFitSpecWrite", {
@@ -130,7 +140,7 @@ export const HistorySchema = z
 
 const FitSpecReadSchema = FitSpecSchema.extend({
   product_name: z.union([z.string(), z.null()]).openapi({ description: "The product's name, never its price." }),
-  ...IN_CENTIMETRES,
+  ...inCentimetres(false),
 }).openapi("HairFitSpecRead");
 
 /** The version a write's form started from, so a write from an older copy is not taken for the latest silently. */

@@ -185,9 +185,9 @@ export const JobDetailSchema = JobSummarySchema.extend({
   }),
   products: z.array(ProductSchema).openapi({
     description:
-      "On a one visit and a consultation, the products by name and never by price: the first fit's services " +
-      "offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. " +
-      "Empty for any other visit.",
+      "On a visit that takes the hair profile (a consultation, a one visit and a first fit), the products by name " +
+      "and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's " +
+      "client chooses from and the profile names. Empty for any other visit.",
   }),
   payment_link: z
     .union([

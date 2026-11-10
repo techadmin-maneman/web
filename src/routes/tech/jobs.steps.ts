@@ -422,11 +422,13 @@ async function tellOfOlderBase(c: Ctx, personId: string, versionId: string): Pro
 /**
  * A consultation's consumables, from a phone that queued the step before a consultation took none
  * (docs/decisions/0240-consultation-rules-and-inches.md): answered as landed, and nothing recorded or taken from the
- * kit, so no phone is stuck on a refusal. Null for a job that takes the step. For one release, then refused.
+ * kit, so no phone is stuck on a refusal. Null for a job that takes the step, and for one ops have given another
+ * technician, which the step refuses as any other. For one release, then refused.
  */
 async function stepNotTaken(c: Ctx): Promise<z.infer<typeof AcceptedSchema> | null> {
   const job = await namedJob(c, c.req.param("id") ?? "");
-  if (job === null || takesStep("consumables", job.type, job.oneVisit !== null)) return null;
+  if (job?.technicianId !== technicianOf(c).technicianId) return null;
+  if (takesStep("consumables", job.type, job.oneVisit !== null)) return null;
   const { noShowWaitMin } = await opsInputs(c);
   return {
     event_id: c.req.header(EVENT_ID_HEADER) ?? "",

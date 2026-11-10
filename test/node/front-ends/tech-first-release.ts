@@ -80,3 +80,33 @@ export function sixthRelease(kept: {
     };
   });
 }
+
+/** A database as the build before the head was measured in inches left it, at version 7, holding these records. */
+export function seventhRelease(kept: {
+  readonly cards: readonly object[];
+  readonly device: readonly object[];
+  readonly outbox: readonly object[];
+}): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE, 7);
+    request.onupgradeneeded = (event) => {
+      const upgrade = request.transaction;
+      if (upgrade === null) return;
+      for (const step of UPGRADES.slice(event.oldVersion, 7)) step(request.result, upgrade);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(["cards", "device", "outbox"], "readwrite");
+      for (const card of kept.cards) transaction.objectStore("cards").put(card);
+      for (const record of kept.device) transaction.objectStore("device").put(record);
+      for (const queued of kept.outbox) transaction.objectStore("outbox").put(queued);
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onabort = () => {
+        reject(new Error("could not seed the seventh release’s records"));
+      };
+    };
+  });
+}
