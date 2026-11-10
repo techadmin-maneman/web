@@ -11,7 +11,7 @@
     min-height: var(--check-row-height);
     padding: var(--sp-20);
     border: 0;
-    border-bottom: var(--hairline) solid var(--ink-rule);
+    border-bottom: var(--hairline) solid var(--ui-line);
     background: transparent;
     font: inherit;
     text-align: left;
@@ -19,7 +19,7 @@
   }
 
   .row:focus-visible {
-    outline: var(--focus-width) solid var(--paper);
+    outline: var(--focus-width) solid var(--focus-colour);
     outline-offset: var(--focus-inset);
   }
 
@@ -30,21 +30,21 @@
     justify-content: center;
     width: var(--check-box-size);
     height: var(--check-box-size);
-    border: var(--rule-strong) solid var(--ink-line-strong);
+    border: var(--rule-strong) solid var(--ui-line-control);
   }
 
   .boxDone {
-    border-color: var(--paper);
-    background: var(--paper);
-    color: var(--ink-deep);
+    border-color: var(--ui-strong);
+    background: var(--ui-strong);
+    color: var(--ui-on-strong);
   }
 
   .words {
     font-size: var(--fs-18);
-    color: var(--paper);
+    color: var(--ui-text);
   }
 
   .wordsDone {
-    color: var(--ink-muted);
+    color: var(--ui-text-quiet);
   }
 }

@@ -7,9 +7,10 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { atTheDoor, deviceRecordOnPhone, heldOnPhone, pageScrolls, queuedOnPhone } from "./on-phone.ts";
-import { holding, startedThrough, writesTo, checklistItems, gilded } from "./steps-fixtures.ts";
+import { atTheDoor, deviceRecordOnPhone, heldOnPhone, pageScrolls, queuedOnPhone, recordOnPhone } from "./on-phone.ts";
+import { holding, startedThrough, writesTo, checklistItems, brassMarks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { stepAction } from "./steps-fixtures.ts";
 
 /** A step's one action, in the foot below its body. */
 const footAction = (page: Page) => page.locator("main > div").last().getByRole("button");
@@ -45,9 +46,9 @@ test("a double tap on Next finishes one step, and never the step it opens", asyn
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  for (const item of await checklistItems(page).all()) await item.click();
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
 
-  await page.getByRole("button", { name: techCopy.steps.next }).dblclick();
+  await stepAction(page).dblclick();
 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
@@ -63,13 +64,14 @@ test("the outcome has nothing chosen for the technician, and Next waits for thei
 
   const done = page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true });
   await expect(done).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByRole("button", { name: techCopy.steps.outcome.choose })).toBeDisabled();
+  await expect(page.getByText(techCopy.steps.outcome.choose, { exact: true })).toBeVisible();
+  await expect(stepAction(page)).toBeDisabled();
 
   await done.click();
   await expect(done).toHaveAttribute("aria-pressed", "true");
   // The choice is outlined, and the one gold thing is still Next.
   expect(await done.evaluate((button) => getComputedStyle(button).backgroundColor)).not.toBe("rgb(201, 163, 99)");
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
   await expect(page.getByText("Rohit M. · done")).toBeVisible();
   expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
 });
@@ -84,9 +86,10 @@ test("a consultation’s outcome asks whether the client is going ahead, and why
   await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
   await expect(page.getByText(techCopy.steps.outcome.goingAhead)).toBeVisible();
   await page.getByRole("button", { name: techCopy.steps.outcome.notNow }).click();
-  await expect(page.getByRole("button", { name: techCopy.steps.outcome.pickWhy })).toBeDisabled();
+  await expect(page.getByText(techCopy.steps.outcome.pickWhy, { exact: true })).toBeVisible();
+  await expect(stepAction(page)).toBeDisabled();
   await page.getByRole("button", { name: "The price" }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
 
   await expect
     .poll(() => writesTo(fake, "outcome").at(-1)?.body)
@@ -104,23 +107,22 @@ test("a consultation’s outcome sends the client’s yes", async ({ page }) => 
 
   await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
   // Unanswered, the question holds Next back: it is never recorded as a yes by default.
-  await expect(page.getByRole("button", { name: techCopy.steps.outcome.answerFirst })).toBeDisabled();
+  await expect(page.getByText(techCopy.steps.outcome.answerFirst, { exact: true })).toBeVisible();
+  await expect(stepAction(page)).toBeDisabled();
   await page.getByRole("button", { name: techCopy.steps.outcome.yes }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
   await expect.poll(() => writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: true });
 });
 
-// ADR 0025, item 59: "gold marks only the one primary action". The boards also gild a ticked
-// box, a step's count and a chosen outcome or reason.
 test("ticks the whole checklist with one tap when everything was done, and shows how far through the job", async ({
   page,
 }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  await expect(page.getByRole("img", { name: /^Step 2 of \d+$/ })).toBeVisible();
+  await expect(page.getByText(/^Step 2 of \d+$/)).toBeVisible();
   await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
   await expect
     .poll(() => writesTo(fake, "checklist").at(-1)?.body)
     .toEqual({ done: ["piece_removed", "scalp_cleaned", "piece_cleaned"] });
@@ -136,7 +138,7 @@ test("steps a measure by five and takes a typed count, landing back on the fives
   await page.getByRole("spinbutton", { name: "Type the solvent used" }).fill("32");
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "5 ml less solvent" }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
   await expect
     .poll(() => writesTo(fake, "consumables").at(-1)?.body)
     .toEqual({
@@ -147,22 +149,22 @@ test("steps a measure by five and takes a typed count, landing back on the fives
     });
 });
 
-test("draws nothing in gold but the one primary action", async ({ page }) => {
+// The brief: "brass-500, the one highlight per screen". On a step it is the step under way, in the bar.
+test("marks only the step under way in brass", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  const items = checklistItems(page);
-  await expect(items).toHaveCount(3);
-  for (const item of await items.all()) await item.click();
-  await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeEnabled();
-  expect(await gilded(page)).toEqual(["Next"]);
+  await expect(page.getByText(techCopy.visit.task(1, 3))).toBeVisible();
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await expect(stepAction(page)).toBeEnabled();
+  expect(await brassMarks(page)).toBe(1);
   expect(await axeViolations(page)).toEqual([]);
 
   startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
   await page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true }).click();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
-  expect(await gilded(page)).toEqual(["Next"]);
+  expect(await brassMarks(page)).toBe(1);
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -171,17 +173,21 @@ test("keeps the checklist’s ticks when the app closes part-way, and lets them 
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  await checklistItems(page).nth(0).click();
-  await checklistItems(page).nth(1).click();
+  // One task a screen: the first done, on to the second, done.
+  await checklistItems(page).first().click();
+  await stepAction(page).click();
+  await checklistItems(page).first().click();
   await expect.poll(() => deviceRecordOnPhone(page, "checklist_draft")).toContain(fake.checklist[1]?.id ?? "");
 
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  await expect(checklistItems(page).nth(0)).toHaveAttribute("aria-pressed", "true");
-  await expect(checklistItems(page).nth(1)).toHaveAttribute("aria-pressed", "true");
-  await expect(checklistItems(page).nth(2)).toHaveAttribute("aria-pressed", "false");
+  await expect(checklistItems(page).first()).toHaveAttribute("aria-pressed", "true");
+  await stepAction(page).click();
+  await expect(checklistItems(page).first()).toHaveAttribute("aria-pressed", "true");
+  await stepAction(page).click();
+  await expect(checklistItems(page).first()).toHaveAttribute("aria-pressed", "false");
 
-  await checklistItems(page).nth(2).click();
+  await checklistItems(page).first().click();
   await footAction(page).click();
   await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);
   await expect.poll(() => deviceRecordOnPhone(page, "checklist_draft")).toBeNull();
@@ -221,8 +227,8 @@ test.describe("the consumables step", () => {
     await expect(page.getByRole("status").filter({ hasText: "Solvent: 10" })).toBeAttached();
     await expect(page.getByText("4 strips expected")).toBeVisible();
     await expect(page.getByRole("button", { name: "One more bonding glue" })).toHaveCount(0);
-    // Untouched, the step goes on in one tap that says so.
-    await expect(page.getByRole("button", { name: techCopy.steps.consumables.asExpected })).toBeVisible();
+    // Untouched, the step goes on in one tap to the step after.
+    await expect(stepAction(page)).toHaveText(techCopy.visit.next("After photos"));
 
     const another = page.getByRole("button", { name: techCopy.steps.consumables.add });
     await expect(another).toHaveAttribute("aria-expanded", "false");
@@ -233,7 +239,7 @@ test.describe("the consumables step", () => {
     await page.getByRole("button", { name: "Add Bonding glue" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Bonding glue: 1" })).toBeAttached();
     await expect(page.getByRole("button", { name: "Add Bonding glue" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeVisible();
+    await expect(stepAction(page)).toBeVisible();
   });
 
   // A count stepped below what the service expects closed the job at no cost, and nobody was told (ADR 0222).
@@ -250,12 +256,13 @@ test.describe("the consumables step", () => {
     await page.getByRole("button", { name: "Add Shampoo sachet" }).click();
 
     // Short of the solvent expected: Next waits for why.
-    await expect(page.getByRole("button", { name: words.pickWhy })).toBeDisabled();
+    await expect(page.getByText(words.pickWhy, { exact: true })).toBeVisible();
+    await expect(stepAction(page)).toBeDisabled();
     await page
       .getByRole("radiogroup", { name: words.whyShort })
       .getByRole("radio", { name: words.shortReasons.ran_out })
       .click();
-    await page.getByRole("button", { name: techCopy.steps.next }).click();
+    await stepAction(page).click();
 
     await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.after_photos })).toBeVisible();
     await expect.poll(() => writesTo(fake, "consumables").length).toBe(1);
@@ -314,16 +321,15 @@ test.describe("on a 360 × 640 phone", () => {
 
     const heading = page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist });
     await expect(heading).toBeInViewport({ ratio: 1 });
-    await expect(footAction(page)).toHaveText(techCopy.steps.checklist.unfinished);
+    await expect(footAction(page)).toHaveText(techCopy.visit.nextTask);
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
     expect(await pageScrolls(page)).toBe(false);
 
     // Reaching each item scrolls the list alone; the head and the foot stay where they are.
-    const items = checklistItems(page);
-    await expect(items).toHaveCount(9);
-    for (const item of await items.all()) await item.click();
+    await expect(page.getByText(techCopy.visit.task(1, 9))).toBeVisible();
+    await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
 
-    await expect(footAction(page)).toHaveText(techCopy.steps.next);
+    await expect(footAction(page)).toHaveText(techCopy.visit.next("Consumables"));
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
     await expect(heading).toBeInViewport({ ratio: 1 });
     expect(await pageScrolls(page)).toBe(false);
@@ -404,7 +410,7 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   await expect(label).toHaveValue("MM-STD-7193 C");
   await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot })).toHaveValue("LOT-5120");
   await label.fill("MM-STD-7193-C");
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
 
   // The corrected piece goes first, and the outcome that waited behind it follows.
   await expect.poll(() => fake.writes.map((write) => write.path.split("/").at(-1))).toEqual(["piece", "outcome"]);
@@ -440,7 +446,7 @@ test("a refused outcome opens as it was chosen", async ({ page }) => {
   );
   await expect(page.getByRole("button", { name: "Client stopped it partway" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "More time needed" }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
 
   await expect
     .poll(() => writesTo(fake, "outcome").at(-1)?.body)
@@ -456,4 +462,51 @@ test("the consumables step says what the kit holds, and when more is counted tha
   await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips", 1, "strip") }).click();
   await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips", 1, "strip") }).click();
   await expect(page.getByText(techCopy.steps.consumables.inKit(5, "strip", true))).toBeVisible();
+});
+
+test("leaves a note for the next technician and an alert with the close, only when written", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
+  await page.goto(`/jobs/${JOB_ID}/outcome`);
+  await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+  await page.getByLabel(techCopy.steps.outcome.nextNote).fill("  Edge lifting at the left temple. ");
+  await page.getByLabel(techCopy.steps.outcome.alert).fill("Allergic to latex.");
+  expect(await axeViolations(page)).toEqual([]);
+  await stepAction(page).click();
+  await expect
+    .poll(() => writesTo(fake, "outcome").at(-1)?.body)
+    .toEqual({ outcome: "done", handoff_note: "Edge lifting at the left temple.", client_alert: "Allergic to latex." });
+  // Once sent, the phone keeps what was decided, and none of what was written about the client.
+  await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
+  const kept = await recordOnPhone(page, "closures", JOB_ID);
+  expect(kept).toContain('"outcome":"done"');
+  expect(kept).not.toContain("handoff_note");
+  expect(kept).not.toContain("client_alert");
+});
+
+test("guides each task with its words, what to watch for, and the client's alerts above it", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.alerts = [
+    {
+      id: "55555555-5555-4555-8555-555555555551",
+      body: "Allergic to latex.",
+      raised_by: { kind: "staff" },
+      written_at: "2026-09-02T05:00:00.000Z",
+    },
+  ];
+  startedThrough(fake, "before_photos");
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+
+  await expect(page.getByText(techCopy.visit.task(1, 3))).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Remove the hair system" })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Spray solvent along the front edge." })).toBeVisible();
+  await expect(page.getByText(techCopy.visit.watchFor)).toBeVisible();
+  await expect(page.getByText("Allergic to latex.")).toBeVisible();
+  await expect(stepAction(page)).toHaveText(techCopy.visit.nextTask);
+  expect(await axeViolations(page)).toEqual([]);
+
+  // On the last task, once every one is done, the action goes on to the step after.
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await expect(page.getByText(techCopy.visit.task(3, 3))).toBeVisible();
+  await expect(stepAction(page)).toHaveText(techCopy.visit.next("Consumables"));
 });

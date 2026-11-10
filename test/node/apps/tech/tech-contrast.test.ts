@@ -100,13 +100,11 @@ const EDGE_PAIRINGS: readonly EdgePairing[] = [
 
 /**
  * The controls the edge pairings speak for, each by its stylesheet and its rule: the shared ones the app draws on the
- * ink (the sign-in number, a code's box, a checklist's box, a field).
+ * ink (the sign-in number, a code's box, a field).
  */
 const CONTROLS = [
   { file: "packages/ui/mobile-input.module.css", selector: ".onInk" },
   { file: "packages/ui/code-field.module.css", selector: ".box" },
-  { file: "packages/ui/check-row.module.css", selector: ".box" },
-  { file: "packages/ui/check-row.module.css", selector: ".boxDone" },
   { file: "packages/ui/field.module.css", selector: ".onInk" },
 ] as const;
 
@@ -155,6 +153,7 @@ const REDRAWN = [
   "apps/tech/src/camera/CaptureScreen.tsx",
   "apps/tech/src/camera/FramingGuide.tsx",
   "apps/tech/src/visit/",
+  "apps/tech/src/steps/",
   "apps/tech/src/frame/light.module.css",
 ];
 const slashed = (file: string) => file.replace(/\\/g, "/");

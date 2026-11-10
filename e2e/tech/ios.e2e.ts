@@ -119,7 +119,7 @@ test("keeps a long checklist’s action at the foot of the screen, with its head
   await expect(page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist })).toBeInViewport({
     ratio: 1,
   });
-  await expect(page.getByRole("button", { name: techCopy.steps.checklist.unfinished })).toBeInViewport({ ratio: 1 });
+  await expect(page.locator("main > div").last().getByRole("button")).toBeInViewport({ ratio: 1 });
   expect(await pageScrolls(page)).toBe(false);
 });
 

@@ -44,13 +44,18 @@
   background: var(--white-000);
 }
 
-/* A job that did not load (./JobFailed.tsx), on a screen in the new look: its ground and words, and the head's rule. */
-.failedScreen {
+/* A screen on the ink frame (./frame.module.css) drawn in the new look: a job that did not load (./JobFailed.tsx), the
+   close-out (../steps/CloseOut.tsx). Its ground and words, and the rules of its head and foot. */
+.paperScreen {
   background: var(--ui-ground);
   color: var(--ui-text);
 }
 
-.failedHead {
+.paperHead {
   border-bottom-color: var(--ui-line);
   color: var(--ui-text);
+}
+
+.paperFoot {
+  border-top-color: var(--ui-line);
 }

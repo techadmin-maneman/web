@@ -11,6 +11,7 @@ import { fakeTech, type Fake } from "./fake-tech.ts";
 import { atTheDoor, heldOnPhone, keptOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { askToSignOut, openPending } from "./tabs.ts";
+import { stepAction } from "./steps-fixtures.ts";
 
 /**
  * Opens the day, checks in at the door, then takes the signal away. The app
@@ -70,16 +71,16 @@ async function workTheJob(page: Page): Promise<void> {
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await stepAction(page).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await page.getByRole("button", { name: "One more tape strips" }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.after })).toBeVisible();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
   await page.getByRole("button", { name: techCopy.capture.finish, exact: true }).click();
-  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await stepAction(page).click();
 }
 
 // A whole job worked with no signal, from Start job to the outcome, reaches the API in the order it was
@@ -347,7 +348,9 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
 
-  // Nothing has gone up, and the queue says so: no bar full of frames that are only waiting.
+  // Nothing has gone up, and the queue says so: no bar full of frames that are only waiting. The way back from the
+  // step after is the visit's plan, then the job, then Today.
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await openPending(page);
@@ -390,7 +393,9 @@ test("counts a set as sent only as its photographs go up", async ({ page, contex
     await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
-  // Every move here is a link inside the app: with no signal there is no navigation.
+  // Every move here is a link inside the app: with no signal there is no navigation. From a step, the way back is the
+  // visit's plan, then the job, then Today.
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await openPending(page);

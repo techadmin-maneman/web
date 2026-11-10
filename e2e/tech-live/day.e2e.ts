@@ -14,6 +14,7 @@ import {
   notHome,
   job as jobWords,
   steps,
+  visit,
 } from "../../apps/tech/src/content.ts";
 
 const day = liveDay();
@@ -85,7 +86,7 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
   await photograph(page);
 
   await expect(page.getByRole("heading", { level: 1, name: steps.titles.checklist })).toBeVisible();
-  for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
+  await page.getByRole("button", { name: steps.checklist.all }).click();
   await page.getByRole("button", { name: steps.next }).click();
   await expect(page.getByRole("heading", { level: 1, name: steps.titles.consumables })).toBeVisible();
   // A count short of what ops expect, or nothing at all, is said why, and the API holds the step to it (ADR 0222). A
@@ -99,7 +100,7 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
   await expect(page.getByRole("heading", { level: 1, name: steps.titles.outcome })).toBeVisible();
   await page.getByRole("button", { name: captureWords.finish, exact: true }).click();
   const closing = page.waitForResponse((answer) => answer.url().endsWith(`/api/tech/jobs/${id}/outcome`));
-  await page.getByRole("button", { name: steps.next }).click();
+  await page.getByRole("button", { name: visit.close }).click();
   expect((await closing).status()).toBe(202);
   await expect(page.getByText(`${day.client} · done`)).toBeVisible();
 

@@ -552,8 +552,14 @@ export const visit = {
   whoAndWhat: (who: string, kind: string) => `${who} · ${kind}`,
   step: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
   allSteps: "All steps",
-  next: (title: string) => `Next: ${title}`,
+  next: (title: string) => `Next: ${title.toLowerCase()}`,
   close: "Close visit",
+  /** A guided task (./visit/tasks.ts): one a screen. */
+  task: (at: number, total: number) => `Task ${String(at)} of ${String(total)}`,
+  nextTask: "Next task",
+  reference: (what: string) => `Reference photo: ${what}`,
+  watchFor: "Watch for",
+  taskDone: (title: string) => `Done: ${title}`,
   plan: {
     title: "Visit plan",
     done: (done: number, total: number) => `${String(done)} of ${String(total)} done`,
@@ -639,7 +645,7 @@ export const steps = {
   },
   checklist: {
     // The board's dim bar while the list is unfinished.
-    unfinished: "Finish the list to continue",
+    unfinished: "Finish the tasks to continue",
     all: "Tick all: everything was done",
   },
   consumables: {
@@ -658,7 +664,6 @@ export const steps = {
     },
     // The board draws four steppers and no way to record a fifth consumable.
     add: "Add a consumable",
-    asExpected: "Used as expected",
     addOne: (name: string) => `Add ${name}`,
     none: "None used",
     // The console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).
@@ -728,6 +733,12 @@ export const steps = {
     },
   },
   outcome: {
+    /** What the close leaves on the client's record, for whoever takes their next visit. */
+    nextNote: "Note for the next technician",
+    alert: "Alert for every visit",
+    alertHint: "Read before every visit, until ops take it off.",
+    /** A one visit closed as done texts the client the payment link. */
+    sendLinkAndClose: "Send link and close",
     // The board draws Done chosen already; nothing is chosen for the technician here.
     choose: "Choose Done or Partly done",
     pickReason: "Pick a reason to continue",

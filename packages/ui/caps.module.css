@@ -1,13 +1,14 @@
-/* The small-caps serif. A caller's own class sets the size and the colour, and may space it closer. */
+/* The small-caps serif, or a look's own titles. A caller's own class sets the size and the colour, and may space it closer. */
 
 @layer base, ui;
 
 @layer ui {
+  /* A look may set its own: the technician app's new look writes these as its section titles. */
   .caps {
-    font-family: var(--font-serif);
-    font-weight: var(--weight-regular);
-    font-variant-caps: all-small-caps;
-    letter-spacing: var(--tracking-14);
+    font-family: var(--caps-font);
+    font-weight: var(--caps-weight);
+    font-variant-caps: var(--caps-variant);
+    letter-spacing: var(--caps-tracking);
   }
 
   /* A badge: a state named in small capitals beside what it is about, a little closer set and in its tone. */

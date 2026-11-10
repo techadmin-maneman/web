@@ -1,53 +1,109 @@
-/* What ./StepFrame.tsx alone draws; what it shares is in ./steps.module.css. */
+/* A step of the visit in the new look (./StepFrame.tsx): the head, the step bar under it, the body that scrolls and the
+   action bar at the foot; the step slides in on the house curve, unless motion is reduced. */
 
-/* The frame's head (../components/frame.module.css), closer set: the step's count sits beside its title. */
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--ui-ground);
+  color: var(--ui-text);
+  animation: var(--duration-quick) var(--ease-house) backwards step-in;
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--sp-16));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen {
+    animation: none;
+  }
+}
+
 .head {
-  gap: var(--sp-12);
-}
-
-.progress {
-  margin-left: auto;
-  font-size: var(--fs-18);
-  font-variant-numeric: tabular-nums;
-  color: var(--paper);
-}
-
-/* How far through the job: a thin rail of the job's steps beneath the head. */
-.rail {
   display: flex;
   flex-shrink: 0;
   gap: var(--sp-4);
-  padding: var(--sp-8) var(--sp-20) 0;
+  align-items: center;
+  min-height: var(--sp-64);
+  padding: var(--sp-8) var(--screen-gutter);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
-.railDone,
-.railTodo {
+.back {
+  --icon-button-size: var(--tech-min);
+
+  margin-left: calc(-1 * var(--sp-12));
+  color: var(--ui-text);
+}
+
+.who {
   flex: 1;
-  height: var(--sp-4);
+  min-width: 0;
 }
 
-.railDone {
-  background: var(--paper);
+.title {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
 }
 
-.railTodo {
-  background: var(--ink-rule);
+.title:focus {
+  outline: none;
+}
+
+.sub {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+/* The visit's steps, and the way to the plan: the whole row is the link. */
+.bar {
+  display: block;
+  flex-shrink: 0;
+  min-height: var(--tech-min);
+  padding: var(--sp-12) var(--screen-gutter);
+  border-bottom: var(--hairline) solid var(--ui-line);
+  color: var(--ui-text-soft);
+  font-size: var(--fs-14);
+  text-decoration: none;
+}
+
+.barLine {
+  display: flex;
+  gap: var(--sp-12);
+  justify-content: space-between;
+  margin-top: var(--sp-8);
+}
+
+.allSteps {
+  font-weight: var(--weight-semibold);
+  color: var(--ui-strong);
 }
 
 .body {
   display: flex;
   flex: 1;
   flex-direction: column;
+  min-height: 0;
   overflow-y: auto;
+  padding-bottom: var(--sp-24);
 }
 
-/* The API refused what this step sent, and the technician is putting it right. */
 .notice {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20);
-  border-top: var(--rule-strong) solid var(--error-on-ink);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-  font-size: var(--fs-17);
-  line-height: var(--lh-145);
-  color: var(--paper);
+  margin: var(--sp-16) var(--screen-gutter) 0;
+  width: auto;
+}
+
+.count {
+  margin: var(--sp-16) var(--screen-gutter) 0;
+  font-size: var(--fs-14);
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text-soft);
 }

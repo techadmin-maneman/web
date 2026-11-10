@@ -1,154 +1,186 @@
-// The frame every in-job step shares (board B): the title and how far through
-// its own work it is at the top, the step's own body, and one primary action at
-// the bottom, in the same place on every screen.
+// A step of the visit in the new look (docs/prompts/tech-redesign.md, "Visit engine"; docs/decisions/0245-the-steps.md):
+// the step's name with the client and the visit beneath, the visit's steps as a bar with "Step n of N" and All steps,
+// the step's own body, and one action at the foot, "Next: <the step after>". What the action still waits on is said
+// above it. A step the API refused says so in red.
 //
-// A step slides in on the house curve, 300 ms, as the board's motion note asks
-// — except the capture screen, since nothing moves while the camera is
-// capturing. A tap that lands while a step is still arriving was aimed at the
+// A step slides in on the house curve, 300 ms. A tap that lands while a step is still arriving was aimed at the
 // screen before it, so the action takes none until the slide is done.
 
-import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
+import { ActionBar } from "@maneman/ui/ActionBar";
 import { Button } from "@maneman/ui/Button";
+import { IconButton } from "@maneman/ui/IconButton";
+import { ProblemCard } from "@maneman/ui/ProblemCard";
+import { StepProgress, type StepState } from "@maneman/ui/Progress";
+import { Link } from "@maneman/ui/router";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { placeOf } from "../lib/progress.ts";
-import { routeOf, usePath } from "../route.ts";
-import { keptJob } from "../store/jobs.ts";
-import { steps as copy, today } from "../content.ts";
-import { Offline } from "../frame/Banners.tsx";
-import { useSession } from "../session.ts";
+import type { Job } from "../api.ts";
+import { steps as copy, visit } from "../content.ts";
+import { NoSignal } from "../frame/Banners.tsx";
+import { kindNameLower } from "../lib/kind.ts";
+import { done } from "../lib/progress.ts";
+import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import frame from "../frame/frame.module.css";
-import { classes } from "@maneman/ui/classes";
-import shared from "./steps.module.css";
+import { routeOf, usePath } from "../route.ts";
+import { useSession } from "../session.ts";
+import { keptJob } from "../store/jobs.ts";
+import { screensOf } from "../visit/index.ts";
 import styles from "./step-frame.module.css";
 
 /** The slide's 300 ms and a little: a second tap of a gloved double tap lands inside it. */
 const SETTLE_MS = 350;
 
+const ARRIVING = Symbol("arriving");
+
 /**
- * Whether the screen has finished arriving. Until it has, its action is marked
- * unavailable to assistive technology and ignores a tap, without being drawn
- * dim: a tap meant for the screen before must not finish this one.
+ * Whether the screen, or the page of it now showing, has finished arriving. Until it has, its action is marked
+ * unavailable to assistive technology and ignores a tap, without being drawn dim: a tap meant for the page before must
+ * not finish this one.
  */
-function useSettled(): boolean {
-  const [settled, setSettled] = useState(false);
+function useSettled(page: unknown): boolean {
+  const [settledOn, setSettledOn] = useState<unknown>(ARRIVING);
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSettled(true);
+      setSettledOn(page);
     }, SETTLE_MS);
     return () => {
       clearTimeout(timer);
     };
-  }, []);
-  return settled;
+  }, [page]);
+  return Object.is(settledOn, page);
 }
 
-/**
- * The job's steps as segments, the ones done and this one lit: how far through the whole job the technician is. Read
- * from the step's address and the card the phone keeps, so no step needs to say where it is.
- */
-function Rail() {
+/** Where the visit stands, from the step's address and the card the phone keeps: no step needs to say where it is. */
+interface Where {
+  readonly job: Job;
+  readonly at: number;
+  readonly states: readonly StepState[];
+  /** The step the visit goes to after this one, by its name: the first after it not yet sent; null where none is. */
+  readonly next: string | null;
+}
+
+function useWhere(): Where | null {
   const route = routeOf(usePath());
   const id = route.page === "step" ? route.id : "";
   const readKept = useCallback(() => keptJob(id).catch(() => null), [id]);
   const job = valueOr(useAsync(readKept)[0], null);
+  const { events } = useOutbox();
   if (route.page !== "step" || job === null) return null;
-  const { at, of } = placeOf(job, route.step);
-  if (at === 0) return null;
+  const screens = screensOf(job);
+  const sent = done(job, events);
+  const here = screens.findIndex((screen) => screen.event === route.step);
+  // A step the card's visit has no screen for, as a card kept from before the visit's type changed: no bar to draw.
+  if (here < 0) return null;
+  const states = screens.map((screen, index): StepState => {
+    if (index === here) return "current";
+    return sent.has(screen.event) ? "done" : "todo";
+  });
+  const next = screens.slice(here + 1).find((screen) => screen.event !== route.step && !sent.has(screen.event));
+  return { job, at: here + 1, states, next: next?.title ?? null };
+}
+
+/** The visit's steps as a bar, with which one this is, opening the visit's plan. */
+function StepBar({ where }: { where: Where }) {
   return (
-    <div className={styles.rail} role="img" aria-label={copy.place(at, of)}>
-      {Array.from({ length: of }, (_, index) => (
-        <span key={index} className={index < at ? styles.railDone : styles.railTodo} />
-      ))}
-    </div>
+    <Link className={styles.bar} to={`/jobs/${where.job.id}/plan`} aria-label={visit.allSteps}>
+      <StepProgress steps={where.states} />
+      <span className={styles.barLine}>
+        <span>{visit.step(where.at, where.states.length)}</span>
+        <span className={styles.allSteps}>
+          {visit.allSteps}
+          <span aria-hidden="true"> ›</span>
+        </span>
+      </span>
+    </Link>
   );
+}
+
+/** "Next: <the step it goes to>", "Close visit" where none is left, or plain Next where the visit's place is not known. */
+function labelOf(where: Where | null): string {
+  if (where === null) return copy.next;
+  return where.next === null ? visit.close : visit.next(where.next);
 }
 
 export function StepFrame({
   title,
   at,
   of,
+  page,
   action,
   ready,
   unfinished,
   notice,
-  still = false,
-  foot,
   onBack,
   onAction,
   children,
 }: {
   readonly title: string;
-  /** How far through this screen's own work it is — angles taken, items ticked — or nothing. */
+  /** How far through this screen's own work it is: items done, tasks seen. */
   readonly at?: number;
   readonly of?: number;
-  readonly action: string;
-  /** False keeps the action in place and dims it, as the board draws an unfinished list. */
+  /** Which page of the step is showing, where it has several: the action waits for each to arrive. */
+  readonly page?: number | string;
+  /** The action's words where they are not "Next: <the step after>": the outcome's, say. */
+  readonly action?: string;
+  /** False keeps the action in place and dims it, with `unfinished` above it saying what is missing. */
   readonly ready: boolean;
-  /** What the dimmed action says instead, when the board gives it words of its own. */
   readonly unfinished?: string;
-  /** A line above the step's body: the API refused what this step sent, and it is being put right. */
+  /** The API refused what this step sent, and it is being put right. */
   readonly notice?: string | null;
-  /** True for the capture screen, which does not slide. */
-  readonly still?: boolean;
-  /** A foot of the screen's own in place of the one action: the capture screen's Retake and Capture. */
-  readonly foot?: ReactNode;
   readonly onBack: () => void;
   readonly onAction: () => void;
   readonly children: ReactNode;
 }) {
   const heading = useScreen(title);
-  const settled = useSettled();
+  const settled = useSettled(page);
   const { offline } = useSession();
-
+  const where = useWhere();
+  const label = action ?? labelOf(where);
   return (
-    <main className={still ? frame.screen : shared.sliding}>
-      {offline && <Offline body={today.offline.step} />}
-      <header className={classes(frame.head, styles.head)}>
-        <IconButton
-          className={shared.back}
-          d={ICONS.back}
-          size="lg"
-          weight="heavy"
-          label={copy.back}
-          onClick={onBack}
-        />
-        <h1 className={shared.title} ref={heading} tabIndex={-1}>
-          {title}
-        </h1>
-        {at !== undefined && of !== undefined && (
-          <span className={styles.progress} role="status">
-            {copy.of(at, of)}
-          </span>
-        )}
+    <main className={styles.screen} data-look="light">
+      <header className={styles.head}>
+        <IconButton className={styles.back} d={ICONS.back} size="lg" label={copy.back} onClick={onBack} />
+        <div className={styles.who}>
+          <h1 className={styles.title} ref={heading} tabIndex={-1}>
+            {title}
+          </h1>
+          {where !== null && (
+            <p className={styles.sub}>
+              {visit.whoAndWhat(where.job.client?.name ?? kindNameLower(where.job), kindNameLower(where.job))}
+            </p>
+          )}
+        </div>
       </header>
-      <Rail />
-
+      {offline && <NoSignal />}
+      {where !== null && <StepBar where={where} />}
       <div className={styles.body}>
         {notice !== undefined && notice !== null && (
-          <p className={styles.notice} role="alert">
+          <ProblemCard className={styles.notice} title={visit.plan.needsFix} live>
             {notice}
+          </ProblemCard>
+        )}
+        {at !== undefined && of !== undefined && (
+          <p className={styles.count} role="status">
+            {copy.of(at, of)}
           </p>
         )}
         {children}
       </div>
-
-      <div className={frame.foot}>
-        {foot ?? (
+      <ActionBar helper={ready ? undefined : unfinished}>
+        {(helperId) => (
           <Button
-            variant="gold"
+            variant="primary"
             size="action"
-            className={frame.action}
             disabled={!ready}
             settling={!settled}
+            aria-describedby={helperId}
             onClick={onAction}
           >
-            {ready ? action : (unfinished ?? action)}
+            {label}
           </Button>
         )}
-      </div>
+      </ActionBar>
     </main>
   );
 }

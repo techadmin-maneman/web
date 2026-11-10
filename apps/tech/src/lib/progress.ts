@@ -30,12 +30,6 @@ export const stepsOf = (job: Job): InJobStep[] => {
   return [...worked, ...job.steps.filter(isInJob).filter((step) => !worked.includes(step))];
 };
 
-/** Where a step sits among the job's steps: the third of six. */
-export function placeOf(job: Job, step: InJobStep): { readonly at: number; readonly of: number } {
-  const steps = stepsOf(job);
-  return { at: steps.indexOf(step) + 1, of: steps.length };
-}
-
 /** Everything this job has sent, whether it reached us or is still on the phone. */
 export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   const sent = new Set<string>(job.progress.steps_done);

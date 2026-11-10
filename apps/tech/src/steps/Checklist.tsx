@@ -1,5 +1,6 @@
-// Step 2: the visit's checklist. One 88 px row per item, a 36 px box
-// each, and the action dim until the list is finished.
+// The guided tasks (docs/prompts/tech-redesign.md, "Guided tasks"): the visit's checklist, one item a screen, each with
+// the training lead's words for it (../visit/tasks.ts), the client's alerts above, and its Done. The action goes to
+// the next task, and on the last, once every one is done, to the step after.
 //
 // The items are the API's, per visit type (src/config/job-sheet.ts); the app
 // invents none and sends back the IDs it was given. The title names the visit
@@ -10,13 +11,15 @@
 
 import { Button } from "@maneman/ui/Button";
 import { CheckRow } from "@maneman/ui/CheckRow";
+import { ProblemCard } from "@maneman/ui/ProblemCard";
 import { useEffect, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
-import { oneVisit, steps as copy } from "../content.ts";
+import { clientRecord, oneVisit, steps as copy, visit } from "../content.ts";
 import { declinedTheFit } from "../lib/progress.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { put, remove } from "../store/db.ts";
+import { taskFor } from "../visit/index.ts";
 import type { Queued } from "../store/outbox.ts";
 import { useDraft, type Draft } from "./drafts.ts";
 import { checklistSent } from "./sent-before.ts";
@@ -31,7 +34,10 @@ function titleOf(job: Job, declined: boolean): string {
   return job.type === null ? copy.titles.checklist : copy.checklistTitles[job.type];
 }
 
-/** The list once the job is in hand: a refused list starts as it was ticked, else as the phone kept it. */
+/**
+ * The list once the job is in hand: a refused list starts as it was ticked, else as the phone kept it, and one already
+ * finished opens on its last task, ready to send.
+ */
 function Ticking({
   job,
   declined,
@@ -61,54 +67,111 @@ function Ticking({
     put("device", { key: "checklist_draft", job_id: job.id, done }).catch(() => undefined);
   }, [job.id, done]);
 
+  const [at, setAt] = useState(() => (all ? items.length - 1 : 0));
+  const item = items[Math.min(at, items.length - 1)];
+  const last = at >= items.length - 1;
+  const toggle = (id: string) => {
+    setDone((already) => (already.includes(id) ? already.filter((one) => one !== id) : [...already, id]));
+  };
   return (
     <StepFrame
       title={titleOf(job, declined)}
-      at={done.length}
-      of={items.length}
-      action={copy.next}
-      ready={all}
+      page={at}
+      action={last ? undefined : visit.nextTask}
+      ready={!last || all}
       unfinished={copy.checklist.unfinished}
       notice={refused === null ? null : copy.corrected.other}
-      onBack={onBack}
+      onBack={() => {
+        if (at > 0) setAt(at - 1);
+        else onBack();
+      }}
       onAction={() => {
+        if (!last) {
+          setAt(at + 1);
+          return;
+        }
         remove("device", "checklist_draft").catch(() => undefined);
         onFinish({ done: [...done] });
       }}
     >
+      <Alerts job={job} />
+      {item !== undefined && (
+        <Task item={item} at={at} total={items.length} done={done.includes(item.id)} onToggle={toggle} />
+      )}
       {!all && items.length > 1 && (
         <Button
-          variant="outlineOnInk"
+          variant="outline"
           size="control"
           className={styles.tickAll}
           onClick={() => {
             setDone(listed);
+            setAt(items.length - 1);
           }}
         >
           {copy.checklist.all}
         </Button>
       )}
-      <ul className={styles.list}>
-        {items.map((item) => {
-          const ticked = done.includes(item.id);
-          return (
-            <li key={item.id}>
-              <CheckRow
-                done={ticked}
-                tickWeight="heavy"
-                onToggle={() => {
-                  setDone((already) =>
-                    already.includes(item.id) ? already.filter((one) => one !== item.id) : [...already, item.id],
-                  );
-                }}
-              >
-                {item.label}
-              </CheckRow>
-            </li>
-          );
-        })}
-      </ul>
     </StepFrame>
+  );
+}
+
+/** The client's alerts, above every task (docs/prompts/tech-redesign.md, "Guided tasks"). */
+function Alerts({ job }: { job: Job }) {
+  if (job.client_alerts.length === 0) return null;
+  return (
+    <ProblemCard className={styles.alerts} title={clientRecord.alerts}>
+      {job.client_alerts.map((alert) => alert.body).join(" ")}
+    </ProblemCard>
+  );
+}
+
+/** One guided task: how far through, its words from the training lead's file, and its Done. */
+function Task(props: {
+  item: { readonly id: string; readonly label: string };
+  at: number;
+  total: number;
+  done: boolean;
+  onToggle: (id: string) => void;
+}) {
+  const words = taskFor(props.item);
+  return (
+    <section className={styles.task} aria-labelledby="task-title">
+      <p className={styles.taskCount}>{visit.task(props.at + 1, props.total)}</p>
+      <h2 className={styles.taskTitle} id="task-title">
+        {words.title}
+      </h2>
+      {words.reference !== "" && (
+        <div className={styles.reference} role="img" aria-label={visit.reference(words.reference)}>
+          {visit.reference(words.reference)}
+        </div>
+      )}
+      {words.how.length > 0 && (
+        <ol className={styles.how}>
+          {words.how.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ol>
+      )}
+      {words.watch !== null && (
+        <div className={styles.watch}>
+          <p className={styles.watchTitle}>{visit.watchFor}</p>
+          <p className={styles.watchLine}>{words.watch}</p>
+        </div>
+      )}
+      <ul className={styles.taskDone}>
+        <li>
+          <CheckRow
+            done={props.done}
+            tickWeight="heavy"
+            onToggle={() => {
+              props.onToggle(props.item.id);
+            }}
+          >
+            {props.item.label}
+          </CheckRow>
+        </li>
+      </ul>
+    </section>
   );
 }
 

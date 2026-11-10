@@ -24,16 +24,14 @@ export const writesTo = (fake: Fake, step: string) => fake.writes.filter((write)
 /** The checklist's items, each a button in its own row of the list. */
 export const checklistItems = (page: Page) => page.getByRole("listitem").getByRole("button");
 
-/** The words of every element drawn in gold: in its type, its ground or its edge. */
-export const gilded = (page: Page) =>
-  page.evaluate(() =>
-    [...document.querySelectorAll("body *")]
-      .filter((element) => {
+/** How many things are marked in brass, the one mark a screen of the new look has: the step under way in the bar. */
+export const brassMarks = (page: Page) =>
+  page.evaluate(
+    () =>
+      [...document.querySelectorAll("body *")].filter((element) => {
         const style = getComputedStyle(element);
-        const drawn = [style.color, style.backgroundColor, style.borderLeftColor, style.fill, style.stroke];
-        return drawn.includes("rgb(201, 163, 99)");
-      })
-      .map((element) => element.textContent.trim()),
+        return [style.color, style.backgroundColor, style.borderLeftColor].includes("rgb(185, 139, 69)");
+      }).length,
   );
 
 /** A hair system in the technician's kit, held under the one label given: what a fit goes on with. */
@@ -51,3 +49,6 @@ export const holding = (product: string, label: string): Fake["kitHairSystems"] 
     units: [{ code: label, lot_code: null, expires_on: null }],
   },
 ];
+
+/** A step's one action, in the bar at its foot: "Next: <the step after>", or the step's own words. */
+export const stepAction = (page: Page) => page.locator("main > div").last().getByRole("button");

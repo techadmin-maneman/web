@@ -27,7 +27,7 @@
   }
 
   .edged {
-    border: var(--hairline) solid var(--edge-on-ink);
-    color: var(--paper);
+    border: var(--hairline) solid var(--ui-line-control);
+    color: var(--ui-text);
   }
 }

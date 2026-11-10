@@ -53,8 +53,8 @@ function CannotFit({ onClose }: { onClose: (why: typeof CANNOT_FIT_TODAY) => voi
   return (
     <>
       <Button
-        variant="outlineOnInk"
-        size="small"
+        variant="outline"
+        size="control"
         className={styles.wayOut}
         onClick={() => {
           setAsking(true);
@@ -162,7 +162,6 @@ function Fitting({
   return (
     <StepFrame
       title={copy.titles.piece}
-      action={copy.next}
       ready={missing === null}
       unfinished={missing ?? undefined}
       notice={refused === null ? null : noticeFor(refused.fields)}

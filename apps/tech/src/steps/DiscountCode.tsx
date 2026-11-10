@@ -44,11 +44,10 @@ export function DiscountCode({ jobId, onChecking }: { jobId: string; onChecking:
 
   return (
     <div className={styles.field}>
-      <Field onInk announce label={copy.label} error={problem} look={{ label: styles.fieldLabel, error: styles.hint }}>
+      <Field announce label={copy.label} error={problem} look={{ label: styles.fieldLabel, error: styles.hint }}>
         {(control) => (
           <TextInput
             {...control}
-            onInk
             className={styles.box64}
             value={typed}
             autoCapitalize="characters"
@@ -62,7 +61,7 @@ export function DiscountCode({ jobId, onChecking }: { jobId: string; onChecking:
         )}
       </Field>
       <Button
-        variant="outlineOnInk"
+        variant="outline"
         size="control"
         className={styles.second}
         disabled={typed.trim() === "" || checking}

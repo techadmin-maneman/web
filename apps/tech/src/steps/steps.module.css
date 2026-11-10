@@ -4,42 +4,18 @@
  * for gloved use. The screen is the phone's height and its body scrolls.
  */
 
-.sliding {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--ink-deep);
-}
-
-/*
- * Steps slide in 300 ms on the house curve (the board's motion note). Only the
- * way in is drawn, so nothing is left transformed once the step has landed;
- * under prefers-reduced-motion nothing moves (packages/ui/base.css).
- */
-.sliding {
-  animation: var(--duration-quick) var(--ease-house) backwards step-in;
-}
-
-@keyframes step-in {
-  from {
-    opacity: 0;
-    transform: translateX(var(--sp-24));
-  }
-}
-
 .back {
   --icon-button-size: var(--tech-min);
 
   margin-left: calc(-1 * var(--sp-12));
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 .title {
   margin: 0;
   font-size: var(--fs-17);
   font-weight: var(--weight-regular);
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 .title:focus,
@@ -65,12 +41,12 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .countLabel {
   font-size: var(--fs-18);
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 /* What one is counted in, and how many the visit's service expects, beneath the consumable's name (ADR 0087). */
@@ -78,7 +54,7 @@
   display: block;
   margin-top: var(--sp-4);
   font-size: var(--fs-16);
-  color: var(--ink-muted);
+  color: var(--ui-text-soft);
 }
 
 /* More counted than the kit holds: said in the warning colour, so ops are asked for more. */
@@ -86,7 +62,7 @@
   display: block;
   margin-top: var(--sp-4);
   font-size: var(--fs-16);
-  color: var(--error-on-ink);
+  color: var(--ui-error);
 }
 
 .stepper {
@@ -100,7 +76,6 @@
   min-width: var(--tech-stepper);
   height: var(--tech-stepper);
   padding: 0;
-  font-family: var(--font-serif);
   font-size: var(--fs-22);
   font-variant-numeric: lining-nums;
   text-align: center;
@@ -111,7 +86,7 @@
   padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-17);
   line-height: var(--lh-160);
-  color: var(--ink-soft);
+  color: var(--ui-text-soft);
 }
 
 .warn {
@@ -119,7 +94,7 @@
   padding: var(--sp-16) var(--sp-20);
   font-size: var(--fs-17);
   line-height: var(--lh-160);
-  color: var(--error-on-ink);
+  color: var(--ui-error);
 }
 
 /* ---- The piece --------------------------------------------------- */
@@ -128,13 +103,13 @@
   display: flex;
   flex-direction: column;
   padding: var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .fieldTitle {
   margin: 0 0 var(--sp-16);
   font-size: var(--fs-15);
-  color: var(--ink-muted);
+  color: var(--ui-text-soft);
 }
 
 .fieldLabel {
@@ -165,13 +140,13 @@
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-17);
   line-height: var(--lh-145);
-  color: var(--error-on-ink);
+  color: var(--ui-error);
 }
 
 .paidFor {
   margin: 0;
   font-size: var(--fs-17);
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 .second {
@@ -204,12 +179,12 @@
   gap: var(--sp-16);
   justify-content: space-between;
   padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--ink-rule);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .rowKey {
   font-size: var(--fs-16);
-  color: var(--ink-muted);
+  color: var(--ui-text-soft);
 }
 
 .rowValue {
@@ -217,7 +192,7 @@
   font-size: var(--fs-17);
   font-variant-numeric: tabular-nums;
   text-align: right;
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 /* ---- The outcome ------------------------------------------------- */
@@ -237,7 +212,7 @@
   gap: var(--sp-8);
   margin: 0;
   padding: var(--sp-16) var(--sp-20) var(--sp-20);
-  border-top: var(--hairline) solid var(--ink-rule);
+  border-top: var(--hairline) solid var(--ui-line);
   list-style: none;
 }
 
@@ -252,11 +227,11 @@
 .closeLabel {
   margin: 0 0 var(--sp-16);
   font-size: var(--fs-14);
-  color: var(--ink-muted);
+  color: var(--ui-text-soft);
 }
 
 .closeTick {
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 /* How the job closed, kept whole: "no-show" breaks at its hyphen otherwise. */
@@ -266,16 +241,15 @@
 
 .closeWho {
   margin: var(--sp-16) 0 var(--sp-16);
-  font-family: var(--font-serif);
   font-size: var(--fs-28);
-  font-weight: var(--weight-regular);
+  font-weight: var(--weight-semibold);
   line-height: var(--lh-115);
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 .close .rows {
   padding: 0;
-  border-top: var(--hairline) solid var(--ink-rule);
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
 /* ---- The one action, bottom of every screen, clear of an iPhone's home indicator ---- */
@@ -299,4 +273,71 @@
 /* The checklist's one tap for a visit where everything was done. */
 .tickAll {
   margin: var(--sp-16) var(--sp-20) 0;
+}
+
+/* A guided task (./Checklist.tsx): the client's alerts above, then how far through, its title, where its reference
+   photograph goes, the numbered instructions, and what to watch for in a ruled block. */
+.alerts {
+  margin: var(--sp-16) var(--screen-gutter) 0;
+  width: auto;
+}
+
+.task {
+  padding: var(--sp-16) var(--screen-gutter) 0;
+}
+
+.taskCount {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+.taskTitle {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.reference {
+  display: flex;
+  align-items: flex-end;
+  min-height: calc(var(--sp-64) * 2);
+  margin-top: var(--sp-16);
+  padding: var(--sp-12);
+  background: var(--placeholder);
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+.how {
+  margin: var(--sp-16) 0 0;
+  padding-left: var(--sp-24);
+  font-size: var(--fs-16);
+  line-height: var(--lh-160);
+}
+
+.watch {
+  margin-top: var(--sp-16);
+  padding-top: var(--sp-12);
+  border-top: var(--rule-strong) solid var(--ui-strong);
+}
+
+.watchTitle {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.watchLine {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+}
+
+/* The task's Done, a full-width row like every list's: it takes back the gutter the task sits in. */
+.taskDone {
+  margin: var(--sp-16) calc(-1 * var(--screen-gutter)) 0;
+  padding: 0;
+  list-style: none;
 }
