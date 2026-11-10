@@ -535,6 +535,35 @@ export const notHome = {
   },
 } as const;
 
+/** The visit engine's screens and plan (docs/decisions/0244-the-visit-engine.md). */
+export const visit = {
+  screens: {
+    before_photos: "Before photos",
+    service: "Service",
+    fitting: "Fitting",
+    scalp: "Scalp and hairline",
+    hair_profile: "Hair profile",
+    hair_system: "Hair system",
+    consumables: "Consumables",
+    after_photos: "After photos",
+    outcome: "Outcome",
+  },
+  /** "Rohit M. · service visit", beneath a step's name. */
+  whoAndWhat: (who: string, kind: string) => `${who} · ${kind}`,
+  step: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
+  allSteps: "All steps",
+  next: (title: string) => `Next: ${title}`,
+  close: "Close visit",
+  plan: {
+    title: "Visit plan",
+    done: (done: number, total: number) => `${String(done)} of ${String(total)} done`,
+    finishBy: (time: string) => `Finish by ${time}`,
+    states: { done: "Done", now: "Now", todo: "To do" },
+    needsFix: "Needs a fix",
+    open: (title: string) => `Open ${title}`,
+  },
+} as const;
+
 export const capture = {
   back: "Back",
   before: "Before photos",

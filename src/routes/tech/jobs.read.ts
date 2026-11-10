@@ -18,8 +18,15 @@ import { listableDate } from "../../policy/job-visibility.ts";
 import { inputsIn, rulesOfVisit } from "../../domain/cities/city-rules.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 
-import { clientHistoryRoute, historyPhotoRoute, jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
-import { clientHistory, historyPhoto } from "../../domain/field/client-history.ts";
+import {
+  clientHistoryRoute,
+  comparePhotoRoute,
+  historyPhotoRoute,
+  jobsRoute,
+  jobRoute,
+  lastVisitPhotoRoute,
+} from "./jobs.routes.ts";
+import { clientHistory, comparePhoto, historyPhoto } from "../../domain/field/client-history.ts";
 import { alertsForTechnician } from "../../domain/clients/client-alerts.ts";
 import { workableJob } from "../../domain/field/workable-job.ts";
 import { unlocked } from "../../policy/job-visibility.ts";
@@ -131,6 +138,14 @@ export function registerTechJobReads(app: App): void {
     return c.json({ alerts, visits }, 200);
   });
 
+  registerPhotoReads(app);
+}
+
+/**
+ * The client's photographs a job shows (docs/decisions/0242-client-record.md, 0244-the-visit-engine.md): each under the
+ * job's own rule, the technician's and unlocked, and never kept by the browser or the service worker.
+ */
+function registerPhotoReads(app: App): void {
   app.openapi(historyPhotoRoute, async (c) => {
     const { id, photo_id: photoId } = c.req.valid("param");
     const job = await recordedJob(c, id);
@@ -138,6 +153,17 @@ export function registerTechJobReads(app: App): void {
     const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
     if (photo === null || object === null) return refuse(c, "not_found");
     // A client's photograph stays off a technician's phone: neither the browser nor the service worker keeps it.
+    return new Response(object.body, {
+      headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },
+    });
+  });
+
+  app.openapi(comparePhotoRoute, async (c) => {
+    const { id, phase, angle } = c.req.valid("param");
+    const job = await recordedJob(c, id);
+    const photo = job === null ? null : await comparePhoto(c.env.DB, job, phase, angle);
+    const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
+    if (photo === null || object === null) return refuse(c, "not_found");
     return new Response(object.body, {
       headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },
     });

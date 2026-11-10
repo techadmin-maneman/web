@@ -5505,6 +5505,183 @@
         }
       }
     },
+    "/api/tech/jobs/{id}/compare/{phase}/{angle}": {
+      "get": {
+        "summary": "The photograph an angle is compared with as it is taken, under the card's own unlock, never cached",
+        "description": "Before: the client's last after photograph of that angle. After: this visit's own before photograph of it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "before",
+                "after"
+              ]
+            },
+            "required": true,
+            "name": "phase",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "front",
+                "top",
+                "left",
+                "right",
+                "hair"
+              ]
+            },
+            "required": true,
+            "name": "angle",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required; device_revoked; technician_inactive: ops switched the technician off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required",
+                                "device_revoked",
+                                "technician_inactive"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such job of this technician's, not unlocked yet, or no photograph to compare with",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tech/jobs/{id}/last-visit-photo": {
       "get": {
         "summary": "The client's last visit, after: one photograph, under the card's own unlock, never cached",

@@ -6,6 +6,7 @@
 // A write the API stopped (superseded or refused) has not happened, so only
 // what is still waiting to be sent counts beside what landed.
 
+import { screensOf } from "../visit/engine.ts";
 import type { CheckIn, Job, JobSummary, Step } from "../api.ts";
 import type { Heard } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
@@ -19,8 +20,15 @@ const IN_JOB = new Set<string>(Object.keys(STEP_PATHS));
 
 const isInJob = (step: Step): step is InJobStep => IN_JOB.has(step);
 
-/** The steps this visit runs, in order: the API leaves the piece out where it does not apply. */
-export const stepsOf = (job: Job): InJobStep[] => job.steps.filter(isInJob);
+/**
+ * The steps this visit runs, in the order its screens are worked (../visit/engine.ts): the API leaves out a step that
+ * does not apply, and the hair profile, which it does not order, comes before the hair system.
+ */
+export const stepsOf = (job: Job): InJobStep[] => {
+  const worked = screensOf(job).map((screen) => screen.event);
+  // A step the engine has no screen for yet keeps its place at the end, so no step the API asks for is lost.
+  return [...worked, ...job.steps.filter(isInJob).filter((step) => !worked.includes(step))];
+};
 
 /** Where a step sits among the job's steps: the third of six. */
 export function placeOf(job: Job, step: InJobStep): { readonly at: number; readonly of: number } {

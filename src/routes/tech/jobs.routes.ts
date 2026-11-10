@@ -9,6 +9,7 @@ import {
   PieceRequestSchema,
 } from "../../domain/field/job-event-bodies.ts";
 import { errorResponse } from "../../http/errors.ts";
+import { PHOTO_ANGLES } from "../../policy/in-job-steps.ts";
 import { json } from "../../http/openapi.ts";
 import {
   jobId,
@@ -116,6 +117,27 @@ export const historyPhotoRoute = techRoute({
     401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse(
       "not_found: no such job of this technician's, not unlocked yet, or no after photograph of the client's earlier visit",
+    ),
+  },
+});
+
+export const comparePhotoRoute = techRoute({
+  method: "get",
+  path: "/api/tech/jobs/{id}/compare/{phase}/{angle}",
+  summary: "The photograph an angle is compared with as it is taken, under the card's own unlock, never cached",
+  description:
+    "Before: the client's last after photograph of that angle. After: this visit's own before photograph of it.",
+  request: {
+    params: z.object({ id: z.uuid(), phase: z.enum(["before", "after"]), angle: z.enum(PHOTO_ANGLES) }),
+  },
+  responses: {
+    200: {
+      description: "The image",
+      content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
+    },
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
+    404: errorResponse(
+      "not_found: no such job of this technician's, not unlocked yet, or no photograph to compare with",
     ),
   },
 });

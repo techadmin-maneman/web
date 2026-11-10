@@ -267,3 +267,36 @@ describe("the client's history", () => {
     expect((await job.get(`/api/tech/jobs/${JOB}/history-photos/${PHOTO}`)).status).toBe(404);
   });
 });
+
+describe("the photograph an angle is compared with", () => {
+  it("is the client's last after photograph of it before the visit, and this visit's own before one after it", async () => {
+    const job = await working("service");
+    await anEarlierVisit();
+    const before = await job.get(`/api/tech/jobs/${JOB}/compare/before/front`);
+    expect(before.status).toBe(200);
+    expect(before.headers.get("Cache-Control")).toBe("private, no-store");
+    expect((await job.get(`/api/tech/jobs/${JOB}/compare/before/top`)).status).toBe(404);
+
+    expect((await job.get(`/api/tech/jobs/${JOB}/compare/after/front`)).status).toBe(404);
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES ('set-today', ?1, 'before', ?2)",
+      ).bind(JOB, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, created_at)
+         VALUES ('44444444-4444-4444-8444-444444444442', 'set-today', 'front', 'before/front.jpg', 'image/jpeg', 3, ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+    await env.CLIENT_PHOTOS.put("before/front.jpg", new Uint8Array([4, 5, 6]));
+    const after = await job.get(`/api/tech/jobs/${JOB}/compare/after/front`);
+    expect(after.status).toBe(200);
+    expect(new Uint8Array(await after.arrayBuffer())).toEqual(new Uint8Array([4, 5, 6]));
+  });
+
+  it("is not found for a job ops gave to another technician", async () => {
+    const job = await working("service");
+    await anEarlierVisit();
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
+    expect((await job.get(`/api/tech/jobs/${JOB}/compare/before/front`)).status).toBe(404);
+  });
+});

@@ -139,6 +139,40 @@ export async function afterPhotosOf(db: D1Database, jobId: string, visitId: stri
 }
 
 /**
+ * The photograph a technician compares an angle with as they take it (docs/decisions/0244-the-visit-engine.md): before
+ * the visit, the client's last after photograph of that angle; after it, this visit's own before photograph. Null where
+ * there is none yet.
+ */
+export async function comparePhoto(
+  db: D1Database,
+  job: { readonly id: string; readonly personId: string; readonly startsAt: string },
+  phase: "before" | "after",
+  angle: string,
+): Promise<{ key: string; contentType: string } | null> {
+  const row =
+    phase === "before"
+      ? await db
+          .prepare(
+            `SELECT p.r2_key, p.content_type FROM photos p
+             JOIN photo_sets s ON s.id = p.photo_set_id AND s.phase = 'after'
+             JOIN appointments a ON a.id = s.appointment_id
+             WHERE a.person_id = ?1 AND a.id <> ?2 AND a.deleted_at IS NULL AND a.window_start < ?3 AND p.angle = ?4
+             ORDER BY a.window_start DESC, p.created_at DESC LIMIT 1`,
+          )
+          .bind(job.personId, job.id, job.startsAt, angle)
+          .first<{ r2_key: string; content_type: string }>()
+      : await db
+          .prepare(
+            `SELECT p.r2_key, p.content_type FROM photos p
+             JOIN photo_sets s ON s.id = p.photo_set_id AND s.phase = 'before'
+             WHERE s.appointment_id = ?1 AND p.angle = ?2 ORDER BY p.created_at DESC LIMIT 1`,
+          )
+          .bind(job.id, angle)
+          .first<{ r2_key: string; content_type: string }>();
+  return row === null ? null : { key: row.r2_key, contentType: row.content_type };
+}
+
+/**
  * One of the history's photographs, for the job open on the phone: an after photograph of an earlier visit of the
  * same client. Null where it is not one.
  */
