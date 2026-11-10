@@ -59,6 +59,9 @@ const CLIENTS: Readonly<Record<string, string>> = {
 
 const jobId = (id: number) => `a0000000-0000-4000-8000-00000000000${String(id)}`;
 
+// The board draws no Navigate or drive beneath a row.
+const NO_WAY_THERE = { address: null, next: null, drive_minutes: null, leave_by: null } as const;
+
 const job = ({
   id,
   date,
@@ -96,9 +99,7 @@ const job = ({
   unlocks_at: `${date}T00:00:00.000Z`,
   client_name: CLIENTS[jobId(id)] ?? null,
   progress: { started_at: null, outcome: null },
-  // The board draws no Navigate or drive beneath a row.
-  address: null,
-  next: null,
+  ...NO_WAY_THERE,
 });
 
 const JOBS = [

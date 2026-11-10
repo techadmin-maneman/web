@@ -1,7 +1,8 @@
 /*
  * A question before a tap that cannot be taken back, at the foot of the column
  * on the ink-night ground (./Sheet.tsx). Both answers are outlined,
- * 64 px and full width, the way back last, where the thumb is.
+ * 64 px and full width, the way back last, where the thumb is. On paper, the way
+ * back comes first and is the filled one.
  */
 
 @layer base, ui;
@@ -39,5 +40,30 @@
 
   .no {
     margin-top: var(--sp-12);
+  }
+
+  .paper {
+    border-top-color: var(--ui-line);
+    background: var(--sheet-ground);
+    color: var(--sheet-text);
+  }
+
+  .paper .title {
+    font-family: var(--title-font);
+    font-size: var(--fs-22);
+    font-weight: var(--title-weight);
+    color: var(--sheet-text);
+  }
+
+  .paper .body {
+    color: var(--ui-text-soft);
+  }
+
+  .paper .yes {
+    margin-top: var(--sp-12);
+  }
+
+  .paper .no {
+    margin-top: 0;
   }
 }

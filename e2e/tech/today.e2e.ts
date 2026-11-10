@@ -1,6 +1,7 @@
-// Today: the day's jobs, the empty state, the offline banner,
-// and one job's card with its locked version.
+// Today, in the new look: the next job with the way there, the rest of the day, tomorrow, the empty day, the no-signal
+// bar, and one job's card with its locked version.
 
+import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { card, JOB_ID, NOTHING_DONE, ROHITS_PIECE, todayInIndia } from "./fixtures.ts";
@@ -8,51 +9,52 @@ import { fakeTech } from "./fake-tech.ts";
 import { keptOnPhone, leftOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
-test("lists the day’s jobs in order, with no amount anywhere (board A1)", async ({ page }) => {
+/** The rest of the day, under Later today. */
+const laterRows = (page: Page) => page.getByRole("region", { name: techCopy.today.later }).getByRole("listitem");
+
+/** The next job's block. */
+const nextJob = (page: Page) => page.getByRole("region", { name: /^Next|^At the door|^In progress/ });
+
+test("puts the next job first with the way there, then the rest of the day, with no amount anywhere", async ({
+  page,
+}) => {
   await fakeTech(page);
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1, name: "3 jobs today" })).toBeVisible();
-  await expect(page.getByText("Next at 9:30 am · Sector 65")).toBeVisible();
+  await expect(page.getByText(techCopy.today.sync.synced)).toBeVisible();
 
-  const rows = page.getByRole("listitem");
-  // The day's list names the client of a job that has unlocked.
-  await expect(rows.first()).toContainText("Rohit M.");
-  await expect(rows.nth(1)).toContainText("Vikram S.");
-  await expect(rows.first()).toContainText("Sector 65");
-  await expect(rows.first()).toContainText(techCopy.badges.prepaid);
-  await expect(rows.nth(1)).toContainText(techCopy.badges.credit);
-  // The clock the heading uses, never "2:00", and how long each visit is, never "2 slots".
-  await expect(rows.first().getByText("9:30 am", { exact: true })).toBeVisible();
-  await expect(rows.first().getByText("1 h 30 min", { exact: true })).toBeVisible();
-  await expect(rows.nth(2).getByText("2 pm", { exact: true })).toBeVisible();
-  await expect(rows.nth(2).getByText("3 h", { exact: true })).toBeVisible();
+  // The next job: when to leave, the time and length, the client, the visit and how it is paid, and the drive.
+  const next = nextJob(page);
+  await expect(next).toContainText(/^Next · leave/);
+  await expect(next.getByText("9:30 am", { exact: true })).toBeVisible();
+  await expect(next.getByText("1 h 30 min", { exact: true })).toBeVisible();
+  await expect(next).toContainText("Rohit M.");
+  await expect(next).toContainText("Service visit · prepaid");
+  await expect(next).toContainText(`Tower C, 14th floor, Sector 65 · ${techCopy.today.driveTo(18)}`);
+  await expect(next.getByRole("link", { name: techCopy.job.navigate })).toHaveAttribute(
+    "href",
+    "https://www.google.com/maps/dir/?api=1&destination=28.39%2C77.07",
+  );
+  // Message and Call, once the card the phone keeps names the client's number.
+  await expect(next.getByRole("link", { name: techCopy.today.call("Rohit") })).toHaveAttribute("href", /^tel:/);
+  await expect(next.getByRole("link", { name: techCopy.today.message("Rohit") })).toBeVisible();
+
+  // The rest of the day: each with its drive and when to leave, the locked one by its kind.
+  const rows = laterRows(page);
+  await expect(rows.first()).toContainText("Vikram S.");
+  await expect(rows.first()).toContainText(`Service visit · DLF Phase 4 · ${techCopy.badgesLower.credit}`);
+  await expect(rows.first()).toContainText(techCopy.today.driveAndLeave(20, "11:10 am"));
+  await expect(rows.nth(1).getByText("2 pm", { exact: true })).toBeVisible();
+  await expect(rows.nth(1).getByText("3 h", { exact: true })).toBeVisible();
+  await expect(rows.nth(1)).toContainText(techCopy.today.driveAndLeave(25, "1:35 pm"));
 
   // "No money anywhere in the technician app": a badge only.
   await expect(page.locator("body")).not.toContainText("₹");
   expect(await axeViolations(page)).toEqual([]);
 });
 
-// "CONSULTATION AND FIT · PAYS ONCE FITTED" broke into two ragged columns at 375 and 390 px.
-test("keeps a row’s type and its badge each on one line on a narrow phone", async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
-  const fake = await fakeTech(page);
-  fake.type = "first_fit";
-  fake.oneVisit = true;
-  await page.goto("/");
-
-  const row = page.getByRole("listitem").first();
-  for (const words of ["Consultation and fit", "Pays at the visit"]) {
-    const lines = await row.getByText(words).evaluate((element) => {
-      const range = document.createRange();
-      range.selectNodeContents(element);
-      return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
-    });
-    expect(lines, words).toBe(1);
-  }
-});
-
-test("a job closed out on another phone reads as closed on Today, as its card says", async ({ page }) => {
+test("a job closed out on another phone is done with on Today, and the next is the one after", async ({ page }) => {
   const fake = await fakeTech(page);
   // The visit's status still says scheduled, and this phone holds none of the job's work.
   fake.progress = {
@@ -64,42 +66,33 @@ test("a job closed out on another phone reads as closed on Today, as its card sa
   };
   await page.goto("/");
 
-  const row = page.getByRole("listitem").first();
-  await expect(row).toContainText(techCopy.titles.closeOut);
-  await row.click();
+  await expect(page.getByRole("heading", { level: 1, name: "2 jobs today" })).toBeVisible();
+  await expect(nextJob(page)).toContainText("Vikram S.");
+  const closed = laterRows(page).first();
+  await expect(closed).toContainText(techCopy.today.closed.partial);
+  await closed.click();
   await expect(page.getByText("Closed out · partly done")).toBeVisible();
 });
 
-test("puts Navigate and the drive on beneath a job, and says when one under way runs into the next", async ({
-  page,
-}) => {
+test("says when a job under way runs into the next", async ({ page }) => {
   const fake = await fakeTech(page);
-  await page.goto("/");
-
-  const first = page.getByRole("listitem").first();
-  await expect(first.getByRole("link", { name: techCopy.job.navigate })).toHaveAttribute(
-    "href",
-    "https://www.google.com/maps/dir/?api=1&destination=28.39%2C77.07",
-  );
-  await expect(first).toContainText(techCopy.today.drive(20));
-  await expect(first).not.toContainText(techCopy.today.runsOver("11 am", "11:30 am"));
-  expect(await axeViolations(page)).toEqual([]);
-
   // Begun at 10 am, the 90-minute visit runs to 11:30, past the 11 o'clock it must be done by for Vikram's.
   const begun = `${todayInIndia()}T04:30:00.000Z`;
   fake.progress = { ...NOTHING_DONE, checked_in_at: begun, started_at: begun, steps_done: ["before_photos"] };
-  await page.reload();
-  await expect(page.getByRole("listitem").first()).toContainText(techCopy.today.runsOver("11 am", "11:30 am"));
+  await page.goto("/");
+  await expect(nextJob(page)).toContainText(techCopy.today.next.inProgress);
+  await expect(nextJob(page)).toContainText(techCopy.today.runsOver("11 am", "11:30 am"));
 });
 
-test("says nothing is booked when the day is empty (board A2)", async ({ page }) => {
+test("says there are no jobs when the day is empty", async ({ page }) => {
   await fakeTech(page, true);
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.today.empty.title })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.today.noJobs })).toBeVisible();
+  await expect(page.getByText(techCopy.today.noMore)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("shows board A2's banner with no signal, and the card still opens from the phone", async ({ page, context }) => {
+test("shows the no-signal bar with no signal, and the card still opens from the phone", async ({ page, context }) => {
   const fake = await fakeTech(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
@@ -114,8 +107,8 @@ test("shows board A2's banner with no signal, and the card still opens from the 
   fake.online = false;
   await context.setOffline(true);
 
-  await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
-  await expect(page.getByText(techCopy.today.offline.body)).toBeVisible();
+  await expect(page.getByText(techCopy.today.offline.bar)).toBeVisible();
+  await expect(page.getByText(techCopy.today.sync.offline(0))).toBeVisible();
   await expect(page.getByText("Rohit M.").first()).toBeVisible();
 
   // The card comes from what the phone kept, not from the API, which cannot be reached.
@@ -129,21 +122,21 @@ test("says there is no signal when nothing answers, even while the phone says it
   const fake = await fakeTech(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await expect(page.getByText(techCopy.today.offline.title)).toHaveCount(0);
+  await expect(page.getByText(techCopy.today.offline.bar)).toHaveCount(0);
 
   // A weak signal: the phone reports a network, and nothing on it answers.
   fake.online = false;
   await page.getByText("Rohit M.").first().click();
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
-  await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
+  await expect(page.getByText(techCopy.today.offline.bar)).toBeVisible();
 
   // And once something answers again, it stops saying so.
   fake.online = true;
   await page.getByText("Rohit M.").first().click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await expect(page.getByText(techCopy.today.offline.title)).toHaveCount(0);
+  await expect(page.getByText(techCopy.today.offline.bar)).toHaveCount(0);
 });
 
 test("keeps today’s and tomorrow’s jobs and lets go of every older day and card as the day arrives", async ({
@@ -194,7 +187,7 @@ test("opens a job’s card with its address, access notes and the way in (board 
 test("a job further out shows time, type and sector only, and cannot be started", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/");
-  await page.getByRole("listitem").nth(2).click();
+  await laterRows(page).nth(1).click();
 
   // When it opens, from the card's unlocks_at, not "the day before".
   await expect(page.getByText("Opens at 6 pm tomorrow.")).toBeVisible();
@@ -203,27 +196,27 @@ test("a job further out shows time, type and sector only, and cannot be started"
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
 });
 
-test("scrolls the whole day on a screen shorter than it, down to tomorrow’s last job", async ({ page }) => {
+test("scrolls the whole day on a screen shorter than it, down to tomorrow, above the tab bar", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 480 });
   const fake = await fakeTech(page);
   fake.tomorrow = true;
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "3 jobs today" })).toBeVisible();
-  await page.getByRole("button", { name: "Tomorrow · 1 job" }).click();
 
-  const last = page.getByRole("listitem").last();
-  await expect(last).toContainText("Sector 50");
-  // From the top of the day, whatever opening tomorrow scrolled.
+  const tomorrow = page.getByRole("link", { name: /^Tomorrow · 1 job from/ });
+  await expect(tomorrow).not.toBeInViewport({ ratio: 1 });
+  // A finger's scroll, not a script's: a column that hid what overflows it would leave tomorrow out of reach.
   await page.mouse.move(180, 240);
-  await page.mouse.wheel(0, -3000);
-  await expect(last).not.toBeInViewport({ ratio: 1 });
-
-  // A finger's scroll, not a script's: a column that hid what overflows it would leave this job out of reach. A step
-  // at a time, since the links beneath the day pass it at the very foot.
   await expect(async () => {
     await page.mouse.wheel(0, 200);
-    await expect(last).toBeInViewport({ ratio: 1, timeout: 200 });
+    await expect(tomorrow).toBeInViewport({ ratio: 1, timeout: 200 });
   }).toPass();
+  // At the very foot of the day, clear of the tab bar, which stays at the foot of the window.
+  await page.mouse.wheel(0, 3000);
+  await expect(tomorrow).toBeInViewport({ ratio: 1 });
+  const bar = await page.getByRole("navigation", { name: techCopy.tabs.label }).boundingBox();
+  const row = await tomorrow.boundingBox();
+  expect((row?.y ?? 0) + (row?.height ?? 0)).toBeLessThanOrEqual(bar?.y ?? 0);
 });
 
 test("every target on every screen is at least the design’s 48 px, and the primary action is 64", async ({ page }) => {
@@ -244,7 +237,17 @@ test("every target on every screen is at least the design’s 48 px, and the pri
     checked_in_at: "2030-01-01T04:00:00.000Z",
     started_at: "2030-01-01T04:10:00.000Z",
   };
-  const screens = ["/", `/jobs/${JOB_ID}`, "/waiting", "before-photos", "checklist", "consumables", "piece", "outcome"];
+  const screens = [
+    "/",
+    "/me",
+    `/jobs/${JOB_ID}`,
+    "/waiting",
+    "before-photos",
+    "checklist",
+    "consumables",
+    "piece",
+    "outcome",
+  ];
   for (const screen of screens) {
     await page.goto(screen.startsWith("/") ? screen : `/jobs/${JOB_ID}/${screen}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

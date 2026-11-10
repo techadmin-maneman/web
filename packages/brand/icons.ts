@@ -94,6 +94,12 @@ export const GLYPHS = {
   /** A list item's moves in the console: a place up, a place down. */
   up: "M6 15 L12 9 L18 15",
   down: "M6 9 L12 15 L18 9",
+  /** The technician's Navigate, on the next job: the arrow a map's directions draw. */
+  navigate: "M20 4 L3.5 11 L10.5 13.5 L13 20.5 Z",
+  /** The technician's day, saved and sent: a cloud. */
+  cloud: "M7 18.5 H17 A4 4 0 0 0 17.6 10.5 A6 6 0 0 0 6.1 12.1 A3.3 3.3 0 0 0 7 18.5 Z",
+  /** The technician's Schedule tab: a calendar with its days' lines. */
+  schedule: "M3.5 5.5 H20.5 V20.5 H3.5 Z M3.5 10 H20.5 M8 3.5 V7 M16 3.5 V7 M7.5 13.5 H16.5 M7.5 17 H12.5",
   /** A client's page's Call. */
   phone:
     "M5 4.5 H8.5 L10 8.5 L8 10 C9 12.2 11.8 15 14 16 L15.5 14 L19.5 15.5 V19 C19.5 19.6 19 20 18.5 20 C10.5 19.5 4.5 13.5 4 5.5 C4 5 4.4 4.5 5 4.5 Z",

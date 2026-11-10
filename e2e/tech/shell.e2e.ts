@@ -8,6 +8,7 @@ import { axeViolations } from "../a11y.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { heldOnPhone, storeOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { askToSignOut, signOut } from "./tabs.ts";
 
 test("opens on the sign-in: the number first, the code once it is sent, and the way to ops", async ({ page }) => {
   await page.goto("/");
@@ -82,14 +83,13 @@ test("signs the phone out and forgets everything it held", async ({ page }) => {
   const before = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(before).toContain("mm-tech");
 
-  // Signing out takes the jobs off the phone, so it asks first, even with nothing waiting to be sent.
-  await page.getByRole("button", { name: techCopy.today.signOut }).click();
-  await expect(page.getByRole("alert")).toContainText(techCopy.leaving.confirm);
-  await page.getByRole("button", { name: techCopy.leaving.stay }).click();
-  await expect(page.getByRole("alert")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await page.getByRole("button", { name: techCopy.today.signOut }).click();
-  await page.getByRole("alert").getByRole("button", { name: techCopy.today.signOut }).click();
+  // Signing out takes the jobs off the phone, so it asks first, from Me, even with nothing waiting to be sent.
+  await askToSignOut(page);
+  await expect(page.getByRole("dialog")).toContainText(techCopy.me.sheet.uploaded);
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.me.sheet.cancel }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.me.title })).toBeVisible();
+  await signOut(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");

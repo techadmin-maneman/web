@@ -5,11 +5,12 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fakeTech } from "./fake-tech.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { tab } from "./tabs.ts";
 
-test("opens the technician's next six days from Today, a day at a time", async ({ page }) => {
+test("opens the technician's next six days from the Schedule tab, a day at a time", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/");
-  await page.getByRole("link", { name: techCopy.week.link }).click();
+  await tab(page, techCopy.tabs.schedule).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.week.title })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2 })).toHaveCount(6);
   await expect(page.getByText(techCopy.week.none).first()).toBeVisible();
@@ -21,7 +22,8 @@ test("shows the technician's own month: visits by kind, what each earned, and a 
 }) => {
   await fakeTech(page);
   await page.goto("/");
-  await page.getByRole("link", { name: techCopy.month.link }).click();
+  await tab(page, techCopy.tabs.me).click();
+  await page.getByRole("link", { name: techCopy.me.month }).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.month.title })).toBeVisible();
   await expect(page.getByRole("term")).toHaveText([
     techCopy.month.line(techCopy.month.kinds.service, 12),
@@ -35,7 +37,8 @@ test("shows the technician's own month: visits by kind, what each earned, and a 
 test("asks for leave from the phone, and shows the ask with ops", async ({ page }) => {
   const fake = await fakeTech(page);
   await page.goto("/");
-  await page.getByRole("link", { name: techCopy.leave.link }).click();
+  await tab(page, techCopy.tabs.me).click();
+  await page.getByRole("link", { name: techCopy.me.leave, exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.leave.title })).toBeVisible();
   await expect(page.getByText(techCopy.leave.none)).toBeVisible();
   await page.getByLabel(techCopy.leave.note).fill("Sister's wedding");

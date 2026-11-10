@@ -72,6 +72,25 @@
   --check-row-height: var(--tap-row);
   --check-box-size: var(--sp-24);
 
+  /* The tab bar on white: its current tab in navy, under a 2 px navy mark; and a sheet's panel on white. */
+  --nav-ground: var(--white-000);
+  --nav-rule: var(--line-200);
+  --nav-text: var(--ink-500);
+  --nav-text-current: var(--navy-900);
+  --nav-label: var(--ink-500);
+  --tab-mark: var(--navy-900);
+  --sheet-ground: var(--white-000);
+  --sheet-text: var(--ink-900);
+  /* Rows run the column's width under hairlines, with no box, at the brief's list sizes. */
+  --list-edge: 0;
+  --row-lead-text: var(--fs-15);
+  --row-lead-colour: var(--ink-900);
+  --row-lead-wrap: normal;
+  --row-lead-align: flex-start;
+  --row-title-text: var(--fs-17);
+  --row-title-weight: var(--weight-semibold);
+  --row-meta-text: var(--fs-14);
+
   background: var(--white-000);
   color: var(--ink-900);
   font-family: var(--font-plex);

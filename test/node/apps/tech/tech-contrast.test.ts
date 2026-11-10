@@ -124,7 +124,13 @@ const SHARED_BUTTONS = { file: "packages/ui/button.module.css", looks: [".gold",
  * The screens redrawn in the new look, which carry data-look="light", and the look itself. Each redesign PR adds the
  * folders of the screens it redraws; their colours are read as the look sets them and held to its 4.5:1.
  */
-const REDRAWN = ["apps/tech/src/parts/", "apps/tech/src/styles/look.css"];
+const REDRAWN = [
+  "apps/tech/src/parts/",
+  "apps/tech/src/styles/look.css",
+  "apps/tech/src/today/",
+  "apps/tech/src/me/",
+  "apps/tech/src/frame/light.module.css",
+];
 const slashed = (file: string) => file.replace(/\\/g, "/");
 const isRedrawn = (file: string) => REDRAWN.some((place) => slashed(file).startsWith(place));
 

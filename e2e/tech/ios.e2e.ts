@@ -19,6 +19,7 @@ import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { pageScrolls } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { signOut } from "./tabs.ts";
 
 /** A 401 with no session: what an installed iOS app's own cookie jar produces on its first call. */
 const noSession = { status: 401, json: { error: { code: "session_required", request_id: "test" } } };
@@ -142,8 +143,7 @@ test("wipes everything the phone holds when the technician signs out", async ({ 
   const before = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(before).toContain("mm-tech");
 
-  await page.getByRole("button", { name: techCopy.today.signOut }).click();
-  await page.getByRole("alert").getByRole("button", { name: techCopy.today.signOut }).click();
+  await signOut(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");

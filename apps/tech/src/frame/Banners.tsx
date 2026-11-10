@@ -16,6 +16,7 @@ import { isStorageFull, onStorageFull } from "../store/db.ts";
 import type { HeldJob } from "../store/jobs.ts";
 import { account, type JobAccount } from "../store/outbox.ts";
 import styles from "./banner.module.css";
+import light from "./light.module.css";
 import { apiDate } from "../lib/when.ts";
 
 /** While the phone has just refused a write for want of room (../store/db.ts), above whichever screen is showing. */
@@ -28,6 +29,16 @@ export function StorageFull() {
       <p className={styles.fullTitle}>{storage.title}</p>
       <p className={styles.fullBody}>{storage.body}</p>
     </div>
+  );
+}
+
+/** On a screen in the new look, the bar under its head that says there is no signal and the work is kept. */
+export function NoSignal() {
+  return (
+    <p className={light.noSignal} role="status">
+      <Icon d={APP_ICONS.offline} size="sm" weight="heavy" />
+      <span>{todayCopy.offline.bar}</span>
+    </p>
   );
 }
 

@@ -4,12 +4,24 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { badges, changed, closeOut, job, notHome, today, whatStopped } from "../../../apps/tech/src/content.ts";
+import {
+  badges,
+  changed,
+  closeOut,
+  job,
+  me,
+  notHome,
+  tabs,
+  today,
+  whatStopped,
+} from "../../../apps/tech/src/content.ts";
 import { jobLabel } from "../../../apps/tech/src/lib/kind.ts";
 import type { HeldJob } from "../../../apps/tech/src/store/jobs.ts";
 
 const SOURCE = "apps/tech/src";
 const DESIGN = readFileSync("design/phase2/Technician App.dc.html", "utf8");
+/** The redesign's prototype, which the screens redrawn in the new look follow (docs/prompts/tech-redesign.md). */
+const PROTOTYPE = readFileSync("design/tech-redesign/Technician App.prototype.html", "utf8");
 
 /** The app sets apostrophes curly, as its house style, where the design types them straight. */
 const plain = (text: string) => text.replaceAll("’", "'");
@@ -29,9 +41,25 @@ describe("the technician app’s content", () => {
     expect(DESIGN).toContain(plain(today.offline.body));
   });
 
-  it("says the design’s words for the empty day", () => {
-    expect(DESIGN).toContain(today.empty.title);
-    expect(DESIGN).toContain(today.empty.label);
+  it("says the prototype’s words for Today, its tabs and signing out", () => {
+    for (const words of [
+      today.allDone,
+      today.noMore,
+      today.later,
+      today.dayView,
+      today.sync.synced,
+      today.offline.bar,
+      tabs.today,
+      tabs.schedule,
+      tabs.kit,
+      tabs.me,
+      me.pending,
+      me.contact,
+      me.sheet.title,
+      me.sheet.uploaded,
+    ]) {
+      expect(PROTOTYPE, words).toContain(words);
+    }
   });
 
   it("names the badges as the design does, in the glossary’s words, and carries no amount", () => {

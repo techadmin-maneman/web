@@ -1,0 +1,39 @@
+/*
+ * What the frame draws on a screen in the new look (../styles/look.css): the sync label at a screen's head, the
+ * no-signal bar under it, a failure's words, and the white beneath a screen that runs on to the tab bar.
+ */
+
+.sync {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-4);
+  align-items: center;
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+/* A tinted strip of the column's width, under the screen's head. */
+.noSignal {
+  display: flex;
+  gap: var(--sp-8);
+  align-items: center;
+  margin: 0;
+  padding: var(--sp-8) var(--screen-gutter);
+  background: var(--ui-tint);
+  color: var(--ui-text);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+.message {
+  font-size: var(--fs-17);
+  line-height: var(--lh-145);
+  color: var(--ui-text);
+}
+
+/* Beneath a screen in the new look, its white runs on to the bar: outside the screen, so the brief's own white. */
+.ground {
+  background: var(--white-000);
+}

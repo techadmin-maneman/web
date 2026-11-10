@@ -44,35 +44,78 @@ export const signIn = {
 } as const;
 
 export const today = {
+  /** The jobs still to do today: the count falls as each closes. */
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
-  /** The next job still to do, by its start and area. */
-  next: (time: string, sector: string) => `Next at ${time} · ${sector}`,
-  allDone: "All done for today.",
-  tomorrow: (count: number) => `Tomorrow · ${String(count)} ${count === 1 ? "job" : "jobs"}`,
-  /** The drive to the day's next job, by our estimate. */
-  drive: (minutes: number) => `${String(minutes)} min to the next job`,
+  allDone: "All done today",
+  sync: {
+    synced: "Synced",
+    offline: (saved: number) => (saved > 0 ? `Offline · ${String(saved)} saved` : "Offline"),
+    sending: (count: number) => `${String(count)} to upload`,
+  },
+  /** The next job's line above its time: where the technician is with it, or when to leave for it. */
+  next: {
+    next: "Next",
+    leaveIn: (minutes: number) => `Next · leave in ${String(minutes)} min`,
+    leaveBy: (time: string) => `Next · leave by ${time}`,
+    leaveNow: "Next · leave now",
+    atTheDoor: "At the door",
+    inProgress: "In progress",
+  },
+  driveTo: (minutes: number) => `${String(minutes)} min drive`,
+  driveAndLeave: (minutes: number, time: string) => `${String(minutes)} min drive · leave ${time}`,
+  message: (first: string) => `Message ${first}`,
+  call: (first: string) => `Call ${first}`,
+  later: "Later today",
+  dayView: "Day view",
+  /** A job done with, by how it closed. */
+  closed: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
   /** A job under way that runs into the next: when to be done to reach it on time. */
   runsOver: (finishBy: string, next: string) => `Running over · finish by ${finishBy} for the ${next} job`,
-  /** Yesterday's jobs not yet closed, above today's, so their work can be finished and sent. */
-  leftOpen: (count: number) => `Still open from yesterday · ${String(count)}`,
-  signOut: "Sign out",
-  empty: {
-    label: "No jobs",
-    title: "Nothing booked for today",
-    tomorrow: (count: number, time: string) =>
-      `Tomorrow you have ${String(count)} ${count === 1 ? "job" : "jobs"}, first at ${time}.`,
-    // The board draws the line with a job tomorrow only.
-    none: "Nothing tomorrow either.",
-  },
+  noMore: "No more jobs today.",
+  noJobs: "No jobs today",
+  tomorrow: "Tomorrow",
+  tomorrowJobs: (count: number, time: string) => `${String(count)} ${count === 1 ? "job" : "jobs"} from ${time}`,
+  nothingBooked: "Nothing booked",
+  /** Yesterday's jobs not yet closed, as a card at the top: their work can still be finished and sent. */
+  leftOpen: (count: number) =>
+    count === 1 ? "A job from yesterday is still open" : `${String(count)} jobs from yesterday are still open`,
+  leftOpenBody: "Finish it and send it.",
   offline: {
     title: "No signal",
     body: "Today’s jobs and cards are on the phone.",
     /** On a job's step: what the technician does is kept, and goes once the signal is back. */
     step: "Saved on the phone. Sends when you’re back online.",
+    /** Under Today's head: the bar the new look draws. */
+    bar: "No signal · your work is saved on this phone",
   },
-  // The board draws no failure for the day's list.
   failed: "The day’s jobs didn’t load.",
   retry: "Try again",
+} as const;
+
+/** The tab bar at the foot of the top-level screens. */
+export const tabs = {
+  label: "Sections",
+  today: "Today",
+  schedule: "Schedule",
+  kit: "Kit",
+  me: "Me",
+} as const;
+
+/** Me: the technician's own pages, what waits to send, ops, and signing out. */
+export const me = {
+  title: "Me",
+  month: "This month",
+  leave: "Leave",
+  pending: "Pending uploads",
+  nothingPending: "None",
+  contact: "Contact ops",
+  signOut: "Sign out",
+  /** The sheet before signing out, which wipes the phone. */
+  sheet: {
+    title: "Sign out?",
+    uploaded: "Everything is uploaded.",
+    cancel: "Cancel",
+  },
 } as const;
 
 /** The way to ops from anywhere the app says to ask them (./components/ReachOps.tsx). */
@@ -673,6 +716,14 @@ export const badges = {
   // No board draws a consultation and fit in one visit, paid for once the client is fitted.
   at_visit: "Pays at the visit",
 } as const;
+
+/** The badges in a line, after the visit's kind: "Service visit · prepaid". */
+export const badgesLower = {
+  prepaid: "prepaid",
+  credit: "free visit",
+  free: "no charge",
+  at_visit: "pays at the visit",
+} as const satisfies Record<keyof typeof badges, string>;
 
 /**
  * No board draws a consultation and fit in one visit

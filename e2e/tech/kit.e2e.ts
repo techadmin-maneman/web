@@ -7,6 +7,7 @@ import { axeViolations } from "../a11y.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
 import { writesTo } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { tab } from "./tabs.ts";
 
 const copy = techCopy.kit;
 const HAIR = "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density";
@@ -45,11 +46,11 @@ function withAKit(fake: Fake): void {
   };
 }
 
-test("opens from today, shows each lot’s expiry, and receives a top-up by the pieces scanned", async ({ page }) => {
+test("opens from its tab, shows each lot’s expiry, and receives a top-up by the pieces scanned", async ({ page }) => {
   const fake = await fakeTech(page);
   withAKit(fake);
   await page.goto("/");
-  await page.getByRole("link", { name: copy.link }).click();
+  await tab(page, techCopy.tabs.kit).click();
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 
   const held = page.getByRole("region", { name: copy.held.title });

@@ -70,7 +70,8 @@ export function ListRow({
   /** One figure or state: a time, an amount, a Badge. */
   readonly end?: ReactNode;
   readonly endTone?: EndTone;
-  readonly rule?: RuleTone | undefined;
+  /** Its first edge's rule: how pressing it is, or, `done`, that its thing is done with. */
+  readonly rule?: RuleTone | "done" | undefined;
   /** The page the row opens. */
   readonly to?: string | undefined;
   /** What the row opens in place, as a drawer. */
