@@ -17,9 +17,15 @@ export interface Steps {
   readonly max: number;
 }
 
-/** `value` moved one step, kept between the least and the most. */
+/**
+ * `value` moved one step, landing on the step's own figures (12 ml in fives goes up to 15 and down to 10), and kept
+ * between the least and the most. A key pressed at or past its limit moves nothing: a count already above the most, as
+ * a visit can expect more than a kit holds, is never pulled down by plus.
+ */
 export function stepped(value: number, by: 1 | -1, { step, min, max }: Steps): number {
-  return Math.min(max, Math.max(min, value + by * step));
+  if ((by > 0 && value >= max) || (by < 0 && value <= min)) return value;
+  const next = by > 0 ? Math.floor(value / step) * step + step : Math.ceil(value / step) * step - step;
+  return Math.min(max, Math.max(min, next));
 }
 
 export function Stepper({

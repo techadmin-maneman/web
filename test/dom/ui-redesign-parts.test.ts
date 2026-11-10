@@ -79,6 +79,23 @@ describe("the stepper", () => {
     expect(stepped(9, 1, { step: 2, min: 0, max: 10 })).toBe(10);
     expect(stepped(1, -1, { step: 2, min: 0, max: 10 })).toBe(0);
   });
+
+  it("lands on the step's own figures", () => {
+    expect(stepped(12, 1, { step: 5, min: 0, max: 999 })).toBe(15);
+    expect(stepped(12, -1, { step: 5, min: 0, max: 999 })).toBe(10);
+  });
+
+  it("moves nothing when pressed at or past its limit, so plus never lowers a count above the most", () => {
+    expect(stepped(7, 1, { step: 1, min: 0, max: 5 })).toBe(7);
+    expect(stepped(7, -1, { step: 1, min: 0, max: 5 })).toBe(5);
+    expect(stepped(-1, -1, { step: 1, min: 0, max: 5 })).toBe(-1);
+    act(() => {
+      root.render(createElement(Counted, { start: 7, max: 5 }));
+    });
+    press("Two more tape strips");
+    expect(page.textContent).toContain("Tape strips, 7");
+    expect(key("Two more tape strips")?.getAttribute("aria-disabled")).toBe("true");
+  });
 });
 
 describe("a visit's step bar", () => {
