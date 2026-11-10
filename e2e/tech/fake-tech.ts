@@ -49,8 +49,8 @@ export interface Fake {
   slowCardMs: number;
   /** How long who is signed in takes to come once a code is verified, as on a slow network. */
   slowMeMs: number;
-  /** How long the sign-out's answer takes, in milliseconds. */
-  slowSignOutMs: number;
+  /** Holds the sign-out's answer until it settles, for a test to look at the screen while it is on its way. */
+  signOutHeld: Promise<void> | null;
   /** False until a code is verified: the API has no session for this phone, and every call but the sign-in's is a 401. */
   signedIn: boolean;
   /** True once ops revoke the phone: every call is a 401 `device_revoked`. */
@@ -198,7 +198,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     online: true,
     slowCardMs: 0,
     slowMeMs: 0,
-    slowSignOutMs: 0,
+    signOutHeld: null,
     signedIn: true,
     revoked: false,
     switchedOff: false,
@@ -330,7 +330,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
 
     if (method === "POST") {
       if (path === "/api/tech/auth/logout") {
-        if (fake.slowSignOutMs > 0) await new Promise((resolve) => setTimeout(resolve, fake.slowSignOutMs));
+        if (fake.signOutHeld !== null) await fake.signOutHeld;
         return reply(route, 204);
       }
       if (path.endsWith("/door-photo/upload-url")) {

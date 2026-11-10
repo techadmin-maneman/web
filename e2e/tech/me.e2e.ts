@@ -42,7 +42,10 @@ test("keeps the tab bar on every top-level screen, and none inside a job", async
 
 test("signs out once, however often Sign out is tapped while it goes", async ({ page }) => {
   const fake = await fakeTech(page);
-  fake.slowSignOutMs = 1500;
+  let answer: (() => void) | undefined;
+  fake.signOutHeld = new Promise((resolve) => {
+    answer = resolve;
+  });
   const logouts: string[] = [];
   page.on("request", (request) => {
     if (request.url().endsWith("/api/tech/auth/logout")) logouts.push(request.url());
@@ -51,9 +54,17 @@ test("signs out once, however often Sign out is tapped while it goes", async ({ 
   const signOut = page.getByRole("button", { name: techCopy.me.signOut, exact: true });
   await signOut.click();
   await page.getByRole("dialog").getByRole("button", { name: techCopy.me.signOut, exact: true }).click();
-  // Tapped again while the first is on its way: no second question, and no second sign-out.
-  await signOut.click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect.poll(() => logouts.length).toBe(1);
+
+  // Tapped again while the first is on its way, still on Me: no second question.
+  await signOut.click();
+  await page.waitForTimeout(300);
+  await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 0 });
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.me.title })).toBeVisible();
+
+  // The answer comes: one sign-out, and the sign-in.
+  answer?.();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   expect(logouts).toHaveLength(1);
 });
