@@ -377,6 +377,11 @@ jobs:
       - name: Their system libraries
         if: steps.browsers.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium webkit
+      # apt, as root, takes its partial/ folder and a lock file for itself, which the cache, saving as the runner, could
+      # not read: the folder goes back to the runner, so the cache can keep it.
+      - name: apt's downloads given back to the runner, for the cache
+        if: runner.environment == 'github-hosted'
+        run: sudo chown -R "$(id -un)" ~/apt-archives
       - name: Local secrets, and every migration applied to an empty D1
         run: |
           node scripts/dev/ensure-dev-vars.ts
