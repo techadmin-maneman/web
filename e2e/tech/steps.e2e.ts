@@ -462,3 +462,17 @@ test("the consumables step says what the kit holds, and when more is counted tha
   await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips", 1, "strip") }).click();
   await expect(page.getByText(techCopy.steps.consumables.inKit(5, "strip", true))).toBeVisible();
 });
+
+test("leaves a note for the next technician and an alert with the close, only when written", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
+  await page.goto(`/jobs/${JOB_ID}/outcome`);
+  await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+  await page.getByLabel(techCopy.steps.outcome.nextNote).fill("  Edge lifting at the left temple. ");
+  await page.getByLabel(techCopy.steps.outcome.alert).fill("Allergic to latex.");
+  expect(await axeViolations(page)).toEqual([]);
+  await stepAction(page).click();
+  await expect
+    .poll(() => writesTo(fake, "outcome").at(-1)?.body)
+    .toEqual({ outcome: "done", handoff_note: "Edge lifting at the left temple.", client_alert: "Allergic to latex." });
+});

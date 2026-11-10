@@ -3,6 +3,8 @@
 // After a consultation, Done asks whether the client goes ahead (docs/decisions/0149-lost-reasons.md).
 
 import { ToggleButton } from "@maneman/ui/ToggleButton";
+import { Field, TextArea } from "@maneman/ui/Field";
+import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "@rules/policy/client-record.ts";
 import { useState } from "react";
 import type { EventBody, Job, OutcomeRequest, PartialReason } from "../api.ts";
 import { oneVisit, steps as copy } from "../content.ts";
@@ -121,6 +123,50 @@ function doneOf(asked: boolean, notGoingAhead: boolean, lost: string | null): Ou
     : { outcome: "done", lost_reason: lost, going_ahead: false };
 }
 
+/**
+ * What the close leaves on the client's record (docs/prompts/tech-redesign.md, "Outcome"): a note for whoever takes the
+ * client's next visit, and an alert read before every visit. Each goes with the close only when written.
+ */
+function useCloseNotes() {
+  const [note, setNote] = useState("");
+  const [alert, setAlert] = useState("");
+  const add = (body: OutcomeRequest): OutcomeRequest => ({
+    ...body,
+    ...(note.trim() === "" ? {} : { handoff_note: note.trim() }),
+    ...(alert.trim() === "" ? {} : { client_alert: alert.trim() }),
+  });
+  const fields = (
+    <div className={styles.notes}>
+      <Field label={copy.outcome.nextNote}>
+        {(control) => (
+          <TextArea
+            {...control}
+            maxLength={HANDOFF_MAX_CHARS}
+            value={note}
+            onChange={(event) => {
+              setNote(event.currentTarget.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={copy.outcome.alert} hint={copy.outcome.alertHint}>
+        {(control) => (
+          <TextArea
+            {...control}
+            rows={2}
+            maxLength={ALERT_MAX_CHARS}
+            value={alert}
+            onChange={(event) => {
+              setAlert(event.currentTarget.value);
+            }}
+          />
+        )}
+      </Field>
+    </div>
+  );
+  return { add, fields };
+}
+
 /** After a consultation: whether the client is going ahead with a fit. */
 function GoingAhead(props: { answer: boolean | null; onAnswer: (value: boolean) => void }) {
   return (
@@ -161,6 +207,7 @@ function Choosing({
   const [codeChecking, setCodeChecking] = useState(false);
   const [goingAhead, setGoingAhead] = useState<boolean | null>(null);
   const [lost, setLost] = useState<string | null>(null);
+  const notes = useCloseNotes();
 
   const closesOneVisit = job.one_visit && choice === "done";
   const declined = clientChoice !== null && "declined" in clientChoice;
@@ -182,8 +229,8 @@ function Choosing({
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
       onAction={() => {
-        if (choice === "partial" && reason !== null) onFinish({ outcome: "partial", reason });
-        else onFinish(doneOf(asksWhy, notGoingAhead, lost));
+        if (choice === "partial" && reason !== null) onFinish(notes.add({ outcome: "partial", reason }));
+        else onFinish(notes.add(doneOf(asksWhy, notGoingAhead, lost)));
       }}
     >
       <Pair<"done" | "partial">
@@ -216,6 +263,7 @@ function Choosing({
         </>
       )}
       {choice === "partial" && <ReasonList reasons={job.partial_reasons} picked={reason} onPick={setReason} />}
+      {choice !== null && notes.fields}
     </StepFrame>
   );
 }

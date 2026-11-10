@@ -727,6 +727,10 @@ export const steps = {
     },
   },
   outcome: {
+    /** What the close leaves on the client's record, for whoever takes their next visit. */
+    nextNote: "Note for the next technician",
+    alert: "Alert for every visit",
+    alertHint: "Read before every visit, until ops take it off.",
     // The board draws Done chosen already; nothing is chosen for the technician here.
     choose: "Choose Done or Partly done",
     pickReason: "Pick a reason to continue",
