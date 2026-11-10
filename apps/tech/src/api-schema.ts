@@ -3563,6 +3563,10 @@ export interface components {
                  */
                 finish_by: string;
             } | null;
+            /** @description The drive to it by our estimate: from the job before, or from the technician's home for the day's first. Null for a job closed. */
+            drive_minutes: number | null;
+            /** @description When to leave for it, to start on time. Null for a job closed. */
+            leave_by: string | null;
         };
         TechnicianService: {
             /** @description Its code, which the hair profile names a first fit's product by. */

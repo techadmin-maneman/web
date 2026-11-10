@@ -70,6 +70,20 @@ describe("the day's jobs", () => {
     });
   });
 
+  it("gives each job the drive to it from home, or the job before, and when to leave for it", async () => {
+    // Home 2.5 km west of the client's door, which the estimate drives in its shortest drive or more.
+    await env.DB.prepare("UPDATE technicians SET home_lat = ?2, home_lng = ?3 WHERE id = ?1")
+      .bind(IMRAN, ADDRESS.lat, ADDRESS.lng - 0.025)
+      .run();
+    const { jobs } = await (await get("/api/tech/jobs")).json<{ jobs: Record<string, unknown>[] }>();
+    const [job] = jobs;
+    const drive = job?.drive_minutes as number;
+
+    expect(drive).toBeGreaterThan(0);
+    // 1 pm in India, less the drive.
+    expect(job?.leave_by).toBe(new Date(Date.parse("2026-09-21T07:30:00.000Z") - drive * 60_000).toISOString());
+  });
+
   it("gives the whole address the client saved: building, tower, floor, flat and landmark", async () => {
     await env.DB.prepare(
       `UPDATE addresses SET building = 'Emerald Heights', tower = 'C', floor = '14', flat = '1402',

@@ -48,7 +48,7 @@ import { bookedMinutes } from "../booking/occupancy.ts";
 import { isOneOf } from "../../lib/one-of.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
-import { nextJobs, type NextJob } from "../../policy/next-job.ts";
+import { drivesTo, nextJobs, type NextJob } from "../../policy/next-job.ts";
 import type { BookingRules } from "../../policy/start-times.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
@@ -87,10 +87,17 @@ export interface JobSummary {
   readonly progress: JobState;
 }
 
-/** A job on the day's list: its address once it unlocks, for Navigate, and the next job still to do from it. */
+/**
+ * A job on the day's list: its address once it unlocks, for Navigate, the next job still to do from it, and the drive
+ * to it with when to leave for it.
+ */
 export interface DayJob extends JobSummary {
   readonly address: JobAddress | null;
   readonly next: NextJob | null;
+  /** The drive to it, from the job before or from home for the day's first; null for a job closed. */
+  readonly drive_minutes: number | null;
+  /** When to leave for it, to start on time; null for a job closed. */
+  readonly leave_by: string | null;
 }
 
 /** The address as the client saved it, the parts ADR 0054 added included: what gets them to the right door. */
@@ -187,7 +194,8 @@ export const SELECT_JOB = `
 
 /**
  * The jobs on one India date, in time order. Statuses the technician can still act on, and what they closed today;
- * each with its address once unlocked, and the drive to the next job still to do.
+ * each with its address once unlocked, the drive to the next job still to do, and the drive to it from the job before
+ * or from the technician's home.
  */
 export async function jobsOn({
   db,
@@ -206,13 +214,17 @@ export async function jobsOn({
 }): Promise<DayJob[]> {
   const from = indiaInstant(date, "00:00").toISOString();
   const to = indiaInstant(addDays(date, 1), "00:00").toISOString();
-  const [jobs, schedule, landed] = await Promise.all([
+  const [jobs, schedule, landed, home] = await Promise.all([
     db
       .prepare(`${SELECT_JOB} AND a.window_start >= ?2 AND a.window_start < ?3 ORDER BY a.window_start`)
       .bind(technicianId, from, to)
       .all<JobRow>(),
     loadSlotSchedule(db),
     startsAndOutcomesOn(db, technicianId, from, to),
+    db
+      .prepare("SELECT home_lat AS lat, home_lng AS lng FROM technicians WHERE id = ?1")
+      .bind(technicianId)
+      .first<{ lat: number | null; lng: number | null }>(),
   ]);
   const shown = jobs.results.filter((row) => isOneOf(SHOWN, row.status));
   const arrivalMinutes = rules.booking.arrival;
@@ -220,18 +232,27 @@ export async function jobsOn({
     listingOf({ row, now, unlockHour, arrivalMinutes, schedule, progress: stateOf(landed.get(row.id) ?? []) }),
   );
   const pinOf = (row: JobRow) => (row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng });
-  const nexts = nextJobs(
-    shown.map((row, index) => ({
-      startsAt: row.window_start,
-      minutes: listed[index]?.minutes ?? null,
-      status: row.status,
-      pin: pinOf(row),
-    })),
-    rules,
-  );
+  const day = shown.map((row, index) => ({
+    startsAt: row.window_start,
+    minutes: listed[index]?.minutes ?? null,
+    status: row.status,
+    pin: pinOf(row),
+  }));
+  const nexts = nextJobs(day, rules);
+  const homeLat = home?.lat ?? null;
+  const homeLng = home?.lng ?? null;
+  const homePin = homeLat === null || homeLng === null ? null : { lat: homeLat, lng: homeLng };
+  const drives = drivesTo(day, homePin, rules);
   return listed.map((job, index) => {
     const row = shown[index];
-    return { ...job, address: job.unlocked && row !== undefined ? addressOf(row) : null, next: nexts[index] ?? null };
+    const drive = drives[index] ?? null;
+    return {
+      ...job,
+      address: job.unlocked && row !== undefined ? addressOf(row) : null,
+      next: nexts[index] ?? null,
+      drive_minutes: drive?.drive_minutes ?? null,
+      leave_by: drive?.leave_by ?? null,
+    };
   });
 }
 
