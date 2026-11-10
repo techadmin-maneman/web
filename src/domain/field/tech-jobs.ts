@@ -94,9 +94,12 @@ export interface JobSummary {
 export interface DayJob extends JobSummary {
   readonly address: JobAddress | null;
   readonly next: NextJob | null;
-  /** The drive to it, from the job before or from home for the day's first; null for a job closed. */
+  /**
+   * The drive to it, from the job before or from home for the day's first; null for a job closed, and for the day's
+   * first where the technician's home has no pin.
+   */
   readonly drive_minutes: number | null;
-  /** When to leave for it, to start on time; null for a job closed. */
+  /** When to leave for it, to start on time; null where there is no drive to it. */
   readonly leave_by: string | null;
 }
 

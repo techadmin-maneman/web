@@ -11,13 +11,15 @@ import { useSession } from "../session.ts";
 import styles from "./light.module.css";
 
 /**
- * How much of the phone's work has not reached us: every write still on it, waiting or stopped by the API, and each
- * photo set not sent; and how many of the writes the API stopped.
+ * How much of the phone's work has not reached us: each write waiting or stopped by the API, superseded or refused, and
+ * each photo set not sent; and how many of the writes the API stopped. A write it answered as too early is neither, as
+ * the queue leaves it out (../store/replay.ts): it is tried again when its time comes.
  */
 export function useUnsent(): { readonly unsent: number; readonly stopped: number } {
   const waiting = useOutbox();
-  const stopped = waiting.events.filter((event) => event.state !== "waiting").length;
-  return { unsent: waiting.events.length + photoSets(waiting.frames, waiting.events).length, stopped };
+  const writes = waiting.events.filter((event) => event.state !== "early");
+  const stopped = writes.filter((event) => event.state === "superseded" || event.state === "refused").length;
+  return { unsent: writes.length + photoSets(waiting.frames, waiting.events).length, stopped };
 }
 
 export function SyncLabel() {

@@ -10,24 +10,19 @@ import { SectionHead } from "@maneman/ui/SectionHead";
 import type { JobSummary } from "../api.ts";
 import { badgesLower, job as jobCopy, today as copy } from "../content.ts";
 import { kindName } from "../lib/kind.ts";
-import { outcomeOf, type RowState } from "../lib/progress.ts";
+import type { RowState } from "../lib/progress.ts";
 import type { Queued } from "../store/outbox.ts";
+import type { Heard } from "../store/jobs.ts";
+import { closedAs } from "../lib/today.ts";
 import { apiDate, clock, runsOver } from "../lib/when.ts";
 import styles from "./today.module.css";
-
-/** How a job done with closed, in a word: as it landed, or as the phone has it on its way. */
-function closedAs(job: JobSummary, queued: readonly Queued[]): string {
-  const outcome = outcomeOf(job, queued);
-  if (outcome === null) return job.status === "completed" ? copy.closed.done : copy.closed.other;
-  return copy.closed[outcome];
-}
 
 /**
  * The row's third line: how it closed, that it runs into the next job, where the technician is with it, or the drive
  * and when to leave.
  */
 function lastLine(job: JobSummary, state: RowState | null, ahead: Ahead): string | null {
-  if (state === "closed") return closedAs(job, ahead.queued);
+  if (state === "closed") return closedAs(job, ahead.queued, ahead.heard);
   if (state === "in_progress" && job.next !== null && ahead.later !== undefined && runsOver(job, apiDate())) {
     return copy.runsOver(clock(job.next.finish_by), clock(ahead.later.starts_at));
   }
@@ -41,6 +36,8 @@ function lastLine(job: JobSummary, state: RowState | null, ahead: Ahead): string
 interface Ahead {
   readonly later: JobSummary | undefined;
   readonly queued: readonly Queued[];
+  /** What the phone heard of the job since the list was read. */
+  readonly heard: Heard | undefined;
 }
 
 function Row(props: {
@@ -80,6 +77,7 @@ export function LaterToday(props: {
   readonly states: ReadonlyMap<string, RowState | null>;
   readonly names: ReadonlyMap<string, string>;
   readonly queued: readonly Queued[];
+  readonly heard: ReadonlyMap<string, Heard>;
 }) {
   const { jobs, states } = props;
   return (
@@ -107,6 +105,7 @@ export function LaterToday(props: {
               ahead={{
                 later: jobs.slice(index + 1).find((after) => states.get(after.id) !== "closed"),
                 queued: props.queued,
+                heard: props.heard.get(job.id),
               }}
             />
           ))}

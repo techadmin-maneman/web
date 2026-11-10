@@ -116,10 +116,12 @@ const DayJobSchema = JobSummarySchema.extend({
   drive_minutes: z.union([z.number().int(), z.null()]).openapi({
     description:
       "The drive to it by our estimate: from the job before, or from the technician's home for the day's first. " +
-      "Null for a job closed.",
+      "Null for a job closed, and for the day's first where the technician's home has no pin.",
   }),
   leave_by: z.union([z.iso.datetime(), z.null()]).openapi({
-    description: "When to leave for it, to start on time. Null for a job closed.",
+    description:
+      "When to leave for it, to start on time. Null for a job closed, and for the day's first where the technician's " +
+      "home has no pin.",
   }),
 }).openapi("TechnicianDayJob");
 

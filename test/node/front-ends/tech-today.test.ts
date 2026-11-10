@@ -3,7 +3,8 @@
 
 import { describe, expect, it } from "vitest";
 import { today as copy } from "../../../apps/tech/src/content.ts";
-import { nextLine, nextOf, titleOf } from "../../../apps/tech/src/lib/today.ts";
+import { closedAs, nextLine, nextOf, titleOf } from "../../../apps/tech/src/lib/today.ts";
+import type { Queued } from "../../../apps/tech/src/store/outbox.ts";
 
 const NOW = new Date("2026-11-10T03:30:00.000Z"); // 9 am in India
 const leaving = (iso: string | null) => ({ leave_by: iso });
@@ -54,5 +55,28 @@ describe("the job Today puts first, and its title", () => {
     expect(titleOf([], new Map(), true)).toBe(copy.noJobs);
     // Before the list loads, nothing is said to be done.
     expect(titleOf([], new Map(), false)).toBe(copy.jobs(0));
+  });
+});
+
+describe("how a job done with closed, in a word", () => {
+  const job = (outcome: string | null, status: "in_progress" | "completed" | "terminated" = "in_progress") => ({
+    id: "a",
+    status,
+    progress: { started_at: "2026-11-10T04:00:00.000Z", outcome },
+  });
+
+  it("is the outcome the list has, else the one the phone heard land, else the one on its way", () => {
+    expect(closedAs(job("partial"), [], undefined)).toBe(copy.closed.partial);
+    // Landed after the list was read: the list still has none, and the phone heard it.
+    expect(closedAs(job(null), [], { outcome: "done" })).toBe(copy.closed.done);
+    const queued = [
+      { job_id: "a", kind: "outcome", state: "waiting", body: { outcome: "no_show" } },
+    ] as unknown as Queued[];
+    expect(closedAs(job(null), queued, undefined)).toBe(copy.closed.no_show);
+  });
+
+  it("is the visit's status where no outcome is known", () => {
+    expect(closedAs(job(null, "completed"), [], undefined)).toBe(copy.closed.done);
+    expect(closedAs(job(null, "terminated"), [], undefined)).toBe(copy.closed.other);
   });
 });

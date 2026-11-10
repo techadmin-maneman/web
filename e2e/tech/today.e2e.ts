@@ -281,3 +281,13 @@ test("says the day did not load, and loads it on Try again", async ({ page }) =>
   await page.getByRole("button", { name: techCopy.today.retry }).click();
   await expect(page.getByRole("heading", { level: 1, name: "3 jobs today" })).toBeVisible();
 });
+
+test("counts down to leaving while Today stays open", async ({ page }) => {
+  // 9 am in India today: twelve minutes before 9:12, when the first job is left for.
+  await page.clock.install({ time: new Date(`${todayInIndia()}T03:30:00.000Z`) });
+  await fakeTech(page);
+  await page.goto("/");
+  await expect(nextJob(page)).toContainText(techCopy.today.next.leaveIn(12));
+  await page.clock.fastForward("02:00");
+  await expect(nextJob(page)).toContainText(techCopy.today.next.leaveIn(10));
+});

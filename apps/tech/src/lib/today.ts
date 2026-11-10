@@ -5,6 +5,9 @@
 import type { JobSummary } from "../api.ts";
 import { today as copy } from "../content.ts";
 import { clock } from "./when.ts";
+import { outcomeOf } from "./progress.ts";
+import type { Heard } from "../store/jobs.ts";
+import type { Queued } from "../store/outbox.ts";
 
 const MINUTE_MS = 60_000;
 
@@ -30,6 +33,21 @@ export function titleOf(jobs: readonly Row[], states: ReadonlyMap<string, Where>
   if (loaded && jobs.length === 0) return copy.noJobs;
   const open = jobs.filter((job) => states.get(job.id) !== "closed").length;
   return loaded && open === 0 ? copy.allDone : copy.jobs(open);
+}
+
+/**
+ * How a job done with closed, in a word: as the list has it, as the phone heard it land since, or as the phone has it
+ * on its way, as the row's state reads it (./progress.ts); else by the visit's status.
+ */
+export function closedAs(
+  job: Pick<JobSummary, "id" | "progress" | "status">,
+  queued: readonly Queued[],
+  heard: Pick<Heard, "outcome"> | undefined,
+): string {
+  const landed = { started_at: job.progress.started_at, outcome: job.progress.outcome ?? heard?.outcome ?? null };
+  const outcome = outcomeOf({ id: job.id, progress: landed }, queued);
+  if (outcome !== null) return copy.closed[outcome];
+  return job.status === "completed" ? copy.closed.done : copy.closed.other;
 }
 
 export function nextLine(job: Pick<JobSummary, "leave_by">, state: Where, now: Date): string {

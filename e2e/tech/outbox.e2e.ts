@@ -265,6 +265,8 @@ test("accounts plainly for what has not reached us, and says what changed on a s
 
   // Not only here: every screen says so, and the card offers nothing to press on with.
   await page.getByRole("button", { name: techCopy.queue.back }).click();
+  // Today's head says a write failed, in the error's colour, not that all is synced.
+  await expect(page.getByText(/^\d+ uploads? failed$/)).toBeVisible();
   await expect(
     page.getByRole("alert").filter({ hasText: `9:30 am service visit · Sector 65: ${movedToSameer}` }),
   ).toBeVisible();

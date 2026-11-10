@@ -152,7 +152,9 @@ export function TodayScreen() {
           cards={round}
         />
       )}
-      {day.state === "loaded" && <LaterToday jobs={rest} states={states} names={names} queued={waiting.events} />}
+      {day.state === "loaded" && (
+        <LaterToday jobs={rest} states={states} names={names} queued={waiting.events} heard={heard} />
+      )}
       <Tomorrow jobs={tomorrowJobs} loaded={tomorrow.state === "loaded"} />
     </main>
   );

@@ -39,3 +39,21 @@ test("keeps the tab bar on every top-level screen, and none inside a job", async
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
   await expect(bar).toHaveCount(0);
 });
+
+test("signs out once, however often Sign out is tapped while it goes", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.slowSignOutMs = 1500;
+  const logouts: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/tech/auth/logout")) logouts.push(request.url());
+  });
+  await page.goto("/me");
+  const signOut = page.getByRole("button", { name: techCopy.me.signOut, exact: true });
+  await signOut.click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.me.signOut, exact: true }).click();
+  // Tapped again while the first is on its way: no second question, and no second sign-out.
+  await signOut.click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
+  expect(logouts).toHaveLength(1);
+});
