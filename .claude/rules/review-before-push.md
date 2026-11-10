@@ -11,7 +11,9 @@ are the one exception to working without agents.
    - `security-reviewer`
    - `reviewer`, given the brief and the plan the change answers to
 3. Fix what they return as CHANGES REQUIRED or FAIL, and commit. A finding is left unfixed only where its reviewer
-   agrees, on its next look, that it can wait and still gives PASS; the PR's note says which, and why. A fix is a new
+   agrees, on its next look, that it can wait and still gives PASS; the PR's note says which, and why. A secret found
+   in a commit is not fixed by a later commit, since the push sends every commit: rebuild the unpushed branch without
+   it (a fresh branch from origin/main, the commits picked onto it), and have the secret rotated. A fix is a new
    change, so each reviewer looks again, told the commit it last reviewed and what it found:
    - `reviewer` reviews every fix in full: a fix is always a change of logic.
    - `ui-guard` and `security-reviewer`, where their last verdict was PASS, review the change again only where the fix

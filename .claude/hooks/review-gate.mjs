@@ -66,12 +66,10 @@ const DIFF = [
   "--dst-prefix=b/",
 ];
 
-/** A change's key: the commit's diff from where it left main, as exactly as the reviews read it. */
-export function changeKey(cwd, commit = "HEAD") {
-  const base = git(cwd, ["merge-base", "origin/main", commit]);
-  const range = `${base}..${commit}`;
+/** One diff's identity: its text's lines exactly (git's patch id) and each binary file it touches by its contents. */
+function diffIdentity(cwd, range, tip) {
   const diff = gitBytes(cwd, [...DIFF, range]);
-  if (diff.length === 0) return "nothing-changed";
+  if (diff.length === 0) return "";
   // The text's lines, binaries left out of the diff patch-id reads: a binary's encoding could pass for a patch's head.
   const ids = gitBytes(cwd, ["patch-id", "--verbatim"], diff).toString("utf8").trim().split("\n").filter(Boolean);
   if (ids.length > 1) throw new Error("the diff reads as more than one patch");
@@ -80,9 +78,25 @@ export function changeKey(cwd, commit = "HEAD") {
     .filter((record) => record.startsWith("-\t-\t"))
     .map((record) => record.slice(4))
     .sort()
-    .map((path) => `${path}:${blobAt(cwd, commit, path)}`);
+    .map((path) => `${path}:${blobAt(cwd, tip, path)}`);
+  return [ids[0]?.split(" ")[0] ?? "", ...binaries].join("\n");
+}
+
+/**
+ * A change's key: the commit's diff from where it left main, and each of the branch's own commits on the way, since a
+ * push sends every commit (a secret one commit adds and the next takes away is still sent). Main's commits, and the
+ * commits that merge it in, are not the branch's own.
+ */
+export function changeKey(cwd, commit = "HEAD") {
+  const base = git(cwd, ["merge-base", "origin/main", commit]);
+  const whole = diffIdentity(cwd, `${base}..${commit}`, commit);
+  const own = git(cwd, ["rev-list", "--no-merges", "--reverse", `origin/main..${commit}`])
+    .split("\n")
+    .filter(Boolean);
+  if (whole === "" && own.length === 0) return "nothing-changed";
+  const each = own.map((sha) => diffIdentity(cwd, `${sha}^..${sha}`, sha));
   return createHash("sha256")
-    .update([ids[0]?.split(" ")[0] ?? "", ...binaries].join("\n"))
+    .update([whole, ...each].join("\n--\n"))
     .digest("hex")
     .slice(0, 40);
 }
@@ -309,12 +323,20 @@ export function refusal(command, cwd) {
           (/core\.hookspath\s*(=|\s+[^\s-])/i.test(part) ||
             /(--|\b)(unset|unset-all|replace-all|add|remove-section|rename-section|set|edit)\b/i.test(part)),
       ) ||
-    (/\bconfig\b[^;&|\n]*\balias\./i.test(plain) &&
-      !/\bconfig\s+(--\S+\s+)*(--get|--get-all|--list|-l|get|list)\b/i.test(plain)) ||
+    // Setting a git alias, part by part: reading one, beside it or not, is fine.
+    plain
+      .split(/[;&|\n]/)
+      .some(
+        (part) =>
+          /\bconfig\b.*\balias\./i.test(part) &&
+          !/\bconfig\s+(--\S+\s+)*(--get|--get-all|--list|-l|get|list)\b/i.test(part),
+      ) ||
+    // A config file pulled in from elsewhere could carry its own hooks path.
+    /\binclude(if)?\.|--config-env/i.test(plain) ||
     /\b(send-pack|remote-https?|receive-pack)\b/.test(plain) ||
     (GATE_FILES.test(plain) &&
       WRITES.test(unredirected.replace(/\bnode\s+\S*review-gate\.mjs\s+(record|key|install)\b/g, ""))) ||
-    />>?\s*\S*(claude-gate|settings\.local\.json|\.git[\\/]+config|\.git[\\/]+hooks)/i.test(plain);
+    />>?\s*\S*(claude-gate|claude-reviews|settings\.local\.json|\.git[\\/]+config|\.git[\\/]+hooks)/i.test(plain);
   if (stepsAround) return "This command would step around the pre-push hook that holds unreviewed pushes.";
   if (/\bwsl(\.exe)?\b/i.test(plain) && PUSH.test(plain)) {
     return "WSL's git does not run this repository's pre-push hook: push from Git Bash or PowerShell.";

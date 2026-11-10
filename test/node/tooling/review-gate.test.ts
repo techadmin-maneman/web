@@ -74,6 +74,16 @@ describe("a change's key", () => {
     expect(gate(folder, "key")).toBe(reviewed);
   });
 
+  it("takes in each of the branch's own commits, so one that adds a secret and another that takes it away still count", () => {
+    const clean = repository();
+    commitFile(clean, "f.txt", TWELVE.replace("c\n", "C\n"));
+    const secretGone = repository();
+    commitFile(secretGone, "f.txt", TWELVE.replace("c\n", "C\n").replace("e\n", "secret\n"));
+    commitFile(secretGone, "f.txt", TWELVE.replace("c\n", "C\n"));
+    expect(git(clean, "diff", "origin/main..feat")).toBe(git(secretGone, "diff", "origin/main..feat"));
+    expect(gate(secretGone, "key")).not.toBe(gate(clean, "key"));
+  });
+
   it("does not depend on the user's own diff settings", () => {
     const folder = repository();
     commitFile(folder, "f.txt", TWELVE.replace("c\n", "C\n"));
@@ -226,6 +236,11 @@ describe("installing the gate", () => {
     expect(guard()).toBe(0);
     git(folder, "config", "core.hooksPath", join(folder, "elsewhere"));
     expect(guard()).toBe(2);
+    execFileSync(process.execPath, [own, "install"], { cwd: folder, env: PERSON });
+    expect(guard()).toBe(0);
+    // The checkout's own guard taken out of its settings, as in a worktree never installed.
+    writeFileSync(join(folder, ".claude", "settings.local.json"), "{}\n");
+    expect(guard()).toBe(2);
   });
 
   it("guards a command run through a junction to the gate as through its real path", () => {
@@ -279,6 +294,10 @@ describe("the tool-call guard", () => {
     "echo {} > .claude/settings.local.json",
     "sed -i s/hooks/x/ .git/config",
     "wsl git push",
+    "git config alias.ship x; git config --get alias.ship",
+    "git config --list; git config alias.ship x",
+    "echo {} > .git/claude-reviews/x.json",
+    "git -c include.path=elsewhere push",
   ])("refuses %s", (command) => {
     expect(guard({ tool_input: { command } })).toBe(2);
   });
