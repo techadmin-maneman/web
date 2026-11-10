@@ -139,19 +139,43 @@ function headInInches(kept: object): object {
   );
 }
 
+type Change = (value: unknown) => object | null;
+
+/** The changes each store's records take in one upgrade, in the order its steps asked for them. */
+const CHANGES = new WeakMap<IDBTransaction, Map<string, Change[]>>();
+
 /**
  * Each record of a store in turn, read again by its key once the cursor reaches it, so the read comes after whatever an
- * earlier step queued for it; written back as `change` gives it, or left where `change` gives null.
+ * earlier step queued for it; written back as `change` gives it, or left where `change` gives null. Every step of one
+ * upgrade that changes the same store goes in the one pass, each change taking the record as the one before left it:
+ * two passes would each read a record before the other wrote it, and the second would write the first's change away.
  */
-function eachAgain(store: IDBObjectStore, change: (value: unknown) => object | null): void {
+function eachAgain(store: IDBObjectStore, change: Change): void {
+  const byStore = CHANGES.get(store.transaction) ?? new Map<string, Change[]>();
+  CHANGES.set(store.transaction, byStore);
+  const asked = byStore.get(store.name);
+  if (asked !== undefined) {
+    asked.push(change);
+    return;
+  }
+  const changes = [change];
+  byStore.set(store.name, changes);
   const cursor = store.openCursor();
   cursor.onsuccess = () => {
     const at = cursor.result;
     if (at === null) return;
     const again = store.get(at.primaryKey);
     again.onsuccess = () => {
-      const changed = change(again.result);
-      if (changed !== null) store.put(changed);
+      let record: unknown = again.result;
+      let changed = false;
+      for (const each of changes) {
+        const next = each(record);
+        if (next !== null) {
+          record = next;
+          changed = true;
+        }
+      }
+      if (changed) store.put(record);
     };
     at.continue();
   };
@@ -279,6 +303,20 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       const queued = value as { readonly kind: string; readonly body: { readonly fit?: object } | null };
       if (queued.kind !== "profile" || queued.body?.fit === undefined) return null;
       return { ...queued, body: { ...queued.body, fit: headInInches(queued.body.fit) } };
+    });
+  },
+  // Version 9: a day's row carries the drive to it and when to leave for it. One kept before says neither until the
+  // day is read again.
+  (_db, upgrade) => {
+    eachAgain(upgrade.objectStore("days"), (value) => {
+      // What an earlier build wrote, which may lack the fields this step adds.
+      const day = value as Omit<KeptDay, "jobs"> & { readonly jobs: readonly Partial<JobSummary>[] };
+      const jobs = day.jobs.map((job) => ({
+        ...job,
+        drive_minutes: job.drive_minutes ?? null,
+        leave_by: job.leave_by ?? null,
+      }));
+      return { ...day, jobs };
     });
   },
 ];
