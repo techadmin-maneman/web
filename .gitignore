@@ -23,6 +23,9 @@ private/
 # Worktrees a background agent works in; never part of the repository.
 .claude/worktrees/
 
+# Each checkout's own Claude Code settings, which hold the review gate's guard (.claude/rules/review-before-push.md).
+.claude/settings.local.json
+
 # What tsc -b keeps between runs (npm run typecheck).
 *.tsbuildinfo
 .vitest-reports/
