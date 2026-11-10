@@ -78,12 +78,17 @@ describe("a change's key", () => {
   });
 
   it("takes in each of the branch's own commits, so one that adds a secret and another that takes it away still count", () => {
+    // Two commits each, with the same messages and the same sum: only the middle state differs.
     const clean = repository();
+    commitFile(clean, "f.txt", TWELVE.replace("c\n", "C\n").replace("e\n", "harmless\n"));
     commitFile(clean, "f.txt", TWELVE.replace("c\n", "C\n"));
     const secretGone = repository();
     commitFile(secretGone, "f.txt", TWELVE.replace("c\n", "C\n").replace("e\n", "secret\n"));
     commitFile(secretGone, "f.txt", TWELVE.replace("c\n", "C\n"));
     expect(git(clean, "diff", "origin/main..feat")).toBe(git(secretGone, "diff", "origin/main..feat"));
+    expect(git(clean, "log", "--format=%B", "origin/main..feat")).toBe(
+      git(secretGone, "log", "--format=%B", "origin/main..feat"),
+    );
     expect(gate(secretGone, "key")).not.toBe(gate(clean, "key"));
   });
 
@@ -310,6 +315,8 @@ describe("the tool-call guard", () => {
     "git config --list; git config alias.ship x",
     "echo {} > .git/claude-reviews/x.json",
     "git -c include.path=elsewhere push",
+    "git config include.path elsewhere",
+    "git --config-env=include.path=V push",
   ])("refuses %s", (command) => {
     expect(guard({ tool_input: { command } })).toBe(2);
   });
