@@ -26,7 +26,7 @@ const SET: TaskWords = {
   watch: "Check the hairline in the mirror with the client.",
 };
 
-export const TASKS: Readonly<Record<string, TaskWords>> = {
+const TASKS: Readonly<Record<string, TaskWords>> = {
   piece_removed: REMOVE,
   old_piece_removed: { ...REMOVE, title: "Remove the old hair system" },
   scalp_cleaned: {
