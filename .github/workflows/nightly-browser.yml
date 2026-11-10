@@ -25,14 +25,16 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       # The system libraries' packages, kept in main's cache as ci.yml's browser job keeps them, under the same key: a
-      # pull request's run reads its own branch's cache and main's, so this run is what lets its first find them.
+      # pull request's run reads its own branch's cache and main's, so this run is what lets its first find them. Saved
+      # once they are installed, not at the job's end, which a night's failed test would skip.
       - name: Which Playwright
         id: playwright
         run: |
           version=$(node -p "require('@playwright/test/package.json').version")
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: The system libraries' packages, from the cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: apt-packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/apt-archives
           key: apt-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
@@ -45,6 +47,12 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: apt's downloads given back to the runner, for the cache
         run: sudo chown -R "$(id -un)" ~/apt-archives
+      - name: The system libraries' packages, into main's cache
+        if: steps.apt-packages.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-archives
+          key: apt-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
       - name: Local secrets, and every migration applied to an empty D1
         run: |
           node scripts/dev/ensure-dev-vars.ts
