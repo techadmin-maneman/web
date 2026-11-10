@@ -141,8 +141,8 @@
   color: var(--ui-text);
 }
 
+/* The rows inside the gutter, as the prototype draws them: a done row's rule on the gutter's line. */
 .rows {
-  margin: 0 calc(var(--screen-gutter) * -1);
   border-bottom: var(--hairline) solid var(--ui-line);
 }
 
