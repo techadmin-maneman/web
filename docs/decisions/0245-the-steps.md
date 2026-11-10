@@ -3,8 +3,9 @@
 - Status: accepted
 - Date: 2026-11-12
 - Topic: Field work
-- Amends [0244](0244-the-visit-engine.md), which stands except on when the hair system is matched to the profile the
-  phone holds: PR 7's, not PR 6's (section 7)
+- Amends [0244](0244-the-visit-engine.md), which stands except on what PR 6 was to bring: Colour and style stays the
+  hair profile's second part, not a screen of its own; Options and the one visit's decision, and matching the hair
+  system to the profile the phone holds, are PR 7's (section 7)
 
 ## Context
 

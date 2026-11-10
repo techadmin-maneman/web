@@ -70,10 +70,38 @@ describe("a refused piece", () => {
 
 describe("a refused outcome", () => {
   it("starts as Done, or as Partial with its reason while the card still offers it", () => {
-    expect(outcomeSent(refused("outcome", { outcome: "done" }), [])).toEqual({ choice: "done", reason: null });
+    const unwritten = { note: "", alert: "" };
+    expect(outcomeSent(refused("outcome", { outcome: "done" }), [])).toEqual({
+      choice: "done",
+      reason: null,
+      ...unwritten,
+    });
     const partial = refused("outcome", { outcome: "partial", reason: "client_stopped_it" });
-    expect(outcomeSent(partial, ["client_stopped_it"])).toEqual({ choice: "partial", reason: "client_stopped_it" });
-    expect(outcomeSent(partial, ["piece_not_ready"])).toEqual({ choice: "partial", reason: null });
+    expect(outcomeSent(partial, ["client_stopped_it"])).toEqual({
+      choice: "partial",
+      reason: "client_stopped_it",
+      ...unwritten,
+    });
+    expect(outcomeSent(partial, ["piece_not_ready"])).toEqual({ choice: "partial", reason: null, ...unwritten });
+  });
+
+  it("keeps the note for the next technician and the alert as written, and drops one that is not text", () => {
+    const written = refused("outcome", {
+      outcome: "done",
+      handoff_note: "Edge lifting at the left temple.",
+      client_alert: "Allergic to latex.",
+    });
+    expect(outcomeSent(written, [])).toMatchObject({
+      note: "Edge lifting at the left temple.",
+      alert: "Allergic to latex.",
+    });
+    const odd = refused("outcome", {
+      outcome: "partial",
+      reason: "client_stopped_it",
+      handoff_note: 7,
+      client_alert: null,
+    });
+    expect(outcomeSent(odd, ["client_stopped_it"])).toMatchObject({ note: "", alert: "" });
   });
 
   it("starts with nothing chosen for a body it cannot read", () => {
