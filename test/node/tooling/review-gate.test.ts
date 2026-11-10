@@ -6,7 +6,10 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
+
+// Each case runs git a few dozen times in throwaway repositories, slow beside the rest of the suite under its load.
+vi.setConfig({ testTimeout: 60_000 });
 
 const GATE = resolve(".claude/hooks/review-gate.mjs");
 const made: string[] = [];
