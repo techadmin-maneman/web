@@ -1,7 +1,8 @@
+import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { takeSignInMark } from "@maneman/web-kit/access";
 import { reportUncaughtErrors } from "@maneman/web-kit/client-errors";
 import { keepUpToDate } from "@maneman/web-kit/sw-update";
-import { StrictMode } from "react";
+import { StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
@@ -10,12 +11,25 @@ import "./styles/global.css";
 reportUncaughtErrors();
 takeSignInMark();
 
+// The parts page (./parts/PartsScreen.tsx) is built into local builds alone: elsewhere the condition is false when the
+// build writes it, so its import is dropped with it.
+const PartsScreen =
+  import.meta.env.MM_ENV === "local"
+    ? lazyScreen(() => import("./parts/PartsScreen.tsx").then((module) => module.PartsScreen))
+    : null;
+
 const root = document.getElementById("root");
 if (root === null) throw new Error("index.html has no #root");
 createRoot(root).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      {PartsScreen !== null && window.location.pathname === "/_parts" ? (
+        <Suspense fallback={null}>
+          <PartsScreen />
+        </Suspense>
+      ) : (
+        <App />
+      )}
     </ErrorBoundary>
   </StrictMode>,
 );

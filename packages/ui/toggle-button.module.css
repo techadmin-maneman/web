@@ -7,6 +7,7 @@
   .toggle {
     min-height: var(--control-height);
     padding: 0 var(--sp-12);
+    border-radius: var(--ui-radius-box);
     background: none;
     font: inherit;
     font-size: var(--control-text);

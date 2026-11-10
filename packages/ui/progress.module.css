@@ -1,0 +1,60 @@
+/* How far along (./Progress.tsx): a line a rule's weight, on the quiet track. */
+
+@layer base, ui;
+
+@layer ui {
+  .steps {
+    display: flex;
+    gap: var(--sp-4);
+  }
+
+  .segment {
+    flex: 1;
+    height: var(--progress-line);
+  }
+
+  .done {
+    background: var(--ui-strong);
+  }
+
+  .current {
+    background: var(--ui-accent);
+  }
+
+  .todo {
+    background: var(--ui-tint);
+  }
+
+  .track {
+    display: block;
+    flex: 1;
+    height: var(--progress-line);
+    background: var(--ui-tint);
+  }
+
+  .fill {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--ui-strong);
+    appearance: none;
+  }
+
+  .fill::-webkit-progress-bar {
+    background: transparent;
+  }
+
+  .fill::-webkit-progress-value {
+    background: currentColor;
+  }
+
+  .fill::-moz-progress-bar {
+    background: currentColor;
+  }
+
+  .accent {
+    color: var(--ui-accent);
+  }
+}

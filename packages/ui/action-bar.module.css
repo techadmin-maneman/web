@@ -1,0 +1,32 @@
+/* The bar at a screen's foot (./ActionBar.tsx): a hairline above, the phone's safe area below, each action an equal share. */
+
+@layer base, ui;
+
+@layer ui {
+  .bar {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    gap: var(--sp-8);
+    padding: var(--sp-12) var(--screen-gutter) calc(var(--sp-12) + env(safe-area-inset-bottom));
+    border-top: var(--hairline) solid var(--ui-line);
+    background: var(--ui-ground);
+  }
+
+  .helper {
+    margin: 0;
+    font-size: var(--fs-14);
+    line-height: var(--lh-130);
+    color: var(--ui-text-muted);
+    text-align: center;
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--sp-8);
+  }
+
+  .actions > * {
+    flex: 1;
+  }
+}

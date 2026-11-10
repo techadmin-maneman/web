@@ -1,0 +1,45 @@
+/* Something wrong to deal with (./ProblemCard.tsx): a rule's weight of the error's colour around it, no fill. */
+
+@layer base, ui;
+
+@layer ui {
+  .card {
+    display: block;
+    width: 100%;
+    padding: var(--sp-12) var(--sp-16);
+    border: var(--rule-strong) solid var(--ui-error);
+    border-radius: var(--ui-radius-box);
+    background: var(--ui-ground);
+    font: inherit;
+    text-align: left;
+  }
+
+  .opens {
+    cursor: pointer;
+  }
+
+  .title,
+  .body {
+    display: block;
+  }
+
+  .title {
+    font-size: var(--fs-15);
+    font-weight: var(--action-weight);
+    line-height: var(--lh-130);
+    color: var(--ui-error);
+  }
+
+  .body {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-14);
+    line-height: var(--lh-145);
+    color: var(--ui-text);
+  }
+
+  @media (hover: hover) {
+    .opens:hover {
+      background: var(--ui-tint);
+    }
+  }
+}

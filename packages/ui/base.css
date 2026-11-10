@@ -66,6 +66,25 @@
     --compact-text: var(--fs-13);
     /* A filled button's edge: none, unless the app draws its filled buttons edged as its outlined ones are. */
     --filled-edge: 0;
+    /* A corner: square, as the brand draws, but where the technician app's look rounds a button's and a box's (a
+       field, a chip, a stepper's key, a card) a little (apps/tech/src/styles/look.css). */
+    --ui-radius-button: 0;
+    --ui-radius-box: 0;
+    /* A title's face and weight (./type.module.css), an action's weight (./button.module.css), and a choice's round
+       (./field.module.css): the serif's one weight and the sans's medium, which the technician app's look sets in
+       Plex's semibold. */
+    --title-font: var(--font-serif);
+    --title-weight: var(--weight-regular);
+    --action-weight: var(--weight-medium);
+    --radio-size: var(--sp-16);
+    --check-text: var(--fs-14);
+    /* A field's label and a group's legend: muted, in the words' weight, but where the technician app's look draws
+       them in the words' own ink and its semibold. */
+    --label-text: var(--ui-text-muted);
+    --label-weight: var(--weight-regular);
+    /* A screen's words from the phone's edge, where a part reaches the edge itself, as the action bar does
+       (./ActionBar.tsx). */
+    --screen-gutter: var(--sp-16);
     /* The column at its widest, which a sheet matches: the design's, unless the app grows it on a larger phone. */
     --column-max: var(--app-column);
     /* A box's width by what it holds (./Field.tsx's BoxWidth), which the console sets: elsewhere a box fills its room. */

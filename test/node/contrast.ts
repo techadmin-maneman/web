@@ -3,13 +3,24 @@
 
 import { readFileSync } from "node:fs";
 
+const TOKEN_FILES = ["packages/brand/tokens.css", "packages/brand/tokens-apps.css"];
+
 const TOKENS = new Map(
-  ["packages/brand/tokens.css", "packages/brand/tokens-apps.css"].flatMap((file) =>
+  TOKEN_FILES.flatMap((file) =>
     [...readFileSync(file, "utf8").matchAll(/(--[\w-]+):\s*(#[0-9a-f]{6})\b/gi)].map(
       ([, name = "", hex = ""]) => [name, hex] as const,
     ),
   ),
 );
+
+// A colour named for another, as the technician look's --navy-900 is the brand's --ink, holds that one's value. A name
+// defined twice, as a role on a ground of its own is, keeps its first.
+for (const file of TOKEN_FILES) {
+  for (const [, name = "", other = ""] of readFileSync(file, "utf8").matchAll(/(--[\w-]+):\s*var\((--[\w-]+)\)/g)) {
+    const hex = TOKENS.get(other);
+    if (hex !== undefined && !TOKENS.has(name)) TOKENS.set(name, hex);
+  }
+}
 
 function luminance(hex: string): number {
   const channels = [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16) / 255);
@@ -19,6 +30,13 @@ function luminance(hex: string): number {
   return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 }
 
+/** A colour token's value as hex, a token named for another read through it. */
+export function hexOf(name: string): string {
+  const hex = TOKENS.get(name);
+  if (hex === undefined) throw new Error(`${name} is no colour token`);
+  return hex;
+}
+
 /** WCAG's contrast ratio between two colours, given as hex. */
 export function ratio(first: string, second: string): number {
   const [lighter, darker] = [luminance(first), luminance(second)].sort((a, b) => b - a);
@@ -26,7 +44,7 @@ export function ratio(first: string, second: string): number {
 }
 
 /** The colour roles a stylesheet's blocks for one selector set, each as the palette token it aliases. */
-function rolesIn(file: string, selector: string): Map<string, string> {
+export function rolesIn(file: string, selector: string): Map<string, string> {
   const css = readFileSync(file, "utf8");
   const roles = new Map<string, string>();
   for (let start = css.indexOf(`${selector} {`); start !== -1; start = css.indexOf(`${selector} {`, start + 1)) {

@@ -1,0 +1,88 @@
+/*
+ * The technician app's new look (docs/prompts/tech-redesign.md; docs/decisions/0239-technician-light-look.md): a
+ * white ground, navy for what to act on and for titles, IBM Plex Sans throughout, corners a little round. The shared
+ * parts draw their paper looks in the --ui-* roles (packages/brand/tokens.css), so here the roles take the brief's
+ * colours, and the parts follow.
+ *
+ * Only the screens already redrawn carry data-look="light"; a screen not yet redrawn keeps the ink it was drawn for,
+ * so a technician never meets one screen half in each. When the last old screen goes, the attribute moves to the
+ * app's root.
+ *
+ * A control's edge is darker than the brief draws it: a field's, a box's and a stepper's key's are --stone, 3:1 on the
+ * white (WCAG 1.4.11), where the brief's --line-200 is 1.35:1. Rules between rows keep --line-200.
+ */
+
+[data-look="light"] {
+  --ui-ground: var(--white-000);
+  --ui-raised: var(--white-000);
+  --ui-tint: var(--grid-100);
+  --ui-shade: var(--disabled);
+  --ui-box: var(--white-000);
+  --ui-box-off: var(--disabled);
+  --ui-text: var(--ink-900);
+  --ui-text-soft: var(--ink-500);
+  --ui-text-muted: var(--ink-500);
+  --ui-text-quiet: var(--ink-500);
+  --ui-hint: var(--ink-500);
+  --ui-line: var(--line-200);
+  --ui-line-control: var(--stone);
+  --ui-strong: var(--navy-900);
+  --ui-on-strong: var(--white-000);
+  --ui-strong-pressed: var(--navy-700);
+  --ui-error: var(--error);
+  --ui-attention: var(--gold-700);
+  --ui-accent: var(--brass-500);
+
+  /* The roles a part on a ground reads (packages/brand/tokens.css). */
+  --surface: var(--white-000);
+  --on-surface: var(--ink-900);
+  --on-surface-muted: var(--ink-500);
+  --border-subtle: var(--line-200);
+  --border-control: var(--stone);
+  --status-error: var(--error);
+  --status-warning: var(--error);
+  --status-saved: var(--ink-900);
+  --status-done: var(--ink-900);
+  --status-note: var(--ink-500);
+  /* Gold's words are for white alone (4.9:1); on a badge's tint they fall to 4.2:1, so a state to look at is navy. */
+  --status-attention: var(--navy-900);
+
+  /* The brief's corners, faces and sizes: 4 px a button, 2 px a box; titles and actions in Plex's semibold. */
+  --ui-radius-button: var(--sp-4);
+  --ui-radius-box: var(--sp-2);
+  --title-font: var(--font-plex);
+  --title-weight: var(--weight-semibold);
+  --action-weight: var(--weight-semibold);
+  --focus-colour: var(--navy-900);
+  --screen-gutter: var(--sp-20);
+  --action-height: var(--btn-lg);
+  --action-text: var(--fs-16);
+  --control-height: var(--tap);
+  --control-text: var(--fs-15);
+  --control-weight: var(--weight-semibold);
+  --small-height: var(--tap);
+  --small-text: var(--fs-15);
+  --field-height: var(--btn-lg);
+  --field-text: var(--fs-17);
+  --message-size: var(--fs-14);
+  --radio-size: var(--sp-24);
+  --check-text: var(--fs-16);
+  --label-text: var(--ink-900);
+  --label-weight: var(--weight-semibold);
+  --check-row-height: var(--tap-row);
+  --check-box-size: var(--sp-24);
+
+  background: var(--white-000);
+  color: var(--ink-900);
+  font-family: var(--font-plex);
+}
+
+/* Plex is loaded at 400, 500 and 600, so the strong words of a line are its semibold. */
+[data-look="light"] :is(strong, b) {
+  font-weight: var(--weight-semibold);
+}
+
+/* Every figure in a row lines up, as the brief asks of a number in a row or a table. */
+[data-look="light"] :is(td, th, output, time) {
+  font-variant-numeric: tabular-nums;
+}

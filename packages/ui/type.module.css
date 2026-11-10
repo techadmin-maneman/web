@@ -10,8 +10,8 @@
   .title3,
   .title4,
   .label {
-    font-family: var(--font-serif);
-    font-weight: var(--weight-regular);
+    font-family: var(--title-font);
+    font-weight: var(--title-weight);
   }
 
   .display {
