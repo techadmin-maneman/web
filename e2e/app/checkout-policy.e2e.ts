@@ -22,9 +22,17 @@ test("loads and opens Razorpay’s own Checkout with nothing refused", async ({ 
 
   const riskDetection = page.waitForResponse(RISK_DETECTION);
   // Loaded as the pay step loads it (apps/app/src/booking/checkout.ts); the policy is the same on every page.
+  // Checkout fetches its risk-detection script on one page load in twenty (checkout.js returns early when
+  // `Math.random() >= .05`), so while its script runs this page is made that one, and has its own randomness back
+  // once the script has loaded.
   await page.evaluate((src) => {
+    const random = Math.random;
+    Math.random = () => 0;
     const script = document.createElement("script");
     script.src = src;
+    script.addEventListener("load", () => {
+      Math.random = random;
+    });
     document.head.append(script);
   }, CHECKOUT);
   await page.waitForFunction(() => "Razorpay" in window);
