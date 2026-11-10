@@ -1,6 +1,7 @@
 // A count to set a step at a time (docs/prompts/tech-redesign.md, "Consumables"): minus, the figure, plus. It stops at
-// its least and its most, each key named for what it does to what, and the figure said whenever it changes. A screen
-// may put its own figure in the middle, as one that can be typed.
+// its least and its most, each key named for what it does to what, and the figure said whenever it changes. A key at
+// its limit says it is unavailable but keeps the keyboard's focus. A screen may put its own figure in the middle, as
+// one that can be typed.
 
 import { ICONS } from "@maneman/brand/icons";
 import { useId, type ReactNode } from "react";
@@ -49,7 +50,8 @@ export function Stepper({
 }) {
   const saidId = useId();
   const change = (by: 1 | -1) => {
-    onChange(stepped(value, by, { step, min, max }));
+    const next = stepped(value, by, { step, min, max });
+    if (next !== value) onChange(next);
   };
   return (
     <span className={classes(styles.stepper, className)}>
@@ -58,7 +60,7 @@ export function Stepper({
         className={styles.key}
         aria-label={lessLabel}
         aria-describedby={saidId}
-        disabled={value <= min}
+        aria-disabled={value <= min}
         onClick={() => {
           change(-1);
         }}
@@ -75,7 +77,7 @@ export function Stepper({
         className={styles.key}
         aria-label={moreLabel}
         aria-describedby={saidId}
-        disabled={value >= max}
+        aria-disabled={value >= max}
         onClick={() => {
           change(1);
         }}

@@ -36,7 +36,11 @@ each PR replaces the live screens it covers, with no switch, and that the techni
 6. **A parts page at `/_parts`, in local builds alone,** as the console's `/_kit`, for each PR's screenshots at 360 and
    390 px and with system text at 130%.
 7. **The new look's colours are held to the brief's 4.5:1** (`test/node/apps/tech/tech-contrast.test.ts`), beside the
-   older screens' 5.8:1, and a role a redrawn screen names is checked as the look sets it.
+   older screens' 5.8:1. The redrawn screens are listed there; their stylesheets may draw only in the brief's colours
+   and the look's roles, read as the look sets them. Every shared part that sets its words and its ground in those
+   roles, and every badge on its tint, is checked as the look draws it.
+8. **`ProblemCard` is not `InlineMessage`:** a line says what just happened where it happened; the card is a titled,
+   edged block a tap can open, and it is said aloud only when it answers what was just done (`live`).
 
 ## Where the build departs from the brief, and why
 
@@ -48,8 +52,15 @@ each PR replaces the live screens it covers, with no switch, and that the techni
 - **A step bar, a scan's progress and the wait are 3 px,** the prototype's, as `--progress-line`.
 - **The SOS hold and the in-app notification come with what they show** (PR 8 and PR 10). A push notification itself
   is drawn by the phone.
+- **A state to look at is navy, not gold,** in a badge or a row: gold-700's words are 4.9:1 on white but 4.2:1 on a
+  badge's tint. Gold stays for the brief's one highlight in words on white.
 
 ## Consequences
 
-- Each redesign PR sets `data-look="light"` on the screens it replaces and deletes the old ones.
+- Each redesign PR sets `data-look="light"` on the screens it replaces, adds their folders to the contrast test's
+  list of redrawn screens, and deletes the old ones.
+- The shared parts this PR does not reach take the look in the PR that first draws them: the tab bar, rows and the
+  empty state in PR 3 (the shell and Today); sheets, the confirmation sheet, the key and value row and the camera in
+  PR 5 (the job and the door); the date strip and the day's timeline in PR 9 (Schedule). Until then they keep the
+  colours and faces they draw today.
 - `--navy-700` is also the primary action pressed, which the brief does not draw.

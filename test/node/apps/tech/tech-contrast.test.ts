@@ -16,7 +16,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { edgeOf, ratio, rolesIn, rulesOf, tokenRatio } from "../../contrast.ts";
+import { edgeOf, hexOf, ratio, rolesIn, rulesOf, tokenRatio } from "../../contrast.ts";
 
 interface Pairing {
   readonly text: string;
@@ -52,7 +52,10 @@ const LIGHT_PAIRINGS: readonly Pairing[] = [
   { text: "--white-000", ground: "--navy-900", where: "the primary action, a chosen chip, the no-signal bar" },
   { text: "--white-000", ground: "--navy-700", where: "the primary action, pressed" },
   { text: "--ink-500", ground: "--disabled", where: "an action not usable yet" },
-  { text: "--ink-900", ground: "--grid-100", where: "a problem card under a pointer" },
+  { text: "--ink-900", ground: "--grid-100", where: "a problem card’s words under a pointer" },
+  { text: "--error", ground: "--grid-100", where: "a problem card’s title under a pointer" },
+  { text: "--error", ground: "--disabled", where: "an action that takes something away, pressed" },
+  { text: "--ink-900", ground: "--disabled", where: "a person’s initials" },
   { text: "--white-000", ground: "--error", where: "a destructive action" },
 ];
 
@@ -117,20 +120,36 @@ function stylesheets(dir: string): string[] {
  */
 const SHARED_BUTTONS = { file: "packages/ui/button.module.css", looks: [".gold", ".outlineOnInk"] } as const;
 
-/** The app's own rules, and the shared buttons' rules for the looks it draws. */
-function rulesDrawn(): [string, string][] {
+/**
+ * The screens redrawn in the new look, which carry data-look="light", and the look itself. Each redesign PR adds the
+ * folders of the screens it redraws; their colours are read as the look sets them and held to its 4.5:1.
+ */
+const REDRAWN = ["apps/tech/src/parts/", "apps/tech/src/styles/look.css"];
+const slashed = (file: string) => file.replace(/\\/g, "/");
+const isRedrawn = (file: string) => REDRAWN.some((place) => slashed(file).startsWith(place));
+
+/** The older screens' rules on the ink, with the shared buttons' rules for the looks they draw. */
+function inkRules(): [string, string][] {
   const shared = rulesOf(SHARED_BUTTONS.file).filter(([selector]) =>
     SHARED_BUTTONS.looks.some((look) => selector.includes(look)),
   );
-  return [...stylesheets("apps/tech/src").flatMap(rulesOf), ...shared];
+  const own = stylesheets("apps/tech/src").filter((file) => !isRedrawn(file));
+  return [...own.flatMap(rulesOf), ...shared];
 }
 
+/** The redrawn screens' rules. */
+const lightRules = (): [string, string][] => stylesheets("apps/tech/src").filter(isRedrawn).flatMap(rulesOf);
+
 /** Every token each rule sets as a text colour and as a ground, and the rules that set both. */
-function coloursUsed(): { texts: Set<string>; grounds: Set<string>; both: [string, string, string][] } {
+function coloursUsed(rules: [string, string][]): {
+  texts: Set<string>;
+  grounds: Set<string>;
+  both: [string, string, string][];
+} {
   const texts = new Set<string>();
   const grounds = new Set<string>();
   const both: [string, string, string][] = [];
-  for (const [selector, body] of rulesDrawn()) {
+  for (const [selector, body] of rules) {
     let text: string | null = null;
     let ground: string | null = null;
     for (const declaration of body.split(";")) {
@@ -229,8 +248,8 @@ describe("the technician app’s control edges", () => {
   );
 });
 
-describe("what the stylesheets use", () => {
-  const used = coloursUsed();
+describe("what the older screens’ stylesheets use", () => {
+  const used = coloursUsed(inkRules());
 
   it("reads every stylesheet’s colours, so the checks below check something", () => {
     expect(used.texts.size).toBeGreaterThanOrEqual(6);
@@ -240,22 +259,106 @@ describe("what the stylesheets use", () => {
     expect(firstSelector).toContainEqual([".outlineOnInk:disabled", "--ink-tag", "--ink-disabled"]);
   });
 
-  // A role a redrawn screen names (--ui-text) is read as the new look sets it.
-  const every = [...PAIRINGS, ...LIGHT_PAIRINGS];
-
   it("sets no text colour the pairings do not list", () => {
-    const listed = new Set(every.map((pairing) => pairing.text));
-    expect([...used.texts].filter((token) => !listed.has(inLook(token)))).toEqual([]);
+    const listed = new Set(PAIRINGS.map((pairing) => pairing.text));
+    expect([...used.texts].filter((token) => !listed.has(token))).toEqual([]);
   });
 
   it("sets no ground the pairings do not list, bar the ones that carry no words", () => {
-    const listed = new Set(every.map((pairing) => pairing.ground));
-    expect([...used.grounds].filter((token) => !listed.has(inLook(token)) && !WORDLESS_GROUNDS.has(token))).toEqual([]);
+    const listed = new Set(PAIRINGS.map((pairing) => pairing.ground));
+    expect([...used.grounds].filter((token) => !listed.has(token) && !WORDLESS_GROUNDS.has(token))).toEqual([]);
   });
 
   it("pairs every rule that sets both a text colour and a ground as the pairings list it", () => {
-    const listed = new Set(every.map((pairing) => `${pairing.text} on ${pairing.ground}`));
-    const unlisted = used.both.filter(([, text, ground]) => !listed.has(`${inLook(text)} on ${inLook(ground)}`));
+    const listed = new Set(PAIRINGS.map((pairing) => `${pairing.text} on ${pairing.ground}`));
+    expect(used.both.filter(([, text, ground]) => !listed.has(`${text} on ${ground}`))).toEqual([]);
+  });
+});
+
+/** The brief's own colours: packages/brand/tokens.css, under "the technician app's light ground". */
+function briefColours(): Set<string> {
+  const css = readFileSync("packages/brand/tokens.css", "utf8");
+  const block = /technician app's light ground[\s\S]*?(?=\/\* ----)/.exec(css)?.[0] ?? "";
+  return new Set([...block.matchAll(/(--[\w-]+):/g)].map((match) => match[1] ?? ""));
+}
+
+const COLOUR_PROPERTY = /^(color|background(-color)?|border(-[a-z]+)*|outline(-color)?|fill|stroke|box-shadow)$/;
+/** Sizes a colour declaration may name beside its colour: a border's width. */
+const NOT_A_COLOUR = /^--(hairline|rule-strong|focus-[\w-]+)$/;
+
+describe("what the redrawn screens use", () => {
+  const used = coloursUsed(lightRules());
+
+  it("knows which screens are redrawn: every one that takes the new look", () => {
+    const screens = readdirSync("apps/tech/src", { recursive: true, encoding: "utf8" })
+      .map((file) => slashed(join("apps/tech/src", file)))
+      .filter((file) => file.endsWith(".tsx") && readFileSync(file, "utf8").includes('data-look="light"'));
+    expect(screens.length).toBeGreaterThan(0);
+    expect(screens.filter((file) => !isRedrawn(file))).toEqual([]);
+  });
+
+  it("draws only in the brief's colours and the look's roles", () => {
+    const brief = briefColours();
+    expect(brief.has("--navy-900")).toBe(true);
+    const allowed = new Set([...brief, ...LOOK_ROLES.keys()]);
+    const outside = lightRules().flatMap(([selector, body]) =>
+      body.split(";").flatMap((declaration) => {
+        const [property = "", value = ""] = declaration.split(/:(.*)/s).map((part) => part.trim());
+        if (!COLOUR_PROPERTY.test(property)) return [];
+        return [...value.matchAll(/var\((--[\w-]+)/g)]
+          .map((match) => match[1] ?? "")
+          .filter((token) => !allowed.has(token) && !NOT_A_COLOUR.test(token))
+          .map((token) => `${selector} ${property}: ${token}`);
+      }),
+    );
+    expect(outside).toEqual([]);
+  });
+
+  it("sets each text colour and ground, read as the look sets them, as the new look's pairings list them", () => {
+    const texts = new Set(LIGHT_PAIRINGS.map((pairing) => pairing.text));
+    const grounds = new Set(LIGHT_PAIRINGS.map((pairing) => pairing.ground));
+    const listed = new Set(LIGHT_PAIRINGS.map((pairing) => `${pairing.text} on ${pairing.ground}`));
+    expect([...used.texts].filter((token) => !texts.has(inLook(token)))).toEqual([]);
+    expect([...used.grounds].filter((token) => !grounds.has(inLook(token)))).toEqual([]);
+    expect(used.both.filter(([, text, ground]) => !listed.has(`${inLook(text)} on ${inLook(ground)}`))).toEqual([]);
+  });
+});
+
+/** A colour as sRGB's three channels, 0 to 255. */
+const channelsOf = (hex: string) => [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16));
+
+/** `share` of one colour over another, as CSS's color-mix(in srgb, …) mixes them. */
+function mixed(over: string, share: number, under: string): string {
+  const bottom = channelsOf(under);
+  const mix = channelsOf(over).map((value, at) => Math.round(value * share + (bottom[at] ?? 0) * (1 - share)));
+  return `#${mix.map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+}
+
+describe("the shared parts in the new look", () => {
+  // Each rule of packages/ui that sets its words and its ground both in roles the look sets.
+  const both = readdirSync("packages/ui")
+    .filter((file) => file.endsWith(".css"))
+    .flatMap((file) => coloursUsed(rulesOf(`packages/ui/${file}`)).both.map((rule) => [file, ...rule] as const))
+    .filter(([, , text, ground]) => LOOK_ROLES.has(text) && LOOK_ROLES.has(ground));
+
+  it("reads the shared parts' pairs, so the check below checks something", () => {
+    expect(both.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("pairs each shared part's words and ground, as the look sets them, as the new look's pairings list them", () => {
+    const listed = new Set(LIGHT_PAIRINGS.map((pairing) => `${pairing.text} on ${pairing.ground}`));
+    const unlisted = both
+      .filter(([, , text, ground]) => !listed.has(`${inLook(text)} on ${inLook(ground)}`))
+      .map(([file, selector, text, ground]) => `${file} ${selector}: ${inLook(text)} on ${inLook(ground)}`);
     expect(unlisted).toEqual([]);
   });
+
+  // A badge's ground is its own tone at 12% over the raised ground (packages/ui/badge.module.css).
+  it.each(["--on-surface-muted", "--status-done", "--status-attention", "--status-warning", "--status-error"])(
+    "draws a %s badge at 4.5:1 or better on its own tint",
+    (role) => {
+      const tone = hexOf(inLook(role));
+      expect(ratio(tone, mixed(tone, 0.12, hexOf(inLook("--ui-raised"))))).toBeGreaterThanOrEqual(4.5);
+    },
+  );
 });

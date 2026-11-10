@@ -8,8 +8,8 @@
  * so a technician never meets one screen half in each. When the last old screen goes, the attribute moves to the
  * app's root.
  *
- * Two edges are darker than the brief draws them. A field's, a box's and a stepper's key's edge is --stone, 3:1 on the
- * white (WCAG 1.4.11), where the brief's --line-200 is 1.35:1; rules between rows keep --line-200.
+ * A control's edge is darker than the brief draws it: a field's, a box's and a stepper's key's are --stone, 3:1 on the
+ * white (WCAG 1.4.11), where the brief's --line-200 is 1.35:1. Rules between rows keep --line-200.
  */
 
 [data-look="light"] {
@@ -44,7 +44,8 @@
   --status-saved: var(--ink-900);
   --status-done: var(--ink-900);
   --status-note: var(--ink-500);
-  --status-attention: var(--gold-700);
+  /* Gold's words are for white alone (4.9:1); on a badge's tint they fall to 4.2:1, so a state to look at is navy. */
+  --status-attention: var(--navy-900);
 
   /* The brief's corners, faces and sizes: 4 px a button, 2 px a box; titles and actions in Plex's semibold. */
   --ui-radius-button: var(--sp-4);

@@ -23,11 +23,11 @@
     cursor: pointer;
   }
 
-  .key:active:not(:disabled) {
+  .key:active:not([aria-disabled="true"]) {
     background: var(--ui-shade);
   }
 
-  .key:disabled {
+  .key[aria-disabled="true"] {
     border-color: var(--ui-line);
     color: var(--ui-text-quiet);
     cursor: default;
@@ -43,7 +43,7 @@
   }
 
   @media (hover: hover) {
-    .key:hover:not(:disabled) {
+    .key:hover:not([aria-disabled="true"]) {
       background: var(--ui-shade);
     }
   }

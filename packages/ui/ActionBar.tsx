@@ -18,7 +18,9 @@ export function ActionBar({
   readonly children: ReactNode | ((helperId: string | undefined) => ReactNode);
 }) {
   const id = useId();
-  const helperId = helper === undefined || helper === null ? undefined : `${id}-helper`;
+  // `helper={left > 0 && words.left(left)}` gives false once nothing is missing: no line then, and nothing described.
+  const helperId =
+    helper === undefined || helper === null || helper === false || helper === "" ? undefined : `${id}-helper`;
   return (
     <div className={classes(styles.bar, className)}>
       {helperId !== undefined && (

@@ -1,5 +1,6 @@
-// The parts page's words (./PartsScreen.tsx): samples from the redesign's prototype, to show each part as a screen
-// will use it. Built into local builds alone, so no technician reads them.
+// The parts page's words (./PartsScreen.tsx): samples, most from the redesign's prototype and the Hindi from
+// design/tech-redesign/strings-hi.json, to show each part as a screen will use it. Built into local builds alone, so
+// no technician reads them.
 
 export const parts = {
   title: "Parts",
@@ -62,8 +63,8 @@ export const parts = {
     rejectedBody: "Before photos are blurred. Fix it and tap Next.",
   },
   hindi: {
-    head: "हिंदी",
-    body: "आज की नौकरियाँ · 3 बाकी",
+    head: "आज बाद में",
+    body: "आज और कोई जॉब नहीं।",
   },
   bar: {
     helper: "2 left",

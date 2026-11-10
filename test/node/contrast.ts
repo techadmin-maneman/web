@@ -30,6 +30,13 @@ function luminance(hex: string): number {
   return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 }
 
+/** A colour token's value as hex, a token named for another read through it. */
+export function hexOf(name: string): string {
+  const hex = TOKENS.get(name);
+  if (hex === undefined) throw new Error(`${name} is no colour token`);
+  return hex;
+}
+
 /** WCAG's contrast ratio between two colours, given as hex. */
 export function ratio(first: string, second: string): number {
   const [lighter, darker] = [luminance(first), luminance(second)].sort((a, b) => b - a);
