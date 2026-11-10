@@ -11,6 +11,7 @@ import {
   notHome,
   signIn as signInWords,
   steps as stepWords,
+  visit as visitWords,
 } from "../../../apps/tech/src/content.ts";
 import { referral } from "../../../site/src/content/referral.ts";
 import * as siteCopy from "../../../site/src/content/site.ts";
@@ -207,7 +208,7 @@ export async function techJobOnScreen(
       if (offline) await phone.context.setOffline(true);
       await photograph(page);
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.checklist })).toBeVisible();
-      for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
+      await page.getByRole("button", { name: stepWords.checklist.all }).click();
       await page.getByRole("button", { name: stepWords.next }).click();
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.consumables })).toBeVisible();
       await page.getByRole("button", { name: stepWords.next }).click();
@@ -216,7 +217,7 @@ export async function techJobOnScreen(
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.outcome })).toBeVisible();
       await page.getByRole("button", { name: captureWords.finish, exact: true }).click();
       await sim.clock.pass(Math.max(30, (job.minutes ?? 90) - 15) * MINUTE);
-      await page.getByRole("button", { name: stepWords.next }).click();
+      await page.getByRole("button", { name: visitWords.close }).click();
       if (offline) {
         // Half an hour without signal, then back: the outbox replays in order.
         await sim.clock.pass(30 * MINUTE);

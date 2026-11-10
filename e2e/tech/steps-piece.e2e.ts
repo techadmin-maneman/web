@@ -7,7 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE } from "./fixtures.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
-import { holding, startedThrough, writesTo, checklistItems } from "./steps-fixtures.ts";
+import { holding, startedThrough, writesTo } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { stepAction } from "./steps-fixtures.ts";
 
@@ -316,10 +316,9 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.consultation }),
     ).toBeVisible();
-    const items = checklistItems(page);
-    await expect(items).toHaveCount(3);
+    await expect(page.getByText(techCopy.visit.task(1, 3))).toBeVisible();
+    await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
     await expect(page.getByRole("button", { name: /Adhesive applied/ })).toHaveCount(0);
-    for (const item of await items.all()) await item.click();
     await stepAction(page).click();
 
     await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);
@@ -335,7 +334,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await stepAction(page).click();
 
     await expect(page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist })).toBeVisible();
-    await expect(checklistItems(page)).toHaveCount(9);
+    await expect(page.getByText(techCopy.visit.task(1, 9))).toBeVisible();
   });
 
   // A declined visit offers no code and promises no link, and closes as what it became.

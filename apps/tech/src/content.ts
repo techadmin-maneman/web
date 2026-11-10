@@ -552,8 +552,14 @@ export const visit = {
   whoAndWhat: (who: string, kind: string) => `${who} · ${kind}`,
   step: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
   allSteps: "All steps",
-  next: (title: string) => `Next: ${title}`,
+  next: (title: string) => `Next: ${title.toLowerCase()}`,
   close: "Close visit",
+  /** A guided task (./visit/tasks.ts): one a screen. */
+  task: (at: number, total: number) => `Task ${String(at)} of ${String(total)}`,
+  nextTask: "Next task",
+  reference: (what: string) => `Reference photo: ${what}`,
+  watchFor: "Watch for",
+  taskDone: (title: string) => `Done: ${title}`,
   plan: {
     title: "Visit plan",
     done: (done: number, total: number) => `${String(done)} of ${String(total)} done`,

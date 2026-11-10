@@ -276,3 +276,63 @@
 .tickAll {
   margin: var(--sp-16) var(--sp-20) 0;
 }
+
+/* A guided task (./Checklist.tsx): the client's alerts above, then how far through, its title, where its reference
+   photograph goes, the numbered instructions, and what to watch for in a ruled block. */
+.alerts {
+  margin: var(--sp-16) var(--screen-gutter) 0;
+  width: auto;
+}
+
+.task {
+  padding: var(--sp-16) var(--screen-gutter) 0;
+}
+
+.taskCount {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+.taskTitle {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.reference {
+  display: flex;
+  align-items: flex-end;
+  min-height: calc(var(--sp-64) * 2);
+  margin-top: var(--sp-16);
+  padding: var(--sp-12);
+  background: var(--placeholder);
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+.how {
+  margin: var(--sp-16) 0 0;
+  padding-left: var(--sp-24);
+  font-size: var(--fs-16);
+  line-height: var(--lh-160);
+}
+
+.watch {
+  margin-top: var(--sp-16);
+  padding-top: var(--sp-12);
+  border-top: var(--rule-strong) solid var(--ui-strong);
+}
+
+.watchTitle {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.watchLine {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+}

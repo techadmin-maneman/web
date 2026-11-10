@@ -513,11 +513,10 @@ test("walks the steps of a service visit and closes it out", async ({ page }) =>
   }
   await page.getByRole("button", { name: techCopy.steps.outcome.done }).click();
 
-  // Step 2: the checklist, which will not let the job on until it is finished.
+  // Step 2: the guided tasks, one a screen; Tick all for a routine visit.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  await expect(page.getByText(techCopy.steps.checklist.unfinished, { exact: true })).toBeVisible();
-  await expect(stepAction(page)).toBeDisabled();
-  for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
+  await expect(stepAction(page)).toHaveText(techCopy.visit.nextTask);
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
   expect(await axeViolations(page)).toEqual([]);
   await stepAction(page).click();
 

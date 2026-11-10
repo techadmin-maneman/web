@@ -71,7 +71,7 @@ async function workTheJob(page: Page): Promise<void> {
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
   await stepAction(page).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await page.getByRole("button", { name: "One more tape strips" }).click();

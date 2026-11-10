@@ -46,7 +46,7 @@ test("a double tap on Next finishes one step, and never the step it opens", asyn
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  for (const item of await checklistItems(page).all()) await item.click();
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
 
   await stepAction(page).dblclick();
 
@@ -154,9 +154,8 @@ test("marks only the step under way in brass", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  const items = checklistItems(page);
-  await expect(items).toHaveCount(3);
-  for (const item of await items.all()) await item.click();
+  await expect(page.getByText(techCopy.visit.task(1, 3))).toBeVisible();
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
   await expect(stepAction(page)).toBeEnabled();
   expect(await brassMarks(page)).toBe(1);
   expect(await axeViolations(page)).toEqual([]);
@@ -174,17 +173,21 @@ test("keeps the checklist’s ticks when the app closes part-way, and lets them 
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  await checklistItems(page).nth(0).click();
-  await checklistItems(page).nth(1).click();
+  // One task a screen: the first done, on to the second, done.
+  await checklistItems(page).first().click();
+  await stepAction(page).click();
+  await checklistItems(page).first().click();
   await expect.poll(() => deviceRecordOnPhone(page, "checklist_draft")).toContain(fake.checklist[1]?.id ?? "");
 
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  await expect(checklistItems(page).nth(0)).toHaveAttribute("aria-pressed", "true");
-  await expect(checklistItems(page).nth(1)).toHaveAttribute("aria-pressed", "true");
-  await expect(checklistItems(page).nth(2)).toHaveAttribute("aria-pressed", "false");
+  await expect(checklistItems(page).first()).toHaveAttribute("aria-pressed", "true");
+  await stepAction(page).click();
+  await expect(checklistItems(page).first()).toHaveAttribute("aria-pressed", "true");
+  await stepAction(page).click();
+  await expect(checklistItems(page).first()).toHaveAttribute("aria-pressed", "false");
 
-  await checklistItems(page).nth(2).click();
+  await checklistItems(page).first().click();
   await footAction(page).click();
   await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);
   await expect.poll(() => deviceRecordOnPhone(page, "checklist_draft")).toBeNull();
@@ -318,15 +321,13 @@ test.describe("on a 360 × 640 phone", () => {
 
     const heading = page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist });
     await expect(heading).toBeInViewport({ ratio: 1 });
-    await expect(page.getByText(techCopy.steps.checklist.unfinished, { exact: true })).toBeVisible();
-    await expect(footAction(page)).toHaveText(/^Next: /);
+    await expect(footAction(page)).toHaveText(techCopy.visit.nextTask);
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
     expect(await pageScrolls(page)).toBe(false);
 
     // Reaching each item scrolls the list alone; the head and the foot stay where they are.
-    const items = checklistItems(page);
-    await expect(items).toHaveCount(9);
-    for (const item of await items.all()) await item.click();
+    await expect(page.getByText(techCopy.visit.task(1, 9))).toBeVisible();
+    await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
 
     await expect(footAction(page)).toHaveText(techCopy.visit.next("Consumables"));
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
@@ -475,4 +476,31 @@ test("leaves a note for the next technician and an alert with the close, only wh
   await expect
     .poll(() => writesTo(fake, "outcome").at(-1)?.body)
     .toEqual({ outcome: "done", handoff_note: "Edge lifting at the left temple.", client_alert: "Allergic to latex." });
+});
+
+test("guides each task with its words, what to watch for, and the client's alerts above it", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.alerts = [
+    {
+      id: "55555555-5555-4555-8555-555555555551",
+      body: "Allergic to latex.",
+      raised_by: { kind: "staff" },
+      written_at: "2026-09-02T05:00:00.000Z",
+    },
+  ];
+  startedThrough(fake, "before_photos");
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+
+  await expect(page.getByText(techCopy.visit.task(1, 3))).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Remove the hair system" })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Spray solvent along the front edge." })).toBeVisible();
+  await expect(page.getByText(techCopy.visit.watchFor)).toBeVisible();
+  await expect(page.getByText("Allergic to latex.")).toBeVisible();
+  await expect(stepAction(page)).toHaveText(techCopy.visit.nextTask);
+  expect(await axeViolations(page)).toEqual([]);
+
+  // On the last task, once every one is done, the action goes on to the step after.
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await expect(page.getByText(techCopy.visit.task(3, 3))).toBeVisible();
+  await expect(stepAction(page)).toHaveText(techCopy.visit.next("Consumables"));
 });
