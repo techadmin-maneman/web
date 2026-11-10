@@ -87,7 +87,7 @@ function AlertList({ clientId, initial }: { clientId: string; initial: readonly 
       {alerts.length === 0 && !mayWrite && <p className={styles.openNone}>{copy.none}</p>}
       <ul className={styles.notes}>
         {alerts.map((alert) => (
-          <li key={alert.id} className={styles.note}>
+          <li key={alert.id} className={styles.noteItem}>
             <p className={styles.noteBody}>{alert.body}</p>
             <span className={styles.noteBy}>
               {copy.by(raisedBy(alert), plainDate(todayInIndia(Date.parse(alert.written_at))))}

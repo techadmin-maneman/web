@@ -1,5 +1,5 @@
 /* The client's history (./ClientHistoryScreen.tsx), in the new look: a head with the way back, the alerts in a problem
-   card, then each visit under a hairline, its photographs in a row of five that wraps. */
+   card, then each visit under a hairline, its five photographs in one row. */
 
 .screen {
   display: flex;
@@ -57,15 +57,15 @@
 }
 
 .photos {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--sp-8);
   margin-top: var(--sp-12);
 }
 
 .photo {
-  width: var(--sp-64);
-  height: var(--sp-64);
+  width: 100%;
+  aspect-ratio: 1;
   object-fit: cover;
   background: var(--ui-tint);
 }
