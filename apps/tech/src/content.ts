@@ -785,7 +785,7 @@ type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, st
 export const profile = {
   sections: {
     stage: "Norwood stage",
-    head: "Head (cm)",
+    head: "Head (in)",
     base: "Base (in)",
     colour: "Colour",
     grey: "Grey (%)",
@@ -795,13 +795,11 @@ export const profile = {
     product: "Product",
     attachment: "Fixing",
   },
-  /** Not drawn: the base typed in inches, in centimetres beneath it. */
-  baseInCentimetres: (width: string, length: string) => `${width} × ${length} cm`,
   measurements: {
-    head_circumference_cm: "Circumference",
-    front_to_nape_cm: "Front to nape",
-    ear_to_ear_cm: "Ear to ear",
-    temple_to_temple_cm: "Temple to temple",
+    head_circumference_in: "Circumference",
+    front_to_nape_in: "Front to nape",
+    ear_to_ear_in: "Ear to ear",
+    temple_to_temple_in: "Temple to temple",
     base_width_in: "Width",
     base_length_in: "Length",
   },

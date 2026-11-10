@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CheckIn, Job, JobSummary, Me } from "../../../apps/tech/src/api.ts";
 import { keepCards, loadDay, loadJob } from "../../../apps/tech/src/lib/useDay.ts";
 import { dayAfter, todayInIndia } from "../../../apps/tech/src/lib/when.ts";
-import { all, wipe } from "../../../apps/tech/src/store/db.ts";
+import { all, deviceRecord, wipe } from "../../../apps/tech/src/store/db.ts";
 import { deviceId, enrolled, enrolledAt, keepMe, keptMe } from "../../../apps/tech/src/store/device.ts";
 import {
   forgetOld,
@@ -29,7 +29,7 @@ import {
 } from "../../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
-import { firstRelease, sixthRelease, thirdRelease } from "./tech-first-release.ts";
+import { firstRelease, seventhRelease, sixthRelease, thirdRelease } from "./tech-first-release.ts";
 
 afterEach(async () => {
   vi.unstubAllGlobals();
@@ -419,6 +419,39 @@ describe("a day and a card kept before jobs carried their arrival window", () =>
     const [kept] = (await keptDay(TODAY)) ?? [];
     expect(kept).toMatchObject({ arrives_by: `${TODAY}T04:30:00.000Z`, address: null, next: null });
     expect((await keptJob("a"))?.arrives_by).toBe(`${TODAY}T04:30:00.000Z`);
+  });
+});
+
+describe("a hair profile kept before the head was measured in inches", () => {
+  const inCentimetres = { norwood_stage: "IV", head_circumference_cm: 57.5, front_to_nape_cm: null, base_width_in: 8 };
+  const inInches = { norwood_stage: "IV", head_circumference_in: 22.6, front_to_nape_in: null, base_width_in: 8 };
+
+  it("is put in inches on a card, in a form half filled in and in a write still to send", async () => {
+    const profile = { id: "v1", recorded_at: "2026-11-01T00:00:00.000Z", fit: inCentimetres, history: null };
+    const figures = { head_circumference_cm: "57.5", front_to_nape_cm: "", ear_to_ear_cm: "3x", base_width_in: "8" };
+    await seventhRelease({
+      cards: [{ ...card("a", TODAY), profile, v: 2 }],
+      device: [{ key: "profile_draft", job_id: "a", page: "measure", fit: { choices: {}, figures }, history: {} }],
+      outbox: [{ id: "e1", job_id: "a", kind: "profile", body: { fit: inCentimetres, history: null, based_on: "v1" } }],
+    });
+
+    expect((await keptJob("a"))?.profile?.fit).toEqual(inInches);
+    expect((await deviceRecord("profile_draft"))?.fit.figures).toEqual({
+      head_circumference_in: "22.6",
+      front_to_nape_in: "",
+      ear_to_ear_in: "3x",
+      base_width_in: "8",
+    });
+    const [queued] = await all("outbox");
+    expect(queued?.body).toEqual({ fit: inInches, history: null, based_on: "v1" });
+  });
+
+  it("keeps the inches a card already gave beside the centimetres", async () => {
+    const both = { ...inInches, head_circumference_in: 22.7, head_circumference_cm: 57.5 };
+    const profile = { id: "v1", recorded_at: "2026-11-01T00:00:00.000Z", fit: both, history: null };
+    await seventhRelease({ cards: [{ ...card("a", TODAY), profile, v: 2 }], device: [], outbox: [] });
+    expect((await keptJob("a"))?.profile?.fit).toMatchObject({ head_circumference_in: 22.7 });
+    expect((await keptJob("a"))?.profile?.fit).not.toHaveProperty("head_circumference_cm");
   });
 });
 

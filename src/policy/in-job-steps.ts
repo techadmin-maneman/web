@@ -37,11 +37,16 @@ const PIECE_STEP_TYPES = ["replacement", "first_fit"] as const;
  */
 const FIT_STEPS: readonly JobStep[] = ["before_photos", "piece", "checklist", "consumables", "after_photos", "outcome"];
 
-/** The steps this visit type runs, in order. */
+/**
+ * The steps this visit type runs, in order. A consultation looks and measures: it takes no photographs after, and uses
+ * nothing from the kit (docs/decisions/0240-consultation-rules-and-inches.md).
+ */
 export function stepsFor(type: VisitType, oneVisit = false): JobStep[] {
   if (oneVisit || isOneOf(PIECE_STEP_TYPES, type)) return [...FIT_STEPS];
-  const takesAfterPhotos = type !== "consultation";
-  return JOB_STEPS.filter((step) => step !== "piece" && (step !== "after_photos" || takesAfterPhotos));
+  const consultation = type === "consultation";
+  return JOB_STEPS.filter(
+    (step) => step !== "piece" && !(consultation && (step === "after_photos" || step === "consumables")),
+  );
 }
 
 /** Whether this visit's job takes the step at all. */
@@ -50,9 +55,10 @@ export function takesStep(step: JobStep, type: VisitType, oneVisit = false): boo
 }
 
 /**
- * The client's hair profile, a screen of the card at a consultation and a one visit (src/policy/hair-profile.ts). It
- * lands in its own table, not as a job event, so the order the API holds a phone's events to leaves it out, and a
- * phone that never sends it holds nothing back (docs/decisions/0106-a-clients-hair-profile.md).
+ * The client's hair profile, a screen of the card at a consultation, a one visit and a first fit
+ * (src/policy/hair-profile.ts). It lands in its own table, not as a job event, so the order the API holds a phone's
+ * events to leaves it out, and a phone that never sends it holds nothing back
+ * (docs/decisions/0106-a-clients-hair-profile.md).
  */
 export const PROFILE_STEP = "profile";
 

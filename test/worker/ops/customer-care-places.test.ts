@@ -138,10 +138,10 @@ const errorCode = async (res: Response) => (await res.json<{ error: { code: stri
 const CORRECTION = {
   fit: {
     norwood_stage: "IV",
-    head_circumference_cm: 57.5,
-    front_to_nape_cm: 36,
-    ear_to_ear_cm: 33.5,
-    temple_to_temple_cm: 34,
+    head_circumference_in: 22.6,
+    front_to_nape_in: 14.2,
+    ear_to_ear_in: 13.2,
+    temple_to_temple_in: 13.4,
     base_width_in: 8,
     base_length_in: 10,
     colour: "1B",

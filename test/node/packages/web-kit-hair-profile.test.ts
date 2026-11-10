@@ -17,14 +17,15 @@ import {
   type FitForm,
 } from "../../../packages/web-kit/hair-profile.ts";
 
-const HEAD = MEASUREMENTS.head_circumference_cm;
+const HEAD = MEASUREMENTS.head_circumference_in;
 
 describe("the profile form", () => {
   it("takes a figure in the ranges the API takes, to one decimal", () => {
-    expect(figureOf("57.5", HEAD)).toBe(57.5);
-    expect(figureOf(" 57 ", HEAD)).toBe(57);
+    expect(figureOf("22.5", HEAD)).toBe(22.5);
+    expect(figureOf(" 22 ", HEAD)).toBe(22);
     expect(figureOf("", HEAD)).toBeNull();
-    for (const typed of ["57.55", "90", "5.7e1", "-57", "fifty"]) expect(figureOf(typed, HEAD)).toBe("invalid");
+    // Centimetres typed for inches are out of range.
+    for (const typed of ["22.55", "57.5", "2.2e1", "-22", "fifty"]) expect(figureOf(typed, HEAD)).toBe("invalid");
   });
 
   it("sends the fit spec only once every figure is one the API takes", () => {
@@ -81,8 +82,8 @@ describe("the console's correction, on the same form", () => {
   it("names each figure typed that the API would refuse", () => {
     const { figures } = fitFormOf(null);
     expect(
-      refusedFigures({ ...figures, head_circumference_cm: "90", grey_percent: "50", base_width_in: "abc" }),
-    ).toEqual(["head_circumference_cm", "base_width_in"]);
+      refusedFigures({ ...figures, head_circumference_in: "90", grey_percent: "50", base_width_in: "abc" }),
+    ).toEqual(["head_circumference_in", "base_width_in"]);
   });
 
   it("takes a choice from a list's control only as one of the list, and an empty one as none", () => {

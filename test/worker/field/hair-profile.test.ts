@@ -1,6 +1,6 @@
 // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md): the technician records the fit spec and the
-// history at a consultation and at a one visit, on no consent of its own; every change is a new
-// version; ops read every version and correct the latest on the client's page; an erasure blanks them, and the export
+// history at a consultation, at a one visit and at a first fit, on no consent of its own, the head in inches; every
+// change is a new version; ops read every version and correct the latest on the client's page; an erasure blanks them, and the export
 // carries them. None of it reaches FSM, a log line or the audit log. NOW is Monday 21 September 2026, 12 noon in
 // India; the visit is today at 13:00. Every name and number is made up.
 
@@ -16,10 +16,10 @@ const CONSOLE = `/api/clients/${PERSON}/hair-profile`;
 
 const FIT = {
   norwood_stage: "IV",
-  head_circumference_cm: 57.5,
-  front_to_nape_cm: 36,
-  ear_to_ear_cm: 33.5,
-  temple_to_temple_cm: 34,
+  head_circumference_in: 22.6,
+  front_to_nape_in: 14.2,
+  ear_to_ear_in: 13.2,
+  temple_to_temple_in: 13.4,
   base_width_in: 8,
   base_length_in: 10,
   colour: "1B",
@@ -35,7 +35,25 @@ const FIT = {
 const SKIN = "Dry at the crown, allergic to latex";
 const HISTORY = { remedies: ["minoxidil", "transplant"], transplant_year: 2019, skin_and_allergies: SKIN };
 
-const FIT_AS_READ = { ...FIT, product_name: "First fit" };
+/** The head in centimetres too, for a phone of the build before, from the inches to one decimal. */
+const FIT_AS_READ = {
+  ...FIT,
+  product_name: "First fit",
+  head_circumference_cm: 57.4,
+  front_to_nape_cm: 36.1,
+  ear_to_ear_cm: 33.5,
+  temple_to_temple_cm: 34,
+};
+
+/** The head as a phone of the build before measured it, in centimetres. */
+const { head_circumference_in, front_to_nape_in, ear_to_ear_in, temple_to_temple_in, ...FIT_BUT_THE_HEAD } = FIT;
+const FIT_IN_CENTIMETRES = {
+  ...FIT_BUT_THE_HEAD,
+  head_circumference_cm: 57.5,
+  front_to_nape_cm: 36,
+  ear_to_ear_cm: 33.5,
+  temple_to_temple_cm: 34,
+};
 
 let logs: ReturnType<typeof captureLogs>;
 
@@ -87,10 +105,85 @@ describe("the technician's profile step", () => {
   it("comes before the outcome at a consultation, which takes no after photographs, and the card offers the products", async () => {
     const job = await working("consultation");
     expect(await card(job)).toMatchObject({
-      steps: ["before_photos", "checklist", "consumables", "profile", "outcome"],
+      steps: ["before_photos", "checklist", "profile", "outcome"],
       products: [{ tier: "standard", name: "First fit" }],
       profile: null,
     });
+  });
+
+  it("is taken at a first fit too, where the head is measured again before the piece goes on", async () => {
+    const job = await working("first_fit");
+    expect((await card(job)).steps).toEqual([
+      "before_photos",
+      "piece",
+      "checklist",
+      "consumables",
+      "profile",
+      "after_photos",
+      "outcome",
+    ]);
+    await job.workTo("piece");
+    expect((await job.post(PROFILE, fromPhone(FIT, null), "event-profile-01")).status).toBe(202);
+    expect(await card(job)).toMatchObject({ profile: { fit: FIT_AS_READ } });
+  });
+
+  it("takes the head in centimetres from a phone of the build before, and keeps it in inches", async () => {
+    const job = await consultation();
+    const answer = await job.post(PROFILE, fromPhone(FIT_IN_CENTIMETRES, null), "event-profile-01");
+
+    expect(answer.status).toBe(202);
+    expect(await card(job)).toMatchObject({ profile: { fit: FIT_AS_READ } });
+    expect(
+      await env.DB.prepare("SELECT head_circumference_in, head_circumference_cm FROM hair_profiles").first(),
+    ).toEqual({ head_circumference_in: 22.6, head_circumference_cm: 57.4 });
+  });
+
+  it.each([
+    ["in both inches and centimetres", { ...FIT, head_circumference_cm: 57.5 }, ["fit.head_circumference_in"]],
+    [
+      "in neither",
+      FIT_BUT_THE_HEAD,
+      ["fit.head_circumference_in", "fit.front_to_nape_in", "fit.ear_to_ear_in", "fit.temple_to_temple_in"],
+    ],
+    [
+      "in centimetres outside the range in inches",
+      { ...FIT_IN_CENTIMETRES, head_circumference_cm: 90 },
+      ["fit.head_circumference_cm"],
+    ],
+  ])("refuses a head measured %s", async (_, fit, fields) => {
+    const job = await consultation();
+    const answer = await job.post(PROFILE, fromPhone(fit, null), "event-profile-01");
+
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { fields } });
+    expect((await versions()).results).toEqual([]);
+  });
+
+  it("gives a version only the release before wrote, in centimetres, in inches", async () => {
+    const job = await consultation();
+    await env.DB.prepare(
+      `INSERT INTO hair_profiles (id, person_id, staff, created_at, head_circumference_cm, front_to_nape_cm)
+       VALUES ('00000000-0000-4000-8000-0000000000aa', ?1, 'ops@maneman.in', ?2, 57.5, 36)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    expect(await card(job)).toMatchObject({
+      profile: {
+        fit: {
+          head_circumference_in: 22.6,
+          front_to_nape_in: 14.2,
+          ear_to_ear_in: null,
+          head_circumference_cm: 57.5,
+        },
+      },
+    });
+  });
+
+  it("takes back the centimetres it gave, from a console or phone of the build before", async () => {
+    const job = await consultation();
+    // 15.5 inches, the least, is 39.4 centimetres: below the build before's 40, and taken all the same.
+    const fit = { ...FIT_IN_CENTIMETRES, head_circumference_cm: 39.4 };
+    expect((await job.post(PROFILE, fromPhone(fit, null), "event-profile-01")).status).toBe(202);
   });
 
   it("is not a step of a service visit, and its card still carries the latest profile", async () => {
@@ -195,8 +288,8 @@ describe("the technician's profile step", () => {
   it.each([
     [
       "a measurement past its range",
-      { fit: { ...FIT, head_circumference_cm: 90 }, history: null },
-      "fit.head_circumference_cm",
+      { fit: { ...FIT, head_circumference_in: 90 }, history: null },
+      "fit.head_circumference_in",
     ],
     ["a measurement to two decimals", { fit: { ...FIT, base_width_in: 8.25 }, history: null }, "fit.base_width_in"],
     ["a colour not on the list", { fit: { ...FIT, colour: "9Z" }, history: null }, "fit.colour"],

@@ -6,13 +6,6 @@
   flex-wrap: wrap;
   gap: var(--sp-8);
 }
-/* The base in centimetres, beneath its figures in inches. */
-.inCentimetres {
-  margin: var(--sp-12) 0 0;
-  font-size: var(--fs-16);
-  color: var(--ink-muted);
-}
-
 /* The head's four figures and the base's two, two to a row. */
 
 .figure {

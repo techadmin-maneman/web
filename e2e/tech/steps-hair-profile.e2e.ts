@@ -30,11 +30,9 @@ test.describe("the client’s hair profile", () => {
     const fake = await atTheProfile(page);
     expect(await axeViolations(page)).toEqual([]);
     await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
-    await page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm }).fill("57.5");
+    await page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_in }).fill("22.6");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_width_in }).fill("8");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_length_in }).fill("10");
-    // The base in centimetres too, as the head above it is measured.
-    await expect(page.getByText("20.3 × 25.4 cm")).toBeVisible();
     // Measured, then matched: the colour and style are a page of their own.
     await next(page).click();
     await expect(page.getByRole("heading", { level: 1, name: techCopy.profile.match.title })).toBeVisible();
@@ -79,10 +77,10 @@ test.describe("the client’s hair profile", () => {
     expect(writesTo(fake, "profile")[0]?.body).toEqual({
       fit: {
         norwood_stage: "IV",
-        head_circumference_cm: 57.5,
-        front_to_nape_cm: null,
-        ear_to_ear_cm: null,
-        temple_to_temple_cm: null,
+        head_circumference_in: 22.6,
+        front_to_nape_in: null,
+        ear_to_ear_in: null,
+        temple_to_temple_in: null,
         base_width_in: 8,
         base_length_in: 10,
         colour: "1B",
@@ -102,7 +100,7 @@ test.describe("the client’s hair profile", () => {
   test("keeps what was typed when the app closes part-way, and lets it go once sent", async ({ page }) => {
     const fake = await atTheProfile(page);
     await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
-    await page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm }).fill("57.5");
+    await page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_in }).fill("22.6");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_width_in }).fill("8");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_length_in }).fill("10");
     await next(page).click();
@@ -119,8 +117,8 @@ test.describe("the client’s hair profile", () => {
     await page.getByRole("button", { name: techCopy.steps.back }).click();
     await expect(page.getByRole("radio", { name: "Mane Man Natural" })).toBeChecked();
     await page.getByRole("button", { name: techCopy.steps.back }).click();
-    await expect(page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm })).toHaveValue(
-      "57.5",
+    await expect(page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_in })).toHaveValue(
+      "22.6",
     );
     await expect(page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true })).toBeChecked();
 
@@ -129,7 +127,7 @@ test.describe("the client’s hair profile", () => {
     await next(page).click();
     await expect.poll(() => writesTo(fake, "profile").length).toBe(1);
     await page.goto(`/jobs/${JOB_ID}/profile`);
-    await expect(page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm })).toHaveValue(
+    await expect(page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_in })).toHaveValue(
       "",
     );
   });
@@ -157,23 +155,23 @@ test.describe("the client’s hair profile", () => {
   test("keeps Next dim on a figure out of its range, and says the range", async ({ page }) => {
     await atTheProfile(page);
     await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
-    const circumference = page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm });
+    const circumference = page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_in });
     // A figure says nothing beneath it until it is out of range.
     await expect(circumference).toHaveAccessibleDescription("");
-    await expect(page.getByText("40–70")).toHaveCount(0);
+    await expect(page.getByText("15.5–28")).toHaveCount(0);
     await circumference.fill("90");
-    await expect(circumference).toHaveAccessibleDescription("40–70");
-    const named = techCopy.profile.checkFigure(techCopy.profile.measurements.head_circumference_cm);
+    await expect(circumference).toHaveAccessibleDescription("15.5–28");
+    const named = techCopy.profile.checkFigure(techCopy.profile.measurements.head_circumference_in);
     await expect(page.getByRole("button", { name: named })).toBeDisabled();
-    await circumference.fill("57.5");
+    await circumference.fill("22.6");
     await expect(next(page)).toBeEnabled();
   });
 
   test("starts from the profile as it stands, names it, and sends no history where none was said", async ({ page }) => {
     const fake = await atTheProfile(page, { ...ROHITS_PROFILE, history: null });
     await expect(page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true })).toBeChecked();
-    await expect(page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm })).toHaveValue(
-      "57.5",
+    await expect(page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_in })).toHaveValue(
+      "22.6",
     );
     await next(page).click();
     await next(page).click();

@@ -18,14 +18,7 @@ describe("a visit's story", () => {
     const answer = await request(job.ops, `/api/visits/${JOB}/story`);
     expect(answer.status).toBe(200);
     const { steps } = await answer.json<{ steps: { kind: string; technician: string; outcome: string | null }[] }>();
-    expect(steps.map((step) => step.kind)).toEqual([
-      "check_in",
-      "start",
-      "before_photos",
-      "checklist",
-      "consumables",
-      "outcome",
-    ]);
+    expect(steps.map((step) => step.kind)).toEqual(["check_in", "start", "before_photos", "checklist", "outcome"]);
     expect(steps.at(-1)).toMatchObject({ outcome: "done" });
     expect(steps.every((step) => step.technician === "Imran Qureshi")).toBe(true);
   });

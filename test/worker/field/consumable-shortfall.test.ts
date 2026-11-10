@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, request } from "../helpers.ts";
-import { JOB, working, type Working } from "../job-fixtures.ts";
+import { JOB, SAMEER, working, type Working } from "../job-fixtures.ts";
 
 let job: Working;
 
@@ -92,5 +92,31 @@ describe("a job short of what its service expects", () => {
       .bind(JOB)
       .first<{ settled_at: string | null }>();
     expect(row?.settled_at).not.toBeNull();
+  });
+});
+
+describe("a consultation, which uses nothing from the kit", () => {
+  it("answers a step a phone queued before as landed, and records nothing and takes nothing from the kit", async () => {
+    await env.DB.prepare("UPDATE appointments SET type = 'consultation' WHERE id = ?1").bind(JOB).run();
+    const answer = await step({ items: [{ code: "tape_strips", quantity: 4 }] });
+
+    expect(answer.status).toBe(202);
+    expect(await answer.json()).toMatchObject({ event_id: "event-consumables-01", write_state: "written" });
+    const recorded = await env.DB.prepare(
+      `SELECT (SELECT COUNT(*) FROM job_events WHERE kind = 'consumables') AS events,
+         (SELECT COUNT(*) FROM consumables_used) AS used, (SELECT COUNT(*) FROM stock_movements) AS moved`,
+    ).first();
+    expect(recorded).toEqual({ events: 0, used: 0, moved: 0 });
+    expect(await shortTasks()).toEqual([]);
+  });
+
+  it("refuses the technician it was taken from, as any step, and tells them nothing more of it", async () => {
+    await env.DB.prepare("UPDATE appointments SET type = 'consultation', technician_id = ?2 WHERE id = ?1")
+      .bind(JOB, SAMEER)
+      .run();
+    const answer = await step({ items: [] });
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "superseded", fields: ["technician"] } });
   });
 });
