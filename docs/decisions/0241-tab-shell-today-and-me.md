@@ -18,12 +18,16 @@ leave, which the API did not give.
    of the screen above it, so a screen not yet redrawn keeps its ink to the foot. Until PR 9, Schedule opens the week
    and Kit the kit as they are.
 2. **Today, as the prototype draws it:** the date, the jobs still to do (the count falls as each closes), and the sync
-   label; problem cards for yesterday's open job and unsent work at risk; the next job with when to leave, its time,
-   client, visit, payment, place and drive, and Navigate, Message and Call; Later today, a job done with ruled in the
-   ink with how it closed; Day view; and tomorrow's line, which opens the Schedule.
+   label, which says how many writes failed where the API stopped any; a problem card for each of yesterday's open
+   jobs and for unsent work at risk; the next job, one under way or at its door first, with when to leave (counted
+   down while the screen is open), its time, client, visit, payment, place and drive, and Navigate, Message and Call;
+   Later today, each row with where it stands, a job done with ruled in the ink with how it closed; Day view; and
+   tomorrow's line, which opens the Schedule.
 3. **Each job on the day's list carries `drive_minutes` and `leave_by`:** the drive from the job before, or from the
    technician's home pin for the day's first, by the drive estimate (`src/policy/next-job.ts`), never Google's, which a
-   list read on every open would call too often.
+   list read on every open would call too often. With no home pin the day's first has neither, as booking counts no
+   drive from nowhere. A job not yet unlocked has them too, for the Schedule's drive before each job (PR 9): the drive
+   tells the technician how far it is from them, no more.
 4. **Me, with what Today held:** sign out behind its sheet, the month, leave, pending uploads with their count, and ops.
    Quality, incentives, guides, language and alerts come with their screens (PRs 9 to 11).
 5. **The shared parts take the look through roles,** each defaulting to what the console and the client app draw now:
@@ -40,10 +44,15 @@ leave, which the API did not give.
 - **Message opens WhatsApp** to the client, as the job card does, until the Message sheet in PR 5.
 - **Day view and tomorrow open the week** as it is until the Schedule's day view in PR 9.
 - **The rows' chevrons are `--ink-500`, not `--stone`:** the look's pairings hold every glyph in a row to 4.5:1.
-- **The storage-full, stopped and update banners keep their ink** above Today until PR 7 redraws them.
+- **The storage-full and stopped banners keep their ink** above Today until PR 7 redraws them. The update banner
+  already draws on paper above Today and Me.
 
 ## Consequences
 
 - PR 9 replaces the Schedule, Kit and Me screens behind the tabs; PR 10 adds the bell to Today's head.
-- An upgrade step that changes a store already changed in the same upgrade now sees that change, whichever step comes
-  first; PR 2's step 8 kept a card's step-7 arrival window only by luck before.
+- Every step that changes a store through `eachAgain` now sees what an earlier one of them changed in the same upgrade:
+  PR 2's step 8 would otherwise have written away a card's step-7 arrival window on a phone last opened at version 6.
+  Two older paths still lose a change, and are left as they are since an old step is never edited: from version 3,
+  steps 4 and 5 each pass over the cards, so the second writes away the first's `lost_reasons`; and from version 1 or
+  2, what step 3 moves into the new stores lands after the later steps have read them empty. Only a phone last opened
+  before 12 October 2026, before production launched, takes either path.

@@ -59,9 +59,10 @@ export interface DriveTo {
 }
 
 /**
- * For each of the day's jobs, in time order: the drive to it and when to leave for it; null for a job closed. The drive
- * from the job before sets off once that job and its wrap-up are done, and the drive from home at the hour the
- * shortest drive would leave in.
+ * For each of the day's jobs, in time order: the drive to it and when to leave for it; null for a job closed, and for
+ * the day's first where the technician's home has no pin, as booking counts no drive from nowhere. The drive from the
+ * job before sets off once that job and its wrap-up are done, and the drive from home at the hour the shortest drive
+ * would leave in.
  */
 export function drivesTo(
   jobs: readonly DayJob[],
@@ -71,6 +72,7 @@ export function drivesTo(
   return jobs.map((job, index) => {
     if (!STILL_TO_DO.includes(job.status)) return null;
     const before = index === 0 ? undefined : jobs[index - 1];
+    if (before === undefined && home === null) return null;
     const from = before === undefined ? home : before.pin;
     const setsOff =
       before === undefined

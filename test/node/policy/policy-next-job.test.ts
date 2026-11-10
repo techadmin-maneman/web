@@ -61,10 +61,11 @@ describe("the drive to each job", () => {
     expect(third).toEqual({ drive_minutes: 10, leave_by: at("15:50") });
   });
 
-  it("is nothing for a job already closed, and the shortest drive from a home with no pin", () => {
+  it("is nothing for a job already closed, nor for the day's first from a home with no pin", () => {
     const [first, second] = drivesTo([job("10:00", 0, "completed"), job("13:00", 25)], null, RULES);
     expect(first).toBeNull();
     expect(second?.drive_minutes).toBe(25);
-    expect(drivesTo([job("10:00", 0)], null, RULES)[0]).toEqual({ drive_minutes: 10, leave_by: at("09:50") });
+    // Booking counts no drive from nowhere, and the phone shows no figure it would have to invent.
+    expect(drivesTo([job("10:00", 0)], null, RULES)[0]).toBeNull();
   });
 });

@@ -4,7 +4,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { card, JOB_ID, NOTHING_DONE, ROHITS_PIECE, todayInIndia } from "./fixtures.ts";
+import { card, JOB_ID, NOTHING_DONE, ROHITS_PIECE, SECOND_JOB_ID, todayInIndia } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { keptOnPhone, leftOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
@@ -259,4 +259,25 @@ test("every target on every screen is at least the design’s 48 px, and the pri
       expect(each?.width ?? 0, name).toBeGreaterThanOrEqual(48);
     }
   }
+});
+
+test("puts a card for each job still open from yesterday at the top, which opens it", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.yesterday = true;
+  await page.goto("/");
+  const open = page.getByRole("button", { name: /^Still open from yesterday · 11:30 am · Vikram S\./ });
+  await expect(open).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  await open.click();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${SECOND_JOB_ID}$`));
+});
+
+test("says the day did not load, and loads it on Try again", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.dayFails = true;
+  await page.goto("/");
+  await expect(page.getByText(techCopy.today.failed)).toBeVisible();
+  fake.dayFails = false;
+  await page.getByRole("button", { name: techCopy.today.retry }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "3 jobs today" })).toBeVisible();
 });

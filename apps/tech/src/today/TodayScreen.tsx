@@ -11,12 +11,14 @@ import { NoSignal } from "../frame/Banners.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
 import { atRisk as atRiskCopy, titles, today as copy } from "../content.ts";
-import { rowState, type RowState } from "../lib/progress.ts";
+import { rowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useRefreshTick } from "../lib/useRefreshTick.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { dayAfter, dayBefore, todayInIndia } from "../lib/when.ts";
+import { clock, dayAfter, dayBefore, todayInIndia } from "../lib/when.ts";
+import { kindName } from "../lib/kind.ts";
+import { nextOf, titleOf } from "../lib/today.ts";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
 import { type Heard, keptStates } from "../store/jobs.ts";
@@ -81,28 +83,24 @@ function Head(props: { readonly date: string; readonly title: string; readonly h
 }
 
 /** Yesterday's jobs still open, as a card at the top: each can be finished and sent. */
-function LeftOpen({ date, queued }: { readonly date: string; readonly queued: readonly Queued[] }) {
-  const [yesterday] = useDay(dayBefore(date));
-  const jobs = yesterday.state === "loaded" ? stillOpen(yesterday.value, queued) : [];
-  const [first] = jobs;
-  if (first === undefined) return null;
-  return (
+function LeftOpen(props: {
+  readonly date: string;
+  readonly queued: readonly Queued[];
+  readonly names: ReadonlyMap<string, string>;
+}) {
+  const [yesterday] = useDay(dayBefore(props.date));
+  const jobs = yesterday.state === "loaded" ? stillOpen(yesterday.value, props.queued) : [];
+  return jobs.map((job) => (
     <ProblemCard
-      title={copy.leftOpen(jobs.length)}
+      key={job.id}
+      title={copy.leftOpen(clock(job.starts_at), job.client_name ?? props.names.get(job.id) ?? kindName(job))}
       onOpen={() => {
-        go(`/jobs/${first.id}`);
+        go(`/jobs/${job.id}`);
       }}
     >
       {copy.leftOpenBody}
     </ProblemCard>
-  );
-}
-
-/** What Today's title says: how many jobs are still to do, that they are all done, or that none are booked. */
-function titleOf(jobs: readonly JobSummary[], states: ReadonlyMap<string, RowState | null>, loaded: boolean): string {
-  if (loaded && jobs.length === 0) return copy.noJobs;
-  const open = jobs.filter((job) => states.get(job.id) !== "closed").length;
-  return loaded && open === 0 ? copy.allDone : copy.jobs(open);
+  ));
 }
 
 export function TodayScreen() {
@@ -123,7 +121,7 @@ export function TodayScreen() {
     [waiting.events, heard],
   );
   const states = new Map(jobs.map((job) => [job.id, stateOf(job)]));
-  const next = jobs.find((job) => states.get(job.id) !== "closed");
+  const next = nextOf(jobs, states);
   const rest = jobs.filter((job) => job !== next);
   const after = rest.find(
     (job) => next !== undefined && job.starts_at > next.starts_at && states.get(job.id) !== "closed",
@@ -136,7 +134,7 @@ export function TodayScreen() {
       {offline && <NoSignal />}
 
       <div className={styles.problems}>
-        <LeftOpen date={date} queued={waiting.events} />
+        <LeftOpen date={date} queued={waiting.events} names={names} />
         {atRisk && unsentOnPhone && <ProblemCard title={atRiskCopy.title}>{atRiskCopy.body}</ProblemCard>}
       </div>
 
@@ -154,7 +152,7 @@ export function TodayScreen() {
           cards={round}
         />
       )}
-      {day.state === "loaded" && <LaterToday jobs={rest} states={states} names={names} />}
+      {day.state === "loaded" && <LaterToday jobs={rest} states={states} names={names} queued={waiting.events} />}
       <Tomorrow jobs={tomorrowJobs} loaded={tomorrow.state === "loaded"} />
     </main>
   );

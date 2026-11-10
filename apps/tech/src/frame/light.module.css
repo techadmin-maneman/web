@@ -14,6 +14,12 @@
   color: var(--ui-text-soft);
 }
 
+/* Work the API stopped: said in the error's colour. */
+.stopped {
+  font-weight: var(--weight-semibold);
+  color: var(--ui-error);
+}
+
 /* A tinted strip of the column's width, under the screen's head. */
 .noSignal {
   display: flex;

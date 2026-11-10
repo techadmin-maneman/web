@@ -23,6 +23,8 @@ import {
   jobsToday,
   dayAfter,
   jobsTomorrow,
+  jobsYesterday,
+  dayBefore,
   ROHITS_PIECE,
   JOB_ID,
   LOCKED_JOB_ID,
@@ -129,6 +131,10 @@ export interface Fake {
   reminderDelivered: string | null | undefined;
   /** True puts one unlocked job on tomorrow's list. */
   tomorrow: boolean;
+  /** True puts a job begun and never closed on yesterday's list. */
+  yesterday: boolean;
+  /** True fails the call for today's list, as a network having a bad minute would. */
+  dayFails: boolean;
   /** Every write that reached the API, in the order it arrived. */
   readonly writes: Write[];
   /** Every photograph PUT to an upload link, by its angle. */
@@ -222,6 +228,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     lastVisit: false,
     reminderDelivered: undefined,
     tomorrow: false,
+    yesterday: false,
+    dayFails: false,
     writes: [],
     month: {
       month: "2026-10",
@@ -441,6 +449,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       const date = url.searchParams.get("date") ?? "";
       // Outside the contract on purpose: what a broken release might send, which the app must survive.
       if (fake.malformed) return route.fulfill({ json: { date, jobs: null } });
+      if (date === today && fake.dayFails) return route.abort("failed");
+      if (date === dayBefore(today) && fake.yesterday) return reply(route, 200, { date, jobs: jobsYesterday(today) });
       if (date === today) {
         const progress = { started_at: fake.progress.started_at, outcome: fake.progress.outcome };
         return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type, progress, fake.oneVisit) });

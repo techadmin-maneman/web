@@ -16,24 +16,11 @@ import { badgesLower, job as jobCopy, today as copy } from "../content.ts";
 import { kindName } from "../lib/kind.ts";
 import { callLink, wayTo } from "../lib/navigate.ts";
 import type { RowState } from "../lib/progress.ts";
-import { apiDate, clock, runsOver } from "../lib/when.ts";
+import { clock, runsOver } from "../lib/when.ts";
+import { nextLine } from "../lib/today.ts";
+import { useMinute } from "../lib/useMinute.ts";
 import { keptJob } from "../store/jobs.ts";
 import styles from "./today.module.css";
-
-const MINUTE_MS = 60_000;
-
-/** How far ahead "leave in" counts in minutes; further off, the line says when. */
-const LEAVE_IN_WITHIN = 90;
-
-/** The line above the next job's time: at the door, under way, or when to leave for it. */
-export function nextLine(job: Pick<JobSummary, "leave_by">, state: RowState | null, now: Date): string {
-  if (state === "at_the_door") return copy.next.atTheDoor;
-  if (state === "in_progress") return copy.next.inProgress;
-  if (job.leave_by === null) return copy.next.next;
-  const minutes = Math.ceil((Date.parse(job.leave_by) - now.getTime()) / MINUTE_MS);
-  if (minutes <= 0) return copy.next.leaveNow;
-  return minutes <= LEAVE_IN_WITHIN ? copy.next.leaveIn(minutes) : copy.next.leaveBy(clock(job.leave_by));
-}
 
 /** The place in a few words: the tower, the building or the street, and the locality. */
 const placeOf = (address: NonNullable<JobSummary["address"]>): string =>
@@ -56,19 +43,20 @@ export function NextJob(props: {
 }) {
   const { job, state, client } = props;
   const mobile = useMobile(job.id, props.cards);
+  const now = useMinute();
   const first = client === undefined ? null : firstNameOf(client);
   const where = job.address === null ? job.sector : placeOf(job.address);
   const drive = job.drive_minutes === null ? null : copy.driveTo(job.drive_minutes);
   const { after } = props;
   const over =
-    state === "in_progress" && job.next !== null && after !== undefined && runsOver(job, apiDate())
+    state === "in_progress" && job.next !== null && after !== undefined && runsOver(job, now)
       ? copy.runsOver(clock(job.next.finish_by), clock(after.starts_at))
       : null;
   return (
     <section className={styles.next} aria-labelledby="today-next">
       <Link className={styles.nextLink} to={`/jobs/${job.id}`}>
         <span className={styles.nextLine} id="today-next">
-          {nextLine(job, state, apiDate())}
+          {nextLine(job, state, now)}
         </span>
         <span className={styles.nextWhen}>
           <span className={styles.nextTime}>{clock(job.starts_at)}</span>

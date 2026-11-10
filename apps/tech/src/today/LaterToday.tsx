@@ -11,36 +11,48 @@ import type { JobSummary } from "../api.ts";
 import { badgesLower, job as jobCopy, today as copy } from "../content.ts";
 import { kindName } from "../lib/kind.ts";
 import { outcomeOf, type RowState } from "../lib/progress.ts";
+import type { Queued } from "../store/outbox.ts";
 import { apiDate, clock, runsOver } from "../lib/when.ts";
 import styles from "./today.module.css";
 
-/** How a job done with closed, in a word. */
-function closedAs(job: JobSummary): string {
-  const outcome = outcomeOf(job, []);
+/** How a job done with closed, in a word: as it landed, or as the phone has it on its way. */
+function closedAs(job: JobSummary, queued: readonly Queued[]): string {
+  const outcome = outcomeOf(job, queued);
   if (outcome === null) return job.status === "completed" ? copy.closed.done : copy.closed.other;
   return copy.closed[outcome];
 }
 
-/** The row's third line: how it closed, that it runs into the next job, or the drive and when to leave. */
-function lastLine(job: JobSummary, state: RowState | null, later: JobSummary | undefined): string | null {
-  if (state === "closed") return closedAs(job);
-  if (state === "in_progress" && job.next !== null && later !== undefined && runsOver(job, apiDate())) {
-    return copy.runsOver(clock(job.next.finish_by), clock(later.starts_at));
+/**
+ * The row's third line: how it closed, that it runs into the next job, where the technician is with it, or the drive
+ * and when to leave.
+ */
+function lastLine(job: JobSummary, state: RowState | null, ahead: Ahead): string | null {
+  if (state === "closed") return closedAs(job, ahead.queued);
+  if (state === "in_progress" && job.next !== null && ahead.later !== undefined && runsOver(job, apiDate())) {
+    return copy.runsOver(clock(job.next.finish_by), clock(ahead.later.starts_at));
   }
+  if (state === "in_progress") return copy.next.inProgress;
+  if (state === "at_the_door") return copy.next.atTheDoor;
   if (job.drive_minutes === null || job.leave_by === null) return null;
   return copy.driveAndLeave(job.drive_minutes, clock(job.leave_by));
+}
+
+/** What a row's last line reads beyond the job: the next job still to do, and the phone's writes on their way. */
+interface Ahead {
+  readonly later: JobSummary | undefined;
+  readonly queued: readonly Queued[];
 }
 
 function Row(props: {
   readonly job: JobSummary;
   readonly state: RowState | null;
   readonly client: string | undefined;
-  readonly later: JobSummary | undefined;
+  readonly ahead: Ahead;
 }) {
   const { job, state } = props;
   const closed = state === "closed";
   const what = [kindName(job), job.sector, badgesLower[job.badge]].filter((part) => part !== null).join(" · ");
-  const last = lastLine(job, state, props.later);
+  const last = lastLine(job, state, props.ahead);
   return (
     <ListRow
       to={`/jobs/${job.id}`}
@@ -67,6 +79,7 @@ export function LaterToday(props: {
   readonly jobs: readonly JobSummary[];
   readonly states: ReadonlyMap<string, RowState | null>;
   readonly names: ReadonlyMap<string, string>;
+  readonly queued: readonly Queued[];
 }) {
   const { jobs, states } = props;
   return (
@@ -91,7 +104,10 @@ export function LaterToday(props: {
               job={job}
               state={states.get(job.id) ?? null}
               client={job.client_name ?? props.names.get(job.id)}
-              later={jobs.slice(index + 1).find((after) => states.get(after.id) !== "closed")}
+              ahead={{
+                later: jobs.slice(index + 1).find((after) => states.get(after.id) !== "closed"),
+                queued: props.queued,
+              }}
             />
           ))}
         </ListRows>

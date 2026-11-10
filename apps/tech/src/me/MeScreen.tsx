@@ -17,6 +17,12 @@ import { useSession } from "../session.ts";
 import { replay } from "../store/outbox.ts";
 import styles from "./me.module.css";
 
+/** Pending uploads' count: in the error's colour where the API stopped some, else marked while any wait. */
+function pendingTone(unsent: number, stopped: number): "error" | "attention" | "muted" {
+  if (stopped > 0) return "error";
+  return unsent > 0 ? "attention" : "muted";
+}
+
 /** Where a sign-out has got to: asking, waiting on the API, or refused for want of signal. */
 type Leaving = "asking" | "going" | "stayed" | null;
 
@@ -57,7 +63,7 @@ function SignOutSheet(props: {
 
 export function MeScreen() {
   const { me, offline, signOut } = useSession();
-  const unsent = useUnsent();
+  const { unsent, stopped } = useUnsent();
   const [leaving, setLeaving] = useState<Leaving>(null);
   const heading = useScreen(copy.title);
 
@@ -88,12 +94,13 @@ export function MeScreen() {
           title={copy.pending}
           to="/waiting"
           end={unsent > 0 ? String(unsent) : copy.nothingPending}
-          endTone={unsent > 0 ? "attention" : "muted"}
+          endTone={pendingTone(unsent, stopped)}
         />
         <ListRow
           title={copy.signOut}
           onClick={() => {
-            setLeaving("asking");
+            // Not twice: the first is still signing out.
+            if (leaving !== "going") setLeaving("asking");
           }}
         />
       </ListRows>

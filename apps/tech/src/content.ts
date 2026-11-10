@@ -51,6 +51,8 @@ export const today = {
     synced: "Synced",
     offline: (saved: number) => (saved > 0 ? `Offline · ${String(saved)} saved` : "Offline"),
     sending: (count: number) => `${String(count)} to upload`,
+    /** Writes the API stopped: a job changed under the phone, or a step refused. */
+    stopped: (count: number) => `${String(count)} ${count === 1 ? "upload" : "uploads"} failed`,
   },
   /** The next job's line above its time: where the technician is with it, or when to leave for it. */
   next: {
@@ -77,8 +79,7 @@ export const today = {
   tomorrowJobs: (count: number, time: string) => `${String(count)} ${count === 1 ? "job" : "jobs"} from ${time}`,
   nothingBooked: "Nothing booked",
   /** Yesterday's jobs not yet closed, as a card at the top: their work can still be finished and sent. */
-  leftOpen: (count: number) =>
-    count === 1 ? "A job from yesterday is still open" : `${String(count)} jobs from yesterday are still open`,
+  leftOpen: (time: string, who: string) => `Still open from yesterday · ${time} · ${who}`,
   leftOpenBody: "Finish it and send it.",
   offline: {
     title: "No signal",

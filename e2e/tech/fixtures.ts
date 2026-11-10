@@ -225,6 +225,13 @@ export function jobsTomorrow(today: string): Job[] {
   return [tomorrowsJob(today)];
 }
 
+/** Yesterday's 11:30, begun and never closed: Vikram's, still open on the phone the next morning. */
+export function jobsYesterday(today: string): Job[] {
+  const date = dayBefore(today);
+  const begun = at(date, "06:10");
+  return [{ ...secondJob(date), day: "past", status: "in_progress", progress: { started_at: begun, outcome: null } }];
+}
+
 export const CHECKLIST: Card["checklist"] = [
   { id: "piece_removed", label: "Hair system removed" },
   { id: "scalp_cleaned", label: "Scalp cleaned" },
