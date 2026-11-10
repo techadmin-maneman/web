@@ -158,6 +158,23 @@ export const clients = {
       unknown: FAILED,
     },
   },
+  alerts: {
+    title: "Alerts for technicians",
+    none: "No alerts.",
+    add: "Add an alert",
+    takeOff: "Take off",
+    save: "Save",
+    saving: "Saving…",
+    /** "Priya · 12 Oct 2026", or "Imran at a visit · 12 Oct 2026" */
+    by: (name: string, date: string) => `${name} · ${date}`,
+    atVisit: (name: string) => `${name} at a visit`,
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      invalid_request: "Write the alert first.",
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
   failed: "Couldn’t load this client.",
   /*
    * Our words, all of them: the board draws a Visits tab and nothing in it. It

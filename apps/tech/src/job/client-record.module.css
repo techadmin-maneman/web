@@ -1,0 +1,59 @@
+/* The client's record on the job's card (./ClientRecord.tsx), on the ink: the alerts edged in the error's colour, the
+   handoff note, and the way to the client's history. */
+
+.record {
+  padding: var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+.alerts {
+  padding: var(--sp-16);
+  border: var(--rule-strong) solid var(--error-on-ink);
+}
+
+.alertsTitle {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-medium);
+  color: var(--error-on-ink);
+}
+
+.alertList {
+  margin: var(--sp-8) 0 0;
+  padding-left: var(--sp-20);
+  font-size: var(--fs-17);
+  line-height: var(--lh-160);
+  color: var(--paper);
+}
+
+.handoff {
+  margin-top: var(--sp-16);
+}
+
+.handoffTitle {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.handoffNote {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-17);
+  line-height: var(--lh-160);
+  color: var(--paper);
+}
+
+.handoffBy {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-15);
+  color: var(--ink-soft);
+}
+
+.history {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tech-min);
+  margin-top: var(--sp-12);
+  font-size: var(--fs-17);
+  color: var(--paper);
+}

@@ -344,6 +344,29 @@ function lengthOf(minutes: number): string {
   return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} min`;
 }
 
+/** A client's record, which belongs to them and not the job (docs/decisions/0242-client-record.md). */
+export const clientRecord = {
+  alerts: "Before you start",
+  handoff: "Handoff",
+  /** "Imran · 1 Sep" */
+  handoffBy: (who: string | null, date: string) => (who === null ? date : `${who} · ${date}`),
+  history: "Client history",
+  /** The history screen. */
+  title: "Client history",
+  back: "Back to the job",
+  none: "No earlier visits.",
+  failed: "The client’s history didn’t load.",
+  retry: "Try again",
+  /** "Service visit · 1 Sep" */
+  visit: (kind: string, date: string) => `${kind} · ${date}`,
+  results: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
+  /** "Imran · Done" */
+  byAndResult: (who: string | null, result: string) => (who === null ? result : `${who} · ${result}`),
+  photo: (angle: string) => `After, ${angle}`,
+  used: "Used",
+  piece: (label: string) => `Piece fitted: ${label}`,
+} as const;
+
 export const job = {
   back: "Back",
   /** "9:30 am · service · 1 h 30 min", and "Tomorrow · …" for a job on another day. */

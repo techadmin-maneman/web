@@ -198,6 +198,9 @@ export const api = {
   month: () => client.get("/api/tech/month", { patience: PATIENCE_MS.read }),
   /** A consultation's packages and what each costs the client, and the looks they made with the try-on. */
   options: (id: string) => client.get("/api/tech/jobs/{id}/options", { path: { id }, patience: PATIENCE_MS.read }),
+  /** The client's alerts and their visits closed before this job (docs/decisions/0242-client-record.md). */
+  clientHistory: (id: string) =>
+    client.get("/api/tech/jobs/{id}/client-history", { path: { id }, patience: PATIENCE_MS.read }),
   /** The technician's asks for leave not yet past, and where each stands. */
   leave: () => client.get("/api/tech/leave", { patience: PATIENCE_MS.read }),
   /** An ask for leave, which ops decide on Tasks. Asked straight, with signal. */

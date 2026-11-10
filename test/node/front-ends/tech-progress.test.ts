@@ -57,6 +57,8 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   last_visit: null,
   reminder: null,
   steps: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
+  client_alerts: [],
+  handoff: null,
   checklist: [],
   checklist_if_declined: [],
   partial_reasons: [],

@@ -20,6 +20,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { TellClient } from "./TellClient.tsx";
+import { ClientRecord } from "./ClientRecord.tsx";
 import { addressLine } from "@maneman/web-kit/address";
 import type { HairProfile, Job } from "../api.ts";
 import { job as copy, options as optionsCopy, profile as profileCopy } from "../content.ts";
@@ -211,6 +212,7 @@ export function JobCard({ job }: { job: Job }) {
         )}
         <TellClient job={job} />
       </section>
+      <ClientRecord job={job} />
       <ProfileCard profile={job.profile} />
       {job.type === "consultation" ? (
         <section className={styles.piece}>

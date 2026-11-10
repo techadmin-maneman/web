@@ -9,6 +9,7 @@ import { Stopped, StorageFull } from "./frame/Banners.tsx";
 import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { OptionsScreen } from "./job/OptionsScreen.tsx";
+import { ClientHistoryScreen } from "./job/ClientHistoryScreen.tsx";
 import { KitScreen } from "./kit/KitScreen.tsx";
 import { LeaveScreen } from "./mine/LeaveScreen.tsx";
 import { MeScreen } from "./me/MeScreen.tsx";
@@ -54,6 +55,8 @@ function pageFor(route: Route) {
       return <JobScreen id={route.id} />;
     case "options":
       return <OptionsScreen id={route.id} />;
+    case "history":
+      return <ClientHistoryScreen id={route.id} />;
     case "done":
       return <CloseOut id={route.id} />;
     case "step":

@@ -363,6 +363,8 @@ export interface CardOptions {
   readonly clientChoice?: Card["client_choice"];
   /** The hair systems the technician's kit holds; none unless a test gives them. */
   readonly kitHairSystems?: Card["kit_hair_systems"];
+  readonly alerts?: Card["client_alerts"];
+  readonly handoff?: Card["handoff"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -418,6 +420,8 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     discount_code: options.discountCode ?? null,
     client_choice: oneVisit ? (options.clientChoice ?? null) : null,
     profile: options.profile ?? null,
+    client_alerts: options.alerts ?? [],
+    handoff: options.handoff ?? null,
   };
 }
 
@@ -448,6 +452,8 @@ export function lockedCard(date: string): Card {
     discount_code: null,
     client_choice: null,
     profile: null,
+    client_alerts: [],
+    handoff: null,
   };
 }
 

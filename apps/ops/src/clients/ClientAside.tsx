@@ -14,6 +14,7 @@ import styles from "./client-screen.module.css";
 import { replacementDueOf } from "./History.tsx";
 import { paidToDate } from "./Payments.tsx";
 import { StaffNotes } from "./StaffNotes.tsx";
+import { ClientAlerts } from "./ClientAlerts.tsx";
 import { VisitAddress } from "./VisitAddress.tsx";
 
 const copy = clients.glance;
@@ -57,6 +58,7 @@ export function ClientAside(props: {
     <aside className={styles.aside} aria-label={record.name}>
       <Glance record={record} credits={props.credits} />
       <VisitAddress clientId={clientId} address={props.address} onAddress={props.onAddress} />
+      <ClientAlerts clientId={clientId} />
       <StaffNotes clientId={clientId} />
       <CarePersonLine clientId={clientId} mobile={record.mobile} />
     </aside>

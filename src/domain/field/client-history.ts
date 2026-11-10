@@ -7,6 +7,7 @@ import type { VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { stateOf } from "./tech-jobs.ts";
+import { statusIn, VISIT_ENDED } from "../../config/statuses.ts";
 
 /** How many of the client's visits the screen goes back. */
 const VISITS_SHOWN = 20;
@@ -50,7 +51,7 @@ export async function clientHistory(
       `SELECT a.id, a.window_start, a.type, t.name AS technician FROM appointments a
        LEFT JOIN technicians t ON t.id = a.technician_id
        WHERE a.person_id = ?1 AND a.id <> ?2 AND a.deleted_at IS NULL AND a.window_start < ?3
-         AND a.status IN ('completed', 'terminated')
+         AND ${statusIn("a.status", VISIT_ENDED)}
        ORDER BY a.window_start DESC LIMIT ${String(VISITS_SHOWN)}`,
     )
     .bind(job.personId, job.id, job.startsAt)

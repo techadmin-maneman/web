@@ -119,6 +119,11 @@ export interface Fake {
   month: TechReply<"/api/tech/month">;
   /** A consultation's options: its packages and prices, and the client's try-on looks. */
   options: TechReply<"/api/tech/jobs/{id}/options">;
+  /** The client's alerts and the last technician's note on the card; none unless a test gives them. */
+  alerts: Card["client_alerts"];
+  handoff: Card["handoff"];
+  /** The client's history, as GET /api/tech/jobs/{id}/client-history answers. */
+  history: TechReply<"/api/tech/jobs/{id}/client-history">;
   /** The technician's asks for leave, as GET /api/tech/leave answers; an ask adds one, with ops. */
   leave: TechReply<"/api/tech/leave">;
   /** The client's hair profile on the card, or none recorded. */
@@ -257,6 +262,9 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       ],
       looks: [{ id: LOOK_ID, made_on: "2026-09-20", url: `/api/tech/jobs/${JOB_ID}/looks/${LOOK_ID}` }],
     },
+    alerts: [],
+    handoff: null,
+    history: { alerts: [], visits: [] },
     photos: [],
     doorPhotos: [],
     thumbnails: [],
@@ -280,6 +288,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       service: fake.service,
       clientChoice: fake.clientChoice,
       kitHairSystems: fake.kitHairSystems,
+      alerts: fake.alerts,
+      handoff: fake.handoff,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -475,6 +485,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     }
     if (path === `/api/tech/jobs/${JOB_ID}/options`) return reply(route, 200, fake.options);
     if (path === `/api/tech/jobs/${JOB_ID}/looks/${LOOK_ID}`) {
+      assertInContract("tech", method, path, 200);
+      return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
+    }
+    if (path === `/api/tech/jobs/${JOB_ID}/client-history`) return reply(route, 200, fake.history);
+    if (path.startsWith(`/api/tech/jobs/${JOB_ID}/history-photos/`)) {
       assertInContract("tech", method, path, 200);
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }

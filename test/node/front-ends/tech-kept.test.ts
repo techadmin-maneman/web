@@ -29,7 +29,14 @@ import {
 } from "../../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
-import { eighthRelease, firstRelease, seventhRelease, sixthRelease, thirdRelease } from "./tech-first-release.ts";
+import {
+  eighthRelease,
+  firstRelease,
+  ninthRelease,
+  seventhRelease,
+  sixthRelease,
+  thirdRelease,
+} from "./tech-first-release.ts";
 
 afterEach(async () => {
   vi.unstubAllGlobals();
@@ -113,6 +120,8 @@ const card = (id: string, date: string) =>
     discount_code: null,
     client_choice: null,
     profile: null,
+    client_alerts: [],
+    handoff: null,
   }) as Job;
 
 const arrival = {
@@ -476,6 +485,14 @@ describe("a day kept before its rows carried their drive", () => {
     await eighthRelease([{ date: TODAY, jobs: [row], v: 2 }]);
     const [kept] = (await keptDay(TODAY)) ?? [];
     expect(kept).toMatchObject({ drive_minutes: null, leave_by: null });
+  });
+});
+
+describe("a card kept before it carried the client's alerts", () => {
+  it("says none, and no note left for the visit, until the card is read again", async () => {
+    const { client_alerts: _alerts, handoff: _handoff, ...earlier } = card("a", TODAY);
+    await ninthRelease([{ ...earlier, v: 2 }]);
+    expect(await keptJob("a")).toMatchObject({ client_alerts: [], handoff: null });
   });
 });
 
