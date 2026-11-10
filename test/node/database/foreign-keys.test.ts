@@ -61,6 +61,11 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/dispatch/technician-roster.ts deletes no phone of a technician a job event names",
   "appointments.technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
+  // Left at a visit's close, by a technician the visit names, so never one the roster deletes.
+  "client_alerts.technician_id -> technicians":
+    "src/domain/dispatch/technician-roster.ts refuses to delete a technician a visit names",
+  "handoff_notes.technician_id -> technicians":
+    "src/domain/dispatch/technician-roster.ts refuses to delete a technician a visit names",
   "slot_holds.technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts refuses to delete a technician it names",
   "checkins.technician_id -> technicians":

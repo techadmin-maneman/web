@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0242. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0245. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -133,6 +133,9 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0239](0239-technician-light-look.md) The technician app's new look: white, navy and Plex, screen by screen
 - [0240](0240-consultation-rules-and-inches.md) A consultation uses nothing from the kit, a first fit takes the profile, and the head is measured in inches
 - [0241](0241-tab-shell-today-and-me.md) The technician app's tab bar, Today redrawn, and Me with sign out
+- [0242](0242-client-record.md) A client's record for the technicians: alerts, the handoff note, and their history
+- [0243](0243-job-and-the-door.md) The job and the door in the new look
+- [0244](0244-the-visit-engine.md) The visit engine, its plan, and the photographs
 
 ### Money and Books
 
@@ -518,3 +521,6 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0239](0239-technician-light-look.md) | The technician app's new look: white, navy and Plex, screen by screen | 2026-11-10 | accepted |  |
 | [0240](0240-consultation-rules-and-inches.md) | A consultation uses nothing from the kit, a first fit takes the profile, and the head is measured in inches | 2026-11-10 | accepted |  |
 | [0241](0241-tab-shell-today-and-me.md) | The technician app's tab bar, Today redrawn, and Me with sign out | 2026-11-10 | accepted |  |
+| [0242](0242-client-record.md) | A client's record for the technicians: alerts, the handoff note, and their history | 2026-11-11 | accepted |  |
+| [0243](0243-job-and-the-door.md) | The job and the door in the new look | 2026-11-11 | accepted |  |
+| [0244](0244-the-visit-engine.md) | The visit engine, its plan, and the photographs | 2026-11-11 | accepted |  |

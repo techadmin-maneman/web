@@ -1,0 +1,30 @@
+/* The visit plan (./PlanScreen.tsx), in the new look: how far along, then each screen with its marker. */
+
+.head {
+  padding: var(--sp-20) var(--screen-gutter) 0;
+}
+
+.count {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+}
+
+.bar {
+  margin-top: var(--sp-12);
+}
+
+.finish {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+.fixCard {
+  margin: var(--sp-16) var(--screen-gutter) 0;
+  width: auto;
+}
+
+.list {
+  margin-top: var(--sp-16);
+}

@@ -108,6 +108,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   fsm_items:
     "FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).",
   grievances: "A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).",
+  client_alerts:
+    "What every technician reads in red before they start on a client, raised by staff or by a technician at a close; one taken off is marked so, never deleted, until an erasure (ADR 0242).",
   hair_profiles:
     "Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).",
   idempotency: "The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).",
@@ -187,6 +189,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What each first fit and replacement product costs us, from its date, for the margin figures until stock lots carry what was paid; an old row stays for the visits under it (ADR 0152).",
   staff:
     "Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).",
+  handoff_notes:
+    "The note a technician leaves at a visit's close for whoever takes the client's next job, one a visit, shown as Handoff on that job (ADR 0242).",
   staff_access_mode: "One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).",
   staff_grants:
     "What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).",

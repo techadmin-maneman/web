@@ -1,0 +1,59 @@
+/* A job's screen in the new look (./CardFrame.tsx): the phone's height, the head at the top, the bar at the foot, the
+   body scrolling between them. */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--ui-ground);
+  color: var(--ui-text);
+}
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-4);
+  align-items: center;
+  min-height: var(--sp-64);
+  padding: var(--sp-8) var(--screen-gutter);
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+/* A gloved thumb's target, as every control in this app is (../styles/tokens.css). */
+.back {
+  --icon-button-size: var(--tech-min);
+
+  margin-left: calc(-1 * var(--sp-12));
+  color: var(--ui-text);
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.name:focus {
+  outline: none;
+}
+
+.when {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--sp-24);
+}

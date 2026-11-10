@@ -143,7 +143,7 @@ function NoteList({ clientId, initial }: { clientId: string; initial: readonly N
               <NoteForm initial={note.body} onSave={(body) => write(body, note.id)} onCancel={close} />
             </li>
           ) : (
-            <li key={note.id} className={styles.note}>
+            <li key={note.id} className={styles.noteItem}>
               <p className={styles.noteBody}>{note.body}</p>
               <span className={styles.noteBy}>
                 {copy.by(staffName(note.written_by), plainDate(todayInIndia(Date.parse(note.written_at))))}

@@ -3,6 +3,7 @@
 // cannot help.
 
 import { ICONS } from "@maneman/brand/icons";
+import { classes } from "@maneman/ui/classes";
 import { IconButton } from "@maneman/ui/IconButton";
 import { ReachOps } from "./ReachOps.tsx";
 import { job as copy } from "../content.ts";
@@ -10,6 +11,7 @@ import { go } from "../route.ts";
 import frame from "./frame.module.css";
 import { Failed } from "./States.tsx";
 import styles from "./job-failed.module.css";
+import light from "./light.module.css";
 
 const toToday = () => {
   go("/");
@@ -18,22 +20,31 @@ const toToday = () => {
 export function JobFailed({
   failed,
   onRetry,
+  onPaper = false,
 }: {
   readonly failed: { readonly requestId: string | null; readonly gone: boolean };
   readonly onRetry: () => void;
+  /** On a screen redrawn in the new look (../styles/look.css). */
+  readonly onPaper?: boolean;
 }) {
   return (
-    <main className={frame.screen}>
-      <header className={frame.head}>
+    <main className={classes(frame.screen, onPaper && light.failedScreen)} data-look={onPaper ? "light" : undefined}>
+      <header className={classes(frame.head, onPaper && light.failedHead)}>
         <IconButton d={ICONS.back} size="lg" weight="heavy" label={copy.backToToday} onClick={toToday} />
       </header>
       <div className={styles.body}>
         {failed.gone ? (
-          <Failed message={copy.gone} retry={copy.backToToday} onRetry={toToday} />
+          <Failed message={copy.gone} retry={copy.backToToday} onRetry={toToday} onPaper={onPaper} />
         ) : (
-          <Failed message={copy.failed} retry={copy.retry} onRetry={onRetry} requestId={failed.requestId} />
+          <Failed
+            message={copy.failed}
+            retry={copy.retry}
+            onRetry={onRetry}
+            requestId={failed.requestId}
+            onPaper={onPaper}
+          />
         )}
-        <ReachOps className={styles.reach} />
+        <ReachOps className={styles.reach} onPaper={onPaper} />
       </div>
     </main>
   );

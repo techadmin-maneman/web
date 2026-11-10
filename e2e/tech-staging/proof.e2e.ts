@@ -263,7 +263,7 @@ test("check-in: outside the fence it fails with the distance, inside it passes",
   expect(nearBody.passed).toBe(true);
   expect(nearBody.distance_m ?? 9999).toBeLessThanOrEqual(200);
   expect(nearBody.wait_ends_at).not.toBeNull();
-  await expect(page.getByText(notHome.waiting.step)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: notHome.door.title })).toBeVisible();
 
   // Both attempts are on the record, with the radius in force: what open point 56 is tuned from.
   const rows = await query<{ distance_m: number; radius_m: number; passed: number }>(

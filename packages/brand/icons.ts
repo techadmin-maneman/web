@@ -70,6 +70,8 @@ export const GLYPHS = {
   otherApps:
     "M8 7 H6 A2 2 0 0 0 4 9 V18 A2 2 0 0 0 6 20 H18 A2 2 0 0 0 20 18 V9 A2 2 0 0 0 18 7 H16 M12 3 V13 M8.5 6.5 L12 3 L15.5 6.5",
   copyLink: "M9.5 13.5 L14.5 8.5 M8 11 L6 13 A3.5 3.5 0 0 0 11 18 L13 16 M11 8 L13 6 A3.5 3.5 0 0 1 18 11 L16 13",
+  /** Copy, beside the way in on a technician's job: one sheet over another. */
+  copy: "M9 9 H19 V19 H9 Z M15 9 V5 H5 V15 H9",
   /** A label tied to a piece, beside the field it is typed in: typed, never scanned, so no barcode. */
   tag: "M3.5 3.5 H12 L20.5 12 L12 20.5 L3.5 12 Z M8 6.8 A1.2 1.2 0 0 1 8 9.2 A1.2 1.2 0 0 1 8 6.8",
   /** Navigate, on the address. */

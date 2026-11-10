@@ -1,0 +1,44 @@
+/* The client's record on the job (./ClientRecord.tsx), in the new look: the alerts in a problem card, the handoff note
+   with its visit's photographs in one row, and the row to the client's history. */
+
+.record {
+  padding-top: var(--sp-24);
+}
+
+.inset {
+  padding: 0 var(--screen-gutter);
+}
+
+.alerts {
+  margin-bottom: var(--sp-24);
+}
+
+.alertList {
+  margin: 0;
+  padding-left: var(--sp-20);
+  font-size: var(--fs-15);
+}
+
+.handoff {
+  margin-bottom: var(--sp-16);
+}
+
+.handoffNote {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+}
+
+.photos {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-8);
+  margin-top: var(--sp-12);
+}
+
+.photo {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--placeholder);
+}

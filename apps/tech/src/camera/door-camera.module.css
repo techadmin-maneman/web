@@ -1,0 +1,110 @@
+/* The door's photograph (./DoorCamera.tsx): the camera's chrome above and below, the view between with its frame and
+   the prompt, and the round shutter, the one place a circle is drawn. */
+
+/* Over the door's screen, the whole of it: a native modal, so the screen behind it is inert. */
+.overlay {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.overlay[open] {
+  display: flex;
+}
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  background: var(--camera-900);
+  color: var(--white-000);
+}
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--sp-8);
+  align-items: center;
+  padding: var(--sp-4) var(--sp-16);
+}
+
+.close {
+  --icon-button-size: var(--tech-min);
+
+  color: var(--white-000);
+}
+
+.title {
+  flex: 1;
+  margin: 0 var(--sp-48) 0 0;
+  font-size: var(--fs-16);
+  font-weight: var(--weight-semibold);
+  text-align: center;
+}
+
+.title:focus {
+  outline: none;
+}
+
+.view {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--camera-700);
+}
+
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Where the door goes: a dashed outline, two thirds of the view's width. */
+.guide {
+  position: relative;
+  width: 60%;
+  aspect-ratio: 2 / 3;
+  border: var(--rule-strong) dashed var(--white-000);
+  border-radius: var(--ui-radius-box);
+}
+
+.prompt {
+  position: absolute;
+  right: 0;
+  bottom: var(--sp-16);
+  left: 0;
+  width: fit-content;
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-12);
+  border-radius: var(--ui-radius-box);
+  background: var(--camera-900);
+  font-size: var(--fs-15);
+}
+
+.refused {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  align-items: center;
+  padding: var(--sp-24);
+  font-size: var(--fs-16);
+  text-align: center;
+}
+
+.foot {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+  padding: var(--sp-16) var(--sp-16) calc(var(--sp-32) + env(safe-area-inset-bottom));
+}

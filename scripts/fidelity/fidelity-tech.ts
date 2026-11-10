@@ -20,6 +20,7 @@ import sharp from "sharp";
 import { pair, rest, routeDesignLibraries, STILL } from "../lib/fidelity.ts";
 import { serveDirectory } from "../lib/static-server.ts";
 import type { components } from "../../apps/tech/src/api-schema.ts";
+import { cardStepsFor } from "../../src/policy/in-job-steps.ts";
 
 type Schemas = components["schemas"];
 
@@ -178,7 +179,6 @@ const LAST_VISIT_PHOTO = Buffer.from(
 const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["TechnicianJobDetail"] => {
   const summary = [...JOBS, ...TOMORROW].find((one) => one.id === id);
   if (summary === undefined) throw new Error(`no job ${id} in the fixtures`);
-  const takesPiece = summary.type === "replacement" || summary.type === "first_fit";
   return {
     ...summary,
     address: {
@@ -206,9 +206,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     // Board A3's "Last visit, after. 22 Aug, Imran.", and board B5's "delivered 9:33 am".
     last_visit: { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${id}/last-visit-photo` },
     reminder: { state: "delivered", delivered_at: `${DAY}T04:03:00.000Z` },
-    steps: takesPiece
-      ? ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"]
-      : ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
+    steps: cardStepsFor(summary.type ?? "service"),
     checklist: CHECKLIST,
     checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
@@ -220,6 +218,8 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     discount_code: null,
     client_choice: null,
     profile: null,
+    client_alerts: [],
+    handoff: null,
   };
 };
 

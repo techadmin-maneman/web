@@ -319,4 +319,14 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       return { ...day, jobs };
     });
   },
+  // Version 10: a card carries the client's alerts and the note left for this visit
+  // (docs/decisions/0242-client-record.md). One kept before says neither until the card is read again.
+  (_db, upgrade) => {
+    eachAgain(upgrade.objectStore("cards"), (value) => {
+      // What an earlier build wrote, which may lack the fields this step adds.
+      const card = value as Partial<Pick<Job, "client_alerts" | "handoff">>;
+      if (card.client_alerts !== undefined && card.handoff !== undefined) return null;
+      return { ...card, client_alerts: card.client_alerts ?? [], handoff: card.handoff ?? null };
+    });
+  },
 ];

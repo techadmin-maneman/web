@@ -34,6 +34,7 @@ import { registerOpsField } from "./field.ts";
 import { registerOpsGrievances } from "./grievances.ts";
 import { registerOpsHairProfile } from "./hair-profile.ts";
 import { registerOpsStaffNotes } from "./staff-notes.ts";
+import { registerOpsClientAlerts } from "./client-alerts.ts";
 import { registerOpsLeaveRequests } from "./leave-requests.ts";
 import { registerPincodeDirectory } from "./pincode-directory.ts";
 import { registerPincodeLaunches } from "./pincode-launches.ts";
@@ -118,6 +119,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
   registerOpsHairProfile,
   registerOpsStaffNotes,
+  registerOpsClientAlerts,
   registerOpsLeaveRequests,
   registerPincodeDirectory,
   registerPincodeLaunches,

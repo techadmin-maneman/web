@@ -12,6 +12,9 @@ import { loadSlotSchedule } from "../booking/slot-times.ts";
 import { offeredProducts } from "../booking/services.ts";
 import { type PhoneClock, earliestCheckIn } from "../../policy/phone-clock.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "../clients/hair-profiles.ts";
+import { alertsForTechnician, type TechnicianAlert } from "../clients/client-alerts.ts";
+import { handoffFor, type Handoff } from "../clients/handoff-notes.ts";
+import { afterPhotosOf, type HistoryPhoto } from "./client-history.ts";
 import { codeOnVisit, type VisitCode } from "../money/discount-code-uses.ts";
 import { decisionAtVisit } from "../visits/one-visit.ts";
 import { evidenceMessage, messageStateOf } from "../no-shows/no-shows.ts";
@@ -105,6 +108,10 @@ interface JobDetail extends JobSummary {
   readonly client_choice: Decision | null;
   /** The client's hair profile as it stands; null while the job is locked, or before one is recorded. */
   readonly profile: HairProfile | null;
+  /** The client's alerts, which every technician reads before they start; none while the job is locked. */
+  readonly client_alerts: TechnicianAlert[];
+  /** The note the last technician left for this visit's; null while the job is locked, or where none was left. */
+  readonly handoff: (Handoff & { readonly photos: HistoryPhoto[] }) | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
   readonly steps: CardStep[];
 }
@@ -185,6 +192,8 @@ export async function jobDetail(
     discount_code: discountCode,
     client_choice: clientChoice,
     profile: null,
+    client_alerts: [],
+    handoff: null,
     steps: cardStepsFor(type, oneVisit),
   };
   if (unlockedParts === null) return locked;
@@ -205,18 +214,30 @@ export async function jobDetail(
   };
 }
 
-/** What only an unlocked card carries beyond the job's own row: the client's pieces and profile, and their last visit. */
+/**
+ * What only an unlocked card carries beyond the job's own row: the client's pieces, profile and alerts, their last
+ * visit, and the note left for this one.
+ */
 async function unlockedPartsOf(
   db: D1Database,
   row: JobRow,
-): Promise<Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile">> {
-  const [pieces, lastVisit, reminder, profile] = await Promise.all([
+): Promise<Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile" | "client_alerts" | "handoff">> {
+  const [pieces, lastVisit, reminder, profile, alerts, handoff] = await Promise.all([
     piecesOf(db, row.person_id),
     lastVisitOf(db, row),
     reminderOf(db, row.id),
     latestProfile(db, row.person_id),
+    alertsForTechnician(db, row.person_id),
+    handoffFor(db, { personId: row.person_id, id: row.id, startsAt: row.window_start }),
   ]);
-  return { pieces: pieces.map(cardPiece), last_visit: lastVisit, reminder, profile };
+  return {
+    pieces: pieces.map(cardPiece),
+    last_visit: lastVisit,
+    reminder,
+    profile,
+    client_alerts: alerts,
+    handoff: handoff === null ? null : { ...handoff, photos: await afterPhotosOf(db, row.id, handoff.visit_id) },
+  };
 }
 
 /** The products offered on a visit's day: the hair systems offered and priced then, in ops' order. */

@@ -43,3 +43,14 @@
 .ground {
   background: var(--white-000);
 }
+
+/* A job that did not load (./JobFailed.tsx), on a screen in the new look: its ground and words, and the head's rule. */
+.failedScreen {
+  background: var(--ui-ground);
+  color: var(--ui-text);
+}
+
+.failedHead {
+  border-bottom-color: var(--ui-line);
+  color: var(--ui-text);
+}

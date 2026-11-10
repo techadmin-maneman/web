@@ -1,31 +1,39 @@
-/* The update to the client: one button on the card, and the words in a sheet (./TellClient.tsx). */
+/* Navigate, Call and Message (./TellClient.tsx), in the new look: three tiles in a row, and the Message sheet with the
+   minutes in a row of five, then the two messages. */
 
-.open {
-  width: 100%;
-  margin-top: var(--sp-12);
+.actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--sp-8);
+  margin-top: var(--sp-16);
 }
 
-.said,
-.noWhatsApp {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
+/* A tile: the icon over its word. */
+.tile {
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-height: var(--sp-64);
+  padding-inline: var(--sp-4);
+  font-size: var(--fs-15);
+}
+
+.said {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
 }
 
 .panel {
   display: flex;
   flex-direction: column;
   gap: var(--sp-12);
-  background: var(--ink-deep);
-  color: var(--paper);
 }
 
 .title {
   margin: 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-22);
-  font-weight: var(--weight-regular);
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
 }
 
 .minutes {
@@ -46,5 +54,5 @@
 .note {
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--ink-muted);
+  color: var(--ui-text-soft);
 }

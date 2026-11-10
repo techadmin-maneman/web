@@ -70,32 +70,34 @@ test("a double tap on Capture keeps one frame for one angle, and moves on by one
   await expect(page.getByText(techCopy.capture.guides.top)).toBeVisible();
 });
 
-test("Capture is the key at the foot of the screen, Retake beside it, over board B1's framing guide", async ({
+test("takes each angle with the round shutter between Retake and Saved on phone, over the head-shape guide", async ({
   page,
 }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
-  const capture = page.getByRole("button", { name: techCopy.capture.take });
-  await expect(capture).toBeEnabled();
+  const shutter = page.getByRole("button", { name: techCopy.capture.take });
+  await expect(shutter).toBeEnabled();
 
-  const key = await capture.boundingBox();
-  const viewport = page.viewportSize();
-  // The foot of the screen, 24 px up, where every other screen's primary action is.
-  expect(Math.round((key?.y ?? 0) + (key?.height ?? 0))).toBe((viewport?.height ?? 0) - 24);
-  expect(key?.height).toBe(64);
-  expect((await page.getByRole("button", { name: techCopy.capture.retake }).boundingBox())?.width).toBe(88);
-  // No second bar beneath it: Capture is the one gold action until the set is done.
+  // The shutter is the one round control, in the dock at the foot.
+  const key = await shutter.boundingBox();
+  expect(key?.height).toBe(72);
+  expect(key?.width).toBe(72);
+  await expect(page.getByText(techCopy.capture.saved)).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.capture.retake })).toBeDisabled();
   await expect(page.getByRole("button", { name: techCopy.capture.finish })).toHaveCount(0);
   // The head's outline, the hairline and the corners, drawn over the camera and not read out.
   await expect(page.locator('svg[aria-hidden="true"] path[stroke-dasharray]')).toHaveCount(1);
+  // The angle to take is outlined in brass.
+  await expect(page.locator('li[data-state="now"]')).toHaveText(techCopy.capture.angles.front);
 
   for (let angle = 1; angle <= 5; angle += 1) {
-    await capture.click();
-    await expect(page.getByRole("status").filter({ hasText: `${String(angle)} of 5` })).toBeAttached();
+    await shutter.click();
+    await expect(page.getByText(`${String(angle)} of 5`, { exact: true })).toBeVisible();
   }
-  // Once the five are in, the same key finishes the step, in the same place.
-  const done = page.getByRole("button", { name: techCopy.capture.finish });
-  expect(await done.boundingBox()).toEqual(key);
+  // Once the five are in, Done takes the shutter's place.
+  await expect(page.getByRole("button", { name: techCopy.capture.finish })).toBeVisible();
+  await expect(shutter).toHaveCount(0);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("Retake drops the last frame from the phone", async ({ page }) => {
@@ -221,8 +223,9 @@ test("a frame the phone has no room for can be taken again, and the phone says i
   });
   await capture.click();
   await expect(page.getByText(techCopy.capture.missed)).toBeVisible();
-  await expect(page.getByText(techCopy.storage.title)).toBeVisible();
-  await expect(page.getByText(/won’t open its camera/)).toHaveCount(0);
+  // Said over the screen, and on the camera's own red bar.
+  await expect(page.getByText(techCopy.storage.title)).toHaveCount(2);
+  await expect(page.getByText(techCopy.capture.unavailableTitle)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 
   // Room again: the same angle is taken, and the warning goes.
@@ -247,8 +250,9 @@ test("a camera the phone refused can be asked for again", async ({ page }) => {
   await fakeTech(page);
   await page.goto(BEFORE);
 
-  await expect(page.getByText(/won’t open its camera/)).toBeVisible();
-  await page.getByRole("button", { name: techCopy.today.retry }).click();
+  await expect(page.getByText(techCopy.capture.unavailableTitle)).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.capture.withoutPhotos })).toBeVisible();
+  await page.getByRole("button", { name: techCopy.capture.retry }).click();
   await expect(page.getByRole("button", { name: techCopy.capture.take })).toBeEnabled();
 });
 

@@ -6,6 +6,7 @@ import { REMINDER_STATES } from "../../domain/field/job-card.ts";
 import { CARD_STEPS } from "../../policy/in-job-steps.ts";
 import { BasedOnSchema, FitSpecWriteSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
 import { PieceSchema } from "./pieces.ts";
+import { HandoffSchema, TechnicianAlertsSchema } from "../schemas/client-record.ts";
 import { AddressSchema, JobSummarySchema } from "../schemas/tech-jobs.ts";
 
 export const jobId = z.object({ id: z.uuid() });
@@ -238,6 +239,8 @@ export const JobDetailSchema = JobSummarySchema.extend({
       "The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until " +
       "the day before the visit, or before one is recorded.",
   }),
+  client_alerts: TechnicianAlertsSchema,
+  handoff: HandoffSchema,
 }).openapi("TechnicianJobDetail");
 
 export const AcceptedSchema = z

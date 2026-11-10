@@ -1,5 +1,5 @@
-// The job card's word to the client (apps/tech/src/job/TellClient.tsx; docs/decisions/0145-technician-presets.md):
-// on the way or running late, queued in the outbox, each word once; a client without WhatsApp is called instead.
+// Message on the job (apps/tech/src/job/TellClient.tsx; docs/decisions/0145-technician-presets.md): on the way or
+// running late, queued in the outbox, each word once; a client without WhatsApp is called instead.
 // Every name and number is made up.
 
 import { act, createElement } from "react";
@@ -26,6 +26,7 @@ const { TellClient } = await import("../../apps/tech/src/job/TellClient.tsx");
 
 const JOB = {
   id: "22222222-2222-4222-8222-222222222221",
+  address: null,
   client: { name: "Rohit Malhotra", mobile: "+919810000001", note: null, whatsapp: true },
   progress: { checked_in_at: null, started_at: null, outcome: null },
 } as unknown as Job;
@@ -74,13 +75,13 @@ const pressInSheet = async (label: string) => {
 describe("telling the client from the card", () => {
   it("queues on the way with the minutes chosen, once: a second tap of the same word sends nothing", async () => {
     draw(JOB);
-    await press(copy.tell.open("Rohit"));
+    await press(copy.messageShort);
     await pressInSheet(copy.tell.minute(30));
     await pressInSheet(copy.tell.onTheWay(30));
     expect(queued).toEqual([{ kind: "update", jobId: JOB.id, body: { preset: "on_the_way", minutes: 30 } }]);
-    expect(page.textContent).toContain("Rohit updated at");
+    expect(page.textContent).toContain("Sent: on my way, 30 min");
 
-    await press(copy.tell.open("Rohit"));
+    await press(copy.messageShort);
     const onTheWay = [...document.querySelectorAll<HTMLButtonElement>("dialog button")].find((each) =>
       each.textContent.trim().startsWith("Sent at"),
     );

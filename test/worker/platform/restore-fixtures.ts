@@ -83,6 +83,9 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO staff_notes (id, person_id, body, written_by, written_at)
      VALUES ('sn1', 'p1', 'Prefers mornings.', 'ops@maneman.in', '${AT}')`,
   `INSERT INTO crm_contact_updates (person_id, owed_at, changed_at) VALUES ('p1', '${AT}', '${AT}')`,
+  // An alert for their technicians, and a note left for the next (docs/decisions/0242-client-record.md).
+  `INSERT INTO client_alerts (id, person_id, body, staff, written_at)
+     VALUES ('al1', 'p1', 'Allergic to latex.', 'ops@maneman.in', '${AT}')`,
   `INSERT INTO vendor_breakers (vendor, failures) VALUES ('crm', 1)`,
   // A matter sent to their city (docs/decisions/0135-city-matters.md).
   `INSERT INTO city_matters (id, person_id, conversation_id, city, note, raised_by, raised_at)
@@ -105,6 +108,8 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
      VALUES ('ap1', 'ap1', 'p1', 'first_fit', '2026-09-22T03:30:00.000Z', '2026-09-22T06:30:00.000Z', 't1',
              'completed', '${AT}')`,
+  `INSERT INTO handoff_notes (appointment_id, person_id, technician_id, body, written_at)
+     VALUES ('ap1', 'p1', 't1', 'Use the softer tape.', '${AT}')`,
   // Their technician's word from the job card (docs/decisions/0145-technician-presets.md).
   `INSERT INTO technician_updates (id, appointment_id, technician_id, preset, minutes, written_at, created_at)
      VALUES ('tu1', 'ap1', 't1', 'on_the_way', 20, '${AT}', '${AT}')`,

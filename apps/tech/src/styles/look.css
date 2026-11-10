@@ -105,3 +105,23 @@
 [data-look="light"] :is(td, th, output, time) {
   font-variant-numeric: tabular-nums;
 }
+
+/* The camera's chrome (../camera/): the look's roles on its dark, so the shared parts draw light on it, with the navy
+   edge the brief gives a control on the camera and the mist for words beneath words. */
+[data-look="light"] [data-chrome="camera"] {
+  --ui-ground: var(--camera-900);
+  --ui-text: var(--white-000);
+  --ui-text-soft: var(--mist-300);
+  --ui-text-muted: var(--mist-300);
+  --ui-text-quiet: var(--mist-300);
+  --ui-hint: var(--mist-300);
+  --ui-tint: var(--camera-700);
+  --ui-raised: var(--camera-900);
+  --ui-box: var(--camera-900);
+  --ui-line: var(--navy-700);
+  --ui-line-control: var(--navy-700);
+  --ui-strong: var(--white-000);
+  --ui-on-strong: var(--navy-900);
+  --ui-strong-pressed: var(--mist-300);
+  --focus-colour: var(--white-000);
+}

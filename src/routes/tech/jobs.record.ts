@@ -52,13 +52,13 @@ export type StepBody = Record<string, unknown> | { invalid: string[] } | { label
 /**
  * One in-job step: check it, land it once, and record what it does with the event.
  * What a step keeps of its own, `afterRecorded` does once it has landed, first time
- * or replayed, and must do the same however often it is called.
+ * or replayed, told which; called again, it changes nothing it kept the first time.
  */
 export async function step(
   c: Ctx,
   kind: JobEventKind,
   build: (job: WorkableJob) => StepBody | Promise<StepBody>,
-  afterRecorded?: (job: WorkableJob) => Promise<void>,
+  afterRecorded?: (job: WorkableJob, accepted: z.infer<typeof AcceptedSchema>) => Promise<void>,
 ) {
   const job = await namedJob(c, c.req.param("id") ?? "");
   if (job === null) return refuse(c, "not_found");
@@ -71,7 +71,7 @@ export async function step(
   }
   const landing = await recordStep(c, job, kind, built);
   if (!landing.ok) return c.json(refusalOf(c, landing), 409);
-  if (afterRecorded !== undefined) await afterRecorded(job);
+  if (afterRecorded !== undefined) await afterRecorded(job, landing.accepted);
   return c.json(landing.accepted, 202);
 }
 

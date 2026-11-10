@@ -32,7 +32,7 @@ const SETTLE_MS = 350;
  * unavailable to assistive technology and ignores a tap, without being drawn
  * dim: a tap meant for the screen before must not finish this one.
  */
-export function useSettled(): boolean {
+function useSettled(): boolean {
   const [settled, setSettled] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => {

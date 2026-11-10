@@ -1,0 +1,83 @@
+/* The client's history (./ClientHistoryScreen.tsx), in the new look: a head with the way back, the alerts in a problem
+   card, then each visit under a hairline, its five photographs in one row. */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0 var(--screen-gutter) var(--sp-24);
+}
+
+.head {
+  display: flex;
+  gap: var(--sp-8);
+  align-items: center;
+  margin: 0 calc(var(--screen-gutter) * -1);
+  padding: var(--sp-8) var(--sp-8) var(--sp-8) var(--sp-4);
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.alerts {
+  margin-top: var(--sp-16);
+}
+
+.alertList {
+  margin: 0;
+  padding-left: var(--sp-20);
+}
+
+.visits {
+  margin: var(--sp-8) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.visit {
+  padding: var(--sp-16) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.meta {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}
+
+.note {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-145);
+}
+
+.photos {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-8);
+  margin-top: var(--sp-12);
+}
+
+.photo {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--ui-tint);
+}
+
+.detail {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}
+
+.none {
+  margin: var(--sp-24) 0 0;
+  font-size: var(--fs-16);
+  color: var(--ui-text-soft);
+}

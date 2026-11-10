@@ -80,6 +80,7 @@ export async function clientRoutes(page: Page, over: Answers = {}): Promise<void
     [READ_STOCK_MATCH]: json(NO_STOCK_MATCH),
     [READ_CUSTOM_ORDERS]: json(NO_CUSTOM_ORDERS),
     "GET /api/clients/{id}/notes": json({ notes: [] }),
+    "GET /api/clients/{id}/alerts": json({ alerts: [] }),
     "GET /api/conversations": json({ conversations: [], next_cursor: null }),
     "GET /api/clients/{id}/photos/{photo_id}": jpeg(await inkPhoto()),
     ...over,

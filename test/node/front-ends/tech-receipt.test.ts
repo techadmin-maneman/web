@@ -1,31 +1,24 @@
-// The receipt beneath the no-show wait says whether a WhatsApp went to the client, and draws the tick only for one
-// delivered: a skipped reminder once read "messaged on WhatsApp, not delivered", with a tick.
+// At the door, the WhatsApp to the client is done only once it was delivered: a skipped reminder once read "messaged on
+// WhatsApp, not delivered", with a tick.
 
-import { ICONS } from "@maneman/brand/icons";
 import { describe, expect, it } from "vitest";
-import { receiptLine } from "../../../apps/tech/src/job/receipt.ts";
+import { whatsAppState } from "../../../apps/tech/src/job/receipt.ts";
 
-describe("the no-show receipt", () => {
-  it("names the client as who it went to, and ticks one delivered", () => {
-    expect(receiptLine({ state: "delivered", delivered_at: "2026-09-20T04:03:00.000Z" }, "Rohit")).toEqual({
-      text: "WhatsApp to Rohit: delivered 9:33 am.",
-      icon: ICONS.tick,
+describe("the no-show's WhatsApp", () => {
+  it("is done once delivered, with the time", () => {
+    expect(whatsAppState({ state: "delivered", delivered_at: "2026-09-20T04:03:00.000Z" })).toEqual({
+      done: true,
+      state: "Delivered 9:33 am",
     });
   });
 
-  it("does not tick one sent and never delivered", () => {
-    expect(receiptLine({ state: "sent", delivered_at: null }, "Rohit")).toEqual({
-      text: "WhatsApp to Rohit: sent, not delivered.",
-      icon: ICONS.minus,
-    });
+  it("is not done when sent and never delivered", () => {
+    expect(whatsAppState({ state: "sent", delivered_at: null })).toEqual({ done: false, state: "Sent, not delivered" });
   });
 
-  it("says none went where none did", () => {
-    expect(receiptLine(null, "Rohit")).toEqual({ text: "No WhatsApp went to Rohit.", icon: ICONS.cross });
+  it("says none went where none did, and one on its way as it goes", () => {
+    expect(whatsAppState(null)).toEqual({ done: false, state: "Not sent" });
     // The arrival notice is queued the moment the technician checks in: on its way, not missing.
-    expect(receiptLine({ state: "on_its_way", delivered_at: null }, "Rohit")).toEqual({
-      text: "Telling Rohit you’re here.",
-      icon: ICONS.sending,
-    });
+    expect(whatsAppState({ state: "on_its_way", delivered_at: null })).toEqual({ done: false, state: "Sending now" });
   });
 });

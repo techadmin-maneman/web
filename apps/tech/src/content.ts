@@ -344,6 +344,29 @@ function lengthOf(minutes: number): string {
   return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} min`;
 }
 
+/** A client's record, which belongs to them and not the job (docs/decisions/0242-client-record.md). */
+export const clientRecord = {
+  alerts: "Before you start",
+  handoff: "Handoff",
+  /** "Imran · 1 Sep" */
+  handoffBy: (who: string | null, date: string) => (who === null ? date : `${who} · ${date}`),
+  history: "Client history",
+  /** The history screen. */
+  title: "Client history",
+  back: "Back to the job",
+  none: "No earlier visits.",
+  failed: "The client’s history didn’t load.",
+  retry: "Try again",
+  /** "Service visit · 1 Sep" */
+  visit: (kind: string, date: string) => `${kind} · ${date}`,
+  results: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
+  /** "Imran · Done" */
+  byAndResult: (who: string | null, result: string) => (who === null ? result : `${who} · ${result}`),
+  photo: (angle: string) => `After, ${angle}`,
+  used: "Used",
+  piece: (label: string) => `Piece fitted: ${label}`,
+} as const;
+
 export const job = {
   back: "Back",
   /** "9:30 am · service · 1 h 30 min", and "Tomorrow · …" for a job on another day. */
@@ -351,36 +374,44 @@ export const job = {
   tomorrow: "Tomorrow",
   // The board writes "1 slot"; the visit's length says more.
   minutes: lengthOf,
+  /** The map's place at the top: the drive there when the day's list knows it; an address with no pin says so. */
+  map: {
+    label: "Map with a pin at the client’s address",
+    noPin: "No map pin for this address",
+    line: (drive: number | null) => (drive === null ? "Map" : `Map · ${String(drive)} min drive`),
+  },
   navigate: "Navigate",
-  // The design draws no landmark; the client types it as they like, so it shows as typed.
-  landmark: "Landmark",
-  // The design draws no client's note; the client leaves one in their app.
-  clientNote: (who: string, note: string) => `${who}’s note: ${note}`,
-  // The board draws no way to reach the client from the card. The buttons say the act; a screen reader hears whom.
+  /** The way in, from the access notes: copied whole, for a gate's keypad. */
+  copyWayIn: "Copy the way in",
+  copied: "Copied",
+  noteFrom: (who: string) => `Note from ${who}: `,
+  // The buttons say the act; a screen reader hears whom.
   callShort: "Call",
   call: (who: string) => `Call ${who}`,
+  messageShort: "Message",
+  message: (who: string) => `Message ${who}`,
   /** A word to the client from our number (docs/decisions/0145-technician-presets.md). */
   tell: {
-    open: (who: string) => `Send ${who} an update`,
-    title: (who: string) => `Update ${who}`,
+    title: (who: string) => `Message ${who}`,
     close: "Close",
     minutes: "Minutes",
     minute: (minutes: number) => `${String(minutes)} min`,
-    onTheWay: (minutes: number) => `On my way · ${String(minutes)} min`,
+    onTheWay: (minutes: number) => `On my way, ${String(minutes)} min`,
     late: (minutes: number) => `Running ${String(minutes)} min late`,
     fromUs: "Sent on WhatsApp from Mane Man’s number.",
     sentAt: (time: string) => `Sent at ${time}`,
-    sent: (who: string, time: string) => `${who} updated at ${time}.`,
+    /** "Sent: on my way, 20 min", under the actions. */
+    sent: (what: string) => `Sent: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
     noWhatsApp: (who: string) => `${who} doesn’t take WhatsApp updates. Call instead.`,
   },
-  whatsAppShort: "WhatsApp",
-  whatsApp: (who: string) => `WhatsApp ${who}`,
-  start: "Start job",
+  checkIn: "Check in",
+  atTheDoor: "At the door",
+  start: "Start visit",
   continueJob: "Continue",
+  viewSummary: "View summary",
   // The board draws no job's state on its card or its row.
   states: { inProgress: "In progress", closed: "Closed out", atTheDoor: "At the door" },
   closedAs: (outcome: string) => `Closed out · ${outcome}`,
-  seeCloseOut: "See the close-out",
   notToday: {
     tomorrow: "This job is tomorrow. Arrive and start it on the day.",
     other: "This job isn’t today’s. Arrive and start it on its day.",
@@ -424,19 +455,14 @@ export const job = {
   backToToday: "Back to today",
 } as const;
 
-/** The evidence chain when the client is not home. */
+/** Checking in at the door, and the no-show's evidence while the client does not answer. */
 export const notHome = {
   arrived: {
-    step: "1 · Arrived",
-    // The board writes 200 m; the radius is ops' to set, and a card kept by an earlier build has none.
+    // The radius is ops' to set, and a card kept by an earlier build has none.
     body: (radiusM: number | null) =>
-      radiusM === null
-        ? "Tap at the door. We record the time and check you are at the address."
-        : `Tap at the door. We record the time and check you are within ${String(radiusM)} m.`,
-    action: "I have arrived",
-    // The board draws no check-in before its time.
+      radiusM === null ? "Check in at the door." : `Check in within ${String(radiusM)} m of the door.`,
+    action: "Check in",
     opensAt: (time: string) => `Check-in opens at ${time}.`,
-    // The board draws no screen for a phone that will not give its position.
     noPosition: "This phone won’t give its position. Check its permissions, then tap again.",
     // An address saved without a building picked from the map has no pin: the check-in records the time alone.
     noPin: "No map pin: the check-in records the time only.",
@@ -444,59 +470,97 @@ export const notHome = {
   failed: {
     title: "Check-in failed",
     away: (km: string) => `You are ${km} from the address.`,
-    // The board draws a distance; an address with no coordinates has none (ADR 0036).
+    // An address with no coordinates has none (ADR 0036).
     unmeasured: "We couldn’t measure how far you are from the address.",
     body: "Go to the door and tap again. Still refused? Call ops.",
     action: "Try again",
   },
-  waiting: {
-    step: "2 · Waiting",
-    left: (minutes: number) => `left of ${String(minutes)} minutes`,
-    // The board draws no arrival before the booked start.
+  /** At the door, after the check-in. */
+  door: {
+    title: "At the door",
+    checkedIn: (who: string, time: string) => `${who} · checked in ${time}`,
+    waitingFor: (who: string) => `Waiting for ${who}`,
+    of: (minutes: number) => `of ${String(minutes)} min`,
+    booked: (time: string) => `Booked for ${time}`,
     fromStart: (time: string) => `The wait starts at ${time}, the booked start.`,
-    // The board draws the wait running, not the moment it ends.
     over: "The wait is over.",
-    // The board draws the check running, not one waiting for signal. The API counts the wait from when
-    // the check-in reaches it as well as from the tap (ADR 0065), so a no-show cannot close before it has.
+    // The API counts the wait from when the check-in reaches it as well as from the tap (ADR 0065), so a no-show
+    // cannot close before it has.
     fromTap: "No signal. The wait counts from your tap; closing needs signal.",
-    // The board draws no no-show refused.
     early: "The wait isn’t over yet. Try again in a minute.",
+    needed: "Needed for a no-show",
+    whatsApp: (who: string) => `WhatsApp to ${who}`,
+    delivered: (time: string) => `Delivered ${time}`,
+    notDelivered: "Sent, not delivered",
+    onItsWay: "Sending now",
+    noneSent: "Not sent",
+    call: (who: string) => `Call ${who}`,
+    callAction: "Call",
+    called: (time: string) => `Called ${time}`,
+    notCalled: "Not called",
+    photo: "Photo of the door",
+    taken: "Taken",
+    notTaken: "Not taken",
+    take: "Take",
+    retake: "Retake",
+    note: "Note for ops (optional)",
+    waitFirst: "Available when the wait ends",
+    evidenceFirst: "Call and take the door photo first",
     close: "Close as no-show",
-    // The board's "Rohit messaged on WhatsApp" reads as if the client wrote, so the receipt names them
-    // as who it went to. The board draws only the delivered one.
-    delivered: (who: string, time: string) => `WhatsApp to ${who}: delivered ${time}.`,
-    notDelivered: (who: string) => `WhatsApp to ${who}: sent, not delivered.`,
-    onItsWay: (who: string) => `Telling ${who} you’re here.`,
-    noneSent: (who: string) => `No WhatsApp went to ${who}.`,
-    callFirst: (who: string) => `Call ${who} before you close`,
     theClient: "the client",
   },
-  /** What the technician adds at the door, which goes with the close for ops to rule on. */
-  door: {
-    note: "Note (optional)",
-    photo: "Photo of the door",
-    taken: "Door photo taken",
-    again: "Take again",
-    shutter: "Take",
+  /** The single-shot camera for the door. */
+  camera: {
+    prompt: "Door and flat number in the frame",
+    shutter: "Take photo",
     cancel: "Cancel",
     view: "The camera’s view of the door",
     noCamera: "The camera wouldn’t open.",
+    again: "Try again",
     missed: "That didn’t take. Try again.",
   },
-  // The board draws no confirmation. Closing as a no-show can bring the client a charge.
+  // Closing as a no-show can bring the client a charge.
   confirm: {
     title: "Close as a no-show?",
-    body: "The client may be charged. Close only if no one has answered.",
+    prepaid: (who: string) => `${who} is prepaid. Ops decide on the charge.`,
     // Nothing was paid ahead, so there is nothing to keep: free, or paid at the visit.
     bodyNothingPaid: "Ops are told nobody was home. Close only if no one has answered.",
     yes: "Close as no-show",
     no: "Not yet",
   },
   appears: {
-    // The board's "appears" screen, which names the client, not a pronoun.
     title: "Client’s here",
     atTheDoor: (who: string) => `${who} is at the door`,
     body: "The timer stops. Nothing is charged.",
+  },
+} as const;
+
+/** The visit engine's screens and plan (docs/decisions/0244-the-visit-engine.md). */
+export const visit = {
+  screens: {
+    before_photos: "Before photos",
+    service: "Service",
+    fitting: "Fitting",
+    scalp: "Scalp and hairline",
+    hair_profile: "Hair profile",
+    hair_system: "Hair system",
+    consumables: "Consumables",
+    after_photos: "After photos",
+    outcome: "Outcome",
+  },
+  /** "Rohit M. · service visit", beneath a step's name. */
+  whoAndWhat: (who: string, kind: string) => `${who} · ${kind}`,
+  step: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
+  allSteps: "All steps",
+  next: (title: string) => `Next: ${title}`,
+  close: "Close visit",
+  plan: {
+    title: "Visit plan",
+    done: (done: number, total: number) => `${String(done)} of ${String(total)} done`,
+    finishBy: (time: string) => `Finish by ${time}`,
+    states: { done: "Done", now: "Now", todo: "To do" },
+    needsFix: "Needs a fix",
+    open: (title: string) => `Open ${title}`,
   },
 } as const;
 
@@ -507,7 +571,13 @@ export const capture = {
   retake: "Retake",
   /** Not drawn: what a screen reader calls a tile, a tap on which takes that angle again. */
   retakeAngle: (angle: string) => `Take ${angle} again`,
-  take: "Capture",
+  take: "Take photo",
+  /** "3 of 5", beneath the step's name. */
+  of: (taken: number) => `${String(taken)} of 5`,
+  saved: "Saved on phone",
+  /** Compare: the last visit's after photograph before the visit, this visit's before one after it. */
+  compareWith: { before: "Compare with last visit", after: "Compare with before" },
+  compareImage: { before: (angle: string) => `Last visit, ${angle}`, after: (angle: string) => `Before, ${angle}` },
   torch: "Torch",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   // The board writes Top's guide alone; the other four are ours.
@@ -519,13 +589,15 @@ export const capture = {
     hair: "Hair · close in, sharp focus",
   } satisfies Record<Angle, string>,
   // The board draws neither a refused camera nor the finished set.
-  unavailable: "This phone won’t open its camera. Check its permissions, then try again.",
+  unavailableTitle: "Camera access is off",
+  unavailable: "Turn on camera access for Mane Man in the phone’s settings, then try again.",
   retry: "Try again",
   // The board draws no capture that failed.
   missed: "That photo didn’t save. Take it again.",
   blank: "That photo came out blank. Take it again.",
   // A camera that will not open does not stop the job: the set goes without its photographs, and ops look at it.
-  withoutPhotos: "Go on without photos",
+  withoutPhotos: "Continue without photos",
+  opsTold: "Ops are told the photos are missing.",
   done: "All five are on the phone.",
   finish: "Done",
   // The board draws no set the API refused.

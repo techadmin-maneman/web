@@ -129,6 +129,9 @@ function careRecords(db: D1Database, personId: string): D1PreparedStatement[] {
     db.prepare("UPDATE remedies SET note = NULL WHERE person_id = ?1").bind(personId),
     // Staff's notes on them, every one at once, so a note that replaced another goes with it.
     db.prepare("DELETE FROM staff_notes WHERE person_id = ?1").bind(personId),
+    // The alerts on them and the notes left for their next technician (docs/decisions/0242-client-record.md).
+    db.prepare("DELETE FROM client_alerts WHERE person_id = ?1").bind(personId),
+    db.prepare("DELETE FROM handoff_notes WHERE person_id = ?1").bind(personId),
   ];
 }
 

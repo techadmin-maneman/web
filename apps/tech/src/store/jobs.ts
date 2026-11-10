@@ -39,7 +39,7 @@ export type Heard = JobState & { readonly arrived: boolean };
 /** Where each job of the days the phone holds stood when last heard of, by job. */
 export async function keptStates(): Promise<Map<string, Heard>> {
   const arrivals = await all("arrivals");
-  const arrived = new Set(arrivals.filter((row) => row.arrival.passed).map((row) => row.job_id));
+  const arrived = new Set(arrivals.filter((row) => row.arrival?.passed === true).map((row) => row.job_id));
   const states = new Map<string, Heard>();
   for (const day of await all("days")) {
     for (const job of day.jobs) states.set(job.id, { ...job.progress, arrived: arrived.has(job.id) });
@@ -59,11 +59,24 @@ export async function keptJob(id: string): Promise<Job | null> {
 
 /** What the check-in measured: the distance, the radius, and when the no-show wait ends. */
 export async function keepArrival(jobId: string, arrival: CheckIn): Promise<void> {
-  await put("arrivals", { job_id: jobId, arrival });
+  const calledAt = (await get("arrivals", jobId))?.called_at;
+  await put(
+    "arrivals",
+    calledAt === undefined ? { job_id: jobId, arrival } : { job_id: jobId, arrival, called_at: calledAt },
+  );
 }
 
 export async function keptArrival(jobId: string): Promise<CheckIn | null> {
   return (await get("arrivals", jobId))?.arrival ?? null;
+}
+
+/** That the technician called the client from the door: part of a no-show's evidence, kept with the check-in's. */
+export async function keepCalled(jobId: string, at: number = apiNow()): Promise<void> {
+  await put("arrivals", { ...((await get("arrivals", jobId)) ?? { job_id: jobId }), called_at: at });
+}
+
+export async function keptCalled(jobId: string): Promise<number | null> {
+  return (await get("arrivals", jobId))?.called_at ?? null;
 }
 
 /** When the technician took the outcome, which the close-out's duration runs to, and what was chosen, which it repeats. */

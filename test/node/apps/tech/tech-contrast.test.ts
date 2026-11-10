@@ -33,7 +33,6 @@ const PAIRINGS: readonly Pairing[] = [
   { text: "--ink-deep", ground: "--gilt", where: "the one primary action" },
   { text: "--ink-deep", ground: "--paper", where: "the offline banner, a ticked box (ADR 0025, item 59)" },
   { text: "--ink-tag", ground: "--ink-disabled", where: "an action not usable yet" },
-  { text: "--paper", ground: "--ink-frame", where: "the capture screen, when the camera will not open" },
   { text: "--ink-soft", ground: "--ink-frame", where: "the capture guide, an angle not taken yet" },
   { text: "--paper", ground: "--ink-raised", where: "an angle taken, a chosen outcome" },
 ];
@@ -57,6 +56,11 @@ const LIGHT_PAIRINGS: readonly Pairing[] = [
   { text: "--error", ground: "--disabled", where: "an action that takes something away, pressed" },
   { text: "--ink-900", ground: "--disabled", where: "a person’s initials" },
   { text: "--white-000", ground: "--error", where: "a destructive action" },
+  { text: "--white-000", ground: "--camera-900", where: "the camera’s head and its prompt" },
+  { text: "--ink-500", ground: "--placeholder", where: "the map’s line beneath its pin" },
+  { text: "--ink-900", ground: "--placeholder", where: "the map’s pin" },
+  { text: "--white-000", ground: "--camera-700", where: "the camera’s view when it will not open" },
+  { text: "--mist-300", ground: "--camera-900", where: "the camera’s count, its lines beneath, Saved on phone" },
 ];
 
 /** The roles the new look gives the shared parts, each as the brief's colour it takes. */
@@ -129,6 +133,28 @@ const REDRAWN = [
   "apps/tech/src/styles/look.css",
   "apps/tech/src/today/",
   "apps/tech/src/me/",
+  "apps/tech/src/job/client-history.module.css",
+  "apps/tech/src/job/ClientHistoryScreen.tsx",
+  "apps/tech/src/frame/card-frame.module.css",
+  "apps/tech/src/frame/CardFrame.tsx",
+  "apps/tech/src/job/check-in.module.css",
+  "apps/tech/src/job/CheckIn.tsx",
+  "apps/tech/src/job/client-record.module.css",
+  "apps/tech/src/job/ClientRecord.tsx",
+  "apps/tech/src/job/door.module.css",
+  "apps/tech/src/job/DoorScreen.tsx",
+  "apps/tech/src/job/job-card.module.css",
+  "apps/tech/src/job/JobCard.tsx",
+  "apps/tech/src/job/job-screen.module.css",
+  "apps/tech/src/job/JobScreen.tsx",
+  "apps/tech/src/job/tell-client.module.css",
+  "apps/tech/src/job/TellClient.tsx",
+  "apps/tech/src/camera/door-camera.module.css",
+  "apps/tech/src/camera/DoorCamera.tsx",
+  "apps/tech/src/camera/capture.module.css",
+  "apps/tech/src/camera/CaptureScreen.tsx",
+  "apps/tech/src/camera/FramingGuide.tsx",
+  "apps/tech/src/visit/",
   "apps/tech/src/frame/light.module.css",
 ];
 const slashed = (file: string) => file.replace(/\\/g, "/");

@@ -72,6 +72,7 @@ import { registerPhotographs } from "./jobs.photos.ts";
 import { NO_PIECE, takesStep } from "../../policy/in-job-steps.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { keepDoorEvidence } from "../../domain/no-shows/door-evidence.ts";
+import { keepCloseNotes } from "./jobs.close-notes.ts";
 
 export function registerTechJobSteps(app: App): void {
   registerArrival(app);
@@ -398,7 +399,8 @@ function registerProfileAndOutcome(app: App): void {
         const known = knownCodes((await jobSheet(c.env.DB)).partialReasons);
         return known.has(body.reason) ? { outcome: "partial", reason: body.reason } : { invalid: ["reason"] };
       },
-      async (job) => {
+      async (job, accepted) => {
+        await keepCloseNotes(c, job, body, accepted);
         if (job.oneVisit === null || body.outcome !== "done") return;
         const { deps, log, config } = c.var;
         await closeOneVisit(c.env.DB, { ...deps, log, messagingSettings: config.settings.messaging }, job, deps.now());

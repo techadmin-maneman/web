@@ -59,18 +59,23 @@
   color: var(--ui-text-muted);
 }
 
-/* Staff's notes on the client (./StaffNotes.tsx), in their panel at the right of the page. */
+/* Staff's notes on the client (./StaffNotes.tsx) and the alerts for technicians (./ClientAlerts.tsx), in their
+   panels at the right of the page, as far in as each panel's head. */
 .notes {
   display: flex;
   flex-direction: column;
   gap: var(--sp-12);
   width: 100%;
   margin: 0;
-  padding: 0;
+  padding: var(--sp-16) var(--note-inset);
   list-style: none;
 }
 
-.note {
+.notes:empty {
+  display: none;
+}
+
+.noteItem {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;

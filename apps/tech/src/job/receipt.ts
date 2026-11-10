@@ -1,18 +1,15 @@
-import { ICONS } from "@maneman/brand/icons";
+// What the WhatsApp to the client at the door came to, a no-show's first piece of evidence (./DoorScreen.tsx): done
+// only once it was delivered. One sent and never delivered, or none at all, proves nothing.
+
 import type { Job } from "../api.ts";
-import { notHome as copy } from "../content.ts";
+import { notHome } from "../content.ts";
 import { clock } from "../lib/when.ts";
 
-export interface ReceiptLine {
-  readonly text: string;
-  /** A tick only for a WhatsApp delivered: one sent and never delivered, or none at all, proves nothing. */
-  readonly icon: string;
-}
+const copy = notHome.door;
 
-/** The evidence chain's receipt beneath the wait: whether a WhatsApp went to the client, and whether it reached their phone. */
-export function receiptLine(reminder: Job["reminder"], who: string): ReceiptLine {
-  if (reminder === null) return { text: copy.waiting.noneSent(who), icon: ICONS.cross };
-  if (reminder.state === "on_its_way") return { text: copy.waiting.onItsWay(who), icon: ICONS.sending };
-  if (reminder.delivered_at === null) return { text: copy.waiting.notDelivered(who), icon: ICONS.minus };
-  return { text: copy.waiting.delivered(who, clock(reminder.delivered_at)), icon: ICONS.tick };
+export function whatsAppState(reminder: Job["reminder"]): { readonly done: boolean; readonly state: string } {
+  if (reminder === null) return { done: false, state: copy.noneSent };
+  if (reminder.state === "on_its_way") return { done: false, state: copy.onItsWay };
+  if (reminder.delivered_at === null) return { done: false, state: copy.notDelivered };
+  return { done: true, state: copy.delivered(clock(reminder.delivered_at)) };
 }

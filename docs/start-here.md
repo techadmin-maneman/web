@@ -89,7 +89,7 @@ this map, or when the map names something that no longer exists.
 
 ### The technician's work in the field
 
-- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`,
+- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `client-history` (a client's past visits for the technician), `workable-job`, `job-events`, `job-event-bodies`,
   `job-record`, `job-use`, `consumable-shortfalls` (a job short of what its service expects, and why), `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `job-options` (a
   consultation's packages, prices and the client's try-on looks)
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `consumable-shortfall`
@@ -172,17 +172,17 @@ this map, or when the map names something that no longer exists.
 
 ### Clients
 
-- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `client-notes`, `staff-notes` (staff's notes on a client),
+- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `client-notes`, `staff-notes` (staff's notes on a client), `client-alerts` (what every technician reads before they start), `handoff-notes` (the note left for the next technician),
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`,
   `pincode-directory` (India Post's pincodes, which ops open a city from), `pincode-launches` (launches scheduled for
   a later day), `launch-runs` (those due, served by the cron on the day), `pincode-reach` (a city's
   technicians, their reach from home, and its pincodes with whoever reaches each), `pincode-demand` (lookups where we
   do not serve, the next to open, and the last thirty days' launches), `launch-readiness` (what a city needs first, a pause, what stopping leaves)
-- **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `staff-notes`, `home-prompt`,
+- **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `staff-notes`, `client-record` (the limits on alerts and handoff notes), `home-prompt`,
   `area-names` (what an area may be called, and the name a post office gives it)
 - **Vendor** (`src/providers/`): `geocode/`
 - **Routes** (`src/routes/`): `client/me`, `client/profile`, `client/notes`, `ops/clients`, `ops/client-record`,
-  `ops/client-photos`, `ops/client-consents`, `ops/client-address`, `ops/service-area`, `ops/pincode-directory`, `ops/pincode-launches`, `ops/pincode-reach`, `ops/pincode-demand`, `ops/hair-profile`, `ops/staff-notes`, `ops/profile`,
+  `ops/client-photos`, `ops/client-consents`, `ops/client-address`, `ops/service-area`, `ops/pincode-directory`, `ops/pincode-launches`, `ops/pincode-reach`, `ops/pincode-demand`, `ops/hair-profile`, `ops/staff-notes`, `ops/client-alerts`, `ops/profile`,
   `public/number-codes`
 - **Screens:** `apps/app/src/home/`, `apps/app/src/profile/`, `apps/ops/src/clients/`,
   `apps/ops/src/number-changes/`, `apps/ops/src/areas/`

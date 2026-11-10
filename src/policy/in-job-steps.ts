@@ -91,6 +91,14 @@ export function landsAfterClose(kind: JobEventKind, closedAt: Date, now: Date): 
   return now.getTime() - closedAt.getTime() < CORRECTION_WINDOW_MS;
 }
 
+/**
+ * Whether a close the phone sent again may still leave its note and alert (docs/decisions/0242-client-record.md): within
+ * the hour after the close, as a correction lands.
+ */
+export function closeNotesLand(closedAt: Date, now: Date): boolean {
+  return now.getTime() - closedAt.getTime() < CORRECTION_WINDOW_MS;
+}
+
 /** A fit's way out at its piece step, "Can't fit today": its outcome's partial reason, which ops do not keep. */
 export const NO_PIECE = "no_piece";
 
