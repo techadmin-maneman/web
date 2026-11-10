@@ -283,18 +283,26 @@ export function Checkbox({
   );
 }
 
-/** One of a few to choose between, with the words that name it beside it; a `ChoiceGroup` holds the few. */
+/**
+ * One of a few to choose between, with the words that name it beside it, and a line beneath them where the name needs
+ * one; a `ChoiceGroup` holds the few.
+ */
 export function Radio({
   label,
+  detail,
   className,
   ...rest
-}: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "id"> & { readonly label: ReactNode }) {
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "id"> & {
+  readonly label: ReactNode;
+  readonly detail?: ReactNode;
+}) {
   const id = useId();
   return (
     <div className={classes(styles.checkLine, className)}>
       <input {...rest} className={styles.check} type="radio" id={id} />
       <label className={styles.checkLabel} htmlFor={id}>
         {label}
+        {detail !== undefined && <span className={styles.checkDetail}>{detail}</span>}
       </label>
     </div>
   );

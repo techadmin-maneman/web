@@ -53,6 +53,24 @@
   --error-on-ink: #e0917f;
   --error-on-paper: #8a3a2e;
 
+  /* ---- Colour: the technician app's light ground --------------------------
+     The redesign's table (docs/prompts/tech-redesign.md, "Design tokens"), under its own names. Navy and brass are
+     the brand's own ink and brass. Only the technician app draws these, through its look's roles
+     (apps/tech/src/styles/look.css). The rest of the table comes with the screens that draw it: the wash, the mist,
+     the placeholder and the camera's chrome. */
+  --navy-900: var(--ink); /* primary buttons, titles, section rules, what is chosen, a job on the day view */
+  --navy-700: #33435f; /* the primary action pressed, and edges on the camera's dark */
+  --brass-500: var(--brass); /* the one thing a screen marks: the step under way, the now-line, the wait */
+  --gold-700: #8a6a2f; /* that mark's words on white: "Next · leave in 10 min" */
+  --white-000: #fdfdfb; /* every screen's ground */
+  --line-200: #d9dce1; /* hairlines */
+  --grid-100: #e8eaed; /* a progress bar's track, the day view's hours, a block done */
+  --ink-900: #1f2328; /* words */
+  --ink-500: #5f6670; /* words beneath words */
+  --stone: #8c939e; /* a radio's or a box's edge not chosen, a chevron, a field's edge (3:1, WCAG 1.4.11) */
+  --disabled: #eef0f2; /* a button not usable yet */
+  --error: #b42318; /* errors, what has expired, SOS, the client's alerts: a functional colour, not the brand's */
+
   /* ---- Colour: the hero's scrims, from --ink-night ----------------------- */
   --hero-scrim: rgba(11, 18, 32, 0.3);
   /* Not drawn: what shows of the screen behind an app's sheet. The boards draw the sheet alone; ink at 72% keeps the
@@ -71,6 +89,9 @@
   /* ---- Type -------------------------------------------------------------- */
   --font-serif: "EB Garamond", serif;
   --font-sans: "Instrument Sans", system-ui, sans-serif;
+  /* The technician app's one face, Latin and Devanagari under one name (./fonts-plex.css): the redesign's brief
+     names it, and Instrument Sans has no Devanagari. */
+  --font-plex: "IBM Plex Sans", system-ui, sans-serif;
 
   --tracking-12: 0.12em;
   --tracking-14: 0.14em;
@@ -83,6 +104,7 @@
   /* The serif is loaded in its one weight, the sans in two: words, and a label or an action. */
   --weight-regular: 400;
   --weight-medium: 500;
+  --weight-semibold: 600; /* the technician app's titles and actions, in Plex */
 
   /* Leading, as a ratio of the type's size, named for its value as the sizes are: --lh-145 is 1.45. Five: display
      type, titles, headings and short lines, body text, and reading. */
@@ -100,6 +122,7 @@
   --fs-16: 16px;
   --fs-17: 17px;
   --fs-18: 18px;
+  --fs-20: 20px;
   --fs-22: 22px;
   --fs-24: 24px;
   --fs-26: 26px;
@@ -132,6 +155,8 @@
   --focus-width: var(--sp-2);
   --focus-offset: var(--sp-2);
   --focus-offset-wide: 3px; /* a ring clear of a link's underline, or of an edged control's own edge */
+  /* The technician app's progress, 3 px: a visit's steps, pieces scanned, the wait. */
+  --progress-line: var(--focus-offset-wide);
   --focus-inset: calc(-1 * var(--focus-width)); /* a ring drawn inside a row or a cell, which would clip one outside */
   --tap: 44px; /* the smallest touch target; also the small button's height */
   --btn-lg: 56px;

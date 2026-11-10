@@ -1,0 +1,45 @@
+/* A section's head (./SectionHead.tsx): its title in the strong ink, under a rule of it. */
+
+@layer base, ui;
+
+@layer ui {
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-12);
+  }
+
+  .ruled {
+    margin-top: var(--sp-24);
+    padding-top: var(--sp-12);
+    border-top: var(--rule-strong) solid var(--ui-strong);
+  }
+
+  .bare {
+    padding-top: var(--sp-20);
+  }
+
+  .section,
+  .list {
+    margin: 0;
+    font-family: var(--title-font);
+    font-weight: var(--title-weight);
+    line-height: var(--lh-130);
+    color: var(--ui-strong);
+  }
+
+  .section {
+    font-size: var(--fs-20);
+  }
+
+  .list {
+    font-size: var(--fs-15);
+  }
+
+  .end {
+    flex-shrink: 0;
+    font-size: var(--fs-14);
+    color: var(--ui-text-muted);
+  }
+}

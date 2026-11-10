@@ -1,0 +1,50 @@
+/* A count set a step at a time (./Stepper.tsx): two edged keys the tap's size, the figure between them. */
+
+@layer base, ui;
+
+@layer ui {
+  .stepper {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--sp-4);
+  }
+
+  .key {
+    display: grid;
+    place-items: center;
+    width: var(--tap);
+    height: var(--tap);
+    padding: 0;
+    border: var(--hairline) solid var(--ui-line-control);
+    border-radius: var(--ui-radius-box);
+    background: var(--ui-box);
+    color: var(--ui-strong);
+    cursor: pointer;
+  }
+
+  .key:active:not(:disabled) {
+    background: var(--ui-shade);
+  }
+
+  .key:disabled {
+    border-color: var(--ui-line);
+    color: var(--ui-text-quiet);
+    cursor: default;
+  }
+
+  .figure {
+    min-width: var(--sp-48);
+    font-size: var(--fs-20);
+    font-weight: var(--action-weight);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: var(--ui-text);
+  }
+
+  @media (hover: hover) {
+    .key:hover:not(:disabled) {
+      background: var(--ui-shade);
+    }
+  }
+}

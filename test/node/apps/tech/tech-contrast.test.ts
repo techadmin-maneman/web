@@ -16,7 +16,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { edgeOf, ratio, rulesOf, tokenRatio } from "../../contrast.ts";
+import { edgeOf, ratio, rolesIn, rulesOf, tokenRatio } from "../../contrast.ts";
 
 interface Pairing {
   readonly text: string;
@@ -36,6 +36,35 @@ const PAIRINGS: readonly Pairing[] = [
   { text: "--paper", ground: "--ink-frame", where: "the capture screen, when the camera will not open" },
   { text: "--ink-soft", ground: "--ink-frame", where: "the capture guide, an angle not taken yet" },
   { text: "--paper", ground: "--ink-raised", where: "an angle taken, a chosen outcome" },
+];
+
+/**
+ * The new look (apps/tech/src/styles/look.css; docs/decisions/0239-technician-light-look.md), held to the redesign
+ * brief's own rule: "Text contrast 4.5:1 minimum" (docs/prompts/tech-redesign.md). Its screens are drawn on white
+ * rather than the ink, so the older screens' 5.8:1 is not theirs.
+ */
+const LIGHT_PAIRINGS: readonly Pairing[] = [
+  { text: "--ink-900", ground: "--white-000", where: "every redrawn screen’s words" },
+  { text: "--ink-500", ground: "--white-000", where: "a line beneath a title, a label, a helper line" },
+  { text: "--navy-900", ground: "--white-000", where: "titles, a section’s head, a link, a stepper’s key" },
+  { text: "--gold-700", ground: "--white-000", where: "the one highlight in words: “Next · leave in 10 min”" },
+  { text: "--error", ground: "--white-000", where: "an error, a problem’s title, an alert" },
+  { text: "--white-000", ground: "--navy-900", where: "the primary action, a chosen chip, the no-signal bar" },
+  { text: "--white-000", ground: "--navy-700", where: "the primary action, pressed" },
+  { text: "--ink-500", ground: "--disabled", where: "an action not usable yet" },
+  { text: "--ink-900", ground: "--grid-100", where: "a problem card under a pointer" },
+  { text: "--white-000", ground: "--error", where: "a destructive action" },
+];
+
+/** The roles the new look gives the shared parts, each as the brief's colour it takes. */
+const LOOK_ROLES = rolesIn("apps/tech/src/styles/look.css", '[data-look="light"]');
+const inLook = (token: string) => LOOK_ROLES.get(token) ?? token;
+
+/** The new look's control edges, at 3:1 on its white: a field's, a box's, a stepper's key's, and one chosen or refused. */
+const LIGHT_EDGES: readonly EdgePairing[] = [
+  { edge: "--stone", ground: "--white-000", where: "a field, a box to tick, a radio, a stepper’s key, a chip" },
+  { edge: "--navy-900", ground: "--white-000", where: "a field being typed in, a box ticked, a chip chosen" },
+  { edge: "--error", ground: "--white-000", where: "a field refused, a problem card" },
 ];
 
 /** Grounds that never carry a word: the upload bar's track, and the scrim behind a confirmation. */
@@ -141,6 +170,38 @@ describe("the technician app’s colour pairings", () => {
   });
 });
 
+describe("the new look’s colour pairings", () => {
+  it.each(LIGHT_PAIRINGS.map((pairing) => [`${pairing.text} on ${pairing.ground}`, pairing] as const))(
+    "%s clears 4.5:1",
+    (_name, pairing) => {
+      expect(ratioOf(pairing)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it.each(LIGHT_EDGES.map((pairing) => [`${pairing.edge} on ${pairing.ground}`, pairing] as const))(
+    "edges a control in %s, which clears 3:1",
+    (_name, pairing) => {
+      expect(tokenRatio(pairing.edge, pairing.ground)).toBeGreaterThanOrEqual(3);
+    },
+  );
+
+  it("does not edge a control in the brief’s --line-200, which falls short of 3:1, but in --stone", () => {
+    expect(tokenRatio("--line-200", "--white-000")).toBeLessThan(3);
+    expect(inLook("--ui-line-control")).toBe("--stone");
+    expect(inLook("--border-control")).toBe("--stone");
+  });
+
+  it("gives the shared parts' words and grounds only colours its pairings list", () => {
+    const texts = new Set(LIGHT_PAIRINGS.map((pairing) => pairing.text));
+    const grounds = new Set(LIGHT_PAIRINGS.map((pairing) => pairing.ground));
+    const words = ["--ui-text", "--ui-text-soft", "--ui-text-muted", "--ui-text-quiet", "--ui-hint", "--ui-strong"];
+    const under = ["--ui-ground", "--ui-raised", "--ui-box", "--ui-shade", "--ui-tint", "--ui-strong"];
+    expect(words.map(inLook).filter((token) => !texts.has(token))).toEqual([]);
+    expect(under.map(inLook).filter((token) => !grounds.has(token))).toEqual([]);
+    expect([inLook("--ui-on-strong"), inLook("--ui-strong")]).toEqual(["--white-000", "--navy-900"]);
+  });
+});
+
 describe("the technician app’s control edges", () => {
   it.each(EDGE_PAIRINGS.map((pairing) => [`${pairing.edge} on ${pairing.ground}`, pairing] as const))(
     "%s clears 3:1",
@@ -179,19 +240,22 @@ describe("what the stylesheets use", () => {
     expect(firstSelector).toContainEqual([".outlineOnInk:disabled", "--ink-tag", "--ink-disabled"]);
   });
 
+  // A role a redrawn screen names (--ui-text) is read as the new look sets it.
+  const every = [...PAIRINGS, ...LIGHT_PAIRINGS];
+
   it("sets no text colour the pairings do not list", () => {
-    const listed = new Set(PAIRINGS.map((pairing) => pairing.text));
-    expect([...used.texts].filter((token) => !listed.has(token))).toEqual([]);
+    const listed = new Set(every.map((pairing) => pairing.text));
+    expect([...used.texts].filter((token) => !listed.has(inLook(token)))).toEqual([]);
   });
 
   it("sets no ground the pairings do not list, bar the ones that carry no words", () => {
-    const listed = new Set(PAIRINGS.map((pairing) => pairing.ground));
-    expect([...used.grounds].filter((token) => !listed.has(token) && !WORDLESS_GROUNDS.has(token))).toEqual([]);
+    const listed = new Set(every.map((pairing) => pairing.ground));
+    expect([...used.grounds].filter((token) => !listed.has(inLook(token)) && !WORDLESS_GROUNDS.has(token))).toEqual([]);
   });
 
   it("pairs every rule that sets both a text colour and a ground as the pairings list it", () => {
-    const listed = new Set(PAIRINGS.map((pairing) => `${pairing.text} on ${pairing.ground}`));
-    const unlisted = used.both.filter(([, text, ground]) => !listed.has(`${text} on ${ground}`));
+    const listed = new Set(every.map((pairing) => `${pairing.text} on ${pairing.ground}`));
+    const unlisted = used.both.filter(([, text, ground]) => !listed.has(`${inLook(text)} on ${inLook(ground)}`));
     expect(unlisted).toEqual([]);
   });
 });

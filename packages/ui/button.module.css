@@ -19,9 +19,10 @@
     justify-content: center;
     gap: var(--sp-8);
     border: var(--filled-edge) solid transparent;
+    border-radius: var(--ui-radius-button);
     background: transparent;
     font: inherit;
-    font-weight: var(--weight-medium);
+    font-weight: var(--action-weight);
     text-decoration: none;
     cursor: pointer;
     transition:

@@ -12,7 +12,8 @@
   .label {
     display: block;
     font-size: var(--fs-14);
-    color: var(--ui-text-muted);
+    font-weight: var(--label-weight);
+    color: var(--label-text);
   }
 
   .box {
@@ -21,6 +22,7 @@
     margin-top: var(--sp-8);
     padding: var(--sp-12) var(--sp-16);
     border: var(--hairline) solid var(--ui-line-control);
+    border-radius: var(--ui-radius-box);
     background: var(--ui-box);
     font: inherit;
     font-size: var(--fs-15);
@@ -191,6 +193,7 @@
     width: var(--sp-20);
     height: var(--sp-20);
     border: var(--hairline) solid var(--ui-line-control);
+    border-radius: var(--ui-radius-box);
     background: var(--ui-box);
   }
 
@@ -254,15 +257,21 @@
 
   .check {
     flex-shrink: 0;
-    width: var(--sp-16);
-    height: var(--sp-16);
+    width: var(--radio-size);
+    height: var(--radio-size);
     margin: 0;
     accent-color: var(--ui-strong);
   }
 
   .checkLabel {
-    font-size: var(--fs-14);
+    font-size: var(--check-text);
     line-height: var(--lh-145);
+  }
+
+  .checkDetail {
+    display: block;
+    font-size: var(--fs-14);
+    color: var(--ui-text-muted);
   }
 
   .tickOnInk + .checkLabel {
@@ -282,7 +291,8 @@
     margin-bottom: var(--sp-8);
     padding: 0;
     font-size: var(--fs-14);
-    color: var(--ui-text-muted);
+    font-weight: var(--label-weight);
+    color: var(--label-text);
   }
 
   .choices {
@@ -295,8 +305,9 @@
   .legendTitle {
     margin-bottom: var(--sp-8);
     padding: 0;
-    font-family: var(--font-serif);
+    font-family: var(--title-font);
     font-size: var(--fs-18);
+    font-weight: var(--title-weight);
   }
 
   .legendCaps {
