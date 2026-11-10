@@ -17,7 +17,10 @@ export function ProblemCard({
   readonly title: ReactNode;
   /** Opens what is wrong, as a job that could not send; none where the card says all there is. */
   readonly onOpen?: () => void;
-  /** Said the moment it appears, as a step refused on Next; not for a card a screen opens with. */
+  /**
+   * Said the moment it appears, as a step refused on Next; not for a card a screen opens with. A card a tap opens is a
+   * button, which is never said as an alert, so `live` counts only without `onOpen`.
+   */
   readonly live?: boolean;
   readonly className?: string | undefined;
   /** What happened and what to do, in a line or two. */
