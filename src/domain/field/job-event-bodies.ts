@@ -6,6 +6,7 @@
 import { z } from "@hono/zod-openapi";
 import { CONSUMABLE_BOUNDS } from "../../config/consumables.ts";
 import { SHORT_REASONS } from "../../policy/consumable-shortfall.ts";
+import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "../../policy/client-record.ts";
 
 const QUANTITY = z.number().int().min(1).max(CONSUMABLE_BOUNDS.maxExpected);
 
@@ -91,6 +92,19 @@ export const ConsumablesRequestSchema = z
 /** One line of a consumables step: by code, or by name from before the codes. */
 export type UsedLine = z.infer<typeof ConsumablesRequestSchema>["items"][number];
 
+/**
+ * What any close may leave on the client's record (docs/decisions/0242-client-record.md): a note for the next
+ * technician, and an alert every technician reads before they start. Kept in their own tables, never in the event.
+ */
+const CLOSE_NOTES = {
+  handoff_note: z.string().trim().min(1).max(HANDOFF_MAX_CHARS).optional().openapi({
+    description: "A note for the next technician, shown on this client's next job whoever takes it.",
+  }),
+  client_alert: z.string().trim().min(1).max(ALERT_MAX_CHARS).optional().openapi({
+    description: "An alert every technician reads before they start, kept on the client until ops take it off.",
+  }),
+};
+
 export const OutcomeRequestSchema = z
   .discriminatedUnion("outcome", [
     z
@@ -110,6 +124,7 @@ export const OutcomeRequestSchema = z
           description:
             "On a consultation, whether the client said they are going ahead with a fit; left out where not asked.",
         }),
+        ...CLOSE_NOTES,
       })
       .strict(),
     z
@@ -132,6 +147,7 @@ export const OutcomeRequestSchema = z
               "Can't fit today: a fit closed from its piece step with no piece of the client's spec to fit, its reason " +
               "`no_piece`. It follows the step before the piece, and ops are given the refit to book.",
           }),
+        ...CLOSE_NOTES,
       })
       .strict(),
   ])

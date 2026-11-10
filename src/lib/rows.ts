@@ -213,6 +213,17 @@ export interface Rows {
     readonly updated_by: string;
     readonly updated_at: string;
   };
+  readonly client_alerts: {
+    readonly id: string;
+    readonly person_id: string;
+    readonly body: string;
+    readonly staff: string | null;
+    readonly technician_id: string | null;
+    readonly appointment_id: string | null;
+    readonly written_at: string;
+    readonly taken_off_at: string | null;
+    readonly taken_off_by: string | null;
+  };
   readonly consents: {
     readonly id: string;
     readonly person_id: string;
@@ -590,6 +601,13 @@ export interface Rows {
     readonly colour: string;
     readonly grey_percent: number;
     readonly density_percent: number;
+  };
+  readonly handoff_notes: {
+    readonly appointment_id: string;
+    readonly person_id: string;
+    readonly technician_id: string;
+    readonly body: string;
+    readonly written_at: string;
   };
   readonly idempotency: {
     readonly key: string;

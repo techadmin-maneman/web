@@ -144,6 +144,8 @@ const HISTORY = [
    SELECT 'p-' || i, 'care-' || (i % 5) || '@maneman.in', '${AGO}', 'system' FROM n`,
   `INSERT INTO staff_notes (id, person_id, body, written_by, written_at)
    SELECT 'sn-' || i, 'p-' || i, 'Prefers mornings.', 'ops@maneman.in', '${AGO}' FROM n`,
+  `INSERT INTO client_alerts (id, person_id, body, staff, written_at)
+   SELECT 'ca-' || i, 'p-' || i, 'Allergic to latex.', 'ops@maneman.in', '${AGO}' FROM n`,
   `INSERT INTO razorpay_events (event_id, event, received_at) SELECT 'evt-' || i, 'payment.captured', '${AGO}' FROM n`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
@@ -152,6 +154,8 @@ const HISTORY = [
   // Their week: a row a day at the most, however long the history.
   `INSERT OR IGNORE INTO technician_hours (technician_id, weekday, starts, ends, set_by, set_at)
    SELECT 't-history', i % 7, '09:00', '18:00', 'ops', '${AGO}' FROM n`,
+  `INSERT INTO handoff_notes (appointment_id, person_id, technician_id, body, written_at)
+   SELECT 'a-' || i, 'p-' || i, 't-history', 'Edge lifting at the left temple.', '${AGO}' FROM n`,
   `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
      gst_percent, state, appointment_id, expires_at, created_at, updated_at, confirmed_at, queued_at, fsm_held_at,
      fsm_refusal)

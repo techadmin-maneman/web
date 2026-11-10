@@ -251,6 +251,10 @@ export const AUDIT_ACTIONS = [
   // client and the note, never a word of it.
   "staff_note.write",
   "staff_note.take_off",
+  // A client's alerts, which technicians see before they start: one raised by staff, and one taken off. The entry
+  // names the client and the alert, never a word of it.
+  "client_alert.raise",
+  "client_alert.take_off",
   // Discount codes (docs/decisions/0108-discount-codes.md): ops making codes, switching one off, and entering one on
   // a client's visit or taking it off.
   "discount_code.make",
@@ -360,6 +364,7 @@ export function auditStatementIfWritten(
       | "no_show_disputes"
       | "hair_profiles"
       | "staff_notes"
+      | "client_alerts"
       | "discount_code_uses"
       | "partner_payouts"
       | "slot_times"

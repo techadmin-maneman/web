@@ -3496,6 +3496,375 @@ Take a note off the client's page; it is kept, with who took it off and when, au
 }
 ```
 
+### GET /api/clients/{id}/alerts
+
+The client's alerts still on, which every technician reads before they start, newest first
+
+**200**: The alerts
+
+```json
+{
+  "$ref": "#/components/schemas/ClientAlerts"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/alerts
+
+Raise an alert on the client under the member of staff, audited
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientAlertRaised"
+}
+```
+
+**201**: Raised, and the alerts as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/ClientAlerts"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/alerts/{alert_id}/take-off
+
+Take an alert off the client; it is kept, with who took it off and when, audited
+
+**200**: Taken off, or already off, and the alerts as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/ClientAlerts"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/leave-requests/{id}/decision
 
 Approve or decline a technician's ask for leave; an approval records the leave
@@ -39692,6 +40061,119 @@ Request body:
 }
 ```
 
+### ClientAlerts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "alerts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientAlert"
+      },
+      "description": "The client's alerts still on, newest first."
+    }
+  },
+  "required": [
+    "alerts"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientAlert
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "body": {
+      "type": "string"
+    },
+    "written_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "raised_by": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "staff"
+              ]
+            },
+            "staff": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "staff"
+          ],
+          "additionalProperties": false,
+          "description": "The member of staff, by their work e-mail."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "technician"
+              ]
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ],
+          "additionalProperties": false,
+          "description": "The technician, by first name, at a visit's close."
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "body",
+    "written_at",
+    "raised_by"
+  ],
+  "additionalProperties": false,
+  "description": "Read before starting: \"Allergic to latex\"."
+}
+```
+
+### ClientAlertRaised
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "body"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### LeaveDecision
 
 ```json
@@ -45548,6 +46030,8 @@ Request body:
         "hair_profile.correct",
         "staff_note.write",
         "staff_note.take_off",
+        "client_alert.raise",
+        "client_alert.take_off",
         "discount_code.make",
         "discount_code.switch_off",
         "discount_code.delete",

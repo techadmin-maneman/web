@@ -18,7 +18,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Consents given and withdrawn | `consents` | Someone who said stop is messaged again | Adding the rows since `<T>`: they are only ever added |
 | Terms agreed to | `terms_acceptances` | A booking made since `<T>` has no record of the terms its client agreed to | Adding the rows since `<T>`: they are only ever added |
 | Revoked sessions and phones | `sessions`, `technician_devices` | A lost phone, or a session that was ended, works again | Revoking again: a phone in the console, a client's session with `sessions.revoked_at` |
-| Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
+| Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
@@ -67,6 +67,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [city_matters](#city_matters): A matter Customer Care sent from a chat to the client's city, on that city's Tasks until it is closed (ADR 0135).
 - [city_prices](#city_prices): A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).
 - [city_settings](#city_settings): A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).
+- [client_alerts](#client_alerts): What every technician reads in red before they start on a client, raised by staff or by a technician at a close; one taken off is marked so, never deleted, until an erasure (ADR 0242).
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 - [consumable_shortfalls](#consumable_shortfalls): A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).
@@ -99,6 +100,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [gst_registrations](#gst_registrations): A state's own GST registration, which supplies the visits in it, and its Books branch (ADR 0198).
 - [hair_profiles](#hair_profiles): Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
 - [hair_systems](#hair_systems): Each hair system kept in stock: its product, base size, colour, grey and density, matched exactly to a client's profile; its stock code is a row of `consumables`, counted in pieces (ADR 0156).
+- [handoff_notes](#handoff_notes): The note a technician leaves at a visit's close for whoever takes the client's next job, one a visit, shown as Handoff on that job (ADR 0242).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 - [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
@@ -603,6 +605,29 @@ Made by `0167_cities_as_data.sql`.
 | `value` | TEXT | no |  |  |  |
 | `updated_by` | TEXT | no |  |  |  |
 | `updated_at` | TEXT | no |  |  |  |
+
+## client_alerts
+
+What every technician reads in red before they start on a client, raised by staff or by a technician at a close; one taken off is marked so, never deleted, until an erasure (ADR 0242).
+
+Made by `0203_client_alerts_and_handoffs.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `body` | TEXT | no |  |  |  |
+| `staff` | TEXT | yes |  |  | Who raised it: a member of staff, by their work e-mail, or a technician at a visit's close. |
+| `technician_id` | TEXT | yes |  | → `technicians.id` |  |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |  |
+| `written_at` | TEXT | no |  |  |  |
+| `taken_off_at` | TEXT | yes |  |  |  |
+| `taken_off_by` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `client_alerts_by_visit`: unique on (`appointment_id`), where `appointment_id IS NOT NULL`
+- `client_alerts_person`: on (`person_id`, `written_at`)
 
 ## consents
 
@@ -1358,6 +1383,24 @@ Made by `0134_hair_systems.sql`.
 Indexes:
 
 - A `UNIQUE` constraint: unique on (`product`, `base_width_in`, `base_length_in`, `colour`, `grey_percent`, `density_percent`)
+
+## handoff_notes
+
+The note a technician leaves at a visit's close for whoever takes the client's next job, one a visit, shown as Handoff on that job (ADR 0242).
+
+Made by `0203_client_alerts_and_handoffs.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `appointment_id` | TEXT | no |  | primary key; → `appointments.id` |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `body` | TEXT | no |  |  |  |
+| `written_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `handoff_notes_person`: on (`person_id`, `written_at`)
 
 ## idempotency
 

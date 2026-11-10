@@ -220,6 +220,26 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut: "Our keys, and which member of staff answered.",
     erasure: { blanks: ["text", "response"], why: "The words go; that a concern was raised and answered stays." },
   },
+  client_alerts: {
+    leftOut: [
+      "id",
+      "person_id",
+      "body",
+      "staff",
+      "technician_id",
+      "appointment_id",
+      "written_at",
+      "taken_off_at",
+      "taken_off_by",
+    ],
+    whyLeftOut: "Our own alerts on them for the technicians, as staff's notes are.",
+    erasure: { deletes: true, why: "Deleted: alerts on an erased record go." },
+  },
+  handoff_notes: {
+    leftOut: ["appointment_id", "person_id", "technician_id", "body", "written_at"],
+    whyLeftOut: "A technician's note for the next, as staff's notes are.",
+    erasure: { deletes: true, why: "Deleted: the notes left on an erased record go." },
+  },
   hair_profiles: {
     leftOut: ["id", "person_id", "appointment_id", "event_id", "technician_id", "staff", ...Object.keys(CENTIMETRES)],
     whyLeftOut:

@@ -25,6 +25,7 @@ import {
   ProfileRecordedSchema,
 } from "./jobs.schemas.ts";
 import { JobsSchema } from "../schemas/tech-jobs.ts";
+import { ClientHistorySchema } from "../schemas/client-record.ts";
 
 const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
 
@@ -86,6 +87,35 @@ export const lastVisitPhotoRoute = techRoute({
     401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse(
       "not_found: no such job of this technician's, not unlocked yet, or no earlier visit's photograph",
+    ),
+  },
+});
+
+export const clientHistoryRoute = techRoute({
+  method: "get",
+  path: "/api/tech/jobs/{id}/client-history",
+  summary: "The client's alerts and their visits closed before this job, under the card's own unlock",
+  request: { params: jobId },
+  responses: {
+    200: { description: "The client's history", ...json(ClientHistorySchema) },
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
+    404: errorResponse("not_found: no such job of this technician's, or not unlocked yet"),
+  },
+});
+
+export const historyPhotoRoute = techRoute({
+  method: "get",
+  path: "/api/tech/jobs/{id}/history-photos/{photo_id}",
+  summary: "One after photograph of the client's earlier visit, under the card's own unlock, never cached",
+  request: { params: z.object({ id: z.uuid(), photo_id: z.uuid() }) },
+  responses: {
+    200: {
+      description: "The image",
+      content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
+    },
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
+    404: errorResponse(
+      "not_found: no such job of this technician's, not unlocked yet, or no after photograph of the client's earlier visit",
     ),
   },
 });

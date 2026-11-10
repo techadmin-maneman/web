@@ -583,6 +583,192 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/jobs/{id}/client-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's alerts and their visits closed before this job, under the card's own unlock */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The client's history */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianClientHistory"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such job of this technician's, or not unlocked yet */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/jobs/{id}/history-photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One after photograph of the client's earlier visit, under the card's own unlock, never cached */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    photo_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                        "image/png": string;
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such job of this technician's, not unlocked yet, or no after photograph of the client's earlier visit */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/jobs/{id}/last-visit-photo": {
         parameters: {
             query?: never;
@@ -3759,6 +3945,9 @@ export interface components {
             } | null;
             /** @description The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded. */
             profile: components["schemas"]["HairProfile"] | null;
+            /** @description The client's alerts still on, newest first. */
+            client_alerts: components["schemas"]["ClientAlert"][];
+            handoff: components["schemas"]["Handoff"];
         };
         TechnicianJobProgress: {
             checked_in_at: string | null;
@@ -3936,6 +4125,66 @@ export interface components {
             /** @description With a transplant only, and no later than this year. */
             transplant_year: number | null;
             skin_and_allergies: string | null;
+        };
+        /** @description Read before starting: "Allergic to latex". */
+        ClientAlert: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            /** Format: date-time */
+            written_at: string;
+            raised_by: {
+                /** @enum {string} */
+                kind: "staff";
+                staff: string;
+            } | {
+                /** @enum {string} */
+                kind: "technician";
+                name: string;
+            };
+        };
+        /** @description The note the last technician left for this visit's; null for none. */
+        Handoff: {
+            note: string;
+            /** @description Who left it, by first name. */
+            technician: string | null;
+            /** Format: uuid */
+            visit_id: string;
+            /**
+             * Format: date
+             * @description The visit it was left at, its day in India.
+             */
+            date: string;
+        } | null;
+        /** @description The client's visits closed before this job, newest first, at most twenty. */
+        TechnicianClientHistory: {
+            /** @description The client's alerts still on, newest first. */
+            alerts: components["schemas"]["ClientAlert"][];
+            visits: components["schemas"]["TechnicianHistoryVisit"][];
+        };
+        TechnicianHistoryVisit: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            technician: string | null;
+            /** @description done, partial or no_show; null where ops closed it with no outcome. */
+            result: string | null;
+            /** @description The note its technician left for the next. */
+            note: string | null;
+            /** @description Its after photographs, never to be kept on the phone. */
+            photos: {
+                angle: string;
+                url: string;
+            }[];
+            consumables: {
+                name: string;
+                quantity: number;
+            }[];
+            /** @description The label of the piece fitted at it. */
+            piece: string | null;
         };
         CheckIn: {
             passed: boolean;
@@ -4144,6 +4393,10 @@ export interface components {
             lost_reason?: string;
             /** @description On a consultation, whether the client said they are going ahead with a fit; left out where not asked. */
             going_ahead?: boolean;
+            /** @description A note for the next technician, shown on this client's next job whoever takes it. */
+            handoff_note?: string;
+            /** @description An alert every technician reads before they start, kept on the client until ops take it off. */
+            client_alert?: string;
         } | {
             /** @enum {string} */
             outcome: "partial";
@@ -4154,6 +4407,10 @@ export interface components {
              * @enum {boolean}
              */
             cannot_fit?: true;
+            /** @description A note for the next technician, shown on this client's next job whoever takes it. */
+            handoff_note?: string;
+            /** @description An alert every technician reads before they start, kept on the client until ops take it off. */
+            client_alert?: string;
         };
         TechnicianUpdate: {
             /** @enum {string} */

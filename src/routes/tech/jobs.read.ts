@@ -18,7 +18,12 @@ import { listableDate } from "../../policy/job-visibility.ts";
 import { inputsIn, rulesOfVisit } from "../../domain/cities/city-rules.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 
-import { jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
+import { clientHistoryRoute, historyPhotoRoute, jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
+import { clientHistory, historyPhoto } from "../../domain/field/client-history.ts";
+import { alertsOf } from "../../domain/clients/client-alerts.ts";
+import { workableJob } from "../../domain/field/workable-job.ts";
+import { unlocked } from "../../policy/job-visibility.ts";
+import type { Ctx } from "./jobs.record.ts";
 
 /**
  * The kit's hair systems in the job card's words, for the piece step to pick and match to the client's profile, each
@@ -47,6 +52,18 @@ async function kitOf(db: D1Database, technicianId: string, job: { readonly id: s
       .filter((unit) => unit.consumableCode === each.code)
       .map((unit) => ({ code: unit.code, lot_code: unit.lotCode, expires_on: unit.expiresOn })),
   }));
+}
+
+/**
+ * The client's record for a job open on the phone: this technician's own job, unlocked, as its card is; null for any
+ * other. A job given to another technician gives its record to them.
+ */
+async function recordedJob(c: Ctx, id: string): Promise<{ id: string; personId: string; startsAt: string } | null> {
+  const job = await workableJob(c.env.DB, id);
+  if (job?.technicianId !== technicianOf(c).technicianId) return null;
+  const { addressUnlockHour } = await opsInputs(c);
+  if (!unlocked(job.windowStart, c.var.deps.now(), addressUnlockHour)) return null;
+  return { id: job.id, personId: job.personId, startsAt: job.windowStart.toISOString() };
 }
 
 /** A checklist as the phone shows it: the technician's words, not the client's. */
@@ -102,6 +119,25 @@ export function registerTechJobReads(app: App): void {
       },
       200,
     );
+  });
+
+  app.openapi(clientHistoryRoute, async (c) => {
+    const job = await recordedJob(c, c.req.valid("param").id);
+    if (job === null) return refuse(c, "not_found");
+    const [alerts, visits] = await Promise.all([alertsOf(c.env.DB, job.personId), clientHistory(c.env.DB, job)]);
+    return c.json({ alerts, visits }, 200);
+  });
+
+  app.openapi(historyPhotoRoute, async (c) => {
+    const { id, photo_id: photoId } = c.req.valid("param");
+    const job = await recordedJob(c, id);
+    const photo = job === null ? null : await historyPhoto(c.env.DB, job, photoId);
+    const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
+    if (photo === null || object === null) return refuse(c, "not_found");
+    // A client's photograph stays off a technician's phone: neither the browser nor the service worker keeps it.
+    return new Response(object.body, {
+      headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },
+    });
   });
 
   app.openapi(lastVisitPhotoRoute, async (c) => {

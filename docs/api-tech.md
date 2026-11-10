@@ -680,6 +680,244 @@ One of the technician's jobs, with the day-before unlock enforced
 }
 ```
 
+### GET /api/tech/jobs/{id}/client-history
+
+The client's alerts and their visits closed before this job, under the card's own unlock
+
+**200**: The client's history
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianClientHistory"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such job of this technician's, or not unlocked yet
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/tech/jobs/{id}/history-photos/{photo_id}
+
+One after photograph of the client's earlier visit, under the card's own unlock, never cached
+
+**200**: The image
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such job of this technician's, not unlocked yet, or no after photograph of the client's earlier visit
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/tech/jobs/{id}/last-visit-photo
 
 The client's last visit, after: one photograph, under the card's own unlock, never cached
@@ -6349,6 +6587,16 @@ One of the client's try-on looks, under the card's own unlock, never cached
         }
       ],
       "description": "The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded."
+    },
+    "client_alerts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientAlert"
+      },
+      "description": "The client's alerts still on, newest first."
+    },
+    "handoff": {
+      "$ref": "#/components/schemas/Handoff"
     }
   },
   "required": [
@@ -6391,7 +6639,9 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "payment_link",
     "discount_code",
     "client_choice",
-    "profile"
+    "profile",
+    "client_alerts",
+    "handoff"
   ],
   "additionalProperties": false
 }
@@ -7303,6 +7553,277 @@ One of the client's try-on looks, under the card's own unlock, never cached
 }
 ```
 
+### ClientAlert
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "body": {
+      "type": "string"
+    },
+    "written_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "raised_by": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "staff"
+              ]
+            },
+            "staff": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "staff"
+          ],
+          "additionalProperties": false,
+          "description": "The member of staff, by their work e-mail."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "technician"
+              ]
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ],
+          "additionalProperties": false,
+          "description": "The technician, by first name, at a visit's close."
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "body",
+    "written_at",
+    "raised_by"
+  ],
+  "additionalProperties": false,
+  "description": "Read before starting: \"Allergic to latex\"."
+}
+```
+
+### Handoff
+
+```json
+{
+  "anyOf": [
+    {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string"
+        },
+        "technician": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Who left it, by first name."
+        },
+        "visit_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The visit it was left at, its day in India."
+        }
+      },
+      "required": [
+        "note",
+        "technician",
+        "visit_id",
+        "date"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "description": "The note the last technician left for this visit's; null for none."
+}
+```
+
+### TechnicianClientHistory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "alerts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientAlert"
+      },
+      "description": "The client's alerts still on, newest first."
+    },
+    "visits": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/TechnicianHistoryVisit"
+      }
+    }
+  },
+  "required": [
+    "alerts",
+    "visits"
+  ],
+  "additionalProperties": false,
+  "description": "The client's visits closed before this job, newest first, at most twenty."
+}
+```
+
+### TechnicianHistoryVisit
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "technician": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "done, partial or no_show; null where ops closed it with no outcome."
+    },
+    "note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The note its technician left for the next."
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "angle": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "angle",
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Its after photographs, never to be kept on the phone."
+    },
+    "consumables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "quantity"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "piece": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The label of the piece fitted at it."
+    }
+  },
+  "required": [
+    "id",
+    "date",
+    "type",
+    "technician",
+    "result",
+    "note",
+    "photos",
+    "consumables",
+    "piece"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### CheckIn
 
 ```json
@@ -8202,6 +8723,18 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "going_ahead": {
           "type": "boolean",
           "description": "On a consultation, whether the client said they are going ahead with a fit; left out where not asked."
+        },
+        "handoff_note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "A note for the next technician, shown on this client's next job whoever takes it."
+        },
+        "client_alert": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "An alert every technician reads before they start, kept on the client until ops take it off."
         }
       },
       "required": [
@@ -8230,6 +8763,18 @@ One of the client's try-on looks, under the card's own unlock, never cached
             true
           ],
           "description": "Can't fit today: a fit closed from its piece step with no piece of the client's spec to fit, its reason `no_piece`. It follows the step before the piece, and ops are given the refit to book."
+        },
+        "handoff_note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "A note for the next technician, shown on this client's next job whoever takes it."
+        },
+        "client_alert": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "An alert every technician reads before they start, kept on the client until ops take it off."
         }
       },
       "required": [
