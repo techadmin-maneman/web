@@ -1,6 +1,5 @@
 // The client's hair profile, which no board draws (docs/decisions/0106-a-clients-hair-profile.md): a consultation's
-// step, and a consultation and fit in one visit's once the product is chosen and fitted, just before the after
-// photographs.
+// step, and a one visit's and a first fit's once the piece is chosen and fitted, just before the after photographs.
 //
 // Three pages under the one step, by what the technician does: measure (the Norwood stage, the head and the base),
 // match (the colour and style the hair system is made to), then the history, the remedies the client has tried and

@@ -18,8 +18,8 @@
 // the product's visit, whose payment link Razorpay then texts to the client, or
 // a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 //
-// A consultation and a one visit also take the client's hair profile, just
-// before the after photographs. It is not a job event: it lands in its own
+// A consultation, a one visit and a first fit also take the client's hair
+// profile, just before the after photographs. It is not a job event: it lands in its own
 // table, and the job's order leaves it out, so it needs only
 // the start (docs/decisions/0106-a-clients-hair-profile.md).
 

@@ -6165,7 +6165,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "profile"
         ]
       },
-      "description": "The steps this visit type runs, in order; a consultation's and a one visit's take the profile."
+      "description": "The steps this visit type runs, in order; a consultation's, a one visit's and a first fit's take the profile."
     },
     "checklist": {
       "type": "array",

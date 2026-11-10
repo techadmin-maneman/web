@@ -3714,7 +3714,7 @@ export interface components {
                 state: "on_its_way" | "sent" | "delivered";
                 delivered_at: string | null;
             } | null;
-            /** @description The steps this visit type runs, in order; a consultation's and a one visit's take the profile. */
+            /** @description The steps this visit type runs, in order; a consultation's, a one visit's and a first fit's take the profile. */
             steps: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome" | "profile")[];
             /** @description This kind of visit's checklist, as ops set it in the console, in its order. */
             checklist: components["schemas"]["JobSheetItem"][];

@@ -155,7 +155,8 @@ export const JobDetailSchema = JobSummarySchema.extend({
         "The day-before or arrival WhatsApp to the client: on its way, sent, or delivered and when; null when none went, as when one was skipped or failed.",
     }),
   steps: z.array(z.enum(CARD_STEPS)).openapi({
-    description: "The steps this visit type runs, in order; a consultation's and a one visit's take the profile.",
+    description:
+      "The steps this visit type runs, in order; a consultation's, a one visit's and a first fit's take the profile.",
   }),
   checklist: z
     .array(JobSheetItemSchema)
