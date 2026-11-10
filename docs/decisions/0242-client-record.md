@@ -20,7 +20,8 @@ and 2); the owner ruled there is no voice note.
    staff's notes are (`src/domain/clients/staff-notes.ts`). A technician raises one at a visit's close, once however often the phone
    sends the close. One taken off is marked so, never deleted, until an erasure. 200 characters at most.
 2. **The handoff note is a typed note at a visit's close, one a visit, in `handoff_notes`.** The job card carries the
-   latest left at an earlier visit of the client, whoever takes the next job; 500 characters at most. No voice note.
+   latest left at an earlier visit of the client, with that visit's after photographs, whoever takes the next job; 500
+   characters at most. No voice note.
 3. **Both come with the outcome**, as `handoff_note` and `client_alert`, and are kept in their own tables, never in the
    job's event, so the event's body stays what the close decided.
 4. **The history is `GET /api/tech/jobs/{id}/client-history`:** the client's alerts, and their visits closed before

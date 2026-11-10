@@ -74,7 +74,7 @@ describe("what a close leaves on the client's record", () => {
 });
 
 describe("the job card", () => {
-  it("carries the client's alerts and the note left at their visit before, whoever left it", async () => {
+  it("carries the client's alerts and the note left at their visit before, whoever left it, with its photographs", async () => {
     const job = await working("service");
     await anEarlierVisit();
     await env.DB.prepare(
@@ -85,7 +85,13 @@ describe("the job card", () => {
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<Record<string, unknown>>();
     expect(card).toMatchObject({
       client_alerts: [{ body: "Allergic to latex.", raised_by: { kind: "staff", staff: "ops@maneman.in" } }],
-      handoff: { note: "Edge lifting at the left temple.", technician: "Imran", visit_id: EARLIER, date: "2026-09-01" },
+      handoff: {
+        note: "Edge lifting at the left temple.",
+        technician: "Imran",
+        visit_id: EARLIER,
+        date: "2026-09-01",
+        photos: [{ angle: "front", url: `/api/tech/jobs/${JOB}/history-photos/${PHOTO}` }],
+      },
     });
   });
 });

@@ -28,6 +28,10 @@ export const ClientAlertsSchema = z
   .array(ClientAlertSchema)
   .openapi({ description: "The client's alerts still on, newest first." });
 
+const PhotosSchema = z
+  .array(z.object({ angle: z.string(), url: z.string() }).strict())
+  .openapi({ description: "Its after photographs, never to be kept on the phone." });
+
 export const HandoffSchema = z
   .union([
     z
@@ -36,6 +40,7 @@ export const HandoffSchema = z
         technician: z.union([z.string(), z.null()]).openapi({ description: "Who left it, by first name." }),
         visit_id: z.uuid(),
         date: z.iso.date().openapi({ description: "The visit it was left at, its day in India." }),
+        photos: PhotosSchema,
       })
       .strict(),
     z.null(),
@@ -52,9 +57,7 @@ export const HistoryVisitSchema = z
       .union([z.string(), z.null()])
       .openapi({ description: "done, partial or no_show; null where ops closed it with no outcome." }),
     note: z.union([z.string(), z.null()]).openapi({ description: "The note its technician left for the next." }),
-    photos: z
-      .array(z.object({ angle: z.string(), url: z.string() }).strict())
-      .openapi({ description: "Its after photographs, never to be kept on the phone." }),
+    photos: PhotosSchema,
     consumables: z.array(z.object({ name: z.string(), quantity: z.number() }).strict()),
     piece: z.union([z.string(), z.null()]).openapi({ description: "The label of the piece fitted at it." }),
   })

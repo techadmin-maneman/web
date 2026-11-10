@@ -4155,6 +4155,11 @@ export interface components {
              * @description The visit it was left at, its day in India.
              */
             date: string;
+            /** @description Its after photographs, never to be kept on the phone. */
+            photos: {
+                angle: string;
+                url: string;
+            }[];
         } | null;
         /** @description The client's visits closed before this job, newest first, at most twenty. */
         TechnicianClientHistory: {

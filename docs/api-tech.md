@@ -7656,13 +7656,34 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "string",
           "format": "date",
           "description": "The visit it was left at, its day in India."
+        },
+        "photos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "angle": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "angle",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Its after photographs, never to be kept on the phone."
         }
       },
       "required": [
         "note",
         "technician",
         "visit_id",
-        "date"
+        "date",
+        "photos"
       ],
       "additionalProperties": false
     },

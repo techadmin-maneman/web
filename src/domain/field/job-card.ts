@@ -14,6 +14,7 @@ import { type PhoneClock, earliestCheckIn } from "../../policy/phone-clock.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "../clients/hair-profiles.ts";
 import { alertsOf, type ClientAlert } from "../clients/client-alerts.ts";
 import { handoffFor, type Handoff } from "../clients/handoff-notes.ts";
+import { afterPhotosOf, type HistoryPhoto } from "./client-history.ts";
 import { codeOnVisit, type VisitCode } from "../money/discount-code-uses.ts";
 import { decisionAtVisit } from "../visits/one-visit.ts";
 import { evidenceMessage, messageStateOf } from "../no-shows/no-shows.ts";
@@ -110,7 +111,7 @@ interface JobDetail extends JobSummary {
   /** The client's alerts, which every technician reads before they start; none while the job is locked. */
   readonly client_alerts: ClientAlert[];
   /** The note the last technician left for this visit's; null while the job is locked, or where none was left. */
-  readonly handoff: Handoff | null;
+  readonly handoff: (Handoff & { readonly photos: HistoryPhoto[] }) | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
   readonly steps: CardStep[];
 }
@@ -235,7 +236,7 @@ async function unlockedPartsOf(
     reminder,
     profile,
     client_alerts: alerts,
-    handoff,
+    handoff: handoff === null ? null : { ...handoff, photos: await afterPhotosOf(db, row.id, handoff.visit_id) },
   };
 }
 

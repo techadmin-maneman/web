@@ -16,6 +16,14 @@ const VISITS_SHOWN = 20;
 const ANGLE_ORDER =
   "CASE p.angle WHEN 'front' THEN 0 WHEN 'top' THEN 1 WHEN 'left' THEN 2 WHEN 'right' THEN 3 ELSE 4 END";
 
+/** An after photograph, by the address the phone fetches it at through the job open on it. */
+export interface HistoryPhoto {
+  readonly angle: string;
+  readonly url: string;
+}
+
+const photoUrl = (jobId: string, photoId: string): string => `/api/tech/jobs/${jobId}/history-photos/${photoId}`;
+
 export interface HistoryVisit {
   readonly id: string;
   /** Its day in India. */
@@ -27,8 +35,7 @@ export interface HistoryVisit {
   readonly result: string | null;
   /** The note its technician left for the next. */
   readonly note: string | null;
-  /** Its after photographs, each by the address the phone fetches it at. */
-  readonly photos: { readonly angle: string; readonly url: string }[];
+  readonly photos: HistoryPhoto[];
   readonly consumables: { readonly name: string; readonly quantity: number }[];
   /** The label of the piece fitted at it. */
   readonly piece: string | null;
@@ -106,13 +113,25 @@ export async function clientHistory(
     note: of<{ appointment_id: string; body: string }>(notes?.results, visit.id)[0]?.body ?? null,
     photos: of<{ appointment_id: string; id: string; angle: string }>(photos?.results, visit.id).map((photo) => ({
       angle: photo.angle,
-      url: `/api/tech/jobs/${job.id}/history-photos/${photo.id}`,
+      url: photoUrl(job.id, photo.id),
     })),
     consumables: of<{ appointment_id: string; name: string; quantity: number }>(used?.results, visit.id).map(
       ({ name, quantity }) => ({ name, quantity }),
     ),
     piece: of<{ appointment_id: string; piece_code: string }>(pieces?.results, visit.id)[0]?.piece_code ?? null,
   }));
+}
+
+/** An earlier visit's after photographs, as the job open on the phone shows them with its handoff note. */
+export async function afterPhotosOf(db: D1Database, jobId: string, visitId: string): Promise<HistoryPhoto[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT p.id, p.angle FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id
+       WHERE s.appointment_id = ?1 AND s.phase = 'after' ORDER BY ${ANGLE_ORDER}`,
+    )
+    .bind(visitId)
+    .all<{ id: string; angle: string }>();
+  return results.map((photo) => ({ angle: photo.angle, url: photoUrl(jobId, photo.id) }));
 }
 
 /**

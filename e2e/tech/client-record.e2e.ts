@@ -29,13 +29,18 @@ test("puts the client's alerts and the last technician's note on the card, and o
     technician: "Imran",
     visit_id: EARLIER,
     date: "2026-09-01",
+    photos: [{ angle: "front", url: `/api/tech/jobs/${JOB_ID}/history-photos/${PHOTO}` }],
   };
   await page.goto(`/jobs/${JOB_ID}`);
 
   const alerts = page.getByRole("note", { name: copy.alerts });
+  await expect(alerts.getByRole("heading", { name: copy.alerts })).toBeVisible();
   await expect(alerts).toContainText("Allergic to latex.");
   await expect(page.getByText("Edge lifting at the left temple.")).toBeVisible();
   await expect(page.getByText(copy.handoffBy("Imran", "1 Sep"))).toBeVisible();
+  const photo = page.getByRole("img", { name: copy.photo("front") });
+  await expect(photo).toBeVisible();
+  expect(await photo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
 
   await page.getByRole("link", { name: copy.history }).click();
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}/history$`));

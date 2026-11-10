@@ -43,7 +43,7 @@ export async function handoffFor(
       `SELECT h.body, h.appointment_id, a.window_start, t.name AS technician FROM handoff_notes h
        JOIN appointments a ON a.id = h.appointment_id
        LEFT JOIN technicians t ON t.id = h.technician_id
-       WHERE h.person_id = ?1 AND h.appointment_id <> ?2 AND a.window_start < ?3
+       WHERE h.person_id = ?1 AND h.appointment_id <> ?2 AND a.deleted_at IS NULL AND a.window_start < ?3
        ORDER BY a.window_start DESC LIMIT 1`,
     )
     .bind(job.personId, job.id, job.startsAt)
