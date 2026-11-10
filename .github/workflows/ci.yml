@@ -357,12 +357,31 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
+      # The system libraries come from Ubuntu's mirror, which can take minutes for their 114 MB: apt keeps what it
+      # downloads where the cache can keep it too, so a run that finds them installs them without a download.
+      - name: The system libraries' packages, from the cache
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-archives
+          key: apt-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
+      - name: apt's downloads kept where the cache finds them
+        if: runner.environment == 'github-hosted'
+        run: |
+          mkdir -p ~/apt-archives/partial
+          printf 'Dir::Cache::Archives "%s";\nAPT::Keep-Downloaded-Packages "true";\n' "$HOME/apt-archives" \
+            | sudo tee /etc/apt/apt.conf.d/99-kept-packages > /dev/null
       - name: Chromium and WebKit for Playwright
         if: steps.browsers.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium webkit
       - name: Their system libraries
         if: steps.browsers.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium webkit
+      # apt, as root, takes its partial/ folder and a lock file for itself, which the cache, saving as the runner, could
+      # not read: the folder goes back to the runner, so the cache can keep it.
+      - name: apt's downloads given back to the runner, for the cache
+        if: runner.environment == 'github-hosted'
+        run: sudo chown -R "$(id -un)" ~/apt-archives
       - name: Local secrets, and every migration applied to an empty D1
         run: |
           node scripts/dev/ensure-dev-vars.ts
