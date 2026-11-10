@@ -10,7 +10,7 @@ const RaisedByTechnician = z
   .strict()
   .openapi({ description: "The technician, by first name, at a visit's close." });
 
-export const ClientAlertSchema = z
+const ClientAlertSchema = z
   .object({
     id: z.uuid(),
     body: z.string(),
@@ -64,7 +64,7 @@ export const HandoffSchema = z
   ])
   .openapi("Handoff", { description: "The note the last technician left for this visit's; null for none." });
 
-export const HistoryVisitSchema = z
+const HistoryVisitSchema = z
   .object({
     id: z.uuid(),
     date: z.iso.date(),
