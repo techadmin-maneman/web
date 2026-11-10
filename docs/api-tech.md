@@ -6591,7 +6591,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "client_alerts": {
       "type": "array",
       "items": {
-        "$ref": "#/components/schemas/ClientAlert"
+        "$ref": "#/components/schemas/TechnicianClientAlert"
       },
       "description": "The client's alerts still on, newest first."
     },
@@ -7553,6 +7553,75 @@ One of the client's try-on looks, under the card's own unlock, never cached
 }
 ```
 
+### TechnicianClientAlert
+
+```json
+{
+  "description": "Read before starting: \"Allergic to latex\".",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "body": {
+      "type": "string"
+    },
+    "written_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "raised_by": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "staff"
+              ]
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "description": "A member of staff."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "technician"
+              ]
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ],
+          "additionalProperties": false,
+          "description": "The technician, by first name, at a visit's close."
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "body",
+    "written_at",
+    "raised_by"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientAlert
 
 ```json
@@ -7704,7 +7773,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "alerts": {
       "type": "array",
       "items": {
-        "$ref": "#/components/schemas/ClientAlert"
+        "$ref": "#/components/schemas/TechnicianClientAlert"
       },
       "description": "The client's alerts still on, newest first."
     },

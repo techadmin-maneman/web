@@ -12,7 +12,7 @@ import { loadSlotSchedule } from "../booking/slot-times.ts";
 import { offeredProducts } from "../booking/services.ts";
 import { type PhoneClock, earliestCheckIn } from "../../policy/phone-clock.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "../clients/hair-profiles.ts";
-import { alertsOf, type ClientAlert } from "../clients/client-alerts.ts";
+import { alertsForTechnician, type TechnicianAlert } from "../clients/client-alerts.ts";
 import { handoffFor, type Handoff } from "../clients/handoff-notes.ts";
 import { afterPhotosOf, type HistoryPhoto } from "./client-history.ts";
 import { codeOnVisit, type VisitCode } from "../money/discount-code-uses.ts";
@@ -109,7 +109,7 @@ interface JobDetail extends JobSummary {
   /** The client's hair profile as it stands; null while the job is locked, or before one is recorded. */
   readonly profile: HairProfile | null;
   /** The client's alerts, which every technician reads before they start; none while the job is locked. */
-  readonly client_alerts: ClientAlert[];
+  readonly client_alerts: TechnicianAlert[];
   /** The note the last technician left for this visit's; null while the job is locked, or where none was left. */
   readonly handoff: (Handoff & { readonly photos: HistoryPhoto[] }) | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
@@ -227,7 +227,7 @@ async function unlockedPartsOf(
     lastVisitOf(db, row),
     reminderOf(db, row.id),
     latestProfile(db, row.person_id),
-    alertsOf(db, row.person_id),
+    alertsForTechnician(db, row.person_id),
     handoffFor(db, { personId: row.person_id, id: row.id, startsAt: row.window_start }),
   ]);
   return {

@@ -20,7 +20,7 @@ test("puts the client's alerts and the last technician's note on the card, and o
     {
       id: ALERT,
       body: "Allergic to latex.",
-      raised_by: { kind: "staff", staff: "ops@maneman.in" },
+      raised_by: { kind: "staff" },
       written_at: "2026-09-02T05:00:00.000Z",
     },
   ];

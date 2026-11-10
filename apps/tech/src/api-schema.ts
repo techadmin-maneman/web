@@ -3946,7 +3946,7 @@ export interface components {
             /** @description The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded. */
             profile: components["schemas"]["HairProfile"] | null;
             /** @description The client's alerts still on, newest first. */
-            client_alerts: components["schemas"]["ClientAlert"][];
+            client_alerts: components["schemas"]["TechnicianClientAlert"][];
             handoff: components["schemas"]["Handoff"];
         };
         TechnicianJobProgress: {
@@ -4127,6 +4127,22 @@ export interface components {
             skin_and_allergies: string | null;
         };
         /** @description Read before starting: "Allergic to latex". */
+        TechnicianClientAlert: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            /** Format: date-time */
+            written_at: string;
+            raised_by: {
+                /** @enum {string} */
+                kind: "staff";
+            } | {
+                /** @enum {string} */
+                kind: "technician";
+                name: string;
+            };
+        };
+        /** @description Read before starting: "Allergic to latex". */
         ClientAlert: {
             /** Format: uuid */
             id: string;
@@ -4164,7 +4180,7 @@ export interface components {
         /** @description The client's visits closed before this job, newest first, at most twenty. */
         TechnicianClientHistory: {
             /** @description The client's alerts still on, newest first. */
-            alerts: components["schemas"]["ClientAlert"][];
+            alerts: components["schemas"]["TechnicianClientAlert"][];
             visits: components["schemas"]["TechnicianHistoryVisit"][];
         };
         TechnicianHistoryVisit: {

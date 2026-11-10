@@ -12,8 +12,6 @@ import { keepShortfall } from "../../domain/field/consumable-shortfalls.ts";
 import { needsReason, shortfallOf, type Shortfall } from "../../policy/consumable-shortfall.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { profileLanded, recordAtVisit } from "../../domain/clients/hair-profiles.ts";
-import { alertAtClose } from "../../domain/clients/client-alerts.ts";
-import { noteAtClose } from "../../domain/clients/handoff-notes.ts";
 import { fitInInches } from "../schemas/hair-profile.ts";
 import {
   answerBeforeLanding,
@@ -74,6 +72,7 @@ import { registerPhotographs } from "./jobs.photos.ts";
 import { NO_PIECE, takesStep } from "../../policy/in-job-steps.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { keepDoorEvidence } from "../../domain/no-shows/door-evidence.ts";
+import { keepCloseNotes } from "./jobs.close-notes.ts";
 
 export function registerTechJobSteps(app: App): void {
   registerArrival(app);
@@ -400,32 +399,14 @@ function registerProfileAndOutcome(app: App): void {
         const known = knownCodes((await jobSheet(c.env.DB)).partialReasons);
         return known.has(body.reason) ? { outcome: "partial", reason: body.reason } : { invalid: ["reason"] };
       },
-      async (job) => {
-        await keepCloseNotes(c, job, body);
+      async (job, accepted) => {
+        await keepCloseNotes(c, job, body, accepted);
         if (job.oneVisit === null || body.outcome !== "done") return;
         const { deps, log, config } = c.var;
         await closeOneVisit(c.env.DB, { ...deps, log, messagingSettings: config.settings.messaging }, job, deps.now());
       },
     );
   });
-}
-
-/**
- * What the close leaves on the client's record (docs/decisions/0242-client-record.md): the note for the next technician
- * and an alert, each in its own table and never in the event, once however often the phone sends the close.
- */
-async function keepCloseNotes(
-  c: Ctx,
-  job: WorkableJob,
-  notes: { readonly handoff_note?: string | undefined; readonly client_alert?: string | undefined },
-): Promise<void> {
-  const { technicianId } = technicianOf(c);
-  const kept = { personId: job.personId, appointmentId: job.id, technicianId, now: c.var.deps.now() };
-  const writes = [
-    notes.handoff_note === undefined ? null : noteAtClose(c.env.DB, { ...kept, body: notes.handoff_note }),
-    notes.client_alert === undefined ? null : alertAtClose(c.env.DB, { ...kept, body: notes.client_alert }),
-  ].filter((write) => write !== null);
-  if (writes.length > 0) await c.env.DB.batch(writes);
 }
 
 /**

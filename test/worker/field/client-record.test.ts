@@ -5,7 +5,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { captureLogs, markDatabase } from "../helpers.ts";
+import { captureLogs, markDatabase, NOW } from "../helpers.ts";
+import { MINUTE_MS } from "../../../src/lib/durations.ts";
 import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 import { aPerson, aVisit } from "../fixtures/index.ts";
 
@@ -65,6 +66,31 @@ describe("what a close leaves on the client's record", () => {
     expect(event?.body).not.toContain("latex");
   });
 
+  it("leaves nothing from another step's event ID sent to the close", async () => {
+    const job = await working("service");
+    await job.workTo("outcome");
+    const answer = await outcome(job, { outcome: "done", client_alert: "Late." }, "event-checkin-01");
+    expect(answer.status).toBe(202);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM client_alerts").first()).toEqual({ n: 0 });
+  });
+
+  it("keeps the close sent again within the hour after it, and nothing it brings past the hour", async () => {
+    let now = NOW;
+    const job = await working("service", { now: () => now });
+    await job.workTo("outcome");
+    expect((await outcome(job, { outcome: "done" })).status).toBe(202);
+
+    now = new Date(NOW.getTime() + 10 * MINUTE_MS);
+    expect((await outcome(job, { outcome: "done", handoff_note: "Use the softer tape." })).status).toBe(202);
+    now = new Date(NOW.getTime() + 61 * MINUTE_MS);
+    expect((await outcome(job, { outcome: "done", client_alert: "Late." })).status).toBe(202);
+
+    expect(await env.DB.prepare("SELECT body FROM handoff_notes").all()).toMatchObject({
+      results: [{ body: "Use the softer tape." }],
+    });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM client_alerts").first()).toEqual({ n: 0 });
+  });
+
   it("refuses a note past its length", async () => {
     const job = await working("service");
     await job.workTo("outcome");
@@ -84,7 +110,7 @@ describe("the job card", () => {
       .run();
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<Record<string, unknown>>();
     expect(card).toMatchObject({
-      client_alerts: [{ body: "Allergic to latex.", raised_by: { kind: "staff", staff: "ops@maneman.in" } }],
+      client_alerts: [{ body: "Allergic to latex.", raised_by: { kind: "staff" } }],
       handoff: {
         note: "Edge lifting at the left temple.",
         technician: "Imran",
@@ -135,6 +161,28 @@ describe("the client's history", () => {
     await anEarlierVisit();
     await aPerson({ id: "p-other" });
     await env.DB.prepare("UPDATE appointments SET person_id = 'p-other' WHERE id = ?1").bind(EARLIER).run();
+    expect((await job.get(`/api/tech/jobs/${JOB}/history-photos/${PHOTO}`)).status).toBe(404);
+  });
+
+  it("serves no photograph of a visit after the job's", async () => {
+    const job = await working("service");
+    await anEarlierVisit();
+    await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-25T05:00:00.000Z' WHERE id = ?1")
+      .bind(EARLIER)
+      .run();
+    expect((await job.get(`/api/tech/jobs/${JOB}/history-photos/${PHOTO}`)).status).toBe(404);
+  });
+
+  it("is not found for a job still locked, nor its photographs", async () => {
+    const job = await working("service");
+    await anEarlierVisit();
+    // Tomorrow's job opens at 6 pm today; it is noon.
+    await env.DB.prepare(
+      "UPDATE appointments SET window_start = '2026-09-22T07:30:00.000Z', window_end = '2026-09-22T09:00:00.000Z' WHERE id = ?1",
+    )
+      .bind(JOB)
+      .run();
+    expect((await job.get(`/api/tech/jobs/${JOB}/client-history`)).status).toBe(404);
     expect((await job.get(`/api/tech/jobs/${JOB}/history-photos/${PHOTO}`)).status).toBe(404);
   });
 });

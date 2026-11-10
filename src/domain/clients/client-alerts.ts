@@ -38,6 +38,19 @@ export async function alertsOf(db: D1Database, personId: string): Promise<Client
   }));
 }
 
+/** An alert as a technician's card and history give it: raised by staff, never which member of staff. */
+export interface TechnicianAlert extends Omit<ClientAlert, "raised_by"> {
+  readonly raised_by: { readonly kind: "staff" } | { readonly kind: "technician"; readonly name: string };
+}
+
+/** The client's alerts still on, newest first, for a technician. */
+export async function alertsForTechnician(db: D1Database, personId: string): Promise<TechnicianAlert[]> {
+  return (await alertsOf(db, personId)).map(({ raised_by: by, ...alert }) => ({
+    ...alert,
+    raised_by: by.kind === "staff" ? { kind: "staff" } : by,
+  }));
+}
+
 /** An alert raised by a member of staff, with its audit entry. */
 export async function raiseAlert(
   db: D1Database,

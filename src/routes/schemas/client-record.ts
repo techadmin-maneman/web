@@ -5,6 +5,11 @@
 import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 
+const RaisedByTechnician = z
+  .object({ kind: z.literal("technician"), name: z.string() })
+  .strict()
+  .openapi({ description: "The technician, by first name, at a visit's close." });
+
 export const ClientAlertSchema = z
   .object({
     id: z.uuid(),
@@ -15,10 +20,7 @@ export const ClientAlertSchema = z
         .object({ kind: z.literal("staff"), staff: z.string() })
         .strict()
         .openapi({ description: "The member of staff, by their work e-mail." }),
-      z
-        .object({ kind: z.literal("technician"), name: z.string() })
-        .strict()
-        .openapi({ description: "The technician, by first name, at a visit's close." }),
+      RaisedByTechnician,
     ]),
   })
   .strict()
@@ -26,6 +28,21 @@ export const ClientAlertSchema = z
 
 export const ClientAlertsSchema = z
   .array(ClientAlertSchema)
+  .openapi({ description: "The client's alerts still on, newest first." });
+
+/** The alerts as a technician's phone is given them: raised by staff, never which member of staff. */
+export const TechnicianAlertsSchema = z
+  .array(
+    ClientAlertSchema.extend({
+      raised_by: z.discriminatedUnion("kind", [
+        z
+          .object({ kind: z.literal("staff") })
+          .strict()
+          .openapi({ description: "A member of staff." }),
+        RaisedByTechnician,
+      ]),
+    }).openapi("TechnicianClientAlert"),
+  )
   .openapi({ description: "The client's alerts still on, newest first." });
 
 const PhotosSchema = z
@@ -65,7 +82,7 @@ export const HistoryVisitSchema = z
   .openapi("TechnicianHistoryVisit");
 
 export const ClientHistorySchema = z
-  .object({ alerts: ClientAlertsSchema, visits: z.array(HistoryVisitSchema) })
+  .object({ alerts: TechnicianAlertsSchema, visits: z.array(HistoryVisitSchema) })
   .strict()
   .openapi("TechnicianClientHistory", {
     description: "The client's visits closed before this job, newest first, at most twenty.",

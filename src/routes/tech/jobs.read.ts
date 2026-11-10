@@ -20,7 +20,7 @@ import { opsInputs } from "../../http/ops-inputs.ts";
 
 import { clientHistoryRoute, historyPhotoRoute, jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
 import { clientHistory, historyPhoto } from "../../domain/field/client-history.ts";
-import { alertsOf } from "../../domain/clients/client-alerts.ts";
+import { alertsForTechnician } from "../../domain/clients/client-alerts.ts";
 import { workableJob } from "../../domain/field/workable-job.ts";
 import { unlocked } from "../../policy/job-visibility.ts";
 import type { Ctx } from "./jobs.record.ts";
@@ -124,7 +124,10 @@ export function registerTechJobReads(app: App): void {
   app.openapi(clientHistoryRoute, async (c) => {
     const job = await recordedJob(c, c.req.valid("param").id);
     if (job === null) return refuse(c, "not_found");
-    const [alerts, visits] = await Promise.all([alertsOf(c.env.DB, job.personId), clientHistory(c.env.DB, job)]);
+    const [alerts, visits] = await Promise.all([
+      alertsForTechnician(c.env.DB, job.personId),
+      clientHistory(c.env.DB, job),
+    ]);
     return c.json({ alerts, visits }, 200);
   });
 
