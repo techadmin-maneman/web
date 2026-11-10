@@ -76,10 +76,10 @@ function NoCamera(props: { onRetry: () => void; onWithout: () => void }) {
     <div className={styles.unavailable} role="alert">
       <p className={styles.unavailableTitle}>{copy.unavailableTitle}</p>
       <p className={styles.unavailableLine}>{copy.unavailable}</p>
-      <Button variant="light" size="action" onClick={props.onRetry}>
+      <Button variant="primary" size="action" onClick={props.onRetry}>
         {copy.retry}
       </Button>
-      <Button variant="outlineOnInk" size="action" onClick={props.onWithout}>
+      <Button variant="outline" size="action" onClick={props.onWithout}>
         {copy.withoutPhotos}
       </Button>
       <p className={styles.unavailableLine}>{copy.opsTold}</p>
@@ -207,8 +207,8 @@ function Controls(props: {
   return (
     <div className={styles.controls}>
       <Button
-        variant="outlineOnInk"
-        size="control"
+        variant="outline"
+        size="action"
         className={styles.retake}
         disabled={!props.canRetake}
         onClick={props.onRetake}
@@ -216,7 +216,7 @@ function Controls(props: {
         {copy.retake}
       </Button>
       {props.all ? (
-        <Button variant="light" size="action" onClick={props.onDone}>
+        <Button variant="primary" size="action" onClick={props.onDone}>
           {copy.finish}
         </Button>
       ) : (
@@ -227,26 +227,14 @@ function Controls(props: {
   );
 }
 
-export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
-  const step = phase === "before" ? "before_photos" : "after_photos";
-  const title = phase === "before" ? copy.before : copy.after;
-  const heading = useScreen(title);
-  const { loaded, retry, refused, finish } = useStep(id, step);
+/**
+ * The camera's stream on the video element. The camera and the element arrive in either order, so the stream is
+ * attached whichever is last; capture then waits for the first frame, since a canvas drawn from a video with no
+ * dimensions yet holds nothing.
+ */
+function useView(stream: MediaStream | null) {
   const video = useRef<HTMLVideoElement | null>(null);
-  const [camera, reopen] = useCamera(openCamera);
-  const stream = camera.state === "open" ? camera.stream : null;
-  const { taken, setTaken, refusedAngles } = useTaken(id, phase);
   const [ready, setReady] = useState(false);
-  // Why the last tap kept no frame: it did not save, or it came out blank.
-  const [missed, setMissed] = useState<"missed" | "blank" | null>(null);
-  const [comparing, setComparing] = useState(false);
-  const [comparable, setComparable] = useState<string | null>(null);
-  const [, once] = useOneAtATime();
-  const full = useFull();
-  const pictures = useThumbnails(taken);
-
-  // The camera and the element arrive in either order, so the stream is attached whichever is last. Capture then
-  // waits for the first frame: a canvas drawn from a video with no dimensions yet holds nothing.
   const attach = useCallback(
     (element: HTMLVideoElement | null) => {
       video.current = element;
@@ -255,6 +243,25 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
     },
     [stream],
   );
+  return { video, attach, ready, setReady };
+}
+
+export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
+  const step = phase === "before" ? "before_photos" : "after_photos";
+  const title = phase === "before" ? copy.before : copy.after;
+  const heading = useScreen(title);
+  const { loaded, retry, refused, finish } = useStep(id, step);
+  const [camera, reopen] = useCamera(openCamera);
+  const stream = camera.state === "open" ? camera.stream : null;
+  const { video, attach, ready, setReady } = useView(stream);
+  const { taken, setTaken, refusedAngles } = useTaken(id, phase);
+  // Why the last tap kept no frame: it did not save, or it came out blank.
+  const [missed, setMissed] = useState<"missed" | "blank" | null>(null);
+  const [comparing, setComparing] = useState(false);
+  const [comparable, setComparable] = useState<string | null>(null);
+  const [, once] = useOneAtATime();
+  const full = useFull();
+  const pictures = useThumbnails(taken);
 
   const angle: Angle | undefined = ANGLES.find((each) => !taken.some((one) => one.angle === each));
   const compareUrl = angle === undefined ? null : `/api/tech/jobs/${id}/compare/${phase}/${angle}`;
@@ -289,67 +296,68 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const notice = refused === null ? null : refusalNotice(refusedAngles, taken);
   const canCompare = comparable !== null && comparable === compareUrl;
   return (
-    <main className={styles.screen}>
-      <CameraHead id={id} title={title} taken={taken.length} stream={stream} heading={heading} />
-      {canCompare && (
-        <div className={styles.compareBar}>
-          <ToggleButton
-            onInk
-            className={styles.compareToggle}
-            pressed={comparing}
-            onClick={() => {
-              setComparing(!comparing);
-            }}
-          >
-            {copy.compareWith[phase]}
-          </ToggleButton>
-        </div>
-      )}
-      {full && (
-        <p className={styles.alertBar} role="alert">
-          {storage.title}
-        </p>
-      )}
-      {notice !== null && (
-        <p className={styles.alertBar} role="alert">
-          {notice}
-        </p>
-      )}
-      <div className={styles.stage}>
-        {camera.state === "refused" ? (
-          <NoCamera onRetry={reopen} onWithout={() => void finish({ phase, unavailable: true })} />
-        ) : (
-          <>
-            {/* Muted and inline: a technician's phone never plays sound, and never goes full screen. */}
-            <video
-              className={styles.view}
-              ref={attach}
-              autoPlay
-              muted
-              playsInline
-              onLoadedMetadata={() => {
-                setReady(true);
+    <div className={styles.look} data-look="light">
+      <main className={styles.screen}>
+        <CameraHead id={id} title={title} taken={taken.length} stream={stream} heading={heading} />
+        {canCompare && (
+          <div className={styles.compareBar}>
+            <ToggleButton
+              className={styles.compareToggle}
+              pressed={comparing}
+              onClick={() => {
+                setComparing(!comparing);
               }}
-            />
-            <FramingGuide angle={angle ?? "front"} />
-            <Compare id={id} phase={phase} angle={angle} on={comparing && canCompare} onLoad={setComparable} />
-            <p className={styles.prompt} role={missed === null ? undefined : "alert"}>
-              {promptOf(missed, angle)}
-            </p>
-          </>
+            >
+              {copy.compareWith[phase]}
+            </ToggleButton>
+          </div>
         )}
-      </div>
-      <div className={styles.dock}>
-        <Tiles taken={taken} now={angle} pictures={pictures} onRetake={(frameId) => void retake(frameId)} />
-        <Controls
-          all={all}
-          canRetake={lastOnPhone !== null}
-          canTake={stream !== null && ready}
-          onRetake={() => void retake(lastOnPhone)}
-          onTake={() => void take()}
-          onDone={() => void finish({ phase })}
-        />
-      </div>
-    </main>
+        {full && (
+          <p className={styles.alertBar} role="alert">
+            {storage.title}
+          </p>
+        )}
+        {notice !== null && (
+          <p className={styles.alertBar} role="alert">
+            {notice}
+          </p>
+        )}
+        <div className={styles.stage}>
+          {camera.state === "refused" ? (
+            <NoCamera onRetry={reopen} onWithout={() => void finish({ phase, unavailable: true })} />
+          ) : (
+            <>
+              {/* Muted and inline: a technician's phone never plays sound, and never goes full screen. */}
+              <video
+                className={styles.view}
+                ref={attach}
+                autoPlay
+                muted
+                playsInline
+                onLoadedMetadata={() => {
+                  setReady(true);
+                }}
+              />
+              <FramingGuide angle={angle ?? "front"} />
+              <Compare id={id} phase={phase} angle={angle} on={comparing && canCompare} onLoad={setComparable} />
+              <p className={styles.prompt} role={missed === null ? undefined : "alert"}>
+                {promptOf(missed, angle)}
+              </p>
+            </>
+          )}
+        </div>
+        <div className={styles.dock}>
+          <Tiles taken={taken} now={angle} pictures={pictures} onRetake={(frameId) => void retake(frameId)} />
+          <Controls
+            all={all}
+            canRetake={lastOnPhone !== null}
+            canTake={stream !== null && ready}
+            onRetake={() => void retake(lastOnPhone)}
+            onTake={() => void take()}
+            onDone={() => void finish({ phase })}
+          />
+        </div>
+      </main>
+    </div>
   );
 }

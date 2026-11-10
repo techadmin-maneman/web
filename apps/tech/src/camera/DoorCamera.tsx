@@ -47,44 +47,46 @@ export function DoorCamera({ onTaken, onCancel }: { onTaken: (photo: Blob) => vo
       }
     });
   return (
-    <div className={styles.screen} role="dialog" aria-modal="true" aria-labelledby={titleId} data-look="light">
-      <header className={styles.head}>
-        <IconButton className={styles.close} d={ICONS.cross} size="lg" label={copy.cancel} onClick={onCancel} />
-        <h2 className={styles.title} id={titleId} ref={heading} tabIndex={-1}>
-          {notHome.door.photo}
-        </h2>
-      </header>
-      <div className={styles.view}>
-        {camera.state === "refused" ? (
-          <div className={styles.refused}>
-            <p role="alert">{copy.noCamera}</p>
-            <Button variant="light" size="action" onClick={reopen}>
-              {copy.again}
-            </Button>
-          </div>
-        ) : (
-          <>
-            {/* Muted and inline: a technician's phone never plays sound, and never goes full screen. */}
-            <video
-              className={styles.video}
-              ref={attach}
-              aria-label={copy.view}
-              autoPlay
-              muted
-              playsInline
-              onLoadedMetadata={() => {
-                setReady(true);
-              }}
-            />
-            <span className={styles.guide} aria-hidden="true" />
-            <p className={styles.prompt} role={missed ? "alert" : undefined}>
-              {missed ? copy.missed : copy.prompt}
-            </p>
-          </>
-        )}
-      </div>
-      <div className={styles.foot}>
-        <Shutter label={copy.shutter} disabled={camera.state === "refused" || !ready || busy} onTake={take} />
+    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby={titleId} data-look="light">
+      <div className={styles.screen}>
+        <header className={styles.head}>
+          <IconButton className={styles.close} d={ICONS.cross} size="lg" label={copy.cancel} onClick={onCancel} />
+          <h2 className={styles.title} id={titleId} ref={heading} tabIndex={-1}>
+            {notHome.door.photo}
+          </h2>
+        </header>
+        <div className={styles.view}>
+          {camera.state === "refused" ? (
+            <div className={styles.refused}>
+              <p role="alert">{copy.noCamera}</p>
+              <Button variant="primary" size="action" onClick={reopen}>
+                {copy.again}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {/* Muted and inline: a technician's phone never plays sound, and never goes full screen. */}
+              <video
+                className={styles.video}
+                ref={attach}
+                aria-label={copy.view}
+                autoPlay
+                muted
+                playsInline
+                onLoadedMetadata={() => {
+                  setReady(true);
+                }}
+              />
+              <span className={styles.guide} aria-hidden="true" />
+              <p className={styles.prompt} role={missed ? "alert" : undefined}>
+                {missed ? copy.missed : copy.prompt}
+              </p>
+            </>
+          )}
+        </div>
+        <div className={styles.foot}>
+          <Shutter label={copy.shutter} disabled={camera.state === "refused" || !ready || busy} onTake={take} />
+        </div>
       </div>
     </div>
   );

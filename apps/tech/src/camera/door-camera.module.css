@@ -1,11 +1,34 @@
 /* The door's photograph (./DoorCamera.tsx): the camera's chrome above and below, the view between with its frame and
    the prompt, and the round shutter, the one place a circle is drawn. */
 
-.screen {
+/* Over the door's screen, in the new look for its type. */
+.overlay {
   position: fixed;
   inset: 0;
   z-index: var(--z-bar);
   display: flex;
+}
+
+/* The new look's roles on the camera's dark, as the photographs' camera sets them (./capture.module.css). */
+.screen {
+  --ui-ground: var(--camera-900);
+  --ui-text: var(--white-000);
+  --ui-text-soft: var(--mist-300);
+  --ui-text-muted: var(--mist-300);
+  --ui-text-quiet: var(--mist-300);
+  --ui-hint: var(--mist-300);
+  --ui-tint: var(--camera-700);
+  --ui-raised: var(--camera-900);
+  --ui-box: var(--camera-900);
+  --ui-line: var(--navy-700);
+  --ui-line-control: var(--navy-700);
+  --ui-strong: var(--white-000);
+  --ui-on-strong: var(--navy-900);
+  --ui-strong-pressed: var(--mist-300);
+  --focus-colour: var(--white-000);
+
+  display: flex;
+  flex: 1;
   flex-direction: column;
   background: var(--camera-900);
   color: var(--white-000);

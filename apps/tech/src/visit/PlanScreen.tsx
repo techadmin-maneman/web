@@ -91,7 +91,7 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
           return (
             <ListRow
               key={screen.id}
-              lead={<Marker state={state} />}
+              mark={<Marker state={state} />}
               title={screen.title}
               end={STATE_WORDS[state]}
               endTone={state === "fix" ? "error" : "muted"}

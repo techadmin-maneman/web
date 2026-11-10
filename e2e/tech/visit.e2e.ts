@@ -47,6 +47,7 @@ test("compares the angle to take with the last visit's, over the top half of the
 
   const compare = page.getByRole("button", { name: techCopy.capture.compareWith.before });
   await expect(compare).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
   await expect(page.getByRole("img", { name: techCopy.capture.compareImage.before("Front") })).toBeHidden();
   await compare.click();
   await expect(compare).toHaveAttribute("aria-pressed", "true");
