@@ -19,11 +19,16 @@ interface Repo {
 
 /** The jobs that do the work of each check, every one run and passed. */
 const WORK = {
-  "unit tests (1 of 2)": "success",
-  "unit tests (2 of 2)": "success",
+  "unit tests (1 of 4)": "success",
+  "unit tests (2 of 4)": "success",
+  "unit tests (3 of 4)": "success",
+  "unit tests (4 of 4)": "success",
   build: "success",
-  "browser tests (1 of 2)": "success",
-  "browser tests (2 of 2)": "success",
+  "browser tests (1 of 4)": "success",
+  "browser tests (2 of 4)": "success",
+  "browser tests (3 of 4)": "success",
+  "browser tests (4 of 4)": "success",
+  "browser tests (Lighthouse)": "success",
   "smoke (local)": "success",
 };
 const FULL = {
@@ -93,15 +98,17 @@ describe("a staging deploy's merge", () => {
   // to do against that base, and its full suite job passes on the skips; the same head against main has everything to
   // do.
   it("takes no check as passed whose own jobs were skipped, though its gate job passed on the skips", async () => {
-    const skipped = {
-      ...FULL,
-      build: "skipped",
-      "browser tests (${{ matrix.shard }} of 2)": "skipped",
-      "smoke (local)": "skipped",
-      "unit tests (1 of 2)": "skipped",
-    };
-    delete (skipped as Record<string, string>)["browser tests (1 of 2)"];
-    delete (skipped as Record<string, string>)["browser tests (2 of 2)"];
+    // A skipped matrix job keeps its name unexpanded, so its expanded names are not there.
+    const skipped = Object.fromEntries(
+      Object.entries({
+        ...FULL,
+        build: "skipped",
+        "browser tests (${{ matrix.part == 'lighthouse' && 'Lighthouse' || format('{0} of 4', matrix.part) }})":
+          "skipped",
+        "smoke (local)": "skipped",
+        "unit tests (1 of 4)": "skipped",
+      }).filter(([name]) => !/^browser tests \((\d of 4|Lighthouse)\)$/.test(name)),
+    );
     expect((await alreadyChecked("o/r", MERGE, github({ runs: [skipped] }))).passed).toEqual(["static"]);
   });
 
