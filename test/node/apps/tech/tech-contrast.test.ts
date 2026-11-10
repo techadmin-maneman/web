@@ -297,6 +297,20 @@ describe("what the redrawn screens use", () => {
     expect(screens.filter((file) => !isRedrawn(file))).toEqual([]);
   });
 
+  it("rounds corners only as the look does, a circle aside, and draws no shadow", () => {
+    expect([inLook("--ui-radius-button"), inLook("--ui-radius-box")]).toEqual(["--sp-4", "--sp-2"]);
+    const outside = lightRules().flatMap(([selector, body]) =>
+      body.split(";").flatMap((declaration) => {
+        const [property = "", value = ""] = declaration.split(/:(.*)/s).map((part) => part.trim());
+        if (property.endsWith("radius") && !/^(0|50%|var\(--ui-radius-(button|box)\))$/.test(value)) {
+          return [`${selector} ${property}: ${value}`];
+        }
+        return property === "box-shadow" && value !== "none" ? [`${selector} box-shadow: ${value}`] : [];
+      }),
+    );
+    expect(outside).toEqual([]);
+  });
+
   it("draws only in the brief's colours and the look's roles", () => {
     const brief = briefColours();
     expect(brief.has("--navy-900")).toBe(true);

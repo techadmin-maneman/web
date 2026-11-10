@@ -37,8 +37,9 @@ each PR replaces the live screens it covers, with no switch, and that the techni
    390 px and with system text at 130%.
 7. **The new look's colours are held to the brief's 4.5:1** (`test/node/apps/tech/tech-contrast.test.ts`), beside the
    older screens' 5.8:1. The redrawn screens are listed there; their stylesheets may draw only in the brief's colours
-   and the look's roles, read as the look sets them. Every shared part that sets its words and its ground in those
-   roles, and every badge on its tint, is checked as the look draws it.
+   and the look's roles, read as the look sets them, round a corner only by the look's 4 px and 2 px (or as a circle),
+   and draw no shadow. Every shared part that sets its words and its ground in those roles, and every badge on its
+   tint, is checked as the look draws it.
 8. **`ProblemCard` is not `InlineMessage`:** a line says what just happened where it happened; the card is a titled,
    edged block a tap can open, and it is said aloud only when it answers what was just done (`live`).
 
