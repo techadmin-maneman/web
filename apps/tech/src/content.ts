@@ -9,6 +9,7 @@ import { amountOf } from "@maneman/web-kit/figures";
 import type { Angle, FitSpec, History } from "./api.ts";
 import { apiDate, clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
 import { localised, sayNow } from "./lang/words.ts";
+import { languageNow } from "./lang/language.ts";
 
 export const signIn = localised({
   title: "Sign in",
@@ -86,7 +87,7 @@ export const today = localised({
   leftOpenBody: "Finish it and send it.",
   /** A visit with steps ops sent back, from whatever day, until they are done again (docs/decisions/0246-closed-and-sent-back.md). */
   toFix: (time: string, who: string) => `Needs a fix · ${time} · ${who}`,
-  toFixBody: (steps: readonly string[]) => `Ops sent back ${steps.join(" and ")}.`,
+  toFixBody: (steps: readonly string[]) => `Ops sent back ${listed(steps)}.`,
   toFixSteps: {
     before_photos: "the before photos",
     checklist: "the tasks",
@@ -195,8 +196,9 @@ export const safety = localised({
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
 const capital = (words: string) => words.charAt(0).toUpperCase() + words.slice(1);
 
-/** "top", "top and left", "top, left and hair". */
-const listed = (words: readonly string[]) => new Intl.ListFormat("en-IN", { type: "conjunction" }).format(words);
+/** "top", "top and left", "top, left and hair"; in Hindi, joined by "और". */
+const listed = (words: readonly string[]) =>
+  new Intl.ListFormat(languageNow() === "hi" ? "hi" : "en-IN", { type: "conjunction" }).format(words);
 
 /**
  * Signing out wipes the phone, so it asks first when there is work on it that

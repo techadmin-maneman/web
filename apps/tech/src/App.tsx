@@ -152,7 +152,7 @@ export function App() {
     case "out":
       // The sign-in's one main landmark, so its heading and the code's status are inside one.
       return (
-        <main>
+        <main className={styles.out}>
           <SignIn why={state.why} onSignedIn={() => void check()} />
         </main>
       );

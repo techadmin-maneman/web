@@ -9,6 +9,8 @@ import * as content from "../../../apps/tech/src/content.ts";
 import { hasHindi, toHindi } from "../../../apps/tech/src/lang/hindi.ts";
 import { speak } from "../../../apps/tech/src/lang/language.ts";
 import { localised } from "../../../apps/tech/src/lang/words.ts";
+import { taskFor } from "../../../apps/tech/src/visit/tasks.ts";
+import { CHECKLIST, LOST_REASONS, PARTIAL_REASONS } from "../../../src/config/job-sheet.ts";
 
 afterEach(() => {
   speak("en");
@@ -34,6 +36,20 @@ describe("a line in Hindi", () => {
     expect(toHindi("Sector 65")).toBe("Sector 65");
     expect(hasHindi("+91")).toBe(true);
     expect(hasHindi("Sector 65")).toBe(false);
+    // A code the catalog keeps as it is counts as worded.
+    expect(hasHindi("SOS")).toBe(true);
+  });
+
+  it("words the app's own lines after the catalog's, the singular and a lower-case part among them", () => {
+    expect(toHindi("1 job today")).toBe("आज 1 जॉब");
+    expect(toHindi("This visit isn’t yours any more.")).toBe("यह विज़िट अब आपकी नहीं है।");
+    expect(toHindi("Next: clean the scalp")).toBe("आगे: स्कैल्प साफ़ करें");
+  });
+
+  it("words what a rule holds, so a count, a date or a part in it is in Hindi too", () => {
+    expect(toHindi("Map · 12 min drive")).toBe("नक्शा · 12 मिनट ड्राइव");
+    expect(toHindi("Expired 31 Oct 2026")).toBe("31 अक्टू 2026 को एक्सपायर");
+    expect(toHindi("Ops moved this job to 9 am on Mon 5 Oct.")).toBe("ऑप्स ने यह जॉब सोम 5 अक्टू, 9 am पर कर दिया।");
   });
 });
 
@@ -46,14 +62,20 @@ describe("the catalog as the screens read it", () => {
   });
 });
 
+/** A name, a count, one, none and nothing: each function's every branch, from "1 job" to "Alerts" with none unread. */
+const SAMPLE_NAME = "Rohit M.";
+const SAMPLES: readonly unknown[] = [SAMPLE_NAME, 2, 1, 0, null];
+/** As many values as the catalog's longest function takes: a function read through the catalog has no length. */
+const MOST_ARGUMENTS = 3;
+
 /** Every line the catalog can show: its strings, and what its functions write for sample values. */
 function shown(value: unknown, out: string[]): string[] {
   if (typeof value === "string") out.push(value);
   else if (typeof value === "function") {
     const write = value as (...args: unknown[]) => unknown;
-    for (const sample of ["Rohit M.", 2]) {
+    for (const sample of SAMPLES) {
       try {
-        shown(write(...Array.from({ length: Math.max(write.length, 1) }, () => sample)), out);
+        shown(write(...Array.from({ length: MOST_ARGUMENTS }, () => sample)), out);
       } catch {
         // A function that needs a value of another kind writes nothing for this one.
       }
@@ -82,8 +104,16 @@ function listed(): string[] {
 describe("the lines still in English", () => {
   it("are those REPORT.md lists for the native speaker, and no other", () => {
     const { languageNames: _ownNames, ...words } = content;
-    const lines = [...new Set(shown(Object.values(words), []))].filter((line) => !line.includes("undefined"));
-    const english = [...new Set(lines.filter((line) => !hasHindi(line)).map(spaced))].sort();
+    // The job sheet's committed lists stand until ops set their own, each checklist item with its task's words.
+    const items = [...Object.values(CHECKLIST).flat(), ...PARTIAL_REASONS, ...LOST_REASONS];
+    const sheet = items.flatMap((item) => [item.label, ...shown(taskFor(item), [])]);
+    // A sample of the wrong kind can write "null" or "NaN" where a value goes: no screen shows those.
+    const lines = [...new Set([...shown(Object.values(words), []), ...sheet])].filter(
+      (line) => !/undefined|null|NaN/.test(line),
+    );
+    // A line whose Hindi is the sample name alone, "Rohit M. · Rohit M.", has none of the app's words left in English.
+    const untold = (line: string) => !hasHindi(line) && /[A-Za-z]/.test(toHindi(line).replaceAll(SAMPLE_NAME, ""));
+    const english = [...new Set(lines.filter(untold).map(spaced))].sort();
     expect(listed().sort()).toEqual(english);
   });
 });

@@ -19,6 +19,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
 import { steps as copy } from "../content.ts";
+import { sayNow } from "../lang/index.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import type { Queued } from "../store/outbox.ts";
@@ -113,7 +114,9 @@ function Stepper({
   onChange: (count: number) => void;
 }) {
   const said = useId();
-  const { name, unit } = consumable;
+  // The console's name, in the language now where the catalog holds it ("Tape strips").
+  const name = sayNow(consumable.name);
+  const { unit } = consumable;
   const step = STEP_BY_UNIT[unit] ?? 1;
   const change = (by: 1 | -1) => {
     onChange(stepped(count, step, by));
@@ -177,12 +180,12 @@ function Picks({
             variant="outline"
             size="control"
             className={shared.pick}
-            aria-label={copy.consumables.addOne(each.name)}
+            aria-label={copy.consumables.addOne(sayNow(each.name))}
             onClick={() => {
               onPick(each.code);
             }}
           >
-            {each.name}
+            {sayNow(each.name)}
           </Button>
         </li>
       ))}

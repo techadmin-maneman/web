@@ -1,0 +1,974 @@
+{
+  "_note": "The technician app's own lines in Hindi, which the prototype's catalog (design/tech-redesign/strings-hi.json) does not word: states and refusals the prototype does not draw, and the words of the new parts. Read after the catalog, in the same way (apps/tech/src/lang/hindi.ts). Names, codes, product names, Rs. amounts and am/pm stay in English. Draft: have a native Hindi speaker review before launch.",
+  "strings": {
+    "#1B": "#1B",
+    "A 6-digit code is on its way.": "6 अंकों का कोड आ रहा है।",
+    "A job": "एक जॉब",
+    "A new version is ready.": "नया वर्ज़न तैयार है।",
+    "A visit’s client details close the day after it.": "क्लाइंट की जानकारी विज़िट के अगले दिन बंद हो जाती है।",
+    "Add": "जोड़ें",
+    "Add a consumable": "सामान जोड़ें",
+    "Adhesive": "गोंद",
+    "Adhesive applied": "गोंद लगाया",
+    "Adhesive renewed": "गोंद नया लगाया",
+    "Aftercare card": "आफ़्टरकेयर कार्ड",
+    "Aftercare explained": "आफ़्टरकेयर समझाया",
+    "Alert for every visit": "हर विज़िट का अलर्ट",
+    "Alerts didn’t load.": "अलर्ट लोड नहीं हुए।",
+    "Alerts don’t show on this phone yet.": "इस फ़ोन पर अभी अलर्ट नहीं दिखते।",
+    "Alerts weren’t turned on. Try again with signal.": "अलर्ट चालू नहीं हुए। नेटवर्क मिलने पर फिर से कोशिश करें।",
+    "All five are on the phone.": "पाँचों फ़ोन में हैं।",
+    "Already received or sent back.": "पहले ही ले लिया या लौटा दिया।",
+    "Apply code": "कोड लगाएँ",
+    "Back to Schedule": "शेड्यूल पर वापस",
+    "Back to the job": "जॉब पर वापस",
+    "Back to today": "आज पर वापस",
+    "Base (in)": "बेस (इंच)",
+    "Base marked from the template": "टेम्पलेट से बेस पर निशान",
+    "Base size": "बेस का साइज़",
+    "Base trimmed and shaped": "बेस काटा और आकार दिया",
+    "Base with old tape removed": "पुरानी टेप हटाकर बेस",
+    "Blend at the sides": "साइड में ब्लेंड",
+    "Bonding area, cleaned": "साफ़ बॉन्डिंग एरिया",
+    "Booked as": "बुकिंग का प्रकार",
+    "Change number": "नंबर बदलें",
+    "Check in at the door.": "दरवाज़े पर चेक इन करें।",
+    "Check the figures to continue": "आगे बढ़ने के लिए नाप जाँचें",
+    "Check the label to continue": "आगे बढ़ने के लिए लेबल जाँचें",
+    "Check the number and the code.": "नंबर और कोड जाँचें।",
+    "Check-in failed": "चेक इन नहीं हुआ",
+    "Checking the label…": "लेबल जाँच रहे हैं…",
+    "Checking…": "जाँच रहे हैं…",
+    "Choose Done or Partly done": "हो गया या आधा हुआ चुनें",
+    "Choose the hair system, or mark it declined": "हेयर सिस्टम चुनें, या मना किया मार्क करें",
+    "Choose the stage to continue": "आगे बढ़ने के लिए स्टेज चुनें",
+    "Chose another option": "कोई और विकल्प चुना",
+    "Client stopped it partway": "क्लाइंट ने बीच में रोका",
+    "Client’s here": "क्लाइंट आ गए",
+    "Client’s own supplies": "क्लाइंट का अपना सामान",
+    "Close without fitting": "बिना फ़िट किए बंद करें",
+    "Close without fitting?": "बिना फ़िट किए बंद करें?",
+    "Closed": "बंद",
+    "Closed out": "बंद हो गया",
+    "Closing sends the payment link, or ends a declined visit as a free consultation.": "बंद करने पर पेमेंट लिंक जाएगा, या मना करने पर विज़िट फ़्री कंसल्टेशन के तौर पर बंद होगी।",
+    "Codes aren’t going out right now. Try again shortly.": "अभी कोड नहीं जा रहे। थोड़ी देर में फिर से कोशिश करें।",
+    "Compare with before": "पहले वाली से मिलाएँ",
+    "Compare with last visit": "पिछली विज़िट से मिलाएँ",
+    "Consultation and fit checklist": "कंसल्टेशन और फ़िट की चेकलिस्ट",
+    "Consultation checklist": "कंसल्टेशन की चेकलिस्ट",
+    "Consultations": "कंसल्टेशन",
+    "Consumables used": "इस्तेमाल हुआ सामान",
+    "Copied": "कॉपी हो गया",
+    "Copy": "कॉपी करें",
+    "Copy the way in": "अंदर आने का तरीका कॉपी करें",
+    "Correct it": "ठीक करें",
+    "Couldn’t open this screen.": "यह स्क्रीन नहीं खुली।",
+    "Couldn’t send. Try again.": "भेजा नहीं जा सका। फिर से कोशिश करें।",
+    "Cut and styled": "कट और स्टाइल किया",
+    "Days off, asked of ops": "छुट्टी, ऑप्स से माँगी",
+    "Decided against it": "मना कर दिया",
+    "Delete them": "मिटा दें",
+    "Delete this job’s work": "इस जॉब का काम मिटाएँ",
+    "Delete this job’s work?": "इस जॉब का काम मिटाएँ?",
+    "Density": "घनापन",
+    "Details closed": "जानकारी बंद",
+    "Discount code, if the client has one": "डिस्काउंट कोड, अगर क्लाइंट के पास है",
+    "Distance": "दूरी",
+    "Ends as a free consultation. Nothing to pay.": "फ़्री कंसल्टेशन के तौर पर बंद होगी। कोई पेमेंट नहीं।",
+    "Enter your 10-digit mobile number.": "अपना 10 अंकों का मोबाइल नंबर डालें।",
+    "Finasteride": "फ़िनास्टेराइड",
+    "Finish it and send it.": "पूरा करें और भेजें।",
+    "Finish the tasks to continue": "आगे बढ़ने के लिए काम पूरे करें",
+    "First fit checklist": "फ़र्स्ट फ़िट की चेकलिस्ट",
+    "First fits": "फ़र्स्ट फ़िट",
+    "First:": "पहला:",
+    "Fit": "फ़िट",
+    "Fitted": "फ़िट किया",
+    "Free up space by deleting photos or apps you don’t need, then try again.": "जो फ़ोटो या ऐप ज़रूरी नहीं, उन्हें मिटाकर जगह बनाएँ, फिर से कोशिश करें।",
+    "Free visit": "फ़्री विज़िट",
+    "From your kit": "आपकी किट से",
+    "Get to signal today so everything sends.": "आज नेटवर्क में आएँ ताकि सब भेजा जा सके।",
+    "Go to the door and tap again. Still refused? Call ops.": "दरवाज़े पर जाकर फिर से टैप करें। फिर भी न हो तो ऑप्स को कॉल करें।",
+    "Grey (%)": "सफ़ेद बाल (%)",
+    "Hair system cleaned": "हेयर सिस्टम साफ़ किया",
+    "Hair system refitted": "हेयर सिस्टम दोबारा लगाया",
+    "Hair system removed": "हेयर सिस्टम उतारा",
+    "Hair system set and pressed": "हेयर सिस्टम बैठाया और दबाया",
+    "Hairline aligned": "हेयरलाइन सीध में",
+    "Hairline marked, front": "हेयरलाइन का निशान, सामने से",
+    "Hand back expired stock": "एक्सपायर हुआ सामान लौटाएँ",
+    "Handed back. Ops receive it from you.": "लौटा दिया। ऑप्स आपसे ले लेंगे।",
+    "Head (in)": "सिर (इंच)",
+    "History": "इतिहास",
+    "How each visit is done": "हर विज़िट कैसे होती है",
+    "I": "I",
+    "II": "II",
+    "III": "III",
+    "IV": "IV",
+    "In a recall: not to be used": "रिकॉल में है: इस्तेमाल न करें",
+    "In progress": "चल रहा है",
+    "Keep fitting": "फ़िटिंग जारी रखें",
+    "Keep holding…": "दबाए रखें…",
+    "Keep them": "रहने दें",
+    "Kept out of the gallery.": "फ़ोन की गैलरी में सेव नहीं होतीं।",
+    "Last visit’s after photo": "पिछली विज़िट की बाद वाली फ़ोटो",
+    "Less than expected. Why?": "उम्मीद से कम। क्यों?",
+    "Link texted to the client": "क्लाइंट को लिंक SMS किया",
+    "Loading…": "लोड हो रहा है…",
+    "Low": "कम",
+    "Low · hand back the expired stock and ops are told": "कम · एक्सपायर हुआ सामान लौटाएँ, ऑप्स को बताया गया",
+    "Low · more on its way": "कम · और आ रहा है",
+    "Low · ops told": "कम · ऑप्स को बताया",
+    "MM-ESS-0000123-K": "MM-ESS-0000123-K",
+    "Mane Man technician": "Mane Man टेक्नीशियन",
+    "Map": "नक्शा",
+    "Map with a pin at the client’s address": "क्लाइंट के पते पर पिन वाला नक्शा",
+    "Matches the profile": "प्रोफ़ाइल से मेल खाता है",
+    "Measurements taken": "नाप लिया",
+    "Minoxidil": "मिनोक्सिडिल",
+    "Minutes": "मिनट",
+    "Missing": "नहीं मिला",
+    "More time needed": "और समय चाहिए",
+    "Needs signal": "नेटवर्क चाहिए",
+    "New hair system checked against its label": "नया हेयर सिस्टम उसके लेबल से मिलाया",
+    "New, or your number changed? Ask ops to add it.": "नए हैं, या नंबर बदला है? ऑप्स से जुड़वाएँ।",
+    "Next · leave now": "आगे · अभी निकलें",
+    "No alerts in the last 7 days.": "पिछले 7 दिनों में कोई अलर्ट नहीं।",
+    "No camera. Type the label instead.": "कैमरा नहीं है। लेबल टाइप करें।",
+    "No consumables to record. Tell ops if you used any.": "लिखने को कोई सामान नहीं। कुछ इस्तेमाल किया हो तो ऑप्स को बताएँ।",
+    "No earlier visits.": "पहले कोई विज़िट नहीं।",
+    "No hair system is offered for this visit. Speak to ops before you fit anything.": "इस विज़िट के लिए कोई हेयर सिस्टम नहीं है। कुछ भी फ़िट करने से पहले ऑप्स से बात करें।",
+    "No hair system recorded for this client yet.": "इस क्लाइंट का अभी कोई हेयर सिस्टम दर्ज नहीं।",
+    "No jobs today": "आज कोई जॉब नहीं",
+    "No map pin for this address": "इस पते का मैप पिन नहीं है",
+    "No map pin: the check-in records the time only.": "मैप पिन नहीं: चेक इन में सिर्फ़ समय दर्ज होगा।",
+    "No signal, so it isn’t checked. It’s saved as you typed it.": "नेटवर्क नहीं, इसलिए जाँच नहीं हुई। जैसा टाइप किया वैसा सेव है।",
+    "No signal. The wait counts from your tap; closing needs signal.": "नेटवर्क नहीं। इंतज़ार आपके टैप से गिना जाएगा; बंद करने के लिए नेटवर्क चाहिए।",
+    "No signal. Try again.": "नेटवर्क नहीं। फिर से कोशिश करें।",
+    "No signal. You’re still signed in. Try again with signal.": "नेटवर्क नहीं। आप अभी साइन इन हैं। नेटवर्क मिलने पर फिर से कोशिश करें।",
+    "No visits closed yet this month.": "इस महीने अभी कोई विज़िट बंद नहीं हुई।",
+    "None in your kit": "आपकी किट में नहीं",
+    "None sent": "कुछ नहीं भेजा",
+    "None used": "कुछ इस्तेमाल नहीं हुआ",
+    "None yet": "अभी कोई नहीं",
+    "Not home": "घर पर नहीं",
+    "Not in your kit. Check the label, or close with Can’t fit today.": "आपकी किट में नहीं है। लेबल जाँचें, या ‘आज फ़िट नहीं हो सकता’ से बंद करें।",
+    "Not in your kit: book the first fit": "आपकी किट में नहीं: फ़र्स्ट फ़िट बुक करें",
+    "Not measured": "नाप नहीं लिया",
+    "Not recorded": "दर्ज नहीं",
+    "Not saved. Try again with signal.": "सेव नहीं हुआ। नेटवर्क मिलने पर फिर से कोशिश करें।",
+    "Not suited to a hair system": "हेयर सिस्टम उनके लिए सही नहीं",
+    "Not the hair system this fit is for. Check with ops before you fit.": "यह इस फ़िट वाला हेयर सिस्टम नहीं है। फ़िट करने से पहले ऑप्स से पूछें।",
+    "Note for ops (optional)": "ऑप्स के लिए नोट (ज़रूरी नहीं)",
+    "Nothing asked for.": "कुछ नहीं माँगा।",
+    "Nothing booked needs consumables.": "बुक किसी जॉब में सामान नहीं चाहिए।",
+    "Nothing is fitted today. Nothing to pay now.": "आज कुछ फ़िट नहीं होगा। अभी कोई पेमेंट नहीं।",
+    "Nothing is fitted. The visit ends as a free consultation.": "कुछ फ़िट नहीं हुआ। विज़िट फ़्री कंसल्टेशन के तौर पर बंद होगी।",
+    "Nothing more can be sent for it.": "इसके लिए अब और कुछ नहीं भेजा जा सकता।",
+    "Nothing on sale yet.": "अभी बिक्री के लिए कुछ नहीं।",
+    "Nothing used. Why?": "कुछ इस्तेमाल नहीं हुआ। क्यों?",
+    "Nothing’s short now.": "अभी कुछ कम नहीं।",
+    "Notifications are blocked for this app in the phone’s settings.": "फ़ोन की सेटिंग्स में इस ऐप की नोटिफ़िकेशन बंद हैं।",
+    "Offline": "ऑफ़लाइन",
+    "Old hair system removed": "पुराना हेयर सिस्टम उतारा",
+    "Opening the camera…": "कैमरा खुल रहा है…",
+    "Ops are told nobody was home. Close only if no one has answered.": "ऑप्स को बताया जाएगा कि घर पर कोई नहीं था। तभी बंद करें जब किसी ने जवाब न दिया हो।",
+    "Ops cancelled this visit.": "ऑप्स ने यह विज़िट रद्द की।",
+    "Ops cancelled this visit. What you recorded is kept on this phone, in Pending uploads.": "ऑप्स ने यह विज़िट रद्द की। आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।",
+    "Ops gave this visit to another technician.": "ऑप्स ने यह विज़िट किसी और टेक्नीशियन को दी।",
+    "Ops have stopped sign-in on your number. Ask them to let you back in.": "ऑप्स ने आपके नंबर पर साइन इन रोका है। उनसे दोबारा चालू करवाएँ।",
+    "Ops know you’re safe.": "ऑप्स को पता है कि आप सुरक्षित हैं।",
+    "Ops moved this job to another time.": "ऑप्स ने इस जॉब का समय बदल दिया।",
+    "Options and prices": "विकल्प और दाम",
+    "Options and prices shown": "विकल्प और दाम दिखाए",
+    "Options didn’t load.": "विकल्प लोड नहीं हुए।",
+    "Other hair systems": "दूसरे हेयर सिस्टम",
+    "Out": "खत्म",
+    "Paid": "पेमेंट हुआ",
+    "Paid already.": "पेमेंट पहले ही हो चुका है।",
+    "Pays at the visit": "विज़िट पर पेमेंट",
+    "Pick a reason to continue": "आगे बढ़ने के लिए कारण चुनें",
+    "Pick days from today on, the last no earlier than the first.": "आज या उसके बाद के दिन चुनें, आखिरी दिन पहले दिन से पहले न हो।",
+    "Pick from the list": "सूची से चुनें",
+    "Pick why to continue": "आगे बढ़ने के लिए वजह चुनें",
+    "Press and hold for 3 seconds. Let go to cancel.": "3 सेकंड दबाकर रखें। रद्द करने के लिए छोड़ दें।",
+    "Prices didn’t load.": "दाम लोड नहीं हुए।",
+    "Put it right": "ठीक करें",
+    "Razorpay refused it. Ops are told.": "Razorpay ने मना कर दिया। ऑप्स को बताया गया।",
+    "Read before every visit, until ops take it off.": "हर विज़िट से पहले पढ़ें, जब तक ऑप्स इसे हटा न दें।",
+    "Recalled": "रिकॉल हुआ",
+    "Receive all": "सब लें",
+    "Ref": "रेफ़",
+    "Reload": "फिर से लोड करें",
+    "Remedies tried": "आज़माए गए इलाज",
+    "Remove the old hair system": "पुराना हेयर सिस्टम उतारें",
+    "Replacement checklist": "रिप्लेसमेंट की चेकलिस्ट",
+    "Replacement due": "रिप्लेसमेंट का समय",
+    "Replacements": "रिप्लेसमेंट",
+    "Request what’s short": "जो कम है वह मँगवाएँ",
+    "Retake photos": "फ़ोटो फिर से लें",
+    "SOS": "SOS",
+    "SOS didn’t go through. Call ops or 112 now.": "SOS नहीं गया। अभी ऑप्स को या 112 पर कॉल करें।",
+    "Saved on the phone. Sends when you’re back online.": "फ़ोन में सेव है। नेटवर्क आने पर भेजा जाएगा।",
+    "Saved. It goes to ops with the visit’s close.": "सेव हुआ। विज़िट बंद होने पर ऑप्स को जाएगा।",
+    "Say if they’re going ahead": "बताएँ कि वे आगे बढ़ रहे हैं या नहीं",
+    "Scalp and hairline checked": "स्कैल्प और हेयरलाइन जाँची",
+    "Scalp cleaned": "स्कैल्प साफ़ किया",
+    "Scalp not suitable today": "आज स्कैल्प ठीक नहीं",
+    "Scalp under good light": "अच्छी रोशनी में स्कैल्प",
+    "Scan or type each label": "हर लेबल स्कैन या टाइप करें",
+    "Scan the label": "लेबल स्कैन करें",
+    "Sections": "हिस्से",
+    "See what is waiting": "देखें क्या बाकी है",
+    "Send": "भेजें",
+    "Send a new code": "नया कोड भेजें",
+    "Send first": "पहले भेजें",
+    "Send the code": "कोड भेजें",
+    "Sending now": "अभी भेज रहे हैं",
+    "Sending your SOS…": "आपका SOS भेज रहे हैं…",
+    "Sending…": "भेज रहे हैं…",
+    "Sent": "भेजा",
+    "Sent again.": "फिर से भेजा।",
+    "Sent as often as today allows. Ops can send it.": "आज जितनी बार भेज सकते थे, भेज दिया। ऑप्स भेज सकते हैं।",
+    "Sent on WhatsApp from Mane Man’s number.": "Mane Man के नंबर से WhatsApp पर भेजा।",
+    "Sent, not delivered": "भेजा, पहुँचा नहीं",
+    "Sent.": "भेज दिया।",
+    "Service checklist": "सर्विस की चेकलिस्ट",
+    "Service visits": "सर्विस विज़िट",
+    "Sign in here once, then use the home-screen app. Anything waiting in the browser still sends.": "यहाँ एक बार साइन इन करें, फिर होम स्क्रीन वाला ऐप इस्तेमाल करें। ब्राउज़र में जो बाकी है वह फिर भी जाएगा।",
+    "Sign out anyway": "फिर भी साइन आउट करें",
+    "Sign out now and they’re lost.": "अभी साइन आउट किया तो ये खो जाएँगे।",
+    "Sign out of this phone?": "इस फ़ोन से साइन आउट करें?",
+    "Skin conditions and allergies": "स्किन की दिक्कतें और एलर्जी",
+    "Skin reaction or allergy": "स्किन पर रिएक्शन या एलर्जी",
+    "Solvent along the front edge": "आगे के किनारे पर सॉल्वेंट",
+    "Stay signed in": "साइन इन रहें",
+    "Steps arrived out of order. Open the job again.": "स्टेप गलत क्रम में पहुँचे। जॉब फिर से खोलें।",
+    "Still open from yesterday": "कल से खुला है",
+    "Still to come": "अभी बाकी",
+    "Stop scanning": "स्कैन बंद करें",
+    "Supplier lot": "सप्लायर लॉट",
+    "Take photo": "फ़ोटो लें",
+    "Taken": "ली गई",
+    "Tape placement on the base": "बेस पर टेप कहाँ लगे",
+    "Technician": "टेक्नीशियन",
+    "Technician sign in": "टेक्नीशियन साइन इन",
+    "Template checked against the head": "टेम्पलेट सिर पर जाँचा",
+    "Template on the head, front": "सिर पर टेम्पलेट, सामने से",
+    "That code didn’t match.": "कोड मेल नहीं खाया।",
+    "That code no longer works. Send the code again.": "यह कोड अब नहीं चलेगा। फिर से कोड भेजें।",
+    "That didn’t go through. Try again.": "नहीं हुआ। फिर से कोशिश करें।",
+    "That didn’t reach ops. Call them.": "ऑप्स तक नहीं पहुँचा। उन्हें कॉल करें।",
+    "That didn’t reach ops. Try again.": "ऑप्स तक नहीं पहुँचा। फिर से कोशिश करें।",
+    "That didn’t take. Try again.": "नहीं हुआ। फिर से कोशिश करें।",
+    "That hair system has expired": "वह हेयर सिस्टम एक्सपायर हो चुका है",
+    "That hair system isn’t this client’s": "वह हेयर सिस्टम इस क्लाइंट का नहीं है",
+    "That hair system isn’t this client’s.": "वह हेयर सिस्टम इस क्लाइंट का नहीं है।",
+    "That label isn’t in your kit": "यह लेबल आपकी किट में नहीं है",
+    "That label isn’t on this transfer.": "यह लेबल इस खेप में नहीं है।",
+    "That photo came out blank. Take it again.": "फ़ोटो खाली आई। फिर से लें।",
+    "That photo didn’t save. Take it again.": "फ़ोटो सेव नहीं हुई। फिर से लें।",
+    "That product isn’t offered that day.": "उस दिन यह प्रोडक्ट नहीं मिलता।",
+    "That reason wasn’t accepted.": "यह कारण नहीं लिया गया।",
+    "The camera wouldn’t open.": "कैमरा नहीं खुला।",
+    "The camera’s view of the door": "कैमरे में दरवाज़ा",
+    "The client’s choice": "क्लाइंट की पसंद",
+    "The client’s history didn’t load.": "क्लाइंट का इतिहास लोड नहीं हुआ।",
+    "The day, by the hour": "दिन, घंटे के हिसाब से",
+    "The day’s jobs didn’t load.": "दिन के जॉब लोड नहीं हुए।",
+    "The hair system": "हेयर सिस्टम",
+    "The hair system that came off": "जो हेयर सिस्टम उतारा",
+    "The hair system’s label wasn’t accepted.": "हेयर सिस्टम का लेबल नहीं लिया गया।",
+    "The job closes as partly done, and ops book the refit with the right hair system.": "जॉब आधा हुआ के तौर पर बंद होगा, और ऑप्स सही हेयर सिस्टम के साथ दोबारा फ़िट बुक करेंगे।",
+    "The label of the hair system that came off": "उतारे गए हेयर सिस्टम का लेबल",
+    "The label of the hair system that came off wasn’t accepted.": "उतारे गए हेयर सिस्टम का लेबल नहीं लिया गया।",
+    "The last 7 days": "पिछले 7 दिन",
+    "The new hair system’s label": "नए हेयर सिस्टम का लेबल",
+    "The one not scanned is": "जो एक स्कैन नहीं हुआ",
+    "The payment link has gone, so the code can no longer change.": "पेमेंट लिंक जा चुका है, इसलिए कोड अब नहीं बदल सकता।",
+    "The photos wouldn’t upload.": "फ़ोटो अपलोड नहीं हुईं।",
+    "The same five shots": "वही पाँच फ़ोटो",
+    "The timer stops. Nothing is charged.": "टाइमर रुक जाएगा। कोई चार्ज नहीं लगेगा।",
+    "The transplant’s year": "ट्रांसप्लांट का साल",
+    "The wait is over.": "इंतज़ार पूरा हुआ।",
+    "The wait isn’t over yet. Try again in a minute.": "इंतज़ार अभी पूरा नहीं हुआ। एक मिनट में फिर से कोशिश करें।",
+    "Their looks": "उनके लुक",
+    "They never reach us. Tell ops if the client should hear about it.": "ये हम तक कभी नहीं पहुँचेंगे। क्लाइंट को बताना हो तो ऑप्स को बताएँ।",
+    "This couldn’t reach us after several tries. Send it again.": "कई बार कोशिश के बाद भी हम तक नहीं पहुँचा। फिर से भेजें।",
+    "This day didn’t load.": "यह दिन लोड नहीं हुआ।",
+    "This day didn’t load. It shows once there’s signal.": "यह दिन लोड नहीं हुआ। नेटवर्क आने पर दिखेगा।",
+    "This goes to ops.": "यह ऑप्स को जाएगा।",
+    "This hair system has expired. Hand it in and use another.": "यह हेयर सिस्टम एक्सपायर हो चुका है। इसे लौटाएँ और दूसरा इस्तेमाल करें।",
+    "This job changed": "यह जॉब बदल गया",
+    "This job changed while the phone was offline.": "फ़ोन ऑफ़लाइन था तब यह जॉब बदल गया।",
+    "This job is closed.": "यह जॉब बंद है।",
+    "This job is no longer on your list.": "यह जॉब अब आपकी सूची में नहीं है।",
+    "This job is no longer on your schedule.": "यह जॉब अब आपके शेड्यूल में नहीं है।",
+    "This job is on another day. Arrive and start it on the day.": "यह जॉब किसी और दिन का है। उसी दिन पहुँचकर शुरू करें।",
+    "This job is someone else’s now.": "यह जॉब अब किसी और का है।",
+    "This job is tomorrow. Arrive and start it on the day.": "यह जॉब कल है। उसी दिन पहुँचकर शुरू करें।",
+    "This job isn’t closed yet.": "यह जॉब अभी बंद नहीं हुआ।",
+    "This job isn’t on your list.": "यह जॉब आपकी सूची में नहीं है।",
+    "This job isn’t today’s. Arrive and start it on its day.": "यह जॉब आज का नहीं है। उसी दिन पहुँचकर शुरू करें।",
+    "This job was cancelled while the phone was offline.": "फ़ोन ऑफ़लाइन था तब यह जॉब रद्द हो गया।",
+    "This job was started, so it can’t close as a no-show.": "यह जॉब शुरू हो चुका है, इसलिए नो-शो के तौर पर बंद नहीं हो सकता।",
+    "This job’s card didn’t load.": "इस जॉब का कार्ड लोड नहीं हुआ।",
+    "This job’s checklist changed. Open the job again.": "इस जॉब की चेकलिस्ट बदल गई। जॉब फिर से खोलें।",
+    "This number can’t be texted. Ops will send it.": "इस नंबर पर SMS नहीं जा सकता। ऑप्स भेजेंगे।",
+    "This phone is no longer signed in. Ask ops, then sign in again.": "यह फ़ोन अब साइन इन नहीं है। ऑप्स से पूछें, फिर दोबारा साइन इन करें।",
+    "This phone won’t give its position. Check its permissions, then tap again.": "यह फ़ोन अपनी लोकेशन नहीं दे रहा। इजाज़त जाँचें, फिर से टैप करें।",
+    "This phone’s storage is full": "इस फ़ोन की मेमोरी भरी है",
+    "This task isn’t in the guide any more.": "यह काम अब गाइड में नहीं है।",
+    "This visit already has a code.": "इस विज़िट पर पहले से कोड है।",
+    "This visit is closed or called off.": "यह विज़िट बंद या रद्द हो चुकी है।",
+    "This visit isn’t yours any more.": "यह विज़िट अब आपकी नहीं है।",
+    "This visit was closed. What you recorded is kept on this phone, in Pending uploads.": "यह विज़िट बंद हो गई। आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।",
+    "Tick all: everything was done": "सब पर टिक करें: सब हो गया",
+    "To do": "करना है",
+    "Today’s jobs and cards are on the phone.": "आज के जॉब और कार्ड फ़ोन में हैं।",
+    "Too early for this job. Tap again from the time on its card.": "इस जॉब के लिए अभी जल्दी है। कार्ड पर लिखे समय से फिर टैप करें।",
+    "Too many codes for this number today. Ask ops.": "इस नंबर पर आज बहुत कोड भेजे गए। ऑप्स से पूछें।",
+    "Too many codes tried. Try again tomorrow.": "बहुत बार कोड डाला गया। कल फिर से कोशिश करें।",
+    "Torch": "टॉर्च",
+    "Transplant": "ट्रांसप्लांट",
+    "Try again": "फिर से कोशिश करें",
+    "Turn on": "चालू करें",
+    "Turn on camera access for Mane Man in the phone’s settings, then try again.": "फ़ोन की सेटिंग्स में Mane Man के लिए कैमरा चालू करें, फिर से कोशिश करें।",
+    "Unsent work could be lost": "न भेजा गया काम खो सकता है",
+    "Update": "अपडेट करें",
+    "Uploading…": "अपलोड हो रहा है…",
+    "Use first": "पहले इस्तेमाल करें",
+    "Used": "इस्तेमाल हुआ",
+    "V": "V",
+    "VI": "VI",
+    "VII": "VII",
+    "Visit plan": "विज़िट का प्लान",
+    "Waiting for the label check": "लेबल जाँच का इंतज़ार",
+    "Wave": "लहर",
+    "We couldn’t measure how far you are from the address.": "पते से आपकी दूरी नहीं नापी जा सकी।",
+    "We couldn’t record the label you gave. Correct it and tap Next.": "आपका दिया लेबल दर्ज नहीं हो सका। ठीक करें और आगे दबाएँ।",
+    "We couldn’t record this set. Tap Done to send it again.": "यह सेट दर्ज नहीं हो सका। फिर से भेजने के लिए हो गया दबाएँ।",
+    "We couldn’t record this step as it was. Correct it and tap Next.": "यह स्टेप जैसा था वैसा दर्ज नहीं हो सका। ठीक करें और आगे दबाएँ।",
+    "We couldn’t record this. Tap Retry, or call ops.": "यह दर्ज नहीं हो सका। फिर से भेजें दबाएँ, या ऑप्स को कॉल करें।",
+    "WhatsApp ops": "ऑप्स को WhatsApp",
+    "Why": "क्यों",
+    "Why it failed, if it did": "अगर नहीं हुआ, तो क्यों",
+    "Why not?": "क्यों नहीं?",
+    "Your account is switched off. Ask ops to switch it back on, then sign in.": "आपका अकाउंट बंद है। ऑप्स से चालू करवाएँ, फिर साइन इन करें।",
+    "Your account is switched off. Unsent work stays on this phone for 7 days and sends once you’re switched back on and sign in.": "आपका अकाउंट बंद है। न भेजा गया काम 7 दिन इस फ़ोन में रहेगा, और अकाउंट चालू होकर साइन इन करने पर चला जाएगा।",
+    "Your incentives didn’t load.": "आपके इंसेंटिव लोड नहीं हुए।",
+    "Your kit didn’t load.": "आपकी किट लोड नहीं हुई।",
+    "Your kit is empty.": "आपकी किट खाली है।",
+    "Your leave didn’t load.": "आपकी छुट्टी लोड नहीं हुई।",
+    "Your quality didn’t load.": "आपकी क्वालिटी लोड नहीं हुई।",
+    "Your week didn’t load.": "आपका हफ़्ता लोड नहीं हुआ।",
+    "You’re offline. Codes need signal.": "आप ऑफ़लाइन हैं। कोड के लिए नेटवर्क चाहिए।",
+    "You’re offline. Reconnect, then sign in.": "आप ऑफ़लाइन हैं। नेटवर्क जोड़ें, फिर साइन इन करें।",
+    "before": "पहले वाली",
+    "close in, sharp focus": "पास से, साफ़ फ़ोकस",
+    "ear in the centre": "कान बीच में",
+    "fit to book": "फ़िट बुक करना है",
+    "free consultation": "फ़्री कंसल्टेशन",
+    "last visit": "पिछली विज़िट",
+    "leave now": "अभी निकलें",
+    "line up the hairline": "हेयरलाइन सीध में रखें",
+    "not sent yet": "अभी नहीं भेजा गया",
+    "ops will add it to your next transfer": "ऑप्स अगली खेप में भेजेंगे",
+    "pays at the visit": "विज़िट पर पेमेंट",
+    "the after photos": "बाद की फ़ोटो",
+    "the before photos": "पहले की फ़ोटो",
+    "the client": "क्लाइंट",
+    "the consumables": "सामान",
+    "the hair system they chose": "उनका चुना हेयर सिस्टम",
+    "the tasks": "काम"
+  },
+  "patterns": [
+    {
+      "match": "^([^·]+) photo sets? and ([^·]+) actions? not sent yet$",
+      "hi": "$1 फ़ोटो सेट और $2 एंट्री अभी नहीं भेजी गईं"
+    },
+    {
+      "match": "^([^·]+) photo sets? not sent yet$",
+      "hi": "$1 फ़ोटो सेट अभी नहीं भेजे गए"
+    },
+    {
+      "match": "^([^·]+) actions? not sent yet$",
+      "hi": "$1 एंट्री अभी नहीं भेजी गईं"
+    },
+    {
+      "match": "^This deletes ([^·]+) photos? and ([^·]+) actions? from this phone\\.$",
+      "hi": "इससे इस फ़ोन से $1 फ़ोटो और $2 एंट्री मिट जाएँगी।"
+    },
+    {
+      "match": "^This deletes ([^·]+) photos? from this phone\\.$",
+      "hi": "इससे इस फ़ोन से $1 फ़ोटो मिट जाएँगी।"
+    },
+    {
+      "match": "^This deletes ([^·]+) actions? from this phone\\.$",
+      "hi": "इससे इस फ़ोन से $1 एंट्री मिट जाएँगी।"
+    },
+    {
+      "match": "^This deletes\\s+from this phone\\.$",
+      "hi": "इससे इस फ़ोन से सब मिट जाएगा।"
+    },
+    {
+      "match": "^([^·]+) actions? waiting$",
+      "hi": "$1 एंट्री बाकी"
+    },
+    {
+      "match": "^([^·]+) photo sets? waiting$",
+      "hi": "$1 फ़ोटो सेट बाकी"
+    },
+    {
+      "match": "^([^·]+) uploads? failed$",
+      "hi": "$1 अपलोड नहीं हुए"
+    },
+    {
+      "match": "^([^·]+) min before you need to set off$",
+      "hi": "निकलने से $1 मिनट पहले"
+    },
+    {
+      "match": "^([^·]+) jobs? today$",
+      "hi": "आज $1 जॉब"
+    },
+    {
+      "match": "^Tomorrow: ([^·]+) jobs? from ([^·]+)$",
+      "hi": "कल: $2 से $1 जॉब"
+    },
+    {
+      "match": "^([^·]+) jobs? from ([^·]+)$",
+      "hi": "$2 से $1 जॉब"
+    },
+    {
+      "match": "^([^·]+) of ([^·]+) scanned$",
+      "hi": "$2 में से $1 स्कैन"
+    },
+    {
+      "match": "^([^·]+) of ([^·]+) taken$",
+      "hi": "$2 में से $1 ली गईं"
+    },
+    {
+      "match": "^([^·]+) of ([^·]+) sent$",
+      "hi": "$2 में से $1 भेजी गईं"
+    },
+    {
+      "match": "^([^·]+) of ([^·]+) done$",
+      "hi": "$2 में से $1 पूरे"
+    },
+    {
+      "match": "^([^·]+) of ([^·]+) fits?$",
+      "hi": "$2 में से $1 फ़िट"
+    },
+    {
+      "match": "^([^·]+) × ([^·]+) in$",
+      "hi": "$1 × $2 इंच"
+    },
+    {
+      "match": "^([^·]+) / ([^·]+)% grey$",
+      "hi": "$1 / $2% सफ़ेद"
+    },
+    {
+      "match": "^([^·,]+), nothing booked$",
+      "hi": "$1, कुछ बुक नहीं"
+    },
+    {
+      "match": "^([^·,]+), didn’t load$",
+      "hi": "$1, लोड नहीं हुआ"
+    },
+    {
+      "match": "^([^·,]+), (\\d+ jobs?)$",
+      "hi": "$1, $2"
+    },
+    {
+      "match": "^([\\d.]+) strips?$",
+      "hi": "$1 स्ट्रिप"
+    },
+    {
+      "match": "^([\\d.]+) sachets?$",
+      "hi": "$1 पाउच"
+    },
+    {
+      "match": "^([\\d.]+) rolls?$",
+      "hi": "$1 रोल"
+    },
+    {
+      "match": "^([\\d.]+) pieces?$",
+      "hi": "$1 पीस"
+    },
+    {
+      "match": "^([^·]+) expected$",
+      "hi": "$1 चाहिए"
+    },
+    {
+      "match": "^One fewer ([^·]+)$",
+      "hi": "$1: एक कम"
+    },
+    {
+      "match": "^One more ([^·]+)$",
+      "hi": "$1: एक ज़्यादा"
+    },
+    {
+      "match": "^([^·]+) less ([^·]+)$",
+      "hi": "$2: $1 कम"
+    },
+    {
+      "match": "^([^·]+) more ([^·]+)$",
+      "hi": "$2: $1 ज़्यादा"
+    },
+    {
+      "match": "^([^·]+) min drive to ([^·]+)$",
+      "hi": "$2 तक $1 मिनट ड्राइव"
+    },
+    {
+      "match": "^([^·]+) min drive$",
+      "hi": "$1 मिनट ड्राइव"
+    },
+    {
+      "match": "^Leave in ([^·]+) min for ([^·]+)$",
+      "hi": "$2 के लिए $1 मिनट में निकलें"
+    },
+    {
+      "match": "^On my way, ([^·]+) min$",
+      "hi": "रास्ते में हूँ, $1 मिनट"
+    },
+    {
+      "match": "^Running ([^·]+) min late$",
+      "hi": "$1 मिनट देर से पहुँचूँगा"
+    },
+    {
+      "match": "^of ([^·]+) min$",
+      "hi": "$1 मिनट में से"
+    },
+    {
+      "match": "^New code in ([^·]+) s$",
+      "hi": "$1 सेकंड में नया कोड"
+    },
+    {
+      "match": "^That code didn’t match\\. ([^·]+) tr(?:y|ies) left\\.$",
+      "hi": "कोड मेल नहीं खाया। $1 कोशिश बाकी।"
+    },
+    {
+      "match": "^Hand back ([^·]+) hair systems?$",
+      "hi": "$1 हेयर सिस्टम लौटाएँ"
+    },
+    {
+      "match": "^Receive ([^·]+) scanned$",
+      "hi": "$1 स्कैन किए हुए लें"
+    },
+    {
+      "match": "^The ([^·]+) not scanned are$",
+      "hi": "जो $1 स्कैन नहीं हुए"
+    },
+    {
+      "match": "^Replacement, every ([^·]+) months?$",
+      "hi": "रिप्लेसमेंट, हर $1 महीने"
+    },
+    {
+      "match": "^Service visit, every ([^·]+) days?$",
+      "hi": "सर्विस विज़िट, हर $1 दिन"
+    },
+    {
+      "match": "^Check in within ([^·]+) m of the door\\.$",
+      "hi": "दरवाज़े से $1 मी के अंदर चेक इन करें।"
+    },
+    {
+      "match": "^Alerts, ([^·]+) new$",
+      "hi": "अलर्ट, $1 नए"
+    },
+    {
+      "match": "^([^·]+)% of visits$",
+      "hi": "$1% विज़िट"
+    },
+    {
+      "match": "^([^·]+) h ([^·]+) min$",
+      "hi": "$1 घंटे $2 मिनट"
+    },
+    {
+      "match": "^([^·]+) of (\\d+)$",
+      "hi": "$2 में से $1"
+    },
+    {
+      "match": "^Code sent to ([^·]+)$",
+      "hi": "कोड $1 पर भेजा गया"
+    },
+    {
+      "match": "^([^·]*\\d[^·]*) to ([^·]*\\d[^·]*)$",
+      "hi": "$1 से $2"
+    },
+    {
+      "match": "^Resend in (\\d+:\\d\\d)$",
+      "hi": "$1 में दोबारा भेजें"
+    },
+    {
+      "match": "^Under ([^·]+) min$",
+      "hi": "$1 मिनट से कम"
+    },
+    {
+      "match": "^(\\d[\\d:]* ?(?:am|pm)) today$",
+      "hi": "आज $1"
+    },
+    {
+      "match": "^(\\d[\\d:]* ?(?:am|pm)) tomorrow$",
+      "hi": "कल $1"
+    },
+    {
+      "match": "^(\\d[\\d:]* ?(?:am|pm)) on (.+)$",
+      "hi": "$2, $1"
+    },
+    {
+      "match": "^Name and address from ([^·]+)\\.$",
+      "hi": "नाम और पता $1 से दिखेगा।"
+    },
+    {
+      "match": "^Open since ([^·]+)\\. Go back and open the job again\\.$",
+      "hi": "$1 से खुला है। वापस जाकर जॉब फिर से खोलें।"
+    },
+    {
+      "match": "^Ops moved this job to ([^·]+) on ([^·]+) at ([^·]+)\\.$",
+      "hi": "ऑप्स ने यह जॉब $2 को $3 पर $1 को दिया।"
+    },
+    {
+      "match": "^Ops moved this job to ([^·]+) at (\\d[\\d:]* ?(?:am|pm))\\.$",
+      "hi": "ऑप्स ने यह जॉब $2 पर $1 को दिया।"
+    },
+    {
+      "match": "^Ops moved this job to (\\d[^·]* ?(?:am|pm)(?: today| tomorrow| on [^·]+)?)\\.$",
+      "hi": "ऑप्स ने यह जॉब $1 पर कर दिया।"
+    },
+    {
+      "match": "^Ops moved this job to ([^·]+)\\.$",
+      "hi": "ऑप्स ने यह जॉब $1 को दिया।"
+    },
+    {
+      "match": "^fitted ([^·]+)$",
+      "hi": "$1 को फ़िट किया"
+    },
+    {
+      "match": "^Reschedule asked ([^·]+)$",
+      "hi": "समय बदलने को कहा $1"
+    },
+    {
+      "match": "^From your kit: ([^·]+) · lot ([^·]+)\\.$",
+      "hi": "आपकी किट से: $1 · लॉट $2।"
+    },
+    {
+      "match": "^From your kit: ([^·]+)\\.$",
+      "hi": "आपकी किट से: $1।"
+    },
+    {
+      "match": "^From ([^·]+)$",
+      "hi": "$1 से"
+    },
+    {
+      "match": "^sent ([^·]+)$",
+      "hi": "$1 को भेजा"
+    },
+    {
+      "match": "^([^·]+) doesn’t take WhatsApp updates\\. Call instead\\.$",
+      "hi": "$1 WhatsApp पर अपडेट नहीं लेते। कॉल करें।"
+    },
+    {
+      "match": "^([^·]+) is at the door$",
+      "hi": "$1 दरवाज़े पर हैं"
+    },
+    {
+      "match": "^([^·]+) is in your kit$",
+      "hi": "$1 आपकी किट में है"
+    },
+    {
+      "match": "^([^·]+) in your kit\\. Ops will send more\\.$",
+      "hi": "किट में $1। ऑप्स और भेजेंगे।"
+    },
+    {
+      "match": "^([^·]+) in your kit$",
+      "hi": "किट में $1"
+    },
+    {
+      "match": "^None in your kit\\. Ops will send more\\.$",
+      "hi": "आपकी किट में नहीं। ऑप्स और भेजेंगे।"
+    },
+    {
+      "match": "^([^·]+) is out of range$",
+      "hi": "$1 सीमा से बाहर है"
+    },
+    {
+      "match": "^([^·]+): cancelled$",
+      "hi": "$1: रद्द"
+    },
+    {
+      "match": "^([^·]+): closed$",
+      "hi": "$1: बंद"
+    },
+    {
+      "match": "^([^·]+): given to another technician$",
+      "hi": "$1: किसी और टेक्नीशियन को दिया"
+    },
+    {
+      "match": "^([^·]+): moved to ([^·]+)$",
+      "hi": "$1: $2 पर गया"
+    },
+    {
+      "match": "^([^·]+) went to another technician$",
+      "hi": "$1 अब किसी और टेक्नीशियन के पास"
+    },
+    {
+      "match": "^([^·]+) was cancelled$",
+      "hi": "$1 रद्द हुई"
+    },
+    {
+      "match": "^([^·]+) moved to ([^·]+)$",
+      "hi": "$1 का समय $2 हुआ"
+    },
+    {
+      "match": "^the (\\d[\\d:]* ?(?:am|pm)) (.+)$",
+      "hi": "$1 की $2"
+    },
+    {
+      "match": "^for the ([^·]+) job, ([^·]+)$",
+      "hi": "$1 वाले जॉब के लिए, $2"
+    },
+    {
+      "match": "^for the ([^·]+) job$",
+      "hi": "$1 वाले जॉब के लिए"
+    },
+    {
+      "match": "^Running over · finish by ([^·]+) for the ([^·]+) job$",
+      "hi": "देर हो रही है · $2 वाले जॉब के लिए $1 तक पूरा करें"
+    },
+    {
+      "match": "^At ([^·]+), the next day’s jobs$",
+      "hi": "$1, अगले दिन के जॉब"
+    },
+    {
+      "match": "^Add ([^·]+)$",
+      "hi": "$1 जोड़ें"
+    },
+    {
+      "match": "^After, ([^·]+)$",
+      "hi": "बाद की फ़ोटो, $1"
+    },
+    {
+      "match": "^Before, ([^·]+)$",
+      "hi": "पहले की फ़ोटो, $1"
+    },
+    {
+      "match": "^Last visit, ([^·]+)$",
+      "hi": "पिछली विज़िट, $1"
+    },
+    {
+      "match": "^Check-in opens at ([^·]+)\\.$",
+      "hi": "चेक इन $1 पर खुलेगा।"
+    },
+    {
+      "match": "^Closing sends the client a payment link for ([^·]+)\\.$",
+      "hi": "बंद करने पर क्लाइंट को $1 का पेमेंट लिंक जाएगा।"
+    },
+    {
+      "match": "^Code ([^·]+) applied at booking\\. The payment link will take it off\\.$",
+      "hi": "कोड $1 बुकिंग पर लगा था। पेमेंट लिंक में छूट मिलेगी।"
+    },
+    {
+      "match": "^Code ([^·]+) applied\\. The payment link will take it off\\.$",
+      "hi": "कोड $1 लग गया। पेमेंट लिंक में छूट मिलेगी।"
+    },
+    {
+      "match": "^Done: ([^·]+)$",
+      "hi": "पूरा: $1"
+    },
+    {
+      "match": "^Ends as a consultation\\. Ops will call to book ([^·]+); it’s paid at that visit\\.$",
+      "hi": "कंसल्टेशन के तौर पर बंद होगी। ऑप्स $1 बुक करने के लिए कॉल करेंगे; पेमेंट उसी विज़िट पर होगा।"
+    },
+    {
+      "match": "^Expired ([^·]+)$",
+      "hi": "$1 को एक्सपायर"
+    },
+    {
+      "match": "^Expires ([^·]+)$",
+      "hi": "$1 को एक्सपायर होगा"
+    },
+    {
+      "match": "^expires ([^·]+)$",
+      "hi": "$1 तक"
+    },
+    {
+      "match": "^First: ([^·]*)$",
+      "hi": "पहला: $1"
+    },
+    {
+      "match": "^Incentives, ([^·]+)$",
+      "hi": "इंसेंटिव, $1"
+    },
+    {
+      "match": "^Look made ([^·]+)$",
+      "hi": "लुक $1 को बना"
+    },
+    {
+      "match": "^Old hair system, removed ([^·]+)$",
+      "hi": "पुराना हेयर सिस्टम, $1 को उतारा"
+    },
+    {
+      "match": "^Open ([^·]+)$",
+      "hi": "$1 खोलें"
+    },
+    {
+      "match": "^Ops gave this visit to ([^·]+)\\. What you recorded is kept on this phone, in Pending uploads\\.$",
+      "hi": "ऑप्स ने यह विज़िट $1 को दी। आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।"
+    },
+    {
+      "match": "^Ops sent back ([^·]+)\\.$",
+      "hi": "ऑप्स ने $1 वापस भेजा।"
+    },
+    {
+      "match": "^Ops sent this back: ([^·]+)$",
+      "hi": "ऑप्स ने यह लौटाया: $1"
+    },
+    {
+      "match": "^Out, ([^·]+) short$",
+      "hi": "खत्म, $1 कम"
+    },
+    {
+      "match": "^Piece fitted: ([^·]+)$",
+      "hi": "फ़िट किया पीस: $1"
+    },
+    {
+      "match": "^Reference photo: ([^·]+)$",
+      "hi": "रेफ़रेंस फ़ोटो: $1"
+    },
+    {
+      "match": "^Requested ([^·]+)$",
+      "hi": "मँगवाया $1"
+    },
+    {
+      "match": "^Sent at ([^·]+)$",
+      "hi": "$1 पर भेजा"
+    },
+    {
+      "match": "^Sent: ([^·]+)$",
+      "hi": "भेजा: $1"
+    },
+    {
+      "match": "^Short ([^·]+)$",
+      "hi": "$1 कम"
+    },
+    {
+      "match": "^Take ([^·]+) again$",
+      "hi": "$1 फिर से लें"
+    },
+    {
+      "match": "^The hair profile says ([^·]+)\\. Check with ops before you fit\\.$",
+      "hi": "हेयर प्रोफ़ाइल में $1 लिखा है। फ़िट करने से पहले ऑप्स से पूछें।"
+    },
+    {
+      "match": "^The ([^·]+) photos wouldn’t upload\\. Take them again\\.$",
+      "hi": "$1 की फ़ोटो अपलोड नहीं हुईं। फिर से लें।"
+    },
+    {
+      "match": "^The ([^·]+) photo wouldn’t upload\\. Take it again\\.$",
+      "hi": "$1 की फ़ोटो अपलोड नहीं हुई। फिर से लें।"
+    },
+    {
+      "match": "^The wait starts at ([^·]+), the booked start\\.$",
+      "hi": "इंतज़ार $1 से गिना जाएगा, जो बुकिंग का समय है।"
+    },
+    {
+      "match": "^Their pick: ([^·]+)\\.$",
+      "hi": "उनकी पसंद: $1।"
+    },
+    {
+      "match": "^Type the ([^·]+) used$",
+      "hi": "इस्तेमाल हुआ $1 टाइप करें"
+    },
+    {
+      "match": "^Waiting since ([^·]+)$",
+      "hi": "$1 से बाकी"
+    },
+    {
+      "match": "^Yesterday, ([^·]+)$",
+      "hi": "कल, $1"
+    },
+    {
+      "match": "^You are ([^·]+) from the address\\.$",
+      "hi": "आप पते से $1 दूर हैं।"
+    },
+    {
+      "match": "^tomorrow ([^·]+)$",
+      "hi": "कल $1"
+    },
+    {
+      "match": "^to ([^·]+)$",
+      "hi": "$1 तक"
+    },
+    {
+      "match": "^([^·]+) labelled$",
+      "hi": "$1 लेबल वाले"
+    },
+    {
+      "match": "^([^·]+) queued$",
+      "hi": "$1 कतार में"
+    },
+    {
+      "match": "^([^·]+) sent$",
+      "hi": "$1 भेजे"
+    },
+    {
+      "match": "^([^·]+) in kit$",
+      "hi": "किट में $1"
+    },
+    {
+      "match": "^([^·]+) to upload$",
+      "hi": "$1 अपलोड बाकी"
+    },
+    {
+      "match": "^([^·]+) waiting$",
+      "hi": "$1 बाकी"
+    },
+    {
+      "match": "^([^·]+) steps?$",
+      "hi": "$1 स्टेप"
+    },
+    {
+      "match": "^([^·]+) jobs?$",
+      "hi": "$1 जॉब"
+    },
+    {
+      "match": "^([^·]+) min$",
+      "hi": "$1 मिनट"
+    },
+    {
+      "match": "^([^·]+) on$",
+      "hi": "$1 चालू"
+    },
+    {
+      "match": "^([^·]+) of ([^·]+)$",
+      "hi": "$2 में से $1"
+    },
+    {
+      "match": "^the ([^·]+)$",
+      "hi": "$1"
+    }
+  ],
+  "dateTokens": {
+    "Jan": "जन",
+    "Feb": "फ़र",
+    "Mar": "मार्च",
+    "January": "जनवरी",
+    "February": "फ़रवरी",
+    "March": "मार्च",
+    "April": "अप्रैल",
+    "June": "जून",
+    "July": "जुलाई",
+    "August": "अगस्त",
+    "September": "सितंबर",
+    "October": "अक्टूबर",
+    "November": "नवंबर",
+    "December": "दिसंबर",
+    "Monday": "सोमवार",
+    "Tuesday": "मंगलवार",
+    "Wednesday": "बुधवार",
+    "Thursday": "गुरुवार",
+    "Friday": "शुक्रवार",
+    "Saturday": "शनिवार",
+    "Sunday": "रविवार"
+  }
+}

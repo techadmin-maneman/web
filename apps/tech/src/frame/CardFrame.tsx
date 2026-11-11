@@ -9,6 +9,7 @@ import { shortDate } from "@maneman/web-kit/dates";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { badgesLower, job as copy } from "../content.ts";
+import { sayNow } from "../lang/index.ts";
 import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { arrival, dayAfter, todayInIndia } from "../lib/when.ts";
@@ -21,7 +22,7 @@ function dayOf(date: string): string | null {
   const today = todayInIndia();
   if (date === today) return null;
   if (date === dayAfter(today)) return copy.tomorrow;
-  return shortDate(date);
+  return sayNow(shortDate(date));
 }
 
 /** "9:30–10 am · service visit · prepaid", the line beneath the name, with the day first when it is not today. */

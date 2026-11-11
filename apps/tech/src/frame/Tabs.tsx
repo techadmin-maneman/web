@@ -7,12 +7,13 @@ import { TabBar, TabBarItem } from "@maneman/ui/TabBar";
 import { tabs as copy } from "../content.ts";
 import type { Route } from "../route.ts";
 
+// Each tab's name by its key, read as the bar is drawn, so it is in the language now.
 const TABS = [
-  { page: "today", to: "/", icon: TAB_ICONS.visits, name: copy.today },
-  { page: "week", to: "/week", icon: GLYPHS.schedule, name: copy.schedule },
-  { page: "kit", to: "/kit", icon: GLYPHS.box, name: copy.kit },
-  { page: "me", to: "/me", icon: GLYPHS.person, name: copy.me },
-] as const satisfies readonly { page: Route["page"]; to: string; icon: string; name: string }[];
+  { page: "today", to: "/", icon: TAB_ICONS.visits, name: "today" },
+  { page: "week", to: "/week", icon: GLYPHS.schedule, name: "schedule" },
+  { page: "kit", to: "/kit", icon: GLYPHS.box, name: "kit" },
+  { page: "me", to: "/me", icon: GLYPHS.person, name: "me" },
+] as const satisfies readonly { page: Route["page"]; to: string; icon: string; name: keyof typeof copy }[];
 
 /** The pages a tab opens, under which the bar is drawn; a later job's preview is Schedule's. */
 const TABBED: ReadonlySet<Route["page"]> = new Set([...TABS.map((tab) => tab.page), "preview"]);
@@ -32,7 +33,13 @@ export function Tabs({ page }: { readonly page: Route["page"] }) {
     <div data-look={drawnLight(page) ? "light" : undefined}>
       <TabBar label={copy.label}>
         {TABS.map((tab) => (
-          <TabBarItem key={tab.page} to={tab.to} icon={tab.icon} name={tab.name} current={tab.page === tabOf(page)} />
+          <TabBarItem
+            key={tab.page}
+            to={tab.to}
+            icon={tab.icon}
+            name={copy[tab.name]}
+            current={tab.page === tabOf(page)}
+          />
         ))}
       </TabBar>
     </div>
