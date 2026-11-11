@@ -19,7 +19,7 @@ import { LeaveScreen } from "./me/LeaveScreen.tsx";
 import { MeScreen } from "./me/MeScreen.tsx";
 import { GuideScreen, GuidesScreen, GuideTaskScreen } from "./guides/GuidesScreen.tsx";
 import { AlertsScreen } from "./alerts/AlertsScreen.tsx";
-import { useLanguage } from "./lang/language.ts";
+import { useLanguage } from "./lang/index.ts";
 import { alertsBack, guideBack } from "./lib/opened-from.ts";
 import { PreviewScreen } from "./schedule/PreviewScreen.tsx";
 import { ScheduleScreen } from "./schedule/ScheduleScreen.tsx";
