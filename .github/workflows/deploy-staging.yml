@@ -142,6 +142,7 @@ jobs:
 
       # Cloudflare adds scripts to pages at its edge, which no local run sees. Last, so a failure here leaves every
       # check above run.
+      - uses: ./.github/actions/ubuntu-mirror
       - name: Chromium for the policy check
         run: npx playwright install --with-deps chromium
       - name: No staging page refuses anything under its content security policy
