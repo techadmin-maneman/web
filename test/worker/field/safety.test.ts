@@ -153,15 +153,39 @@ describe("an SOS", () => {
     expect(await (await job.get("/api/tech/sos")).json()).toMatchObject({ sos: { id, safe: true } });
   });
 
-  it("is raised again after the technician said they are safe, and pages ops again", async () => {
-    const job = await checkedIn();
+  it("is raised again after the technician said they are safe, and pages ops again some minutes on", async () => {
+    let now = NOW;
+    const job = await working("service", { now: () => now });
+    await job.post(`/api/tech/jobs/${JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
     const { id } = await (await raise(job)).json<{ id: string }>();
     await job.post(`/api/tech/sos/${id}/safe`, undefined, "safe");
-    const again = await (await raise(job, reading(5))).json<{ id: string; safe: boolean }>();
+    now = new Date(NOW.getTime() + 6 * 60_000);
+    const again = await (await raise(job, reading(6))).json<{ id: string; safe: boolean }>();
     expect(again).toMatchObject({ id, safe: false });
-    expect(
-      job.deps.alerts.filter((alert) => alert.startsWith("SOS from") || alert.includes("] SOS from")),
-    ).toHaveLength(2);
+    expect(job.deps.alerts.filter((alert) => alert.startsWith("SOS from"))).toHaveLength(2);
+  });
+
+  it("pages ops at most once in five minutes, however often it is raised and said safe", async () => {
+    const job = await checkedIn();
+    const { id } = await (await raise(job)).json<{ id: string }>();
+    for (const round of [1, 2, 3, 4, 5]) {
+      await job.post(`/api/tech/sos/${id}/safe`, undefined, `safe-${String(round)}`);
+      await raise(job, reading(round));
+    }
+    expect(job.deps.alerts.filter((alert) => alert.startsWith("SOS from"))).toHaveLength(1);
+    expect(job.deps.alerts.filter((alert) => alert.includes("says they are safe"))).toHaveLength(1);
+    // The banner says where it stands all the same: raised again, not safe.
+    expect(await (await job.get("/api/tech/sos")).json()).toMatchObject({ sos: { id, safe: false } });
+  });
+
+  it("takes a closer reading on the open SOS without raising it again", async () => {
+    const job = await checkedIn();
+    const { id } = await (await raise(job, null)).json<{ id: string }>();
+    await job.post(`/api/tech/sos/${id}/safe`, undefined, "safe");
+    expect((await job.post(`/api/tech/sos/${id}/position`, reading(1, 28.43), "closer")).status).toBe(204);
+    const { open } = await (await job.opsGet("/api/sos")).json<{ open: unknown[] }>();
+    expect(open[0]).toMatchObject({ position: { lat: 28.43 }, safe_at: NOW.toISOString() });
+    expect(job.deps.alerts.filter((alert) => alert.startsWith("SOS from"))).toHaveLength(1);
   });
 
   it("names only the visit under way: one of another day, or before its check-in, is no part of it", async () => {

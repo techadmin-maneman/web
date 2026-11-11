@@ -136,7 +136,7 @@ export interface Fake {
   readonly positions: unknown[];
   /** The technician's SOS not yet handled; none unless the phone raised one or a test gives one. */
   sos: { readonly id: string; readonly sent_at: string; readonly safe: boolean } | null;
-  /** Set to refuse an SOS, as with no signal the phone's raise never reaches the API. */
+  /** Set to refuse an SOS and its "I'm safe", as with no signal neither reaches the API. */
   sosRefused: boolean;
   /** True for a past visit whose card has locked again, the day after it: no client, no address. */
   relocked: boolean;
@@ -441,7 +441,12 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         }
         return reply(route, 201, fake.sos);
       }
+      if (fake.sos !== null && path === `/api/tech/sos/${fake.sos.id}/position`) {
+        fake.positions.push(route.request().postDataJSON() as unknown);
+        return reply(route, 204);
+      }
       if (fake.sos !== null && path === `/api/tech/sos/${fake.sos.id}/safe`) {
+        if (fake.sosRefused) return route.abort("internetdisconnected");
         fake.sos = { ...fake.sos, safe: true };
         return reply(route, 204);
       }

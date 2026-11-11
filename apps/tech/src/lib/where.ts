@@ -22,11 +22,12 @@ export function readPosition(how: "quick" | "close" = "close"): Promise<Position
     }
     navigator.geolocation.getCurrentPosition(
       (fix) => {
+        // When the phone took the fix, which a quick reading may have kept a while, on the API's clock.
         resolve({
           lat: fix.coords.latitude,
           lng: fix.coords.longitude,
           accuracy_m: fix.coords.accuracy,
-          at: new Date(apiNow()).toISOString(),
+          at: new Date(fix.timestamp + (apiNow() - Date.now())).toISOString(),
         });
       },
       () => {

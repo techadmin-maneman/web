@@ -212,6 +212,9 @@ export const api = {
   /** Raises an SOS, with the visit and where they are: ops are paged at once. Asked straight, never queued. */
   sos: (jobId: string | null, position: Position | null) =>
     client.post("/api/tech/sos", { body: { job_id: jobId, position }, patience: PATIENCE_MS.write }),
+  /** A closer reading of where the technician is, for their open SOS; it pages nobody. */
+  sosPosition: (id: string, position: Position) =>
+    client.post("/api/tech/sos/{id}/position", { path: { id }, body: position, patience: PATIENCE_MS.write }),
   /** The technician says they are safe after their SOS. */
   sosSafe: (id: string) => client.post("/api/tech/sos/{id}/safe", { path: { id }, patience: PATIENCE_MS.write }),
 

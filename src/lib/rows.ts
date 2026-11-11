@@ -1332,6 +1332,8 @@ export interface Rows {
     readonly position_at: string | null;
     readonly sent_at: string;
     readonly safe_at: string | null;
+    readonly paged_at: string | null;
+    readonly safe_paged_at: string | null;
     readonly handled_at: string | null;
     readonly handled_by: string | null;
   };

@@ -16,7 +16,7 @@ import { api } from "../api.ts";
 import { ops, safety as copy } from "../content.ts";
 import { buzz } from "../lib/haptics.ts";
 import { checkedIn, closed } from "../lib/progress.ts";
-import { useOutbox } from "../lib/useOutbox.ts";
+import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { clock } from "../lib/when.ts";
 import { readPosition } from "../lib/where.ts";
 import { keptJob } from "../store/jobs.ts";
@@ -28,31 +28,67 @@ type SosState =
   | { readonly state: "sent"; readonly at: string; readonly safe: boolean }
   | { readonly state: "failed" };
 
-/** Whether the phone is sharing where it is: the visit checked in and not closed, by what landed or is on its way. */
+/**
+ * Whether the phone is sharing where it is: the visit checked in and not closed, by what landed or is on its way. Read
+ * as the sheet opens, and again as the outbox changes.
+ */
 function useSharing(jobId: string | null): boolean {
-  const { events } = useOutbox();
+  const waiting = useOutbox();
   const read = useCallback(() => (jobId === null ? Promise.resolve(null) : keptJob(jobId).catch(() => null)), [jobId]);
-  const job = valueOr(useAsync(read)[0], null);
-  return job !== null && checkedIn(job, events) && !closed(job, events);
+  const job = valueOr(useAsync(read, signatureOf(waiting))[0], null);
+  return job !== null && checkedIn(job, waiting.events) && !closed(job, waiting.events);
+}
+
+/** The SOS sent: when, and "I'm safe" until they say it, with a word where that did not reach ops. */
+function Sent({
+  sent,
+  safeFailed,
+  onSafe,
+}: {
+  readonly sent: { readonly at: string; readonly safe: boolean };
+  readonly safeFailed: boolean;
+  readonly onSafe: () => void;
+}) {
+  return (
+    <>
+      <div className={styles.sent} role="status">
+        <p className={styles.sentAt}>{copy.sent(sent.at)}</p>
+        <p className={styles.note}>{sent.safe ? copy.safeSaid : copy.sentBody}</p>
+        {!sent.safe && (
+          <Button variant="outline" size="action" onClick={onSafe}>
+            {copy.safe}
+          </Button>
+        )}
+      </div>
+      {!sent.safe && safeFailed && (
+        <p className={styles.failed} role="alert">
+          {copy.safeFailed}
+        </p>
+      )}
+    </>
+  );
 }
 
 function SafetySheet({
+  jobId,
   sos,
   sending,
-  sharing,
+  safeFailed,
   onSos,
   onSafe,
   onClose,
 }: {
+  readonly jobId: string | null;
   readonly sos: SosState;
   readonly sending: boolean;
-  readonly sharing: boolean;
+  readonly safeFailed: boolean;
   readonly onSos: () => void;
   readonly onSafe: () => void;
   readonly onClose: () => void;
 }) {
   const titleId = useId();
   const holdId = useId();
+  const sharing = useSharing(jobId);
   const sent = sos.state === "sent" ? sos : null;
   return (
     <Sheet labelledBy={titleId} rises={false} onClose={onClose}>
@@ -62,17 +98,7 @@ function SafetySheet({
           {copy.title}
         </h2>
         {sharing && <p className={styles.note}>{copy.sharing}</p>}
-        {sent !== null && (
-          <div className={styles.sent} role="status">
-            <p className={styles.sentAt}>{copy.sent(sent.at)}</p>
-            <p className={styles.note}>{sent.safe ? copy.safeSaid : copy.sentBody}</p>
-            {!sent.safe && (
-              <Button variant="outline" size="action" onClick={onSafe}>
-                {copy.safe}
-              </Button>
-            )}
-          </div>
-        )}
+        {sent !== null && <Sent sent={sent} safeFailed={safeFailed} onSafe={onSafe} />}
         {/* Said safe, and in need again: the SOS is there to raise again. */}
         {(sent === null || sent.safe) && (
           <>
@@ -120,6 +146,7 @@ function SafetySheet({
  */
 function useSos(jobId: string | null) {
   const [sos, setSos] = useState<SosState>({ state: "none" });
+  const [safeFailed, setSafeFailed] = useState(false);
   const [sending, once] = useOneAtATime();
   const ownId = useRef<string | null>(null);
   const read = async () => {
@@ -144,16 +171,18 @@ function useSos(jobId: string | null) {
       buzz();
       ownId.current = answer.body.id;
       setSos({ state: "sent", at: clock(answer.body.sent_at), safe: answer.body.safe });
-      // A closer reading, once the phone has it, brings the SOS up to date; it pages nobody again.
-      void readPosition("close").then((close) => (close === null ? undefined : api.sos(jobId, close)));
+      // A closer reading, once the phone has it, brings the SOS up to date; it raises nothing again.
+      const id = answer.body.id;
+      void readPosition("close").then((close) => (close === null ? undefined : api.sosPosition(id, close)));
     });
   const safe = () =>
     once(async () => {
       if (ownId.current === null) return;
       const answer = await api.sosSafe(ownId.current);
+      setSafeFailed(!answer.ok);
       if (answer.ok) setSos((was) => (was.state === "sent" ? { ...was, safe: true } : was));
     });
-  return { sos, sending, read, raise, safe };
+  return { sos, sending, safeFailed, read, raise, safe };
 }
 
 /** The shield in a visit's header, and the sheet it opens. */
@@ -165,8 +194,7 @@ export function Safety({
   readonly className?: string | undefined;
 }) {
   const [open, setOpen] = useState(false);
-  const { sos, sending, read, raise, safe } = useSos(jobId);
-  const sharing = useSharing(jobId);
+  const { sos, sending, safeFailed, read, raise, safe } = useSos(jobId);
   return (
     <>
       <IconButton
@@ -181,9 +209,10 @@ export function Safety({
       />
       {open && (
         <SafetySheet
+          jobId={jobId}
           sos={sos}
           sending={sending}
-          sharing={sharing}
+          safeFailed={safeFailed}
           onSos={() => void raise()}
           onSafe={() => void safe()}
           onClose={() => {

@@ -3,7 +3,7 @@
 // technician deletes it (migration 0207's trigger), and the hourly sweep any left past POSITION_KEPT_HOURS. An SOS is
 // kept until ops mark it handled, its position brought up to date while it is open and blanked once handled.
 
-import { POSITION_KEPT_HOURS } from "../../policy/safety.ts";
+import { PAGE_AGAIN_AFTER_MINUTES, POSITION_KEPT_HOURS } from "../../policy/safety.ts";
 
 /** Where the phone was, and when it read it. */
 export interface Position {
@@ -154,6 +154,41 @@ export async function raiseSos(
   if (open === null) throw new Error("sos_not_kept");
   const changed = (results[0]?.meta.changes ?? 0) + (results[1]?.meta.changes ?? 0);
   return { ...open, fresh: changed > 0 };
+}
+
+/**
+ * Whether ops are to be paged now with the SOS, or with its "I'm safe": once, and again only once
+ * PAGE_AGAIN_AFTER_MINUTES have passed since the last, which it notes. Between, the banner says where it stands.
+ */
+export async function pageDue(
+  db: D1Database,
+  input: { id: string; kind: "sos" | "safe"; now: Date },
+): Promise<boolean> {
+  const before = new Date(input.now.getTime() - PAGE_AGAIN_AFTER_MINUTES * 60_000).toISOString();
+  // Each page's note of when it last went, taken only where the last is old enough.
+  const noted =
+    input.kind === "sos"
+      ? db.prepare(
+          `UPDATE sos_alerts SET paged_at = ?2
+            WHERE id = ?1 AND handled_at IS NULL AND (paged_at IS NULL OR paged_at < ?3)`,
+        )
+      : db.prepare(
+          `UPDATE sos_alerts SET safe_paged_at = ?2
+            WHERE id = ?1 AND handled_at IS NULL AND (safe_paged_at IS NULL OR safe_paged_at < ?3)`,
+        );
+  const due = await noted.bind(input.id, input.now.toISOString(), before).run();
+  return due.meta.changes > 0;
+}
+
+/** A closer reading of where the technician is, for their open SOS; it raises nothing again and pages nobody. */
+export async function updateSosPosition(
+  db: D1Database,
+  input: { id: string; technicianId: string; position: Position },
+): Promise<"updated" | "not_found"> {
+  const open = await openSosOf(db, input.technicianId);
+  if (open?.id !== input.id) return "not_found";
+  await sosPositionStatement(db, input.technicianId, input.position).run();
+  return "updated";
 }
 
 /**

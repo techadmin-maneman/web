@@ -2803,6 +2803,8 @@ Made by `0207_safety.sql`.
 | `position_at` | TEXT | yes |  |  |  |
 | `sent_at` | TEXT | no |  |  |  |
 | `safe_at` | TEXT | yes |  |  | The technician said they are safe. |
+| `paged_at` | TEXT | yes |  |  | When ops were last paged with it, and with its "I'm safe": each pages at most once in a few minutes. |
+| `safe_paged_at` | TEXT | yes |  |  |  |
 | `handled_at` | TEXT | yes |  |  | Ops marked it handled, by their work e-mail. |
 | `handled_by` | TEXT | yes |  |  |  |
 

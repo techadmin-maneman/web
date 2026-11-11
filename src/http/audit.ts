@@ -45,6 +45,7 @@ const UNAUDITED_SESSION_CALLS = new Set([
   "PUT /api/tech/door-photos/:token",
   "POST /api/address/suggestions",
   "POST /api/tech/jobs/:id/position",
+  "POST /api/tech/sos/:id/position",
 ]);
 
 const ID = z.uuid();

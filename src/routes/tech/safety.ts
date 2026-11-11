@@ -7,9 +7,11 @@ import { ALERT_WORDS } from "../../config/alert-words.ts";
 import {
   keepPosition,
   openSosOf,
+  pageDue,
   raiseSos,
   sayingSafe,
   technicianNameOf,
+  updateSosPosition,
   visitUnderWay,
 } from "../../domain/field/safety.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -95,6 +97,18 @@ const sosRoute = techRoute({
   },
 });
 
+const sosPositionRoute = techRoute({
+  method: "post",
+  path: "/api/tech/sos/{id}/position",
+  summary: "A closer reading of where the technician is, for their open SOS: it raises nothing again and pages nobody",
+  request: { params: z.object({ id: z.uuid() }), body: { required: true, ...json(PositionSchema) } },
+  responses: {
+    204: { description: "Kept on the SOS, in place of an earlier reading" },
+    401: errorResponse(UNSIGNED),
+    404: errorResponse("not_found: no SOS of this technician's still open"),
+  },
+});
+
 const safeRoute = techRoute({
   method: "post",
   path: "/api/tech/sos/{id}/safe",
@@ -113,6 +127,7 @@ const safeRoute = techRoute({
  * A page after "I'm safe" closes that word, so a later one is told again.
  */
 async function page(c: Context<AppEnv>, id: string, visit: string | null): Promise<void> {
+  if (!(await pageDue(c.env.DB, { id, kind: "sos", now: c.var.deps.now() }))) return;
   const technician = await technicianNameOf(c.env.DB, technicianOf(c).technicianId);
   await c.var.deps.resolveAlert(`sos_safe:${id}`);
   await c.var.deps.alertOnce({ key: `sos:${id}`, message: ALERT_WORDS.sos({ technician, visit }), link: "/" });
@@ -143,13 +158,22 @@ export function registerTechSafety(app: App): void {
     return c.json({ id: sos.id, sent_at: sos.sent_at, safe: sos.safe }, 201);
   });
 
+  app.openapi(sosPositionRoute, async (c) => {
+    const updated = await updateSosPosition(c.env.DB, {
+      id: c.req.valid("param").id,
+      technicianId: technicianOf(c).technicianId,
+      position: c.req.valid("json"),
+    });
+    return updated === "updated" ? c.body(null, 204) : refuse(c, "not_found");
+  });
+
   app.openapi(safeRoute, async (c) => {
     const id = c.req.valid("param").id;
     const technicianId = technicianOf(c).technicianId;
     const said = await sayingSafe(c.env.DB, { id, technicianId, now: c.var.deps.now() });
     if (said === "not_found") return refuse(c, "not_found");
-    // Ops are told once; the SOS's page is closed, so one raised again pages them again.
-    if (said === "said") {
+    // Ops are told once, and again only some minutes on; the SOS's page is closed, so one raised again is told again.
+    if (said === "said" && (await pageDue(c.env.DB, { id, kind: "safe", now: c.var.deps.now() }))) {
       await c.var.deps.resolveAlert(`sos:${id}`);
       const technician = await technicianNameOf(c.env.DB, technicianId);
       await c.var.deps.alertOnce({ key: `sos_safe:${id}`, message: ALERT_WORDS.sos_safe({ technician }), link: "/" });

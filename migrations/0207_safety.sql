@@ -42,6 +42,9 @@ CREATE TABLE sos_alerts (
   sent_at TEXT NOT NULL,
   -- The technician said they are safe.
   safe_at TEXT,
+  -- When ops were last paged with it, and with its "I'm safe": each pages at most once in a few minutes.
+  paged_at TEXT,
+  safe_paged_at TEXT,
   -- Ops marked it handled, by their work e-mail.
   handled_at TEXT,
   handled_by TEXT

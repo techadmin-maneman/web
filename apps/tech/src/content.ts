@@ -150,6 +150,7 @@ export const safety = {
   sentBody: "Ops will call you now. Your location is shared.",
   safe: "I’m safe",
   safeSaid: "Ops know you’re safe.",
+  safeFailed: "That didn’t reach ops. Call them.",
   call112: "Call 112",
   close: "Close",
   failed: "SOS didn’t go through. Call ops or 112 now.",

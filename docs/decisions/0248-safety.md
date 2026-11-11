@@ -29,8 +29,10 @@ sent every two minutes.
 3. **The SOS is held for `--duration-hold` (three seconds),** with a fill crossing it, and letting go sooner sends
    nothing (`HoldButton` in packages/ui). Under reduced motion no fill is drawn, as it could only jump to full, and the
    line beneath says "Keep holding…" while it is held.
-4. **It goes at once.** The phone sends a quick reading of where it is, from what it knows already, then a closer one
-   once it has it (`POST /api/tech/sos`); the sheet says it is sending meanwhile. It names the visit only where it is
+4. **It goes at once.** The phone sends a quick reading of where it is, from what it knows already (`POST
+/api/tech/sos`); the sheet says it is sending meanwhile. A closer reading follows once the phone has it (`POST
+/api/tech/sos/{id}/position`), which updates the SOS and raises and pages nothing. A reading carries the time the
+   phone took it, not the time it was sent. It names the visit only where it is
    the technician's own and under way, so an SOS from tomorrow's card names no client. It saves `sos_alerts` and pages
    the urgent space at once with the technician's name and the visit (`sos:<id>`, an urgent kind), with a link to the
    console. The page carries no position: the alert log keeps a page for months, and the logs keep it too, longer than
@@ -38,8 +40,10 @@ sent every two minutes.
    open is the same SOS, and pages nobody again. The phone vibrates once it is sent.
 5. **While it is open,** each position the phone sends updates it too. The phone shows "SOS sent <time>" and
    "I'm safe". "I'm safe" records `safe_at` and tells the urgent space once (`sos_safe:<id>`); the SOS stays open. Held
-   again after "I'm safe", it is raised again from that moment and pages ops again. Once ops have handled it, the sheet
-   starts afresh.
+   again after "I'm safe", it is raised again from that moment. Each page, the SOS and its "I'm safe", goes again at most
+   once in five minutes (`PAGE_AGAIN_AFTER_MINUTES`, kept in `paged_at` and `safe_paged_at`), so a session cannot flood
+   the urgent space; between pages the banner says where the SOS stands. If "I'm safe" does not reach the API, the sheet
+   says so and tells them to call ops. Once ops have handled it, the sheet starts afresh.
 6. **National Operations see each open SOS as a red banner on every console screen** (`GET /api/sos`, Operations ·
    View). It names the technician, the visit's client and time, when it was sent, and whether they said they are safe.
    While there is a position it gives a map link and the time of that position, which is where they were, not

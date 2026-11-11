@@ -105,6 +105,16 @@ test("an SOS that cannot go says to call ops or 112 now", async ({ page }) => {
   await expect(page.getByRole("alert").filter({ hasText: safety.failed })).toBeVisible();
 });
 
+test("an I'm safe that cannot go says to call ops, and the SOS stands", async ({ page }) => {
+  const fake = await onAStep(page);
+  await hold(page, 3400);
+  await expect(page.getByText(safety.sentBody)).toBeVisible();
+  fake.sosRefused = true;
+  await page.getByRole("button", { name: safety.safe }).click();
+  await expect(page.getByRole("alert").filter({ hasText: safety.safeFailed })).toBeVisible();
+  await expect(page.getByText(safety.safeSaid)).toHaveCount(0);
+});
+
 test("shares where the phone is every two minutes while a visit is under way", async ({ page }) => {
   await page.clock.install();
   const fake = await fakeTech(page);
