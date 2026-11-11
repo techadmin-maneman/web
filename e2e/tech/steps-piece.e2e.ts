@@ -191,11 +191,15 @@ test.describe("the piece (board B3, step 4)", () => {
 
   test("with no signal says the label is not checked, rather than unknown", async ({ page }) => {
     const fake = await onThePiece(page);
-    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-7193-C");
     fake.online = false;
-    await page.getByRole("button", { name: techCopy.steps.piece.look }).click();
+    // Checked as it reads: no button to press first.
+    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-7193-C");
 
     await expect(page.getByText(techCopy.steps.piece.offline)).toBeVisible();
+    // Tried again once there is signal.
+    fake.online = true;
+    await page.getByRole("button", { name: techCopy.steps.piece.checkAgain }).click();
+    await expect(page.getByText(techCopy.steps.piece.offline)).toHaveCount(0);
     await expect(page.getByText(/We do not know that label/)).toHaveCount(0);
     await expect(stepAction(page)).toBeEnabled();
   });
@@ -203,7 +207,6 @@ test.describe("the piece (board B3, step 4)", () => {
   test("will not record another client’s piece", async ({ page }) => {
     await onThePiece(page);
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-9999-Z");
-    await page.getByRole("button", { name: techCopy.steps.piece.look }).click();
 
     await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.notThisClient })).toBeVisible();
     await expect(page.getByText(techCopy.steps.piece.notThisClientAction, { exact: true })).toBeVisible();

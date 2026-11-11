@@ -732,7 +732,9 @@ export const steps = {
     // The board draws no label typed wrong.
     malformed: "Type it as on the label, like MM-ESS-0000123-K.",
     checkFirst: "Check the label to continue",
-    look: "Check the label",
+    /** A label is checked as soon as it reads; again only once there is signal (docs/prompts/tech-redesign.md). */
+    checking: "Checking the label…",
+    checkAgain: "Check again",
     unknown: "Not in your kit. Check the label, or close with Can’t fit today.",
     notInKitAction: "That label isn’t in your kit",
     uncheckedAction: "Waiting for the label check",

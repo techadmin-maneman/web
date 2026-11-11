@@ -247,16 +247,18 @@ export function LabelField(props: {
           )}
         </Field>
         <ScanButton onCode={props.onCode} />
-        <Button
-          variant="outline"
-          size="control"
-          className={shared.second}
-          disabled={!isLabel(code) || props.looking}
-          busy={props.looking}
-          onClick={props.onLook}
-        >
-          {copy.piece.look}
-        </Button>
+        {/* Checked as it reads, with no step of its own; tried again once a check found no signal. */}
+        {props.looked.state === "offline" && (
+          <Button
+            variant="outline"
+            size="control"
+            className={shared.second}
+            busy={props.looking}
+            onClick={props.onLook}
+          >
+            {copy.piece.checkAgain}
+          </Button>
+        )}
         <Picker pieces={props.pieces} open={props.picking} onToggle={props.onTogglePicking} onPick={props.onPick} />
       </div>
       {props.warning !== null && (
@@ -264,7 +266,12 @@ export function LabelField(props: {
           {props.warning}
         </p>
       )}
-      <LookedNote looked={props.looked} />
+      {props.looking && (
+        <p className={shared.note} role="status">
+          {copy.piece.checking}
+        </p>
+      )}
+      {!props.looking && <LookedNote looked={props.looked} />}
     </>
   );
 }

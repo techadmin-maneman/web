@@ -4,7 +4,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { steps as copy } from "../content.ts";
@@ -37,6 +37,7 @@ import {
   PaidFor,
   type Looked,
 } from "./PieceFields.tsx";
+import { isLabel } from "./label.ts";
 import { pieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -88,19 +89,28 @@ function useLookup(
 ) {
   const [looked, setLooked] = useState<Looked>(NOT_LOOKED);
   const [looking, once] = useOneAtATime();
-  const look = () =>
-    once(async () => {
-      const answer = await api.piece(form.code, job.id);
-      if (answer.ok) {
-        setLooked({ state: "found", found: answer.body });
-        // Another client's piece is refused, and its base and lot are no part of this job.
-        if (!answer.body.belongs_to_this_job) return;
-        if (!given(form.base)) fill.base(answer.body.piece.base ?? "");
-        if (!given(form.lot)) fill.lot(answer.body.piece.supplier_lot ?? "");
-        return;
-      }
-      setLooked(unreachable(answer) ? { state: "offline" } : { state: "unknown" });
-    });
+  const { code, base, lot } = form;
+  const { base: fillBase, lot: fillLot } = fill;
+  const look = useCallback(
+    () =>
+      once(async () => {
+        const answer = await api.piece(code, job.id);
+        if (answer.ok) {
+          setLooked({ state: "found", found: answer.body });
+          // Another client's piece is refused, and its base and lot are no part of this job.
+          if (!answer.body.belongs_to_this_job) return;
+          if (!given(base)) fillBase(answer.body.piece.base ?? "");
+          if (!given(lot)) fillLot(answer.body.piece.supplier_lot ?? "");
+          return;
+        }
+        setLooked(unreachable(answer) ? { state: "offline" } : { state: "unknown" });
+      }),
+    [once, code, job.id, base, lot, fillBase, fillLot],
+  );
+  // A label is checked as soon as it reads, typed whole or scanned (docs/prompts/tech-redesign.md, "Hair system").
+  useEffect(() => {
+    if (isLabel(code) && looked.state === "none") void look();
+  }, [code, looked.state, look]);
   return { looked, setLooked, looking, look } as const;
 }
 
