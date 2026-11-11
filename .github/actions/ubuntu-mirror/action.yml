@@ -1,0 +1,28 @@
+name: Ubuntu's mirror
+description: Ubuntu's Azure mirror held to one address, so apt works while ubuntu.com's DNS fails.
+runs:
+  using: composite
+  steps:
+    # azure.archive.ubuntu.com is a name in ubuntu.com's DNS, pointing at a Traffic Manager name in Microsoft's. When
+    # ubuntu.com's nameservers stop answering (actions/runner-images#15297), apt finds none of its mirrors although the
+    # Azure one is up. The mirror's address is held for the job: as ubuntu.com's DNS gives it where it answers, else as
+    # Microsoft's gives it for the Traffic Manager name; where neither answers, apt keeps its own lookup. To come out
+    # once ubuntu.com's DNS is reliable (docs/open-points.md). deploy-production.yml holds a copy, since a release
+    # checks out a commit that may predate this file.
+    - name: Ubuntu's Azure mirror, held to one address
+      if: runner.environment == 'github-hosted'
+      shell: bash
+      run: |
+        ip=""
+        for name in azure.archive.ubuntu.com ubuntu-archive-asm.trafficmanager.net; do
+          if found=$(getent ahostsv4 "$name"); then
+            ip=$(awk 'NR==1 {print $1}' <<< "$found")
+            break
+          fi
+        done
+        if [ -n "$ip" ]; then
+          echo "$ip azure.archive.ubuntu.com" | sudo tee -a /etc/hosts > /dev/null
+          echo "azure.archive.ubuntu.com held to $ip"
+        else
+          echo "::warning::Ubuntu's Azure mirror could not be found by either name; apt keeps its own lookup"
+        fi
