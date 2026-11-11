@@ -63,10 +63,39 @@ test("an SOS held for three seconds goes with the visit and where the phone is, 
 
   await page.getByRole("button", { name: safety.safe }).click();
   await expect(page.getByText(safety.safeSaid)).toBeVisible();
-  // Opened again, the sheet says where the SOS stands.
+  // Opened again, the sheet says where the SOS stands, and the SOS is there to raise again.
   await page.getByRole("button", { name: safety.close }).click();
   await page.getByRole("button", { name: safety.open }).click();
   await expect(page.getByText(safety.safeSaid)).toBeVisible();
+  await hold(page, 3400);
+  await expect(page.getByText(safety.sentBody)).toBeVisible();
+  expect(fake.writes.filter((write) => write.path === "/api/tech/sos").length).toBeGreaterThanOrEqual(2);
+});
+
+test("starts afresh once ops have handled the SOS", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await atTheDoor(page);
+  startedThrough(fake, "before_photos");
+  fake.sos = { id: "5e000000-0000-4000-8000-000000000001", sent_at: new Date().toISOString(), safe: false };
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+  await page.getByRole("button", { name: safety.open }).click();
+  await expect(page.getByText(safety.sentBody)).toBeVisible();
+
+  fake.sos = null;
+  await page.getByRole("button", { name: safety.close }).click();
+  await page.getByRole("button", { name: safety.open }).click();
+  await expect(sos(page)).toBeVisible();
+  await expect(page.getByText(safety.sentBody)).toHaveCount(0);
+});
+
+test("says ops can see the location only while the visit is under way", async ({ page }) => {
+  await fakeTech(page);
+  await atTheDoor(page);
+  // Before the check-in nothing is shared.
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("button", { name: safety.open }).click();
+  await expect(sos(page)).toBeVisible();
+  await expect(page.getByText(safety.sharing)).toHaveCount(0);
 });
 
 test("an SOS that cannot go says to call ops or 112 now", async ({ page }) => {

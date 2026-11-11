@@ -38,6 +38,12 @@
   color: var(--ui-error);
 }
 
+.sending {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--ui-text);
+}
+
 .failed {
   margin: 0;
   font-size: var(--fs-15);

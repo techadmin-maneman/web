@@ -9,13 +9,12 @@ import { shell } from "../../apps/ops/src/content/shell.ts";
 
 const SOS: OpsReply<"/api/sos">["open"][number] = {
   id: "5e000000-0000-4000-8000-000000000001",
-  technician: { id: "t-imran", name: "Imran Qureshi" },
+  technician: { name: "Imran Qureshi" },
   visit: {
-    id: "a0000000-0000-4000-8000-000000000001",
     starts_at: "2026-09-21T06:00:00.000Z",
     client_name: "Rohit Malhotra",
   },
-  position: { lat: 28.3988, lng: 77.07, accuracy_m: 12, at: "2026-09-21T06:41:00.000Z" },
+  position: { lat: 28.3988, lng: 77.07, at: "2026-09-21T06:41:00.000Z" },
   sent_at: "2026-09-21T06:41:00.000Z",
   safe_at: null,
 };
@@ -37,9 +36,9 @@ test("an SOS shows over every screen, with whose it is, the visit and a map, unt
   await expect(banner).toBeVisible();
   await expect(banner).toContainText(shell.sos.visit("Rohit Malhotra", "11:30 am"));
   await expect(banner).toContainText(shell.sos.call);
-  await expect(banner.getByRole("link", { name: shell.sos.map })).toHaveAttribute(
+  await expect(banner.getByRole("link", { name: shell.sos.map("12:11 pm") })).toHaveAttribute(
     "href",
-    "https://www.google.com/maps?q=28.3988,77.07",
+    "https://www.google.com/maps?q=28.39880,77.07000",
   );
   expect(await axeViolations(page)).toEqual([]);
 

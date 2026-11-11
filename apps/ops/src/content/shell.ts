@@ -17,7 +17,8 @@ export const shell = {
     /** "Rohit Malhotra's visit, 11:30 am" */
     visit: (client: string, time: string) => `${client}’s visit, ${time}`,
     noVisit: "Not on a visit",
-    map: "Where they are",
+    /** "Where they were at 9:41 am": the last position heard, which may not be where they are now. */
+    map: (time: string) => `Where they were at ${time}`,
     noMap: "No location from their phone",
     safe: (time: string) => `Said they’re safe, ${time}`,
     call: "Call them now.",

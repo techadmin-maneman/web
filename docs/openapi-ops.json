@@ -9705,15 +9705,11 @@
           "technician": {
             "type": "object",
             "properties": {
-              "id": {
-                "type": "string"
-              },
               "name": {
                 "type": "string"
               }
             },
             "required": [
-              "id",
               "name"
             ],
             "additionalProperties": false
@@ -9723,9 +9719,6 @@
               {
                 "type": "object",
                 "properties": {
-                  "id": {
-                    "type": "string"
-                  },
                   "starts_at": {
                     "type": "string",
                     "format": "date-time"
@@ -9742,7 +9735,6 @@
                   }
                 },
                 "required": [
-                  "id",
                   "starts_at",
                   "client_name"
                 ],
@@ -9764,16 +9756,6 @@
                   "lng": {
                     "type": "number"
                   },
-                  "accuracy_m": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
                   "at": {
                     "type": "string",
                     "format": "date-time"
@@ -9782,7 +9764,6 @@
                 "required": [
                   "lat",
                   "lng",
-                  "accuracy_m",
                   "at"
                 ],
                 "additionalProperties": false
@@ -9791,7 +9772,7 @@
                 "type": "null"
               }
             ],
-            "description": "Where the technician was last heard, while the SOS is open."
+            "description": "Where the technician was last heard, and when, while the SOS is open."
           },
           "sent_at": {
             "type": "string",
@@ -38077,7 +38058,7 @@
     },
     "/api/sos": {
       "get": {
-        "summary": "Every technician's SOS not yet handled, oldest first, for the banner on every console screen",
+        "summary": "Every technician's SOS not yet handled, oldest first, for the banner on national Operations' every screen",
         "responses": {
           "200": {
             "description": "Open, oldest first",

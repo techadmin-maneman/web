@@ -18,10 +18,12 @@ CREATE TABLE visit_positions (
 -- The sweep's read: positions older than it keeps any.
 CREATE INDEX visit_positions_received ON visit_positions (received_at);
 
--- Gone once the visit closes, is called off, is given to another technician or is deleted: the close needs no position.
-CREATE TRIGGER visit_positions_end AFTER UPDATE OF status, technician_id, deleted_at ON appointments
+-- Gone once the visit closes, is called off, is given to another technician, is moved to another time (its check-in set
+-- aside) or is deleted: none of these needs a position.
+CREATE TRIGGER visit_positions_end AFTER UPDATE OF status, technician_id, window_start, deleted_at ON appointments
 WHEN NEW.status IN ('completed', 'terminated', 'cancelled')
   OR NEW.technician_id IS NOT OLD.technician_id
+  OR NEW.window_start IS NOT OLD.window_start
   OR NEW.deleted_at IS NOT NULL
 BEGIN
   DELETE FROM visit_positions WHERE appointment_id = NEW.id;

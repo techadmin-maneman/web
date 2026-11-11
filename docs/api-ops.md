@@ -13606,7 +13606,7 @@ Request body:
 
 ### GET /api/sos
 
-Every technician's SOS not yet handled, oldest first, for the banner on every console screen
+Every technician's SOS not yet handled, oldest first, for the banner on national Operations' every screen
 
 **200**: Open, oldest first
 
@@ -45385,15 +45385,11 @@ Request body:
     "technician": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string"
-        },
         "name": {
           "type": "string"
         }
       },
       "required": [
-        "id",
         "name"
       ],
       "additionalProperties": false
@@ -45403,9 +45399,6 @@ Request body:
         {
           "type": "object",
           "properties": {
-            "id": {
-              "type": "string"
-            },
             "starts_at": {
               "type": "string",
               "format": "date-time"
@@ -45422,7 +45415,6 @@ Request body:
             }
           },
           "required": [
-            "id",
             "starts_at",
             "client_name"
           ],
@@ -45444,16 +45436,6 @@ Request body:
             "lng": {
               "type": "number"
             },
-            "accuracy_m": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
             "at": {
               "type": "string",
               "format": "date-time"
@@ -45462,7 +45444,6 @@ Request body:
           "required": [
             "lat",
             "lng",
-            "accuracy_m",
             "at"
           ],
           "additionalProperties": false
@@ -45471,7 +45452,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Where the technician was last heard, while the SOS is open."
+      "description": "Where the technician was last heard, and when, while the SOS is open."
     },
     "sent_at": {
       "type": "string",

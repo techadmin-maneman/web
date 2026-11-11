@@ -4,11 +4,17 @@
 import { apiNow } from "@maneman/web-kit/clock";
 import type { Position } from "../api.ts";
 
-/** How long a reading may take before the phone is taken to have none. */
-const READING_MS = 10_000;
+/**
+ * How a reading is taken: quick, from what the phone knows already or can tell at once, for an SOS that must go now;
+ * or close, from the satellites, which takes longer.
+ */
+const READINGS: Readonly<Record<"quick" | "close", PositionOptions>> = {
+  quick: { enableHighAccuracy: false, timeout: 3_000, maximumAge: 10 * 60_000 },
+  close: { enableHighAccuracy: true, timeout: 15_000, maximumAge: 60_000 },
+};
 
 /** One reading of where the phone is; null where it gives none in time, or none at all. */
-export function readPosition(): Promise<Position | null> {
+export function readPosition(how: "quick" | "close" = "close"): Promise<Position | null> {
   return new Promise((resolve) => {
     if (!("geolocation" in navigator)) {
       resolve(null);
@@ -26,7 +32,7 @@ export function readPosition(): Promise<Position | null> {
       () => {
         resolve(null);
       },
-      { enableHighAccuracy: true, timeout: READING_MS, maximumAge: 60_000 },
+      READINGS[how],
     );
   });
 }

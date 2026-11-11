@@ -1,24 +1,22 @@
 // A technician's safety on a visit (docs/decisions/0248-safety.md): where they are, sent every two minutes from
-// check-in to the close, and the SOS, which pages ops at once with whose it is, the visit and a map, and stays open
-// until ops mark it handled. "I'm safe" tells ops so. Each is the technician's own alone.
+// check-in to the close, and the SOS, which pages ops at once with whose it is and the visit under way, and stays open
+// until ops mark it handled. "I'm safe" tells ops so, once. Each is the technician's own alone.
 
 import { z } from "@hono/zod-openapi";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import {
   keepPosition,
-  openSosList,
   openSosOf,
   raiseSos,
   sayingSafe,
-  type Position,
+  technicianNameOf,
+  visitUnderWay,
 } from "../../domain/field/safety.ts";
-import { workableJob } from "../../domain/field/workable-job.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { techRoute } from "../../http/session-routes.ts";
 import { technicianOf } from "../../http/technician-session.ts";
-import { mapLink } from "../../policy/safety.ts";
 import type { Context } from "hono";
 
 const PositionSchema = z
@@ -109,26 +107,15 @@ const safeRoute = techRoute({
   },
 });
 
-/** The visit, where it is the technician's own; null for any other, or none. */
-async function ownVisit(c: Context<AppEnv>, id: string | null): Promise<string | null> {
-  if (id === null) return null;
-  const job = await workableJob(c.env.DB, id);
-  return job?.technicianId === technicianOf(c).technicianId ? job.id : null;
-}
-
-/** Ops paged with the SOS: whose it is, the visit they were on, and a map where the phone gave where they are. */
-async function page(c: Context<AppEnv>, id: string, position: Position | null): Promise<void> {
-  const sos = (await openSosList(c.env.DB)).find((one) => one.id === id);
-  if (sos === undefined) return;
-  await c.var.deps.alertOnce({
-    key: `sos:${id}`,
-    message: ALERT_WORDS.sos({
-      technician: sos.technician.name,
-      visit: sos.visit?.id ?? null,
-      map: position === null ? null : mapLink(position),
-    }),
-    link: "/",
-  });
+/**
+ * Ops paged with the SOS: whose it is and the visit under way, with the console, whose banner shows where they are.
+ * The page names no position, as the alert log and the logs keep it longer than the SOS.
+ * A page after "I'm safe" closes that word, so a later one is told again.
+ */
+async function page(c: Context<AppEnv>, id: string, visit: string | null): Promise<void> {
+  const technician = await technicianNameOf(c.env.DB, technicianOf(c).technicianId);
+  await c.var.deps.resolveAlert(`sos_safe:${id}`);
+  await c.var.deps.alertOnce({ key: `sos:${id}`, message: ALERT_WORDS.sos({ technician, visit }), link: "/" });
 }
 
 export function registerTechSafety(app: App): void {
@@ -149,14 +136,10 @@ export function registerTechSafety(app: App): void {
   app.openapi(sosRoute, async (c) => {
     const { job_id: jobId, position } = c.req.valid("json");
     const technicianId = technicianOf(c).technicianId;
-    const sos = await raiseSos(c.env.DB, {
-      technicianId,
-      appointmentId: await ownVisit(c, jobId),
-      position,
-      now: c.var.deps.now(),
-    });
+    const visit = jobId === null ? null : await visitUnderWay(c.env.DB, jobId, technicianId);
+    const sos = await raiseSos(c.env.DB, { technicianId, appointmentId: visit, position, now: c.var.deps.now() });
     c.var.log.warn("sos_raised", { sos_id: sos.id, technician_id: technicianId, fresh: sos.fresh });
-    if (sos.fresh) await page(c, sos.id, position);
+    if (sos.fresh) await page(c, sos.id, visit);
     return c.json({ id: sos.id, sent_at: sos.sent_at, safe: sos.safe }, 201);
   });
 
@@ -165,12 +148,12 @@ export function registerTechSafety(app: App): void {
     const technicianId = technicianOf(c).technicianId;
     const said = await sayingSafe(c.env.DB, { id, technicianId, now: c.var.deps.now() });
     if (said === "not_found") return refuse(c, "not_found");
-    const sos = (await openSosList(c.env.DB)).find((one) => one.id === id);
-    await c.var.deps.alertOnce({
-      key: `sos_safe:${id}`,
-      message: ALERT_WORDS.sos_safe({ technician: sos?.technician.name ?? technicianId }),
-      link: "/",
-    });
+    // Ops are told once; the SOS's page is closed, so one raised again pages them again.
+    if (said === "said") {
+      await c.var.deps.resolveAlert(`sos:${id}`);
+      const technician = await technicianNameOf(c.env.DB, technicianId);
+      await c.var.deps.alertOnce({ key: `sos_safe:${id}`, message: ALERT_WORDS.sos_safe({ technician }), link: "/" });
+    }
     return c.body(null, 204);
   });
 }

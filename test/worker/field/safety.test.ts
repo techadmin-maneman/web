@@ -66,6 +66,18 @@ describe("where the technician is on a visit", () => {
     expect((await sendPosition(job, reading(4))).status).toBe(409);
   });
 
+  it("is gone once the visit is moved to another time, and refused until its new check-in", async () => {
+    const job = await checkedIn();
+    await sendPosition(job, reading(2));
+    // A move sets the check-in aside (src/domain/dispatch/dispatch.ts), the technician and status unchanged.
+    await env.DB.batch([
+      env.DB.prepare("UPDATE job_events SET superseded = 1 WHERE appointment_id = ?1").bind(JOB),
+      env.DB.prepare("UPDATE appointments SET window_start = '2026-09-21T10:30:00.000Z' WHERE id = ?1").bind(JOB),
+    ]);
+    expect(await kept()).toBeNull();
+    expect((await sendPosition(job, reading(4))).status).toBe(409);
+  });
+
   it("is gone once the visit is given to another technician, or called off", async () => {
     const job = await checkedIn();
     await sendPosition(job, reading(2));
@@ -105,7 +117,8 @@ describe("an SOS", () => {
     expect(isUrgent(`sos:${sos.id}`)).toBe(true);
     expect(job.deps.alerts).toHaveLength(1);
     expect(job.deps.alerts[0]).toContain(`SOS from Imran Qureshi on visit ${JOB}`);
-    expect(job.deps.alerts[0]).toContain("https://www.google.com/maps?q=28.3988,77.07");
+    // Where they are is on the console's banner alone: the alert log and the logs keep a page longer than the SOS.
+    expect(job.deps.alerts[0]).not.toContain("28.39");
 
     // A second press while it is open is the same SOS, and pages nobody again.
     const again = await (await raise(job, reading(3, 28.5))).json<{ id: string }>();
@@ -125,18 +138,51 @@ describe("an SOS", () => {
     expect(open).toHaveLength(1);
     expect(open[0]).toMatchObject({
       technician: { name: "Imran Qureshi" },
-      visit: { id: JOB, client_name: "Rohit Malhotra" },
+      visit: { client_name: "Rohit Malhotra" },
       position: { lat: 28.42 },
       safe_at: null,
     });
   });
 
-  it("is said safe by the technician, and ops are told", async () => {
+  it("is said safe by the technician, and ops are told once", async () => {
     const job = await checkedIn();
     const { id } = await (await raise(job)).json<{ id: string }>();
     expect((await job.post(`/api/tech/sos/${id}/safe`, undefined, "safe")).status).toBe(204);
-    expect(job.deps.alerts.at(-1)).toContain("Imran Qureshi says they are safe");
+    expect((await job.post(`/api/tech/sos/${id}/safe`, undefined, "safe-2")).status).toBe(204);
+    expect(job.deps.alerts.filter((alert) => alert.includes("says they are safe"))).toHaveLength(1);
     expect(await (await job.get("/api/tech/sos")).json()).toMatchObject({ sos: { id, safe: true } });
+  });
+
+  it("is raised again after the technician said they are safe, and pages ops again", async () => {
+    const job = await checkedIn();
+    const { id } = await (await raise(job)).json<{ id: string }>();
+    await job.post(`/api/tech/sos/${id}/safe`, undefined, "safe");
+    const again = await (await raise(job, reading(5))).json<{ id: string; safe: boolean }>();
+    expect(again).toMatchObject({ id, safe: false });
+    expect(
+      job.deps.alerts.filter((alert) => alert.startsWith("SOS from") || alert.includes("] SOS from")),
+    ).toHaveLength(2);
+  });
+
+  it("names only the visit under way: one of another day, or before its check-in, is no part of it", async () => {
+    const job = await working("service");
+    const raised = await raise(job);
+    expect(raised.status).toBe(201);
+    const { open } = await (await job.opsGet("/api/sos")).json<{ open: { visit: unknown }[] }>();
+    expect(open[0]?.visit).toBeNull();
+    expect(job.deps.alerts[0]).not.toContain(JOB);
+  });
+
+  it("keeps no position in the alert log once handled", async () => {
+    const job = await checkedIn();
+    const { id } = await (await raise(job)).json<{ id: string }>();
+    await job.post(`/api/tech/sos/${id}/safe`, undefined, "safe");
+    await job.opsPost(`/api/sos/${id}/handled`);
+    const { results } = await env.DB.prepare("SELECT message FROM alerts WHERE key LIKE 'sos%'").all<{
+      message: string;
+    }>();
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.map((row) => row.message).join(" ")).not.toContain("28.39");
   });
 
   it("is marked handled by ops: who and when stay, where the technician was goes", async () => {

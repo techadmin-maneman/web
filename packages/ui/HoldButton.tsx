@@ -20,6 +20,7 @@ export function holdMs(token: string = cssToken("--duration-hold")): number {
 export function HoldButton({
   children,
   sub,
+  holdingSub,
   describedBy,
   className,
   onHeld,
@@ -27,6 +28,8 @@ export function HoldButton({
   readonly children: ReactNode;
   /** A quieter line beneath its words: what holding it does. */
   readonly sub?: ReactNode;
+  /** The line beneath while it is held, which says so where the fill is not drawn, as under reduced motion. */
+  readonly holdingSub?: ReactNode;
   /** The id of the line saying how to hold it. */
   readonly describedBy?: string | undefined;
   readonly className?: string | undefined;
@@ -56,6 +59,7 @@ export function HoldButton({
     [],
   );
 
+  const line = holding ? (holdingSub ?? sub) : sub;
   return (
     <button
       type="button"
@@ -86,7 +90,7 @@ export function HoldButton({
       <span className={styles.fill} aria-hidden="true" />
       <span className={styles.words}>
         <span>{children}</span>
-        {sub !== undefined && <span className={styles.sub}>{sub}</span>}
+        {line !== undefined && <span className={styles.sub}>{line}</span>}
       </span>
     </button>
   );

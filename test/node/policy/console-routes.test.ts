@@ -81,7 +81,7 @@ describe("what each ops route asks of its caller", () => {
 describe("the routes a caller's calls go ahead on", () => {
   const NO_ZONES = new Map<string, string>();
   /** The health check, who is signed in, and the console's own errors: open to anyone Access lets in. */
-  const SIGNED_IN_ROUTES = ["GET /api/health", "GET /api/whoami", "POST /api/client-errors", "GET /api/sos"];
+  const SIGNED_IN_ROUTES = ["GET /api/health", "GET /api/whoami", "POST /api/client-errors"];
   const financeInDelhi: Caller = {
     kind: "person",
     active: true,

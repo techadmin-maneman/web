@@ -205,9 +205,9 @@ export const ALERT_WORDS = {
     `Check the ${a.phase} photographs of the visit on ${fullDate(a.day)}: the technician's camera would not open, and ` +
     `${String(a.reached)} of 5 reached us.`,
   // A technician's SOS (docs/decisions/0248-safety.md): urgent, paged at once.
-  sos: (a: { readonly technician: string; readonly visit: string | null; readonly map: string | null }) =>
+  sos: (a: { readonly technician: string; readonly visit: string | null }) =>
     `SOS from ${a.technician}${a.visit === null ? "" : ` on visit ${a.visit}`}: call them now. ` +
-    (a.map === null ? "Their phone gave no location." : `Where they are: ${a.map}`),
+    "Where they are is on the console's banner.",
   sos_safe: (a: { readonly technician: string }) =>
     `${a.technician} says they are safe after their SOS. Mark it handled on the console once you have spoken to them.`,
   fit_undone: (a: { readonly visit: string }) =>

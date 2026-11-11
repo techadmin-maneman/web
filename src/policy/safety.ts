@@ -7,6 +7,6 @@ export const POSITION_EVERY_MINUTES = 2;
 /** The longest a visit's position is kept, should its close never come: the hourly sweep deletes it then. */
 export const POSITION_KEPT_HOURS = 12;
 
-/** A map at the technician's position, for ops in the alert space and on the console. */
+/** A map at the technician's position, to about a metre, for ops on the console's banner. */
 export const mapLink = (position: { readonly lat: number; readonly lng: number }): string =>
-  `https://www.google.com/maps?q=${String(position.lat)},${String(position.lng)}`;
+  `https://www.google.com/maps?q=${position.lat.toFixed(5)},${position.lng.toFixed(5)}`;

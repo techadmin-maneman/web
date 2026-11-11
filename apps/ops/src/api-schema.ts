@@ -10064,7 +10064,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every technician's SOS not yet handled, oldest first, for the banner on every console screen */
+        /** Every technician's SOS not yet handled, oldest first, for the banner on national Operations' every screen */
         get: {
             parameters: {
                 query?: never;
@@ -28010,20 +28010,17 @@ export interface components {
             /** Format: uuid */
             id: string;
             technician: {
-                id: string;
                 name: string;
             };
             visit: {
-                id: string;
                 /** Format: date-time */
                 starts_at: string;
                 client_name: string | null;
             } | null;
-            /** @description Where the technician was last heard, while the SOS is open. */
+            /** @description Where the technician was last heard, and when, while the SOS is open. */
             position: {
                 lat: number;
                 lng: number;
-                accuracy_m: number | null;
                 /** Format: date-time */
                 at: string;
             } | null;

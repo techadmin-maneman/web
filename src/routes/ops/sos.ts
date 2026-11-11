@@ -1,6 +1,6 @@
 // A technician's SOS on the console (docs/decisions/0248-safety.md): every SOS not yet handled, which every console
-// screen shows as a banner to anyone signed in, with whose it is, the visit they were on and a map; and marking one
-// handled, behind Operations · Act, which keeps who and when and blanks where the technician was.
+// screen shows national Operations as a banner, with whose it is, the visit they were on and where they were last; and
+// marking one handled, behind Operations · Act, which keeps who and when and blanks where the technician was.
 
 import { z } from "@hono/zod-openapi";
 import { handleSos, openSosList } from "../../domain/field/safety.ts";
@@ -13,24 +13,14 @@ import { opsRoute } from "../../http/session-routes.ts";
 const OpenSosSchema = z
   .object({
     id: z.uuid(),
-    technician: z.object({ id: z.string(), name: z.string() }).strict(),
+    technician: z.object({ name: z.string() }).strict(),
     visit: z.union([
-      z.object({ id: z.string(), starts_at: z.iso.datetime(), client_name: z.union([z.string(), z.null()]) }).strict(),
+      z.object({ starts_at: z.iso.datetime(), client_name: z.union([z.string(), z.null()]) }).strict(),
       z.null(),
     ]),
     position: z
-      .union([
-        z
-          .object({
-            lat: z.number(),
-            lng: z.number(),
-            accuracy_m: z.union([z.number(), z.null()]),
-            at: z.iso.datetime(),
-          })
-          .strict(),
-        z.null(),
-      ])
-      .openapi({ description: "Where the technician was last heard, while the SOS is open." }),
+      .union([z.object({ lat: z.number(), lng: z.number(), at: z.iso.datetime() }).strict(), z.null()])
+      .openapi({ description: "Where the technician was last heard, and when, while the SOS is open." }),
     sent_at: z.iso.datetime(),
     safe_at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When the technician said they are safe." }),
   })
@@ -40,7 +30,7 @@ const OpenSosSchema = z
 const openRoute = opsRoute({
   method: "get",
   path: "/api/sos",
-  summary: "Every technician's SOS not yet handled, oldest first, for the banner on every console screen",
+  summary: "Every technician's SOS not yet handled, oldest first, for the banner on national Operations' every screen",
   responses: {
     200: { description: "Open, oldest first", ...json(z.object({ open: z.array(OpenSosSchema) }).strict()) },
   },

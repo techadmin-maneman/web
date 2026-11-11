@@ -45,7 +45,7 @@ function OneSos({ sos, mayHandle, onHandled }: { sos: OpenSos; mayHandle: boolea
             target="_blank"
             rel="noopener noreferrer"
           >
-            {copy.map}
+            {copy.map(indiaClock(sos.position.at))}
           </ButtonLink>
         )}
         {mayHandle && (
@@ -59,13 +59,17 @@ function OneSos({ sos, mayHandle, onHandled }: { sos: OpenSos; mayHandle: boolea
 }
 
 export function SosBanner() {
-  const mayHandle = useAccess().mayCall("POST /api/sos/{id}/handled");
+  const access = useAccess();
+  const mayRead = access.mayCall("GET /api/sos");
+  const mayHandle = access.mayCall("POST /api/sos/{id}/handled");
   const [open, setOpen] = useState<readonly OpenSos[]>([]);
   const read = useCallback(async () => {
     const answer = await api.openSos();
     if (answer.ok) setOpen(answer.body.open);
   }, []);
   useEffect(() => {
+    // Only for those it is shown to: national Operations.
+    if (!mayRead) return undefined;
     const ask = () => {
       read().catch(() => undefined);
     };
@@ -74,7 +78,7 @@ export function SosBanner() {
     return () => {
       clearInterval(timer);
     };
-  }, [read]);
+  }, [read, mayRead]);
   if (open.length === 0) return null;
   return (
     <div className={styles.banner}>

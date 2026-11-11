@@ -41,6 +41,14 @@
     transition: transform var(--duration-hold) linear;
   }
 
+  /* With no motion the fill could only jump to full at the first touch, a sign of done that is not: none is drawn, and
+     the line beneath says to keep holding. */
+  @media (prefers-reduced-motion: reduce) {
+    .hold[data-holding] .fill {
+      transform: scaleX(0);
+    }
+  }
+
   .words {
     position: relative;
     display: flex;

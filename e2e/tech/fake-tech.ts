@@ -435,7 +435,10 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (path === "/api/tech/sos") {
         if (fake.sosRefused) return route.abort("internetdisconnected");
         fake.writes.push({ path, eventId, startsAt, body: route.request().postDataJSON() as unknown });
-        fake.sos ??= { id: randomUUID(), sent_at: new Date().toISOString(), safe: false };
+        // One open at a time; one raised again after "I'm safe" is the same, from now.
+        if (fake.sos === null || fake.sos.safe) {
+          fake.sos = { id: fake.sos?.id ?? randomUUID(), sent_at: new Date().toISOString(), safe: false };
+        }
         return reply(route, 201, fake.sos);
       }
       if (fake.sos !== null && path === `/api/tech/sos/${fake.sos.id}/safe`) {

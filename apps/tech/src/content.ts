@@ -141,6 +141,9 @@ export const safety = {
   sharing: "Ops can see your location until you close this visit.",
   sos: "SOS",
   sosSub: "Alerts ops and shares your location",
+  /** Beneath SOS while it is held: under reduced motion, the only sign it is going. */
+  keepHolding: "Keep holding…",
+  sending: "Sending your SOS…",
   hold: "Press and hold for 3 seconds. Let go to cancel.",
   /** "SOS sent 9:41 am" */
   sent: (time: string) => `SOS sent ${time}`,

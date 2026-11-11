@@ -1,20 +1,25 @@
-// The Safety sheet, from the shield in a visit's header (docs/prompts/tech-redesign.md, "Safety"): that ops can see the
-// technician's location until the visit closes, the SOS held for three seconds, which alerts ops and shares where they
-// are, and ops' line and 112. Once sent it says when, and "I'm safe" tells ops so.
+// The Safety sheet, from the shield in a visit's header (docs/prompts/tech-redesign.md, "Safety"; docs/decisions/0248-
+// safety.md): that ops can see the technician's location until the visit closes, while it is under way; the SOS held
+// for three seconds, which alerts ops and shares where they are; and ops' line and 112. Once sent it says when, and
+// "I'm safe" tells ops so; the SOS can be raised again after it, and the sheet starts afresh once ops have handled it.
 
 import { GLYPHS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { HoldButton } from "@maneman/ui/HoldButton";
 import { IconButton } from "@maneman/ui/IconButton";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
-import { OPS_NUMBER } from "@maneman/web-kit/whatsapp";
+import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { useId, useRef, useState } from "react";
+import { OPS_NUMBER } from "@maneman/web-kit/whatsapp";
+import { useCallback, useId, useRef, useState } from "react";
 import { api } from "../api.ts";
 import { ops, safety as copy } from "../content.ts";
 import { buzz } from "../lib/haptics.ts";
+import { checkedIn, closed } from "../lib/progress.ts";
+import { useOutbox } from "../lib/useOutbox.ts";
 import { clock } from "../lib/when.ts";
 import { readPosition } from "../lib/where.ts";
+import { keptJob } from "../store/jobs.ts";
 import styles from "./safety.module.css";
 
 /** Where an SOS stands on this phone: not sent, sent at a time (and whether they said they are safe), or refused. */
@@ -23,53 +28,77 @@ type SosState =
   | { readonly state: "sent"; readonly at: string; readonly safe: boolean }
   | { readonly state: "failed" };
 
+/** Whether the phone is sharing where it is: the visit checked in and not closed, by what landed or is on its way. */
+function useSharing(jobId: string | null): boolean {
+  const { events } = useOutbox();
+  const read = useCallback(() => (jobId === null ? Promise.resolve(null) : keptJob(jobId).catch(() => null)), [jobId]);
+  const job = valueOr(useAsync(read)[0], null);
+  return job !== null && checkedIn(job, events) && !closed(job, events);
+}
+
 function SafetySheet({
   sos,
+  sending,
+  sharing,
   onSos,
   onSafe,
   onClose,
 }: {
   readonly sos: SosState;
+  readonly sending: boolean;
+  readonly sharing: boolean;
   readonly onSos: () => void;
   readonly onSafe: () => void;
   readonly onClose: () => void;
 }) {
   const titleId = useId();
   const holdId = useId();
+  const sent = sos.state === "sent" ? sos : null;
   return (
     <Sheet labelledBy={titleId} rises={false} onClose={onClose}>
-      <SheetClose onClose={onClose}>
-        {copy.close}
-      </SheetClose>
+      <SheetClose onClose={onClose}>{copy.close}</SheetClose>
       <SheetPanel className={styles.panel}>
         <h2 className={styles.title} id={titleId}>
           {copy.title}
         </h2>
-        <p className={styles.note}>{copy.sharing}</p>
-        {sos.state === "sent" ? (
+        {sharing && <p className={styles.note}>{copy.sharing}</p>}
+        {sent !== null && (
           <div className={styles.sent} role="status">
-            <p className={styles.sentAt}>{copy.sent(sos.at)}</p>
-            <p className={styles.note}>{sos.safe ? copy.safeSaid : copy.sentBody}</p>
-            {!sos.safe && (
+            <p className={styles.sentAt}>{copy.sent(sent.at)}</p>
+            <p className={styles.note}>{sent.safe ? copy.safeSaid : copy.sentBody}</p>
+            {!sent.safe && (
               <Button variant="outline" size="action" onClick={onSafe}>
                 {copy.safe}
               </Button>
             )}
           </div>
-        ) : (
+        )}
+        {/* Said safe, and in need again: the SOS is there to raise again. */}
+        {(sent === null || sent.safe) && (
           <>
-            <HoldButton className={styles.sos} sub={copy.sosSub} describedBy={holdId} onHeld={onSos}>
+            <HoldButton
+              className={styles.sos}
+              sub={copy.sosSub}
+              holdingSub={copy.keepHolding}
+              describedBy={holdId}
+              onHeld={onSos}
+            >
               {copy.sos}
             </HoldButton>
             <p className={styles.note} id={holdId}>
               {copy.hold}
             </p>
-            {sos.state === "failed" && (
-              <p className={styles.failed} role="alert">
-                {copy.failed}
-              </p>
-            )}
           </>
+        )}
+        {sending && (
+          <p className={styles.sending} role="status">
+            {copy.sending}
+          </p>
+        )}
+        {sos.state === "failed" && (
+          <p className={styles.failed} role="alert">
+            {copy.failed}
+          </p>
         )}
         <div className={styles.calls}>
           <ButtonLink variant="outline" size="action" href={`tel:+${OPS_NUMBER}`}>
@@ -85,23 +114,29 @@ function SafetySheet({
 }
 
 /**
- * Where the technician's SOS stands, read from the API as the sheet opens, and the two things done from it: raised, with
- * the visit and where the phone is, straight to the API and never queued, as it must reach ops now or say it did not;
- * and "I'm safe".
+ * Where the technician's SOS stands, read from the API as the sheet opens, and the two things done from it: raised,
+ * straight to the API and never queued, as it must reach ops now or say it did not, with the visit and a quick reading
+ * of where the phone is, a closer one following once the phone has it; and "I'm safe".
  */
 function useSos(jobId: string | null) {
   const [sos, setSos] = useState<SosState>({ state: "none" });
-  const [busy, once] = useOneAtATime();
+  const [sending, once] = useOneAtATime();
   const ownId = useRef<string | null>(null);
   const read = async () => {
     const answer = await api.ownSos();
-    if (!answer.ok || answer.body.sos === null) return;
+    if (!answer.ok) return;
+    // Handled by ops since: the sheet starts afresh.
+    if (answer.body.sos === null) {
+      ownId.current = null;
+      setSos((was) => (was.state === "sent" ? { state: "none" } : was));
+      return;
+    }
     ownId.current = answer.body.sos.id;
     setSos({ state: "sent", at: clock(answer.body.sos.sent_at), safe: answer.body.sos.safe });
   };
   const raise = () =>
     once(async () => {
-      const answer = await api.sos(jobId, await readPosition());
+      const answer = await api.sos(jobId, await readPosition("quick"));
       if (!answer.ok) {
         setSos({ state: "failed" });
         return;
@@ -109,14 +144,16 @@ function useSos(jobId: string | null) {
       buzz();
       ownId.current = answer.body.id;
       setSos({ state: "sent", at: clock(answer.body.sent_at), safe: answer.body.safe });
+      // A closer reading, once the phone has it, brings the SOS up to date; it pages nobody again.
+      void readPosition("close").then((close) => (close === null ? undefined : api.sos(jobId, close)));
     });
   const safe = () =>
     once(async () => {
       if (ownId.current === null) return;
       const answer = await api.sosSafe(ownId.current);
-      if (answer.ok && sos.state === "sent") setSos({ ...sos, safe: true });
+      if (answer.ok) setSos((was) => (was.state === "sent" ? { ...was, safe: true } : was));
     });
-  return { sos, busy, read, raise, safe };
+  return { sos, sending, read, raise, safe };
 }
 
 /** The shield in a visit's header, and the sheet it opens. */
@@ -128,7 +165,8 @@ export function Safety({
   readonly className?: string | undefined;
 }) {
   const [open, setOpen] = useState(false);
-  const { sos, read, raise, safe } = useSos(jobId);
+  const { sos, sending, read, raise, safe } = useSos(jobId);
+  const sharing = useSharing(jobId);
   return (
     <>
       <IconButton
@@ -144,6 +182,8 @@ export function Safety({
       {open && (
         <SafetySheet
           sos={sos}
+          sending={sending}
+          sharing={sharing}
           onSos={() => void raise()}
           onSafe={() => void safe()}
           onClose={() => {

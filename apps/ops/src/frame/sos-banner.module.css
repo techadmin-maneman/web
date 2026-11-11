@@ -33,6 +33,13 @@
   color: var(--ui-text-soft);
 }
 
+/* A phone keeps the page's own room at the sides, so the banner's words line up with the page's. */
+@media (max-width: 600px) {
+  .sos {
+    padding-inline: var(--sp-16);
+  }
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
