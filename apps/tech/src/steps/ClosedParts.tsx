@@ -68,7 +68,7 @@ export function FinishTheWork({ job }: { job: Job }) {
       <p className={styles.note}>{copy.finish.ask}</p>
       <div className={styles.asks}>
         {ASKS.map((each) => (
-          <ToggleButton key={each} pressed={asked === each} onClick={() => void ask(each)}>
+          <ToggleButton key={each} filled pressed={asked === each} onClick={() => void ask(each)}>
             {copy.finish.asks[each]}
           </ToggleButton>
         ))}
