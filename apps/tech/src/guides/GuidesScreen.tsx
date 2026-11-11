@@ -1,23 +1,21 @@
 // Guides, from Me (docs/prompts/tech-redesign.md, "Guides"): a library of the four kinds of visit, each its steps in
-// order and the tasks each guides, and every task read-only. Drawn from the visit engine and the job sheet the phone
-// already holds, so it opens with no signal.
+// order and the tasks each guides, and every task read-only. Drawn from the visit engine and the checklists as ops set
+// them, which the phone keeps (./checklists.ts), so it opens with no signal.
 
 import { GLYPHS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
-import { CHECKLIST } from "@rules/config/job-sheet.ts";
 import { cardStepsFor } from "@rules/policy/in-job-steps.ts";
 import { VISIT_TYPES, type VisitType } from "@rules/config/visit-types.ts";
 import { CardFrame } from "../frame/CardFrame.tsx";
 import { guides as copy, types } from "../content.ts";
 import { TaskGuide } from "../steps/index.ts";
 import { screensOf, taskFor, type Screen } from "../visit/index.ts";
+import { useChecklists } from "./checklists.ts";
 import styles from "./guides.module.css";
 
 /** A kind of visit's screens, in the order they are worked, as a visit of that kind would have them. */
 const screensFor = (type: VisitType): Screen[] => screensOf({ type, one_visit: false, steps: cardStepsFor(type) });
-
-const tasksOf = (type: VisitType) => CHECKLIST[type];
 
 export function GuidesScreen() {
   return (
@@ -40,6 +38,7 @@ export function GuidesScreen() {
 /** One kind of visit's guide: each step numbered, with what it is, and the tasks a step of tasks guides. */
 export function GuideScreen({ type, back }: { readonly type: VisitType; readonly back: string }) {
   const screens = screensFor(type);
+  const tasks = useChecklists().lists[type];
   return (
     <CardFrame title={types[type]} sub={copy.steps(screens.length)} back={back} foot={null}>
       <ol className={styles.steps}>
@@ -48,7 +47,7 @@ export function GuideScreen({ type, back }: { readonly type: VisitType; readonly
             <p className={styles.stepName}>{screen.title}</p>
             {screen.id === "tasks" ? (
               <ListRows className={styles.tasks} label={screen.title}>
-                {tasksOf(type).map((item) => (
+                {tasks.map((item) => (
                   <ListRow
                     key={item.id}
                     title={taskFor(item).title}
@@ -69,10 +68,17 @@ export function GuideScreen({ type, back }: { readonly type: VisitType; readonly
 
 /** One task, read-only: its reference, the numbered instructions and what to watch for. */
 export function GuideTaskScreen({ type, task }: { readonly type: VisitType; readonly task: string }) {
-  const item = tasksOf(type).find((each) => each.id === task);
+  const { lists, ready } = useChecklists();
+  const item = lists[type].find((each) => each.id === task);
   const screen = screensFor(type).find((each) => each.id === "tasks");
   const back = `/guides/${type}`;
   if (item === undefined) {
+    if (!ready)
+      return (
+        <CardFrame title={types[type]} sub={copy.title} back={back} foot={null}>
+          {null}
+        </CardFrame>
+      );
     return (
       <CardFrame title={types[type]} sub={copy.title} back={back} foot={null}>
         <p className={styles.page}>{copy.gone}</p>

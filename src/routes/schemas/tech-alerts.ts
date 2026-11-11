@@ -59,6 +59,17 @@ export const AlertsSchema = z
   .object({
     alerts: z.array(TechAlertSchema).openapi({ description: "The last seven days', newest first." }),
     settings: AlertSettingsSchema,
+    leave_notice_min: z
+      .number()
+      .int()
+      .positive()
+      .openapi({ description: "How long before setting off, as ops set it." }),
+    day_ahead_hour: z
+      .number()
+      .int()
+      .min(0)
+      .max(23)
+      .openapi({ description: "The hour of India's day the next day's jobs are sent, as ops set it." }),
     push_key: z
       .string()
       .nullable()

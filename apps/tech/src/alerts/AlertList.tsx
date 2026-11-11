@@ -7,18 +7,8 @@ import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { Switch } from "@maneman/ui/Switch";
 import { alerts as copy } from "../content.ts";
+import type { AlertLine } from "./lines.ts";
 import styles from "./alerts.module.css";
-
-/** One alert in the inbox, as its row says it. */
-export interface AlertLine {
-  readonly id: string;
-  /** "9:02 am", "Yesterday, 8 pm" */
-  readonly when: string;
-  readonly title: string;
-  readonly body: string;
-  /** The page it opens: its job, its day, or nowhere when the job is no longer the technician's. */
-  readonly to: string | null;
-}
 
 export type AlertKind = keyof typeof copy.kinds;
 const ALERT_KINDS = Object.keys(copy.kinds) as readonly AlertKind[];
@@ -41,8 +31,16 @@ export function AlertList({ lines }: { readonly lines: readonly AlertLine[] }) {
   );
 }
 
+/** A kind's line beneath its name: the minutes and the hour ops set, where it takes them. */
+function subOf(kind: AlertKind, notice: { readonly leaveMinutes: number; readonly dayAheadHour: number }): string {
+  if (kind === "time_to_leave") return copy.leaveSub(notice.leaveMinutes);
+  if (kind === "day_ahead") return copy.dayAheadSub(notice.dayAheadHour);
+  return copy.kinds[kind].sub;
+}
+
 export function SendMe(props: {
   readonly on: Readonly<Record<AlertKind, boolean>>;
+  readonly notice: { readonly leaveMinutes: number; readonly dayAheadHour: number };
   readonly onToggle: (kind: AlertKind) => void;
   /** A switch whose change did not reach us, said under the list. */
   readonly failed: boolean;
@@ -55,7 +53,7 @@ export function SendMe(props: {
           <ListRow
             key={kind}
             title={<span id={`alert-kind-${kind}`}>{copy.kinds[kind].label}</span>}
-            meta={copy.kinds[kind].sub}
+            meta={subOf(kind, props.notice)}
             end={
               <Switch
                 checked={props.on[kind]}

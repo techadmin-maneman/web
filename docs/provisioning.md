@@ -20,6 +20,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 7. Worker secrets: Turnstile, IP salt          | done                                                    | done                                                                                      |
 | 7. Worker secrets: alert webhook               | done (Google Chat)                                      | done (the same Google Chat space)                                                         |
 | 7. Worker secrets: YouCam, link signing        | done                                                    | done (the harness's YouCam key, as staging's, for now)                                    |
+| 7. Worker secrets: VAPID push keys             | done, 11 Nov 2026 (its own pair)                        | done, 11 Nov 2026 (its own pair)                                                          |
 | 7. Worker secrets: Evolution, allowlist        | done (poker-settle's bridge, for now)                   | Evolution done (the same bridge; messaging off)                                           |
 | 7. Worker secrets: erasure                     | retired: delete `ERASURE_SECRET` once this lands        | retired: delete `ERASURE_SECRET` with the release that carries it                         |
 | 7. Worker secrets: login code pepper           | done (22 September 2026)                                | not yet: with the client surface                                                          |
@@ -218,6 +219,8 @@ W secret list --env staging      # names only, to check
 ```
 
 A single secret: `W secret put ALERT_WEBHOOK_URL --env <env>` prompts for the value.
+
+**The technicians' push keys, `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`** (docs/decisions/0250-guides-and-alerts.md): a P-256 key pair in base64url, the public key the 65-byte uncompressed point and the private key the 32-byte scalar, a pair for each environment, set together. Generate the pair in a Node process and pipe each half to `W secret put <NAME> --env <env>`, so the private key is never printed or written to a file. A new pair stops every phone's pushes until its app next opens and subscribes again with the new public key.
 
 **A Google Chat webhook for `ALERT_WEBHOOK_URL`.** The Workspace admin must allow incoming webhooks (Admin console → Apps → Google Workspace → Google Chat).
 

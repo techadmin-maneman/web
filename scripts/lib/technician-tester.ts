@@ -39,7 +39,8 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM kit_requests WHERE technician_id IN (${ids});`,
     `DELETE FROM reschedule_requests WHERE technician_id IN (${ids});`,
     // Their alerts, written by the cron and by ops' changes to the jobs (docs/decisions/0250-guides-and-alerts.md).
-    `DELETE FROM tech_alerts WHERE technician_id IN (${ids});`,
+    `DELETE FROM tech_alerts WHERE technician_id IN (${ids})
+       OR appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM tech_alert_kinds_off WHERE technician_id IN (${ids});`,
     `DELETE FROM push_subscriptions WHERE device_id IN (SELECT id FROM technician_devices WHERE technician_id IN (${ids}));`,
     // A hair profile is never deleted (migration 0064), so a job one was taken at, the invented client it is of and

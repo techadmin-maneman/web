@@ -15,10 +15,12 @@ import {
 import { jobsOn } from "../../../src/domain/field/tech-jobs.ts";
 import { createCachedOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
+import { createLogger } from "../../../src/log.ts";
 import type { Push } from "../../../src/providers/web-push.ts";
+import { techAlertsJob } from "../../../src/scheduled/tech-alerts.ts";
 import { NOW } from "../clock.ts";
 import { aVisit } from "../fixtures/index.ts";
-import { markDatabase } from "../helpers.ts";
+import { fakeDependencies, LOCAL_CONFIG, markDatabase } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 
 let job: Working;
@@ -82,6 +84,25 @@ describe("a job in the coming week, changed", () => {
     expect(await alerts()).toMatchObject([{ technician_id: IMRAN, kind: "job_reassigned", starts_at: tomorrow }]);
   });
 
+  it("called off from the console, tells the technician", async () => {
+    const cancelled = await job.opsPost(`/api/visits/${AHEAD}/cancel`, {
+      confirm: true,
+      notice: "free",
+      reason: "The client is travelling.",
+    });
+    expect(cancelled.status).toBe(200);
+    expect(await alerts()).toMatchObject([{ technician_id: IMRAN, kind: "job_cancelled", appointment_id: AHEAD }]);
+  });
+
+  it("called off or given to another as its technician waits at the door, after its time, tells them", async () => {
+    const late = "22222222-2222-4222-8222-222222222298";
+    await appointment(late, IMRAN, new Date(Date.now() - 20 * MINUTE_MS).toISOString());
+    await env.DB.prepare("UPDATE appointments SET status = 'dispatched' WHERE id = ?1").bind(late).run();
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(late).run();
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(AHEAD, SAMEER).run();
+    expect((await alerts()).map((alert) => alert.kind)).toEqual(["job_cancelled", "job_reassigned"]);
+  });
+
   it("called off, tells the technician", async () => {
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(AHEAD).run();
     expect(await alerts()).toMatchObject([{ technician_id: IMRAN, kind: "job_cancelled", appointment_id: AHEAD }]);
@@ -106,6 +127,7 @@ describe("the cron's alerts", () => {
     return {
       unlockHour: inputs.addressUnlockHour,
       rules: { booking: inputs.bookingRules, drive: inputs.driveEstimate },
+      leaveNoticeMin: inputs.leaveNoticeMin,
     };
   };
 
@@ -113,18 +135,36 @@ describe("the cron's alerts", () => {
     await env.DB.prepare("UPDATE technicians SET home_lat = 28.45, home_lng = 77.02 WHERE id = ?1").bind(IMRAN).run();
   });
 
-  it("tells the technician to leave within ten minutes of setting off, once", async () => {
+  const leaveByOf = async (now: Date) => {
     const { unlockHour, rules } = await given();
-    const day = () => given();
-    const [first] = await jobsOn({ db: env.DB, technicianId: IMRAN, date: "2026-09-21", now: NOW, unlockHour, rules });
-    const leaveBy = Date.parse(first?.leave_by ?? "");
-    const early = new Date(leaveBy - 12 * MINUTE_MS);
-    const due = new Date(leaveBy - 8 * MINUTE_MS);
+    const [first] = await jobsOn({ db: env.DB, technicianId: IMRAN, date: "2026-09-21", now, unlockHour, rules });
+    return Date.parse(first?.leave_by ?? "");
+  };
 
-    expect(await writeTimedAlerts(env.DB, { now: early, rules: day })).toBe(0);
-    expect(await writeTimedAlerts(env.DB, { now: due, rules: day })).toBe(1);
+  it("tells the technician to leave within the notice ops set of setting off, once for each time the job starts", async () => {
+    const day = () => given();
+    const leaveBy = await leaveByOf(NOW);
+    expect(await writeTimedAlerts(env.DB, { now: new Date(leaveBy - 12 * MINUTE_MS), rules: day })).toBe(0);
+    expect(await writeTimedAlerts(env.DB, { now: new Date(leaveBy - 8 * MINUTE_MS), rules: day })).toBe(1);
     await writeTimedAlerts(env.DB, { now: new Date(leaveBy - 3 * MINUTE_MS), rules: day });
     expect(await alerts()).toMatchObject([{ kind: "time_to_leave", appointment_id: JOB }]);
+
+    // Moved an hour later: told again, for the new time.
+    await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-21T08:30:00.000Z' WHERE id = ?1")
+      .bind(JOB)
+      .run();
+    const later = await leaveByOf(NOW);
+    await writeTimedAlerts(env.DB, { now: new Date(later - 8 * MINUTE_MS), rules: day });
+    expect((await alerts()).map((alert) => alert.starts_at)).toEqual([
+      "2026-09-21T07:30:00.000Z",
+      "2026-09-21T08:30:00.000Z",
+    ]);
+  });
+
+  it("tells nothing to leave once the technician has checked in at the door", async () => {
+    const leaveBy = await leaveByOf(NOW);
+    await env.DB.prepare("UPDATE appointments SET status = 'dispatched' WHERE id = ?1").bind(JOB).run();
+    expect(await writeTimedAlerts(env.DB, { now: new Date(leaveBy - 8 * MINUTE_MS), rules: () => given() })).toBe(0);
   });
 
   it("says a visit under way runs into the next, by when to finish", async () => {
@@ -157,6 +197,33 @@ describe("the cron's alerts", () => {
     await env.DB.prepare("DELETE FROM tech_alerts").run();
     await turnOff("day_ahead");
     expect(await writeDayAhead(env.DB, { now: NOW, date: "2026-09-22" })).toBe(0);
+  });
+
+  it("sends the next day's jobs in the hour ops set for it, and only then", async () => {
+    await appointment(AHEAD, IMRAN, "2026-09-22T05:30:00.000Z");
+    const run = (now: Date) =>
+      techAlertsJob({
+        env,
+        deps: fakeDependencies({ now: () => now }),
+        config: LOCAL_CONFIG,
+        log: createLogger(),
+        budget: createCallBudget(10),
+        inputs: () => createCachedOpsInputs()(env.DB, now),
+      });
+    await run(new Date("2026-09-21T14:25:00.000Z")); // 7:55 pm in India
+    expect(await alerts()).toEqual([]);
+    await run(new Date("2026-09-21T14:35:00.000Z")); // 8:05 pm
+    expect(await alerts()).toMatchObject([{ kind: "day_ahead", appointment_id: AHEAD }]);
+
+    // Ops set it an hour earlier; the next day is sent from 7 pm.
+    await env.DB.prepare("DELETE FROM tech_alerts").run();
+    expect((await job.opsPost("/api/settings/day_ahead_hour", { value: 19 })).status).toBe(200);
+    await run(new Date("2026-09-22T13:35:00.000Z")); // 7:05 pm on the 22nd, for the 23rd
+    await appointment("22222222-2222-4222-8222-222222222297", IMRAN, "2026-09-23T05:30:00.000Z");
+    await run(new Date("2026-09-22T13:40:00.000Z"));
+    expect(await alerts()).toMatchObject([
+      { kind: "day_ahead", appointment_id: "22222222-2222-4222-8222-222222222297" },
+    ]);
   });
 
   it("deletes alerts older than the inbox shows", async () => {
@@ -208,6 +275,15 @@ describe("a push", () => {
     expect(await pushNewAlerts(env.DB, { push: job.deps.push, budget: createCallBudget(10), now: NOW })).toBe(0);
     expect(job.deps.pushes).toEqual([]);
     expect(await pushed()).toBeNull();
+  });
+
+  it("goes for no alert already read in the app, and to no technician switched off", async () => {
+    await env.DB.prepare("UPDATE tech_alerts SET read_at = ?1").bind(NOW.toISOString()).run();
+    expect(await pushNewAlerts(env.DB, { push: job.deps.push, budget: createCallBudget(10), now: NOW })).toBe(0);
+    await env.DB.prepare("UPDATE tech_alerts SET read_at = NULL").run();
+    await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
+    expect(await pushNewAlerts(env.DB, { push: job.deps.push, budget: createCallBudget(10), now: NOW })).toBe(0);
+    expect(job.deps.pushes).toEqual([]);
   });
 
   it("forgets a subscription the push service no longer has", async () => {

@@ -4338,6 +4338,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/checklists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every kind of visit's checklist as ops set it, for Guides */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The checklists */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianChecklists"];
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/quality": {
         parameters: {
             query?: never;
@@ -5896,6 +5950,10 @@ export interface components {
             /** @description The last seven days', newest first. */
             alerts: components["schemas"]["TechnicianAlert"][];
             settings: components["schemas"]["TechnicianAlertSettings"];
+            /** @description How long before setting off, as ops set it. */
+            leave_notice_min: number;
+            /** @description The hour of India's day the next day's jobs are sent, as ops set it. */
+            day_ahead_hour: number;
             /** @description The public key to subscribe to pushes with; null where pushes are not sent. */
             push_key: string | null;
         };
@@ -5964,6 +6022,15 @@ export interface components {
         TechnicianPushSubscription: {
             /** @description The push service's address for this phone, as the browser gave it. */
             endpoint: string;
+        };
+        TechnicianChecklists: {
+            /** @description Each kind of visit's checklist, in its order. */
+            checklists: {
+                consultation: components["schemas"]["JobSheetItem"][];
+                first_fit: components["schemas"]["JobSheetItem"][];
+                service: components["schemas"]["JobSheetItem"][];
+                replacement: components["schemas"]["JobSheetItem"][];
+            };
         };
         TechnicianQuality: {
             /** @description Visits checked in, booked in the last 30 days. */

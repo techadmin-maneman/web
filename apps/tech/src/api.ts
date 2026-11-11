@@ -51,6 +51,7 @@ export type CheckIn = Schema["CheckIn"];
 export type PieceLookup = Schema["PieceLookup"];
 export type Kit = Schema["TechnicianKit"];
 export type LeaveRequests = Schema["TechnicianLeaveRequests"];
+export type Checklists = Schema["TechnicianChecklists"]["checklists"];
 export type Alerts = Schema["TechnicianAlerts"];
 export type Alert = Alerts["alerts"][number];
 export type AlertSettings = Schema["TechnicianAlertSettings"];
@@ -234,6 +235,8 @@ export const api = {
       body: { reason },
       patience: PATIENCE_MS.write,
     }),
+  /** Every kind of visit's checklist as ops set it, for Guides. */
+  checklists: () => client.get("/api/tech/checklists", { patience: PATIENCE_MS.read }),
   /** The technician's alerts of the last seven days, the kinds they have on, and the key to subscribe to pushes with. */
   alerts: () => client.get("/api/tech/alerts", { patience: PATIENCE_MS.read }),
   /** Every alert read: the inbox was opened. */

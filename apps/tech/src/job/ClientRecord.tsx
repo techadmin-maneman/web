@@ -9,7 +9,7 @@ import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import type { Job } from "../api.ts";
-import { clientRecord as copy } from "../content.ts";
+import { clientRecord as copy, guides } from "../content.ts";
 import { dayMonth } from "../lib/when.ts";
 import styles from "./client-record.module.css";
 
@@ -46,6 +46,7 @@ export function ClientRecord({ job }: { job: Job }) {
       </div>
       <ListRows>
         <ListRow title={copy.history} to={`/jobs/${job.id}/history`} end={<Icon d={GLYPHS.chevron} size="sm" />} />
+        <ListRow title={guides.howDone} to={`/guides/${job.type}`} end={<Icon d={GLYPHS.chevron} size="sm" />} />
       </ListRows>
     </section>
   );

@@ -5,7 +5,8 @@
 
 import { api } from "../api.ts";
 
-export type OnThisPhone = "unsupported" | "off" | "on" | "blocked";
+/** Whether the phone shows the alerts; "failed" is allowed but not subscribed, which Turn on tries again. */
+export type OnThisPhone = "unsupported" | "off" | "on" | "blocked" | "failed";
 
 /** Whether this phone can show the technician's alerts, and whether it has been allowed to. */
 export function notificationsHere(): OnThisPhone {
@@ -15,19 +16,39 @@ export function notificationsHere(): OnThisPhone {
   return Notification.permission === "denied" ? "blocked" : "off";
 }
 
-/** The browser's subscription for this phone, made if it has none, and given to the API. */
+/** A base64url key's bytes. */
+function bytesOf(key: string): Uint8Array {
+  const base64 = key.replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")), (char) => char.charCodeAt(0));
+}
+
+/** Whether a subscription was made with this key: one made with a key since replaced takes no pushes. */
+function madeWith(held: ArrayBuffer | null, key: string): boolean {
+  if (held === null) return false;
+  const [a, b] = [new Uint8Array(held), bytesOf(key)];
+  return a.length === b.length && a.every((byte, index) => byte === b[index]);
+}
+
+/** The browser's subscription for this phone, made anew if it has none or one with an old key, given to the API. */
 export async function keepSubscription(key: string): Promise<boolean> {
   const registration = await navigator.serviceWorker.ready;
-  const subscription =
-    (await registration.pushManager.getSubscription()) ??
-    (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }));
+  let subscription = await registration.pushManager.getSubscription();
+  if (subscription !== null && !madeWith(subscription.options.applicationServerKey, key)) {
+    await subscription.unsubscribe();
+    subscription = null;
+  }
+  subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
   return (await api.pushSubscribe(subscription.endpoint)).ok;
 }
 
 /** Asks the phone to show alerts, from the technician's tap, and subscribes once allowed. */
 export async function turnOnNotifications(key: string): Promise<OnThisPhone> {
-  const answer = await Notification.requestPermission();
-  if (answer !== "granted") return answer === "denied" ? "blocked" : "off";
-  await keepSubscription(key);
-  return "on";
+  try {
+    const answer = await Notification.requestPermission();
+    if (answer !== "granted") return answer === "denied" ? "blocked" : "off";
+    return (await keepSubscription(key)) ? "on" : "failed";
+  } catch {
+    // The push service refused, or the API could not be reached.
+    return "failed";
+  }
 }

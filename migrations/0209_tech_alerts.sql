@@ -73,13 +73,14 @@ BEGIN
    );
 END;
 
--- A job still to come in the next seven days given to another technician: the one who had it is told.
+-- A job still to do in the next seven days given to another technician, a late one included as its technician waits at
+-- the door: the one who had it is told.
 CREATE TRIGGER tech_alerts_job_reassigned AFTER UPDATE OF technician_id ON appointments
 WHEN OLD.technician_id IS NOT NULL
   AND NEW.technician_id IS NOT OLD.technician_id
   AND OLD.status IN ('scheduled', 'dispatched')
   AND OLD.deleted_at IS NULL
-  AND OLD.window_start > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+  AND OLD.window_start > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-12 hours')
   AND OLD.window_start < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+7 days')
 BEGIN
   INSERT OR IGNORE INTO tech_alerts (id, technician_id, kind, appointment_id, date, starts_at, once_key, sent_at)
@@ -90,12 +91,12 @@ BEGIN
    );
 END;
 
--- A job still to come in the next seven days called off.
+-- A job still to do in the next seven days called off, a late one included.
 CREATE TRIGGER tech_alerts_job_cancelled AFTER UPDATE OF status ON appointments
 WHEN NEW.status = 'cancelled'
   AND OLD.status IN ('scheduled', 'dispatched')
   AND NEW.technician_id IS NOT NULL
-  AND NEW.window_start > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+  AND NEW.window_start > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-12 hours')
   AND NEW.window_start < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+7 days')
 BEGIN
   INSERT OR IGNORE INTO tech_alerts (id, technician_id, kind, appointment_id, date, starts_at, once_key, sent_at)

@@ -5834,6 +5834,56 @@ Request body:
 }
 ```
 
+### GET /api/tech/checklists
+
+Every kind of visit's checklist as ops set it, for Guides
+
+**200**: The checklists
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianChecklists"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/tech/quality
 
 The technician's on-time visits and hairline redo rate over the last 30 days
@@ -11451,6 +11501,17 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "settings": {
       "$ref": "#/components/schemas/TechnicianAlertSettings"
     },
+    "leave_notice_min": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "description": "How long before setting off, as ops set it."
+    },
+    "day_ahead_hour": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 23,
+      "description": "The hour of India's day the next day's jobs are sent, as ops set it."
+    },
     "push_key": {
       "type": [
         "string",
@@ -11462,6 +11523,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
   "required": [
     "alerts",
     "settings",
+    "leave_notice_min",
+    "day_ahead_hour",
     "push_key"
   ],
   "additionalProperties": false
@@ -11698,6 +11761,57 @@ One of the client's try-on looks, under the card's own unlock, never cached
   },
   "required": [
     "endpoint"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianChecklists
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "checklists": {
+      "type": "object",
+      "properties": {
+        "consultation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/JobSheetItem"
+          }
+        },
+        "first_fit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/JobSheetItem"
+          }
+        },
+        "service": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/JobSheetItem"
+          }
+        },
+        "replacement": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/JobSheetItem"
+          }
+        }
+      },
+      "required": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ],
+      "additionalProperties": false,
+      "description": "Each kind of visit's checklist, in its order."
+    }
+  },
+  "required": [
+    "checklists"
   ],
   "additionalProperties": false
 }

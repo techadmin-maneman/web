@@ -80,12 +80,13 @@ export function registerTechAlerts(app: App): void {
   app.openapi(alertsRoute, async (c) => {
     const { technicianId } = technicianOf(c);
     const now = c.var.deps.now();
-    const { addressUnlockHour } = await opsInputs(c);
+    const { addressUnlockHour, leaveNoticeMin, dayAheadHour } = await opsInputs(c);
     const [alerts, settings] = await Promise.all([
       inboxOf(c.env.DB, technicianId, { now, unlockHour: addressUnlockHour }),
       alertSettingsOf(c.env.DB, technicianId),
     ]);
-    return c.json({ alerts, settings, push_key: c.var.config.settings.push?.publicKey ?? null }, 200);
+    const notice = { leave_notice_min: leaveNoticeMin, day_ahead_hour: dayAheadHour };
+    return c.json({ alerts, settings, ...notice, push_key: c.var.config.settings.push?.publicKey ?? null }, 200);
   });
 
   app.openapi(readRoute, async (c) => {

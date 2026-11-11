@@ -5,7 +5,7 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { dayAfter, jobsTomorrow, todayInIndia, TOMORROW_JOB_ID } from "./fixtures.ts";
+import { dayAfter, JOB_ID, jobsTomorrow, todayInIndia, TOMORROW_JOB_ID } from "./fixtures.ts";
 import { tab } from "./tabs.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
@@ -74,4 +74,30 @@ test("opens a later job's kind of visit from its preview, and goes back to the p
   await expect(page.getByRole("heading", { level: 1, name: techCopy.types[type] })).toBeVisible();
   await page.getByRole("button", { name: techCopy.job.back }).click();
   await expect(page).toHaveURL(new RegExp(`/week/${tomorrow}/${TOMORROW_JOB_ID}$`));
+});
+
+test("lists the tasks ops set for the visit, as its checklist step asks for them", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.checklists = {
+    consultation: [],
+    first_fit: [],
+    service: [
+      { id: "scalp_cleaned", label: "Scalp cleaned" },
+      { id: "photograph_scalp", label: "Photograph the scalp" },
+    ],
+    replacement: [],
+  };
+  await page.goto("/guides/service");
+  await expect(page.getByRole("link", { name: "Clean the scalp" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Photograph the scalp" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Remove the hair system" })).toHaveCount(0);
+});
+
+test("opens from a job, and goes back to it", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("link", { name: new RegExp(`^${copy.howDone}`) }).click();
+  await expect(page).toHaveURL(/\/guides\/service$/);
+  await page.getByRole("button", { name: techCopy.job.back }).click();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
 });

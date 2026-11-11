@@ -52,16 +52,20 @@ function insertOf(db: D1Database, technicianId: string, alert: Written, now: Dat
     );
 }
 
-/** The day's alerts due now: leave for a job not begun, and a job under way that will make the next one late. */
+/**
+ * The day's alerts due now: leave for a job not yet reached, once for each time it starts at, so a job moved is told
+ * again; and a job under way that will make the next one late.
+ */
 function timedAlertsOf(
   jobs: readonly DayJob[],
   now: Date,
-  on: { readonly time_to_leave: boolean; readonly running_over: boolean },
+  on: { readonly time_to_leave: boolean; readonly running_over: boolean; readonly noticeMinutes: number },
 ): Written[] {
   const due: Written[] = [];
   jobs.forEach((job, index) => {
-    const started = job.progress.started_at !== null || job.status === "in_progress";
-    if (on.time_to_leave && STILL_TO_COME.has(job.status) && leaveDue({ leave_by: job.leave_by, started }, now)) {
+    // Checked in at the door is "dispatched": there is nowhere left to leave for.
+    const started = job.status !== "scheduled" || job.progress.started_at !== null;
+    if (on.time_to_leave && leaveDue({ leave_by: job.leave_by, started }, now, on.noticeMinutes)) {
       due.push({
         kind: "time_to_leave",
         appointmentId: job.id,
@@ -69,7 +73,7 @@ function timedAlertsOf(
         startsAt: job.starts_at,
         leaveBy: job.leave_by,
         driveMinutes: job.drive_minutes,
-        onceKey: `time_to_leave:${job.id}`,
+        onceKey: `time_to_leave:${job.id}:${job.starts_at}`,
       });
     }
     const next = jobs.slice(index + 1).find((later) => STILL_TO_COME.has(later.status));
@@ -111,10 +115,11 @@ async function workingOn(db: D1Database, date: string): Promise<string[]> {
   return results.map((row) => row.technician_id);
 }
 
-/** What the day's list is read with: the hour a job unlocks, and the booking and drive rules. */
+/** What the day's list is read with, the hour a job unlocks and the booking and drive rules, and the leave notice. */
 export interface DayRules {
   readonly unlockHour: number;
   readonly rules: { readonly booking: BookingRules; readonly drive: DriveEstimate };
+  readonly leaveNoticeMin: number;
 }
 
 /** Today's time to leave and running over, for every technician with a job still to do; the rules read only then. */
@@ -132,7 +137,7 @@ export async function writeTimedAlerts(
       jobsOn({ db, technicianId, date, now, unlockHour: given.unlockHour, rules: given.rules }),
       alertSettingsOf(db, technicianId),
     ]);
-    const due = timedAlertsOf(jobs, now, on);
+    const due = timedAlertsOf(jobs, now, { ...on, noticeMinutes: given.leaveNoticeMin });
     if (due.length > 0) await db.batch(due.map((alert) => insertOf(db, technicianId, alert, now)));
     written += due.length;
   }
@@ -197,11 +202,14 @@ export async function pushNewAlerts(
     .prepare(
       `SELECT al.id AS alert_id, s.device_id, s.endpoint
          FROM tech_alerts al
-        -- From the few alerts not yet pushed outward, never from every phone there has been.
+        -- From the few alerts not yet pushed outward, never from every phone there has been; a technician switched
+        -- off is pushed nothing.
+        CROSS JOIN technicians t ON t.id = al.technician_id AND t.active = 1
         CROSS JOIN technician_devices d ON d.technician_id = al.technician_id AND d.revoked_at IS NULL
         CROSS JOIN sessions se ON se.id = d.session_id AND se.revoked_at IS NULL AND se.expires_at > ?1
         CROSS JOIN push_subscriptions s ON s.device_id = d.id
-        WHERE al.pushed_at IS NULL AND al.sent_at >= ?2
+        -- One already read in the app has nothing new to show.
+        WHERE al.pushed_at IS NULL AND al.read_at IS NULL AND al.sent_at >= ?2
         ORDER BY al.sent_at`,
     )
     .bind(at, fresh)

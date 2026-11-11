@@ -4706,6 +4706,17 @@
           "settings": {
             "$ref": "#/components/schemas/TechnicianAlertSettings"
           },
+          "leave_notice_min": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "How long before setting off, as ops set it."
+          },
+          "day_ahead_hour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "The hour of India's day the next day's jobs are sent, as ops set it."
+          },
           "push_key": {
             "type": [
               "string",
@@ -4717,6 +4728,8 @@
         "required": [
           "alerts",
           "settings",
+          "leave_notice_min",
+          "day_ahead_hour",
           "push_key"
         ],
         "additionalProperties": false
@@ -4928,6 +4941,52 @@
         },
         "required": [
           "endpoint"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianChecklists": {
+        "type": "object",
+        "properties": {
+          "checklists": {
+            "type": "object",
+            "properties": {
+              "consultation": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/JobSheetItem"
+                }
+              },
+              "first_fit": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/JobSheetItem"
+                }
+              },
+              "service": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/JobSheetItem"
+                }
+              },
+              "replacement": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/JobSheetItem"
+                }
+              }
+            },
+            "required": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ],
+            "additionalProperties": false,
+            "description": "Each kind of visit's checklist, in its order."
+          }
+        },
+        "required": [
+          "checklists"
         ],
         "additionalProperties": false
       },
@@ -12154,6 +12213,63 @@
                       "additionalProperties": {}
                     }
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required; device_revoked; technician_inactive: ops switched the technician off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required",
+                                "device_revoked",
+                                "technician_inactive"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tech/checklists": {
+      "get": {
+        "summary": "Every kind of visit's checklist as ops set it, for Guides",
+        "responses": {
+          "200": {
+            "description": "The checklists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianChecklists"
                 }
               }
             }

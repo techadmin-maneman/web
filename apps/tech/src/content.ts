@@ -387,6 +387,10 @@ export const interrupted = {
   closed: (job: string) => `${job}: closed`,
   closedBody: "This visit was closed. What you recorded is kept on this phone, in Pending uploads.",
   moved: (job: string, to: string) => `${job}: moved to ${to}`,
+  /** From a push, which names no one: given to another technician, or called off. */
+  reassigned: (job: string) => `${job}: given to another technician`,
+  reassignedBody: "Ops gave this visit to another technician.",
+  cancelledAlert: "Ops cancelled this visit.",
   cancelledBody: "Ops cancelled this visit. What you recorded is kept on this phone, in Pending uploads.",
   movedBody: (to: string) =>
     `Ops gave this visit to ${to}. What you recorded is kept on this phone, in Pending uploads.`,
@@ -1172,9 +1176,14 @@ export const alerts = {
   sendMe: "Send me",
   /** Me's row: "4 on" */
   on: (count: number) => `${String(count)} on`,
+  /** "10 min before you need to set off", by the minutes ops set. */
+  leaveSub: (minutes: number) => `${String(minutes)} min before you need to set off`,
+  /** "At 8 pm, the next day’s jobs", by the hour of India's day ops set. */
+  dayAheadSub: (hour: number) =>
+    `At ${String(hour % 12 === 0 ? 12 : hour % 12)} ${hour < 12 ? "am" : "pm"}, the next day’s jobs`,
   kinds: {
-    time_to_leave: { label: "Time to leave", sub: "10 min before you need to set off" },
-    day_ahead: { label: "Day ahead", sub: "At 8 pm, the next day’s jobs" },
+    time_to_leave: { label: "Time to leave", sub: null },
+    day_ahead: { label: "Day ahead", sub: null },
     job_changes: { label: "Job changes", sub: "Moved, cancelled or reassigned" },
     running_over: { label: "Running over", sub: "When a visit will make you late for the next" },
   },
@@ -1182,6 +1191,7 @@ export const alerts = {
   /** Notifications on this phone, beneath Send me: asked for once the technician taps. */
   phoneOff: "Alerts don’t show on this phone yet.",
   turnOn: "Turn on",
+  turnOnFailed: "Alerts weren’t turned on. Try again with signal.",
   blocked: "Notifications are blocked for this app in the phone’s settings.",
   /** "the 2 pm service visit": a job whose client the phone may not name. */
   job: (time: string, kind: string) => `the ${time} ${kind}`,
@@ -1210,6 +1220,8 @@ export const alerts = {
   /** When it came: "9:02 am", "Yesterday, 8 pm", "Mon 9 Nov, 8 pm" */
   yesterday: (time: string) => `Yesterday, ${time}`,
   earlier: (day: string, time: string) => `${day}, ${time}`,
+  /** "tomorrow 4 pm": a job's time on the next day. */
+  tomorrowAt: (time: string) => `tomorrow ${time}`,
 } as const;
 
 /** Guides, from Me: each kind of visit's steps, and each task read alone (./guides/GuidesScreen.tsx). */

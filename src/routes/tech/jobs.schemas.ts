@@ -8,6 +8,7 @@ import { CARD_STEPS, SENT_BACK_KINDS } from "../../policy/in-job-steps.ts";
 import { BasedOnSchema, FitSpecWriteSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
 import { PieceSchema } from "./pieces.ts";
 import { HandoffSchema, TechnicianAlertsSchema } from "../schemas/client-record.ts";
+import { JobSheetItemSchema } from "../schemas/job-sheet.ts";
 import { AddressSchema, JobSummarySchema } from "../schemas/tech-jobs.ts";
 
 export const jobId = z.object({ id: z.uuid() });
@@ -51,9 +52,6 @@ const ProgressSchema = z
   })
   .strict()
   .openapi("TechnicianJobProgress");
-
-/** One item of the job sheet: the code the app sends back, and the words the technician reads. */
-const JobSheetItemSchema = z.object({ id: z.string(), label: z.string() }).strict().openapi("JobSheetItem");
 
 const OfferedSchema = z
   .object({

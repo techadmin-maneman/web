@@ -27,6 +27,8 @@ async function alertFor(technicianId: string, fields: { id: string; kind: string
 interface Inbox {
   alerts: { id: string; read: boolean; client_name: string | null; navigate: string | null; sector: string | null }[];
   settings: Record<string, boolean>;
+  leave_notice_min: number;
+  day_ahead_hour: number;
   push_key: string | null;
 }
 const inbox = async () => (await job.get("/api/tech/alerts")).json<Inbox>();
@@ -48,6 +50,8 @@ describe("the inbox", () => {
     expect(read.alerts[0]).toMatchObject({ read: false, client_name: "Rohit Malhotra", sector: "Sector 65" });
     expect(read.alerts[0]?.navigate).toBe("https://www.google.com/maps/dir/?api=1&destination=28.398%2C77.07");
     expect(read.settings).toEqual({ time_to_leave: true, day_ahead: true, job_changes: true, running_over: true });
+    // The notice and the hour ops set, which Send me's lines read.
+    expect(read).toMatchObject({ leave_notice_min: 10, day_ahead_hour: 20 });
     // No keys are set here, so the phone asks for no notifications.
     expect(read.push_key).toBeNull();
   });
@@ -91,5 +95,20 @@ describe("a phone's push subscription", () => {
     expect((await subscribe("https://example.com/hook")).status).toBe(400);
     expect((await subscribe("http://fcm.googleapis.com/fcm/send/plain")).status).toBe(400);
     expect(await kept()).toEqual([]);
+  });
+});
+
+describe("the checklists for Guides", () => {
+  it("are each kind's as ops set them in the console, in their order, in the technician's words", async () => {
+    const saved = await job.opsPost("/api/job-sheet/checklists/service", {
+      items: [{ code: "piece_removed", label: "Hair system off" }, { label: "Photograph the scalp" }],
+    });
+    expect(saved.status).toBe(200);
+    const { checklists } = await (
+      await job.get("/api/tech/checklists")
+    ).json<{ checklists: Record<string, { id: string; label: string }[]> }>();
+    expect(checklists.service?.map((item) => item.label)).toEqual(["Hair system off", "Photograph the scalp"]);
+    expect(checklists.service?.[0]?.id).toBe("piece_removed");
+    expect(Object.keys(checklists)).toEqual(["consultation", "first_fit", "service", "replacement"]);
   });
 });

@@ -1,6 +1,7 @@
 // When a technician is told (docs/prompts/tech-redesign.md, "Alerts"; docs/decisions/0250-guides-and-alerts.md):
-// to leave, ten minutes before they need to set off; the day ahead, at 8 pm; and that a visit runs over, when it will
-// make them late for the next. The phone's Today reads the running over by the same rule (apps/tech/src/lib/when.ts).
+// to leave, the minutes ops set before they need to set off; the day ahead, at the hour ops set; and that a visit runs
+// over, when it will make them late for the next. The phone's Today reads the running over by the same rule
+// (apps/tech/src/lib/when.ts).
 
 import { MINUTE_MS } from "../lib/durations.ts";
 
@@ -21,20 +22,24 @@ export type AlertSetting = (typeof ALERT_SETTINGS)[number];
 /** How far back the inbox goes; older alerts are deleted. */
 export const INBOX_DAYS = 7;
 
-/** How long before setting off the technician is told to leave. */
-const LEAVE_NOTICE_MINUTES = 10;
+/** How long before setting off the technician is told to leave, until ops set it (./ops-settings-alerts.ts). */
+export const LEAVE_NOTICE_MINUTES = 10;
 
-/** The hour of India's evening the next day's jobs are sent. */
+/** The hour of India's evening the next day's jobs are sent, until ops set it. */
 export const DAY_AHEAD_HOUR = 20;
 
 /** How long a push is kept by the push service for a phone that is off: a job's alert is stale after that. */
 export const PUSH_TTL_SECONDS = 30 * 60;
 
 /** Whether it is time to tell the technician to leave for a job not yet begun: within the notice, before the time. */
-export function leaveDue(job: { readonly leave_by: string | null; readonly started: boolean }, now: Date): boolean {
+export function leaveDue(
+  job: { readonly leave_by: string | null; readonly started: boolean },
+  now: Date,
+  noticeMinutes: number,
+): boolean {
   if (job.leave_by === null || job.started) return false;
   const left = Date.parse(job.leave_by) - now.getTime();
-  return left > 0 && left <= LEAVE_NOTICE_MINUTES * MINUTE_MS;
+  return left > 0 && left <= noticeMinutes * MINUTE_MS;
 }
 
 /**

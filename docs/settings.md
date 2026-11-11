@@ -161,6 +161,8 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `check_in_days` | Follow-ups after a fit | days | `{"first":2,"second":21}` |
 | `referral_monthly_cap` | Hold referral rewards above | fits a month | `5` |
 | `tryon_look_days` | One try-on look per number every | days | `30` |
+| `leave_notice_min` | Time to leave | minutes | `10` |
+| `day_ahead_hour` | Day ahead | hour of the day, in India | `20` |
 | `stock_watch` | Stock alerts | days | `{"expiry_warning_days":30,"demand_days":28,"transfer_overdue_days":7}` |
 | `stock_usage` | Usage flags | days | `{"days":28,"over_percent":20,"min_visits":5,"write_offs":3}` |
 | `stock_quality` | Quality figures | days | `{"failure_days":365,"pace_days":28}` |

@@ -96,6 +96,9 @@ export interface OpsInputs {
   readonly paymentLinks: PaymentLinks;
   /** Minutes after arriving the client may still be told (src/policy/check-in.ts). */
   readonly arrivalNoticeMin: number;
+  /** How long before setting off a technician is told to leave, and when the next day's jobs are sent (ADR 0250). */
+  readonly leaveNoticeMin: number;
+  readonly dayAheadHour: number;
   /** Hours a move to another day waits for the client (src/policy/dispatch.ts). */
   readonly moveProposalHours: number;
   readonly creditReminderDays: CreditReminderDays;
@@ -158,6 +161,8 @@ function shape(values: OpsValues): OpsInputs {
     referralReward: values.referral_reward,
     paymentLinks: values.payment_links,
     arrivalNoticeMin: values.arrival_notice_min,
+    leaveNoticeMin: values.leave_notice_min,
+    dayAheadHour: values.day_ahead_hour,
     moveProposalHours: values.move_proposal_hours,
     creditReminderDays: values.credit_reminder_days,
     checkInDays: values.check_in_days,

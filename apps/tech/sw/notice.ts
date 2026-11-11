@@ -1,19 +1,21 @@
-// What a push shows on the lock screen (./sw.ts): the newest alert the API holds for the technician, in words that
-// name no client, since a locked phone is seen by others. Navigate and Open job where the alert is about a job; a tap
-// opens the job, the day ahead's day, or the inbox. Its own words, not the app's (../src/content.ts): the worker is
-// built as one file and shares no module with the app.
+// What a push shows on the lock screen (./sw.ts): each alert not yet read that has not been shown, a notification each,
+// in words that name no client, since a locked phone is seen by others; a job on another day says which. Navigate and
+// Open job where the alert is about a job; a tap opens the job, the day ahead's day, or the inbox. Its own words, not
+// the app's (../src/content.ts): the worker is built as one file and shares no module with the app.
 
 /** The alert as GET /api/tech/alerts gives it, the parts a notification reads. */
 export interface PushedAlert {
   readonly id: string;
   readonly kind: "time_to_leave" | "day_ahead" | "job_moved" | "job_cancelled" | "job_reassigned" | "running_over";
   readonly read: boolean;
+  readonly sent_at: string;
   readonly job_id: string | null;
   readonly date: string | null;
   readonly type: "consultation" | "first_fit" | "service" | "replacement" | null;
   readonly sector: string | null;
   readonly starts_at: string | null;
   readonly was_starts_at: string | null;
+  readonly leave_by: string | null;
   readonly drive_minutes: number | null;
   readonly finish_by: string | null;
   readonly jobs: number | null;
@@ -43,45 +45,70 @@ export const WORDS = {
   openJob: "Open job",
 } as const;
 
-const INDIA_MS = (5 * 60 + 30) * 60_000;
+const MINUTE_MS = 60_000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
+const INDIA_MS = (5 * 60 + 30) * MINUTE_MS;
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** An instant on India's clock, read as UTC. */
+const inIndia = (instant: number): Date => new Date(instant + INDIA_MS);
+const dayOf = (instant: number): string => inIndia(instant).toISOString().slice(0, 10);
 
 /** "9:30 am", "4 pm": an instant on India's clock, as the app writes it. */
-function at(instant: string | null): string {
-  if (instant === null) return "";
-  const india = new Date(Date.parse(instant) + INDIA_MS);
+function clock(instant: number): string {
+  const india = inIndia(instant);
   const hours = india.getUTCHours();
   const minutes = india.getUTCMinutes();
   const hour = hours % 12 === 0 ? 12 : hours % 12;
   return `${String(hour)}${minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`} ${hours < 12 ? "am" : "pm"}`;
 }
+
+/** "4 pm" today, "tomorrow 4 pm", or "Thu 12 Nov, 4 pm": when, with the day where it is not today. */
+function at(instant: string | null, now: number): string {
+  if (instant === null) return "";
+  const when = Date.parse(instant);
+  if (dayOf(when) === dayOf(now)) return clock(when);
+  if (dayOf(when) === dayOf(now + DAY_MS)) return `tomorrow ${clock(when)}`;
+  const india = inIndia(when);
+  const day = `${WEEKDAYS[india.getUTCDay()] ?? ""} ${String(india.getUTCDate())} ${MONTHS[india.getUTCMonth()] ?? ""}`;
+  return `${day}, ${clock(when)}`;
+}
+
 const joined = (...parts: readonly (string | null)[]): string =>
   parts.filter((part) => part !== null && part !== "").join(" · ");
 
-/** "11:30 am service visit" */
-const job = (alert: PushedAlert): string =>
-  joined(`${at(alert.starts_at)} ${alert.type === null ? "job" : KINDS[alert.type]}`.trim());
+/** "11:30 am service visit", or "tomorrow 11:30 am service visit". */
+const job = (alert: PushedAlert, now: number): string =>
+  `${at(alert.starts_at, now)} ${alert.type === null ? "job" : KINDS[alert.type]}`.trim();
 
-function wordsOf(alert: PushedAlert): { title: string; body: string } {
+/** "Leave in 7 min" as the notification is shown, or "Time to leave" once the time has come. */
+function leaveWords(alert: PushedAlert, now: number): string {
+  const left = Math.round((Date.parse(alert.leave_by ?? "") - now) / MINUTE_MS);
+  return Number.isFinite(left) && left > 0 ? `Leave in ${String(left)} min` : "Time to leave";
+}
+
+function wordsOf(alert: PushedAlert, now: number): { title: string; body: string } {
   switch (alert.kind) {
     case "time_to_leave":
-      return { title: "Leave in 10 min", body: joined(job(alert), alert.sector) };
+      return { title: leaveWords(alert, now), body: joined(job(alert, now), alert.sector) };
     case "running_over":
       return {
-        title: `Running over · finish by ${at(alert.finish_by)}`,
-        body: joined(`for the ${job(alert)}`, alert.sector),
+        title: `Running over · finish by ${at(alert.finish_by, now)}`,
+        body: joined(`for the ${job(alert, now)}`, alert.sector),
       };
     case "job_moved":
       return {
-        title: `A job moved to ${at(alert.starts_at)}`,
-        body: joined(alert.sector, `was ${at(alert.was_starts_at)}`),
+        title: `A job moved to ${at(alert.starts_at, now)}`,
+        body: joined(alert.sector, `was ${at(alert.was_starts_at, now)}`),
       };
     case "job_cancelled":
-      return { title: "A job was cancelled", body: job(alert) };
+      return { title: "A job was cancelled", body: job(alert, now) };
     case "job_reassigned":
-      return { title: "A job went to another technician", body: job(alert) };
+      return { title: "A job went to another technician", body: job(alert, now) };
     case "day_ahead":
       return {
-        title: `Tomorrow: ${String(alert.jobs ?? 0)} ${alert.jobs === 1 ? "job" : "jobs"} from ${at(alert.starts_at)}`,
+        title: `Tomorrow: ${String(alert.jobs ?? 0)} ${alert.jobs === 1 ? "job" : "jobs"} from ${clock(Date.parse(alert.starts_at ?? ""))}`,
         body: alert.sector === null ? "" : `First in ${alert.sector}`,
       };
   }
@@ -94,9 +121,24 @@ function pageOf(alert: PushedAlert): string {
   return alert.job_id === null || gone ? "/alerts" : `/jobs/${alert.job_id}`;
 }
 
-/** The notification for the newest alert not yet read, or the one that says to open the app when none could be read. */
-export function noticeOf(alerts: readonly PushedAlert[] | null): Notice {
-  const newest = alerts?.find((alert) => !alert.read);
-  if (newest === undefined) return { ...WORDS.unread, tag: "alerts", open: "/alerts", navigate: null };
-  return { ...wordsOf(newest), tag: newest.id, open: pageOf(newest), navigate: newest.navigate };
+const noticeFor = (alert: PushedAlert, now: number): Notice => ({
+  ...wordsOf(alert, now),
+  tag: alert.id,
+  open: pageOf(alert),
+  navigate: alert.navigate,
+});
+
+/**
+ * The notifications a push shows: each alert not yet read and not shown before, newest first. A push must show one,
+ * so with none new the newest unread is shown again in its place, or, where none could be read, the one that says to
+ * open the app.
+ */
+export function noticesOf(alerts: readonly PushedAlert[] | null, shown: ReadonlySet<string>, now: number): Notice[] {
+  const unread = (alerts ?? []).filter((alert) => !alert.read);
+  const fresh = unread.filter((alert) => !shown.has(alert.id));
+  if (fresh.length > 0) return fresh.map((alert) => noticeFor(alert, now));
+  const [newest] = unread;
+  return newest === undefined
+    ? [{ ...WORDS.unread, tag: "alerts", open: "/alerts", navigate: null }]
+    : [noticeFor(newest, now)];
 }

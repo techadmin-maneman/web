@@ -2,10 +2,11 @@
 // many are new and opens the inbox, newest first, which reads them; a row opens its job; Send me turns a kind off; Me
 // opens Alerts too, and says how many kinds are on.
 
+import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
-import { JOB_ID } from "./fixtures.ts";
+import { JOB_ID, todayInIndia } from "./fixtures.ts";
 import { tab } from "./tabs.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
@@ -36,7 +37,7 @@ function alertOf(fields: Partial<Alert>): Alert {
   };
 }
 
-const bell = (page: import("@playwright/test").Page) => page.getByRole("link", { name: /^Alerts/ });
+const bell = (page: Page) => page.getByRole("link", { name: /^Alerts/ });
 
 test("Today's bell says how many are new, and opens Alerts, which reads them all", async ({ page }) => {
   const fake = await fakeTech(page);
@@ -93,4 +94,99 @@ test("says when there are none, and Send me turns a kind off, which Me then coun
   await page.getByRole("button", { name: techCopy.job.back }).click();
   await expect(page).toHaveURL(/\/me$/);
   await expect(page.getByRole("link", { name: new RegExp(`^${copy.title}`) })).toContainText(copy.on(3));
+});
+
+/** The phone's notifications as a test sets them: the permission, and a push service that takes or refuses. */
+async function phoneNotifications(page: Page, permission: "default" | "denied", service: "takes" | "refuses") {
+  await page.addInitScript(
+    ([given, answer]) => {
+      const state: { permission: string } = { permission: given };
+      Object.defineProperty(window, "Notification", {
+        configurable: true,
+        value: {
+          get permission() {
+            return state.permission;
+          },
+          requestPermission: () => {
+            state.permission = "granted";
+            return Promise.resolve("granted");
+          },
+        },
+      });
+      const pushManager = {
+        getSubscription: () => Promise.resolve(null),
+        subscribe: () =>
+          answer === "takes"
+            ? Promise.resolve({ endpoint: "https://fcm.googleapis.com/fcm/send/test-phone" })
+            : Promise.reject(new Error("the push service refused")),
+      };
+      // The tests block service workers; the app reads the one the phone would have.
+      Object.defineProperty(navigator.serviceWorker, "ready", { value: Promise.resolve({ pushManager }) });
+    },
+    [permission, service] as const,
+  );
+}
+
+test("Turn on asks the phone, once tapped, and gives the API the phone's push address", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.inbox = {
+    ...fake.inbox,
+    push_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U",
+  };
+  await phoneNotifications(page, "default", "takes");
+  await page.goto("/alerts");
+  await expect(page.getByText(copy.phoneOff)).toBeVisible();
+  await page.getByRole("button", { name: copy.turnOn }).click();
+  await expect(page.getByText(copy.phoneOff)).toHaveCount(0);
+  expect(fake.pushSubscriptions).toEqual(["https://fcm.googleapis.com/fcm/send/test-phone"]);
+});
+
+test("says when the push service refuses, and Turn on can be tried again", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.inbox = {
+    ...fake.inbox,
+    push_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U",
+  };
+  await phoneNotifications(page, "default", "refuses");
+  await page.goto("/alerts");
+  await page.getByRole("button", { name: copy.turnOn }).click();
+  await expect(page.getByRole("alert").filter({ hasText: copy.turnOnFailed })).toBeVisible();
+  await expect(page.getByRole("button", { name: copy.turnOn })).toBeVisible();
+  expect(fake.pushSubscriptions).toEqual([]);
+});
+
+test("says when the phone's settings block notifications", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.inbox = {
+    ...fake.inbox,
+    push_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U",
+  };
+  await phoneNotifications(page, "denied", "takes");
+  await page.goto("/alerts");
+  await expect(page.getByText(copy.blocked)).toBeVisible();
+  await expect(page.getByRole("button", { name: copy.turnOn })).toHaveCount(0);
+});
+
+test("says a kind turned off with no signal was not saved, and keeps it on", async ({ page }) => {
+  await fakeTech(page);
+  await page.route("**/api/tech/alerts/settings", (route) => route.abort("internetdisconnected"));
+  await page.goto("/alerts");
+  const dayAhead = page.getByRole("switch", { name: copy.kinds.day_ahead.label });
+  await dayAhead.click();
+  await expect(page.getByRole("alert").filter({ hasText: copy.settingFailed })).toBeVisible();
+  await expect(dayAhead).toHaveAttribute("aria-checked", "true");
+});
+
+test("a job of today's called off, read from a push, opens the dialog that says so", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.inbox = {
+    ...fake.inbox,
+    alerts: [alertOf({ kind: "job_cancelled", date: todayInIndia(), client_name: "Rohit M." })],
+  };
+  await page.goto("/");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: techCopy.interrupted.cancelled("Rohit M.") })).toBeVisible();
+  await expect(dialog.getByText(techCopy.interrupted.cancelledAlert)).toBeVisible();
+  await dialog.getByRole("button", { name: techCopy.interrupted.today }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });

@@ -1,7 +1,18 @@
 // What each IndexedDB store holds (./db.ts): one record type per store, so a read says what it gets.
 
 import type { FitForm, HistoryForm } from "@maneman/web-kit/hair-profile";
-import type { Angle, CheckIn, FinishAsk, Job, JobSummary, Me, OutcomeRequest, Phase, VisitToFix } from "../api.ts";
+import type {
+  Angle,
+  CheckIn,
+  Checklists,
+  FinishAsk,
+  Job,
+  JobSummary,
+  Me,
+  OutcomeRequest,
+  Phase,
+  VisitToFix,
+} from "../api.ts";
 import type { Queued } from "./replay.ts";
 
 /** A day's list of jobs, by its date. */
@@ -91,7 +102,9 @@ export type DeviceRecord =
   /** The visits with steps ops sent back, as the day's list last said, for Today with no signal (./jobs.ts). */
   | { readonly key: "to_fix"; readonly visits: readonly VisitToFix[] }
   /** How the technician suggested finishing each visit left partly done, still to reach ops (./finish-asks.ts). */
-  | { readonly key: "finish_asks"; readonly asks: Readonly<Record<string, FinishAsk>> };
+  | { readonly key: "finish_asks"; readonly asks: Readonly<Record<string, FinishAsk>> }
+  /** Every kind of visit's checklist as ops last set it, for Guides with no signal (../guides/checklists.ts). */
+  | { readonly key: "checklists"; readonly checklists: Checklists };
 
 export interface Records {
   readonly device: DeviceRecord;

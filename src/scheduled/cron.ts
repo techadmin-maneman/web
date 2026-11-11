@@ -79,8 +79,7 @@ import { placePincodeCentres } from "../domain/cities/pincode-centres.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
-import { DAY_AHEAD_HOUR } from "../policy/tech-alerts.ts";
-import { dayAheadJob, techAlertsJob } from "./tech-alerts.ts";
+import { techAlertsJob } from "./tech-alerts.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -405,7 +404,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "unbooked_holds", needs: "nothing", every: 5, at: 3, run: unbookedHoldsJob },
   { name: "requeue_messages", needs: "nothing", every: 5, at: 4, run: requeueMessages },
   { name: "alerts_retold", needs: "nothing", every: 5, at: 4, run: alertsRetoldJob },
-  // A technician's time to leave and running over, and a push for each of their alerts new since (ADR 0250).
+  // A technician's time to leave and running over, the day ahead in the hour ops set, and a push for each (ADR 0250).
   { name: "tech_alerts", needs: "nothing", every: 5, at: 0, run: techAlertsJob },
 
   // Every fifteen minutes.
@@ -457,8 +456,6 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "analytics_nightly", needs: "nothing", every: 60, at: 31, slot: { hour: 3 }, run: analyticsJob },
   // When each task opened and closed, for the reporting copy (docs/decisions/0147-task-spans.md).
   { name: "task_spans", needs: "nothing", every: 60, at: 26, slot: { hour: 23 }, run: taskSpansJob },
-  // Each technician's jobs tomorrow, from 8 pm in India, pushed by the next tech_alerts run; and alerts past the inbox.
-  { name: "day_ahead", needs: "nothing", every: 60, at: 32, slot: { hour: DAY_AHEAD_HOUR }, run: dayAheadJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
   // A visit today with no technician, told each hour until someone is sent (src/domain/dispatch/unassigned.ts).

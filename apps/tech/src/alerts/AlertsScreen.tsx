@@ -51,7 +51,12 @@ function Inbox({ alerts }: { readonly alerts: Alerts }) {
   return (
     <>
       <AlertList lines={lines} />
-      <SendMe on={settings} onToggle={(kind) => void toggle(kind)} failed={failed} />
+      <SendMe
+        on={settings}
+        notice={{ leaveMinutes: alerts.leave_notice_min, dayAheadHour: alerts.day_ahead_hour }}
+        onToggle={(kind) => void toggle(kind)}
+        failed={failed}
+      />
       {alerts.push_key !== null && <OnPhone pushKey={alerts.push_key} />}
     </>
   );
@@ -63,8 +68,8 @@ function OnPhone({ pushKey }: { readonly pushKey: string }) {
   if (here === "unsupported" || here === "on") return null;
   if (here === "blocked") return <p className={styles.phone}>{copy.blocked}</p>;
   return (
-    <p className={styles.phone}>
-      {copy.phoneOff}{" "}
+    <p className={styles.phone} role={here === "failed" ? "alert" : undefined}>
+      {here === "failed" ? copy.turnOnFailed : copy.phoneOff}{" "}
       <TextButton
         onClick={() => {
           void turnOnNotifications(pushKey).then(setHere);

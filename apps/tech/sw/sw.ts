@@ -9,7 +9,7 @@
 // It shows each push as the phone's own notification (./notice.ts), and a tap opens the app where the alert points.
 
 import { serveTheShell } from "../../../packages/web-kit/sw-shell.ts";
-import { noticeOf, WORDS, type PushedAlert } from "./notice.ts";
+import { noticesOf, WORDS, type Notice, type PushedAlert } from "./notice.ts";
 import { answerFor } from "./requests.ts";
 
 declare const self: ServiceWorkerGlobalScope;
@@ -41,27 +41,63 @@ async function alertsNow(): Promise<readonly PushedAlert[] | null> {
   }
 }
 
+/** The alerts already shown on this phone, kept in a cache of its own: the alerts read, for the ones not in them. */
+const SHOWN = "mm-tech-alerts-shown";
+const shownKey = (id: string): string => `/shown/${id}`;
+
+async function shownBefore(): Promise<Set<string>> {
+  const cache = await caches.open(SHOWN);
+  return new Set((await cache.keys()).map((request) => new URL(request.url).pathname.slice("/shown/".length)));
+}
+
+/** Notes what was shown, and forgets what the API no longer holds. */
+async function noteShown(shown: readonly string[], held: readonly PushedAlert[]): Promise<void> {
+  const cache = await caches.open(SHOWN);
+  const kept = new Set(held.map((alert) => alert.id));
+  for (const request of await cache.keys()) {
+    if (!kept.has(new URL(request.url).pathname.slice("/shown/".length))) await cache.delete(request);
+  }
+  for (const id of shown) await cache.put(shownKey(id), new Response(null, { status: 204 }));
+}
+
+async function show(notice: Notice): Promise<void> {
+  // Actions are in the Notifications standard, not yet in TypeScript's WebWorker types.
+  const options: NotificationOptions & { readonly actions: readonly { action: string; title: string }[] } = {
+    body: notice.body,
+    tag: notice.tag,
+    icon: "/icon-192.png",
+    data: { open: notice.open, navigate: notice.navigate },
+    actions:
+      notice.navigate === null
+        ? []
+        : [
+            { action: "navigate", title: WORDS.navigate },
+            { action: "open", title: WORDS.openJob },
+          ],
+  };
+  await self.registration.showNotification(notice.title, options);
+}
+
+/** An app open on the phone reads its alerts again, so a job called off under it opens the dialog that says so. */
+async function tellTheApp(): Promise<void> {
+  for (const window of await self.clients.matchAll({ type: "window" })) window.postMessage({ kind: "mm-alerts" });
+}
+
 // A push carries nothing (src/providers/web-push.ts): it says there is an alert, which is read from the API and shown.
 // Every push shows one, as the phones require, even when the alert could not be read.
 self.addEventListener("push", (event) => {
   event.waitUntil(
     (async () => {
-      const notice = noticeOf(await alertsNow());
-      // Actions are in the Notifications standard, not yet in TypeScript's WebWorker types.
-      const options: NotificationOptions & { readonly actions: readonly { action: string; title: string }[] } = {
-        body: notice.body,
-        tag: notice.tag,
-        icon: "/icon-192.png",
-        data: { open: notice.open, navigate: notice.navigate },
-        actions:
-          notice.navigate === null
-            ? []
-            : [
-                { action: "navigate", title: WORDS.navigate },
-                { action: "open", title: WORDS.openJob },
-              ],
-      };
-      await self.registration.showNotification(notice.title, options);
+      const [alerts, shown] = await Promise.all([alertsNow(), shownBefore().catch(() => new Set<string>())]);
+      const notices = noticesOf(alerts, shown, Date.now());
+      for (const notice of notices) await show(notice);
+      if (alerts !== null) {
+        await noteShown(
+          notices.map((notice) => notice.tag),
+          alerts,
+        ).catch(() => undefined);
+      }
+      await tellTheApp();
     })(),
   );
 });

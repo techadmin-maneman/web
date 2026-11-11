@@ -91,6 +91,8 @@ export function createPush(options: PushOptions): Push {
           Urgency: "high",
           "Content-Length": "0",
         },
+        // A push service answers itself; a redirect would carry the signed request elsewhere.
+        redirect: "manual",
       },
     );
     if (answer instanceof VendorUnreachable) return "failed";

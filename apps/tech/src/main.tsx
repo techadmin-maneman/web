@@ -1,3 +1,4 @@
+import { dataChanged } from "@maneman/ui/useLoad";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { takeSignInMark } from "@maneman/web-kit/access";
 import { reportUncaughtErrors } from "@maneman/web-kit/client-errors";
@@ -41,5 +42,16 @@ createRoot(root).render(
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   keepUpToDate().catch(() => {
     // Without it the app still works while it stays open, on its own store.
+  });
+  // A push the worker showed: everything read again, the alerts with it (docs/decisions/0250-guides-and-alerts.md).
+  navigator.serviceWorker.addEventListener("message", (event: MessageEvent<unknown>) => {
+    if (
+      typeof event.data === "object" &&
+      event.data !== null &&
+      "kind" in event.data &&
+      event.data.kind === "mm-alerts"
+    ) {
+      dataChanged();
+    }
   });
 }

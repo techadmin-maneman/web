@@ -256,6 +256,11 @@ export async function clearStaging(fixture: StagingFixture): Promise<void> {
     `DELETE FROM sos_alerts WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
     `DELETE FROM kit_requests WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
     `DELETE FROM reschedule_requests WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
+    // Their alerts, which the cron and a change to the jobs write, and their phone's pushes (ADR 0250).
+    `DELETE FROM tech_alerts WHERE technician_id = ${sqlLiteral(fixture.technicianId)} OR appointment_id IN (${ids});`,
+    `DELETE FROM tech_alert_kinds_off WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
+    `DELETE FROM push_subscriptions WHERE device_id IN
+       (SELECT id FROM technician_devices WHERE technician_id = ${sqlLiteral(fixture.technicianId)});`,
     `DELETE FROM appointments WHERE id IN (${ids});`,
     `DELETE FROM addresses WHERE person_id = ${sqlLiteral(fixture.personId)};`,
     `DELETE FROM people WHERE id = ${sqlLiteral(fixture.personId)};`,
