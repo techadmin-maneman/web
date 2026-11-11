@@ -14179,12 +14179,20 @@
                   null
                 ],
                 "description": "The consultation's; null where a fit cannot start in it."
+              },
+              "picked": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The hair system the client picked at the consultation, by its name; null for none."
               }
             },
             "required": [
               "group",
               "consulted_at",
-              "fit_window"
+              "fit_window",
+              "picked"
             ],
             "additionalProperties": false
           },

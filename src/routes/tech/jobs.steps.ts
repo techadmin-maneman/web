@@ -68,6 +68,7 @@ import {
 } from "./jobs.record.ts";
 
 import { pieceBody } from "./jobs.piece.ts";
+import { offeredProducts } from "../../domain/booking/services.ts";
 import { registerPhotographs } from "./jobs.photos.ts";
 import { NO_PIECE, takesStep } from "../../policy/in-job-steps.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
@@ -382,10 +383,14 @@ function registerProfileAndOutcome(app: App): void {
       async (job) => {
         if (body.outcome === "done") {
           if (body.lost_reason === undefined) {
-            return body.going_ahead === undefined
-              ? { outcome: "done" }
-              : { outcome: "done", going_ahead: body.going_ahead };
+            if (body.going_ahead === undefined)
+              return body.product === undefined ? { outcome: "done" } : { invalid: ["product"] };
+            const picked = await pickOf(c, job, body.going_ahead, body.product);
+            return picked === null
+              ? { invalid: ["product"] }
+              : { outcome: "done", going_ahead: body.going_ahead, ...picked };
           }
+          if (body.product !== undefined) return { invalid: ["product"] };
           const lost = knownCodes((await jobSheet(c.env.DB)).lostReasons);
           return lost.has(body.lost_reason)
             ? { outcome: "done", lost_reason: body.lost_reason, going_ahead: false }
@@ -439,6 +444,23 @@ async function stepNotTaken(c: Ctx): Promise<z.infer<typeof AcceptedSchema> | nu
     fsm_write_state: "written",
     progress: await progressOf(c.env.DB, job, noShowWaitMin),
   };
+}
+
+/**
+ * A consultation's pick from Options, kept with a client going ahead (docs/decisions/0247-the-steps-left.md): one of
+ * the products offered on the visit's day. Nothing where none was picked; null for a pick refused, as one on any other
+ * visit, on a client not going ahead, or of a product not offered.
+ */
+async function pickOf(
+  c: Ctx,
+  job: WorkableJob,
+  goingAhead: boolean,
+  product: string | undefined,
+): Promise<{ product?: string } | null> {
+  if (product === undefined) return {};
+  if (job.type !== "consultation" || job.oneVisit !== null || !goingAhead) return null;
+  const offered = await offeredProducts(c.env.DB, indiaDate(job.windowStart));
+  return offered.some((each) => each.tier === product) ? { product } : null;
 }
 
 /** The profile step's answer: the event, whether it had landed before, and where the job stands. */

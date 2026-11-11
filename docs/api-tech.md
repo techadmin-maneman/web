@@ -9382,6 +9382,12 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "boolean",
           "description": "On a consultation, whether the client said they are going ahead with a fit; left out where not asked."
         },
+        "product": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "description": "On a consultation going ahead, the hair system the client picked from Options, by its tier: one offered on the visit's day. Left out where none was picked (ADR 0247)."
+        },
         "handoff_note": {
           "type": "string",
           "minLength": 1,

@@ -76,6 +76,10 @@ export const TaskFactsSchema = z
       fit_window: window
         .nullable()
         .openapi({ description: "The consultation's; null where a fit cannot start in it." }),
+      picked: z
+        .string()
+        .nullable()
+        .openapi({ description: "The hair system the client picked at the consultation, by its name; null for none." }),
     }),
     facts("upi_due", {
       kind,

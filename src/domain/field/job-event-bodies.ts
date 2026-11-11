@@ -124,6 +124,16 @@ export const OutcomeRequestSchema = z
           description:
             "On a consultation, whether the client said they are going ahead with a fit; left out where not asked.",
         }),
+        product: z
+          .string()
+          .min(1)
+          .max(32)
+          .optional()
+          .openapi({
+            description:
+              "On a consultation going ahead, the hair system the client picked from Options, by its tier: one offered " +
+              "on the visit's day. Left out where none was picked (ADR 0247).",
+          }),
         ...CLOSE_NOTES,
       })
       .strict(),

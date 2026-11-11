@@ -198,10 +198,10 @@ export const tasks = {
      * "Consultation Thu 10 Sep, morning · not fitted". The window is the consultation's, which the fit
      * is booked in from the row; none where a fit cannot start in it. The task goes when the client books.
      */
-    first_fit_to_book: (consulted: string, when: string | null) =>
-      when === null
-        ? `Consultation ${consulted} · not fitted`
-        : `Consultation ${consulted}, ${when.toLowerCase()} · not fitted`,
+    first_fit_to_book: (consulted: string, when: string | null, picked: string | null) =>
+      `${when === null ? `Consultation ${consulted}` : `Consultation ${consulted}, ${when.toLowerCase()}`} · ${
+        picked === null ? "not fitted" : `picked ${picked}`
+      }`,
     /** "Service visit · Tue 22 Sep, 9:00 am · no technician": send someone from the board. */
     unassigned_visit: (visit: string, when: string) => `${visit} · ${when} · no technician`,
     /** "MM-ESS-0000041-R · recalled, replacement free": call them to book it. */

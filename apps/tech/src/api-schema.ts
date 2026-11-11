@@ -4772,6 +4772,8 @@ export interface components {
             lost_reason?: string;
             /** @description On a consultation, whether the client said they are going ahead with a fit; left out where not asked. */
             going_ahead?: boolean;
+            /** @description On a consultation going ahead, the hair system the client picked from Options, by its tier: one offered on the visit's day. Left out where none was picked (ADR 0247). */
+            product?: string;
             /** @description A note for the next technician, shown on this client's next job whoever takes it. */
             handoff_note?: string;
             /** @description An alert every technician reads before they start, kept on the client until ops take it off. */

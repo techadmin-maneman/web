@@ -28925,6 +28925,8 @@ export interface components {
              * @enum {string|null}
              */
             fit_window: "morning" | "afternoon" | "evening" | null;
+            /** @description The hair system the client picked at the consultation, by its name; null for none. */
+            picked: string | null;
         } | {
             /** @enum {string} */
             group: "upi_due";
