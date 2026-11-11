@@ -1,0 +1,56 @@
+/* A button that acts only once held (./HoldButton.tsx): the error's colour, a darker fill crossing it as it is held. */
+
+@layer base, ui;
+
+@layer ui {
+  .hold {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    min-height: var(--control-height);
+    padding: var(--sp-12) var(--sp-16);
+    border: 0;
+    border-radius: var(--ui-radius-button);
+    background: var(--error);
+    font: inherit;
+    font-size: var(--control-text);
+    font-weight: var(--weight-medium);
+    color: var(--white);
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .hold:focus-visible {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-offset);
+  }
+
+  /* Empty until held; it crosses in the hold's own time, and goes at once when let go. */
+  .fill {
+    position: absolute;
+    inset: 0;
+    background: var(--error-on-paper);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  .hold[data-holding] .fill {
+    transform: scaleX(1);
+    transition: transform var(--duration-hold) linear;
+  }
+
+  .words {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-4);
+  }
+
+  .sub {
+    font-size: var(--fs-15);
+    font-weight: var(--weight-regular);
+  }
+}
