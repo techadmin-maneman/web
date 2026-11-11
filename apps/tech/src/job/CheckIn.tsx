@@ -61,6 +61,18 @@ export interface CheckIn {
   readonly arrive: () => void;
 }
 
+/** What the check-in says failed: none once here, the fresh read's where it is fresh, else the last read whole. */
+function failureOf(read: {
+  here: boolean;
+  fresh: boolean;
+  tooFar: number | null | undefined;
+  settled: CheckIn["failed"];
+}): CheckIn["failed"] {
+  if (read.here) return null;
+  if (!read.fresh) return read.settled;
+  return read.tooFar === undefined ? null : { distance: read.tooFar };
+}
+
 export function useCheckIn(job: Job, queued: readonly Queued[]): CheckIn {
   const [noPosition, setNoPosition] = useState(false);
   const [busy, once] = useOneAtATime();
@@ -73,8 +85,15 @@ export function useCheckIn(job: Job, queued: readonly Queued[]): CheckIn {
   const answer = valueOr(read, null);
   const arrival = answer?.arrival ?? null;
   const here = checkedIn(job, queued) || arrival?.passed === true;
-  const failed =
-    !here && answer?.after === queued && arrival?.passed === false ? { distance: arrival.distance_m } : null;
+  // While the outbox is read again, the last answer read whole stands, so a check-in measured too far never blinks back
+  // to Check in; one read before a retry landed is not the retry's answer.
+  const fresh = answer?.after === queued;
+  const tooFar = arrival?.passed === false ? arrival.distance_m : undefined;
+  const [settled, setSettled] = useState<CheckIn["failed"]>(null);
+  useEffect(() => {
+    if (fresh) setSettled(here || tooFar === undefined ? null : { distance: tooFar });
+  }, [fresh, here, tooFar]);
+  const failed = failureOf({ here, fresh, tooFar, settled });
   const notYet = useBefore(Date.parse(job.checkin_from));
 
   const arrive = () =>
@@ -93,7 +112,9 @@ export function useCheckIn(job: Job, queued: readonly Queued[]): CheckIn {
       await queue("check_in", job.id, body, job.starts_at);
       await replay();
       // Measured too far stays here to say so; passed, or waiting for signal, is at the door.
-      if ((await keptArrival(job.id))?.passed !== false) go(`/jobs/${job.id}/door`);
+      const kept = await keptArrival(job.id);
+      if (kept?.passed === false) setSettled({ distance: kept.distance_m });
+      else go(`/jobs/${job.id}/door`);
     });
 
   const opens = notYet || checkInRefusedAsEarly(queued, job.id);

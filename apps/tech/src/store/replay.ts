@@ -147,8 +147,17 @@ export function account(queue: readonly Queued[]): JobAccount[] {
   return [...accounts].map(([job_id, held]) => ({ job_id, ...held }));
 }
 
-const refusedEarly = (queue: readonly Queued[], jobId: string, kind: EventKind): boolean =>
-  queue.some((event) => event.job_id === jobId && event.kind === kind && event.state === "early");
+/**
+ * Whether the job's last write of a kind was refused as early. A tap since, still on its way, is the last word: with
+ * no signal it waits to land, and may.
+ */
+function refusedEarly(queue: readonly Queued[], jobId: string, kind: EventKind): boolean {
+  const early = queue.find((event) => event.job_id === jobId && event.kind === kind && event.state === "early");
+  if (early === undefined) return false;
+  return !queue.some(
+    (event) => event.job_id === jobId && event.kind === kind && event.state === "waiting" && event.seq > early.seq,
+  );
+}
 
 /** Whether the job's last no-show was refused as before the wait ran out, so the card says so and stays. */
 export const refusedAsEarly = (queue: readonly Queued[], jobId: string): boolean =>

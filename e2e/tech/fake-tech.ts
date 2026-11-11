@@ -82,6 +82,8 @@ export interface Fake {
   movedTo: string | null;
   /** Set to make the no-show refuse with `409 too_early_to_close`, as it does before the wait runs. */
   tooEarly: boolean;
+  /** Set to make a check-in refuse with `409 too_early_to_arrive`, as it does before the job's earliest check-in. */
+  checkInEarly: boolean;
   /** Set to a photograph's slot, as `before-top`, to refuse its file with `422 photo_invalid_file`, as an empty one is. */
   refusedPhoto: string | null;
   /** What the check-in answers: pass, or a distance outside the radius. */
@@ -245,6 +247,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     moved: false,
     movedTo: null,
     tooEarly: false,
+    checkInEarly: false,
     refusedPhoto: null,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
@@ -439,6 +442,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (changed !== null) return refuse(route, 409, "superseded", changed, fake.wentTo);
       if (fake.closedByOps) return refuse(route, 409, "already_closed");
       if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 409, "too_early_to_close");
+      if (path.endsWith("/checkin") && fake.checkInEarly) return refuse(route, 409, "too_early_to_arrive");
 
       // A one visit's client may decide against the fit, when the piece step carries no label.
       const body = route.request().postDataJSON() as {
