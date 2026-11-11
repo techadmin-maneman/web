@@ -51,6 +51,10 @@ export type CheckIn = Schema["CheckIn"];
 export type PieceLookup = Schema["PieceLookup"];
 export type Kit = Schema["TechnicianKit"];
 export type LeaveRequests = Schema["TechnicianLeaveRequests"];
+export type Checklists = Schema["TechnicianChecklists"]["checklists"];
+export type Alerts = Schema["TechnicianAlerts"];
+export type Alert = Alerts["alerts"][number];
+export type AlertSettings = Schema["TechnicianAlertSettings"];
 export type Options = Schema["TechnicianOptions"];
 export type Position = Schema["TechnicianPosition"];
 type PhotoTaken = Schema["TechnicianPhotoTaken"];
@@ -231,6 +235,18 @@ export const api = {
       body: { reason },
       patience: PATIENCE_MS.write,
     }),
+  /** Every kind of visit's checklist as ops set it, for Guides. */
+  checklists: () => client.get("/api/tech/checklists", { patience: PATIENCE_MS.read }),
+  /** The technician's alerts of the last seven days, the kinds they have on, and the key to subscribe to pushes with. */
+  alerts: () => client.get("/api/tech/alerts", { patience: PATIENCE_MS.read }),
+  /** Every alert read: the inbox was opened. */
+  alertsRead: () => client.post("/api/tech/alerts/read", { patience: PATIENCE_MS.write }),
+  /** Kinds of alert turned on or off, made with signal. */
+  alertSettings: (change: Schema["TechnicianAlertSettingsChange"]) =>
+    client.patch("/api/tech/alerts/settings", { body: change, patience: PATIENCE_MS.write }),
+  /** This phone takes the technician's pushes, by the address its browser gave. */
+  pushSubscribe: (endpoint: string) =>
+    client.post("/api/tech/push-subscriptions", { body: { endpoint }, patience: PATIENCE_MS.write }),
   /** The technician's on-time visits and hairline redo rate over the last 30 days. */
   quality: () => client.get("/api/tech/quality", { patience: PATIENCE_MS.read }),
   /** A consultation's packages and what each costs the client, and the looks they made with the try-on. */

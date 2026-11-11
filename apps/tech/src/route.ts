@@ -7,6 +7,10 @@
 //   /week                    Schedule: today and the six days after it, today down the hours (a tab)
 //   /week/:date              Schedule on another of those days
 //   /week/:date/:id          a later day's job, read-only
+//   /alerts                  Alerts: the inbox and the kinds on, from Today's bell and from Me
+//   /guides                  Guides: each kind of visit's steps, from Me
+//   /guides/:type            one kind of visit's guide
+//   /guides/:type/:task      one of its tasks, read-only
 //   /me                      Me: their month, their leave, what waits to send, ops, and signing out (a tab)
 //   /leave                   their asks for leave, and a new one
 //   /jobs/:id                one job's card, and the evidence chain
@@ -23,6 +27,7 @@
 //   /jobs/:id/outcome        step 6
 //   /jobs/:id/done           the close-out
 
+import { VISIT_TYPES, type VisitType } from "@rules/config/visit-types.ts";
 import type { Step } from "./api.ts";
 
 /** The router the apps share (packages/ui/router.tsx), so a screen takes its routes and its way between them from here. */
@@ -51,6 +56,10 @@ export type Route =
   | { readonly page: "kit" }
   | { readonly page: "week"; readonly date: string | null }
   | { readonly page: "preview"; readonly date: string; readonly id: string }
+  | { readonly page: "alerts" }
+  | { readonly page: "guides" }
+  | { readonly page: "guide"; readonly type: VisitType }
+  | { readonly page: "guideTask"; readonly type: VisitType; readonly task: string }
   | { readonly page: "leave" }
   | { readonly page: "me" }
   | { readonly page: "job"; readonly id: string }
@@ -60,6 +69,8 @@ export type Route =
   | { readonly page: "plan"; readonly id: string }
   | { readonly page: "step"; readonly id: string; readonly step: InJobStep }
   | { readonly page: "done"; readonly id: string };
+
+const isVisitType = (type: string): type is VisitType => (VISIT_TYPES as readonly string[]).includes(type);
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -73,7 +84,13 @@ export function routeOf(path: string): Route {
     if (first === "week") return { page: "week", date: null };
     if (first === "leave") return { page: "leave" };
     if (first === "me") return { page: "me" };
+    if (first === "guides") return { page: "guides" };
+    if (first === "alerts") return { page: "alerts" };
     return first === "kit" ? { page: "kit" } : TODAY;
+  }
+  if (first === "guides") {
+    if (!isVisitType(second)) return TODAY;
+    return third === undefined ? { page: "guide", type: second } : { page: "guideTask", type: second, task: third };
   }
   if (first === "week" && DATE.test(second)) {
     if (third === undefined) return { page: "week", date: second };

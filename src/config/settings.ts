@@ -11,6 +11,7 @@ import type { Msg91Settings, Msg91SmsSettings } from "./msg91.ts";
 import { ENABLED_SURFACES, type EnvironmentName } from "./environments.ts";
 import { type GstRegistration } from "./gst.ts";
 import { Reader, type Env } from "./env-reader.ts";
+import type { VapidKeys } from "./web-push.ts";
 import {
   type ProvidersRead,
   readAccess,
@@ -18,6 +19,7 @@ import {
   readLogin,
   readMessaging,
   readRazorpay,
+  readPush,
   readTryon,
   readWatchers,
   readZohoClients,
@@ -243,6 +245,8 @@ export interface Settings {
   readonly analytics: { readonly clientKeySecret: string | null };
   readonly login: LoginSettings;
   readonly tryon: TryonSettings;
+  /** The key pair the technicians' pushes are signed with; null where none is set, and no push is sent. */
+  readonly push: VapidKeys | null;
   readonly messaging: MessagingSettings;
   /**
    * DEV_ROUTES=on, locally only: the routes that stand in on a laptop for what a technician's phone does, such as
@@ -317,7 +321,6 @@ export function readSettings(
     read.problems.push("DEV_ROUTES is set outside local: its routes would close jobs no technician worked");
   }
 
-  const tryon = readTryon(read, providers, isLocal);
   const messaging = readMessaging(read, providers, environment);
 
   const settings: Settings = {
@@ -342,7 +345,8 @@ export function readSettings(
     routes: { apiKey: providers.ROUTES_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null },
     analytics: { clientKeySecret: readClientKeySecret(read, providers) },
     login,
-    tryon,
+    tryon: readTryon(read, providers, isLocal),
+    push: readPush(read),
     messaging,
     devRoutes: environment === "local" && devRoutes === "on",
   };

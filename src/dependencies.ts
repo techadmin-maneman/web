@@ -17,6 +17,7 @@ import { createPaymentsProvider, type PaymentsProvider } from "./providers/payme
 import { BACKGROUND_TIMEOUT_MS, WAITED_TIMEOUT_MS } from "./providers/zoho-http.ts";
 import { createGeocodeProvider, type GeocodeProvider } from "./providers/geocode/index.ts";
 import { createRoutesProvider, type RoutesProvider } from "./providers/routes/index.ts";
+import { createPush, type Push } from "./providers/web-push.ts";
 import { devNow } from "./lib/dev-clock.ts";
 
 export interface Dependencies {
@@ -46,6 +47,8 @@ export interface Dependencies {
   readonly routes: RoutesProvider | null;
   /** Draws a client's referral card from their first fit's photographs. */
   readonly cards: CardComposer;
+  /** Wakes a technician's phone to show its newest alert. */
+  readonly push: Push;
 }
 
 /**
@@ -109,6 +112,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       createPaymentsProvider(providers.PAYMENTS_PROVIDER, settings.razorpay, { fetch: httpFetch, log }),
     );
     const cards = lazily(() => createCardComposer(env.IMAGES));
+    const push = lazily(() => createPush({ keys: settings.push, fetch: httpFetch, log, now }));
     const geocode = lazily(() =>
       createGeocodeProvider(providers.GEOCODE_PROVIDER, settings.geocode.apiKey, { fetch: httpFetch, log }),
     );
@@ -157,6 +161,9 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       },
       get cards() {
         return cards();
+      },
+      get push() {
+        return push();
       },
     };
   };

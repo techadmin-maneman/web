@@ -188,6 +188,7 @@ export const safety = {
 
 /** "1 photo set", "3 actions": a count and the word for it. */
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
+const capital = (words: string) => words.charAt(0).toUpperCase() + words.slice(1);
 
 /** "top", "top and left", "top, left and hair". */
 const listed = (words: readonly string[]) => new Intl.ListFormat("en-IN", { type: "conjunction" }).format(words);
@@ -386,6 +387,10 @@ export const interrupted = {
   closed: (job: string) => `${job}: closed`,
   closedBody: "This visit was closed. What you recorded is kept on this phone, in Pending uploads.",
   moved: (job: string, to: string) => `${job}: moved to ${to}`,
+  /** From a push, which names no one: given to another technician, or called off. */
+  reassigned: (job: string) => `${job}: given to another technician`,
+  reassignedBody: "Ops gave this visit to another technician.",
+  cancelledAlert: "Ops cancelled this visit.",
   cancelledBody: "Ops cancelled this visit. What you recorded is kept on this phone, in Pending uploads.",
   movedBody: (to: string) =>
     `Ops gave this visit to ${to}. What you recorded is kept on this phone, in Pending uploads.`,
@@ -1155,6 +1160,93 @@ export const schedule = {
     gone: "This job is no longer on your schedule.",
   },
 };
+
+/**
+ * Alerts, from Today's bell and from Me (./alerts/AlertsScreen.tsx): the inbox, newest first, and which kinds are sent.
+ * Each alert's words in the inbox; on the lock screen, the worker's own (../sw/notice.ts).
+ */
+export const alerts = {
+  title: "Alerts",
+  sub: "The last 7 days",
+  /** The bell's name, with how many are new. */
+  bell: (unread: number) => (unread === 0 ? "Alerts" : `Alerts, ${String(unread)} new`),
+  none: "No alerts in the last 7 days.",
+  failed: "Alerts didn’t load.",
+  retry: "Try again",
+  sendMe: "Send me",
+  /** Me's row: "4 on" */
+  on: (count: number) => `${String(count)} on`,
+  /** "10 min before you need to set off", by the minutes ops set. */
+  leaveSub: (minutes: number) => `${String(minutes)} min before you need to set off`,
+  /** "At 8 pm, the next day’s jobs", by the hour of India's day ops set. */
+  dayAheadSub: (hour: number) =>
+    `At ${String(hour % 12 === 0 ? 12 : hour % 12)} ${hour < 12 ? "am" : "pm"}, the next day’s jobs`,
+  kinds: {
+    time_to_leave: { label: "Time to leave", sub: null },
+    day_ahead: { label: "Day ahead", sub: null },
+    job_changes: { label: "Job changes", sub: "Moved, cancelled or reassigned" },
+    running_over: { label: "Running over", sub: "When a visit will make you late for the next" },
+  },
+  settingFailed: "Not saved. Try again with signal.",
+  /** Notifications on this phone, beneath Send me: asked for once the technician taps. */
+  phoneOff: "Alerts don’t show on this phone yet.",
+  turnOn: "Turn on",
+  turnOnFailed: "Alerts weren’t turned on. Try again with signal.",
+  blocked: "Notifications are blocked for this app in the phone’s settings.",
+  /** "the 2 pm service visit": a job whose client the phone may not name. */
+  job: (time: string, kind: string) => `the ${time} ${kind}`,
+  /** "Leave in 8 min for Rohit M." */
+  leave: (minutes: number, who: string) => `Leave in ${String(minutes)} min for ${who}`,
+  /** "18 min drive to Sector 65" */
+  drive: (minutes: number, sector: string) => `${String(minutes)} min drive to ${sector}`,
+  /** "Sameer J. moved to 4:15 pm" */
+  moved: (who: string, time: string) => `${capital(who)} moved to ${time}`,
+  cancelled: (client: string | null, job: string) =>
+    client === null ? `${capital(job)} was cancelled` : `${client}’s visit was cancelled`,
+  reassigned: (who: string) => `${capital(who)} went to another technician`,
+  /** "First fit · Sector 43 · was 2 pm" */
+  was: (parts: readonly (string | null)[], time: string) =>
+    [...parts.filter((part) => part !== null && part !== ""), `was ${time}`].join(" · "),
+  /** "Running over · finish by 11:10 am" */
+  over: (finishBy: string) => `Running over · finish by ${finishBy}`,
+  /** "for the 11:30 am job, Sector 65" */
+  overNext: (next: string, sector: string | null) =>
+    sector === null ? `for the ${next} job` : `for the ${next} job, ${sector}`,
+  /** "Tomorrow: 4 jobs from 9:30 am" */
+  dayAhead: (jobs: number, first: string) => `Tomorrow: ${counted(jobs, "job", "jobs")} from ${first}`,
+  /** "First: Rohit M., Sector 65" */
+  first: (client: string | null, sector: string | null) =>
+    `First: ${[client, sector].filter((part) => part !== null).join(", ")}`,
+  /** When it came: "9:02 am", "Yesterday, 8 pm", "Mon 9 Nov, 8 pm" */
+  yesterday: (time: string) => `Yesterday, ${time}`,
+  earlier: (day: string, time: string) => `${day}, ${time}`,
+  /** "tomorrow 4 pm": a job's time on the next day. */
+  tomorrowAt: (time: string) => `tomorrow ${time}`,
+} as const;
+
+/** Guides, from Me: each kind of visit's steps, and each task read alone (./guides/GuidesScreen.tsx). */
+export const guides = {
+  title: "Guides",
+  sub: "How each visit is done",
+  kinds: "4 visit types",
+  /** "6 steps" */
+  steps: (count: number) => counted(count, "step", "steps"),
+  /** What each step is, beneath its name; a step of tasks lists them instead. */
+  what: {
+    before_photos: "Front, top, left, right, hair",
+    tasks: "",
+    hair_profile: "Norwood stage, head and base",
+    hair_system: "Scan the new piece",
+    consumables: "Record what you used",
+    after_photos: "The same five shots",
+    outcome: "Result and close",
+  },
+  /** "Service visit · Service", beneath a task's name. */
+  where: (kind: string, step: string) => `${kind} · ${step}`,
+  gone: "This task isn’t in the guide any more.",
+  /** The way to a kind of visit's guide, from a later job's preview. */
+  howDone: "How this visit is done",
+} as const;
 
 /** Ask ops to reschedule, from the job (./job/Reschedule.tsx). */
 export const reschedule = {

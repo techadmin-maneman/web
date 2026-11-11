@@ -7,6 +7,7 @@ import { ProblemCard } from "@maneman/ui/ProblemCard";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useState, type Ref } from "react";
 import type { JobSummary } from "../api.ts";
+import { Bell } from "../alerts/index.ts";
 import { NoSignal } from "../frame/Banners.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
@@ -77,7 +78,10 @@ function Head(props: { readonly date: string; readonly title: string; readonly h
           {props.title}
         </h1>
       </div>
-      <SyncLabel />
+      <div className={styles.headEnd}>
+        <SyncLabel />
+        <Bell />
+      </div>
     </header>
   );
 }

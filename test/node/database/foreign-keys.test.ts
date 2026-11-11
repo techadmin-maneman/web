@@ -61,6 +61,11 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/dispatch/technician-roster.ts deletes their sign-in codes first",
   "technician_devices.technician_id -> technicians":
     "src/domain/dispatch/technician-roster.ts deletes their phones first",
+  "tech_alerts.technician_id -> technicians": "src/domain/dispatch/technician-roster.ts deletes their alerts first",
+  "tech_alert_kinds_off.technician_id -> technicians":
+    "src/domain/dispatch/technician-roster.ts deletes the kinds they turned off first",
+  "push_subscriptions.device_id -> technician_devices":
+    "src/domain/dispatch/technician-roster.ts deletes their phones' pushes before their phones",
   "technician_leave.technician_id -> technicians": "src/domain/dispatch/technician-roster.ts deletes their leave first",
   "technician_hours.technician_id -> technicians": "src/domain/dispatch/technician-roster.ts deletes their week first",
   "job_events.device_id -> technician_devices":

@@ -79,6 +79,7 @@ import { placePincodeCentres } from "../domain/cities/pincode-centres.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
+import { techAlertsJob } from "./tech-alerts.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -403,6 +404,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "unbooked_holds", needs: "nothing", every: 5, at: 3, run: unbookedHoldsJob },
   { name: "requeue_messages", needs: "nothing", every: 5, at: 4, run: requeueMessages },
   { name: "alerts_retold", needs: "nothing", every: 5, at: 4, run: alertsRetoldJob },
+  // A technician's time to leave and running over, the day ahead in the hour ops set, and a push for each (ADR 0250).
+  { name: "tech_alerts", needs: "nothing", every: 5, at: 0, run: techAlertsJob },
 
   // Every fifteen minutes.
   { name: "visit_reminders", needs: "messaging", every: 15, at: 1, run: remindersJob },

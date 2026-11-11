@@ -4080,6 +4080,318 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The technician's alerts of the last seven days, newest first, and the kinds they have on */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The inbox */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianAlerts"];
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/alerts/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Every alert the technician has, read: they opened the inbox */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Read */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/alerts/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Kinds of alert turned on or off */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianAlertSettingsChange"];
+                };
+            };
+            responses: {
+                /** @description The kinds on, as they now are */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianAlertSettings"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/tech/push-subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** This phone takes the technician's pushes, until it is signed out or revoked */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianPushSubscription"];
+                };
+            };
+            responses: {
+                /** @description Kept */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianPushSubscribed"];
+                    };
+                };
+                /** @description invalid_request: not a browser's push service */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/checklists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every kind of visit's checklist as ops set it, for Guides */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The checklists */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianChecklists"];
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/quality": {
         parameters: {
             query?: never;
@@ -5633,6 +5945,92 @@ export interface components {
                 /** @description Paise in all; null where none was. */
                 amount: number | null;
             }[];
+        };
+        TechnicianAlerts: {
+            /** @description The last seven days', newest first. */
+            alerts: components["schemas"]["TechnicianAlert"][];
+            settings: components["schemas"]["TechnicianAlertSettings"];
+            /** @description How long before setting off, as ops set it. */
+            leave_notice_min: number;
+            /** @description The hour of India's day the next day's jobs are sent, as ops set it. */
+            day_ahead_hour: number;
+            /** @description The public key to subscribe to pushes with; null where pushes are not sent. */
+            push_key: string | null;
+        };
+        TechnicianAlert: {
+            id: string;
+            /** @enum {string} */
+            kind: "time_to_leave" | "day_ahead" | "job_moved" | "job_cancelled" | "job_reassigned" | "running_over";
+            read: boolean;
+            /** Format: date-time */
+            sent_at: string;
+            /** @description The job it is about; the day ahead's first job. */
+            job_id: string | null;
+            /**
+             * Format: date
+             * @description India's date of the job, or of the day ahead.
+             */
+            date: string;
+            /**
+             * @description Null once the job is no longer the technician's.
+             * @enum {string|null}
+             */
+            type: "consultation" | "first_fit" | "service" | "replacement" | null;
+            sector: string | null;
+            /** @description While the job is the technician's and unlocked; null otherwise. */
+            client_name: string | null;
+            /** Format: date-time */
+            starts_at: string | null;
+            /**
+             * Format: date-time
+             * @description A moved job's start before the move.
+             */
+            was_starts_at: string | null;
+            /**
+             * Format: date-time
+             * @description Time to leave: when to set off.
+             */
+            leave_by: string | null;
+            drive_minutes: number | null;
+            /**
+             * Format: date-time
+             * @description Running over: when the job under way must be done.
+             */
+            finish_by: string | null;
+            /** @description The day ahead: how many jobs. */
+            jobs: number | null;
+            /** @description Navigate's map link, for an alert about driving to a job that is unlocked. */
+            navigate: string | null;
+        };
+        TechnicianAlertSettings: {
+            time_to_leave: boolean;
+            day_ahead: boolean;
+            job_changes: boolean;
+            running_over: boolean;
+        };
+        TechnicianAlertSettingsChange: {
+            time_to_leave?: boolean;
+            day_ahead?: boolean;
+            job_changes?: boolean;
+            running_over?: boolean;
+        };
+        TechnicianPushSubscribed: {
+            endpoint: string;
+            /** Format: date-time */
+            subscribed_at: string;
+        };
+        TechnicianPushSubscription: {
+            /** @description The push service's address for this phone, as the browser gave it. */
+            endpoint: string;
+        };
+        TechnicianChecklists: {
+            /** @description Each kind of visit's checklist, in its order. */
+            checklists: {
+                consultation: components["schemas"]["JobSheetItem"][];
+                first_fit: components["schemas"]["JobSheetItem"][];
+                service: components["schemas"]["JobSheetItem"][];
+                replacement: components["schemas"]["JobSheetItem"][];
+            };
         };
         TechnicianQuality: {
             /** @description Visits checked in, booked in the last 30 days. */

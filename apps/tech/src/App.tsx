@@ -17,6 +17,9 @@ import { PlanScreen } from "./visit/PlanScreen.tsx";
 import { KitScreen } from "./kit/KitScreen.tsx";
 import { LeaveScreen } from "./me/LeaveScreen.tsx";
 import { MeScreen } from "./me/MeScreen.tsx";
+import { GuideScreen, GuidesScreen, GuideTaskScreen } from "./guides/GuidesScreen.tsx";
+import { AlertsScreen } from "./alerts/AlertsScreen.tsx";
+import { alertsBack, guideBack } from "./lib/opened-from.ts";
 import { PreviewScreen } from "./schedule/PreviewScreen.tsx";
 import { ScheduleScreen } from "./schedule/ScheduleScreen.tsx";
 import { OutboxContext, useOutboxSubscription } from "./lib/useOutbox.ts";
@@ -52,10 +55,18 @@ function pageFor(route: Route) {
       return <ScheduleScreen date={route.date} />;
     case "preview":
       return <PreviewScreen date={route.date} id={route.id} />;
+    case "guides":
+      return <GuidesScreen />;
+    case "guide":
+      return <GuideScreen type={route.type} back={guideBack()} />;
+    case "guideTask":
+      return <GuideTaskScreen type={route.type} task={route.task} />;
     case "leave":
       return <LeaveScreen />;
     case "me":
       return <MeScreen />;
+    case "alerts":
+      return <AlertsScreen back={alertsBack()} />;
     case "job":
       return <JobScreen id={route.id} />;
     case "options":

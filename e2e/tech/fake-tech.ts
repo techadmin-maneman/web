@@ -4,7 +4,9 @@
 import type { Route, Page, BrowserContext } from "@playwright/test";
 import { randomUUID } from "crypto";
 // The API's own rule, so the fake cannot drift from it: the piece label it refuses a write for.
+import { CHECKLIST as CHECKLISTS } from "../../src/config/job-sheet.ts";
 import { isPieceCode } from "../../src/config/pieces.ts";
+import { VISIT_TYPES } from "../../src/config/visit-types.ts";
 import { assertInContract } from "../contract.ts";
 import {
   type VisitType,
@@ -121,6 +123,12 @@ export interface Fake {
   month: TechReply<"/api/tech/month">;
   /** The technician's quality over the last 30 days, for Me. */
   quality: TechReply<"/api/tech/quality">;
+  /** The technician's alerts, the kinds on, and the push key; empty, all on and no key to begin. */
+  inbox: TechReply<"/api/tech/alerts">;
+  /** Each kind's checklist as ops set it, for Guides; null answers as the committed lists do. */
+  checklists: TechReply<"/api/tech/checklists">["checklists"] | null;
+  /** The push addresses this phone gave, in order. */
+  pushSubscriptions: string[];
   /** A consultation's options: its packages and prices, and the client's try-on looks. */
   options: TechReply<"/api/tech/jobs/{id}/options">;
   /** The client's alerts and the last technician's note on the card; none unless a test gives them. */
@@ -285,6 +293,15 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     dayFails: false,
     writes: [],
     quality: { visits: 18, on_time: 17, fits: 9, redone: 1 },
+    inbox: {
+      alerts: [],
+      settings: { time_to_leave: true, day_ahead: true, job_changes: true, running_over: true },
+      leave_notice_min: 10,
+      day_ahead_hour: 20,
+      push_key: null,
+    },
+    checklists: null,
+    pushSubscriptions: [],
     month: {
       month: "2026-10",
       lines: [
@@ -460,6 +477,16 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         fake.sos = { ...fake.sos, safe: true };
         return reply(route, 204);
       }
+      if (path === "/api/tech/push-subscriptions") {
+        const { endpoint } = route.request().postDataJSON() as { endpoint: string };
+        fake.pushSubscriptions.push(endpoint);
+        return reply(route, 201, { endpoint, subscribed_at: new Date().toISOString() });
+      }
+      if (path === "/api/tech/alerts/read") {
+        fake.writes.push({ path, eventId, startsAt, body: null });
+        fake.inbox = { ...fake.inbox, alerts: fake.inbox.alerts.map((alert) => ({ ...alert, read: true })) };
+        return reply(route, 204);
+      }
       // The technician's asks of ops go straight, never queued (docs/decisions/0249-schedule-kit-and-me.md).
       if (path === "/api/tech/kit/requests") {
         fake.writes.push({ path, eventId, startsAt, body: null });
@@ -592,6 +619,20 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     }
     if (path === "/api/tech/month") return reply(route, 200, fake.month);
     if (path === "/api/tech/quality") return reply(route, 200, fake.quality);
+    if (method === "GET" && path === "/api/tech/alerts") return reply(route, 200, fake.inbox);
+    if (path === "/api/tech/checklists") {
+      const committed = Object.fromEntries(
+        VISIT_TYPES.map((type) => [type, CHECKLISTS[type].map(({ id, label }) => ({ id, label }))]),
+      ) as TechReply<"/api/tech/checklists">["checklists"];
+      return reply(route, 200, { checklists: fake.checklists ?? committed });
+    }
+    // The kinds on, changed with signal (docs/decisions/0250-guides-and-alerts.md).
+    if (method === "PATCH" && path === "/api/tech/alerts/settings") {
+      const change = route.request().postDataJSON() as Partial<Fake["inbox"]["settings"]>;
+      fake.writes.push({ path, eventId: null, startsAt: null, body: change });
+      fake.inbox = { ...fake.inbox, settings: { ...fake.inbox.settings, ...change } };
+      return reply(route, 200, fake.inbox.settings);
+    }
     if (method === "GET" && path === "/api/tech/leave") return reply(route, 200, fake.leave);
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";

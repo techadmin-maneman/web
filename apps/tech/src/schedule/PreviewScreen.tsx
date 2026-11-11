@@ -2,14 +2,17 @@
 // length, the area and how it is paid, and when the client's name and address come, by the hour ops set. Back goes to
 // its day.
 
+import { GLYPHS } from "@maneman/brand/icons";
 import { DescriptionList } from "@maneman/ui/DescriptionList";
+import { Icon } from "@maneman/ui/Icon";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { useLoad } from "@maneman/ui/useLoad";
 import { weekdayName } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import { api } from "../api.ts";
 import { CardFrame } from "../frame/CardFrame.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
-import { badges, job as jobCopy, schedule } from "../content.ts";
+import { badges, guides, job as jobCopy, schedule } from "../content.ts";
 import { kindName } from "../lib/kind.ts";
 import { clock, dayMonth } from "../lib/when.ts";
 import { lengthOf } from "./ScheduleScreen.tsx";
@@ -62,6 +65,16 @@ export function PreviewScreen({ date, id }: { readonly date: string; readonly id
         />
         {!job.unlocked && <p className={styles.note}>{copy.locked(job.unlocks_at)}</p>}
       </div>
+      {job.type !== null && (
+        <ListRows className={styles.guide} label={guides.howDone}>
+          <ListRow
+            title={guides.howDone}
+            meta={kindName(job)}
+            to={`/guides/${job.type}`}
+            end={<Icon d={GLYPHS.chevron} size="sm" />}
+          />
+        </ListRows>
+      )}
     </CardFrame>
   );
 }

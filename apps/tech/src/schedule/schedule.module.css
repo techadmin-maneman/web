@@ -75,3 +75,9 @@
   line-height: var(--lh-145);
   color: var(--ui-text-soft);
 }
+
+/* The way to the visit's guide, a row under the facts with the section's rule above it. */
+.guide {
+  margin-top: var(--sp-20);
+  border-top: var(--rule-strong) solid var(--ui-strong);
+}

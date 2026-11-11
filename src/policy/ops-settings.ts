@@ -13,6 +13,7 @@
 
 import { BOOKING_SETTINGS } from "./ops-settings-booking.ts";
 import { CARE_HOURS, CARE_HOURS_KEYS, careHoursConflicts } from "./care-hours.ts";
+import { ALERT_RULES } from "./ops-settings-alerts.ts";
 import { CEILING_SETTINGS } from "./ops-settings-ceilings.ts";
 import { CHECKIN_RADIUS_M } from "./check-in.ts";
 import { LOST_AFTER_DAYS } from "./client-standing.ts";
@@ -331,6 +332,7 @@ export const OPS_SETTINGS = [
   },
   ...BOOKING_SETTINGS,
   ...CLIENT_SETTINGS,
+  ...ALERT_RULES,
   ...STOCK_SETTINGS,
   ...CEILING_SETTINGS,
 ] as const satisfies readonly OpsSetting[];

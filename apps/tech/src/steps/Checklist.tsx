@@ -20,6 +20,7 @@ import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { put, remove } from "../store/db.ts";
 import { taskFor } from "../visit/index.ts";
+import { TaskGuide } from "./TaskGuide.tsx";
 import type { Queued } from "../store/outbox.ts";
 import { useDraft, type Draft } from "./drafts.ts";
 import { checklistSent } from "./sent-before.ts";
@@ -141,24 +142,7 @@ function Task(props: {
       <h2 className={styles.taskTitle} id="task-title">
         {words.title}
       </h2>
-      {words.reference !== "" && (
-        <div className={styles.reference} role="img" aria-label={visit.reference(words.reference)}>
-          {visit.reference(words.reference)}
-        </div>
-      )}
-      {words.how.length > 0 && (
-        <ol className={styles.how}>
-          {words.how.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ol>
-      )}
-      {words.watch !== null && (
-        <div className={styles.watch}>
-          <p className={styles.watchTitle}>{visit.watchFor}</p>
-          <p className={styles.watchLine}>{words.watch}</p>
-        </div>
-      )}
+      <TaskGuide words={words} />
       <ul className={styles.taskDone}>
         <li>
           <CheckRow

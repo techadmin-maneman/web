@@ -6,6 +6,7 @@ import { distance } from "@maneman/web-kit/figures";
 import { apiNow } from "@maneman/web-kit/clock";
 import { addDays, dayMonth, indiaClock, indiaTimeOf, todayInIndia as indiaToday } from "@maneman/web-kit/dates";
 import { timeRange } from "@rules/lib/time-range.ts";
+import { runsOver as runsInto } from "@rules/policy/tech-alerts.ts";
 // The schema rather than ../api.ts, so these can be read and tested in Node without the fetch client.
 import type { components } from "../api-schema.ts";
 
@@ -36,16 +37,17 @@ export function stamp(instant: string, now: Date = apiDate()): string {
 export const arrival = (job: { readonly starts_at: string; readonly arrives_by: string }): string =>
   timeRange(indiaTimeOf(job.starts_at), indiaTimeOf(job.arrives_by));
 
-/**
- * Whether a job under way runs into the next one: done, at its booked length or now if that is later, after the time
- * it must finish by to reach the next on time.
- */
-export function runsOver(job: JobSummary, now: Date): boolean {
-  if (job.next === null || job.minutes === null) return false;
-  const started = Date.parse(job.progress.started_at ?? job.starts_at);
-  const done = Math.max(now.getTime(), started + job.minutes * 60_000);
-  return done > Date.parse(job.next.finish_by);
-}
+/** Whether a job under way runs into the next one, by the rule the API's running-over alert follows. */
+export const runsOver = (job: JobSummary, now: Date): boolean =>
+  runsInto(
+    {
+      starts_at: job.starts_at,
+      started_at: job.progress.started_at,
+      minutes: job.minutes,
+      finish_by: job.next?.finish_by ?? null,
+    },
+    now,
+  );
 
 /** The sector beside a job, which is all the place a locked job carries. */
 export const where = (sector: string | null): string => sector ?? "";

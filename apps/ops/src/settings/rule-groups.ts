@@ -37,6 +37,8 @@ export const RULE_GROUPS = [
       "address_unlock_hour",
       "arrival_notice_min",
       "move_proposal_hours",
+      "leave_notice_min",
+      "day_ahead_hour",
     ],
   },
   { id: "reminders", rules: ["reminder_hour", "credit_reminder_days", "check_in_days"] },

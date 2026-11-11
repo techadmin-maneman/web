@@ -6,6 +6,11 @@ import { routeOf } from "../route.ts";
 
 let last = "/";
 const from = new Map<string, string>();
+/** Where the guide open now was opened from: a job, a later job's preview, or Guides. */
+let guideFrom = "/guides";
+const opensGuides = (path: string): boolean => path.startsWith("/week/") || path.startsWith("/jobs/");
+/** Where Alerts was opened from: Me, or Today's bell. */
+let alertsFrom = "/";
 
 /** Notes the page shown; the same page again changes nothing. */
 export function notePage(path: string): void {
@@ -14,8 +19,16 @@ export function notePage(path: string): void {
   if (route.page === "job" && !last.startsWith(`/jobs/${route.id}`)) {
     from.set(route.id, last.startsWith("/week") ? last : "/");
   }
+  if (route.page === "guide" && !last.startsWith(path)) guideFrom = opensGuides(last) ? last : "/guides";
+  if (route.page === "alerts") alertsFrom = last === "/me" ? "/me" : "/";
   last = path;
 }
+
+/** Where Alerts goes back to. */
+export const alertsBack = (): string => alertsFrom;
+
+/** Where the guide open now goes back to. */
+export const guideBack = (): string => guideFrom;
 
 /** Where the job's card goes back to. */
 export const backOf = (id: string): string => from.get(id) ?? "/";

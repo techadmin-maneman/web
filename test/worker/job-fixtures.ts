@@ -27,6 +27,8 @@ export interface Working {
   readonly get: (path: string) => Promise<Response>;
   /** A write from the technician's phone, under the event ID its outbox gave it. */
   readonly post: (path: string, body: unknown, eventId: string) => Promise<Response>;
+  /** A change from the technician's phone, made with signal. */
+  readonly patch: (path: string, body: unknown) => Promise<Response>;
   /** A write from the console. */
   readonly opsPost: (path: string, body?: unknown) => Promise<Response>;
   /** A read from the console. */
@@ -95,6 +97,17 @@ export async function working(
       },
       bindings,
     );
+  const patch = (path: string, body: unknown) =>
+    request(
+      tech,
+      path,
+      {
+        method: "PATCH",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      bindings,
+    );
   const opsPost = (path: string, body?: unknown) =>
     request(
       ops,
@@ -122,5 +135,5 @@ export async function working(
     await post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
   };
 
-  return { tech, ops, deps, get, post, opsPost, opsGet, workTo };
+  return { tech, ops, deps, get, post, patch, opsPost, opsGet, workTo };
 }

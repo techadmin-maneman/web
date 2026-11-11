@@ -68,6 +68,14 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost",
   },
   {
+    what: "A technician's alerts, the kinds they turned off, and the phones that take their pushes",
+    tables: ["tech_alerts", "tech_alert_kinds_off", "push_subscriptions"],
+    leftAtT:
+      "An alert written since is gone from the inbox, and one read since is new again; a kind turned off since is on, and a phone that allowed pushes since takes none",
+    putBackBy:
+      "Nothing: the cron writes the day's alerts again as they fall due, a kind is turned off again in Alerts, and the phone subscribes again when the app next opens",
+  },
+  {
     what: "Number changes, deletion requests, grievances",
     tables: ["number_change_requests", "people", "deletion_requests", "grievances"],
     leftAtT: "A client's new number stops working; a request, or its answer, is lost",
