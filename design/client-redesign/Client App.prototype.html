@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mane Man client app: redesign prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#16233A;--navy8:#1F2E49;--navy7:#33435F;--gold:#C9A363;--brass:#B98B45;--gold7:#8A6A2F;
+  --white:#FDFDFB;--wash:#F4F0E8;--line:#D9DCE1;--grid:#E8EAED;--ink:#1F2328;--ink5:#5F6670;--slate:#6B7A93;--stone:#B4BAC3;--mist:#A9B2C1;--ph:#ECEEF1;
+  --red:#A3361F;--redwash:#FBF1EE;--green:#2F6B4F;
+  --r:4px;--r2:2px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font-family:"IBM Plex Sans",Arial,sans-serif;color:var(--ink);background:#E3E5E9;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+input,textarea{font:inherit;color:inherit}
+.tab-num{font-variant-numeric:tabular-nums}
+
+/* ---------- stage ---------- */
+.stage{min-height:100%;display:flex;align-items:center;justify-content:center;gap:56px;padding:32px}
+.device{width:390px;height:844px;border-radius:48px;background:#0E1420;padding:11px;box-shadow:0 30px 80px rgba(22,35,58,.28);flex:none}
+.app{position:relative;width:100%;height:100%;border-radius:38px;overflow:hidden;background:var(--white)}
+.guide{width:300px;align-self:center;font-size:14px;color:var(--ink)}
+.guide h1{font-size:20px;font-weight:600;margin:0 0 4px;color:var(--navy)}
+.guide p{margin:0 0 16px;color:var(--ink5)}
+.demo-chip{display:none}
+@media (max-width:760px){
+  body{background:var(--white)}
+  .stage{padding:0;display:block;height:100%}
+  .device{width:100%;height:100%;border-radius:0;padding:0;box-shadow:none}
+  .app{border-radius:0}
+  .guide{display:none}
+  .demo-chip{display:flex;position:fixed;z-index:90;right:0;top:38%;opacity:.6;width:20px;height:44px;padding:0;justify-content:center;align-items:center;gap:6px;border-top-right-radius:0!important;border-bottom-right-radius:0!important;background:rgba(22,35,58,.88);color:#fff;border-radius:var(--r);font-size:12px;font-weight:500}
+  .app .top{padding-top:calc(10px + env(safe-area-inset-top))}
+}
+
+/* ---------- demo controls ---------- */
+.ctl-group{margin:0 0 18px}
+.ctl-label{font-weight:600;font-size:13px;color:var(--ink5);margin:0 0 6px}
+.seg-v{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#fff}
+.seg-v button{padding:9px 12px;border-top:1px solid var(--line);font-size:14px}
+.seg-v button:first-child{border-top:0}
+.seg-v button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.chk{display:flex;gap:10px;align-items:center;padding:5px 0;font-size:14px;cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:var(--navy)}
+.jump{display:flex;flex-wrap:wrap;gap:6px}
+.jump button{font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--r2);background:#fff}
+
+/* ---------- app structure ---------- */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--white)}
+.screen.anim-in{animation:slideIn .26s cubic-bezier(.2,.8,.2,1)}
+.screen.anim-back{animation:slideBack .26s cubic-bezier(.2,.8,.2,1)}
+.screen.anim-fade{animation:fadeIn .2s ease}
+@keyframes slideIn{from{transform:translateX(28%);opacity:.4}to{transform:none;opacity:1}}
+@keyframes slideBack{from{transform:translateX(-18%);opacity:.5}to{transform:none;opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.pad{padding:0 20px}
+.top{display:flex;align-items:center;gap:8px;min-height:56px;padding:10px 12px 6px 20px;flex:none}
+.top.sub{padding-left:6px}
+.top h1{font-size:17px;font-weight:600;margin:0;flex:1}
+.top .spacer{flex:1}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r)}
+.icon-btn:active{background:var(--grid)}
+.title{font-size:28px;line-height:1.15;font-weight:600;letter-spacing:-.3px;margin:4px 0 4px;color:var(--navy)}
+.lede{color:var(--ink5);margin:0 0 20px;font-size:15px}
+.h2{font-size:20px;font-weight:600;line-height:1.3;margin:0;color:var(--navy)}
+.sec{margin:28px 0 0}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 4px}
+.sec-h h2{font-size:15px;font-weight:600;margin:0;color:var(--ink)}
+.sec-h a,.sec-h button{font-size:14px;color:var(--navy);font-weight:500}
+.muted{color:var(--ink5)}
+.small{font-size:14px;line-height:1.45}
+.xs{font-size:13px;line-height:1.4}
+
+/* tab bar */
+.tabs{flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--white);padding-bottom:env(safe-area-inset-bottom)}
+.tabs button{height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;color:var(--ink5);position:relative;text-align:center}
+.tabs button[aria-current="page"]{color:var(--navy);font-weight:600}
+.tabs button[aria-current="page"]::before{content:"";position:absolute;top:-1px;left:30%;right:30%;height:2px;background:var(--navy)}
+.tabs .badge{position:absolute;top:9px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:2px;background:var(--navy);color:#fff;font-size:10.5px;font-weight:600;line-height:16px}
+
+/* buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 18px;border-radius:var(--r);font-weight:600;font-size:16px;width:100%;text-align:center;transition:transform .08s,background .15s}
+.btn:active{transform:scale(.985)}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:disabled{background:var(--stone);color:#fff;cursor:not-allowed}
+.btn-secondary{border:1px solid var(--navy);color:var(--navy);background:transparent}
+.btn-ghost{color:var(--navy);height:44px}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{height:40px;font-size:14px;padding:0 14px;width:auto}
+.btn-on-navy{border:1px solid rgba(255,255,255,.5);color:#fff;background:transparent}
+.btn-gold{background:var(--gold);color:var(--navy)}
+.btn-row{display:flex;gap:10px}
+.btn-row>*{flex:1}
+.link{color:var(--navy);font-weight:500;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.footer-cta{flex:none;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--white)}
+
+/* lists */
+.list{border-top:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:14px;min-height:60px;padding:12px 0;border-bottom:1px solid var(--line);width:100%}
+.row .grow{flex:1;min-width:0}
+.row .t{font-weight:500}
+.row .s{font-size:14px;color:var(--ink5)}
+.row .r{text-align:right;flex:none}
+.row .ic{width:24px;color:var(--navy);flex:none;display:flex}
+.row.tap:active{background:var(--wash)}
+.chev{color:var(--stone);flex:none;display:flex}
+.kv{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--line);font-size:15px}
+.kv span:first-child{color:var(--ink5)}
+.kv span:last-child{text-align:right}
+
+/* tags */
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:var(--r2);font-size:12px;font-weight:600;white-space:nowrap}
+.tag-ok{background:#EAF2EE;color:var(--green)}
+.tag-wait{background:var(--wash);color:var(--gold7)}
+.tag-neutral{background:var(--grid);color:var(--ink5)}
+
+/* hero */
+.hero{background:var(--navy);color:#fff;border-radius:var(--r);padding:20px;margin-top:12px;position:relative;overflow:hidden}
+.hero .eyebrow{font-size:13px;color:var(--mist);font-weight:500}
+.hero .when{font-size:28px;font-weight:600;letter-spacing:-.3px;line-height:1.15;margin:4px 0 2px}
+.hero .rel{color:var(--gold);font-weight:600;font-size:14px}
+.hero .meta{display:flex;flex-direction:column;gap:8px;margin:16px 0 18px;font-size:14px;color:#E6E9EE}
+.hero .meta div{display:flex;gap:10px;align-items:flex-start}
+.hero .meta svg{flex:none;margin-top:2px;color:var(--mist)}
+.hero hr{border:0;border-top:1px solid var(--navy7);margin:0 0 14px}
+.tech{display:flex;align-items:center;gap:12px;margin:0 0 16px}
+.avatar{width:40px;height:40px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex:none}
+.hero .avatar{background:var(--navy7);color:#fff}
+.hero-mark{position:absolute;right:-18px;top:-10px;width:120px;opacity:.07;pointer-events:none}
+
+/* stepper (visit day) */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:16px 0 6px}
+.steps div{height:3px;background:var(--navy7);border-radius:1px}
+.steps div.on{background:var(--gold)}
+.steps-l{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:11.5px;color:var(--mist)}
+.steps-l span.on{color:#fff;font-weight:600}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:8px;animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(201,163,99,.6)}100%{box-shadow:0 0 0 10px rgba(201,163,99,0)}}
+
+/* progress */
+.bar{height:6px;background:var(--grid);border-radius:1px;overflow:hidden;margin:10px 0 8px}
+.bar i{display:block;height:100%;background:var(--brass)}
+
+/* segmented */
+.seg{display:flex;border:1px solid var(--line);border-radius:var(--r);padding:3px;gap:3px;background:var(--white)}
+.seg button{flex:1;height:36px;border-radius:var(--r2);font-size:14px;font-weight:500;color:var(--ink5);text-align:center}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+
+/* booking */
+.stepbar{display:flex;gap:4px;padding:0 20px;margin:2px 0 14px}
+.stepbar i{flex:1;height:3px;background:var(--grid);border-radius:1px}
+.stepbar i.on{background:var(--navy)}
+.choice{display:flex;gap:14px;align-items:flex-start;width:100%;padding:16px;border:1px solid var(--line);border-radius:var(--r);margin:0 0 10px;background:var(--white)}
+.choice[aria-checked="true"]{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.radio{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--stone);flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center}
+[aria-checked="true"] .radio{border-color:var(--navy)}
+[aria-checked="true"] .radio::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--navy)}
+.choice .t{font-weight:600}
+.choice .p{margin-left:auto;text-align:right;flex:none}
+.dates{display:flex;gap:8px;overflow-x:auto;padding:2px 20px 6px;scrollbar-width:none}
+.dates::-webkit-scrollbar{display:none}
+.date{flex:none;width:58px;height:72px;border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center}
+.date .d{font-size:12px;color:var(--ink5)}
+.date .n{font-size:20px;font-weight:600}
+.date .a{font-size:10.5px;color:var(--ink5)}
+.date[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.date[aria-pressed="true"] .d,.date[aria-pressed="true"] .a{color:var(--mist)}
+.date:disabled{background:var(--grid);border-color:var(--grid);color:var(--stone);cursor:not-allowed}
+.date:disabled .d,.date:disabled .a{color:var(--stone)}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{height:46px;border:1px solid var(--line);border-radius:var(--r);text-align:center;font-weight:500;font-size:15px}
+.slot[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.slot-h{font-size:14px;font-weight:600;margin:18px 0 8px;display:flex;justify-content:space-between}
+.slot-h span{font-weight:400;color:var(--ink5)}
+.suggest{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--wash);border-radius:var(--r);width:100%;margin:6px 0 0}
+.hold{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink5)}
+.hold b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.notice{display:flex;gap:12px;padding:14px 16px;border-radius:var(--r);font-size:14px;line-height:1.45;margin:0 0 16px}
+.notice svg{flex:none;margin-top:1px}
+.notice.err{background:var(--redwash);color:#6B2414}
+.notice.err svg{color:var(--red)}
+.notice.info{background:var(--wash);color:var(--ink)}
+.timeline{position:relative;margin:14px 0 6px;height:34px}
+.timeline .track{position:absolute;left:0;right:0;top:8px;height:4px;display:flex;border-radius:1px;overflow:hidden}
+.timeline .track i:first-child{background:var(--slate);flex:3}
+.timeline .track i:last-child{background:var(--brass);flex:1}
+.timeline .lbl{position:absolute;top:18px;font-size:11.5px;color:var(--ink5);white-space:nowrap}
+.pm{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:10px 0;border-bottom:1px solid var(--line)}
+.pm .logo{width:36px;height:36px;border:1px solid var(--line);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--navy);flex:none}
+.pm .grow{flex:1}
+.field{display:flex;flex-direction:column;gap:6px;margin:0 0 16px}
+.field label{font-size:14px;font-weight:500}
+.input{height:52px;border:1px solid var(--stone);border-radius:var(--r);padding:0 14px;background:#fff;width:100%;font-size:16px}
+.input:focus{outline:2px solid var(--navy);outline-offset:-1px;border-color:var(--navy)}
+textarea.input{height:auto;min-height:88px;padding:12px 14px;resize:none}
+.phone{display:flex;border:1px solid var(--stone);border-radius:var(--r);height:56px;background:#fff;overflow:hidden}
+.phone:focus-within{outline:2px solid var(--navy);outline-offset:-1px}
+.phone span{display:flex;align-items:center;padding:0 14px;border-right:1px solid var(--line);color:var(--ink5);font-size:17px}
+.phone input{border:0;outline:0;flex:1;padding:0 14px;font-size:19px;letter-spacing:.5px;background:transparent}
+.otp{position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:8px 0 16px}
+.otp div{height:58px;border:1px solid var(--stone);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;background:#fff}
+.otp div.cur{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.otp div.err{border-color:var(--red)}
+.otp input{position:absolute;inset:0;opacity:0;width:100%;font-size:16px}
+.check{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;border:2px solid var(--gold);color:var(--gold);margin:0 0 20px;animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.spinner{width:40px;height:40px;border:3px solid var(--grid);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* photos */
+.ph{background:var(--ph);border-radius:var(--r2);position:relative;overflow:hidden;display:block;width:100%}
+.ph svg{width:100%;height:100%;display:block}
+.thumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.thumbs .ph{aspect-ratio:3/4}
+.compare{position:relative;aspect-ratio:3/4;border-radius:var(--r);overflow:hidden;background:var(--ph);touch-action:none;user-select:none}
+.compare .layer{position:absolute;inset:0}
+.compare .layer svg{width:100%;height:100%}
+.compare .after{clip-path:inset(0 0 0 var(--pos,50%))}
+.compare .handle{position:absolute;top:0;bottom:0;left:var(--pos,50%);width:2px;background:#fff;transform:translateX(-1px);box-shadow:0 0 0 1px rgba(22,35,58,.15)}
+.compare .knob{position:absolute;top:50%;left:50%;width:40px;height:40px;transform:translate(-50%,-50%);background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--navy);box-shadow:0 2px 8px rgba(22,35,58,.25)}
+.compare .cap{position:absolute;bottom:10px;font-size:12px;font-weight:600;background:rgba(22,35,58,.82);color:#fff;padding:4px 8px;border-radius:var(--r2)}
+.pickers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 10px}
+.picker{border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;display:flex;flex-direction:column;align-items:flex-start}
+.picker small{font-size:12px;color:var(--ink5)}
+.picker b{font-weight:600;font-size:15px}
+.angles{display:flex;gap:6px;overflow-x:auto;margin:10px 0 0;scrollbar-width:none}
+.angles button{flex:none;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:var(--r2);font-size:13.5px;font-weight:500}
+.angles button[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.viewer{position:absolute;inset:0;z-index:60;background:#0B111C;color:#fff;display:flex;flex-direction:column;animation:fadeIn .18s}
+.viewer .img{flex:1;display:flex;align-items:center;justify-content:center;padding:0 16px}
+.viewer .img .ph{max-width:100%;aspect-ratio:3/4;height:auto}
+
+/* rewards */
+.reward-hero{background:var(--navy);color:#fff;border-radius:var(--r);padding:22px 20px;margin-top:12px}
+.reward-hero .big{font-size:26px;font-weight:600;line-height:1.2;letter-spacing:-.3px;margin:0 0 6px}
+.stat{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--navy7);margin-top:18px;padding-top:14px}
+.stat b{display:block;font-size:24px;font-weight:600;color:var(--gold)}
+.stat span{font-size:13px;color:var(--mist)}
+.card-prev{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#fff}
+.card-prev .img{aspect-ratio:1.91/1;background:var(--navy);display:flex;align-items:center;justify-content:center}
+.card-prev .txt{padding:12px 14px;font-size:13.5px;line-height:1.4}
+.how{counter-reset:h;margin:6px 0 0;padding:0;list-style:none}
+.how li{display:flex;gap:14px;padding:10px 0;font-size:15px}
+.how li::before{counter-increment:h;content:counter(h);font-weight:600;color:var(--navy);width:16px;flex:none}
+
+/* toggles */
+.switch{width:46px;height:28px;border-radius:14px;background:var(--stone);position:relative;flex:none;transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--navy)}
+.switch[aria-checked="true"]::after{transform:translateX(18px)}
+
+/* sheets, toast, banners */
+.scrim{position:absolute;inset:0;background:rgba(14,20,32,.45);z-index:40;animation:fadeIn .18s}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:var(--white);border-radius:12px 12px 0 0;padding:8px 20px calc(20px + env(safe-area-inset-bottom));max-height:88%;overflow-y:auto;animation:up .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 14px}
+.sheet h3{font-size:20px;font-weight:600;margin:0 0 6px;color:var(--navy)}
+.sheet p{margin:0 0 16px;color:var(--ink5);font-size:15px}
+.toast{position:absolute;left:16px;right:16px;bottom:84px;z-index:70;background:var(--navy);color:#fff;padding:13px 16px;border-radius:var(--r);font-size:14px;display:flex;gap:10px;align-items:center;animation:up2 .22s ease;box-shadow:0 8px 24px rgba(22,35,58,.25)}
+@keyframes up2{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+.toast svg{color:var(--gold);flex:none}
+.offline{flex:none;display:flex;gap:10px;align-items:center;background:var(--ink);color:#fff;font-size:13.5px;padding:9px 20px}
+.skel{background:linear-gradient(90deg,var(--grid) 0%,#F3F4F6 50%,var(--grid) 100%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r2)}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+.empty{padding:48px 0 24px}
+.empty .ic{width:48px;height:48px;border-radius:var(--r);background:var(--wash);display:flex;align-items:center;justify-content:center;color:var(--navy);margin:0 0 16px}
+.stars{display:flex;gap:6px}
+.stars button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--stone)}
+.stars button.on{color:var(--brass)}
+.done-list{list-style:none;margin:6px 0 0;padding:0}
+.done-list li{display:flex;gap:10px;align-items:center;padding:6px 0;font-size:15px}
+.done-list svg{color:var(--green)}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+</style>
+<style>
+/* v2 additions */
+.tier{display:flex;flex-direction:column;gap:6px;width:100%;padding:16px;border:1px solid var(--line);border-radius:var(--r);margin:0 0 10px;background:var(--white)}
+.tier[aria-checked="true"]{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.tier .hd{display:flex;align-items:center;gap:12px}
+.tier .nm{font-weight:600;font-size:17px;flex:1}
+.tier .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+.tier .facts span{font-size:12px;color:var(--ink5);display:block}
+.tier .facts b{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta{border-left:0;background:var(--wash);border-radius:var(--r);padding:14px 16px;font-size:14px;margin:4px 0 14px}
+.delta b{font-weight:600}
+.tl{list-style:none;margin:8px 0 0;padding:0;position:relative}
+.tl li{position:relative;padding:0 0 18px 26px}
+.tl li::before{content:"";position:absolute;left:5px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--white);border:2px solid var(--navy)}
+.tl li::after{content:"";position:absolute;left:10px;top:17px;bottom:-2px;width:1px;background:var(--line)}
+.tl li:last-child::after{display:none}
+.tl li.mm::before{background:var(--navy)}
+.tl li.done::before{background:var(--green);border-color:var(--green)}
+.tl li.pend::before{border-style:dashed;border-color:var(--brass)}
+.tl .when{font-size:12.5px;color:var(--ink5)}
+.tl .who{font-size:13px;font-weight:600}
+.tl .txt{font-size:15px;margin-top:2px}
+.seg3 button{font-size:13.5px}
+.seg .cnt{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:2px;background:var(--brass);color:var(--navy);font-size:11px;font-weight:600;margin-left:6px;text-align:center;padding:0 4px}
+.seg button[aria-pressed="true"] .cnt{background:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{height:40px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r);font-size:14px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.upl{display:flex;gap:8px;flex-wrap:wrap}
+.upl .ph,.upl label{width:72px;height:72px;border-radius:var(--r)}
+.upl label{border:1px dashed var(--stone);display:flex;align-items:center;justify-content:center;color:var(--navy);cursor:pointer}
+.upl input{position:absolute;width:1px;height:1px;opacity:0}
+/* notifications */
+.nbadge{position:absolute;top:8px;right:8px;min-width:16px;height:16px;padding:0 4px;border-radius:2px;background:var(--navy);color:#fff;font-size:10.5px;font-weight:600;line-height:16px;text-align:center}
+.banner{position:absolute;left:10px;right:10px;top:10px;z-index:80;background:#fff;border-radius:var(--r);box-shadow:0 10px 30px rgba(14,20,32,.22);display:flex;gap:12px;padding:12px 12px 12px 14px;align-items:flex-start;animation:down .3s cubic-bezier(.2,.8,.2,1);border:1px solid var(--line)}
+@keyframes down{from{transform:translateY(-120%)}to{transform:none}}
+.banner .bi{width:34px;height:34px;border-radius:var(--r);background:var(--navy);display:flex;align-items:center;justify-content:center;flex:none;color:var(--gold)}
+.banner .bt{font-weight:600;font-size:14px}
+.banner .bb{font-size:13.5px;color:var(--ink5)}
+.nrow{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);width:100%;align-items:flex-start}
+.nrow .ni{width:36px;height:36px;border-radius:var(--r);background:var(--wash);display:flex;align-items:center;justify-content:center;color:var(--navy);flex:none}
+.nrow .nt{font-weight:600;font-size:15px}
+.nrow .nb{font-size:14px;color:var(--ink5)}
+.nrow .nw{font-size:12px;color:var(--ink5);margin-top:2px}
+.nrow.unread .nt::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--brass);margin-left:8px;vertical-align:middle}
+.track5{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:16px 0 6px}
+.track5 div{height:3px;background:var(--navy7);border-radius:1px}.track5 div.on{background:var(--gold)}
+.lbl5{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:10.5px;color:var(--mist)}.lbl5 span.on{color:#fff;font-weight:600}
+.msg{background:var(--navy8);border-radius:var(--r);padding:10px 12px;font-size:13.5px;color:#E6E9EE;margin:12px 0 0}
+.msg b{color:#fff;font-weight:600}
+.jr{list-style:none;margin:12px 0 0;padding:0}
+.jr li{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--navy7);font-size:14px;color:#E6E9EE;align-items:center}
+.jr li .dot{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--mist);display:flex;align-items:center;justify-content:center;flex:none;color:var(--navy)}
+.jr li.ok .dot{background:var(--gold);border-color:var(--gold)}
+.jr li.now{color:#fff;font-weight:600}.jr li.now .dot{border-color:var(--gold)}
+/* toasts: the technician app's (design/tech-redesign): ink, white words, a white tick, the width of the screen */
+.toast{left:12px!important;right:12px!important;bottom:84px!important;background:#1F2328!important;color:#fff!important;border-radius:4px!important;padding:14px 16px!important;font-size:15px!important;line-height:1.4;gap:10px!important;box-shadow:none!important;animation:mmFade .16s ease-out!important}
+.toast svg{color:#fff!important}
+.app.no-tabs .toast{bottom:96px!important}
+@keyframes mmFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.slot.taken{color:var(--stone);background:var(--white);text-decoration:line-through;cursor:not-allowed;border-color:var(--grid)}
+.push{position:absolute;left:8px;right:8px;top:4px;z-index:80;padding:14px 16px 6px;border-radius:22px;background:#fff;box-shadow:0 6px 24px rgba(11,15,22,.22);animation:down .26s ease-out}
+.push .ph1{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink5)}
+.push .ph1 i{width:18px;height:18px;border-radius:5px;background:var(--navy);display:inline-block}
+.push .pt{font-weight:600;font-size:15px;margin-top:6px}
+.push .pb{font-size:14px;color:var(--ink);margin-top:2px}
+.push .pa{display:flex;gap:4px;justify-content:flex-end;margin-top:2px}
+.push .pa button{height:40px;padding:0 8px;font-size:14px;font-weight:600;color:var(--navy)}
+.signoff{background:#fff;color:var(--ink);border-radius:var(--r);padding:16px;margin-top:14px}
+.signoff h3{font-size:17px;font-weight:600;margin:0 0 4px;color:var(--navy)}
+.ck{display:flex;gap:12px;align-items:center;width:100%;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px}
+.ck .bx{width:22px;height:22px;border:1.5px solid var(--stone);border-radius:3px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff}
+.ck[aria-checked="true"] .bx{background:var(--navy);border-color:var(--navy)}
+/* razorpay simulated checkout */
+.rzp{position:absolute;left:0;right:0;bottom:0;z-index:52;background:#fff;border-radius:12px 12px 0 0;max-height:86%;display:flex;flex-direction:column;animation:up .26s cubic-bezier(.2,.8,.2,1);box-shadow:0 -8px 30px rgba(14,20,32,.25)}
+.rzp-h{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.rzp-h .m{width:36px;height:36px;border-radius:var(--r);background:var(--navy);display:flex;align-items:center;justify-content:center;flex:none}
+.rzp-b{overflow-y:auto;padding:6px 16px 8px}
+.rzp-f{padding:10px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);font-size:12px;color:var(--ink5);display:flex;justify-content:space-between}
+.rzp .grp{font-size:13px;font-weight:600;color:var(--ink5);margin:14px 0 4px}
+.sim{position:absolute;top:10px;right:56px;font-size:10.5px;font-weight:600;color:var(--gold7);background:var(--wash);padding:2px 6px;border-radius:2px}
+/* rev 5: corners as the live client app (packages/ui/base.css: --ui-radius-button 0, --ui-radius-box 0) */
+:root{--r:0;--r2:0}
+.sheet,.tier,.delta,.chip,.banner,.banner .bi,.nrow .ni,.msg,.signoff,.ck .bx,.seg .cnt,.nbadge,.tabs .badge,.sim,.grab,.steps div,.bar,.stepbar i,.timeline .track,.track5 div,.switch,.switch::after,.upl .ph,.upl label{border-radius:0!important}
+.toast{border-radius:0!important}
+</style>
+</head>
+<body>
+<div class="stage">
+  <aside class="guide" id="guide" aria-label="Prototype controls"></aside>
+  <div class="device"><div class="app" id="app"></div></div>
+</div>
+<button class="demo-chip" id="demoChip" aria-label="Open prototype controls"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
+<script>
+const MARK_D="M97.3 0.1L99.3 0L101.8 1.6L107.1 7.7L109.5 14L110.3 19.7L110.1 23.8L108.4 30.8L103.8 40.9L92.4 60.2L91 63.5L83.2 76L81.4 76.9L77.4 72.7L77.2 70.8L84.8 59.1L94.3 42.5L99.5 32.7L102.4 24L102.4 15.4L101.1 11L98.5 8.2L95.9 10.5L94.3 14.8L94.3 23.5L96.5 32.5L94 37.9L92.5 38.3L91.3 37.4L86.7 23.5L86.7 15.1L88.3 9.9L92.1 4.2L97.1 0.3ZM147.6 30.6L151.5 31L154.8 32.6L157.3 35.2L159 39.3L159 43.9L157.3 49L152.2 56.1L129.2 78.3L114.9 93.3L111.4 98.2L106.5 106.9L101.2 120.7L95.5 120.7L94.6 119.7L91.8 110.2L86.1 99L74.7 85.2L57.3 68.3L57.1 65.6L58.4 61.8L59.4 60.9L60.5 61.1L83.2 83.6L90.2 92.5L95.9 101.5L97.6 105.6L98.5 106L104.6 94.7L116 80.6L146.5 51L150.3 46.1L151.6 42.3L151.6 40.4L150.4 38L148.2 37.5L145.9 40.1L145.4 41.7L145.4 47.1L143.2 50.7L140.1 53.3L138.9 52.3L137.8 48.2L137.8 40.1L139.4 36.3L142.5 32.6L145.5 31L147.4 30.7ZM45.9 30.8L51 31L55 33.4L57.9 37.6L59.2 43.9L58.7 51.2L55.4 63.7L46.5 88.7L45.8 89.1L41.2 85.1L40.2 84.1L40.2 82.5L45.4 69.7L51.4 50.7L51.9 47.4L51.6 41.2L50.8 39L49.3 37.5L47.1 37.5L45.4 40.1L45.4 44.2L48.4 50.7L47.6 55.6L46.6 57.1L45.7 56.7L40.5 50.1L38.9 46.1L38 41.2L38.6 38.5L41.3 33.6L45.8 31ZM103.5 46.6L105.2 47.4L116.6 65.9L119.6 71.1L119.8 73.2L115.6 77.4L114.8 77.4L113.3 75.7L103 58.8L100 52.3L103.4 46.7ZM0.8 54.5L1.5 54.3L3.7 56L30.3 79.3L43.2 92L48.6 98.2L55.2 108.6L58.4 115.9L60.6 123L64.4 129.8L64.4 130.8L63.2 131.5L51 132.6L40.9 134.8L33.6 137L24.9 140.8L22.6 139.5L3.3 67.8L0 57.7L0 55.3L0.7 54.6ZM195.1 54.8L196.6 54.6L197 56.4L188.3 87.4L185.6 99.3L184 103.7L178.5 126L175.3 136.5L170.9 143.9L165.6 148.4L158.8 151.6L150.1 153.3L139.8 153.3L130.3 151.1L115.9 145.9L109.1 141.8L104.8 140.2L99.3 137L98.4 135.7L100.4 135.6L113.5 140.2L128.7 144L141.7 145.7L150.1 145.1L155.3 144L161.8 140.5L163.3 138.7L162.6 137.2L151.5 133.7L135.7 131L120.2 129.9L119.6 129.2L119.8 127.9L123.4 123.8L125.8 119.7L127.2 112.4L126.4 100.4L122.3 89.3L126.5 84.5L127.3 84.5L133.2 96.6L135.6 106.9L135.1 115.6L133.4 121.3L133.8 122.8L151.5 125.8L164.8 129.9L165.2 128.9L164.4 127.9L159.5 112.4L157.9 109.1L150.8 88.5L145.4 75.7L143.2 68.3L148 63.9L149.7 64.8L153 72.7L154.6 78.9L163.3 100.7L163.9 103.7L166.6 109.6L169.3 119.4L170.2 120.1L176.1 101.2L182.3 76L181.4 75.8L180.3 76.6L164 91.8L163.2 91.8L162.2 90.4L160.9 84.9L161.7 83.3L165.6 79.6L169.7 76.6L189 59.2L195 54.9ZM13.9 75.1L19.4 79.1L38 96.9L47 108.6L50.8 116.7L53 124L50.7 125L38.7 127.2L32.5 129.3L31 129.2L32.3 127.3L34.5 120.2L39.4 108.3L39.7 104.8L35.7 99.7L34 100.4L27.7 117.3L26.9 119.2L25.8 119.4L15.5 81.7L13.6 76.5L13.7 75.3ZM69.3 85.2L70.2 85.1L74.2 89.5L73.1 94.7L71.2 98.2L69.8 104.2L69.8 115.6L72 121.9L77.6 128.5L99.3 142.4L123.5 163.6L130 167.9L136 170.7L141.7 172.8L148.8 173.9L154.2 173.9L161.8 172.8L173.5 167.7L178.9 163.6L184.6 157.6L185.1 159.1L178.8 169.4L170.8 176.6L160.7 182.1L150.1 184.5L140.6 184.5L132.2 182.9L122.7 179.3L112.4 173.6L86 157.1L75.4 151.9L65.1 148.6L55.6 147L47.7 147L40.4 147.8L30.3 150.5L16.2 157.3L15.8 155L18.9 151.9L26.8 145.9L32.5 142.9L38.2 140.8L45.5 139.1L49.3 138.6L62.1 138.6L75.1 141.8L87.1 147.8L97.4 154.3L116.4 169.6L126.8 175.5L134.6 178.3L142.8 179.6L153.1 179.3L156.3 178.1L155.8 177.7L154.5 178.3L145.8 178.5L139.5 177.7L130.3 175L122.4 171.2L112.1 163.6L94.4 148.6L83 140.8L76.2 137L68.5 130L65.2 125.4L62.5 117.8L61.7 106.4L62.5 101L65.5 91.7L69.2 85.3ZM149.5 97.1L150.8 98L151.4 99.3L152.4 102.6L152.4 105L147 114L144.3 120.5L142.8 121.2L137.4 120.4L137 118.3L140.5 109.4L146.5 100.1L149.3 97.3ZM187.2 120L188.6 120.2L189.4 124.3L189.9 128.4L189.7 136.5L187.2 146.1L183.4 153.7L177 160.1L171.3 164.1L162.9 167.4L153.9 168.8L148.8 168.5L141.4 167.1L137.6 165.8L129.8 161.7L124.6 157.6L122.8 155.3L123.8 154.9L131.4 157.6L139 159.2L150.1 159.5L156.9 158.7L167 154.9L173.2 150.5L177.2 146.6L181.3 140.9L185.6 129.2L187.1 120.1ZM194.6 124.6L196.5 126L198.1 130.6L199.7 139.5L200 146.3L199.7 153.1L198.1 160.7L195.7 168.1L193.2 173L185.9 183.8L176.8 192.4L165.9 198.6L155.6 202.2L146.1 203.8L139.3 203.8L127.9 202.2L120.8 200L112.9 196.5L103.7 191.3L77 172.8L65.4 167.4L56.7 164.7L50.1 163.6L37.6 164.1L28.9 166.3L20.8 170.1L14.8 174.2L10.1 178.9L2.9 189.1L2.2 188.5L2.4 185.2L5.2 177.9L9.5 171.1L13 167L19.2 161.4L23.5 158.7L33.3 154.3L43.9 151.9L58.8 152.4L70.8 155.4L83 160.9L90.9 165.2L115.6 181.3L123 184.8L134.4 188.6L141.2 189.7L148 189.7L154.8 188.6L163.5 186.1L172.4 181.5L181.8 173.2L186.1 167.5L191 157.5L194.3 146.1L195.1 138.7L194.4 124.7ZM177.2 152.3L177.7 152.6L172.7 157.6L168.6 160.3L163.2 162.8L157.5 164.1L151 164.7L145.5 164.1L143.8 163.2L154.2 163L162.6 161.4L171.6 156.8L177 152.4ZM44 157.7L52 157.6L58.6 158.4L66.4 160.3L74.9 163.6L82.5 167.4L103.4 181.5L113.5 187.5L126.5 193.2L134.6 195.1L146.9 195.7L158 193.5L171.6 187.5L179.8 180.7L180.6 180.2L181 180.6L170.5 189.7L161.5 194L152.3 196.7L148.2 197.3L136 197.3L124.6 194.6L111.3 188.6L88.7 173.4L73 164.7L64.3 161.4L54.8 159.2L45 158.7L37.6 159.5L37.6 159L40.1 158.2L43.9 157.9ZM45.1 168.9L54.5 169.6L66.7 173.4L78.9 179.9L96.6 192.7L107.5 199.5L114 202.7L126 207.1L134.6 208.7L148.5 208.7L154.5 207.6L161.3 205.4L171.3 200.3L172.7 200.3L172.8 201L171.2 202.9L160.5 210.3L152.3 214.1L145.5 216L138.7 217.1L128.7 217.4L115.9 215.2L106.9 212L96.3 206.5L63.2 182.6L50.1 177.2L43.9 176.1L33.8 176.1L24.3 178.3L14.8 183.2L14.4 181.4L17 178.8L25.1 173.6L35.5 169.6L45 169ZM39.4 182.2L49.6 182.6L56.4 184.8L62.9 188.3L69.4 192.9L76.5 198.4L77.2 200.1L76.2 200.5L67.5 195.7L56.9 190.8L46.1 188L38.2 187.8L29.2 189.7L23.8 191.8L23.4 190.1L27.9 186.1L32.7 183.7L39.3 182.3Z";
+const WORD_D="M6 3L15.4 3L15.4 103L6 103ZM82.6 3L92 3L92 103L82.6 103ZM6 3L22 3L51.5 93L43.5 93ZM78 3L92 3L54.5 93L46.5 93ZM2 3L19 3L19 11.6L2 11.6ZM79 3L96 3L96 11.6L79 11.6ZM2 94.4L17 94.4L17 103L2 103ZM79.5 94.4L96 94.4L96 103L79.5 103ZM134.5 3L143.9 3L120 103L110.6 103ZM139.5 3L148.9 3L170.5 103L156.9 103ZM122.5 68L160 68L160 77L122.5 77ZM106 94.4L126 94.4L126 103L106 103ZM153 94.4L175 94.4L175 103L153 103ZM193 3L202.4 3L202.4 103L193 103ZM247.6 3L257 3L257 103L247.6 103ZM193 3L209 3L257 89L257 103L241 103L193 17ZM189 3L206 3L206 11.6L189 11.6ZM244 3L261 3L261 11.6L244 11.6ZM189 94.4L204 94.4L204 103L189 103ZM243 94.4L261 94.4L261 103L243 103ZM277 3L293 3L293 103L277 103ZM293 3L326 3L326 11.6L293 11.6ZM320 3L327 3L327 19L320 19ZM293 49L321 49L321 57L293 57ZM315.5 43L322.5 43L322.5 63L315.5 63ZM293 94.4L330 94.4L330 103L293 103ZM324 86L331 86L331 103L324 103ZM381 3L390.4 3L390.4 103L381 103ZM457.6 3L467 3L467 103L457.6 103ZM381 3L397 3L426.5 93L418.5 93ZM453 3L467 3L429.5 93L421.5 93ZM377 3L394 3L394 11.6L377 11.6ZM454 3L471 3L471 11.6L454 11.6ZM377 94.4L392 94.4L392 103L377 103ZM454.5 94.4L471 94.4L471 103L454.5 103ZM509.5 3L518.9 3L495 103L485.6 103ZM514.5 3L523.9 3L545.5 103L531.9 103ZM497.5 68L535 68L535 77L497.5 77ZM481 94.4L501 94.4L501 103L481 103ZM528 94.4L550 94.4L550 103L528 103ZM568 3L577.4 3L577.4 103L568 103ZM622.6 3L632 3L632 103L622.6 103ZM568 3L584 3L632 89L632 103L616 103L568 17ZM564 3L581 3L581 11.6L564 11.6ZM619 3L636 3L636 11.6L619 11.6ZM564 94.4L579 94.4L579 103L564 103ZM618 94.4L636 94.4L636 103L618 103Z";
+const mark=(c,w)=>`<svg viewBox="0 0 200 218" width="${w}" aria-hidden="true"><path fill-rule="evenodd" fill="${c}" d="${MARK_D}"/></svg>`;
+const lockup=(c,w)=>`<svg viewBox="0 0 137.51 40" width="${w}" role="img" aria-label="Mane Man"><g transform="scale(0.18399)"><path fill-rule="evenodd" fill="${c}" d="${MARK_D}"/></g><g transform="translate(49.31 13.42) scale(0.14)"><path fill="${c}" d="${WORD_D}"/></g></svg>`;
+
+/* ---------------- icons ---------------- */
+const P={
+ home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+ cal:'<rect x="3" y="4.5" width="18" height="16.5" rx="1.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',
+ cam:'<path d="M3 8a1 1 0 0 1 1-1h3l2-2.5h6L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><circle cx="12" cy="13" r="3.8"/>',
+ gift:'<rect x="3" y="8" width="18" height="4.5"/><path d="M5 12.5V21h14v-8.5M12 8v13M12 8S10.5 3.5 7.8 4.2C5.6 4.8 7 8 12 8zm0 0s1.5-4.5 4.2-3.8C18.4 4.8 17 8 12 8z"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/>',
+ right:'<path d="m9 5 7 7-7 7"/>', left:'<path d="m15 5-7 7 7 7"/>', x:'<path d="M6 6l12 12M18 6 6 18"/>',
+ check:'<path d="m4.5 12.5 5 5 10-11"/>', clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+ pin:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+ chat:'<path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/>', dl:'<path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/>',
+ alert:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.2v.3"/>', wifi:'<path d="M2 2l20 20M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5.2-2.8M14.6 10.4A10 10 0 0 1 19 13M12 20h.01"/>',
+ star:'<path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>', edit:'<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>',
+ link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+ share:'<path d="M12 15V3m-4.5 4.5L12 3l4.5 4.5M5 12v8h14v-8"/>', wrench:'<path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5zM14.5 6.5 17 4"/>',
+ receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>', shield:'<path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/>',
+ logout:'<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>',
+ swap:'<path d="m9 6-5 6 5 6M15 6l5 6-5 6"/>', refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>', lock:'<rect x="5" y="10.5" width="14" height="10" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+ card:'<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 10h18"/>', help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7M12 17v.3"/>',
+ bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5h4"/>',truck:'<path d="M3 6h11v10H3zM14 10h4l3 3v3h-7M7 19a2 2 0 1 0 0-.1M17 19a2 2 0 1 0 0-.1"/>',layers:'<path d="m12 3 9 5-9 5-9-5zM3 13l9 5 9-5"/>', flag:'<path d="M5 21V4h11l-1.5 4L16 12H5"/>', bank:'<path d="M3 9h18L12 3zM5 9v9M10 9v9M14 9v9M19 9v9M3 21h18"/>', wallet:'<rect x="3" y="6" width="18" height="14" rx="1.5"/><path d="M16 13h2M3 9h18"/>', upi:'<path d="M7 4l-3 16M13 4l-3 16M17 8l3 4-3 4"/>'
+};
+const I=(n,s=22,w=1.6)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+
+/* ---------------- dates & money ---------------- */
+let TODAY=new Date(2027,8,13,19,10);
+const D=(y,m,d,h=0,mi=0)=>new Date(y,m-1,d,h,mi);
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const addMonths=(d,n)=>{const x=new Date(d);x.setMonth(x.getMonth()+n);return x};
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'],WDN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const fd=(d,o)=>{const p=[];if(o.weekday)p.push(o.weekday==='long'?WDN[d.getDay()]:WDN[d.getDay()].slice(0,3));if(o.day)p.push(d.getDate());if(o.month)p.push(o.month==='long'?MON[d.getMonth()]:MON[d.getMonth()].slice(0,3));if(o.year)p.push(d.getFullYear());return p.join(' ')};
+const dShort=d=>fd(d,{weekday:'short',day:1,month:'short'});
+const dLong=d=>fd(d,{weekday:'long',day:1,month:'long'});
+const dFull=d=>fd(d,{day:1,month:'short',year:1});
+const dDM=d=>fd(d,{day:1,month:'short'});
+const tStamp=d=>`${dDM(d)}, ${tm(d.getHours()*60+d.getMinutes())}`;
+const tm=(m)=>{const h=Math.floor(m/60),mi=m%60;const hh=((h+11)%12)+1;return `${hh}${mi?':'+String(mi).padStart(2,'0'):''} ${h<12?'am':'pm'}`};
+const tmR=(m)=>{const a=tm(m),b=tm(m+30);return a.split(' ')[1]===b.split(' ')[1]?`${a.split(' ')[0]}–${b}`:`${a}–${b}`};
+const rs=n=>'Rs. '+n.toLocaleString('en-IN');
+const exGst=n=>{const e=Math.round(n/1.18);return [e,n-e]};
+const dayNum=d=>Math.floor(new Date(d.getFullYear(),d.getMonth(),d.getDate())/864e5);
+const daysTo=d=>Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()))/864e5);
+const rel=d=>{const n=daysTo(d);return n===0?'Today':n===1?'Tomorrow':`In ${n} days`};
+
+/* ---------------- data ---------------- */
+// Prices from "Product tiers", revision 7 (6 Oct 2026), ex GST, plus 18% GST.
+/* Everything below is what the console serves, never a figure in the app:
+   Settings · Rules (ops_settings), Prices (price_book, by package and hair system, ADR 0211) and Words.
+   In the build these arrive on GET /api/me, /api/availability and the hold; here they sit in one object the
+   prototype's controls can change, so every screen is seen to follow them. Package figures are product tiers
+   revision 7 (ex GST); late fees and the custom-order lead time are placeholders until ops set them. */
+const OPS={
+ gst_percent:18,
+ rules:{
+  change_notice_hours:24,
+  late_change_charge:{consultation:'nothing',first_fit:'late_fee',replacement:'late_fee',service:'visit'},
+  no_show_wait_min:15,
+  payment_hold:{countdown:10,grace:2},
+  dispute_window_days:30,
+  booking_rules:{step:30,arrival:30,lead:3},
+  booking_days:{horizon:45,replacement_order_lead:30},
+  referral_reward:{referrer_visits:3,friend_visits:3,valid_days:365},
+  care_hours:{opens:9,closes:21,first_reply:60},
+  move_proposal_hours:48,
+  guarantee_days:14,            // proposed setting: the terms' 14 days, today only in the words
+  custom_order_days:21,         // placeholder: the supplier's promised days for a hair system not held
+  custom_order_grace_days:7
+ },
+ packages:{
+  essential:{name:'Essential',service_every_days:30,replace_after_months:8,hair_system:20000,service:1500,replacement:20000,late_fee:1000,desc:'Fine mono base with a lace front. Lasts longest.'},
+  active:{name:'Active',service_every_days:30,replace_after_months:6,hair_system:25000,service:2000,replacement:25000,late_fee:1000,desc:'French lace top. Breathes best in heat and sweat.'},
+  natural:{name:'Natural',service_every_days:30,replace_after_months:6,hair_system:25000,service:2000,replacement:25000,late_fee:1000,desc:'Silk top over lace. Most natural at a visible parting.'},
+  celebrity:{name:'Celebrity',service_every_days:15,replace_after_months:4,hair_system:30000,service:2000,replacement:30000,late_fee:1000,desc:'Ultra-thin skin base. The most natural-looking.'}
+ }
+};
+const inc=ex=>Math.round(ex*(1+OPS.gst_percent/100));
+let TIERS={};
+function recalcTiers(){
+ const P=OPS.packages; const ranks=[...new Set(Object.values(P).map(p=>p.hair_system))].sort((a,b)=>a-b);
+ TIERS={};
+ for(const [k,p] of Object.entries(P)) TIERS[k]={name:p.name,desc:p.desc,life:p.replace_after_months,
+  svc:inc(p.service),svcPer:p.service_every_days>=28?'a month':'twice a month',
+  piece:inc(p.replacement+p.service),          // a replacement: its own price and the service visit's (ADR 0211)
+  ff:inc(p.hair_system+p.service),             // a first fit: the hair system and the service visit
+  hs:inc(p.hair_system),late:inc(p.late_fee),rank:ranks.indexOf(p.hair_system)+1};
+}
+recalcTiers();
+const TORDER=['essential','active','natural','celebrity'];
+const TECHS=[['Imran Qureshi','IQ'],['Sandeep Rawat','SR']];
+const ADDRESS={l1:'House 4417, Tower C, Sector 65',l2:'Gurgaon 122018',notes:'Gate code 4417 · park in visitor bay B'};
+const ALLPAST=[
+ {id:'v9',date:D(2027,11,14),type:'Service visit',tech:'Sandeep Rawat',dur:'85 minutes',paid:2360,ref:'MM-2027-1121',done:['Removed','Cleaned','Re-taped','Re-bonded'],stage:9},
+ {id:'v8',date:D(2027,10,17),type:'Service visit',tech:'Imran Qureshi',dur:'90 minutes',paid:2360,ref:'MM-2027-1018',done:['Removed','Cleaned','Re-taped','Re-bonded','Trimmed'],stage:9},
+ {id:'v7',date:D(2027,9,16),type:'Service visit',tech:'Imran Qureshi',dur:'90 minutes',paid:2360,ref:'MM-2027-0917',done:['Removed','Cleaned','Re-taped','Re-bonded'],stage:9},
+ {id:'vns',date:D(2027,8,8,12,0),type:'Service visit',outcome:'noshow',tech:'Imran Qureshi',dur:'—',paid:2360,ref:'MM-2027-0808',done:[],stage:9,log:[[D(2027,8,7,19,0),'Reminder delivered on WhatsApp'],[D(2027,8,8,12,4),'Imran checked in at your address'],[D(2027,8,8,12,4),'Arrival message delivered on WhatsApp'],[D(2027,8,8,12,9),'Imran called you; no answer'],[D(2027,8,8,12,15),'Waited until 15 minutes past the booked time; visit closed as missed'],[D(2027,8,9,11,20),'Ops ruled on the evidence: missed-visit charge kept']]},
+ {id:'v4',date:D(2027,8,22),type:'Service visit',tech:'Imran Qureshi',dur:'85 minutes',paid:2360,ref:'MM-2027-0841',done:['Removed','Cleaned','Re-taped','Re-bonded','Trimmed','Front edge re-bonded (issue MM-ISS-0024)'],stage:9},
+ {id:'v3',date:D(2027,7,25),type:'Service visit',tech:'Sandeep Rawat',dur:'90 minutes',paid:2360,ref:'MM-2027-0712',done:['Removed','Cleaned','Re-taped','Re-bonded'],stage:8},
+ {id:'v2',date:D(2027,6,27),type:'Replacement',tier:'active',from:'essential',tech:'Sandeep Rawat',dur:'2 hours 40 minutes',paid:29500,ref:'MM-2027-0603',done:['Old hair system removed','New Active hair system fitted','Hairline set','Cut and blended'],stage:7},
+ {id:'v1b',date:D(2027,5,23),type:'Service visit',tech:'Imran Qureshi',dur:'80 minutes',paid:1770,ref:'MM-2027-0518',done:['Removed','Cleaned','Re-taped','Re-bonded'],stage:6},
+ {id:'v1',date:D(2026,11,14),type:'First fit',tier:'essential',tech:'Imran Qureshi',dur:'3 hours',paid:23600,ref:'MM-2026-0114',done:['Scalp prepared','Essential hair system fitted','Hairline set','Cut and styled'],stage:0}
+];
+const PAST=()=>ALLPAST.filter(v=>v.date<TODAY);
+const PHOTOV=()=>PAST().filter(v=>!v.outcome);
+const PIECES=[{tier:'essential',from:D(2026,11,14),to:D(2027,6,27),visit:'v1',paid:23600,how:'First fit'},{tier:'active',from:D(2027,6,27),to:null,visit:'v2',paid:29500,how:'Upgraded from Essential at replacement'}];
+const ANGLES=[['front','Front'],['left','Left'],['right','Right'],['top','Top'],['back','Back']];
+const FRIENDS=[{n:'Vikram',d:'Fitted Aug 2027'},{n:'Ashish',d:'Fitted Mar 2027'}];
+const ISSUE_CATS=['The fit (guarantee)','Edges lifting','Itching or irritation','Colour or shine','Shedding','Fit or comfort','A visit or technician','Payment or refund','Something else'];
+let ISSUES=[];
+function seedIssues(){ISSUES=[
+ {id:'MM-ISS-0031',cat:'Payment or refund',title:'Refund for the cancelled 5 Sep visit',status:'progress',raised:D(2027,9,3,10,12),visit:null,events:[
+  {t:D(2027,9,3,10,12),who:'you',txt:'I cancelled the 5 Sep visit. When does the refund arrive?'},
+  {t:D(2027,9,3,10,41),who:'mm',name:'Neha, Mane Man',txt:'Refund of Rs. 2,360 started. Banks take 5 to 7 working days. We will close this once it lands.'}]},
+ {id:'MM-ISS-0024',cat:'Edges lifting',title:'Front edge lifting after the gym',status:'resolved',raised:D(2027,8,18,8,5),visit:'v4',photos:2,events:[
+  {t:D(2027,8,18,8,5),who:'you',txt:'Front edge lifts after workouts since Monday. Two photos attached.'},
+  {t:D(2027,8,18,8,32),who:'mm',name:'Neha, Mane Man',txt:'Thanks. Your technician will re-bond the front at your 22 Aug visit. If it lifts before then, reply here.'},
+  {t:D(2027,8,22,13,40),who:'done',txt:'Front edge re-bonded at the 22 Aug visit. Marked resolved.'}]}
+];}
+const openIssues=()=>ISSUES.filter(i=>i.status!=='resolved').length;
+
+/* ---------------- state ---------------- */
+const S={
+ scenario:'signedout', stack:[{s:'signin'}], dir:'fade', sheet:null, toast:null, viewer:null, rzp:null,
+ phone:'', otp:'', otpErr:false, resend:30,
+ offline:false, payOutcome:'success', holdShort:false, late:false, shareFail:false, homeError:false, homeLoading:false,
+ credits:2, earned:6, upcoming:null, pendingPiece:null, photoCard:'brand', photoConsent:true, marketingConsent:false, waVisits:true, waLaunch:false,
+ cmp:{a:null,b:0,angle:'front',pos:50}, ratings:{}, visitsSeg:'upcoming',
+ bk:null, raise:null, refundDone:false, notifs:[], banner:null, live:null, ff:null
+};
+const pickTech=()=>TECHS[Math.floor(Math.random()*TECHS.length)];
+function setScenario(sc){
+ S.scenario=sc; S.sheet=null; S.viewer=null; S.bk=null; S.rzp=null; S.pendingPiece=null; seedIssues();
+ TODAY=sc==='due'?new Date(2027,11,6,19,10):new Date(2027,8,13,19,10);
+ S.cmp.a=null; S.cmp.b=0; S.banner=null; S.requested=null; {const k=ALLPAST.findIndex(x=>x.id==='vlive');if(k>=0)ALLPAST.splice(k,1);} ALLPAST.forEach(v=>{delete v.dispute}); S.live=null; S.ff=null;
+ if(sc==='signedout'){S.stack=[{s:'signin'}];S.phone='';S.otp='';}
+ else{
+  S.stack=[{s:'home'}];
+  if(sc==='lead'){S.credits=0;S.earned=0;ISSUES=[];S.upcoming={kind:'consult',date:addDays(TODAY,5),start:540};}
+  if(sc==='consulted'||sc==='custom'){S.credits=0;S.earned=0;ISSUES=[];S.upcoming=null;S.ff={tier:'active',paid:false,custom:sc==='custom',consult:addDays(TODAY,-1),tech:'Imran Qureshi'};}
+  if(sc==='livefit'){S.credits=0;S.earned=0;ISSUES=[];TODAY=new Date(2027,8,13,9,10);S.ff={tier:'active',booked:true,consult:addDays(TODAY,-6),tech:'Imran Qureshi'};S.upcoming={kind:'firstfit',tier:'active',date:new Date(TODAY),start:600,tech:'Sandeep Rawat',ini:'SR',price:TIERS.active.ff,live:true};S.live={stage:'confirmed',step:0,eta:null};}
+  if(sc==='fitted'){S.credits=2;S.earned=6;S.upcoming={kind:'service',date:addDays(TODAY,3),start:720,tech:'Imran Qureshi',ini:'IQ',price:2360};}
+  if(sc==='due'){S.credits=2;S.earned=6;S.upcoming=null;S.refundDone=true;const r=ISSUES[0];r.status='resolved';r.events.push({t:D(2027,9,10,16,5),who:'done',txt:'Refund reached your account on 10 Sep. Marked resolved.'});}else S.refundDone=false;
+  if(sc==='live'){TODAY=new Date(2027,8,13,11,40);S.credits=2;S.earned=6;S.upcoming={kind:'service',date:new Date(TODAY),start:720,tech:'Imran Qureshi',ini:'IQ',price:2360,live:true};S.live={stage:'confirmed',step:0,eta:null,log:[]};}
+ }
+ seedNotifs(sc);
+ S.dir='fade'; render();
+}
+const cur=()=>S.stack[S.stack.length-1];
+const TABROOT=['home','visits','photos','rewards'];
+function go(s,p={}){S.stack.push({s,...p});S.dir='in';S.sheet=null;render();}
+function back(){if(S.stack.length>1){S.stack.pop();S.dir='back';render();}}
+function tab(s){S.stack=[{s}];S.dir='fade';S.sheet=null;render();}
+let toastT;
+function toast(msg){S.toast=msg;render(true);clearTimeout(toastT);toastT=setTimeout(()=>{S.toast=null;render(true)},2600);}
+const isLead=()=>['lead','consulted','custom','livefit'].includes(S.scenario);
+
+/* piece helpers */
+const curPiece=()=>PIECES[PIECES.length-1];
+const pieceEnd=p=>addMonths(p.from,TIERS[p.tier].life);
+const windowOpens=p=>{const e=pieceEnd(p);return new Date(e.getFullYear(),e.getMonth(),1)};
+const orderBy=p=>addDays(pieceEnd(p),-OPS.rules.booking_days.replacement_order_lead);
+const pieceMonth=p=>Math.min(TIERS[p.tier].life,Math.floor((TODAY-p.from)/864e5/30.44)+1);
+const replacementOpen=()=>!isLead()&&TODAY>=windowOpens(curPiece());
+const svcPrice=()=>TIERS[curPiece().tier].svc;
+const MAKE_DAYS=()=>OPS.rules.custom_order_days;
+
+/* ---------------- placeholder photo art ---------------- */
+function head(angle,stage){
+ const full=stage>0, hair=full?'#5D6B82':'#AEB6C3', skin='#D5D9E0', line='#9AA3B2';
+ const cap=full?
+  {front:'M62 92c0-34 22-52 50-52s50 18 50 52c-6-14-18-24-50-24S68 78 62 92z',left:'M70 96c-2-34 20-56 52-56 26 0 44 16 46 42-14-10-30-14-52-12-20 2-36 10-46 26z',right:'M162 96c2-34-20-56-52-56-26 0-44 16-46 42 14-10 30-14 52-12 20 2 36 10 46 26z',top:'M112 54c32 0 52 20 52 52s-20 54-52 54-52-22-52-54 20-52 52-52z',back:'M60 100c0-38 22-60 52-60s52 22 52 60c0 18-6 30-12 38H72c-6-8-12-20-12-38z'}
+ :{front:'M62 96c0-10 2-18 6-24 2 10 4 18 4 24zM162 96c0-10-2-18-6-24-2 10-4 18-4 24z',left:'M150 98c6-6 12-10 18-12 0 8-2 14-6 18z',right:'M82 98c-6-6-12-10-18-12 0 8 2 14 6 18z',top:'M112 70c26 0 44 16 48 36-8-6-14-8-20-8 6 20-2 46-28 52-26-6-34-32-28-52-6 0-12 2-20 8 4-20 22-36 48-36z',back:'M62 112c0-14 4-26 10-34 0 14 4 26 40 30 36-4 40-16 40-30 6 8 10 20 10 34 0 12-4 20-8 26H70c-4-6-8-14-8-26z'};
+ const base={
+  front:`<ellipse cx="112" cy="104" rx="50" ry="62" fill="${skin}" stroke="${line}"/><ellipse cx="60" cy="110" rx="7" ry="13" fill="${skin}" stroke="${line}"/><ellipse cx="164" cy="110" rx="7" ry="13" fill="${skin}" stroke="${line}"/><path d="M70 220c4-28 22-44 42-44s38 16 42 44" fill="${skin}" stroke="${line}"/>`,
+  left:`<path d="M70 100c0-36 22-58 50-58s46 22 46 58c0 20-4 32-10 40l-6 26H98l-4-20c-14-6-24-24-24-46z" fill="${skin}" stroke="${line}"/><path d="M70 104l-10 12 10 4" fill="${skin}" stroke="${line}"/><ellipse cx="128" cy="108" rx="8" ry="13" fill="${skin}" stroke="${line}"/><path d="M84 220c4-26 16-40 34-44h30c14 4 22 18 24 44" fill="${skin}" stroke="${line}"/>`,
+  right:`<path d="M162 100c0-36-22-58-50-58s-46 22-46 58c0 20 4 32 10 40l6 26h52l4-20c14-6 24-24 24-46z" fill="${skin}" stroke="${line}"/><path d="M162 104l10 12-10 4" fill="${skin}" stroke="${line}"/><ellipse cx="104" cy="108" rx="8" ry="13" fill="${skin}" stroke="${line}"/><path d="M148 220c-4-26-16-40-34-44H84c-14 4-22 18-24 44" fill="${skin}" stroke="${line}"/>`,
+  top:`<ellipse cx="112" cy="108" rx="56" ry="62" fill="${skin}" stroke="${line}"/><ellipse cx="54" cy="112" rx="6" ry="12" fill="${skin}" stroke="${line}"/><ellipse cx="170" cy="112" rx="6" ry="12" fill="${skin}" stroke="${line}"/>`,
+  back:`<ellipse cx="112" cy="104" rx="52" ry="64" fill="${skin}" stroke="${line}"/><ellipse cx="58" cy="110" rx="7" ry="13" fill="${skin}" stroke="${line}"/><ellipse cx="166" cy="110" rx="7" ry="13" fill="${skin}" stroke="${line}"/><path d="M80 220c2-26 14-46 32-46s30 20 32 46" fill="${skin}" stroke="${line}"/>`
+ }[angle];
+ return `<svg viewBox="0 0 224 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="224" height="240" fill="#ECEEF1"/>${base}<path d="${cap[angle]}" fill="${hair}"/></svg>`;
+}
+const ph=(angle,stage,label)=>`<span class="ph" role="img" aria-label="${label||'Visit photo placeholder'}">${head(angle,stage)}</span>`;
+
+/* ---------------- shared bits ---------------- */
+const topBar=(title,opts={})=>`<div class="top ${opts.back?'sub':''}">${opts.back?`<button class="icon-btn" data-a="${opts.backAct||'back'}" aria-label="Back">${I('left')}</button>`:''}<h1>${title||''}</h1>${opts.right||''}</div>`;
+const offlineBar=()=>S.offline?`<div class="offline" role="status">${I('wifi',18)}No connection. Showing what you last saw.</div>`:'';
+const tabbar=(active)=>{
+ const t=[['home','Home','home'],['visits','Visits','cal'],['photos','Photos','cam'],['rewards','Rewards','gift']];
+ return `<nav class="tabs" aria-label="Main">${t.map(([k,l,i])=>`<button data-a="tab" data-v="${k}" ${active===k?'aria-current="page"':''}>${I(i,22,active===k?1.9:1.6)}${l}${k==='rewards'&&S.credits?`<span class="badge">${S.credits}</span>`:''}${k==='visits'&&openIssues()?`<span class="badge">${openIssues()}</span>`:''}</button>`).join('')}</nav>`;
+};
+const row=(o)=>`<button class="row tap" ${o.a?`data-a="${o.a}"`:''} ${o.v!==undefined?`data-v="${o.v}"`:''} ${o.p!==undefined?`data-p="${o.p}"`:''}>${o.ic?`<span class="ic">${I(o.ic)}</span>`:''}${o.lead||''}<span class="grow"><span class="t" style="display:block">${o.t}</span>${o.s?`<span class="s" style="display:block">${o.s}</span>`:''}</span>${o.r?`<span class="r">${o.r}</span>`:''}${o.noChev?'':`<span class="chev">${I('right',18)}</span>`}</button>`;
+const kv=(k,v)=>`<div class="kv"><span>${k}</span><span>${v}</span></div>`;
+const avatarBtn=`<button class="icon-btn" data-a="go" data-v="profile" aria-label="Profile and settings"><span class="avatar" style="background:var(--wash);color:var(--navy);width:36px;height:36px">RM</span></button>`;
+const statusTag=s=>s==='resolved'?'<span class="tag tag-ok">Resolved</span>':s==='progress'?'<span class="tag tag-wait">In progress</span>':'<span class="tag tag-wait">Open</span>';
+const upLabel=u=>u.kind==='firstfit'?`First fit · ${TIERS[u.tier].name}`:u.kind==='consult'?'Home consultation':u.kind==='replacement'?`Replacement · ${TIERS[u.tier].name}`:'Service visit';
+
+/* ---------------- screens ---------------- */
+const SCREENS={};
+
+SCREENS.signin=()=>`
+ <div class="scroll"><div class="pad" style="padding-top:64px">
+  ${lockup('#16233A',150)}
+  <h1 class="title" style="margin-top:40px">Sign in</h1>
+  <p class="lede">Use the mobile number you booked with. We'll send a 6-digit code on WhatsApp.</p>
+  <label for="ph" class="small" style="font-weight:500;display:block;margin:0 0 6px">Mobile number</label>
+  <div class="phone"><span>+91</span><input id="ph" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="98000 44417" value="${S.phone}" data-in="phone"></div>
+  <p class="xs muted" style="margin:10px 0 0">Demo: any 10 digits work. Numbers starting with 7 have no booking.</p>
+ </div></div>
+ <div class="footer-cta">
+  <button class="btn btn-primary" data-a="sendCode" ${S.phone.length===10?'':'disabled'}>Send code on WhatsApp</button>
+  <p class="small muted" style="text-align:center;margin:12px 0 0">New to Mane Man? <button class="link" data-a="toast" data-v="Opens the free consultation booking on maneman.in">Book a free consultation</button></p>
+ </div>`;
+
+SCREENS.otp=()=>{
+ const cells=[...Array(6)].map((_,i)=>`<div class="${S.otpErr?'err':i===S.otp.length?'cur':''}">${S.otp[i]||''}</div>`).join('');
+ return `${topBar('',{back:1})}
+ <div class="scroll"><div class="pad">
+  <h1 class="title">Enter the code</h1>
+  <p class="lede">Sent on WhatsApp to +91 ${S.phone.slice(0,5)} ${S.phone.slice(5)}. <button class="link" data-a="back">Change</button></p>
+  <div class="otp">${cells}<input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="${S.otp}" data-in="otp" aria-label="6-digit code"></div>
+  ${S.otpErr?`<p class="small" style="color:var(--red);margin:-6px 0 12px">That code doesn't match. Check the latest message and try again.</p>`:''}
+  <p class="small muted" style="margin:0">The code fills in by itself when it arrives. Demo: any 6 digits; 000000 shows the error.</p>
+  <div style="margin-top:24px;display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+   <button class="btn-ghost small" style="font-weight:500" data-a="toast" data-v="Code sent by SMS">Send by SMS instead</button>
+   <span class="small muted" id="resend">${S.resend>0?`Resend on WhatsApp in 0:${String(S.resend).padStart(2,'0')}`:''}</span>
+   ${S.resend<=0?`<button class="btn-ghost small" style="font-weight:500" data-a="resend">Resend on WhatsApp</button>`:''}
+  </div>
+ </div></div>`;
+};
+
+SCREENS.notfound=()=>`${topBar('',{back:1})}
+ <div class="scroll"><div class="pad">
+  <h1 class="title">No booking on +91 ${S.phone.slice(0,5)} ${S.phone.slice(5)}</h1>
+  <p class="lede">The app opens once you've booked a home consultation. If you booked with another number, sign in with that one.</p>
+  <div class="list">${row({ic:'refresh',t:'Try another number',a:'back'})}${row({ic:'chat',t:'Message us on WhatsApp',s:'We link your booking to this number',a:'toast',v:'Opens WhatsApp with Mane Man'})}</div>
+ </div></div>
+ <div class="footer-cta"><button class="btn btn-primary" data-a="toast" data-v="Opens the free consultation booking on maneman.in">Book a free consultation</button></div>`;
+
+const heroMark=`<div class="hero-mark">${mark('#C9A363',120)}</div>`;
+const techRow=u=>u.tech?`<hr><div class="tech"><span class="avatar">${u.ini}</span><div><div style="font-weight:600">${u.tech}</div><div style="font-size:13px;color:var(--mist)">Your technician for this visit</div></div></div>`:'';
+function heroUpcoming(u){
+ const p=curPiece();
+ if(!u&&replacementOpen()){
+  const end=pieceEnd(p);
+  return `<div class="hero">${heroMark}<div class="eyebrow">Replacement due</div><div class="when" style="font-size:24px">Your ${TIERS[p.tier].name} hair system is due on ${dDM(end)}</div><div class="rel">${daysTo(end)} days left</div>
+   <p style="color:#E6E9EE;font-size:14px;margin:12px 0 18px">Book your replacement. Keep ${TIERS[p.tier].name}, or change to another hair system now; a different one has to be ordered for you.</p>
+   <button class="btn btn-gold" data-a="bookRepl">Book your replacement</button></div>`;
+ }
+ if(!u) return `<div class="hero">${heroMark}<div class="eyebrow">Next visit</div><div class="when" style="font-size:22px">Nothing booked</div><p style="color:#E6E9EE;font-size:14px;margin:6px 0 18px">Your last service was on ${dDM(PAST()[0].date)}. A service ${TIERS[p.tier].svcPer} keeps the bond and the hairline right.</p><button class="btn btn-gold" data-a="book">Book a service visit</button></div>`;
+ if(u.live) return liveHero(u);
+ const consult=u.kind==='consult';
+ return `<div class="hero">${heroMark}
+  <div class="eyebrow">${consult?'Your home consultation':u.kind==='replacement'?'Your replacement':u.kind==='firstfit'?'Your first fit':'Next visit'}</div>
+  <div class="when">${fd(u.date,{weekday:'long',day:1,month:'short'})}</div>
+  <div class="rel">${rel(u.date)}</div>
+  <div class="meta">
+   <div>${I('clock',16)}<span>${consult?'Morning, 9 am to 12 noon<br><span style="color:var(--mist)">We confirm the exact hour on WhatsApp the day before</span>':`Arrives ${tmR(u.start)}${u.kind==='service'?' · about 90 minutes':u.kind==='firstfit'?' · about 3 hours':''}`}</span></div>
+   ${u.kind==='firstfit'?`<div>${I('layers',16)}<span>Mane Man ${TIERS[u.tier].name}, in your colour</span></div>`:''}
+   ${u.kind==='replacement'?`<div>${I('layers',16)}<span>New ${TIERS[u.tier].name} hair system${u.tier!==curPiece().tier?` (changing from ${TIERS[curPiece().tier].name})`:''}</span></div>`:''}
+   <div>${I('pin',16)}<span>${ADDRESS.l1}, ${ADDRESS.l2}</span></div>
+   <div>${I('receipt',16)}<span>${consult?'Free':u.kind==='firstfit'?'Hair system paid; fitting included':u.price?`${rs(u.price)} paid`:'Free service visit'}</span></div>
+  </div>
+  ${techRow(u)}
+  <div class="btn-row"><button class="btn btn-on-navy btn-sm" style="height:44px" data-a="manage">Change</button><button class="btn btn-on-navy btn-sm" style="height:44px" data-a="note">Add a note</button></div>
+ </div>`;
+}
+
+function pieceBlock(){
+ const p=curPiece(),T=TIERS[p.tier],m=pieceMonth(p),end=pieceEnd(p),open=replacementOpen();
+ return `<section class="sec"><div class="sec-h"><h2>Your hair system</h2><button data-a="go" data-v="piece">History</button></div>
+  <div style="border-top:1px solid var(--line);padding-top:14px">
+   <div style="display:flex;justify-content:space-between;font-size:15px"><b style="font-weight:600">Mane Man ${T.name}</b><span class="muted tab-num">Month ${m} of ${T.life}</span></div>
+   <div class="bar" role="progressbar" aria-valuenow="${m}" aria-valuemin="0" aria-valuemax="${T.life}" aria-label="Hair system age"><i style="width:${m/T.life*100}%"></i></div>
+   <div class="small muted">${S.pendingPiece?`Replacement booked for ${dDM(S.pendingPiece.date)}: ${TIERS[S.pendingPiece.tier].name}.`:open?`Ends ${dDM(end)}. You can book its replacement now.`:`Fitted ${dFull(p.from)}. You can book its replacement from ${dDM(windowOpens(p))}, and pick a different hair system then if you want one.`}</div>
+  </div></section>`;
+}
+
+SCREENS.home=()=>{
+ const hdr=`<div class="top"><span style="display:flex">${mark('#16233A',30)}</span><span class="spacer"></span>${bellBtn()}${avatarBtn}</div>`;
+ if(S.homeLoading) return `${hdr}<div class="scroll"><div class="pad"><div class="skel" style="height:30px;width:60%;margin:6px 0 16px"></div><div class="skel" style="height:290px"></div><div class="skel" style="height:18px;width:40%;margin:28px 0 12px"></div><div class="skel" style="height:56px;margin:0 0 8px"></div><div class="skel" style="height:56px"></div></div></div>${tabbar('home')}`;
+ if(S.homeError) return `${hdr}<div class="scroll"><div class="pad"><div class="empty"><div class="ic">${I('alert')}</div><h1 class="h2">We couldn't load your account</h1><p class="lede" style="margin-top:6px">Your bookings are safe. Nothing has changed on our side.</p><div class="btn-row"><button class="btn btn-primary" data-a="retryHome">Try again</button><button class="btn btn-secondary" data-a="toast" data-v="Opening WhatsApp">Message us</button></div></div></div></div>${tabbar('home')}`;
+ const greet=TODAY.getHours()<12?'Good morning':TODAY.getHours()<17?'Good afternoon':'Good evening';
+ let body=`<h1 class="title" style="margin-top:0">${greet}, Rohit</h1>${heroUpcoming(S.upcoming)}`;
+ if(['consulted','custom'].includes(S.scenario)&&!S.upcoming){body=`<h1 class="title" style="margin-top:0">${greet}, Rohit</h1>${ffHero()}`;}
+ if(['consulted','custom','livefit'].includes(S.scenario)){body+=`<section class="sec"><div class="list">${row({ic:'layers',t:'Compare the four hair systems',s:'Want a different one? Message us before you pay',a:'go',v:'compare'})}${row({ic:'help',t:'Questions about your fitting?',s:'We reply within an hour, 9 am to 9 pm',a:'toast',v:'Opens WhatsApp with Mane Man'})}</div></section>`;}
+ else if(isLead()){
+  body+=`<section class="sec"><div class="sec-h"><h2>What happens at the consultation</h2></div>
+   <ol class="how"><li>Before photos, then your scalp and hairline are mapped.</li><li>Your colour and style are matched, and the technician shows the hair systems that suit you.</li><li>If you go ahead, you pay through Razorpay, in the app or by the link we text you. If your hair system is in the technician's kit, you can be fitted the same day; if not, we book your first fit.</li></ol></section>
+   <section class="sec"><div class="list">${row({ic:'layers',t:'Compare the four hair systems',s:'Essential, Active, Natural, Celebrity',a:'go',v:'compare'})}${row({ic:'cam',t:'Try on a look',s:'See a style on your own photo before the visit',a:'toast',v:'Opens the try-on on maneman.in'})}${row({ic:'help',t:'Questions before the visit?',s:'We reply within an hour, 9 am to 9 pm',a:'toast',v:'Opens WhatsApp with Mane Man'})}</div></section>`;
+ } else {
+  const oi=ISSUES.find(i=>i.status!=='resolved');
+  const last=PHOTOV()[0];
+  body+=`${pieceBlock()}
+   <section class="sec"><div class="list">
+    ${oi?row({ic:'flag',t:oi.title,s:`${oi.id} · ${oi.status==='progress'?'In progress':'Open'}`,a:'go',v:'issue',p:oi.id}):''}
+    ${S.credits?row({lead:`<span class="avatar" style="background:var(--wash);color:var(--gold7);width:40px;height:40px">${S.credits}</span>`,t:`${S.credits} free service visits`,s:'Use by 3 Jan 2028. Applied when you book.',a:'tab',v:'rewards'}):''}
+    ${S.upcoming?'':row({ic:'plus',t:'Book a service visit',s:`${rs(svcPrice())} · about 90 minutes`,a:'book'})}
+    ${row({ic:'wrench',t:'Report an issue',s:'Lifting edges, itching, colour, billing',a:'raise'})}
+    ${row({ic:'gift',t:'Invite a friend',s:'You both get 3 free service visits when they are fitted',a:'tab',v:'rewards'})}
+   </div></section>
+   <section class="sec" style="margin-bottom:28px"><div class="sec-h"><h2>Last visit</h2><button data-a="tab" data-v="visits">All visits</button></div>
+    <div class="list">${row({lead:`<span style="width:44px;flex:none">${ph('front',last.stage,'Front photo')}</span>`,t:dDM(last.date)+' · '+last.type,s:last.tech+' · 5 photos',a:'go',v:'visit',p:last.id})}</div></section>`;
+ }
+ return `${hdr}${offlineBar()}<div class="scroll"><div class="pad">${body}<div style="height:24px"></div></div></div>${tabbar('home')}`;
+};
+
+SCREENS.visits=()=>{
+ const u=S.upcoming;
+ const up=S.requested&&!u?`<div class="list"><div class="row"><span class="ic">${I('clock')}</span><span class="grow"><span class="t" style="display:block">Requested: ${dShort(S.requested.date)}, ${S.requested.win}</span><span class="s">Waiting for us to confirm on WhatsApp</span></span><span class="tag tag-wait">Requested</span></div></div>`:u?`<div class="list">${row({lead:`<span class="avatar" style="background:var(--navy);color:#fff;flex-direction:column;width:52px;height:56px;line-height:1.1"><span style="font-size:11px;color:var(--mist);font-weight:500">${fd(u.date,{month:'short'})}</span><span style="font-size:20px">${u.date.getDate()}</span></span>`,t:upLabel(u),s:`${fd(u.date,{weekday:'long'})} · ${u.kind==='consult'?'9 am to 12 noon':tmR(u.start)}${u.tech?' · '+u.tech.split(' ')[0]:''}`,r:u.kind==='consult'?'<span class="tag tag-neutral">Free</span>':'<span class="tag tag-ok">Paid</span>',a:'manage'})}</div>`
+  :`<div class="empty" style="padding-top:28px"><div class="ic">${I('cal')}</div><h2 class="h2">Nothing booked</h2><p class="lede" style="margin-top:6px">${replacementOpen()?'Your replacement is due. Book it from Home.':'Book your next service when it suits you. A technician comes to you.'}</p></div>`;
+ const past=isLead()?`<div class="empty" style="padding-top:28px"><div class="ic">${I('clock')}</div><h2 class="h2">No visits yet</h2><p class="lede" style="margin-top:6px">After your consultation, every visit shows here with its photos and invoice.</p></div>`
+  :`<div class="list">${PAST().map(v=>row({lead:`<span style="width:44px;flex:none">${ph('front',v.stage,'Front photo')}</span>`,t:dFull(v.date),s:v.outcome==='noshow'?`<span style="color:var(--red)">Missed visit</span>`:`${v.type}${v.tier?' · '+TIERS[v.tier].name:''} · ${v.tech.split(' ')[0]}`,r:`<span class="small tab-num">${rs(v.paid)}</span>`,a:'go',v:'visit',p:v.id})).join('')}</div>`;
+ const iss=ISSUES.length?`<div class="list">${ISSUES.map(i=>row({t:i.title,s:`${i.id} · raised ${dDM(i.raised)}`,r:statusTag(i.status),a:'go',v:'issue',p:i.id})).join('')}</div><p class="xs muted" style="margin:10px 0 0">Every issue you raise stays here with our replies and what was done.</p>`
+  :`<div class="empty" style="padding-top:28px"><div class="ic">${I('flag')}</div><h2 class="h2">No issues raised</h2><p class="lede" style="margin-top:6px">If something is off with your hair system, a visit or a payment, raise it here and track it to the end.</p></div>`;
+ const seg=S.visitsSeg;
+ const cta=seg==='issues'?`<button class="btn btn-primary" data-a="raise">${I('plus',20,2)}Report an issue</button>`:isLead()||u?'':`<button class="btn btn-primary" data-a="book">${I('plus',20,2)}Book a service visit</button>`;
+ return `<div class="top"><h1 style="font-size:28px;color:var(--navy)">Visits</h1>${bellBtn()}${avatarBtn}</div>${offlineBar()}
+ <div class="pad" style="flex:none;padding-bottom:10px"><div class="seg seg3" role="group" aria-label="Show"><button data-a="seg" data-v="upcoming" aria-pressed="${seg==='upcoming'}">Upcoming</button><button data-a="seg" data-v="past" aria-pressed="${seg==='past'}">Past</button><button data-a="seg" data-v="issues" aria-pressed="${seg==='issues'}">Issues${openIssues()?`<span class="cnt">${openIssues()}</span>`:''}</button></div></div>
+ <div class="scroll"><div class="pad">${seg==='upcoming'?up:seg==='past'?past:iss}</div></div>
+ ${cta?`<div class="footer-cta" style="border-top:0;padding-bottom:12px">${cta}</div>`:''}
+ ${tabbar('visits')}`;
+};
+
+SCREENS.visit=(p)=>{
+ const v=ALLPAST.find(x=>x.id===p.p)||PAST()[0];
+ if(v.outcome==='noshow') return missedVisit(v);
+ const r=S.ratings[v.id]||0, vi=PHOTOV().indexOf(v);
+ const linked=ISSUES.filter(i=>i.visit===v.id);
+ return `${topBar(dFull(v.date),{back:1})}<div class="scroll"><div class="pad">
+  <div class="small muted">${v.type}${v.tier?` · ${TIERS[v.tier].name}${v.from?` (changed from ${TIERS[v.from].name})`:''}`:''}</div>
+  <div class="thumbs" style="margin:12px 0 6px">${ANGLES.map(([k,l],i)=>`<button data-a="viewer" data-v="${vi}" data-p="${i}" aria-label="${l} photo">${ph(k,v.stage,l)}</button>`).join('')}</div>
+  <p class="xs muted" style="margin:0 0 18px">${I('lock',13)} Only you and your technician see these photos.</p>
+  ${v.signed?kv('Signed off',`By you, ${tStamp(v.signed)}`)+(v.firstfit?kv('Fit guarantee',`Until ${dDM(addDays(v.date,OPS.rules.guarantee_days))} · <button class="link" data-a="raise" data-v="${v.id}">The fit isn't right</button>`):''):''}${kv('Technician',v.tech)}${kv('Time taken',v.dur)}${kv('Paid',`${rs(v.paid)} · <button class="link" data-a="go" data-v="payment" data-p="${v.id}">Invoice</button>`)}
+  <section class="sec" style="margin-top:22px"><div class="sec-h"><h2>What was done</h2></div><ul class="done-list">${v.done.map(d=>`<li>${I('check',18,2)}${d}</li>`).join('')}</ul></section>
+  ${linked.length?`<section class="sec"><div class="sec-h"><h2>Issues linked to this visit</h2></div><div class="list">${linked.map(i=>row({t:i.title,s:i.id,r:statusTag(i.status),a:'go',v:'issue',p:i.id})).join('')}</div></section>`:''}
+  <section class="sec"><div class="sec-h"><h2>How was this visit?</h2></div>
+   <div class="stars" role="radiogroup" aria-label="Rate this visit">${[1,2,3,4,5].map(n=>`<button class="${n<=r?'on':''}" data-a="rate" data-v="${v.id}" data-p="${n}" aria-label="${n} of 5"><svg width="28" height="28" viewBox="0 0 24 24" fill="${n<=r?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">${P.star}</svg></button>`).join('')}</div>
+   ${r?`<p class="small muted" style="margin:6px 0 0">${r<4?'Thanks. Tell us what went wrong and we will follow up. <button class="link" data-a="raise" data-v="'+v.id+'">Report an issue</button>':'Thanks. We share ratings with the technician.'}</p>`:''}</section>
+  <div style="margin:22px 0 30px"><button class="link small" data-a="raise" data-v="${v.id}">Report an issue with this visit</button></div>
+ </div></div>`;
+};
+
+/* ---------- issues ---------- */
+SCREENS.issue=(p)=>{
+ const i=ISSUES.find(x=>x.id===p.p); if(!i) return '';
+ const vis=i.visit?ALLPAST.find(v=>v.id===i.visit)||null:null;
+ const ev=i.events.map(e=>`<li class="${e.who==='mm'?'mm':e.who==='done'?'done':''}"><div class="when">${tStamp(e.t)}</div><div class="who">${e.who==='you'?'You':e.who==='done'?'Resolved':e.name}</div><div class="txt">${e.txt}</div>${e.photos?`<div class="upl" style="margin-top:8px">${[...Array(e.photos)].map(()=>ph('front',9,'Photo you attached')).join('')}</div>`:''}</li>`).join('');
+ return `${topBar(i.id,{back:1})}<div class="scroll"><div class="pad">
+  ${statusTag(i.status)}
+  <h1 class="h2" style="font-size:22px;margin:10px 0 4px">${i.title}</h1>
+  <div class="small muted">${i.cat} · raised ${tStamp(i.raised)}</div>
+  ${vis?`<div style="margin-top:14px" class="list">${row({ic:'cal',t:`Linked visit: ${dFull(vis.date)}`,s:vis.type,a:'go',v:'visit',p:vis.id})}</div>`:''}
+  <section class="sec"><div class="sec-h"><h2>Log</h2></div><ol class="tl">${ev}${i.status!=='resolved'?`<li class="pend"><div class="who" style="color:var(--gold7)">Waiting on Mane Man</div><div class="txt small muted">We reply within an hour, 9 am to 9 pm.</div></li>`:''}</ol></section>
+  ${i.status==='resolved'?`<div class="notice info" style="margin-top:6px">${I('check',18,2)}<span>Resolved. If it comes back within 14 days, reopen it and the history stays together.</span></div><button class="btn btn-secondary" style="margin-bottom:28px" data-a="reopen" data-v="${i.id}">It's happening again</button>`:
+  `<div class="field" style="margin-top:6px"><label for="upd">Add an update</label><textarea class="input" id="upd" placeholder="Anything new since you raised this"></textarea></div><div class="btn-row" style="margin-bottom:28px"><button class="btn btn-primary" data-a="addUpdate" data-v="${i.id}">Send update</button><button class="btn btn-secondary" data-a="resolveMine" data-v="${i.id}">It's sorted</button></div>`}
+ </div></div>`;
+};
+
+SCREENS.raise=()=>{
+ const r=S.raise;
+ const visits=PAST().slice(0,4);
+ return `${topBar('Report an issue',{back:1})}<div class="scroll"><div class="pad">
+  <h2 class="h2" style="margin:0 0 12px">What's it about?</h2>
+  <div class="chips" role="group" aria-label="Issue type">${ISSUE_CATS.map((c,k)=>`<button class="chip" data-a="rcat" data-v="${k}" aria-pressed="${r.cat===k}">${c}</button>`).join('')}</div>
+  <div class="field" style="margin-top:22px"><label for="rdesc">What's happening?</label><textarea class="input" id="rdesc" data-in="rdesc" placeholder="When it started and what you notice">${r.desc}</textarea></div>
+  <div class="field"><label>Photos <span class="muted" style="font-weight:400">(optional, helps us a lot)</span></label>
+   <div class="upl">${[...Array(r.photos)].map(()=>ph('front',9,'Photo you added')).join('')}<label>${I('plus',22)}<input type="file" accept="image/*" multiple data-a2="addPhoto" aria-label="Add photos"></label></div></div>
+  <div class="field"><label>Linked visit <span class="muted" style="font-weight:400">(optional)</span></label>
+   <div class="list">${visits.map(v=>`<button class="pm" role="radio" aria-checked="${r.visit===v.id}" data-a="rvisit" data-v="${v.id}"><span class="grow">${dFull(v.date)}<span class="s small muted" style="display:block">${v.type} · ${v.tech}</span></span><span class="radio"></span></button>`).join('')}<button class="pm" role="radio" aria-checked="${r.visit===null}" data-a="rvisit" data-v=""><span class="grow">Not about a visit</span><span class="radio"></span></button></div></div>
+  <p class="xs muted" style="margin:6px 0 24px">We reply in the app and on WhatsApp within an hour, 9 am to 9 pm. Everything stays in your issue log.</p>
+ </div></div><div class="footer-cta"><button class="btn btn-primary" data-a="submitIssue" ${r.cat===null||!r.desc.trim()?'disabled':''}>Send to Mane Man</button></div>`;
+};
+
+/* ---------- piece history and comparison ---------- */
+SCREENS.piece=()=>{
+ const p=curPiece(),T=TIERS[p.tier];
+ const hist=[...PIECES].reverse();
+ const pend=S.pendingPiece;
+ const items=(pend?[`<li class="pend"><div class="when">Booked for ${dFull(pend.date)}</div><div class="who">${TIERS[pend.tier].name}${pend.tier!==p.tier?` · ${TIERS[pend.tier].rank>T.rank?'upgrade':TIERS[pend.tier].rank<T.rank?'downgrade':'change'} from ${T.name}`:' · same hair system'}</div><div class="txt small">${rs(TIERS[pend.tier].piece)} paid. Service ${rs(TIERS[pend.tier].svc)} ${TIERS[pend.tier].svcPer} after the fitting.</div></li>`]:[])
+  .concat(hist.map((h,k)=>{const t=TIERS[h.tier];const worn=Math.max(1,Math.round(((h.to||TODAY)-h.from)/864e5/30.44));return `<li class="${k===0&&!h.to?'mm':''}"><div class="when">${dFull(h.from)} to ${h.to?dFull(h.to):'now'} · ${worn} month${worn>1?'s':''}</div><div class="who">${t.name}</div><div class="txt small">${h.how}. ${rs(h.paid)}. Service ${h.to?'was':'is'} ${rs(t.svc)} ${t.svcPer}. <button class="link" data-a="go" data-v="visit" data-p="${h.visit}">Fitting visit</button></div></li>`})).join('');
+ return `${topBar('Your hair system',{back:1})}<div class="scroll"><div class="pad">
+  <div class="small muted">Wearing now</div>
+  <h1 class="title" style="margin:2px 0 4px">Mane Man ${T.name}</h1>
+  <p class="small muted" style="margin:0 0 6px">${T.desc}</p>
+  ${kv('Fitted',dFull(p.from))}${kv('Life',`${T.life} months, ends ${dFull(pieceEnd(p))}`)}${kv('Service',`${rs(T.svc)} ${T.svcPer}`)}${kv('Replacement',replacementOpen()?'Open now':`Opens ${dFull(windowOpens(p))}`)}
+  ${replacementOpen()&&!pend?`<button class="btn btn-primary" style="margin-top:16px" data-a="bookRepl">Book your replacement</button>`:''}
+  <section class="sec"><div class="sec-h"><h2>Every hair system you've worn</h2></div><ol class="tl">${items}</ol></section>
+  <section class="sec" style="margin-bottom:28px"><div class="list">${row({ic:'layers',t:'Compare the four hair systems',s:'You can change at each replacement',a:'go',v:'compare'})}</div></section>
+ </div></div>`;
+};
+
+const tierFacts=t=>`<div class="facts"><div><span>${isLead()?'First fit':'Replacement'}</span><b>${rs(isLead()?t.ff:t.piece)}</b></div><div><span>Lasts</span><b>${t.life} months</b></div><div><span>Service</span><b>${rs(t.svc)}</b><span>${t.svcPer}</span></div></div>`;
+SCREENS.compare=()=>`${topBar('The four hair systems',{back:1})}<div class="scroll"><div class="pad">
+  <p class="lede">Every hair system is fitted and serviced at home. The difference is the base. ${isLead()?'Your consultant recommends one at the visit.':'You can change at each replacement.'}</p>
+  ${TORDER.map(k=>{const t=TIERS[k];const mine=!isLead()&&curPiece().tier===k;return `<div class="tier"><div class="hd"><span class="nm">${t.name}</span>${mine?'<span class="tag tag-neutral">Wearing now</span>':''}</div><div class="small muted">${t.desc}</div>${tierFacts(t)}</div>`}).join('')}
+  <p class="xs muted" style="margin:6px 0 28px">Prices include GST.</p>
+ </div></div>`;
+
+SCREENS.photos=()=>{
+ if(isLead()) return `<div class="top"><h1 style="font-size:28px;color:var(--navy)">Photos</h1>${bellBtn()}${avatarBtn}</div><div class="scroll"><div class="pad"><div class="empty"><div class="ic">${I('cam')}</div><h2 class="h2">Your photos start at your first fit</h2><p class="lede" style="margin-top:6px">Your technician takes five angles at every visit, for your record. Only you and your technician see them.</p><button class="btn btn-secondary btn-sm" data-a="toast" data-v="Opens the try-on on maneman.in">Try on a look</button></div></div></div>${tabbar('photos')}`;
+ const L=PHOTOV(); const c=S.cmp; if(c.a===null||c.a>=L.length) c.a=L.length-1; const A=L[c.a], B=L[c.b];
+ return `<div class="top"><h1 style="font-size:28px;color:var(--navy)">Photos</h1>${bellBtn()}${avatarBtn}</div>${offlineBar()}
+ <div class="scroll"><div class="pad">
+  <div class="pickers"><button class="picker" data-a="pick" data-v="a"><small>Before</small><b>${dFull(A.date)}</b></button><button class="picker" data-a="pick" data-v="b"><small>After</small><b>${dFull(B.date)}</b></button></div>
+  <div class="compare" id="cmp" style="--pos:${c.pos}%" aria-label="Drag to compare before and after">
+   <div class="layer">${head(c.angle,A.stage)}</div><div class="layer after">${head(c.angle,B.stage)}</div>
+   <span class="cap" style="left:10px">${A.type==='First fit'?'First fit':dShort(A.date)}</span><span class="cap" style="right:10px">${dShort(B.date)}</span>
+   <div class="handle"><span class="knob">${I('swap',20,2)}</span></div>
+  </div>
+  <div class="angles" role="group" aria-label="Angle">${ANGLES.map(([k,l])=>`<button data-a="angle" data-v="${k}" aria-pressed="${c.angle===k}">${l}</button>`).join('')}</div>
+  <p class="xs muted" style="margin:10px 0 0">${I('lock',13)} Only you and your technician see these.</p>
+  <section class="sec" style="margin-bottom:28px"><div class="sec-h"><h2>Every visit</h2><span class="small muted">${L.length*5} photos</span></div>
+   ${L.map((v,vi)=>`<div style="border-top:1px solid var(--line);padding:14px 0"><div style="display:flex;justify-content:space-between;margin:0 0 10px"><b style="font-weight:600">${dFull(v.date)}</b><span class="small muted">${v.type}${v.tier?' · '+TIERS[v.tier].name:''}</span></div><div class="thumbs">${ANGLES.map(([k,l],i)=>`<button data-a="viewer" data-v="${vi}" data-p="${i}" aria-label="${l}, ${dFull(v.date)}">${ph(k,v.stage,l)}</button>`).join('')}</div></div>`).join('')}
+  </section>
+ </div></div>${tabbar('photos')}`;
+};
+
+SCREENS.rewards=()=>{
+ const brandCard=`<div class="img">${lockup('#C9A363',170)}</div>`;
+ const photoCard=`<div class="img" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--navy)"><span class="ph" style="height:100%;border-radius:0">${head('front',0)}</span><span class="ph" style="height:100%;border-radius:0">${head('front',9)}</span></div>`;
+ return `<div class="top"><h1 style="font-size:28px;color:var(--navy)">Rewards</h1>${bellBtn()}${avatarBtn}</div>${offlineBar()}
+ <div class="scroll"><div class="pad">
+  <div class="reward-hero">
+   <div class="big">Invite a friend. When they're fitted, you both get 3 free service visits.</div>
+   <div class="stat"><div><b class="tab-num">${S.credits}</b><span>Free visits left${S.credits?' · use by 3 Jan 2028':''}</span></div><div><b class="tab-num">${S.earned}</b><span>Earned so far</span></div></div>
+  </div>
+  <div style="margin:16px 0 0;display:flex;flex-direction:column;gap:10px">
+   <button class="btn btn-primary" data-a="share">${I('chat',20,1.8)}Invite on WhatsApp</button>
+   <div class="btn-row"><button class="btn btn-secondary btn-sm" style="height:46px" data-a="copy">${I('link',18)}Copy link</button><button class="btn btn-secondary btn-sm" style="height:46px" data-a="share">${I('share',18)}Other apps</button></div>
+  </div>
+  <section class="sec"><div class="sec-h"><h2>What your friend sees</h2></div>
+   <div class="seg" style="margin:6px 0 12px" role="group" aria-label="Invite picture"><button data-a="card" data-v="brand" aria-pressed="${S.photoCard==='brand'}">Mane Man example card</button><button data-a="card" data-v="photo" aria-pressed="${S.photoCard==='photo'}">My before and after</button></div>
+   <div class="card-prev">${S.photoCard==='brand'?brandCard:photoCard}<div class="txt"><b style="font-weight:600">Rohit sent you a Mane Man invite</b><br><span class="muted">Hair systems fitted at home across Delhi NCR. 3 free service visits when you're fitted.</span><br><span class="muted">maneman.in/r/RM4417</span></div></div>
+   <p class="xs muted" style="margin:8px 0 0">Your name and message travel with the picture, never on it.</p>
+  </section>
+  <section class="sec"><div class="sec-h"><h2>Friends fitted</h2></div>
+   ${isLead()?`<p class="small muted">Friends show here once they're fitted.</p>`:`<div class="list">${FRIENDS.map(f=>`<div class="row"><span class="avatar" style="background:var(--wash);color:var(--navy)">${f.n[0]}</span><span class="grow"><span class="t" style="display:block">${f.n}</span><span class="s">${f.d}</span></span><span class="r small" style="font-weight:600;color:var(--gold7)">+3 visits</span></div>`).join('')}</div><p class="xs muted" style="margin:8px 0 0">Friends show here once they're fitted.</p>`}
+  </section>
+  <section class="sec" style="margin-bottom:28px"><div class="sec-h"><h2>How it works</h2></div>
+   <ol class="how"><li>Send your link on WhatsApp.</li><li>Your friend books a free consultation at home.</li><li>Once they're fitted, you both get 3 free service visits. They apply on their own when you book.</li></ol>
+   <button class="link small" data-a="toast" data-v="Opens the offer terms">Offer terms</button>
+  </section>
+ </div></div>${tabbar('rewards')}`;
+};
+
+SCREENS.profile=()=>`${topBar('',{back:1})}<div class="scroll"><div class="pad">
+  <div style="display:flex;gap:14px;align-items:center;margin:0 0 20px"><span class="avatar" style="width:56px;height:56px;font-size:18px;background:var(--navy);color:#fff">RM</span><div><h1 class="h2" style="font-size:22px">Rohit Malhotra</h1><div class="small muted">+91 98000 44417</div></div></div>
+  <div class="list">
+   ${isLead()?'':row({ic:'layers',t:'Your hair system',s:`${TIERS[curPiece().tier].name} · every one you've worn`,a:'go',v:'piece'})}
+   ${isLead()?'':row({ic:'receipt',t:'Payments and invoices',s:'Paid through Razorpay',a:'go',v:'payments'})}
+   ${isLead()?'':row({ic:'flag',t:'Issues',s:`${ISSUES.length} raised · ${openIssues()} open`,a:'issuesTab'})}
+   ${row({ic:'pin',t:'Address and access notes',s:ADDRESS.l1,a:'go',v:'address'})}
+   ${row({ic:'shield',t:'Privacy and messages',s:'Photos, WhatsApp updates',a:'go',v:'privacy'})}
+   ${row({ic:'chat',t:'Help on WhatsApp',s:'We reply within an hour, 9 am to 9 pm daily',a:'toast',v:'Opens WhatsApp with Mane Man'})}
+   ${row({ic:'user',t:'Account',s:'Mobile number, your data, delete account',a:'go',v:'account'})}
+  </div>
+  <div class="list" style="margin-top:28px;border-top:0">${row({ic:'logout',t:'Sign out',a:'signout',noChev:1})}</div>
+  <p class="xs muted" style="margin:24px 0 12px">Terms · Privacy · Version 2.1 (prototype)</p><button class="btn btn-secondary btn-sm" style="margin:0 0 30px" data-a="openDemo">Prototype controls</button>
+ </div></div>`;
+
+SCREENS.payments=()=>{
+ const items=[{g:'September 2027',t:'Refund',s:'Cancelled visit, 5 Sep',amt:'+ '+rs(2360),tag:S.refundDone?'<span class="tag tag-ok">Refunded</span>':'<span class="tag tag-wait">Refund in progress</span>',id:'refund',date:D(2027,9,3)}]
+  .concat(PAST().map(v=>({g:fd(v.date,{month:'long',year:1}),t:v.type+(v.tier?' · '+TIERS[v.tier].name:'')+(v.outcome==='noshow'?' (missed)':''),s:`${dDM(v.date)} · ${v.id==='v1'?'Card':'UPI'} via Razorpay`,amt:rs(v.paid),tag:'<span class="tag tag-ok">Paid</span>',id:v.id,date:v.date})))
+  .sort((a,b)=>b.date-a.date);
+ let g='',h='';
+ items.forEach(it=>{if(it.g!==g){g=it.g;h+=`<div class="small" style="font-weight:600;color:var(--ink5);padding:18px 0 6px">${g}</div>`}
+  h+=`<button class="row tap" data-a="go" data-v="payment" data-p="${it.id}" style="border-top:1px solid var(--line);border-bottom:0"><span class="grow"><span class="t" style="display:block">${it.t}</span><span class="s">${it.s}</span></span><span class="r"><span class="tab-num" style="display:block;font-weight:600">${it.amt}</span>${it.tag}</span><span class="chev">${I('right',18)}</span></button>`});
+ return `${topBar('Payments and invoices',{back:1})}<div class="scroll"><div class="pad">${h}<div style="border-top:1px solid var(--line);margin-bottom:24px"></div><p class="xs muted" style="margin-bottom:28px">Prices include GST. Every payment goes through Razorpay: in the app when you book, or by a Razorpay link we text you. Technicians never take cash or UPI.</p></div></div>`;
+};
+
+SCREENS.payment=(p)=>{
+ if(p.p==='refund') return `${topBar('Refund',{back:1})}<div class="scroll"><div class="pad">
+  <div style="font-size:32px;font-weight:600;color:var(--navy)" class="tab-num">+ ${rs(2360)}</div><div class="small muted" style="margin:0 0 18px">Back to the UPI account you paid from</div>
+  <div class="steps" style="grid-template-columns:repeat(3,1fr)"><div style="background:var(--navy)"></div><div style="background:var(--navy)"></div><div style="background:${S.refundDone?'var(--navy)':'var(--grid)'}"></div></div>
+  <div class="steps-l" style="grid-template-columns:repeat(3,1fr);color:var(--ink5)"><span>Cancelled 3 Sep</span><span style="${S.refundDone?'':'color:var(--ink);font-weight:600'}">Refund started 3 Sep</span><span style="${S.refundDone?'color:var(--ink);font-weight:600':''}">In your account</span></div>
+  <div style="height:16px"></div>${kv('For','Service visit, 5 Sep')}${kv('Razorpay refund ID','rfnd_P8x2Lk0Qe7aV1c')}${kv('Bank reference',S.refundDone?'RRN 724601938812':'Shown when the bank completes it')}
+  <p class="small muted" style="margin:16px 0">Banks take 5 to 7 working days. Track it in <button class="link" data-a="go" data-v="issue" data-p="MM-ISS-0031">issue MM-ISS-0031</button>.</p></div></div>`;
+ const v=ALLPAST.find(x=>x.id===p.p)||PAST()[0];
+ const [ex,gst]=exGst(v.paid);
+ return `${topBar(v.type,{back:1})}<div class="scroll"><div class="pad">
+  <div style="font-size:32px;font-weight:600;color:var(--navy)" class="tab-num">${rs(v.paid)}</div><div class="small muted tab-num" style="margin:0 0 18px">${rs(ex)} + ${rs(gst)} GST</div>
+  ${kv('Date',dFull(v.date))}${kv('Method',v.id==='v1'?'Card via Razorpay':'UPI via Razorpay')}${kv('Status','<span class="tag tag-ok">Paid</span>')}${kv('Booking',v.ref)}${kv('Razorpay payment ID','pay_'+v.ref.replace(/-/g,'').slice(2)+'Xq')}
+  <section class="sec"><div class="sec-h"><h2>Documents</h2></div><div class="list">
+   ${row({ic:'receipt',t:'Tax invoice',r:I('dl',20),noChev:1,a:'toast',v:'Tax invoice saved'})}
+   ${row({ic:'receipt',t:'Payment receipt',r:I('dl',20),noChev:1,a:'toast',v:'Receipt saved'})}
+  </div></section>
+  <div style="margin:22px 0 30px;display:flex;flex-direction:column;gap:12px;align-items:flex-start"><button class="link small" data-a="go" data-v="visit" data-p="${v.id}">See this visit</button><button class="link small" data-a="raise">Question about this payment</button></div>
+ </div></div>`;
+};
+
+SCREENS.address=()=>`${topBar('Address',{back:1})}<div class="scroll"><div class="pad">
+  <p class="lede">Your technician sees this before every visit.</p>
+  <div class="field"><label for="a1">Address</label><input class="input" id="a1" value="${ADDRESS.l1}"></div>
+  <div class="field"><label for="a2">City and PIN code</label><input class="input" id="a2" value="${ADDRESS.l2}"></div>
+  <div class="field"><label for="a3">Access notes</label><textarea class="input" id="a3">${ADDRESS.notes}</textarea><span class="xs muted">Gate codes, parking, which bell to ring.</span></div>
+  <p class="xs muted">Moving outside our service area? Message us first; we'll check before you change it.</p>
+ </div></div><div class="footer-cta"><button class="btn btn-primary" data-a="saveAddr">Save</button></div>`;
+
+const sw=(k,label,sub)=>`<div class="row"><span class="grow"><span class="t" style="display:block">${label}</span>${sub?`<span class="s">${sub}</span>`:''}</span><button class="switch" role="switch" aria-checked="${S[k]}" aria-label="${label}" data-a="sw" data-v="${k}"></button></div>`;
+SCREENS.privacy=()=>`${topBar('Privacy and messages',{back:1})}<div class="scroll"><div class="pad">
+  <section><div class="sec-h"><h2>Your photos</h2></div><p class="small muted" style="margin:0 0 8px">Five angles at every visit, for your record. Only you and your technician see them unless you switch something on below.</p>
+  <div class="list">${sw('photoConsent','On invite cards I send',S.photoConsent?'Given 3 Aug 2027':'Off. Friends see the Mane Man example card')}${sw('marketingConsent','In Mane Man marketing','Off unless you switch it on')}</div></section>
+  <section class="sec"><div class="sec-h"><h2>WhatsApp</h2></div><div class="list">${sw('waVisits','About my visits and issues','Reminders, confirmations, receipts, replies')}${sw('waLaunch','About new services and cities',null)}</div></section>
+  <p class="xs muted" style="margin:18px 0 30px">Switching off a photo choice stops new uses. Invites already sent stay in those chats.</p>
+ </div></div>`;
+
+SCREENS.account=()=>`${topBar('Account',{back:1})}<div class="scroll"><div class="pad">
+  <section><div class="sec-h"><h2>Mobile number</h2></div><p class="small muted" style="margin:0 0 10px">We send a code to both numbers, then confirm with you.</p>
+   <div class="phone" style="height:52px"><span>+91</span><input inputmode="numeric" placeholder="New number" aria-label="New mobile number"></div>
+   <button class="btn btn-secondary" style="margin-top:10px" data-a="toast" data-v="Codes sent to both numbers">Change number</button></section>
+  <section class="sec"><div class="sec-h"><h2>Your data</h2></div><div class="list">${row({ic:'dl',t:'Download my data',a:'toast',v:'Request received. We will message you on WhatsApp.'})}${row({ic:'alert',t:'Raise a concern about my data',a:'raise'})}</div></section>
+  <section class="sec" style="margin-bottom:30px"><div class="sec-h"><h2>Delete account</h2></div><p class="small muted" style="margin:0 0 10px">We act on your request within 30 days. Bookings and payments are settled first, and invoices are kept for 8 years, as the law requires.</p><button class="btn btn-secondary" style="border-color:var(--red);color:var(--red)" data-a="sheet" data-v="delete">Request deletion</button></section>
+ </div></div>`;
+
+/* ---------- booking flow ---------- */
+// kinds: service | replacement | reschedule
+function newBooking(kind){
+ const rs_=kind==='reschedule';
+ const u=S.upcoming;
+ S.bk={kind, origKind:rs_&&u?u.kind:kind, step:kind==='replacement'?'piece':'when', tier:kind==='firstfit'?S.ff.tier:curPiece().tier, useCredit:S.credits>0&&kind==='service', day:null, slot:null, note:'', code:false, err:null, holdEnd:null, failed:false};
+ if(rs_&&u&&u.kind==='replacement') S.bk.tier=u.tier;
+ go('book');
+}
+const bkLen=()=>S.bk.origKind==='replacement'?28:14;
+const minDay=()=>{const b=S.bk;if(b.origKind==='replacement'&&b.tier!==curPiece().tier&&TODAY>orderBy(curPiece()))return MAKE_DAYS()-1;return 0};
+function dayList(){const n=bkLen(),mn=minDay();return [...Array(n)].map((_,i)=>{const d=addDays(TODAY,i+1);return {d,i,full:i%6===4,early:i<mn}})}
+function allSlots(i){const out=[],st=OPS.rules.booking_rules.step;for(let m=540;m<=1110;m+=st){const h=(i*7+Math.round(m/30)*3)%5;out.push({m,open:h!==0&&h!==3&&!(i===2&&m<720)})}return out}
+function slotsFor(i){return allSlots(i).filter(o=>o.open).map(o=>o.m)}
+function earliest(){for(const x of dayList()){if(!x.full&&!x.early){const s=slotsFor(x.i);if(s.length)return {i:x.i,m:s[0],d:x.d}}}}
+function bkPrice(){const b=S.bk;
+ if(b.kind==='reschedule') return S.late&&b.origKind!=='consult'?(S.upcoming.price||svcPrice()):0;
+ if(b.kind==='replacement') return TIERS[b.tier].piece;
+ if(b.kind==='firstfit') return S.ff&&S.ff.custom?TIERS[b.tier].svc:TIERS[b.tier].ff;
+ return b.useCredit?0:svcPrice();}
+const holdLeft=()=>Math.max(0,Math.round((S.bk.holdEnd-Date.now())/1000));
+const mmss=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+
+SCREENS.book=()=>{
+ const b=S.bk; if(!b) return '';
+ const steps=b.kind==='replacement'?['piece','when','review']:b.kind==='reschedule'?['when','review']:['when','review'];
+ const si=steps.indexOf(b.step);
+ const bar=si>=0?`<div class="stepbar" aria-hidden="true">${steps.map((s,i)=>`<i class="${i<=si?'on':''}"></i>`).join('')}</div>`:'';
+ const close=`<button class="icon-btn" data-a="closeBook" aria-label="Close">${I('x')}</button>`;
+ const head=(t,backable)=>`<div class="top ${backable?'sub':''}">${backable?`<button class="icon-btn" data-a="bkBack" aria-label="Back">${I('left')}</button>`:''}<h1>${t}</h1>${close}</div>`;
+ const cp=curPiece();
+ if(b.step==='verifying'||b.step==='pending') return `<div class="scroll" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px"><div class="spinner"></div>
+  <h1 class="h2" style="margin:24px 0 6px">${b.step==='verifying'?'Confirming your payment':'Waiting for your bank'}</h1>
+  <p class="small muted" style="max-width:300px">${b.step==='verifying'?'This takes a few seconds.':'Razorpay has your payment and your bank is confirming it. Your time stays held. We will message you on WhatsApp the moment it clears, so you can close the app.'}</p></div>`;
+ if(b.step==='done'){
+  const u=S.upcoming;
+  return `<div class="screen" style="background:var(--navy);color:#fff"><div class="scroll"><div class="pad" style="padding-top:72px">
+   <div class="check">${I('check',32,2.2)}</div>
+   <div style="color:var(--mist);font-size:14px">${b.kind==='reschedule'?'Visit moved':b.kind==='replacement'?'Replacement booked':b.kind==='firstfit'?'First fit booked':'Visit booked'}</div>
+   <h1 style="font-size:30px;font-weight:600;line-height:1.15;margin:6px 0 4px">${dLong(u.date)}</h1>
+   <div style="color:var(--gold);font-weight:600">${u.kind==='consult'?'Morning visit':'Arrives '+tmR(u.start)}</div>
+   <div style="border-top:1px solid var(--navy7);margin:22px 0 0">
+    ${u.kind==='replacement'?`<div class="kv" style="border-color:var(--navy7)"><span style="color:var(--mist)">New hair system</span><span>${TIERS[u.tier].name}${u.tier!==cp.tier?` (from ${TIERS[cp.tier].name})`:''}</span></div>`:''}
+    <div class="kv" style="border-color:var(--navy7)"><span style="color:var(--mist)">Technician</span><span>${u.tech||'Confirmed the day before'}</span></div>
+    <div class="kv" style="border-color:var(--navy7)"><span style="color:var(--mist)">Address</span><span>${ADDRESS.l1}</span></div>
+    <div class="kv" style="border-color:var(--navy7)"><span style="color:var(--mist)">Payment</span><span>${b.kind==='firstfit'?'Hair system paid':b.paid?rs(b.paid)+' paid':b.kind==='reschedule'?'Carried over':'Free service visit'}</span></div>
+   </div>
+   <p style="color:#E6E9EE;font-size:14px;margin:18px 0 22px">${u.tech?'Technicians are assigned by us. If yours changes, we tell you on WhatsApp. ':''}We remind you the day before.</p>
+   <div class="btn-row"><button class="btn btn-on-navy btn-sm" style="height:46px" data-a="toast" data-v="Added to Google Calendar">Google Calendar</button><button class="btn btn-on-navy btn-sm" style="height:46px" data-a="toast" data-v="Calendar file saved">Apple or Outlook</button></div>
+  </div></div><div class="footer-cta" style="background:var(--navy);border-color:var(--navy7)"><button class="btn btn-gold" data-a="bkDone">Done</button><button class="btn btn-ghost" style="color:#fff;margin-top:4px" data-a="note">Add a note for your technician</button></div></div>`;
+ }
+ if(b.step==='piece'){
+  const ct=TIERS[cp.tier];
+  const sel=TIERS[b.tier];
+  const dir=b.tier===cp.tier?'same':sel.rank>ct.rank?'Upgrade':sel.rank<ct.rank?'Downgrade':'Switch';
+  return `${head('Book your replacement')}${bar}<div class="scroll"><div class="pad">
+   <h2 class="h2" style="margin:0 0 4px">Choose your next hair system</h2>
+   <p class="small muted" style="margin:0 0 14px">Your ${ct.name} hair system is due on ${dFull(pieceEnd(cp))}. Keep it or change the base.</p>
+   ${TORDER.map(k=>{const t=TIERS[k];const mine=k===cp.tier;const lab=mine?'Keep it':t.rank>ct.rank?'Upgrade':t.rank<ct.rank?'Downgrade':'Switch';return `<button class="tier" role="radio" aria-checked="${b.tier===k}" data-a="tierPick" data-v="${k}"><span class="hd"><span class="radio"></span><span class="nm">${t.name}</span><span class="tag ${mine?'tag-neutral':'tag-wait'}">${lab}</span></span><span class="small muted">${t.desc}</span>${tierFacts(t)}</button>`}).join('')}
+   ${dir!=='same'?`<div class="delta"><b>${dir} from ${ct.name} to ${sel.name}</b><br>${rs(sel.piece)} with its fitting, lasts ${sel.life} months. ${ct.svc===sel.svc&&ct.svcPer===sel.svcPer?`Service stays ${rs(sel.svc)} ${sel.svcPer}.`:`Service changes from ${rs(ct.svc)} ${ct.svcPer} to ${rs(sel.svc)} ${sel.svcPer}, from your first service after the fitting.`} ${minDay()?`${sel.name} in your size is made for you once you pay, so the earliest fitting is ${dDM(addDays(TODAY,MAKE_DAYS()))}.`:`${sel.name} is ready in time for your fitting.`} The ${ct.name} we set aside for you costs you nothing.</div>`:''}
+   <p class="xs muted" style="margin:4px 0 24px">Prices include GST. Your colour, density and hairline carry over. <button class="link" data-a="raise">Not sure? Ask us</button>.</p>
+  </div></div><div class="footer-cta"><button class="btn btn-primary" data-a="bkNext">Choose a date</button></div>`;
+ }
+ if(b.step==='when'){
+  const days=dayList(); const e=earliest(); if(b.day===null||days[b.day].early){b.day=e.i;}
+  const sl=allSlots(b.day);
+  const groups=[['Morning',o=>o.m<720],['Afternoon',o=>o.m>=720&&o.m<960],['Evening',o=>o.m>=960]];
+  const rsch=b.kind==='reschedule';
+  const consult=b.origKind==='consult';
+  const note=rsch?`<div class="notice ${S.late&&!consult?'err':'info'}">${I(S.late&&!consult?'alert':'check',18,2)}<span>${consult?'Free to move. Pick any open day.':S.late?`This is inside 24 hours. Moving now means the ${rs(S.upcoming.price||svcPrice())} is not refunded and the new visit is paid separately.`:S.upcoming.price?`Free to move. Your ${rs(S.upcoming.price)} carries over.`:'Free to move. Your free visit carries over.'}</span></div>`:'';
+  const replNote=b.origKind==='replacement'?`<div class="notice info">${I('layers',18)}<span>${minDay()?`${TIERS[b.tier].name} is on order. Dates before ${dDM(addDays(TODAY,MAKE_DAYS()))} aren't open.`:`Fit before ${dDM(pieceEnd(cp))}, when your current hair system is due.`}</span></div>`:'';
+  return `${head(rsch?'Move your visit':b.kind==='replacement'||b.kind==='firstfit'?'Pick a date':'Pick a time',!rsch&&b.kind!=='firstfit')}${bar}<div class="scroll">
+   <div class="pad">${note}${replNote}
+    <button class="suggest" data-a="pickEarliest"><span style="color:var(--gold7)">${I('clock',20)}</span><span class="grow"><span style="display:block;font-weight:600">Earliest: ${dShort(e.d)}, ${tm(e.m)}</span><span class="small muted">Tap to choose it</span></span><span class="chev">${I('right',18)}</span></button>
+   </div>
+   <div class="small" style="font-weight:600;padding:20px 20px 8px">${fd(days[0].d,{month:'long',year:1})}</div>
+   <div class="dates" role="group" aria-label="Day">${days.map(x=>`<button class="date" data-a="day" data-v="${x.i}" aria-pressed="${b.day===x.i}" ${x.full||x.early?`disabled aria-label="${dShort(x.d)}, ${x.full?'fully booked':'not open'}"`:''}><span class="d">${fd(x.d,{weekday:'short'})}</span><span class="n">${x.d.getDate()}</span><span class="a">${x.early?'—':x.full?'Full':slotsFor(x.i).length+' left'}</span></button>`).join('')}</div>
+   <div class="pad">${groups.map(([g,f])=>{const s=sl.filter(f);return `<div class="slot-h">${g}<span>${s.filter(o=>o.open).length?s.filter(o=>o.open).length+' open':'Fully booked'}</span></div>${s.length?`<div class="slots">${s.map(o=>o.open?`<button class="slot tab-num" data-a="slot" data-v="${o.m}" aria-pressed="${b.slot===o.m}">${tm(o.m)}</button>`:`<button class="slot tab-num taken" disabled aria-label="${tm(o.m)}, taken">${tm(o.m)}</button>`).join('')}</div>`:''}`}).join('')}
+   <p class="xs muted" style="margin:16px 0 24px">The technician arrives within ${OPS.rules.booking_rules.arrival} minutes of the time you pick. We assign the technician.</p></div>
+  </div><div class="footer-cta">${b.slot!==null?`<div class="small" style="margin:0 0 10px">${dShort(addDays(TODAY,b.day+1))}, arrives ${tmR(b.slot)}</div>`:''}<button class="btn btn-primary" data-a="bkNext" ${b.slot===null?'disabled':''}>Continue</button></div>`;
+ }
+ // review
+ const price=bkPrice(), d=addDays(TODAY,b.day+1), left=holdLeft(), deadline=new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,b.slot-OPS.rules.change_notice_hours*60);
+ const what=b.kind==='firstfit'?`First fit · ${TIERS[b.tier].name}`:b.kind==='reschedule'?upLabel(S.upcoming)+' (moved)':b.kind==='replacement'?`Replacement · ${TIERS[b.tier].name}`:'Service visit';
+ const payBtn=price>0?`Pay ${rs(price)}`:b.kind==='reschedule'?'Confirm new time':'Confirm free visit';
+ const priceRows=b.kind==='reschedule'?kv('Payment',price?`${rs(price)} new charge`:'Already paid, carries over')
+  :b.kind==='service'?(S.credits>0?`<div class="row" style="min-height:56px"><span class="grow"><span class="t" style="display:block">Use a free service visit</span><span class="s">${S.credits} left · use by 3 Jan 2028</span></span><button class="switch" role="switch" aria-checked="${b.useCredit}" aria-label="Use a free service visit" data-a="useCredit"></button></div>`:'')+kv('Total, incl. GST',b.useCredit?`<s class="muted">${rs(svcPrice())}</s> <b style="font-weight:600">Free</b>`:`<b class="tab-num" style="font-weight:600">${rs(price)}</b>`)
+  :b.kind==='firstfit'?(S.ff&&S.ff.custom?kv('Hair system','Paid when ordered')+kv('Fitting, incl. GST',`<b class="tab-num" style="font-weight:600">${rs(price)}</b>`):kv('First fit, incl. GST',`<b class="tab-num" style="font-weight:600">${rs(price)}</b>`)+`<div class="xs muted" style="padding:6px 0">${TIERS[b.tier].name} hair system ${rs(TIERS[b.tier].hs)} and its fitting</div>`):kv('Total, incl. GST',`<b class="tab-num" style="font-weight:600">${rs(price)}</b>`);
+ return `${head('Review',true)}${bar}<div class="scroll"><div class="pad">
+  <div class="hold" style="margin:0 0 14px">${I('lock',16)}<span>We're holding this time for you for <b id="holdt">${mmss(left)}</b></span></div>
+  ${b.err==='fail'?`<div class="notice err" role="alert">${I('alert',20)}<span><b style="font-weight:600;display:block">The payment didn't go through.</b>Nothing was booked. If money left your account, it comes back automatically. Try again, or use another method.</span></div>`:''}
+  ${b.err==='closed'?`<div class="notice info" role="status">${I('lock',18)}<span>Payment not completed. Your time is still held.</span></div>`:''}
+  <div style="border-top:1px solid var(--line)">
+   ${kv('Visit',what)}${kv('When',`${dShort(d)}, arrives ${tmR(b.slot)}`)}${kv('Technician','Assigned by us')}
+   <div class="kv"><span>Address</span><span>${ADDRESS.l1}<br><button class="link small" data-a="go" data-v="address">Change</button></span></div>
+   ${priceRows}
+  </div>
+  <div class="field" style="margin-top:18px"><label for="note">Note for the technician <span class="muted" style="font-weight:400">(optional)</span></label><textarea class="input" id="note" data-in="note" placeholder="For example: the back feels loose since Tuesday">${b.note}</textarea></div>
+  ${price>0?`<div class="small muted" style="display:flex;gap:10px;align-items:flex-start;margin:0 0 6px">${I('lock',16)}<span>Pay by UPI, card, netbanking or wallet on Razorpay's secure checkout. Saved methods appear there.</span></div>
+   ${b.code?`<div class="field" style="margin-top:14px"><label for="code">Discount code</label><div class="btn-row"><input class="input" id="code" style="flex:2" placeholder="Enter code"><button class="btn btn-secondary" style="height:52px" data-a="toast" data-v="That code isn't valid for this visit">Apply</button></div></div>`:`<button class="link small" style="margin:8px 0 0;display:inline-block" data-a="code">Have a discount code?</button>`}`:''}
+  <section class="sec"><div class="sec-h"><h2>Changing your plans</h2></div>
+   <div class="timeline" aria-hidden="true"><div class="track"><i></i><i></i></div><span class="lbl" style="left:0">Now</span><span class="lbl" style="left:75%;transform:translateX(-50%)">${dShort(deadline)}, ${tm(b.slot)}</span><span class="lbl" style="right:0">Visit</span></div>
+   <p class="small muted" style="margin:6px 0 0">${lateLine(b,deadline)}</p></section>
+  <p class="xs muted" style="margin:20px 0 24px">By continuing you agree to the <button class="link">Terms</button> and <button class="link">Privacy Policy</button>. The technician photographs five angles at every visit, for your record.</p>
+ </div></div><div class="footer-cta"><button class="btn btn-primary" data-a="pay" ${S.offline?'disabled':''}>${S.offline?'You are offline':payBtn}</button></div>`;
+};
+
+/* ---------- simulated Razorpay checkout ---------- */
+function rzpHTML(){
+ const r=S.rzp; if(!r) return '';
+ const amt=rs(r.amount);
+ let body='';
+ if(r.stage==='methods'){
+  const upi=[['gpay','Google Pay'],['phonepe','PhonePe'],['paytm','Paytm']];
+  body=`<div class="grp">UPI</div>${upi.map(([k,l])=>`<button class="pm" data-a="rzpPay" data-v="${l}"><span class="logo">${I('upi',18)}</span><span class="grow">${l}</span><span class="chev">${I('right',18)}</span></button>`).join('')}
+   <button class="pm" data-a="rzpPay" data-v="UPI ID"><span class="logo">${I('upi',18)}</span><span class="grow">Pay by UPI ID</span><span class="chev">${I('right',18)}</span></button>
+   <div class="grp">Other ways</div>
+   <button class="pm" data-a="rzpPay" data-v="card"><span class="logo">${I('card',18)}</span><span class="grow">Card<span class="s small muted" style="display:block">Saved: Visa ending 4417</span></span><span class="chev">${I('right',18)}</span></button>
+   <button class="pm" data-a="rzpPay" data-v="netbanking"><span class="logo">${I('bank',18)}</span><span class="grow">Netbanking</span><span class="chev">${I('right',18)}</span></button>
+   <button class="pm" data-a="rzpPay" data-v="wallet" style="border-bottom:0"><span class="logo">${I('wallet',18)}</span><span class="grow">Wallet</span><span class="chev">${I('right',18)}</span></button>`;
+ }
+ if(r.stage==='wait') body=`<div style="text-align:center;padding:36px 8px 30px"><div class="spinner" style="margin:0 auto"></div><h3 style="font-size:18px;font-weight:600;margin:20px 0 6px">${['card','netbanking','wallet'].includes(r.method)?'Completing payment':`Approve in ${r.method}`}</h3><p class="small muted" style="margin:0">${['card','netbanking','wallet'].includes(r.method)?'You may be asked for an OTP by your bank.':`Open ${r.method} and approve ${amt} to Mane Man.`}</p></div>`;
+ if(r.stage==='failed') body=`<div style="text-align:center;padding:30px 8px 20px"><div style="color:var(--red);display:flex;justify-content:center">${I('alert',40,1.6)}</div><h3 style="font-size:18px;font-weight:600;margin:12px 0 6px">Payment failed</h3><p class="small muted" style="margin:0 0 20px">Your bank declined it. If money left your account, it comes back automatically.</p><button class="btn btn-primary" data-a="rzpRetry">Try another method</button></div>`;
+ return `<div class="scrim" style="z-index:51" data-a="rzpClose"></div><div class="rzp" role="dialog" aria-label="Razorpay checkout (simulated)">
+  <span class="sim">Simulated</span>
+  <div class="rzp-h"><span class="m">${mark('#C9A363',24)}</span><span class="grow" style="flex:1"><b style="font-weight:600;display:block">Mane Man</b><span class="small muted">${r.desc} · +91 98000 44417</span></span><b class="tab-num" style="font-weight:600">${amt}</b><button class="icon-btn" data-a="rzpClose" aria-label="Close checkout">${I('x',20)}</button></div>
+  <div class="rzp-b">${body}</div>
+  <div class="rzp-f"><span>${I('lock',12)} Secured by Razorpay</span><span>Prototype stand-in for Razorpay Checkout</span></div></div>`;
+}
+
+/* ---------- sheets ---------- */
+function sheetHTML(){
+ const s=S.sheet; if(!s) return '';
+ let h='';
+ const u=S.upcoming;
+ if(s.t==='manage'){
+  const consult=u.kind==='consult';
+  const deadline=new Date(u.date.getFullYear(),u.date.getMonth(),u.date.getDate(),0,u.start-OPS.rules.change_notice_hours*60);
+  const late=S.late&&!consult;
+  h=`<h3>${upLabel(u)} on ${dShort(u.date)}</h3>
+   ${late?`<div class="notice err">${I('alert',20)}<span>You're inside 24 hours of the visit. Moving or cancelling now means the ${rs(u.price)} is not refunded.</span></div>`:`<p>${consult?'Free to move or cancel any time before the visit.':`Free to move or cancel until ${tm(u.start)} on ${dShort(deadline)}.`}</p>`}
+   <div class="list">${row({ic:'cal',t:consult?'Move to another day':'Move to another time',s:consult?'Pick any open day':late?'The new visit is paid separately':u.price?'Your payment carries over':'Your free visit carries over',a:'reschedule'})}${row({ic:'edit',t:'Add a note for the technician',a:'note'})}${row({ic:'x',t:consult?'Cancel consultation':'Cancel',s:consult?'You can book again any time':late?'No refund':u.price?`${rs(u.price)} back to the account you paid from in 5 to 7 working days`:'Your free visit goes back to your account',a:'sheet',v:'cancel'})}</div>`;
+ }
+ if(s.t==='cancel'){
+  const consult=u.kind==='consult';
+  h=`<h3>Cancel ${dShort(u.date)}?</h3><p>${consult?'You can book a new consultation any time.':S.late?`This is inside 24 hours, so the ${rs(u.price)} is not refunded.`:u.price?`${rs(u.price)} is refunded through Razorpay to the account you paid from, in 5 to 7 working days.`:'Your free service visit goes back to your account.'}</p>
+   <div class="btn-row"><button class="btn ${S.late&&!consult?'btn-danger':'btn-primary'}" data-a="doCancel">${S.late&&!consult?'Cancel, no refund':'Cancel visit'}</button><button class="btn btn-secondary" data-a="closeSheet">Keep it</button></div>`;
+ }
+ if(s.t==='note'){
+  h=`<h3>Note for the technician</h3><p>They read it before they leave for your home.</p><div class="field"><textarea class="input" aria-label="Note" placeholder="For example: the front edge has been lifting since Tuesday"></textarea></div><button class="btn btn-primary" data-a="saveNote">Save note</button>`;
+ }
+ if(s.t==='expired'){
+  const e=earliest();
+  h=`<h3>That time has been released</h3><p>We hold a time for ${OPS.rules.payment_hold.countdown} minutes while you pay. Nothing was charged.</p>
+   <div class="list" style="margin:0 0 16px">${[0,1].map(k=>{const i=Math.min(e.i+k,bkLen()-1);const dd=addDays(TODAY,i+1);const m=slotsFor(i)[1]||e.m;return row({ic:'clock',t:`${dShort(dd)}, ${tm(m)}`,s:'Open now',a:'quickSlot',v:`${i}|${m}`})}).join('')}</div>
+   <button class="btn btn-primary" data-a="repick">Pick another time</button>`;
+ }
+ if(s.t==='pick'){
+  const L=PHOTOV();
+  h=`<h3>${s.which==='a'?'Compare from':'Compare to'}</h3><div class="list">${L.map((v,i)=>row({t:dFull(v.date),s:v.type,r:(s.which==='a'?S.cmp.a:S.cmp.b)===i?I('check',20,2):'',noChev:1,a:'setPick',v:`${s.which}|${i}`})).join('')}</div>`;
+ }
+ if(s.t==='share'){
+  h=`<h3>Send your invite</h3>
+   ${S.shareFail?`<div class="notice err" role="alert">${I('alert',20)}<span>We couldn't create your link. Check your connection and try again.</span></div><button class="btn btn-primary" data-a="retryShare">Try again</button>`:
+   `<div class="card-prev" style="margin:4px 0 14px">${S.photoCard==='brand'?`<div class="img">${lockup('#C9A363',150)}</div>`:`<div class="img" style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><span class="ph" style="height:100%;border-radius:0">${head('front',0)}</span><span class="ph" style="height:100%;border-radius:0">${head('front',9)}</span></div>`}<div class="txt">Thought you'd like this: Mane Man fits hair systems at home. maneman.in/r/RM4417</div></div>
+   <button class="btn btn-primary" data-a="sent">${I('chat',20,1.8)}WhatsApp</button><div class="btn-row" style="margin-top:10px"><button class="btn btn-secondary btn-sm" style="height:46px" data-a="copy">Copy link</button><button class="btn btn-secondary btn-sm" style="height:46px" data-a="sent">Other apps</button></div>`}`;
+ }
+ if(s.t==='consent'){
+  h=`<h3>Use your photos on invites?</h3><p>Your first-fit and latest front photos go on the picture your friend sees. Only people you send it to see it. You can switch this off any time in Privacy; invites already sent stay in those chats.</p><div class="btn-row"><button class="btn btn-primary" data-a="consentYes">Use my photos</button><button class="btn btn-secondary" data-a="closeSheet">Not now</button></div>`;
+ }
+ if(s.t==='signflag'){
+  const opts=['The hairline','The colour or the blend','It feels loose or uncomfortable','Something else'];
+  h=`<h3>What isn't right?</h3><p>${S.upcoming&&S.upcoming.tech?S.upcoming.tech.split(' ')[0]:'The technician'} sees this on his phone straight away.</p>${opts.map((o,i)=>`<button class="choice" style="padding:14px 16px" role="radio" aria-checked="${S.signPick===i}" data-a="signPick" data-v="${i}"><span class="radio"></span><span class="t" style="font-weight:500">${o}</span></button>`).join('')}<div class="field"><textarea class="input" id="sgn" maxlength="300" aria-label="More detail" placeholder="More detail, if it helps"></textarea></div><button class="btn btn-primary" data-a="signFlag" ${S.signPick==null?'disabled':''}>Send to the technician</button>`;
+ }
+ if(s.t==='dispute'){
+  h=`<h3>Dispute the missed-visit charge</h3><p>Tell us what happened. Ops see the technician's check-in, the messages and your words, then refund the charge or tell you why it stands.</p><div class="field"><textarea class="input" id="dsp" maxlength="300" aria-label="What happened" placeholder="For example: I was home; the bell isn't working"></textarea><span class="xs muted">Up to 300 characters</span></div><button class="btn btn-primary" data-a="sendDispute" data-v="${s.p}">Send dispute</button>`;
+ }
+ if(s.t==='delete'){
+  h=`<h3>Delete your account?</h3><p>We act within 30 days. Upcoming visits are cancelled and refunded first. Invoices are kept for 8 years, as the law requires.</p><div class="btn-row"><button class="btn btn-danger" data-a="toast" data-v="Request received. We will confirm on WhatsApp.">Request deletion</button><button class="btn btn-secondary" data-a="closeSheet">Keep account</button></div>`;
+ }
+ return `<div class="scrim" data-a="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${h}</div>`;
+}
+
+function viewerHTML(){
+ const v=S.viewer; if(!v) return '';
+ const vis=v.live?{date:TODAY,stage:9}:PHOTOV()[v.v], [k,l]=ANGLES[v.i];
+ return `<div class="viewer" role="dialog" aria-label="Photo"><div class="top" style="color:#fff"><button class="icon-btn" data-a="closeViewer" aria-label="Close">${I('x')}</button><h1 style="color:#fff">${l} · ${dFull(vis.date)}</h1></div>
+  <div class="img"><span class="ph" style="width:100%">${head(k,vis.stage)}</span></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px calc(16px + env(safe-area-inset-bottom))">
+   <button class="icon-btn" data-a="vstep" data-v="-1" aria-label="Previous photo">${I('left')}</button>
+   <span class="small" style="color:var(--mist)">${v.i+1} of 5</span>
+   <button class="icon-btn" data-a="vstep" data-v="1" aria-label="Next photo">${I('right')}</button>
+  </div>
+  <div style="padding:0 16px 20px"><button class="btn btn-on-navy" data-a="toast" data-v="Saved to Photos">${I('dl',20)}Save to phone</button></div></div>`;
+}
+
+
+function opsPanel(){
+ const f=(lab,key,val,unit)=>`<label style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;font-size:13.5px">${lab}<span style="display:flex;align-items:center;gap:4px"><input data-g="ops" data-v="${key}" value="${val}" inputmode="numeric" style="width:76px;height:30px;border:1px solid var(--line);border-radius:0;padding:0 6px;font:inherit;text-align:right">${unit}</span></label>`;
+ return f('Active service visit, ex GST','pkg.service',OPS.packages.active.service,'Rs.')+f('Active replacement, ex GST','pkg.replacement',OPS.packages.active.replacement,'Rs.')+f('GST','gst.x',OPS.gst_percent,'%')+f('Payment hold','hold.x',OPS.rules.payment_hold.countdown,'min')+f('Free change until','notice.x',OPS.rules.change_notice_hours,'h')+f('Fit guarantee','guar.x',OPS.rules.guarantee_days,'days')+`${S.scenario==='custom'&&S.ff&&S.ff.paid&&!S.ff.arrived?`<button class="chk" style="color:var(--navy);font-weight:500" data-g="custom" data-v="x">Custom order arrives</button>`:''}`;
+}
+
+/* ---------- guide ---------- */
+function guideHTML(){
+ const sc=[['signedout','Signed out'],['lead','Booked a consultation'],['consulted','After consultation, hair system in stock'],['custom','After consultation, hair system made to order'],['livefit','First fit day (sign-off)'],['fitted','Fitted client'],['due','Replacement due (6 Dec)'],['live','Visit day (drive it below)']];
+ const lv=[['onway','On the way, 20 min'],['late','Running late, 15 min'],['gate','At the gate'],['arrived','Checked in'],['start','Start visit'],['step','Next step'],['signoff','Ask for sign-off'],['done','Close: done'],['partly','Close: partly done'],['noshow','Close: no-show'],['reassign','Ops: swap technician'],['propose','Ops: move to another day'],['opscancel','Ops: cancel visit']];
+ const tg=[['offline','No connection'],['holdShort','Hold runs out in 10 seconds'],['late','Inside 24 hours of the visit'],['shareFail','Invite link fails'],['homeError','Home fails to load']];
+ const po=[['success','Succeeds'],['fail','Fails'],['pending','Pending at bank']];
+ const jumps=[['home','Home'],['visits','Visits'],['issues','Issues'],['photos','Photos'],['rewards','Rewards'],['piece','Hair system'],['payments','Payments'],['book','Book service'],['repl','Book replacement']];
+ return `<h1>Mane Man client app</h1><p>Redesign prototype, revision 5. Payments are Razorpay only; corners square, as the live app. Tap through it as a client would. These controls switch who is signed in and force the states real use rarely shows.</p>
+ <div class="ctl-group"><div class="ctl-label">Client</div><div class="seg-v">${sc.map(([k,l])=>`<button data-g="scenario" data-v="${k}" aria-pressed="${S.scenario===k}">${l}</button>`).join('')}</div></div>
+ <div class="ctl-group"><div class="ctl-label">Technician and ops events (visit day)</div><div class="jump">${lv.map(([k,l])=>`<button data-g="live" data-v="${k}">${l}</button>`).join('')}</div><p style="font-size:12.5px;margin:6px 0 0">Each event reaches the client as a WhatsApp message, an in-app banner and an entry under the bell.</p></div>
+ <div class="ctl-group"><div class="ctl-label">Ops console values (change one: every screen follows)</div>${opsPanel()}</div>
+ <div class="ctl-group"><div class="ctl-label">Next Razorpay payment</div><div class="seg-v" style="flex-direction:row">${po.map(([k,l])=>`<button style="flex:1;border-top:0;border-left:1px solid var(--line)" data-g="pay" data-v="${k}" aria-pressed="${S.payOutcome===k}">${l}</button>`).join('')}</div></div>
+ <div class="ctl-group"><div class="ctl-label">Force a state</div>${tg.map(([k,l])=>`<label class="chk"><input type="checkbox" data-g="flag" data-v="${k}" ${S[k]?'checked':''}>${l}</label>`).join('')}<button class="chk" style="color:var(--navy);font-weight:500" data-g="loading">Replay home loading</button></div>
+ <div class="ctl-group"><div class="ctl-label">Jump to</div><div class="jump">${jumps.map(([k,l])=>`<button data-g="jump" data-v="${k}">${l}</button>`).join('')}</div></div>`;
+}
+
+
+
+SCREENS.request=()=>{
+ const r=S.req, days=[...Array(14)].map((_,i)=>addDays(TODAY,i+1));
+ return `${topBar('Ask for a time',{back:1})}<div class="scroll"><div class="pad">
+  <p class="lede">Pick a day and the part of the day that suits you. We confirm the time on WhatsApp.</p></div>
+  <div class="dates" role="group" aria-label="Day">${days.map((d,i)=>`<button class="date" data-a="reqDay" data-v="${i}" aria-pressed="${r.day===i}"><span class="d">${fd(d,{weekday:'short'})}</span><span class="n">${d.getDate()}</span><span class="a">${fd(d,{month:'short'})}</span></button>`).join('')}</div>
+  <div class="pad"><div class="seg" style="margin:18px 0 0" role="group" aria-label="Time of day">${[['morning','Morning'],['afternoon','Afternoon'],['evening','Evening']].map(([k,l])=>`<button data-a="reqWin" data-v="${k}" aria-pressed="${r.win===k}">${l}</button>`).join('')}</div>
+  <p class="xs muted" style="margin:14px 0 0">Nothing is held or paid until we confirm. Booking in the app opens when ops switch it on.</p></div></div>
+  <div class="footer-cta"><button class="btn btn-primary" data-a="sendReq">Send request</button></div>`;
+};
+
+/* ---------- notifications ---------- */
+let nid=0;
+function pushNotif(n,banner=true){n.id='n'+(++nid);n.t=n.t||new Date(TODAY);n.read=false;S.notifs.unshift(n);if(banner){S.banner=n;clearTimeout(window._bt);window._bt=setTimeout(()=>{S.banner=null;render(true)},6000)}render(true)}
+function seedNotifs(sc){
+ nid=0;S.notifs=[];const add=(n,read=true)=>{n.id='n'+(++nid);n.read=read;S.notifs.push(n)};
+ if(sc==='fitted'){add({t:D(2027,9,13,9,0),icon:'cal',title:'Your visit is on Thu 16 Sep',body:'Imran Qureshi, arriving 12–12:30 pm. Reply on WhatsApp or open the app to change it.',go:{s:'visits'}},false);
+  add({t:D(2027,9,3,10,41),icon:'flag',title:'Neha replied on MM-ISS-0031',body:'Refund of Rs. 2,360 started. Banks take 5 to 7 working days.',go:{s:'issue',p:'MM-ISS-0031'}});
+  add({t:D(2027,8,22,13,40),icon:'cam',title:'Your visit photos are in',body:'Five before and five after, from 22 Aug.',go:{s:'visit',p:'v4'}});}
+ if(sc==='due'){add({t:D(2027,11,27,9,0),icon:'layers',title:'You can book your replacement',body:'Your Active hair system is due on 27 Dec. Keep it or change to another.',go:{s:'piece'}},false);
+  add({t:D(2027,9,10,16,5),icon:'receipt',title:'Refund reached your account',body:'Rs. 2,360 for the cancelled 5 Sep visit.',go:{s:'payment',p:'refund'}});}
+ if(sc==='lead'){add({t:addDays(TODAY,-1),icon:'cal',title:'Consultation booked',body:'We confirm the exact hour on WhatsApp the day before.',go:{s:'visits'}});}
+ if(sc==='consulted'){add({t:addDays(TODAY,-1),icon:'receipt',title:'Your first-fit payment link',body:'Active, Rs. 29,500. Pay here or from the WhatsApp link; both are the same Razorpay order.',go:{s:'home'}},false);}
+ if(sc==='live'){add({t:D(2027,9,12,19,0),icon:'cal',title:'Tomorrow: service visit',body:'Imran Qureshi, arriving 12–12:30 pm.',go:{s:'home'}});}
+}
+const unread=()=>S.notifs.filter(n=>!n.read).length;
+const bellBtn=()=>S.scenario==='signedout'?'':`<button class="icon-btn" data-a="go" data-v="notifs" aria-label="Notifications${unread()?', '+unread()+' unread':''}" style="position:relative">${I('bell')}${unread()?`<span class="nbadge">${unread()}</span>`:''}</button>`;
+function bannerHTML(){const b=S.banner;if(!b)return '';return `<div class="push" role="alert"><div class="ph1"><i aria-hidden="true"></i><span>Mane Man</span><span>·</span><span>now</span></div><div class="pt">${b.title}</div><div class="pb">${b.body}</div><div class="pa"><button data-a="dismissBanner">Dismiss</button><button data-a="openBanner">${b.action||'Open'}</button></div></div>`}
+SCREENS.notifs=()=>{
+ const today=S.notifs.filter(n=>dayNum(n.t)===dayNum(TODAY)), earlier=S.notifs.filter(n=>dayNum(n.t)!==dayNum(TODAY));
+ const item=n=>`<button class="nrow ${n.read?'':'unread'}" data-a="openNotif" data-v="${n.id}"><span class="ni">${I(n.icon||'bell',18)}</span><span style="flex:1;min-width:0"><span class="nt" style="display:block">${n.title}</span><span class="nb" style="display:block">${n.body}</span><span class="nw" style="display:block">${tStamp(n.t)}</span></span></button>`;
+ return `${topBar('Notifications',{back:1,right:unread()?`<button class="btn-ghost small" style="font-weight:500;padding:0 8px" data-a="readAll">Mark all read</button>`:''})}<div class="scroll"><div class="pad">
+  ${S.notifs.length?'':`<div class="empty"><div class="ic">${I('bell')}</div><h2 class="h2">Nothing yet</h2><p class="lede" style="margin-top:6px">Visit updates, issue replies and payments show here.</p></div>`}
+  ${today.length?`<div class="small" style="font-weight:600;color:var(--ink5);padding:8px 0 0">Today</div>${today.map(item).join('')}`:''}
+  ${earlier.length?`<div class="small" style="font-weight:600;color:var(--ink5);padding:18px 0 0">Earlier</div>${earlier.map(item).join('')}`:''}
+  <p class="xs muted" style="margin:18px 0 28px">The same updates reach you on WhatsApp. Choose which ones in <button class="link" data-a="go" data-v="privacy">Privacy and messages</button>.</p>
+ </div></div>`;
+};
+
+/* ---------- live visit, mirrored from the technician app ---------- */
+const STEPS={service:['Before photos','Service','After photos'],replacement:['Before photos','Hair system','Fitting','After photos','Your sign-off'],firstfit:['Before photos','Hair profile','Hair system','Fitting','After photos','Your sign-off'],consult:['Before photos','Scalp and hairline','Hair profile','Colour and style','Options']};
+const at=(h,m)=>{const d=new Date(TODAY);d.setHours(h,m,0,0);return d};
+function liveEvent(v){
+ const L=S.live, u=S.upcoming; if(!L||!u){return}
+ const first=u.tech.split(' ')[0];
+ const steps=STEPS[u.kind]||STEPS.service;
+ if(v==='onway'){TODAY=at(11,45);L.stage='onway';L.eta=at(12,5);L.msg={t:at(11,45),txt:'On my way, 20 min'};pushNotif({icon:'truck',title:`${first} is on his way`,body:'Arriving around 12:05 pm.',go:{s:'home'}})}
+ if(v==='late'){TODAY=at(12,2);L.stage='late';L.eta=at(12,35);L.msg={t:at(12,2),txt:'Running 15 min late'};pushNotif({icon:'clock',title:`${first} is running late`,body:'Now arriving around 12:35 pm. Sorry for the wait.',go:{s:'home'}})}
+ if(v==='gate'){TODAY=at(12,3);L.stage='onway';L.eta=at(12,5);L.msg={t:at(12,3),txt:'At the gate'};pushNotif({icon:'pin',title:`${first} is at the gate`,body:'He will be at your door in a minute or two.',go:{s:'home'}})}
+ if(v==='reassign'){const nt=u.tech.startsWith('Imran')?['Sandeep Rawat','SR']:['Imran Qureshi','IQ'];u.tech=nt[0];u.ini=nt[1];toast('Ops swapped the technician: the client is not told (ADR 0115)')}
+ if(v==='arrived'){TODAY=at(12,4);L.stage='arrived';L.msg={t:at(12,4),txt:'I have arrived'};pushNotif({icon:'pin',title:`${first} is at your door`,body:'He waits until 12:15 pm, 15 minutes past the booked time.',go:{s:'home'}})}
+ if(v==='start'){if(L.stage!=='arrived')liveEvent('arrived');TODAY=at(12,7);L.stage='inprogress';L.step=0;pushNotif({icon:'wrench',title:'Your visit has started',body:`Step 1 of ${steps.length}: ${steps[0]}.`,go:{s:'home'}},false)}
+ if(v==='step'){if(L.stage!=='inprogress'){liveEvent('start');return}L.step=Math.min(L.step+1,steps.length-1);TODAY=new Date(TODAY.getTime()+25*6e4);render(true)}
+ if(v==='signoff'){if(!['firstfit','replacement'].includes(u.kind)){toast('Sign-off is for a first fit or a replacement');return}if(L.stage!=='inprogress')liveEvent('start');L.step=steps.length-1;L.stage='signoff';L.sign={checks:{},state:'asked'};pushNotif({icon:'check',title:`${first} asks you to sign off the fit`,body:'Look at the hairline and the photos, then sign off in the app.',action:'Sign off',go:{s:'home'}})}
+ if(v==='done'&&['firstfit','replacement'].includes(u.kind)&&!(L.sign&&L.sign.state==='approved')){liveEvent('signoff');toast('The technician can close a fit once you sign off');return}
+ if(v==='done'){if(L.stage!=='inprogress'&&L.stage!=='signoff')liveEvent('start');TODAY=at(13,32);L.stage='done';const fit=['firstfit','replacement'].includes(u.kind);const rec={id:'vlive',date:at(12,7),type:upLabel(u).split(' · ')[0],tier:u.tier,tech:u.tech,dur:fit?'2 hours 50 minutes':'85 minutes',paid:u.price||0,ref:'MM-2027-0913',done:fit?['Scalp prepared','Hair system fitted','Hairline set','Cut and blended']:['Removed','Cleaned','Re-taped','Re-bonded','Trimmed'],stage:9,signed:L.sign&&L.sign.at,firstfit:u.kind==='firstfit'};const k=ALLPAST.findIndex(x=>x.id==='vlive');if(k>=0)ALLPAST.splice(k,1);ALLPAST.unshift(rec);pushNotif({icon:'check',title:'Visit done',body:'Your photos are in. How did it go?',go:{s:'visit',p:'vlive'}})}
+ if(v==='partly'){if(L.stage!=='inprogress')liveEvent('start');TODAY=at(13,10);L.stage='partly';L.reason='Out of time';pushNotif({icon:'alert',title:'Visit partly done',body:'We\'ll call you to set a day to finish it.',go:{s:'home'}})}
+ if(v==='noshow'){if(L.stage!=='arrived')liveEvent('arrived');TODAY=at(12,16);L.stage='noshow';pushNotif({icon:'alert',title:'Missed visit',body:`${first} waited until 12:15 pm, called and messaged. Ops decide the missed-visit charge.`,go:{s:'home'}})}
+ if(v==='propose'){TODAY=at(10,30);L.stage='proposal';L.prop={date:addDays(TODAY,1),start:690,until:new Date(Math.min(TODAY.getTime()+OPS.rules.move_proposal_hours*36e5,at(12,0).getTime()))};pushNotif({icon:'cal',title:'We need to move your visit',body:`We've asked to move it to ${dShort(L.prop.date)}, ${tm(L.prop.start)}. Accept it or pick another time.`,action:'See it',go:{s:'home'}})}
+ if(v==='opscancel'){TODAY=at(10,30);const amt=u.price;S.upcoming=null;S.live=null;pushNotif({icon:'alert',title:'Your visit is cancelled',body:`Sorry, we had to cancel today's visit. ${rs(amt)} is refunded in full to the account you paid from.`,go:{s:'payments'}});return}
+ render(true);
+}
+function liveHero(u){
+ const L=S.live||{stage:'confirmed'}, first=u.tech?u.tech.split(' ')[0]:'Your technician';
+ const order=['confirmed','onway','arrived','inprogress','done'];
+ const idx={confirmed:0,onway:1,late:1,arrived:2,inprogress:3,signoff:3,done:4,partly:4,noshow:2,proposal:0}[L.stage];
+ const track=`<div class="track5">${order.map((_,i)=>`<div class="${i<=idx?'on':''}"></div>`).join('')}</div><div class="lbl5">${['Confirmed','On the way','Arrived','Visit','Done'].map((l,i)=>`<span class="${i===idx?'on':''}">${l}</span>`).join('')}</div>`;
+ const msg=L.msg?`<div class="msg"><b>${first}</b>, ${tm(L.msg.t.getHours()*60+L.msg.t.getMinutes())}: “${L.msg.txt}”<span style="display:block;font-size:12px;color:var(--mist);margin-top:2px">Also sent to you on WhatsApp</span></div>`:'';
+ const tech=`<hr style="margin-top:16px"><div class="tech"><span class="avatar">${u.ini}</span><div><div style="font-weight:600">${u.tech}</div><div style="font-size:13px;color:var(--mist)">Your technician for this visit</div></div></div>`;
+ let eyebrow='Today',title='',sub='',body='',btns='';
+ const steps=STEPS[u.kind]||STEPS.service;
+ if(L.stage==='confirmed'){title=`${upLabel(u).split(' · ')[0]} today`;sub=`Arrives ${tmR(u.start)}`;body=`<p style="color:#E6E9EE;font-size:14px;margin:12px 0 0">You'll get a message here and on WhatsApp when ${first} sets off.</p>`;btns=`<button class="btn btn-on-navy btn-sm" style="height:44px" data-a="manage">Change</button><button class="btn btn-on-navy btn-sm" style="height:44px" data-a="note">Add a note</button>`}
+ if(L.stage==='onway'||L.stage==='late'){eyebrow=`<span class="pulse"></span>Today`;title=L.stage==='late'?`${first} is running late`:`${first} is on his way`;sub=`Arriving around ${tm(L.eta.getHours()*60+L.eta.getMinutes())}`;body=msg+`<div class="meta" style="margin:14px 0 0">${`<div>${I('pin',16)}<span>${ADDRESS.l1}<br><span style="color:var(--mist)">${ADDRESS.notes}</span></span></div>`}</div>`;btns=`<button class="btn btn-on-navy btn-sm" style="height:44px" data-a="note">Add a note</button><button class="btn btn-on-navy btn-sm" style="height:44px" data-a="toast" data-v="Opening WhatsApp">Message us</button>`}
+ if(L.stage==='arrived'){eyebrow=`<span class="pulse"></span>Today`;title=`${first} is at your door`;sub='Arrived 12:04 pm';body=msg+`<p style="color:#E6E9EE;font-size:14px;margin:12px 0 0">He waits until 12:15 pm, 15 minutes past the booked time. If nobody answers, the visit is marked missed.</p>`;btns=`<button class="btn btn-gold" data-a="toast" data-v="We've told ${first} you're coming down">I'm coming</button>`}
+ if(L.stage==='inprogress'){title='Visit in progress';sub=`Step ${L.step+1} of ${steps.length}: ${steps[L.step]}`;body=`<ul class="jr">${steps.map((st,i)=>`<li class="${i<L.step?'ok':i===L.step?'now':''}"><span class="dot">${i<L.step?I('check',14,2.4):''}</span>${st}</li>`).join('')}</ul><p style="color:var(--mist);font-size:12.5px;margin:10px 0 0">Updates as ${first} completes each step in his app.</p>`}
+ if(L.stage==='done'){eyebrow='Today';title='Visit done';sub=L.sign&&L.sign.at?`Signed off by you, ${tm(L.sign.at.getHours()*60+L.sign.at.getMinutes())}`:'85 minutes · photos are in';btns=`<button class="btn btn-gold" data-a="go" data-v="visit" data-p="vlive">See photos and rate it</button>`}
+ if(L.stage==='signoff'){eyebrow='Today';title='Your sign-off';sub=`Step ${steps.length} of ${steps.length}`;body=signoffPanel(u);}
+ if(L.stage==='proposal'){eyebrow='Today';title='We need to move your visit';sub=`Asked to move it to ${dShort(L.prop.date)}, ${tmR(L.prop.start)}`;body=`<p style="color:#E6E9EE;font-size:14px;margin:12px 0 0">Your visit stays where it is until you accept. Open until ${tStamp(L.prop.until)}. Moving it costs you nothing.</p>`;btns=`<button class="btn btn-gold" data-a="acceptMove">Accept ${dShort(L.prop.date)}</button>`;btns+=`</div><div style="margin-top:10px"><button class="btn btn-on-navy" style="height:44px" data-a="reschedule">Pick another time</button>`}
+ if(L.stage==='partly'){eyebrow='Today';title='Visit partly done';sub=`Reason: ${L.reason}`;body=`<p style="color:#E6E9EE;font-size:14px;margin:12px 0 0">${first} couldn't finish everything today. We'll call you to set a day to finish it; there's nothing to book or pay here.</p>`;btns=`<button class="btn btn-on-navy btn-sm" style="height:44px" data-a="go" data-v="visit" data-p="vlive">What was done</button><button class="btn btn-on-navy btn-sm" style="height:44px" data-a="raise">Report an issue</button>`;if(!ALLPAST.find(x=>x.id==='vlive'))ALLPAST.unshift({id:'vlive',date:at(12,7),type:'Service visit',tech:u.tech,dur:'60 minutes',paid:u.price,ref:'MM-2027-0913',done:['Removed','Cleaned','Not finished: re-taping and re-bonding (out of time)'],stage:9})}
+ if(L.stage==='noshow'){eyebrow='Today';title='Missed visit';sub='Closed 12:16 pm';body=`<ul class="jr"><li class="ok"><span class="dot">${I('check',14,2.4)}</span>12:04 · ${first} checked in at your address</li><li class="ok"><span class="dot">${I('check',14,2.4)}</span>12:04 · Arrival message delivered on WhatsApp</li><li class="ok"><span class="dot">${I('check',14,2.4)}</span>12:09 · ${first} called you</li><li class="ok"><span class="dot">${I('check',14,2.4)}</span>12:15 · Waited ${OPS.rules.no_show_wait_min} minutes past the booked time</li></ul><p style="color:#E6E9EE;font-size:14px;margin:12px 0 0">Ops look at what happened and decide the missed-visit charge. If they charge it and you were home, you can dispute it here.</p>`;btns=`<button class="btn btn-on-navy btn-sm" style="height:44px" data-a="toast" data-v="Opening WhatsApp">Message us</button><button class="btn btn-on-navy btn-sm" style="height:44px" data-a="book">Book again</button>`}
+ return `<div class="hero">${heroMark}<div class="eyebrow">${eyebrow}</div><div class="when">${title}</div><div class="rel">${sub}</div>${['proposal','signoff'].includes(L.stage)?'':track}${body}${u.tech&&!['done','noshow','proposal','signoff'].includes(L.stage)?tech:'<div style="height:16px"></div>'}${btns?`<div class="btn-row">${btns}</div>`:''}</div>`;
+}
+
+
+/* ---------- the client signs off a fit (proposed: a sign_offs table, never a new job-event kind) ---------- */
+const SIGN_CHECKS=[['hairline','The hairline sits where we agreed'],['blend','The colour and the blend look right'],['secure','It feels secure and comfortable']];
+function signoffPanel(u){
+ const L=S.live, g=L.sign, first=u.tech.split(' ')[0], ff=u.kind==='firstfit';
+ if(g.state==='flagged') return `<div class="signoff"><h3>Sent to ${first}</h3><p class="small muted" style="margin:0 0 10px">“${g.what}”. ${first} sees it on his phone now and puts it right before he goes. He'll ask you to sign off again.</p><button class="btn btn-secondary" data-a="signAgain">${first} has fixed it</button></div>`;
+ const all=SIGN_CHECKS.every(([k])=>g.checks[k]);
+ return `<div class="signoff"><h3>Check the fit before ${first} leaves</h3>
+  <p class="small muted" style="margin:0 0 10px">These are today's after photos.</p>
+  <div class="thumbs" style="margin:0 0 6px">${ANGLES.map(([k,l],i)=>`<button data-a="liveViewer" data-v="${i}" aria-label="${l} after photo">${ph(k,9,l)}</button>`).join('')}</div>
+  ${SIGN_CHECKS.map(([k,l])=>`<button class="ck" role="checkbox" aria-checked="${!!g.checks[k]}" data-a="signCheck" data-v="${k}"><span class="bx">${g.checks[k]?I('check',14,2.6):''}</span>${l}</button>`).join('')}
+  <button class="btn btn-primary" style="margin-top:14px" data-a="signApprove" ${all?'':'disabled'}>I'm happy with the fit</button>
+  <button class="btn btn-ghost" style="width:100%;justify-content:center" data-a="sheet" data-v="signflag">Something isn't right</button>
+  <p class="xs muted" style="margin:6px 0 0">${ff?`Signing off doesn't end your guarantee: if the fit isn't right, tell us within ${OPS.rules.guarantee_days} days of today and we refit it free or refund you in full.`:'Signing off records that you saw the fit before the technician left.'} No phone to hand? Sign on ${first}'s phone instead.</p></div>`;
+}
+function lateLine(b,deadline){
+ if(deadline<=TODAY) return 'This visit starts inside the notice, so moving or cancelling it after booking is charged.';
+ const kind=b.kind==='firstfit'?'first_fit':b.kind==='reschedule'?(S.upcoming&&S.upcoming.kind==='firstfit'?'first_fit':S.upcoming&&S.upcoming.kind||'service'):b.kind;
+ const ch=OPS.rules.late_change_charge[kind==='consult'?'consultation':kind]||'visit';
+ const t=TIERS[b.tier]||TIERS[curPiece().tier];
+ const after=b.kind==='service'&&b.useCredit?'the free service visit is used up':ch==='nothing'?'it is still free':ch==='late_fee'?`it costs the late fee, ${rs(t.late)}`:'the payment is not refunded';
+ return `Free to move or cancel until ${tm(deadline.getHours()*60+deadline.getMinutes())} on ${dShort(deadline)}, ${OPS.rules.change_notice_hours} hours before. After that, ${after}.`;
+}
+
+/* ---------- missed visit detail ---------- */
+function missedVisit(v){
+ return `${topBar(dFull(v.date),{back:1})}<div class="scroll"><div class="pad">
+  <div class="small muted">${v.type}</div>
+  <div class="notice err" style="margin-top:12px">${I('alert',20)}<span><b style="font-weight:600;display:block">Missed visit</b>Nobody answered while the technician waited ${OPS.rules.no_show_wait_min} minutes past the booked time. No work was done.</span></div>
+  ${kv('Technician',v.tech)}${kv('Booked',`${tm(v.date.getHours()*60)}, ${dFull(v.date)}`)}${kv('Missed-visit charge',v.dispute==='refunded'?'Refunded':`We kept ${rs(v.paid)}`)}${v.dispute?kv('Your dispute',v.dispute==='open'?'<span class="tag tag-wait">Open</span>':v.dispute==='refunded'?'<span class="tag tag-ok">Refunded</span>':'<span class="tag tag-neutral">Upheld</span>'):''}
+  <section class="sec"><div class="sec-h"><h2>What happened</h2></div><ol class="tl">${v.log.map(([t,txt],i)=>`<li class="${i===v.log.length-1?'done':'mm'}"><div class="when">${tStamp(t)}</div><div class="txt">${txt}</div></li>`).join('')}</ol></section>
+  ${v.dispute?'':`<p class="small muted" style="margin:6px 0 14px">Were you home? You can dispute the charge until ${dDM(addDays(v.date,OPS.rules.dispute_window_days))}.</p>`}
+  <div class="btn-row" style="margin-bottom:28px">${v.dispute?'':`<button class="btn btn-secondary" data-a="sheet" data-v="dispute" data-p="${v.id}">Dispute this charge</button>`}<button class="btn btn-primary" data-a="book">Book again</button></div>
+ </div></div>`;
+}
+
+/* ---------- first fit after consultation ---------- */
+function ffHero(){
+ const f=S.ff, t=TIERS[f.tier];
+ if(f.custom){
+  const due=f.orderedOn?addDays(f.orderedOn,OPS.rules.custom_order_days):addDays(TODAY,OPS.rules.custom_order_days);
+  const st=[['Consultation',`Done ${dDM(f.consult)} with ${f.tech}`,true],['Pay to order your hair system',f.paid?`${rs(t.hs)} paid`:`${rs(t.hs)}, incl. GST. Made to your colour and size`,f.paid],['Being made',f.arrived?'Arrived':`Promised by ${dDM(due)}`,!!f.arrived],['Book your first fit',`The fitting, ${rs(t.svc)}`,!!f.booked],['Fitted',`${OPS.rules.guarantee_days}-day guarantee on the fit`,false]];
+  const now=st.findIndex(x=>!x[2]);
+  return `<div class="hero">${heroMark}<div class="eyebrow">Your first fit</div><div class="when" style="font-size:24px">Mane Man ${t.name}</div><div class="rel">Made for you: none of our stock matches your hair</div>
+  <ul class="jr">${st.map((x,i)=>`<li class="${x[2]?'ok':i===now?'now':''}"><span class="dot">${x[2]?I('check',14,2.4):''}</span><span style="flex:1">${x[0]}<span style="display:block;font-size:12.5px;color:var(--mist);font-weight:400">${x[1]}</span></span></li>`).join('')}</ul>
+  <div style="margin-top:16px">${!f.paid?`<button class="btn btn-gold" data-a="payFF">Pay ${rs(t.hs)} to order it</button>`:f.arrived?`<button class="btn btn-gold" data-a="bookFF">Book your first fit</button>`:`<p style="color:#E6E9EE;font-size:14px;margin:0">We'll tell you the day it arrives. If it's more than ${OPS.rules.custom_order_grace_days} days late, you can have your money back in full.</p>`}</div></div>`;
+ }
+ const st=[['Consultation',`Done ${dDM(f.consult)} with ${f.tech}`,true],['Book and pay for your first fit',`${rs(t.ff)}, incl. GST · about 3 hours at home`,!!f.booked],['Fitted, and you sign it off',`${OPS.rules.guarantee_days}-day guarantee on the fit`,false]];
+ const now=st.findIndex(x=>!x[2]);
+ return `<div class="hero">${heroMark}<div class="eyebrow">Your first fit</div><div class="when" style="font-size:24px">Mane Man ${t.name}</div><div class="rel">${t.desc}</div>
+  <ul class="jr">${st.map((x,i)=>`<li class="${x[2]?'ok':i===now?'now':''}"><span class="dot">${x[2]?I('check',14,2.4):''}</span><span style="flex:1">${x[0]}<span style="display:block;font-size:12.5px;color:var(--mist);font-weight:400">${x[1]}</span></span></li>`).join('')}</ul>
+  <div style="margin-top:16px"><button class="btn btn-gold" data-a="bookFF">Book your first fit</button><p style="color:var(--mist);font-size:12.5px;margin:8px 0 0">${f.tech.split(' ')[0]} recommended ${t.name}. You can choose another when you book.</p></div></div>`;
+}
+
+/* ---------- render ---------- */
+const app=document.getElementById('app');
+let lastKey='';
+function render(soft){
+ const c=cur(); const fn=SCREENS[c.s];
+ const key=c.s+S.stack.length+(c.p||'')+(S.bk&&c.s==='book'?S.bk.step:'')+(c.s==='visits'?S.visitsSeg:'');
+ const anim=soft||key===lastKey?'':S.dir==='in'?'anim-in':S.dir==='back'?'anim-back':'anim-fade';
+ const scrollEl=app.querySelector('.scroll'); const st=key===lastKey&&scrollEl?scrollEl.scrollTop:0;
+ const ae=document.activeElement; const focusIn=ae&&ae.dataset&&ae.dataset.in; const selS=focusIn?ae.selectionStart:null;
+ app.classList.toggle('no-tabs',!TABROOT.includes(c.s)); app.innerHTML=`<div class="screen ${anim}">${fn(c)}</div>${viewerHTML()}${sheetHTML()}${rzpHTML()}${bannerHTML()}${S.toast?`<div class="toast" role="status">${I('check',18,2.5)}<span>${S.toast}</span></div>`:''}`;
+ const ns=app.querySelector('.scroll'); if(ns&&st) ns.scrollTop=st;
+ if(focusIn){const el=app.querySelector(`[data-in="${focusIn}"]`);if(el){el.focus();try{el.setSelectionRange(selS,selS)}catch(e){}}}
+ lastKey=key;
+ document.getElementById('guide').innerHTML=guideHTML();
+ bindCompare();
+}
+function bindCompare(){
+ const el=document.getElementById('cmp'); if(!el) return;
+ const set=x=>{const r=el.getBoundingClientRect();S.cmp.pos=Math.max(4,Math.min(96,(x-r.left)/r.width*100));el.style.setProperty('--pos',S.cmp.pos+'%')};
+ el.onpointerdown=e=>{el.setPointerCapture(e.pointerId);set(e.clientX);el.onpointermove=ev=>set(ev.clientX)};
+ el.onpointerup=el.onpointercancel=()=>{el.onpointermove=null};
+}
+
+/* ---------- inputs ---------- */
+app.addEventListener('input',e=>{
+ const k=e.target.dataset.in; if(!k) return;
+ if(k==='phone'){S.phone=e.target.value.replace(/\D/g,'').slice(0,10);render(true);}
+ if(k==='otp'){S.otp=e.target.value.replace(/\D/g,'').slice(0,6);S.otpErr=false;render(true);if(S.otp.length===6)verify();}
+ if(k==='note'&&S.bk){S.bk.note=e.target.value;}
+ if(k==='rdesc'&&S.raise){const had=!!S.raise.desc.trim();S.raise.desc=e.target.value;if(had!==!!S.raise.desc.trim())render(true);}
+});
+app.addEventListener('change',e=>{if(e.target.dataset.a2==='addPhoto'&&S.raise){S.raise.photos+=Math.max(1,e.target.files.length);render(true);}});
+function verify(){
+ setTimeout(()=>{
+  if(S.otp==='000000'){S.otpErr=true;S.otp='';render(true);return}
+  if(S.phone.startsWith('7')){go('notfound');return}
+  setScenario('fitted');S.homeLoading=true;render();setTimeout(()=>{S.homeLoading=false;render(true)},900);
+ },350);
+}
+let resendT;
+function startResend(){S.resend=30;clearInterval(resendT);resendT=setInterval(()=>{S.resend--;const el=document.getElementById('resend');if(S.resend<=0){clearInterval(resendT);if(cur().s==='otp')render(true)}else if(el)el.textContent=`Resend on WhatsApp in 0:${String(S.resend).padStart(2,'0')}`},1000)}
+
+setInterval(()=>{
+ if(!S.bk||S.bk.step!=='review'||cur().s!=='book'||S.rzp) return;
+ const l=holdLeft(); const el=document.getElementById('holdt'); if(el) el.textContent=mmss(l);
+ if(l<=0&&(!S.sheet||S.sheet.t!=='expired')){S.sheet={t:'expired'};render(true);}
+},1000);
+
+/* ---------- booking completion ---------- */
+function confirmBooking(paid){
+ const b=S.bk, old=S.upcoming, d=addDays(TODAY,b.day+1);
+ const [tn,ti]=pickTech();
+ if(b.kind==='service'&&b.useCredit) S.credits--;
+ if(b.kind==='reschedule') S.upcoming={...old,date:d,start:b.slot,live:false,tech:old.kind==='consult'?null:tn,ini:ti};
+ else S.upcoming={kind:b.kind,tier:b.kind==='replacement'||b.kind==='firstfit'?b.tier:undefined,date:d,start:b.slot,tech:tn,ini:ti,price:paid||0};
+ if(S.upcoming.kind==='replacement') S.pendingPiece={tier:S.upcoming.tier,date:d};
+ b.paid=paid; b.step='done'; S.rzp=null; render(true);
+}
+
+/* ---------- actions ---------- */
+const A={
+ back, tab:v=>tab(v), go:(v,p)=>go(v,{p}), toast:v=>toast(v),
+ sendCode(){go('otp');S.otp='';S.otpErr=false;startResend();setTimeout(()=>{const o=document.getElementById('otp');if(o)o.focus()},300)},
+ resend(){startResend();toast('New code sent on WhatsApp');},
+ signout(){setScenario('signedout')},
+ openDemo(){document.getElementById('demoChip').click()},
+ retryHome(){S.homeError=false;S.homeLoading=true;render(true);setTimeout(()=>{S.homeLoading=false;render(true)},900)},
+ seg:v=>{S.visitsSeg=v;render(true)},
+ issuesTab(){S.visitsSeg='issues';tab('visits')},
+ manage(){S.sheet={t:'manage'};render(true)},
+ note(){S.sheet={t:'note'};render(true)},
+ saveNote(){S.sheet=null;toast('Note saved')},
+ raise:v=>{S.sheet=null;S.raise={cat:v?5:null,desc:'',photos:0,visit:v||(PAST()[0]||{}).id||null};go('raise')},
+ rcat:v=>{S.raise.cat=+v;render(true)},
+ rvisit:v=>{S.raise.visit=v||null;render(true)},
+ submitIssue(){
+  const r=S.raise; const n=String(32+ISSUES.filter(i=>i.id>'MM-ISS-0031').length).padStart(4,'0');
+  const t=new Date(TODAY);
+  const iss={id:'MM-ISS-'+n,cat:ISSUE_CATS[r.cat],title:r.desc.trim().split(/[.\n]/)[0].slice(0,60)||ISSUE_CATS[r.cat],status:'open',raised:t,visit:r.visit,events:[{t,who:'you',txt:r.desc.trim(),photos:r.photos}]};
+  ISSUES.unshift(iss); S.raise=null;
+  S.stack.pop(); go('issue',{p:iss.id}); toast(`Sent to Care · ${iss.id}`);
+ },
+ addUpdate:v=>{const el=document.getElementById('upd');const txt=el&&el.value.trim();if(!txt){toast('Write an update first');return}const i=ISSUES.find(x=>x.id===v);i.events.push({t:new Date(TODAY.getTime()+6e4),who:'you',txt});render(true);toast('Update sent')},
+ resolveMine:v=>{const i=ISSUES.find(x=>x.id===v);i.status='resolved';i.events.push({t:new Date(TODAY.getTime()+6e4),who:'done',txt:'You marked this sorted.'});render(true)},
+ reopen:v=>{const i=ISSUES.find(x=>x.id===v);i.status='open';i.events.push({t:new Date(TODAY),who:'you',txt:'Reopened: it is happening again.'});render(true);toast('Reopened')},
+ sheet:(v,p)=>{S.sheet={t:v,p};render(true)},
+ sendDispute:v=>{const el=document.getElementById('dsp');if(!el||!el.value.trim()){toast('Say what happened first');return}const x=ALLPAST.find(a=>a.id===v);x.dispute='open';S.sheet=null;pushNotif({icon:'flag',title:'Dispute received',body:'Ops look at the evidence and your words, then refund or explain.',go:{s:'visit',p:v}},false);toast('Dispute sent')},
+ closeSheet(){S.sheet=null;render(true)},
+ doCancel(){const u=S.upcoming;S.sheet=null;S.upcoming=null;if(u.kind==='replacement')S.pendingPiece=null;if(u.kind==='service'&&!u.price)S.credits++;toast(u.kind==='consult'?'Consultation cancelled':S.late?'Cancelled':u.price?`Cancelled. ${rs(u.price)} refund started.`:'Cancelled. Your free visit is back.');},
+ book(){S.sheet=null;newBooking('service')},
+ reqDay:v=>{S.req.day=+v;render(true)},
+ reqWin:v=>{S.req.win=v;render(true)},
+ sendReq(){const d=addDays(TODAY,S.req.day+1);S.requested={date:d,win:S.req.win};S.stack.pop();pushNotif({icon:'cal',title:'Request sent',body:`${dShort(d)}, ${S.req.win}. We confirm on WhatsApp, usually within the hour, ${OPS.rules.care_hours.opens} am to ${OPS.rules.care_hours.closes-12} pm.`,go:{s:'visits'}},false);toast('Request sent')},
+ bookRepl(){S.sheet=null;newBooking('replacement')},
+ reschedule(){S.sheet=null;newBooking('reschedule')},
+ closeBook(){S.bk=null;back()},
+ tierPick:v=>{S.bk.tier=v;S.bk.day=null;S.bk.slot=null;render(true)},
+ useCredit(){S.bk.useCredit=!S.bk.useCredit;render(true)},
+ bkBack(){const b=S.bk;b.err=null;if(b.step==='review')b.step='when';else if(b.step==='when'&&b.kind==='replacement')b.step='piece';render()},
+ bkNext(){const b=S.bk;if(b.step==='piece')b.step='when';else if(b.step==='when'){b.step='review';b.holdEnd=Date.now()+(S.holdShort?10000:OPS.rules.payment_hold.countdown*60000)}render()},
+ day:v=>{S.bk.day=+v;S.bk.slot=null;render(true)},
+ slot:v=>{S.bk.slot=+v;render(true)},
+ pickEarliest(){const e=earliest();S.bk.day=e.i;S.bk.slot=e.m;render(true)},
+ code(){S.bk.code=true;render(true)},
+ pay(){
+  const b=S.bk; if(S.offline){toast('You are offline');return}
+  const price=bkPrice();
+  if(price===0){b.step='verifying';render(true);setTimeout(()=>confirmBooking(0),700);return}
+  b.err=null;
+  S.rzp={stage:'methods',amount:price,desc:b.kind==='replacement'?`Replacement, ${TIERS[b.tier].name}`:b.kind==='reschedule'?'Moved visit':'Service visit'};render(true);
+ },
+ rzpPay:v=>{
+  S.rzp.stage='wait';S.rzp.method=v;render(true);
+  setTimeout(()=>{
+   if(!S.rzp) return;
+   const o=S.payOutcome;
+   if(S.rzp.ctx==='ff'){if(o==='fail'&&!S.ff.failed){S.ff.failed=true;S.rzp.stage='failed';render(true);return}const amt=S.rzp.amount;S.rzp=null;S.ff.paid=true;S.ff.orderedOn=new Date(TODAY);pushNotif({icon:'receipt',title:'Hair system ordered',body:`${rs(amt)} paid. Your ${TIERS[S.ff.tier].name} hair system is promised by ${dDM(addDays(TODAY,OPS.rules.custom_order_days))}.`});toast('Paid');return}
+   if(o==='fail'&&!S.bk.failed){S.bk.failed=true;S.rzp.stage='failed';render(true);return}
+   const amt=S.rzp.amount;S.rzp=null;
+   if(o==='pending'){S.bk.step='pending';render(true);setTimeout(()=>confirmBooking(amt),2600);return}
+   S.bk.step='verifying';render(true);setTimeout(()=>confirmBooking(amt),900);
+  },1500);
+ },
+ rzpRetry(){S.rzp.stage='methods';render(true)},
+ rzpClose(){if(!S.rzp)return;const failed=S.rzp.stage==='failed',ctx=S.rzp.ctx;S.rzp=null;if(ctx==='ff'){render(true);toast(failed?'Payment failed. Nothing was charged.':'Payment not completed');return}S.bk.err=failed?'fail':'closed';render(true)},
+ payFF(){if(S.offline){toast('You are offline');return}S.rzp={stage:'methods',amount:TIERS[S.ff.tier].hs,desc:`First fit, ${TIERS[S.ff.tier].name}`,ctx:'ff'};render(true)},
+ bookFF(){newBooking('firstfit')},
+ dismissBanner(){S.banner=null;render(true)},
+ openBanner(){const b=S.banner;S.banner=null;if(b&&b.go){if(TABROOT.includes(b.go.s))tab(b.go.s);else go(b.go.s,{p:b.go.p})}else render(true)},
+ readAll(){S.notifs.forEach(n=>n.read=true);render(true)},
+ openNotif:v=>{const n=S.notifs.find(x=>x.id===v);n.read=true;if(n.go){if(TABROOT.includes(n.go.s))tab(n.go.s);else go(n.go.s,{p:n.go.p})}else render(true)},
+ liveAct:v=>liveEvent(v),
+ signCheck:v=>{const g=S.live.sign;g.checks[v]=!g.checks[v];render(true)},
+ signApprove(){const g=S.live.sign;g.state='approved';g.at=new Date(TODAY);S.live.stage='inprogress';render(true);toast('Signed off')},
+ signPick:v=>{S.signPick=+v;render(true)},
+ signFlag(){const el=document.getElementById('sgn');const opts=['The hairline','The colour or the blend','It feels loose or uncomfortable','Something else'];S.live.sign.state='flagged';S.live.sign.what=opts[S.signPick]+(el&&el.value.trim()?': '+el.value.trim():'');S.sheet=null;S.signPick=null;render(true);toast('Sent to the technician')},
+ signAgain(){S.live.sign={checks:{},state:'asked'};render(true)},
+ liveViewer:v=>{S.viewer={v:0,i:+v,live:true};render(true)},
+ acceptMove(){const L=S.live;S.upcoming={...S.upcoming,date:L.prop.date,start:L.prop.start,live:false};S.live=null;toast(`Moved to ${dShort(L.prop.date)}`)},
+ opsSet:(v)=>{},
+
+ refundMissed(){S.upcoming=null;S.live=null;toast('Refund of Rs. 2,360 started. 5 to 7 working days.');},
+ bkDone(){if(S.bk&&S.bk.kind==='firstfit')S.ff.booked=true;S.bk=null;S.stack=[{s:'home'}];S.dir='fade';render()},
+ repick(){S.sheet=null;S.bk.step='when';S.bk.slot=null;S.bk.err=null;render()},
+ quickSlot:v=>{const [d,m]=v.split('|').map(Number);S.sheet=null;S.bk.day=d;S.bk.slot=m;S.bk.holdEnd=Date.now()+(S.holdShort?10000:OPS.rules.payment_hold.countdown*60000);render(true)},
+ rate:(v,p)=>{S.ratings[v]=+p;render(true)},
+ viewer:(v,p)=>{S.viewer={v:+v,i:+p};render(true)},
+ closeViewer(){S.viewer=null;render(true)},
+ vstep:v=>{S.viewer.i=(S.viewer.i+ +v+5)%5;render(true)},
+ angle:v=>{S.cmp.angle=v;render(true)},
+ pick:v=>{S.sheet={t:'pick',which:v};render(true)},
+ setPick:v=>{const [w,i]=v.split('|');S.cmp[w]=+i;S.sheet=null;render(true)},
+ card:v=>{if(v==='photo'&&!S.photoConsent){S.sheet={t:'consent'};render(true);return}S.photoCard=v;render(true)},
+ consentYes(){S.photoConsent=true;S.photoCard='photo';S.sheet=null;render(true)},
+ share(){S.sheet={t:'share'};render(true)},
+ retryShare(){S.shareFail=false;render(true)},
+ sent(){S.sheet=null;toast('Opening WhatsApp')},
+ async copy(){try{await navigator.clipboard.writeText('https://maneman.in/r/RM4417');toast('Link copied')}catch(e){toast('maneman.in/r/RM4417')}},
+ sw:v=>{S[v]=!S[v];if(v==='photoConsent'&&!S[v])S.photoCard='brand';render(true)},
+ saveAddr(){back();setTimeout(()=>toast('Address saved'),50)}
+};
+app.addEventListener('click',e=>{
+ const t=e.target.closest('[data-a]'); if(!t||t.disabled) return;
+ const f=A[t.dataset.a]; if(f){e.preventDefault();f(t.dataset.v,t.dataset.p)}
+});
+
+/* ---------- guide events ---------- */
+function onGuide(e){
+ const t=e.target.closest('[data-g]'); if(!t) return;
+ if(e.type==='click'&&t.tagName==='INPUT') return;
+ if(e.type==='change'&&t.dataset.g==='ops'){}
+ const g=t.dataset.g,v=t.dataset.v;
+ if(g==='scenario'){setScenario(v);closeDemo()}
+ if(g==='custom'){S.ff.arrived=true;pushNotif({icon:'layers',title:'Your hair system has arrived',body:'Book your first fit when it suits you.',action:'Book',go:{s:'home'}});return}
+ if(g==='ops'){const [p,k]=v.split('.');const val=+t.value;if(!(val>=0))return;if(p==='pkg')OPS.packages.active[k]=val;else if(p==='gst')OPS.gst_percent=val;else if(p==='hold')OPS.rules.payment_hold.countdown=val;else if(p==='notice')OPS.rules.change_notice_hours=val;else if(p==='guar')OPS.rules.guarantee_days=val;recalcTiers();render(true);return}
+ if(g==='live'){if(!['live','livefit'].includes(S.scenario))setScenario(v==='signoff'?'livefit':'live');S.stack=[{s:'home'}];liveEvent(v);closeDemo();return}
+ if(g==='pay'){S.payOutcome=v;if(S.bk)S.bk.failed=false;render(true)}
+ if(g==='flag'){S[v]=t.checked;if(v==='homeError'&&S.scenario==='signedout')setScenario('fitted');render(true)}
+ if(g==='loading'){if(S.scenario==='signedout')setScenario('fitted');S.stack=[{s:'home'}];S.homeLoading=true;render();setTimeout(()=>{S.homeLoading=false;render(true)},1200);closeDemo()}
+ if(g==='jump'){
+  if(S.scenario==='signedout'||(v==='repl'&&S.scenario!=='due'))setScenario(v==='repl'?'due':'fitted');
+  if(v==='book'&&S.upcoming&&S.scenario!=='due'){S.upcoming=null}
+  S.sheet=null;S.viewer=null;S.rzp=null;
+  if(v==='book'){S.stack=[{s:'home'}];newBooking('service')}
+  else if(v==='repl'){S.stack=[{s:'home'}];newBooking('replacement')}
+  else if(v==='issues'){S.visitsSeg='issues';tab('visits')}
+  else if(TABROOT.includes(v))tab(v);
+  else{S.stack=[{s:'home'},{s:'profile'},{s:v}];S.dir='in';render()}
+  closeDemo()}
+}
+document.getElementById('guide').addEventListener('click',onGuide);
+document.getElementById('guide').addEventListener('change',onGuide);
+const chip=document.getElementById('demoChip');
+let demoOpen=false;
+function closeDemo(){if(!demoOpen)return;demoOpen=false;const d=document.getElementById('demoSheet');if(d)d.remove()}
+chip.onclick=()=>{
+ if(demoOpen){closeDemo();return}
+ demoOpen=true;
+ const wrap=document.createElement('div');wrap.id='demoSheet';
+ wrap.innerHTML=`<div style="position:fixed;inset:0;background:rgba(14,20,32,.45);z-index:95" data-close="1"></div><div style="position:fixed;left:0;right:0;bottom:0;z-index:96;background:#fff;border-radius:0;padding:16px 20px calc(20px + env(safe-area-inset-bottom));max-height:82%;overflow:auto" class="guide" id="demoInner"></div>`;
+ document.body.appendChild(wrap);
+ const inner=wrap.querySelector('#demoInner');inner.style.display='block';inner.style.width='auto';inner.innerHTML=guideHTML();
+ const h=e=>{onGuide(e);if(demoOpen&&!(e.type==='click'&&e.target.tagName==='INPUT'))inner.innerHTML=guideHTML()};
+ inner.addEventListener('click',h);inner.addEventListener('change',h);
+ wrap.querySelector('[data-close]').onclick=closeDemo;
+};
+seedIssues();
+render();
+</script>
+</body>
+</html>
