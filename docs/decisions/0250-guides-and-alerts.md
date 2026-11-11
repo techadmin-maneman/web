@@ -39,7 +39,9 @@ keys as secrets, the technician's subscriptions and per-kind settings.
 4. **A push carries nothing.** The cron pushes each alert not yet read to every phone signed in as its technician that
    allowed notifications, signed with our VAPID key (RFC 8292) and with no payload; a technician switched off is pushed
    nothing. The service worker then reads the inbox with the phone's own session and shows each alert it has not shown
-   before, a notification each. Nothing about a client passes through Apple's or Google's push services, and no
+   before, a notification each, of those its push could still bring: written within the hour, as the cron pushes an
+   alert up to 30 minutes after it is written and the push lives 30 minutes more. Older ones, whose push the phone
+   missed, wait in the inbox. Nothing about a client passes through Apple's or Google's push services, and no
    encryption library is needed. The lock screen names no client (owner, 11 November 2026): "Leave in 7 min · 11:30 am
    service visit · Sector 65", its minutes counted as it is shown. A phone signed out or revoked takes no pushes. A
    subscription the push service has forgotten is deleted. A push goes only to a browser push service's host, never an

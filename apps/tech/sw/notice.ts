@@ -47,8 +47,12 @@ export const WORDS = {
 } as const;
 
 const MINUTE_MS = 60_000;
-/** How long a push lives at the push service (src/policy/tech-alerts.ts, PUSH_TTL_SECONDS): an alert older is stale. */
-const FRESH_MS = 30 * MINUTE_MS;
+/**
+ * How old an alert can be when its push arrives (src/policy/tech-alerts.ts, PUSH_TTL_SECONDS): the cron pushes an
+ * alert up to 30 minutes after it was written, and the push lives 30 minutes more. An alert older than both is one
+ * whose push this phone missed.
+ */
+const FRESH_MS = 2 * 30 * MINUTE_MS;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 const INDIA_MS = (5 * 60 + 30) * MINUTE_MS;
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

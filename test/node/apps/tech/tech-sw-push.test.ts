@@ -55,6 +55,11 @@ describe("a push on the lock screen", () => {
     );
   });
 
+  it("shows in its own words an alert whose push came late but alive, up to an hour after it was written", () => {
+    const cancelled = alert({ kind: "job_cancelled", sent_at: "2026-11-11T04:48:00Z", navigate: null });
+    expect(noticesOf([cancelled], NONE, NOW).notices[0]?.title).toBe("A job was cancelled");
+  });
+
   it("shows nothing older than a push lives, whose push the phone missed, and notes it as seen", () => {
     const missed = alert({
       id: "al9",
