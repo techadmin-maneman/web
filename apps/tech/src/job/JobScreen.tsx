@@ -99,6 +99,7 @@ function AtTheJob({ job, queued }: { job: Job; queued: readonly Queued[] }) {
       <CardFrame
         title={nameOf(job)}
         sub={whenOf(job)}
+        safety={job.id}
         foot={
           <Button
             variant="primary"
@@ -119,6 +120,7 @@ function AtTheJob({ job, queued }: { job: Job; queued: readonly Queued[] }) {
     <CardFrame
       title={nameOf(job)}
       sub={whenOf(job)}
+      safety={job.id}
       helper={checkIn.helper}
       foot={(helperId) => (
         <Button
