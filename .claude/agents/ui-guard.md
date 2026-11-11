@@ -15,6 +15,7 @@ On a second look, after a fix, you are told the commit you last reviewed and you
 4. Look at the screenshots you were given (Read opens them; every screen the change touches, at 360 and 390 px, and with text at 130% for the technician app). Compare them with the design: `design/tech-redesign/Technician App.prototype.html` and `docs/prompts/tech-redesign.md` for the technician app, `design/ops-redesign/` for the console. List the differences that matter: layout, spacing, type, colour, copy, a state missing. Check labels wrap rather than truncate, and nothing scrolls sideways.
 5. Check the words come from the app's content files, read tight and plain (no explanations of how the system works; "hair system", never "hair patch"; rupees as "Rs."), and that a disabled action says what is missing.
 6. Check accessibility: targets at least 44 px, real buttons, links, inputs and labels, an `aria-label` on an icon-only control, text contrast as the contrast tests hold it, and no motion under reduced motion.
+7. Do not rerun the typecheck or the tests: the author lists in your brief the checks already run and their results, and CI runs the full suite on push. Run one test, or the typecheck, only to confirm a specific suspicion, and say which.
 
 End with PASS or CHANGES REQUIRED.
 

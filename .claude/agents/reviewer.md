@@ -11,7 +11,7 @@ On a second look, after a fix, you are told what you found and the commit you re
 
 1. Read what the change answers to: the brief in `docs/prompts/` and the plan it names (for the technician redesign, `docs/prompts/tech-redesign.md` and `docs/technician-redesign/PLAN.md`), the ADRs the diff adds or cites in `docs/decisions/`, and `CONTRIBUTING.md`.
 2. Read `git diff origin/main...HEAD` and every file it touches, whole, not only the hunks.
-3. Run `npm run typecheck`, and `npx vitest run` on the test files the change adds or touches and those that cover the files it changes. Do not run the whole suite.
+3. Read the checks the author lists as run, and judge whether they cover what the change touches. Do not rerun the typecheck or the tests: the author lists in your brief the checks already run and their results, and CI runs the full suite on push. Run one test, or the typecheck, only to confirm a specific suspicion, and say which.
 4. Report only:
    - correctness bugs, each with file, line and the input or state that breaks it
    - a requirement of the brief or the plan this change claims and does not meet, or meets without a test
