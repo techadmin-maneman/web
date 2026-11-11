@@ -1165,20 +1165,19 @@ export const options = {
 
 /** The technician's asks for leave: a new one, and where each stands once ops decide it. */
 export const leave = {
-  title: "Your leave",
-  link: "Your leave",
-  back: "Back to today",
+  title: "Leave",
+  sub: "Days off, asked of ops",
   failed: "Your leave didn’t load.",
   retry: "Try again",
   askTitle: "Ask for leave",
   from: "From",
   to: "To",
-  note: "Why, in a line",
+  note: "Reason",
   ask: "Ask",
   needsSignal: "Needs signal",
   badDates: "Pick days from today on, the last no earlier than the first.",
   notDone: "That didn’t go through. Try again.",
-  askedTitle: "Asked",
+  askedTitle: "Your requests",
   none: "Nothing asked for.",
   states: { asked: "With ops", approved: "Approved", declined: "Declined" },
   /** "26 Sep – 28 Sep", or "5 Oct" for one day. */

@@ -14,7 +14,7 @@ import { ClientHistoryScreen } from "./job/ClientHistoryScreen.tsx";
 import { DoorScreen } from "./job/DoorScreen.tsx";
 import { PlanScreen } from "./visit/PlanScreen.tsx";
 import { KitScreen } from "./kit/KitScreen.tsx";
-import { LeaveScreen } from "./mine/LeaveScreen.tsx";
+import { LeaveScreen } from "./me/LeaveScreen.tsx";
 import { MeScreen } from "./me/MeScreen.tsx";
 import { PreviewScreen } from "./schedule/PreviewScreen.tsx";
 import { ScheduleScreen } from "./schedule/ScheduleScreen.tsx";
