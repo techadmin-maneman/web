@@ -187,6 +187,7 @@ export const dispatch = {
         /** Beneath a step sent back and not yet done again: why, as ops wrote it. */
         sent: (reason: string) => `Sent back: ${reason}`,
         reason: "What to fix",
+        needsReason: "Say what to fix to send it back.",
         confirm: "Send back",
         sending: "Sending back…",
         errors: {

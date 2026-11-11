@@ -47,7 +47,8 @@ export function SendBackForm({
         void send();
       }}
     >
-      <Field className={styles.field} label={copy.reason}>
+      {/* Send back waits for what to fix, and says so beneath the field until there is some. */}
+      <Field className={styles.field} label={copy.reason} hint={reason.trim() === "" ? copy.needsReason : undefined}>
         {(control) => (
           <TextArea
             {...control}

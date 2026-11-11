@@ -35,9 +35,10 @@
     font-weight: var(--weight-medium);
   }
 
+  /* Not yet chosen: the look's words for a toggle, muted unless it says otherwise. */
   .onPaper {
     border: var(--hairline) solid var(--ui-line-control);
-    color: var(--ui-text-muted);
+    color: var(--ui-toggle-text, var(--ui-text-muted));
   }
 
   .onPaper[aria-pressed="true"],

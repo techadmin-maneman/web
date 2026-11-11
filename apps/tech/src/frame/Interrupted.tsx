@@ -36,24 +36,27 @@ export function Interrupted() {
   };
   return (
     <Dialog labelledBy="interrupted-title" className={styles.dialog} canClose={false} onDismiss={close}>
-      <h2 className={styles.title} id="interrupted-title">
-        {to === null ? copy.cancelled(job) : copy.moved(job, to)}
-      </h2>
-      <p className={styles.body}>{to === null ? copy.cancelledBody : copy.movedBody(to)}</p>
-      <div className={styles.actions}>
-        <ButtonLink variant="outline" size="action" href={`tel:+${OPS_NUMBER}`}>
-          {ops.call}
-        </ButtonLink>
-        <Button
-          variant="primary"
-          size="action"
-          onClick={() => {
-            close();
-            go("/");
-          }}
-        >
-          {copy.today}
-        </Button>
+      {/* The dialog opens above every screen's own look, so it carries the new look itself. */}
+      <div className={styles.panel} data-look="light">
+        <h2 className={styles.title} id="interrupted-title">
+          {to === null ? copy.cancelled(job) : copy.moved(job, to)}
+        </h2>
+        <p className={styles.body}>{to === null ? copy.cancelledBody : copy.movedBody(to)}</p>
+        <div className={styles.actions}>
+          <ButtonLink variant="outline" size="action" href={`tel:+${OPS_NUMBER}`}>
+            {ops.call}
+          </ButtonLink>
+          <Button
+            variant="primary"
+            size="action"
+            onClick={() => {
+              close();
+              go("/");
+            }}
+          >
+            {copy.today}
+          </Button>
+        </div>
       </div>
     </Dialog>
   );
