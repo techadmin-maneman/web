@@ -13,6 +13,7 @@ import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { arrival, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
+import { Safety } from "./Safety.tsx";
 import styles from "./card-frame.module.css";
 
 /** The day, written only when it is not today: "Tomorrow", or "Fri 27 Sep". */
@@ -38,6 +39,7 @@ export function CardFrame({
   back = "/",
   foot,
   helper,
+  safety,
   children,
 }: {
   readonly title: string;
@@ -48,6 +50,8 @@ export function CardFrame({
   readonly foot: ReactNode | ((helperId: string | undefined) => ReactNode);
   /** What an action still waits on, above it. */
   readonly helper?: ReactNode;
+  /** On a visit's screen, the visit: the shield in the header opens Safety (./Safety.tsx). */
+  readonly safety?: string;
   readonly children: ReactNode;
 }) {
   const heading = useScreen(title);
@@ -69,6 +73,7 @@ export function CardFrame({
           </h1>
           <p className={styles.when}>{sub}</p>
         </div>
+        {safety !== undefined && <Safety jobId={safety} className={styles.safety} />}
       </header>
       <div className={styles.body}>{children}</div>
       {foot !== null && <ActionBar helper={helper}>{foot}</ActionBar>}

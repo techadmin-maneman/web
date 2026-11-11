@@ -5,7 +5,10 @@
 // itself, and an expired one is refused (docs/decisions/0163-pieces-scanned-from-the-kit.md).
 
 import { z } from "@hono/zod-openapi";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { fitsNothing, PieceRequestSchema } from "../../domain/field/job-event-bodies.ts";
+import { decisionAtVisit } from "../../domain/visits/one-visit.ts";
+import { fitsToday } from "../../policy/one-visit.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
 import { isHairSystem } from "../../domain/inventory/hair-systems.ts";
 import { kitUnit } from "../../domain/inventory/stock-units.ts";
@@ -59,4 +62,19 @@ async function oneVisitPiece(c: Ctx, job: WorkableJob, body: PieceBody): Promise
   }
   const fitted = pieceRecorded(body);
   return "invalid" in fitted ? fitted : { ...fitted, product: body.product };
+}
+
+/**
+ * Whether this piece step takes back a fit already landed on a one visit: declined, or booked for later, after a piece
+ * was recorded as fitted. Its close then charges nothing, so ops are told (tellOfUndoneFit).
+ */
+export async function undoesTheFit(c: Ctx, job: WorkableJob, built: StepBody): Promise<boolean> {
+  if (job.oneVisit === null || !("declined" in built || "fit_later" in built)) return false;
+  const was = await decisionAtVisit(c.env.DB, job.id);
+  return was !== null && fitsToday(was);
+}
+
+/** Ops are told once, by the visit's ID, to check the charge and that the piece is back in the kit. */
+export async function tellOfUndoneFit(c: Ctx, job: WorkableJob): Promise<void> {
+  await c.var.deps.alertOnce({ key: `fit_undone:${job.id}`, message: ALERT_WORDS.fit_undone({ visit: job.id }) });
 }

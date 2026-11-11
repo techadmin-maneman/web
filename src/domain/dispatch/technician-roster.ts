@@ -253,8 +253,9 @@ export async function reactivateTechnician(
 }
 
 /**
- * Whether anything records work of theirs: a visit, a hold, a step, a check-in, a move or one asked, a claim or stock. A hair profile
- * names its technician too; it is never read here, and its foreign key refuses the delete instead.
+ * Whether anything records work of theirs: a visit, a hold, a step, a check-in, a move or one asked, a claim, stock or
+ * an SOS. A hair profile names its technician too; it is never read here, and its foreign key refuses the delete
+ * instead.
  */
 const HAS_WORK = `(EXISTS (SELECT 1 FROM appointments WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM slot_holds WHERE technician_id = ?1)
@@ -263,7 +264,8 @@ const HAS_WORK = `(EXISTS (SELECT 1 FROM appointments WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM dispatch_moves WHERE was_technician_id = ?1 OR now_technician_id = ?1)
   OR EXISTS (SELECT 1 FROM move_proposals WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM slot_claims WHERE technician_id = ?1)
-  OR EXISTS (SELECT 1 FROM stock_movements WHERE technician_id = ?1))`;
+  OR EXISTS (SELECT 1 FROM stock_movements WHERE technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM sos_alerts WHERE technician_id = ?1))`;
 
 /**
  * Deletes a technician nothing records any work of, with what is theirs alone, all in one batch with the audit entry.
@@ -283,6 +285,7 @@ export async function deleteTechnician(
       theirs("DELETE FROM technician_leave WHERE technician_id = ?1"),
       theirs("DELETE FROM technician_hours WHERE technician_id = ?1"),
       theirs("DELETE FROM technician_devices WHERE technician_id = ?1"),
+      theirs("DELETE FROM visit_positions WHERE technician_id = ?1"),
       theirs("DELETE FROM otp_challenges WHERE technician_id = ?1"),
       theirs("DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id = ?1"),
       theirs("DELETE FROM stock_places WHERE id = ?1 AND kind = 'kit'"),

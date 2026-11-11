@@ -7,6 +7,7 @@ import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { classes } from "@maneman/ui/classes";
 import { Stopped, StorageFull } from "./frame/Banners.tsx";
 import { Interrupted } from "./frame/Interrupted.tsx";
+import { SharePosition } from "./frame/SharePosition.tsx";
 import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { OptionsScreen } from "./job/OptionsScreen.tsx";
@@ -101,6 +102,8 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
         {/* A job cancelled or given away under the phone, said once over any screen but the one that says it job by
             job (ADR 0246). */}
         {route.page !== "waiting" && <Interrupted />}
+        {/* Where the technician is, from a visit's check-in to its close (ADR 0248). */}
+        <SharePosition />
         {/* Keyed by the path, so each screen opens at its top with its own data, and one that failed stays behind. */}
         {tabbed ? (
           <>

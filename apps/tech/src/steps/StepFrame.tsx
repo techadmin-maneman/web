@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { steps as copy, visit } from "../content.ts";
 import { NoSignal } from "../frame/Banners.tsx";
+import { Safety } from "../frame/Safety.tsx";
 import { kindNameLower } from "../lib/kind.ts";
 import { done, sentBackFor } from "../lib/progress.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
@@ -158,6 +159,7 @@ export function StepFrame({
             </p>
           )}
         </div>
+        {where !== null && <Safety jobId={where.job.id} className={styles.safety} />}
       </header>
       {offline && <NoSignal />}
       {where !== null && <StepBar where={where} />}

@@ -77,6 +77,7 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
       title={copy.plan.title}
       sub={copy.whoAndWhat(nameOf(job), kindNameLower(job))}
       back={`/jobs/${job.id}`}
+      safety={job.id}
       foot={null}
     >
       <section className={styles.head}>

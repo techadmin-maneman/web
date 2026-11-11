@@ -34,6 +34,7 @@ import {
   request,
 } from "../helpers.ts";
 import { DAY_MS, AGO, IN_TWO_MONTHS, over, rowsReadBy } from "./cron-reads-fixtures.ts";
+import { aTechnician } from "../fixtures/index.ts";
 
 const AGO_PLUS_HOUR = new Date(NOW.getTime() - 60 * DAY_MS + 60 * 60 * 1000).toISOString();
 
@@ -95,6 +96,12 @@ const HISTORY = [
   `INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) SELECT 'v-' || i, 'a-' || i, 'done', '${AGO}' FROM n`,
   `INSERT INTO step_send_backs (id, appointment_id, kind, reason, sent_by, sent_at, cleared_at)
    SELECT 'sb-' || i, 'a-' || i, 'checklist', 'Tick the scalp again.', 'ops@maneman.in', '${AGO}', '${AGO}' FROM n`,
+  // A position heard just now, as a visit under way keeps one, which the sweep leaves; and an SOS handled long ago.
+  // Both are the history's technician's (history()).
+  `INSERT INTO visit_positions (appointment_id, technician_id, lat, lng, accuracy_m, at, received_at)
+   SELECT 'a-' || i, 't-history', 28.4, 77.07, 12, '${NOW.toISOString()}', '${NOW.toISOString()}' FROM n`,
+  `INSERT INTO sos_alerts (id, technician_id, appointment_id, sent_at, safe_at, handled_at, handled_by)
+   SELECT 'sos-' || i, 't-history', 'a-' || i, '${AGO}', '${AGO}', '${AGO}', 'ops@maneman.in' FROM n`,
   // Each client's last visit, as a visit's write keeps it (src/domain/visits/visit-upkeep.ts).
   `INSERT OR REPLACE INTO last_visits (person_id, visit_id, visit_start, consulted_start)
    SELECT 'p-' || i, 'a-' || i, '${AGO}', NULL FROM n`,
@@ -333,6 +340,8 @@ const HISTORY = [
 
 /** The history of the people numbered `from` to `to`. */
 async function history(from: number, to: number): Promise<void> {
+  // The technician whose positions and SOS the history holds, written with the first of it.
+  if (from === 1) await aTechnician({ id: "t-history", name: "Arjun Mehta", initials: "AM" });
   await env.DB.batch(
     HISTORY.map((sql) =>
       env.DB.prepare(`WITH RECURSIVE n(i) AS (SELECT ?1 UNION ALL SELECT i + 1 FROM n WHERE i < ?2) ${sql}`).bind(

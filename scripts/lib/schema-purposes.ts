@@ -198,6 +198,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Staff's short notes on a client, at the top of their page: a change writes a new note in the place of the one before, and one taken off is marked so, never deleted, until an erasure.",
   staff_service_tokens:
     "The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).",
+  sos_alerts:
+    "A technician's SOS, kept until ops mark it handled: whose, the visit, when, said safe, and where they were while it is open (ADR 0248).",
   step_send_backs:
     "A landed step of a visit ops sent back to its technician with why; it lands again even after the close, which clears it (ADR 0246).",
   stock_balances:
@@ -258,6 +260,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   city_blackouts: "Days on which no visit is offered in one city alone (ADR 0119).",
   city_prices: "A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).",
   city_settings: "A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).",
+  visit_positions:
+    "Where a technician is on a visit, the latest reading alone, from check-in to the close; deleted then, or by the sweep after 12 hours (ADR 0248).",
   gst_registrations:
     "A state's own GST registration, which supplies the visits in it, and its Books branch (ADR 0198).",
   visit_changes:

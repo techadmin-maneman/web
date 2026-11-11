@@ -221,6 +221,8 @@ const CALLS: Readonly<Partial<Record<string, string>>> = {
   "POST /api/tech/jobs/{id}/discount-code": "Applied a discount code",
   "POST /api/tech/jobs/{id}/payment-link/resend": "Texted the client their payment link again",
   "POST /api/tech/jobs/{id}/finish-ask": "Suggested a time to finish the visit",
+  "POST /api/tech/sos": "Raised an SOS",
+  "POST /api/tech/sos/{id}/safe": "Said they were safe after an SOS",
   "POST /api/tech/kit/transfers/{id}/receive": "Received stock into their kit",
   "POST /api/tech/kit/hand-back": "Handed pieces back",
   "POST /api/tech/leave": "Asked for leave",

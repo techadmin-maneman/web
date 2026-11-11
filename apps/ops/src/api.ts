@@ -190,6 +190,8 @@ type MoveRequest = Sent<paths["/api/dispatch/move"]["post"]>;
 export type MoveReason = MoveRequest["reason"];
 export type BookingWindow = NonNullable<MoveRequest["window"]>;
 export type VisitType = NonNullable<Block["type"]>;
+/** A technician's SOS not yet handled, as every console screen's banner shows it (docs/decisions/0248-safety.md). */
+export type OpenSos = components["schemas"]["OpenSos"];
 
 /**
  * A failed call carries the API's error code, and for invalid_request the
@@ -284,6 +286,10 @@ export const moveBody = (appointmentId: string, to: Landing, shown: Shown) => ({
 export const api = {
   /** Who Access let through, and where signing out goes. */
   whoami: () => client.get("/api/whoami"),
+  /** Every technician's SOS not yet handled, oldest first. */
+  openSos: () => client.get("/api/sos"),
+  /** An SOS handled: its banner goes, and where the technician was is blanked. */
+  sosHandled: (id: string) => client.post("/api/sos/{id}/handled", { path: { id } }),
   /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
   toldByPhone: (moveId: string) => client.post("/api/dispatch/moves/{id}/told", { path: { id: moveId } }),
   /**

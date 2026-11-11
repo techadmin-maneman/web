@@ -10,6 +10,21 @@ export const DEPARTMENT_NAMES = {
 } as const;
 
 export const shell = {
+  /** A technician's SOS, on every screen until someone marks it handled (docs/decisions/0248-safety.md). */
+  sos: {
+    /** "SOS from Imran Qureshi, 9:41 am" */
+    title: (technician: string, time: string) => `SOS from ${technician}, ${time}`,
+    /** "Rohit Malhotra's visit, 11:30 am"; "Visit at 11:30 am" for a client since erased */
+    visit: (client: string | null, time: string) =>
+      client === null ? `Visit at ${time}` : `${client}’s visit, ${time}`,
+    noVisit: "Not on a visit",
+    /** "Where they were at 9:41 am": the last position heard, which may not be where they are now. */
+    map: (time: string) => `Where they were at ${time}`,
+    noMap: "No location from their phone",
+    safe: (time: string) => `Said they’re safe, ${time}`,
+    call: "Call them now.",
+    handled: "Mark handled",
+  },
   /** Whatever the console did by itself, or a token for the console did: never its ID or its label. */
   serviceToken: "System",
   /** The sidebar's own title: the console's name. */

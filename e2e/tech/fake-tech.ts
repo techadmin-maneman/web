@@ -132,6 +132,14 @@ export interface Fake {
   resendRefused: string | null;
   /** True once ops have closed the job by hand: a write answers `409 already_closed`. */
   closedByOps: boolean;
+  /** Each position the phone sent (docs/decisions/0248-safety.md). */
+  readonly positions: unknown[];
+  /** The technician's SOS not yet handled; none unless the phone raised one or a test gives one. */
+  sos: { readonly id: string; readonly sent_at: string; readonly safe: boolean } | null;
+  /** Milliseconds the read of the technician's SOS takes, answering what was open when it was asked. */
+  slowSosReadMs: number;
+  /** Set to refuse an SOS and its "I'm safe", as with no signal neither reaches the API. */
+  sosRefused: boolean;
   /** True for a past visit whose card has locked again, the day after it: no client, no address. */
   relocked: boolean;
   /** Whether there is a photograph to compare each angle with, before the visit and after it. */
@@ -301,6 +309,10 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     paymentLink: null,
     resendRefused: null,
     closedByOps: false,
+    positions: [],
+    sos: null,
+    slowSosReadMs: 0,
+    sosRefused: false,
     relocked: false,
     history: { alerts: [], visits: [] },
     compare: false,
@@ -418,6 +430,29 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         fake.leave = { requests: [asked, ...fake.leave.requests] };
         return reply(route, 201, fake.leave);
       }
+      // Safety's writes are asked straight, never queued (docs/decisions/0248-safety.md).
+      if (path === `/api/tech/jobs/${JOB_ID}/position`) {
+        fake.positions.push(route.request().postDataJSON() as unknown);
+        return reply(route, 204);
+      }
+      if (path === "/api/tech/sos") {
+        if (fake.sosRefused) return route.abort("internetdisconnected");
+        fake.writes.push({ path, eventId, startsAt, body: route.request().postDataJSON() as unknown });
+        // One open at a time; one raised again after "I'm safe" is the same, from now.
+        if (fake.sos === null || fake.sos.safe) {
+          fake.sos = { id: fake.sos?.id ?? randomUUID(), sent_at: new Date().toISOString(), safe: false };
+        }
+        return reply(route, 201, fake.sos);
+      }
+      if (fake.sos !== null && path === `/api/tech/sos/${fake.sos.id}/position`) {
+        fake.writes.push({ path, eventId, startsAt, body: route.request().postDataJSON() as unknown });
+        return reply(route, 204);
+      }
+      if (fake.sos !== null && path === `/api/tech/sos/${fake.sos.id}/safe`) {
+        if (fake.sosRefused) return route.abort("internetdisconnected");
+        fake.sos = { ...fake.sos, safe: true };
+        return reply(route, 204);
+      }
       // The kit's writes are asked straight, never queued (docs/decisions/0164-the-kit-screen.md).
       if (path.startsWith("/api/tech/kit/")) {
         fake.writes.push({ path, eventId, startsAt, body: route.request().postDataJSON() as unknown });
@@ -529,6 +564,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, ME);
     }
     if (path === "/api/tech/kit") return reply(route, 200, { ...fake.kit, today });
+    if (path === "/api/tech/sos") {
+      const open = fake.sos;
+      if (fake.slowSosReadMs > 0) await new Promise((resolve) => setTimeout(resolve, fake.slowSosReadMs));
+      return reply(route, 200, { sos: open });
+    }
     if (path === "/api/tech/month") return reply(route, 200, fake.month);
     if (method === "GET" && path === "/api/tech/leave") return reply(route, 200, fake.leave);
     if (path === "/api/tech/jobs") {

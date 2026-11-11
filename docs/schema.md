@@ -19,6 +19,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Terms agreed to | `terms_acceptances` | A booking made since `<T>` has no record of the terms its client agreed to | Adding the rows since `<T>`: they are only ever added |
 | Revoked sessions and phones | `sessions`, `technician_devices` | A lost phone, or a session that was ended, works again | Revoking again: a phone in the console, a client's session with `sessions.revoked_at` |
 | Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes`, `step_send_backs` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
+| A technician's position and their SOS | `visit_positions`, `sos_alerts` | A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was | The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
@@ -156,6 +157,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 - [slot_times](#slot_times): Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
+- [sos_alerts](#sos_alerts): A technician's SOS, kept until ops mark it handled: whose, the visit, when, said safe, and where they were while it is open (ADR 0248).
 - [spend_entries](#spend_entries): A month's offline spend to win clients, for a city or national, by channel, as typed on the console's Spend page; one taken off kept, with who and when (ADR 0150).
 - [staff](#staff): Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
 - [staff_access_mode](#staff_access_mode): One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
@@ -196,6 +198,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [visit_changes](#visit_changes): Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).
 - [visit_outcomes](#visit_outcomes): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 - [visit_pay_rates](#visit_pay_rates): What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).
+- [visit_positions](#visit_positions): Where a technician is on a visit, the latest reading alone, from check-in to the close; deleted then, or by the sweep after 12 hours (ADR 0248).
 - [waitlist_entries](#waitlist_entries): Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).
 - [word_versions](#word_versions): Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).
 - [zoho_access_tokens](#zoho_access_tokens): Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).
@@ -264,7 +267,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`, `0168_upkeep_out_of_triggers.sql`, `0169_visits_whole.sql`, `0173_fsm_columns_read_the_new.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`, `0168_upkeep_out_of_triggers.sql`, `0169_visits_whole.sql`, `0173_fsm_columns_read_the_new.sql`, `0207_safety.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -319,7 +322,7 @@ Indexes:
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
-Triggers: `appointments_kept_whole`, `appointments_whole`.
+Triggers: `appointments_kept_whole`, `appointments_whole`, `visit_positions_end`.
 
 ## audit_log
 
@@ -2783,6 +2786,34 @@ Indexes:
 
 Triggers: `slot_times_board_added`, `slot_times_no_delete`, `slot_times_no_update`.
 
+## sos_alerts
+
+A technician's SOS, kept until ops mark it handled: whose, the visit, when, said safe, and where they were while it is open (ADR 0248).
+
+Made by `0207_safety.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` | The visit they were on, where there was one. |
+| `lat` | REAL | yes |  |  | Where they were, last heard while it is open; blanked once it is handled. |
+| `lng` | REAL | yes |  |  |  |
+| `accuracy_m` | REAL | yes |  |  |  |
+| `position_at` | TEXT | yes |  |  |  |
+| `sent_at` | TEXT | no |  |  |  |
+| `safe_at` | TEXT | yes |  |  | The technician said they are safe. |
+| `paged_at` | TEXT | yes |  |  | When ops were last paged with it, and with its "I'm safe": each pages at most once in a few minutes. |
+| `safe_paged_at` | TEXT | yes |  |  |  |
+| `handled_at` | TEXT | yes |  |  | Ops marked it handled, by their work e-mail. |
+| `handled_by` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `sos_alerts_open`: unique on (`technician_id`), where `handled_at IS NULL`
+- `sos_alerts_open_sent`: on (`sent_at`), where `handled_at IS NULL`
+- `sos_alerts_technician`: on (`technician_id`)
+
 ## spend_entries
 
 A month's offline spend to win clients, for a city or national, by channel, as typed on the console's Spend page; one taken off kept, with who and when (ADR 0150).
@@ -3674,6 +3705,26 @@ Made by `0108_technician_pay.sql`.
 Indexes:
 
 - `visit_pay_rates_one_a_day`: unique on (`grade_id`, `null`, `visit_kind`, `effective_from`)
+
+## visit_positions
+
+Where a technician is on a visit, the latest reading alone, from check-in to the close; deleted then, or by the sweep after 12 hours (ADR 0248).
+
+Made by `0207_safety.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `appointment_id` | TEXT | no |  | primary key; → `appointments.id` |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `lat` | REAL | no |  |  |  |
+| `lng` | REAL | no |  |  |  |
+| `accuracy_m` | REAL | yes |  |  |  |
+| `at` | TEXT | no |  |  | When the phone read it, and when it reached us. |
+| `received_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `visit_positions_received`: on (`received_at`)
 
 ## waitlist_entries
 

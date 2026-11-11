@@ -134,6 +134,28 @@ export const ops = {
   whatsApp: "WhatsApp ops",
 } as const;
 
+/** The Safety sheet, from the shield in a visit's header (docs/prompts/tech-redesign.md, "Safety"). */
+export const safety = {
+  open: "Safety",
+  title: "Safety",
+  sharing: "Ops can see your location until you close this visit.",
+  sos: "SOS",
+  sosSub: "Alerts ops and shares your location",
+  /** Beneath SOS while it is held: under reduced motion, the only sign it is going. */
+  keepHolding: "Keep holding…",
+  sending: "Sending your SOS…",
+  hold: "Press and hold for 3 seconds. Let go to cancel.",
+  /** "SOS sent 9:41 am" */
+  sent: (time: string) => `SOS sent ${time}`,
+  sentBody: "Ops will call you now. Your location is shared.",
+  safe: "I’m safe",
+  safeSaid: "Ops know you’re safe.",
+  safeFailed: "That didn’t reach ops. Call them.",
+  call112: "Call 112",
+  close: "Close",
+  failed: "SOS didn’t go through. Call ops or 112 now.",
+} as const;
+
 /** "1 photo set", "3 actions": a count and the word for it. */
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
 
