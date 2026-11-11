@@ -18,6 +18,7 @@ import {
   labelWarning,
   given,
   kitChoices,
+  profileToMatch,
   noticeFor,
   onTheHead,
   pieceBody,
@@ -126,11 +127,14 @@ function Asked({ job, choice, onChoose }: { job: Job; choice: Choice; onChoose: 
 /** The step once the job is in hand: a refused piece starts as it was sent, so nothing is typed twice. */
 function Fitting({
   job,
+  matchTo,
   refused,
   onFinish,
   onBack,
 }: {
   job: Job;
+  /** The profile the kit is matched to: the one the phone holds, else the card's. */
+  matchTo: ReturnType<typeof profileToMatch>;
   refused: Queued | null;
   onFinish: (body: EventBody<"piece"> | typeof CANNOT_FIT_TODAY) => void;
   onBack: () => void;
@@ -183,12 +187,12 @@ function Fitting({
       <Asked job={job} choice={choice} onChoose={setChoice} />
       {!declinedTheFit(form, job) && (
         <>
-          <KitPieces choices={kitChoices(job, choice)} stock={stock} onStock={setStock} />
+          <KitPieces choices={kitChoices({ ...job, profile: matchTo }, choice)} stock={stock} onStock={setStock} />
           <LabelField
             code={code}
             looked={looked}
             looking={looking}
-            warning={labelWarning(job, form)}
+            warning={labelWarning({ ...job, profile: matchTo }, form)}
             pieces={(job.pieces ?? []).filter(toFit)}
             picking={picking === "new"}
             onCode={takeLabel}
@@ -220,7 +224,7 @@ function Fitting({
 }
 
 export function Piece({ id }: { id: string }) {
-  const { loaded, retry, refused, finish, closeWith, back } = useStep(id, "piece");
+  const { loaded, retry, refused, queued, finish, closeWith, back } = useStep(id, "piece");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
@@ -228,5 +232,8 @@ export function Piece({ id }: { id: string }) {
   }
   const finishing = (body: EventBody<"piece"> | typeof CANNOT_FIT_TODAY) =>
     void (body === CANNOT_FIT_TODAY ? closeWith(CANNOT_FIT) : finish(body));
-  return <Fitting job={loaded.value} refused={refused} onFinish={finishing} onBack={back} />;
+  const job = loaded.value;
+  return (
+    <Fitting job={job} matchTo={profileToMatch(job, queued)} refused={refused} onFinish={finishing} onBack={back} />
+  );
 }

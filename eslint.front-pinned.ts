@@ -33,7 +33,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/tech/src/camera/CaptureScreen.tsx": { fn: 108 },
   "apps/tech/src/login/SignIn.tsx": { fn: 134 },
   "apps/tech/src/steps/Consumables.tsx": { fn: 81 },
-  "apps/tech/src/steps/Piece.tsx": { fn: 90 },
+  "apps/tech/src/steps/Piece.tsx": { fn: 92 },
   "apps/tech/src/steps/Profile.tsx": { fn: 85 },
   "apps/tech/src/waiting/WaitingScreen.tsx": { fn: 81 },
   "scripts/fidelity/fidelity-app.ts": { lines: 1087, fn: 167 },

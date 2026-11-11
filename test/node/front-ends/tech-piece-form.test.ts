@@ -1,11 +1,13 @@
 // The piece step's rules (apps/tech/src/steps/piece-form.ts): what keeps Next dim, and the body the step sends.
 
 import { describe, expect, it } from "vitest";
+import type { Queued } from "../../../apps/tech/src/store/outbox.ts";
 import { steps as copy, oneVisit } from "../../../apps/tech/src/content.ts";
 import {
   DECLINED,
   kitChoices,
   pieceBody,
+  profileToMatch,
   stillMissing,
   type KitHairSystem,
   type PieceForm,
@@ -117,5 +119,27 @@ describe("the kit’s hair systems", () => {
     } as unknown as Parameters<typeof kitChoices>[0];
     expect(kitChoices(job, "natural")[0]?.matches).toBe(false);
     expect(kitChoices(job, "essential")[0]?.matches).toBe(true);
+  });
+
+  // Measured on the head with no signal (docs/decisions/0245-the-steps.md): the kit is matched to what the phone holds.
+  it("matches the profile the phone holds, measured with no signal, over the card's", () => {
+    const card = { id: "a", profile } as unknown as Parameters<typeof profileToMatch>[0];
+    const measured = { ...spec, density_percent: 120 };
+    const held = (state: string) =>
+      ({ job_id: "a", kind: "profile", state, body: { fit: measured } }) as unknown as Queued;
+
+    expect(profileToMatch(card, [])).toBe(profile);
+    expect(profileToMatch(card, [held("waiting")])).toEqual({ fit: measured });
+    // A profile ops took the job from under does not count.
+    expect(profileToMatch(card, [held("superseded")])).toBe(profile);
+
+    const job = {
+      kit_hair_systems: [kit("denser", { density_percent: 120 }), kit("exact", {})],
+      profile: profileToMatch(card, [held("waiting")]),
+      service: { tier: "essential" },
+      one_visit: false,
+      type: "first_fit",
+    } as unknown as Parameters<typeof kitChoices>[0];
+    expect(kitChoices(job, null)[0]?.hairSystem.code).toBe("denser");
   });
 });
