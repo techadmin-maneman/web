@@ -20,6 +20,7 @@ import { apiDate, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
 import type { Queued } from "../store/outbox.ts";
 import { CardFrame, nameOf, whenOf } from "../frame/CardFrame.tsx";
+import { backOf } from "../lib/opened-from.ts";
 import { CheckInFailed, useCheckIn } from "./CheckIn.tsx";
 import { JobCard } from "./JobCard.tsx";
 import styles from "./job-screen.module.css";
@@ -99,6 +100,7 @@ function AtTheJob({ job, queued }: { job: Job; queued: readonly Queued[] }) {
       <CardFrame
         title={nameOf(job)}
         sub={whenOf(job)}
+        back={backOf(job.id)}
         foot={
           <Button
             variant="primary"
@@ -119,6 +121,7 @@ function AtTheJob({ job, queued }: { job: Job; queued: readonly Queued[] }) {
     <CardFrame
       title={nameOf(job)}
       sub={whenOf(job)}
+      back={backOf(job.id)}
       helper={checkIn.helper}
       foot={(helperId) => (
         <Button
@@ -153,7 +156,7 @@ export function JobScreen({ id }: { id: string }) {
 
   const line = stateLine(stage, job, queued);
   return (
-    <CardFrame title={nameOf(job)} sub={whenOf(job)} foot={footFor(stage, job, queued)}>
+    <CardFrame title={nameOf(job)} sub={whenOf(job)} back={backOf(job.id)} foot={footFor(stage, job, queued)}>
       {stage === "changed" && (
         <ProblemCard className={styles.changed} title={copy.changed.title} live level={2}>
           {whatChanged(job, queued)} {copy.changed.body}

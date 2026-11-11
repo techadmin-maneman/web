@@ -1066,17 +1066,37 @@ export const session = {
 } as const;
 
 // The kit (docs/decisions/0164-the-kit-screen.md). No board draws it; every line is ours.
-/** The technician's next days, a day at a time, as the jobs route gives later days: time, kind and area. */
-export const week = {
-  title: "Your week",
-  link: "Your week",
-  back: "Back to today",
+/** Schedule: today and the six days after it, a day at a time down the hours; and a later job's preview. */
+export const schedule = {
+  title: "Schedule",
+  /** "12 Nov to 18 Nov · 12 jobs" */
+  range: (from: string, to: string, jobs: number) => `${from} to ${to} · ${counted(jobs, "job", "jobs")}`,
+  /** What a screen reader hears for a day in the strip: "Thursday 12 Nov, 4 jobs". */
+  dayLabel: (weekday: string, date: string, jobs: number) =>
+    `${weekday} ${date}, ${jobs === 0 ? "nothing booked" : counted(jobs, "job", "jobs")}`,
+  noJobs: "–",
+  /** "Thu, 12 Nov" */
+  day: (weekday: string, date: string) => `${weekday}, ${date}`,
+  jobs: (count: number) => counted(count, "job", "jobs"),
+  nothing: "Nothing booked",
+  dayView: "The day, 8 am to 8 pm",
+  now: "Now",
+  /** "18 min · leave 9:12 am" */
+  drive: (minutes: number, leave: string) => `${String(minutes)} min · leave ${leave}`,
   failed: "Your week didn’t load.",
   retry: "Try again",
-  none: "Nothing booked.",
-  /** "9:30 am · Service visit · Sector 65" */
-  job: (time: string, kind: string, area: string | null) =>
-    [time, kind, area].filter((part) => part !== null && part !== "").join(" · "),
+  preview: {
+    back: "Back to Schedule",
+    /** "Thu, 12 Nov · 11:30 am" */
+    sub: (day: string, time: string) => `${day} · ${time}`,
+    time: "Time",
+    area: "Area",
+    payment: "Payment",
+    /** "11:30 am · 1 h 30 min" */
+    when: (time: string, length: string) => `${time} · ${length}`,
+    locked: "Name and address from 6 pm the day before.",
+    gone: "This job is no longer on your schedule.",
+  },
 };
 
 /** The technician's own month: the visits they closed, by kind, and what each earned at their rates. */

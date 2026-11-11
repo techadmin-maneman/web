@@ -17,11 +17,13 @@ import { KitScreen } from "./kit/KitScreen.tsx";
 import { LeaveScreen } from "./mine/LeaveScreen.tsx";
 import { MeScreen } from "./me/MeScreen.tsx";
 import { MonthScreen } from "./mine/MonthScreen.tsx";
-import { WeekScreen } from "./mine/WeekScreen.tsx";
+import { PreviewScreen } from "./schedule/PreviewScreen.tsx";
+import { ScheduleScreen } from "./schedule/ScheduleScreen.tsx";
 import { OutboxContext, useOutboxSubscription } from "./lib/useOutbox.ts";
 import { useReplayTriggers } from "./lib/useReplayTriggers.ts";
 import { useSessionLifecycle } from "./lib/useSessionLifecycle.ts";
 import { SignIn } from "./login/SignIn.tsx";
+import { notePage } from "./lib/opened-from.ts";
 import { routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext, useOnline, type Session } from "./session.ts";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
@@ -47,7 +49,9 @@ function pageFor(route: Route) {
     case "kit":
       return <KitScreen />;
     case "week":
-      return <WeekScreen />;
+      return <ScheduleScreen date={route.date} />;
+    case "preview":
+      return <PreviewScreen date={route.date} id={route.id} />;
     case "month":
       return <MonthScreen />;
     case "leave":
@@ -90,6 +94,7 @@ function pageFor(route: Route) {
 function SignedIn({ session, path }: { session: Session; path: string }) {
   const waiting = useOutboxSubscription();
   const route = routeOf(path);
+  notePage(path);
   const tabbed = hasTabs(route.page);
   return (
     <SessionContext value={session}>

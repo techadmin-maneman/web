@@ -14,7 +14,7 @@ import type { RowState } from "../lib/progress.ts";
 import type { Queued } from "../store/outbox.ts";
 import type { Heard } from "../store/jobs.ts";
 import { closedAs } from "../lib/today.ts";
-import { apiDate, clock, runsOver } from "../lib/when.ts";
+import { apiDate, clock, dayAfter, runsOver, todayInIndia } from "../lib/when.ts";
 import styles from "./today.module.css";
 
 /**
@@ -120,7 +120,7 @@ export function Tomorrow({ jobs, loaded }: { readonly jobs: readonly JobSummary[
   if (!loaded) return null;
   const [first] = jobs;
   return (
-    <Link className={styles.tomorrow} to="/week">
+    <Link className={styles.tomorrow} to={`/week/${dayAfter(todayInIndia())}`}>
       <span>
         <strong>{copy.tomorrow}</strong>
         {" · "}

@@ -1,0 +1,127 @@
+/* A day down the hours (./DayColumn.tsx): the hours' times a column at the start, a line across at each, then the day
+   a pixel a minute, five to a row; a visit in the ink, one done shaded, the drive before one hatched, and it is now a
+   line in the brand's metal. */
+
+@layer base, ui;
+
+@layer ui {
+  .column {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .step {
+    height: calc(var(--hairline) * 5);
+  }
+
+  .hour {
+    width: calc(var(--sp-48) + var(--sp-4));
+    padding: 0;
+    vertical-align: top;
+    text-align: start;
+    font-weight: var(--weight-regular);
+  }
+
+  /* The time sits on its line. */
+  .hourWords {
+    display: block;
+    padding-inline-end: var(--sp-4);
+    font-size: var(--fs-13);
+    line-height: var(--lh-130);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text-muted);
+    transform: translateY(-50%);
+  }
+
+  .cell {
+    position: relative;
+    padding: 0;
+    vertical-align: top;
+  }
+
+  .onHour {
+    border-top: var(--hairline) solid var(--ui-line);
+  }
+
+  .visit,
+  .done,
+  .drive {
+    border-top: var(--hairline) solid var(--ui-ground);
+  }
+
+  .visit {
+    background: var(--ui-strong);
+    color: var(--ui-on-strong);
+  }
+
+  .done {
+    background: var(--ui-shade);
+    color: var(--ui-text-muted);
+  }
+
+  .drive {
+    background: repeating-linear-gradient(
+      135deg,
+      var(--ui-tint) 0 var(--sp-4),
+      var(--ui-shade) var(--sp-4) var(--sp-8)
+    );
+    color: var(--ui-text);
+  }
+
+  /* A block split by the now-line: its second part goes on without a line of its own. */
+  .continued {
+    border-top: 0;
+  }
+
+  .now {
+    border-top: var(--rule-strong) solid var(--ui-accent);
+  }
+
+  /* The block's words fill it from the top, cut where it ends rather than making the rows taller. */
+  .words {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: var(--sp-4) var(--sp-8);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .drive .words {
+    flex-direction: row;
+    gap: var(--sp-4);
+    align-items: center;
+    padding-block: 0;
+    white-space: nowrap;
+  }
+
+  .words:focus-visible {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: calc(var(--focus-offset) * -1);
+  }
+
+  .title {
+    font-size: var(--fs-14);
+    font-weight: var(--weight-semibold);
+    line-height: var(--lh-130);
+  }
+
+  .drive .title {
+    font-weight: var(--weight-regular);
+    font-size: var(--fs-13);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .meta {
+    font-size: var(--fs-13);
+    line-height: var(--lh-130);
+  }
+
+  .end {
+    height: 0;
+  }
+}

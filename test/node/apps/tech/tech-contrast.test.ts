@@ -131,6 +131,7 @@ const REDRAWN = [
   "apps/tech/src/styles/look.css",
   "apps/tech/src/today/",
   "apps/tech/src/me/",
+  "apps/tech/src/schedule/",
   "apps/tech/src/job/client-history.module.css",
   "apps/tech/src/job/ClientHistoryScreen.tsx",
   "apps/tech/src/frame/card-frame.module.css",

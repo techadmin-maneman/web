@@ -1,0 +1,66 @@
+/* Schedule (./ScheduleScreen.tsx) and a later job's preview (./PreviewScreen.tsx), in the new look: the head with the
+   week's range, the strip of days, then the day chosen down the hours. */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-bottom: var(--sp-24);
+}
+
+.head {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--sp-16) var(--screen-gutter) var(--sp-12);
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.range {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.strip {
+  padding: var(--sp-12) var(--screen-gutter) 0;
+}
+
+.day {
+  padding: 0 var(--screen-gutter);
+}
+
+.dayTitle {
+  margin: var(--sp-20) 0 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+  color: var(--navy-900);
+}
+
+.daySub {
+  margin: var(--sp-2) 0 var(--sp-16);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.facts {
+  margin-top: var(--sp-16);
+}
+
+.note {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}

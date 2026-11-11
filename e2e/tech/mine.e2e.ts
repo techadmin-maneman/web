@@ -1,21 +1,11 @@
-// The technician saw only today and tomorrow: no week ahead, nothing of what they had done or earned this month, and no
-// way to ask for leave but a call.
+// The technician saw nothing of what they had done or earned this month, and had no way to ask for leave but a call.
+// The week ahead is Schedule's (./schedule.e2e.ts).
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fakeTech } from "./fake-tech.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { tab } from "./tabs.ts";
-
-test("opens the technician's next six days from the Schedule tab, a day at a time", async ({ page }) => {
-  await fakeTech(page);
-  await page.goto("/");
-  await tab(page, techCopy.tabs.schedule).click();
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.week.title })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2 })).toHaveCount(6);
-  await expect(page.getByText(techCopy.week.none).first()).toBeVisible();
-  expect(await axeViolations(page)).toEqual([]);
-});
 
 test("shows the technician's own month: visits by kind, what each earned, and a kind with no rate set yet", async ({
   page,

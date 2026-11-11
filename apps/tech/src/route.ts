@@ -4,7 +4,9 @@
 //   /                        Today: the day's next job, the rest of the day, and tomorrow (a tab)
 //   /waiting                 what has not reached us: the photo sets and the queued writes
 //   /kit                     the technician's kit (docs/decisions/0164-the-kit-screen.md; a tab)
-//   /week                    their next six days, a day at a time (the Schedule tab)
+//   /week                    Schedule: today and the six days after it, today down the hours (a tab)
+//   /week/:date              Schedule on another of those days
+//   /week/:date/:id          a later day's job, read-only
 //   /me                      Me: their month, their leave, what waits to send, ops, and signing out (a tab)
 //   /month                   their visits this month, and what they earned
 //   /leave                   their asks for leave, and a new one
@@ -48,7 +50,8 @@ export type Route =
   | { readonly page: "today" }
   | { readonly page: "waiting" }
   | { readonly page: "kit" }
-  | { readonly page: "week" }
+  | { readonly page: "week"; readonly date: string | null }
+  | { readonly page: "preview"; readonly date: string; readonly id: string }
   | { readonly page: "month" }
   | { readonly page: "leave" }
   | { readonly page: "me" }
@@ -61,6 +64,7 @@ export type Route =
   | { readonly page: "done"; readonly id: string };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TODAY: Route = { page: "today" };
 
 export function routeOf(path: string): Route {
@@ -68,11 +72,15 @@ export function routeOf(path: string): Route {
   if (first === undefined || rest.length > 0) return TODAY;
   if (second === undefined) {
     if (first === "waiting") return { page: "waiting" };
-    if (first === "week") return { page: "week" };
+    if (first === "week") return { page: "week", date: null };
     if (first === "month") return { page: "month" };
     if (first === "leave") return { page: "leave" };
     if (first === "me") return { page: "me" };
     return first === "kit" ? { page: "kit" } : TODAY;
+  }
+  if (first === "week" && DATE.test(second)) {
+    if (third === undefined) return { page: "week", date: second };
+    return UUID.test(third) ? { page: "preview", date: second, id: third } : TODAY;
   }
   if (first !== "jobs" || !UUID.test(second)) return TODAY;
   if (third === undefined) return { page: "job", id: second };
