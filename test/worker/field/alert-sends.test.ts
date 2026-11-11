@@ -17,6 +17,7 @@ import { createCachedOpsInputs } from "../../../src/domain/platform/ops-settings
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import type { Push } from "../../../src/providers/web-push.ts";
 import { NOW } from "../clock.ts";
+import { aVisit } from "../fixtures/index.ts";
 import { markDatabase } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 
@@ -44,16 +45,8 @@ const alerts = async (): Promise<Alert[]> =>
     ).all<Alert>()
   ).results;
 
-async function appointment(id: string, technicianId: string, windowStart: string, status = "scheduled") {
-  const end = new Date(Date.parse(windowStart) + 90 * MINUTE_MS).toISOString();
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id,
-       service_city, service_pincode, synced_at)
-     VALUES (?1, ?1, ?2, 'service', ?3, ?4, ?5, ?6, 'Gurgaon', '122018', ?4)`,
-  )
-    .bind(id, PERSON, status, windowStart, end, technicianId)
-    .run();
-}
+const appointment = (id: string, technicianId: string, windowStart: string) =>
+  aVisit({ id, person_id: PERSON, technician_id: technicianId, window_start: windowStart });
 
 const turnOff = (kind: string) =>
   env.DB.prepare("INSERT INTO tech_alert_kinds_off (technician_id, kind, set_at) VALUES (?1, ?2, ?3)")

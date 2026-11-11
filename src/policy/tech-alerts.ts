@@ -22,7 +22,7 @@ export type AlertSetting = (typeof ALERT_SETTINGS)[number];
 export const INBOX_DAYS = 7;
 
 /** How long before setting off the technician is told to leave. */
-export const LEAVE_NOTICE_MINUTES = 10;
+const LEAVE_NOTICE_MINUTES = 10;
 
 /** The hour of India's evening the next day's jobs are sent. */
 export const DAY_AHEAD_HOUR = 20;

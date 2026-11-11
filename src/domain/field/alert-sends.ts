@@ -53,7 +53,7 @@ function insertOf(db: D1Database, technicianId: string, alert: Written, now: Dat
 }
 
 /** The day's alerts due now: leave for a job not begun, and a job under way that will make the next one late. */
-export function timedAlertsOf(
+function timedAlertsOf(
   jobs: readonly DayJob[],
   now: Date,
   on: { readonly time_to_leave: boolean; readonly running_over: boolean },
@@ -143,22 +143,25 @@ export async function writeTimedAlerts(
 export async function writeDayAhead(db: D1Database, { now, date }: { readonly now: Date; readonly date: string }) {
   const from = indiaInstant(date, "00:00").toISOString();
   const to = indiaInstant(addDays(date, 1), "00:00").toISOString();
-  const [days, off] = await Promise.all([
-    // The first job is the least of each start with its ID beside it: one pass over the day.
-    db
-      .prepare(
-        `SELECT technician_id, COUNT(*) AS jobs, MIN(window_start || ' ' || id) AS first
-           FROM appointments
-          WHERE technician_id IS NOT NULL AND deleted_at IS NULL AND ${toDo("status")}
-            AND window_start >= ?1 AND window_start < ?2
-          GROUP BY technician_id`,
-      )
-      .bind(from, to)
-      .all<{ technician_id: string; jobs: number; first: string }>(),
-    db
-      .prepare("SELECT technician_id FROM tech_alert_kinds_off WHERE kind = 'day_ahead'")
-      .all<{ technician_id: string }>(),
-  ]);
+  // The first job is the least of each start with its ID beside it: one pass over the day.
+  const days = await db
+    .prepare(
+      `SELECT technician_id, COUNT(*) AS jobs, MIN(window_start || ' ' || id) AS first
+         FROM appointments
+        WHERE technician_id IS NOT NULL AND deleted_at IS NULL AND ${toDo("status")}
+          AND window_start >= ?1 AND window_start < ?2
+        GROUP BY technician_id`,
+    )
+    .bind(from, to)
+    .all<{ technician_id: string; jobs: number; first: string }>();
+  if (days.results.length === 0) return 0;
+  const off = await db
+    .prepare(
+      `SELECT technician_id FROM tech_alert_kinds_off
+        WHERE kind = 'day_ahead' AND technician_id IN (SELECT value FROM json_each(?1))`,
+    )
+    .bind(JSON.stringify(days.results.map((row) => row.technician_id)))
+    .all<{ technician_id: string }>();
   const turnedOff = new Set(off.results.map((row) => row.technician_id));
   const due = days.results.filter((row) => !turnedOff.has(row.technician_id));
   if (due.length === 0) return 0;

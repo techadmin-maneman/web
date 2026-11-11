@@ -7,7 +7,7 @@ import { ALERT_KINDS, ALERT_SETTINGS } from "../../policy/tech-alerts.ts";
 
 const instant = z.iso.datetime().nullable();
 
-export const TechAlertSchema = z
+const TechAlertSchema = z
   .object({
     id: z.string(),
     kind: z.enum(ALERT_KINDS),

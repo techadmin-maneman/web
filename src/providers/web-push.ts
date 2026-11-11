@@ -28,7 +28,7 @@ export function isPushEndpoint(endpoint: string): boolean {
   return PUSH_HOSTS.some((host) => host.test(url.hostname));
 }
 
-export type PushAnswer = "sent" | "gone" | "failed";
+type PushAnswer = "sent" | "gone" | "failed";
 
 /** Wakes the phone behind a subscription; `ttlSeconds` is how long the push service keeps it for a phone that is off. */
 export type Push = (endpoint: string, ttlSeconds: number) => Promise<PushAnswer>;

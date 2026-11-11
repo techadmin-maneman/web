@@ -79,6 +79,7 @@ import { placePincodeCentres } from "../domain/cities/pincode-centres.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
+import { DAY_AHEAD_HOUR } from "../policy/tech-alerts.ts";
 import { dayAheadJob, techAlertsJob } from "./tech-alerts.ts";
 
 export interface CronContext {
@@ -457,7 +458,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   // When each task opened and closed, for the reporting copy (docs/decisions/0147-task-spans.md).
   { name: "task_spans", needs: "nothing", every: 60, at: 26, slot: { hour: 23 }, run: taskSpansJob },
   // Each technician's jobs tomorrow, from 8 pm in India, pushed by the next tech_alerts run; and alerts past the inbox.
-  { name: "day_ahead", needs: "nothing", every: 60, at: 32, slot: { hour: 20 }, run: dayAheadJob },
+  { name: "day_ahead", needs: "nothing", every: 60, at: 32, slot: { hour: DAY_AHEAD_HOUR }, run: dayAheadJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
   // A visit today with no technician, told each hour until someone is sent (src/domain/dispatch/unassigned.ts).
