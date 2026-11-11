@@ -43,6 +43,7 @@ jobs:
           mkdir -p ~/apt-archives/partial
           printf 'Dir::Cache::Archives "%s";\nAPT::Keep-Downloaded-Packages "true";\n' "$HOME/apt-archives" \
             | sudo tee /etc/apt/apt.conf.d/99-kept-packages > /dev/null
+      - uses: ./.github/actions/ubuntu-mirror
       - name: Chromium and WebKit for Playwright
         run: npx playwright install --with-deps chromium webkit
       - name: apt's downloads given back to the runner, for the cache
@@ -84,6 +85,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
+      - uses: ./.github/actions/ubuntu-mirror
       - name: Chromium for Playwright
         run: npx playwright install --with-deps chromium
       - name: Build the site and the Phase 2 apps (local)

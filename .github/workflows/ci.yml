@@ -317,6 +317,7 @@ jobs:
       - name: The production site's publish gate
         run: node scripts/ci/site-production-gate.ts
       # The browser tests run local builds; production's pages are opened here, as built, before a release ships them.
+      - uses: ./.github/actions/ubuntu-mirror
       - name: Chromium for production's pages
         run: npx playwright install --with-deps chromium
       - name: Production's pages open without an error
@@ -371,6 +372,7 @@ jobs:
           mkdir -p ~/apt-archives/partial
           printf 'Dir::Cache::Archives "%s";\nAPT::Keep-Downloaded-Packages "true";\n' "$HOME/apt-archives" \
             | sudo tee /etc/apt/apt.conf.d/99-kept-packages > /dev/null
+      - uses: ./.github/actions/ubuntu-mirror
       - name: Chromium and WebKit for Playwright
         if: steps.browsers.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium webkit
