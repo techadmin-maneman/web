@@ -18,7 +18,7 @@ import { firstNameOf } from "@rules/lib/names.ts";
 import { useCallback, useState } from "react";
 import type { HairProfile, Job } from "../api.ts";
 import { job as copy, options as optionsCopy, profile as profileCopy } from "../content.ts";
-import { sayNow } from "../lang/index.ts";
+import { sayNow, theirs } from "../lang/index.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { keptDay } from "../store/jobs.ts";
@@ -188,7 +188,7 @@ export function JobCard({ job }: { job: Job }) {
         {job.access_notes !== null && <WayIn notes={job.access_notes} />}
         {client !== null && note !== null && (
           <p className={styles.note}>
-            <span className={styles.noteFrom}>{copy.noteFrom(firstNameOf(client.name))}</span>
+            <span className={styles.noteFrom}>{copy.noteFrom(theirs(firstNameOf(client.name)))}</span>
             {note}
           </p>
         )}

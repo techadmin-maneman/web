@@ -68,4 +68,4 @@ of `01-sign-in`, which no PR of the plan had named.
 ## Consequences
 
 - A new line in `content.ts` needs Hindi in `app-hi.json`, or a place on REPORT.md's list, before the test passes.
-- The catalogs travel in the technician app's bundle: 188.5 KB gzipped with them, of its 200 KB budget.
+- The catalogs travel in the technician app's bundle: 188.6 KB gzipped with them, of its 200 KB budget.

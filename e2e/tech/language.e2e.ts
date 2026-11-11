@@ -106,3 +106,27 @@ test("Me's Language row switches every screen without a reload, and a visit keep
   await expect(checklistItems(page).first()).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("body")).toHaveAttribute("data-same-load", "yes");
 });
+
+test("the close-out says what was decided in Hindi around ops' own reason, which stays as they wrote it", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.type = "consultation";
+  fake.lostReasons = [{ id: "moved_away", label: "Client moved to another city" }];
+  startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
+  await page.goto(`/jobs/${JOB_ID}/outcome`);
+  await page.getByRole("button", { name: /^Mane Man Essential/ }).click();
+  await stepAction(page).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.notNow }).click();
+  await page.getByRole("button", { name: "Client moved to another city" }).click();
+  await stepAction(page).click();
+  await expect(page.getByText(techCopy.closeOut.notNow("Client moved to another city"))).toBeVisible();
+  const closeOut = new URL(page.url()).pathname;
+
+  await goInApp(page, "/me");
+  await page.getByRole("button", { name: new RegExp(`^${techCopy.me.language}`) }).click();
+  await page.getByRole("dialog").getByRole("radio", { name: HINDI }).click();
+  await goInApp(page, closeOut);
+  await expect(page.getByText("अभी नहीं · Client moved to another city", { exact: true })).toBeVisible();
+});
