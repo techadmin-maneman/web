@@ -70,10 +70,7 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   reschedule_request: (facts) =>
     copy.reschedule_request(dayAndTime(facts.starts_at), copy.rescheduleReasons[facts.reason], facts.technician),
   kit_request: (facts) =>
-    copy.kit_request(
-      facts.technician,
-      facts.items.map((item) => `${item.name} ${amountOf(item.quantity, item.unit)}`).join(", "),
-    ),
+    copy.kit_request(facts.items.map((item) => `${item.name} ${amountOf(item.quantity, item.unit)}`).join(", ")),
   leave_request: (facts) =>
     copy.leave_request(
       facts.from === facts.to ? shortDate(facts.from) : tasks.leave.days(shortDate(facts.from), shortDate(facts.to)),

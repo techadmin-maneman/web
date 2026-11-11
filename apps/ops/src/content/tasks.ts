@@ -180,8 +180,8 @@ export const tasks = {
       running_late: "Running late",
       kit_problem: "Kit problem",
     },
-    /** "Imran Qureshi · Shampoo sachet 6 sachets, Solvent 40 ml": what the kit is short of, for its next transfer. */
-    kit_request: (technician: string, items: string) => `${technician} · ${items}`,
+    /** "Shampoo sachet 6 sachets, Solvent 40 ml": what the kit is short of, for its next transfer; whose heads the row. */
+    kit_request: (items: string) => items,
     /** "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
     leave_conflict: (when: string, technician: string) => `${when} · ${technician} is away`,
     /** "Sat 26 Sep to Mon 28 Sep · Sister's wedding" */
