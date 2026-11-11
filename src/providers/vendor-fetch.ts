@@ -20,6 +20,7 @@ const VENDOR_NAMES = {
   "cloudflare-analytics": "Cloudflare analytics",
   "chat-webhook": "Chat webhook",
   healthchecks: "Heartbeat monitor",
+  "web-push": "Web push",
 } as const;
 
 export type Vendor = keyof typeof VENDOR_NAMES;

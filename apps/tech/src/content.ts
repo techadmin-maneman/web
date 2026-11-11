@@ -1156,6 +1156,50 @@ export const schedule = {
   },
 };
 
+/**
+ * Alerts, from Today's bell and from Me (./alerts/AlertsScreen.tsx): the inbox, newest first, and which kinds are sent.
+ * Each alert's words in the inbox; on the lock screen, the worker's own (../sw/notice.ts).
+ */
+export const alerts = {
+  title: "Alerts",
+  /** The bell's name, with how many are new. */
+  bell: (unread: number) => (unread === 0 ? "Alerts" : `Alerts, ${String(unread)} new`),
+  none: "No alerts in the last 7 days.",
+  failed: "Alerts didn’t load.",
+  retry: "Try again",
+  sendMe: "Send me",
+  /** Me's row: "4 on" */
+  on: (count: number) => `${String(count)} on`,
+  kinds: {
+    time_to_leave: { label: "Time to leave", sub: "10 min before you need to set off" },
+    day_ahead: { label: "Day ahead", sub: "At 8 pm, the next day’s jobs" },
+    job_changes: { label: "Job changes", sub: "Moved, cancelled or reassigned" },
+    running_over: { label: "Running over", sub: "When a visit will make you late for the next" },
+  },
+  settingFailed: "Not saved. Try again with signal.",
+  /** "Leave in 10 min for Rohit M." */
+  leave: (minutes: number, client: string) => `Leave in ${String(minutes)} min for ${client}`,
+  /** "18 min drive to Sector 65" */
+  drive: (minutes: number, sector: string) => `${String(minutes)} min drive to ${sector}`,
+  /** "Sameer J. moved to 4:15 pm" */
+  moved: (client: string, time: string) => `${client} moved to ${time}`,
+  cancelled: (client: string) => `${client}’s visit cancelled`,
+  reassigned: (client: string) => `${client} moved to another technician`,
+  /** "First fit · Sector 43 · was 2 pm" */
+  was: (parts: readonly string[], time: string) => [...parts, `was ${time}`].join(" · "),
+  /** "Running over · finish by 11:10 am" */
+  over: (finishBy: string) => `Running over · finish by ${finishBy}`,
+  /** "for the 11:30 am job, Sector 65" */
+  overNext: (next: string, sector: string) => `for the ${next} job, ${sector}`,
+  /** "Tomorrow: 4 jobs from 9:30 am" */
+  dayAhead: (jobs: number, first: string) => `Tomorrow: ${counted(jobs, "job", "jobs")} from ${first}`,
+  /** "First: Rohit M., Sector 65" */
+  first: (client: string, sector: string) => `First: ${client}, ${sector}`,
+  /** When it came: "9:02 am", "Yesterday, 8 pm", "Mon 9 Nov, 8 pm" */
+  yesterday: (time: string) => `Yesterday, ${time}`,
+  earlier: (day: string, time: string) => `${day}, ${time}`,
+} as const;
+
 /** Guides, from Me: each kind of visit's steps, and each task read alone (./guides/GuidesScreen.tsx). */
 export const guides = {
   title: "Guides",
