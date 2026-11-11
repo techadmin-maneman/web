@@ -81,7 +81,7 @@ this map, or when the map names something that no longer exists.
 
 ### Technicians' pay
 
-- **Database work** (`src/domain/field/`): `technician-pay`, `pay-statement` (the month's pay at those rates, and its CSV)
+- **Database work** (`src/domain/field/`): `technician-pay`, `pay-statement` (the month's pay at those rates, and its CSV), `quality` (their on-time visits and redo rate, for Me)
 - **Routes** (`src/routes/`): `ops/technician-pay`
 - **Screens:** `apps/ops/src/technician-pay/TechnicianPay.tsx`, `apps/ops/src/technician-pay/PayRates.tsx`,
   `apps/ops/src/technician-pay/PayForms.tsx`

@@ -455,6 +455,38 @@
             "type": "string",
             "description": "For the chip at the head of Today: the first and last initials."
           },
+          "grade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Their grade, as Finance names it; null for none."
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mobile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Their own number, E.164, as ops keep it."
+          },
           "device": {
             "type": "object",
             "properties": {
@@ -491,6 +523,9 @@
           "name",
           "first_name",
           "initials",
+          "grade",
+          "city",
+          "mobile",
           "device"
         ],
         "additionalProperties": false
@@ -4413,6 +4448,38 @@
         ],
         "additionalProperties": false,
         "description": "The visits closed in the month, by kind and city, at the rate in force."
+      },
+      "TechnicianQuality": {
+        "type": "object",
+        "properties": {
+          "visits": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Visits checked in, booked in the last 30 days."
+          },
+          "on_time": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Of them, those checked in by the booked start."
+          },
+          "fits": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "First fits done in the last 30 days."
+          },
+          "redone": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Of them, those followed by another first fit within 30 days."
+          }
+        },
+        "required": [
+          "visits",
+          "on_time",
+          "fits",
+          "redone"
+        ],
+        "additionalProperties": false
       },
       "TechnicianLeaveRequests": {
         "type": "object",
@@ -10546,6 +10613,63 @@
                       "additionalProperties": {}
                     }
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required; device_revoked; technician_inactive: ops switched the technician off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required",
+                                "device_revoked",
+                                "technician_inactive"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tech/quality": {
+      "get": {
+        "summary": "The technician's on-time visits and hairline redo rate over the last 30 days",
+        "responses": {
+          "200": {
+            "description": "Their counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianQuality"
                 }
               }
             }

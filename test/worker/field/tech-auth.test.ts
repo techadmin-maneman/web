@@ -321,6 +321,9 @@ describe("a signed-in phone", () => {
       name: "Imran Qureshi",
       first_name: "Imran",
       initials: "IQ",
+      grade: null,
+      city: null,
+      mobile: "+919810000009",
       device: { device_id: DEVICE, label: null, enrolled_at: NOW.toISOString() },
     });
   });

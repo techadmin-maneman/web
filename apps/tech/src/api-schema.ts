@@ -3598,6 +3598,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The technician's on-time visits and hairline redo rate over the last 30 days */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Their counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianQuality"];
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/leave": {
         parameters: {
             query?: never;
@@ -4003,6 +4057,11 @@ export interface components {
             first_name: string;
             /** @description For the chip at the head of Today: the first and last initials. */
             initials: string;
+            /** @description Their grade, as Finance names it; null for none. */
+            grade: string | null;
+            city: string | null;
+            /** @description Their own number, E.164, as ops keep it. */
+            mobile: string | null;
             device: {
                 /** @description The phone's own ID, as it sent it at sign-in. */
                 device_id: string;
@@ -4918,6 +4977,16 @@ export interface components {
                 /** @description Paise in all; null where none was. */
                 amount: number | null;
             }[];
+        };
+        TechnicianQuality: {
+            /** @description Visits checked in, booked in the last 30 days. */
+            visits: number;
+            /** @description Of them, those checked in by the booked start. */
+            on_time: number;
+            /** @description First fits done in the last 30 days. */
+            fits: number;
+            /** @description Of them, those followed by another first fit within 30 days. */
+            redone: number;
         };
         /** @description The asks not yet past, the latest first. */
         TechnicianLeaveRequests: {

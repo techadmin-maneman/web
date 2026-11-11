@@ -4922,6 +4922,56 @@ The technician's visits in a month, and what they earned at their rates
 }
 ```
 
+### GET /api/tech/quality
+
+The technician's on-time visits and hairline redo rate over the last 30 days
+
+**200**: Their counts
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianQuality"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/tech/leave
 
 The technician's asks for leave not yet past, and where each stands
@@ -5782,6 +5832,38 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "type": "string",
       "description": "For the chip at the head of Today: the first and last initials."
     },
+    "grade": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Their grade, as Finance names it; null for none."
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mobile": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Their own number, E.164, as ops keep it."
+    },
     "device": {
       "type": "object",
       "properties": {
@@ -5818,6 +5900,9 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "name",
     "first_name",
     "initials",
+    "grade",
+    "city",
+    "mobile",
     "device"
   ],
   "additionalProperties": false
@@ -10000,6 +10085,43 @@ One of the client's try-on looks, under the card's own unlock, never cached
   ],
   "additionalProperties": false,
   "description": "The visits closed in the month, by kind and city, at the rate in force."
+}
+```
+
+### TechnicianQuality
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Visits checked in, booked in the last 30 days."
+    },
+    "on_time": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Of them, those checked in by the booked start."
+    },
+    "fits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "First fits done in the last 30 days."
+    },
+    "redone": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Of them, those followed by another first fit within 30 days."
+    }
+  },
+  "required": [
+    "visits",
+    "on_time",
+    "fits",
+    "redone"
+  ],
+  "additionalProperties": false
 }
 ```
 
