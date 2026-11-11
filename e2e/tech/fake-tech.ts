@@ -136,6 +136,8 @@ export interface Fake {
   readonly positions: unknown[];
   /** The technician's SOS not yet handled; none unless the phone raised one or a test gives one. */
   sos: { readonly id: string; readonly sent_at: string; readonly safe: boolean } | null;
+  /** Milliseconds the read of the technician's SOS takes, answering what was open when it was asked. */
+  slowSosReadMs: number;
   /** Set to refuse an SOS and its "I'm safe", as with no signal neither reaches the API. */
   sosRefused: boolean;
   /** True for a past visit whose card has locked again, the day after it: no client, no address. */
@@ -309,6 +311,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     closedByOps: false,
     positions: [],
     sos: null,
+    slowSosReadMs: 0,
     sosRefused: false,
     relocked: false,
     history: { alerts: [], visits: [] },
@@ -561,7 +564,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, ME);
     }
     if (path === "/api/tech/kit") return reply(route, 200, { ...fake.kit, today });
-    if (path === "/api/tech/sos") return reply(route, 200, { sos: fake.sos });
+    if (path === "/api/tech/sos") {
+      const open = fake.sos;
+      if (fake.slowSosReadMs > 0) await new Promise((resolve) => setTimeout(resolve, fake.slowSosReadMs));
+      return reply(route, 200, { sos: open });
+    }
     if (path === "/api/tech/month") return reply(route, 200, fake.month);
     if (method === "GET" && path === "/api/tech/leave") return reply(route, 200, fake.leave);
     if (path === "/api/tech/jobs") {

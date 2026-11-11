@@ -187,6 +187,15 @@ describe("an SOS", () => {
     expect(await (await job.get("/api/tech/sos")).json()).toMatchObject({ sos: { id, safe: false } });
   });
 
+  it("keeps the last position heard when raised again with none", async () => {
+    const job = await checkedIn();
+    const { id } = await (await raise(job)).json<{ id: string }>();
+    await job.post(`/api/tech/sos/${id}/safe`, undefined, "safe");
+    await raise(job, null);
+    const { open } = await (await job.opsGet("/api/sos")).json<{ open: unknown[] }>();
+    expect(open[0]).toMatchObject({ id, safe_at: null, position: { lat: AT_THE_DOOR.lat } });
+  });
+
   it("is raised again on the visit and with the position it carries, not the first one's", async () => {
     const job = await checkedIn();
     const { id } = await (await raise(job)).json<{ id: string }>();

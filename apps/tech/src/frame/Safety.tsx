@@ -170,6 +170,8 @@ function useSos(jobId: string | null) {
       raised.current += 1;
       setSafeFailed(false);
       const answer = await api.sos(jobId, await readPosition("quick"));
+      // A read that set out while this one was on its way answers from before it.
+      raised.current += 1;
       if (!answer.ok) {
         setSos({ state: "failed" });
         return;

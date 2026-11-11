@@ -46,6 +46,15 @@ test("an SOS shows over every screen, with whose it is, the visit and a map, unt
   await expect(banner).toHaveCount(0);
 });
 
+test("names the visit by its time where its client has since been erased", async ({ page }) => {
+  const erased = { ...SOS, visit: SOS.visit === null ? null : { ...SOS.visit, client_name: null } };
+  await answer(page, { "GET /api/sos": json({ open: [erased] }) });
+  await page.goto("/settings/cities");
+  const banner = page.getByRole("alert").filter({ hasText: shell.sos.title("Imran Qureshi", "12:11 pm") });
+  await expect(banner).toContainText(shell.sos.visit(null, "11:30 am"));
+  await expect(banner).not.toContainText("’s visit");
+});
+
 test("says when the technician said they are safe", async ({ page }) => {
   await answer(page, { "GET /api/sos": json({ open: [{ ...SOS, safe_at: "2026-09-21T06:45:00.000Z" }] }) });
   await page.goto("/settings/cities");

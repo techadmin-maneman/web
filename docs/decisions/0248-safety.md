@@ -40,7 +40,7 @@ sent every two minutes.
    open is the same SOS, and pages nobody again. The phone vibrates once it is sent.
 5. **While it is open,** each position the phone sends updates it too. The phone shows "SOS sent <time>" and
    "I'm safe". "I'm safe" records `safe_at` and tells the urgent space once (`sos_safe:<id>`); the SOS stays open. Held
-   again after "I'm safe", it is raised again from that moment, on the visit and with the position it carries. Each
+   again after "I'm safe", it is raised again from that moment, on the visit it carries, its position brought up to date where it carries a later one. Each
    page goes again at most once in five minutes (`PAGE_AGAIN_AFTER_MINUTES`, kept in `paged_at` and `safe_paged_at`),
    so a session cannot flood the urgent space, but an SOS raised again after a "safe" ops were told is always paged:
    ops' last word is never "safe" while an SOS stands. Between pages the banner says where the SOS stands. If "I'm safe" does not reach the API, the sheet

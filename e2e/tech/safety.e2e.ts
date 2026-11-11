@@ -125,6 +125,20 @@ test("still says the location is shared once a check-in made with no signal land
   await expect(page.getByText(safety.sharing)).toBeVisible();
 });
 
+test("a slow read from before the SOS never undoes it", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await atTheDoor(page);
+  startedThrough(fake, "before_photos");
+  fake.slowSosReadMs = 6000;
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+  await page.getByRole("button", { name: safety.open }).click();
+  await hold(page, 3400);
+  await expect(page.getByText(safety.sentBody)).toBeVisible();
+  // The read asked as the sheet opened answers "none open" after the SOS landed.
+  await page.waitForTimeout(3500);
+  await expect(page.getByText(safety.sentBody)).toBeVisible();
+});
+
 test("an SOS that cannot go says to call ops or 112 now", async ({ page }) => {
   const fake = await onAStep(page);
   fake.sosRefused = true;
