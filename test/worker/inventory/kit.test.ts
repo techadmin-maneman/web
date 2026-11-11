@@ -221,6 +221,37 @@ describe("what the kit holds fit to use", () => {
   });
 });
 
+describe("handing back expired stock", () => {
+  it("sends what Return to ops lists, the lots within the kit's count, and leaves what is fit to use", async () => {
+    await job.opsPost("/api/consumables", { name: "Solvent", unit: "ml", unit_cost: 50 });
+    // Used on a job before the kit held any: its count goes below nought while its lots hold nothing.
+    await job.workTo("consumables");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [{ code: "solvent", quantity: 2 }] }, "event-use-01");
+    for (const [lot, expires] of [
+      ["SV-OLD", "2026-09-20"],
+      ["SV-NEW", "2027-12-31"],
+    ] as const) {
+      await job.opsPost("/api/stock/deliveries", {
+        consumable_code: "solvent",
+        quantity: 5,
+        lot_code: lot,
+        expires_on: expires,
+      });
+    }
+    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 10, from: "central", to: IMRAN });
+
+    type Held = { code: string; quantity: number; usable: number; lots: { lot_code: string; quantity: number }[] };
+    const solventOf = async (answer: Response) =>
+      (await answer.json<{ held: Held[] }>()).held.find((item) => item.code === "solvent");
+    const before = await solventOf(await job.get("/api/tech/kit"));
+    // Count 8; the lots hold 10, so the 2 over come off the expired lot, which lists 3 to hand back.
+    expect(before).toMatchObject({ quantity: 8, usable: 5 });
+    const after = await solventOf(await job.post("/api/tech/kit/hand-back", { pieces: [], expired: true }, "kit-back"));
+    expect(after).toMatchObject({ quantity: 5, usable: 5 });
+    expect(after?.lots.map((lot) => lot.lot_code)).toEqual(["SV-NEW"]);
+  });
+});
+
 describe("the kit's hair systems", () => {
   it("leaves out one it holds none of, and never calls one running low", async () => {
     await job.opsPost(`/api/consumables/${code}`, { reorder_kit: 2 });

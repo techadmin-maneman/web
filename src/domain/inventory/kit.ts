@@ -95,7 +95,7 @@ type ComingRow = {
  * total below zero but never its lots, so a delivery after it left the lots above the total: what is over came off the
  * soonest to expire, which go first.
  */
-function lotsWithin(lots: readonly KitLot[], held: number): KitLot[] {
+function lotsWithin<Lot extends { readonly quantity: number }>(lots: readonly Lot[], held: number): Lot[] {
   let over = lots.reduce((sum, lot) => sum + lot.quantity, 0) - Math.max(held, 0);
   return lots.flatMap((lot) => {
     const cut = Math.min(Math.max(over, 0), lot.quantity);
@@ -301,8 +301,9 @@ function piecesHandedIn(
 }
 
 /**
- * Each lot of expired stock a kit holds, recalled stock among it (docs/decisions/0187-recalls.md): what each lot that
- * expired before today or was recalled holds, and of a stock code no more in all than its balance.
+ * Each lot of expired stock a kit holds, recalled stock among it (docs/decisions/0187-recalls.md), as the kit lists it
+ * under Return to ops: every lot of a code read in the kit's own order and kept within its balance as `lotsWithin`
+ * keeps it, the excess off the soonest to expire, and of those the ones expired before today or recalled.
  */
 async function expiredHeld(
   db: D1Database,
@@ -311,20 +312,27 @@ async function expiredHeld(
 ): Promise<{ readonly code: string; readonly lotId: string; readonly quantity: number }[]> {
   const { results } = await db
     .prepare(
-      `SELECT l.consumable_code AS code, l.id AS lot_id, b.quantity,
+      `SELECT l.consumable_code AS code, l.id AS lot_id, l.expires_on, l.recalled_at IS NOT NULL AS recalled, b.quantity,
          COALESCE((SELECT quantity FROM stock_balances
            WHERE consumable_code = l.consumable_code AND place = ?1), 0) AS balance
        FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
-       WHERE b.place = ?1 AND b.quantity > 0 AND (l.expires_on < ?2 OR l.recalled_at IS NOT NULL)
-       ORDER BY l.consumable_code, l.expires_on, l.id`,
+       WHERE b.place = ?1 AND b.quantity > 0
+       ORDER BY l.expires_on IS NULL, l.expires_on, l.received_at`,
     )
-    .bind(kit, today)
-    .all<{ code: string; lot_id: string; quantity: number; balance: number }>();
-  const left = new Map<string, number>();
-  return results.flatMap((row) => {
-    const room = left.get(row.code) ?? Math.max(row.balance, 0);
-    const quantity = Math.min(row.quantity, room);
-    left.set(row.code, room - quantity);
-    return quantity > 0 ? [{ code: row.code, lotId: row.lot_id, quantity }] : [];
+    .bind(kit)
+    .all<{
+      code: string;
+      lot_id: string;
+      expires_on: string | null;
+      recalled: number;
+      quantity: number;
+      balance: number;
+    }>();
+  const codes = [...new Set(results.map((row) => row.code))];
+  return codes.flatMap((code) => {
+    const lots = results.filter((row) => row.code === code);
+    return lotsWithin(lots, lots[0]?.balance ?? 0)
+      .filter((lot) => lot.recalled === 1 || (lot.expires_on !== null && lot.expires_on < today))
+      .map((lot) => ({ code, lotId: lot.lot_id, quantity: lot.quantity }));
   });
 }
