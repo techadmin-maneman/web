@@ -25,6 +25,7 @@ const PAYMENT_LINK_STATES: Readonly<Record<LinkState, string>> = {
 const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   untold_move: "Open in Dispatch",
   move_unanswered: "Open in Dispatch",
+  reschedule_request: "Move in Dispatch",
   unanswered_chat: "Answer in Messages",
   remedy_approval: "Decide in Messages",
   leave_conflict: "Move in Dispatch",
@@ -76,6 +77,8 @@ export const tasks = {
     untold_move: "Call about a move",
     // Not drawn: a move to another day the client has not answered (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
     move_unanswered: "Move not answered",
+    // A group the board does not draw (docs/decisions/0249-schedule-kit-and-me.md).
+    reschedule_request: "Technician asks to move",
     visit_left_open: "Visit left open",
     unassigned_visit: "No technician",
     // Not drawn: a client wearing a recalled piece (docs/decisions/0187-recalls.md).
@@ -100,6 +103,8 @@ export const tasks = {
     partial_visit: "Partly done visit",
     // A group the board does not draw (docs/decisions/0222-consumables-short-of-expected.md).
     consumables_short: "Consumables short",
+    // A group the board does not draw.
+    kit_request: "Kit request",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
     // A group the Tasks design does not draw; the Payments design letters the card "Disputed charge".
@@ -168,6 +173,15 @@ export const tasks = {
       open: (when: string) => `Asked to move to ${when}`,
       ranOut: (when: string) => `Asked to move to ${when} · expired`,
     },
+    /** "Wed 23 Sep, 10:30 am · Client asked · Imran Qureshi": call the client, then move it on the dispatch board. */
+    reschedule_request: (when: string, reason: string, technician: string) => `${when} · ${reason} · ${technician}`,
+    rescheduleReasons: {
+      client_asked: "Client asked to move",
+      running_late: "Running late",
+      kit_problem: "Kit problem",
+    },
+    /** "Imran Qureshi · Shampoo sachet 6 sachets, Solvent 40 ml": what the kit is short of, for its next transfer. */
+    kit_request: (technician: string, items: string) => `${technician} · ${items}`,
     /** "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
     leave_conflict: (when: string, technician: string) => `${when} · ${technician} is away`,
     /** "Sat 26 Sep to Mon 28 Sep · Sister's wedding" */
@@ -332,6 +346,10 @@ export const tasks = {
     atRisk: { open: "Close", label: "What came of the call" },
     /** Consumables short close once checked against the kit. */
     consumablesShort: { open: "Checked", label: "What the kit showed" },
+    /** A kit request closes once what it asked for is sent, or with why not. */
+    kitRequest: { open: "Sent", label: "What was sent" },
+    /** A technician's ask to move a visit closes with what was agreed with the client. */
+    reschedule: { open: "Close", label: "What was agreed" },
     confirm: "Close task",
     closing: "Closing…",
     errors: {

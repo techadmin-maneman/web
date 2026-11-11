@@ -49341,6 +49341,7 @@ Request body:
             "enum": [
               "untold_move",
               "move_unanswered",
+              "reschedule_request",
               "visit_left_open",
               "unassigned_visit",
               "recall_call",
@@ -49357,6 +49358,7 @@ Request body:
               "at_risk_client",
               "partial_visit",
               "consumables_short",
+              "kit_request",
               "referral_review",
               "no_show_decision",
               "no_show_dispute",
@@ -50034,6 +50036,93 @@ Request body:
       "required": [
         "group",
         "starts_at"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "reschedule_request"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "technician": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "client_asked",
+            "running_late",
+            "kit_problem"
+          ]
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "starts_at",
+        "technician",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "kit_request"
+          ]
+        },
+        "technician": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "unit",
+              "quantity"
+            ],
+            "additionalProperties": false
+          },
+          "description": "What the kit was short of when asked, by the job sheet's counts."
+        }
+      },
+      "required": [
+        "group",
+        "technician",
+        "items"
       ],
       "additionalProperties": false
     },

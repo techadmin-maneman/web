@@ -224,6 +224,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     client_alerts: [],
     handoff: null,
     sent_back: [],
+    reschedule_asked: null,
   };
 };
 

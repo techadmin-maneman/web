@@ -1149,6 +1149,19 @@ export const schedule = {
   },
 };
 
+/** Ask ops to reschedule, from the job (./job/Reschedule.tsx). */
+export const reschedule = {
+  open: "Ask ops to reschedule",
+  why: "Why",
+  reasons: { client_asked: "Client asked", running_late: "I’m running late", kit_problem: "Kit problem" },
+  send: "Send to ops",
+  close: "Close",
+  needsSignal: "Needs signal",
+  failed: "That didn’t reach ops. Try again.",
+  /** "Reschedule asked 9:05 am · Client asked · ops will confirm with the client" */
+  asked: (time: string, reason: string) => `Reschedule asked ${time} · ${reason} · ops will confirm with the client`,
+} as const;
+
 /** Each kind of visit as Me's incentives name it (./me/Standing.tsx). */
 export const month = {
   kinds: {
@@ -1214,6 +1227,10 @@ export const kit = {
   notDone: "That didn’t go through. Try again.",
   forecast: {
     title: "Next 7 days",
+    request: "Request what’s short",
+    /** "Requested 9:05 am · ops will add it to your next transfer" */
+    requested: (time: string) => `Requested ${time} · ops will add it to your next transfer`,
+    requestFailed: "That didn’t reach ops. Try again.",
     none: "Nothing booked needs consumables.",
     item: "Item",
     need: "Need",

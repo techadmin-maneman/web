@@ -222,6 +222,15 @@ export const api = {
   kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),
   /** This month's visits closed, by kind and city, at the technician's own rates. */
   month: () => client.get("/api/tech/month", { patience: PATIENCE_MS.read }),
+  /** Asks ops for what the kit is short of over the next seven days, as the API finds it. Asked straight, with signal. */
+  kitRequest: () => client.post("/api/tech/kit/requests", { patience: PATIENCE_MS.write }),
+  /** Asks ops to move a visit, with why. Asked straight, with signal. */
+  reschedule: (jobId: string, reason: "client_asked" | "running_late" | "kit_problem") =>
+    client.post("/api/tech/jobs/{id}/reschedule-request", {
+      path: { id: jobId },
+      body: { reason },
+      patience: PATIENCE_MS.write,
+    }),
   /** The technician's on-time visits and hairline redo rate over the last 30 days. */
   quality: () => client.get("/api/tech/quality", { patience: PATIENCE_MS.read }),
   /** A consultation's packages and what each costs the client, and the looks they made with the try-on. */

@@ -148,6 +148,8 @@ const REDRAWN = [
   "apps/tech/src/job/JobCard.tsx",
   "apps/tech/src/job/job-screen.module.css",
   "apps/tech/src/job/JobScreen.tsx",
+  "apps/tech/src/job/reschedule.module.css",
+  "apps/tech/src/job/Reschedule.tsx",
   "apps/tech/src/job/tell-client.module.css",
   "apps/tech/src/job/TellClient.tsx",
   "apps/tech/src/camera/door-camera.module.css",

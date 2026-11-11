@@ -124,6 +124,7 @@ const card = (id: string, date: string) =>
     client_alerts: [],
     handoff: null,
     sent_back: [],
+    reschedule_asked: null,
   }) as Job;
 
 const arrival = {

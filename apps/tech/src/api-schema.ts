@@ -3857,6 +3857,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/kit/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask ops for what the kit is short of over the next seven days, as the week ahead finds it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The technician's kit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianKit"];
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_changeable: the week ahead finds the kit short of nothing */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_changeable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/kit/hand-back": {
         parameters: {
             query?: never;
@@ -4056,6 +4128,120 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/jobs/{id}/reschedule-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask ops to move the visit, with why: a task on their board until they settle it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianRescheduleRequest"];
+                };
+            };
+            responses: {
+                /** @description The ask that stands, new or already open */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianRescheduleAsked"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such job of this technician's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_changeable: the visit is closed or called off */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_changeable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -4770,6 +4956,8 @@ export interface components {
             /** @description The client's alerts still on, newest first. */
             client_alerts: components["schemas"]["TechnicianClientAlert"][];
             handoff: components["schemas"]["Handoff"];
+            /** @description The technician's open ask that ops move the visit, until it is settled; null for none. */
+            reschedule_asked: components["schemas"]["TechnicianRescheduleAsked"] | null;
             /** @description The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and leaves this list once it has (ADR 0246). */
             sent_back: {
                 /** @enum {string} */
@@ -5008,6 +5196,12 @@ export interface components {
                 url: string;
             }[];
         } | null;
+        TechnicianRescheduleAsked: {
+            /** Format: date-time */
+            asked_at: string;
+            /** @enum {string} */
+            reason: "client_asked" | "running_late" | "kit_problem";
+        };
         /** @description The client's visits closed before this job, newest first, every one. */
         TechnicianClientHistory: {
             /** @description The client's alerts still on, newest first. */
@@ -5388,6 +5582,16 @@ export interface components {
                 /** @description What the kit holds of it now. */
                 have: number;
             }[];
+            /** @description The kit's ask of ops for what it is short of, open until ops settle it; null for none. */
+            asked: {
+                /** Format: date-time */
+                asked_at: string;
+                items: {
+                    name: string;
+                    unit: string;
+                    quantity: number;
+                }[];
+            } | null;
             /** Format: date */
             today: string;
         };
@@ -5433,6 +5637,13 @@ export interface components {
             fits: number;
             /** @description Of them, those followed by another first fit within 30 days. */
             redone: number;
+        };
+        TechnicianRescheduleRequest: {
+            /**
+             * @description The client asked, the technician is running late, or a problem with the kit.
+             * @enum {string}
+             */
+            reason: "client_asked" | "running_late" | "kit_problem";
         };
         /** @description The asks not yet past, the latest first. */
         TechnicianLeaveRequests: {

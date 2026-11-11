@@ -189,7 +189,7 @@ export function KitScreen() {
       )}
       {kit !== null && (
         <>
-          <Forecast forecast={kit.forecast} />
+          <Forecast kit={kit} offline={offline} onKit={setAfter} />
           <Arriving kit={kit} offline={offline} onKit={setAfter} />
           <ReturnToOps kit={kit} offline={offline} onKit={setAfter} />
           <InKit kit={kit} />

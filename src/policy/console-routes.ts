@@ -383,6 +383,8 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   at_risk_client: "customer_care",
   partial_visit: "operations",
   consumables_short: "operations",
+  kit_request: "operations",
+  reschedule_request: "operations",
   referral_review: "growth",
   no_show_decision: "finance",
   no_show_dispute: "finance",

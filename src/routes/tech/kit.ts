@@ -7,6 +7,7 @@ import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { handBack, kitView } from "../../domain/inventory/kit.ts";
 import { weekAheadOf } from "../../domain/inventory/kit-week.ts";
+import { askForKit, kitAskedOf } from "../../domain/inventory/kit-requests.ts";
 import { tellOfLowStock } from "../../domain/inventory/stock.ts";
 import { receiveTransfer } from "../../domain/inventory/stock-transit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -103,6 +104,21 @@ const KitSchema = z
           "The consumables the technician's visits from today to six days on are expected to use, by the job sheet, " +
           "against what the kit holds. Hair systems are left out.",
       }),
+    asked: z
+      .union([
+        z
+          .object({
+            asked_at: z.iso.datetime(),
+            items: z.array(
+              z.object({ name: z.string(), unit: z.string(), quantity: z.number().int().positive() }).strict(),
+            ),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description: "The kit's ask of ops for what it is short of, open until ops settle it; null for none.",
+      }),
     today: z.iso.date(),
   })
   .strict()
@@ -151,6 +167,17 @@ const receiveRoute = techRoute({
   },
 });
 
+const askRoute = techRoute({
+  method: "post",
+  path: "/api/tech/kit/requests",
+  summary: "Ask ops for what the kit is short of over the next seven days, as the week ahead finds it",
+  responses: {
+    200: KIT,
+    401: SIGNED_IN,
+    409: errorResponse("not_changeable: the week ahead finds the kit short of nothing"),
+  },
+});
+
 const handBackRoute = techRoute({
   method: "post",
   path: "/api/tech/kit/hand-back",
@@ -178,10 +205,11 @@ const handBackRoute = techRoute({
 
 async function kitAnswer(c: Context<AppEnv>, kit: string) {
   const today = indiaDate(c.var.deps.now());
-  const [view, { stockWatch }, forecast] = await Promise.all([
+  const [view, { stockWatch }, forecast, asked] = await Promise.all([
     kitView(c.env.DB, kit),
     opsInputs(c),
     weekAheadOf(c.env.DB, kit, today),
+    kitAskedOf(c.env.DB, kit),
   ]);
   const warnedBy = addDays(today, stockWatch.expiry_warning_days);
   const useFirst = (expiresOn: string | null) => expiresOn !== null && expiresOn >= today && expiresOn <= warnedBy;
@@ -217,6 +245,7 @@ async function kitAnswer(c: Context<AppEnv>, kit: string) {
       reason: piece.reason,
     })),
     forecast: forecast.map((item) => ({ ...item })),
+    asked: asked === null ? null : { asked_at: asked.asked_at, items: asked.items.map((item) => ({ ...item })) },
     today,
   };
 }
@@ -247,6 +276,15 @@ export function registerTechKit(app: App): void {
     );
     if (!settled.ok) return refuse(c, settled.code, settled.fields);
     await tellOfLowStock(c.env.DB, c.var.deps, { touched: [technicianId], lowered: [] });
+    return c.json(await kitAnswer(c, technicianId), 200);
+  });
+
+  app.openapi(askRoute, async (c) => {
+    const { technicianId } = technicianOf(c);
+    const now = c.var.deps.now();
+    const asked = await askForKit(c.env.DB, { kit: technicianId, today: indiaDate(now), now });
+    if (asked === "nothing_short") return refuse(c, "not_changeable");
+    c.var.log.info("kit_requested", { technician_id: technicianId, items: asked.items.length });
     return c.json(await kitAnswer(c, technicianId), 200);
   });
 

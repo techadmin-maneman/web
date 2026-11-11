@@ -5,6 +5,7 @@ import { FINISH_ASKS } from "../../policy/finish-the-work.ts";
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
+import { RESCHEDULE_REASONS } from "../../domain/dispatch/reschedule-requests.ts";
 
 const instant = z.iso.datetime();
 const day = z.iso.date();
@@ -53,6 +54,18 @@ export const TaskFactsSchema = z
       note: z.union([z.string(), z.null()]),
     }),
     facts("address_to_confirm", { starts_at: instant }),
+    facts("reschedule_request", {
+      kind,
+      starts_at: instant,
+      technician: z.string(),
+      reason: z.enum(RESCHEDULE_REASONS),
+    }),
+    facts("kit_request", {
+      technician: z.string(),
+      items: z
+        .array(z.object({ name: z.string(), unit: z.string(), quantity: z.number() }).strict())
+        .openapi({ description: "What the kit was short of when asked, by the job sheet's counts." }),
+    }),
     facts("partial_visit", {
       kind,
       reason_code: z.string().nullable(),

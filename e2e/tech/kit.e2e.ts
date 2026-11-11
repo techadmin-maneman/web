@@ -44,6 +44,7 @@ function withAKit(fake: Fake): void {
     ],
     returned: [{ piece_code: "MM-STD-4417-B", returned_at: "2030-07-01T05:00:00.000Z", reason: "Base lifting" }],
     forecast: [],
+    asked: null,
   };
 }
 
@@ -158,4 +159,10 @@ test("weighs the next seven days' need against the kit, a shortfall in red", asy
   await expect(days.getByRole("row", { name: /Shampoo sachet/ })).toContainText(copy.forecast.short(6));
   await expect(days.getByRole("row", { name: /Solvent/ })).toContainText(copy.forecast.enough);
   expect(await axeViolations(page)).toEqual([]);
+
+  // One tap asks ops for what is short; the kit then says when, until ops settle it.
+  await days.getByRole("button", { name: copy.forecast.request }).click();
+  await expect(days.getByRole("status")).toHaveText(/^Requested \d{1,2}(:\d{2})? [ap]m · ops will add it/);
+  expect(writesTo(fake, "kit/requests")).toHaveLength(1);
+  await expect(days.getByRole("button", { name: copy.forecast.request })).toHaveCount(0);
 });

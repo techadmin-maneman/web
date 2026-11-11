@@ -5286,6 +5286,92 @@ Request body:
 }
 ```
 
+### POST /api/tech/kit/requests
+
+Ask ops for what the kit is short of over the next seven days, as the week ahead finds it
+
+**200**: The technician's kit
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianKit"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: not_changeable: the week ahead finds the kit short of nothing
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_changeable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/tech/kit/hand-back
 
 Returned pieces, and the kit's expired stock, back to the place the kit hangs from
@@ -5498,6 +5584,172 @@ The technician's on-time visits and hairline redo rate over the last 30 days
                 "session_required",
                 "device_revoked",
                 "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/jobs/{id}/reschedule-request
+
+Ask ops to move the visit, with why: a task on their board until they settle it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianRescheduleRequest"
+}
+```
+
+**200**: The ask that stands, new or already open
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianRescheduleAsked"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such job of this technician's
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: not_changeable: the visit is closed or called off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_changeable"
               ]
             }
           },
@@ -7781,6 +8033,17 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "handoff": {
       "$ref": "#/components/schemas/Handoff"
     },
+    "reschedule_asked": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/TechnicianRescheduleAsked"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician's open ask that ops move the visit, until it is settled; null for none."
+    },
     "sent_back": {
       "type": "array",
       "items": {
@@ -7857,6 +8120,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "profile",
     "client_alerts",
     "handoff",
+    "reschedule_asked",
     "sent_back"
   ],
   "additionalProperties": false
@@ -8977,6 +9241,33 @@ One of the client's try-on looks, under the card's own unlock, never cached
     }
   ],
   "description": "The note the last technician left for this visit's; null for none."
+}
+```
+
+### TechnicianRescheduleAsked
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "asked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "client_asked",
+        "running_late",
+        "kit_problem"
+      ]
+    }
+  },
+  "required": [
+    "asked_at",
+    "reason"
+  ],
+  "additionalProperties": false
 }
 ```
 
@@ -10647,6 +10938,52 @@ One of the client's try-on looks, under the card's own unlock, never cached
       },
       "description": "The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out."
     },
+    "asked": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "asked_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "name",
+                  "unit",
+                  "quantity"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "asked_at",
+            "items"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The kit's ask of ops for what it is short of, open until ops settle it; null for none."
+    },
     "today": {
       "type": "string",
       "format": "date"
@@ -10657,6 +10994,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "coming",
     "returned",
     "forecast",
+    "asked",
     "today"
   ],
   "additionalProperties": false
@@ -10832,6 +11170,29 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "on_time",
     "fits",
     "redone"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianRescheduleRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "enum": [
+        "client_asked",
+        "running_late",
+        "kit_problem"
+      ],
+      "description": "The client asked, the technician is running late, or a problem with the kit."
+    }
+  },
+  "required": [
+    "reason"
   ],
   "additionalProperties": false
 }

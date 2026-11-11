@@ -128,6 +128,8 @@ export interface Fake {
   handoff: Card["handoff"];
   /** The steps ops sent back on the first job, with why (docs/decisions/0246-closed-and-sent-back.md); none to begin. */
   sentBack: Card["sent_back"];
+  /** The technician's open ask that ops move the first job; none to begin. */
+  rescheduleAsked: Card["reschedule_asked"];
   /** A one visit's payment link on the card; none to begin. */
   paymentLink: Card["payment_link"];
   /** Set to refuse the link texted again with this code, as the API does past three a day. */
@@ -271,7 +273,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     clientChoice: null,
     pieces: [],
     kitHairSystems: [],
-    kit: { held: [], coming: [], returned: [], forecast: [] },
+    kit: { held: [], coming: [], returned: [], forecast: [], asked: null },
     kitAfter: null,
     profile: null,
     checklist: CHECKLIST,
@@ -309,6 +311,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     alerts: [],
     handoff: null,
     sentBack: [],
+    rescheduleAsked: null,
     paymentLink: null,
     resendRefused: null,
     closedByOps: false,
@@ -360,6 +363,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       handoff: fake.handoff,
       sentBack: fake.sentBack,
       paymentLink: fake.paymentLink,
+      rescheduleAsked: fake.rescheduleAsked,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -455,6 +459,20 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         if (fake.sosRefused) return route.abort("internetdisconnected");
         fake.sos = { ...fake.sos, safe: true };
         return reply(route, 204);
+      }
+      // The technician's asks of ops go straight, never queued (docs/decisions/0249-schedule-kit-and-me.md).
+      if (path === "/api/tech/kit/requests") {
+        fake.writes.push({ path, eventId, startsAt, body: null });
+        const items = fake.kit.forecast
+          .filter((item) => item.need > Math.max(item.have, 0))
+          .map((item) => ({ name: item.name, unit: item.unit, quantity: item.need - Math.max(item.have, 0) }));
+        fake.kit = { ...fake.kit, asked: { asked_at: new Date().toISOString(), items } };
+        return reply(route, 200, { ...fake.kit, today: todayInIndia() });
+      }
+      if (path === `/api/tech/jobs/${JOB_ID}/reschedule-request`) {
+        const body = route.request().postDataJSON() as { reason: "client_asked" | "running_late" | "kit_problem" };
+        fake.writes.push({ path, eventId, startsAt, body });
+        return reply(route, 200, { asked_at: new Date().toISOString(), reason: body.reason });
       }
       // The kit's writes are asked straight, never queued (docs/decisions/0164-the-kit-screen.md).
       if (path.startsWith("/api/tech/kit/")) {

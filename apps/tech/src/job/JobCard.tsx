@@ -22,6 +22,7 @@ import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { keptDay } from "../store/jobs.ts";
 import { ClientRecord } from "./ClientRecord.tsx";
+import { Reschedule } from "./Reschedule.tsx";
 import { TellClient } from "./TellClient.tsx";
 import styles from "./job-card.module.css";
 
@@ -191,6 +192,7 @@ export function JobCard({ job }: { job: Job }) {
           </p>
         )}
         <TellClient job={job} />
+        <Reschedule job={job} />
       </section>
       <ClientRecord job={job} />
       <ProfileSection profile={job.profile} />

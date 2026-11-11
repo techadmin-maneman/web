@@ -6,6 +6,7 @@ import type { FinishAsk } from "../../policy/finish-the-work.ts";
 import { PARTIAL_REASONS } from "../../config/job-sheet.ts";
 import type { BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
+import type { RescheduleReason } from "../dispatch/reschedule-requests.ts";
 import { offeredWindow } from "../../policy/next-visit.ts";
 import type { TaskGroup } from "../../policy/tasks.ts";
 import type { SlotSchedule } from "../booking/slot-times.ts";
@@ -50,6 +51,19 @@ export type TaskFacts =
       readonly note: string | null;
     }
   | { readonly group: "address_to_confirm"; readonly starts_at: Instant }
+  | {
+      readonly group: "reschedule_request";
+      readonly kind: VisitType;
+      readonly starts_at: Instant;
+      readonly technician: string;
+      readonly reason: RescheduleReason;
+    }
+  | {
+      readonly group: "kit_request";
+      readonly technician: string;
+      /** What the kit was short of when asked, by the job sheet's counts. */
+      readonly items: { name: string; unit: string; quantity: number }[];
+    }
   | {
       readonly group: "partial_visit";
       readonly kind: VisitType;

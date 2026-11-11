@@ -370,6 +370,7 @@ export interface CardOptions {
   readonly handoff?: Card["handoff"];
   readonly sentBack?: Card["sent_back"];
   readonly paymentLink?: Card["payment_link"];
+  readonly rescheduleAsked?: Card["reschedule_asked"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -428,6 +429,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     client_alerts: options.alerts ?? [],
     handoff: options.handoff ?? null,
     sent_back: options.sentBack ?? [],
+    reschedule_asked: options.rescheduleAsked ?? null,
   };
 }
 
@@ -461,6 +463,7 @@ export function lockedCard(date: string): Card {
     client_alerts: [],
     handoff: null,
     sent_back: [],
+    reschedule_asked: null,
   };
 }
 

@@ -5,6 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, NOW } from "../helpers.ts";
+import { aVisit } from "../fixtures/index.ts";
 import { AT, writeRow } from "../fixtures/rows.ts";
 import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 
@@ -34,12 +35,7 @@ async function checkedInAt(at: string, starts: string): Promise<void> {
 
 /** Another first fit for the same client, by `technician`, `daysAgo` days ago. */
 const fittedAgain = (technician: string, daysAgo: number) =>
-  env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
-     VALUES (?1, ?1, ?2, 'first_fit', 'scheduled', ?3, ?3, ?4, ?5)`,
-  )
-    .bind(crypto.randomUUID(), PERSON, ago(daysAgo * DAY), technician, AT)
-    .run();
+  aVisit({ person_id: PERSON, type: "first_fit", window_start: ago(daysAgo * DAY), technician_id: technician });
 
 describe("the technician's quality", () => {
   it("counts a visit checked in by its booked start on time", async () => {

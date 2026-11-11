@@ -265,7 +265,9 @@ const HAS_WORK = `(EXISTS (SELECT 1 FROM appointments WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM move_proposals WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM slot_claims WHERE technician_id = ?1)
   OR EXISTS (SELECT 1 FROM stock_movements WHERE technician_id = ?1)
-  OR EXISTS (SELECT 1 FROM sos_alerts WHERE technician_id = ?1))`;
+  OR EXISTS (SELECT 1 FROM sos_alerts WHERE technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM kit_requests WHERE technician_id = ?1)
+  OR EXISTS (SELECT 1 FROM reschedule_requests WHERE technician_id = ?1))`;
 
 /**
  * Deletes a technician nothing records any work of, with what is theirs alone, all in one batch with the audit entry.
