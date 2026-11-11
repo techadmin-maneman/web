@@ -233,6 +233,11 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('kr1', 't1', '[{"code":"strip","quantity":2}]', '${AT}')`,
   `INSERT INTO reschedule_requests (id, appointment_id, technician_id, reason, requested_at)
      VALUES ('rr1', 'ap2', 't1', 'client_asked', '${AT}')`,
+  `INSERT INTO tech_alerts (id, technician_id, kind, appointment_id, date, starts_at, once_key, sent_at)
+     VALUES ('al1', 't1', 'time_to_leave', 'ap1', '2026-09-22', '${AT}', 'time_to_leave:ap1', '${AT}')`,
+  `INSERT INTO tech_alert_kinds_off (technician_id, kind, set_at) VALUES ('t1', 'day_ahead', '${AT}')`,
+  `INSERT INTO push_subscriptions (device_id, endpoint, subscribed_at)
+     VALUES ('d1', 'https://fcm.googleapis.com/fcm/send/phone-1', '${AT}')`,
   `INSERT INTO step_send_backs (id, appointment_id, kind, reason, sent_by, sent_at)
      VALUES ('sb1', 'ap1', 'checklist', 'Tick the scalp check.', 'ops@example.com', '${AT}')`,
   // A setting changed in the console: ops_settings_snapshot follows it.

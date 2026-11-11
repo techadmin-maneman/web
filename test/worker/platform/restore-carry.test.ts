@@ -148,6 +148,7 @@ describe("restoring the whole database", () => {
       "stock_lot_balances",
       "visit_positions",
       "reschedule_requests",
+      "tech_alerts",
     ]);
   });
 });
