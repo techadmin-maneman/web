@@ -18,7 +18,7 @@ const TABS = [
 const TABBED: ReadonlySet<Route["page"]> = new Set([...TABS.map((tab) => tab.page), "preview"]);
 
 /** The tabbed pages already drawn in the new look. */
-const LIGHT: ReadonlySet<Route["page"]> = new Set(["today", "week", "preview", "me"]);
+const LIGHT: ReadonlySet<Route["page"]> = new Set(["today", "week", "preview", "kit", "me"]);
 
 /** The tab a page is under. */
 const tabOf = (page: Route["page"]): Route["page"] => (page === "preview" ? "week" : page);

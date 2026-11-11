@@ -1,168 +1,83 @@
-// The technician's kit (docs/decisions/0164-the-kit-screen.md): what is on its way to it, received once in hand, a hair
-// system's pieces scanned one by one; what it holds, each lot's expiry beside it; and the pieces that came off clients
-// and any expired stock, handed back to the stockroom. Never a cost. Its writes need signal, and say so without it.
+// Kit (docs/decisions/0164-the-kit-screen.md; docs/prompts/tech-redesign.md, "Kit"), in the new look: the next seven
+// days' consumables against what the kit holds; what is on its way to it, received once in hand; what goes back to
+// ops, the pieces that came off clients and any expired stock; and what it holds, each lot's expiry beside it, low and
+// out in colour. Never a cost. Its writes need signal, and say so without it.
 
 import { amountOf } from "@maneman/web-kit/figures";
-import { ICONS } from "@maneman/brand/icons";
+import { fullDate, indiaDate } from "@maneman/web-kit/dates";
 import { Button } from "@maneman/ui/Button";
-import { ErrorRef } from "@maneman/ui/ErrorRef";
-import { ToggleButton } from "@maneman/ui/ToggleButton";
-import { IconButton } from "@maneman/ui/IconButton";
-import { ScanField } from "@maneman/ui/ScanField";
+import { SectionHead } from "@maneman/ui/SectionHead";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, type Kit } from "../api.ts";
-import { Offline } from "../frame/Banners.tsx";
+import { NoSignal } from "../frame/Banners.tsx";
 import { ReachOps } from "../frame/ReachOps.tsx";
-import { kit as copy, reference, steps } from "../content.ts";
-import { useScreen } from "../lib/useScreen.ts";
-import { fullDate, indiaDate } from "@maneman/web-kit/dates";
-import { dayMonth } from "../lib/when.ts";
-import { go } from "../route.ts";
-import { useSession } from "../session.ts";
 import { Failed, Loading } from "../frame/States.tsx";
-import frame from "../frame/frame.module.css";
+import { SyncLabel } from "../frame/SyncLabel.tsx";
+import { kit as copy } from "../content.ts";
+import { useScreen } from "../lib/useScreen.ts";
+import { dayMonth } from "../lib/when.ts";
+import { useSession } from "../session.ts";
+import { Arriving } from "./Arriving.tsx";
+import { Forecast } from "./Forecast.tsx";
+import { NotDone, type Problem } from "./NotDone.tsx";
 import styles from "./kit.module.css";
 
-type Coming = Kit["coming"][number];
+type Held = Kit["held"][number];
 
-/** Why a write did not go through; `requestId` is the API's, to quote to ops, and null when the phone said it. */
-interface Problem {
-  readonly words: string;
-  readonly requestId: string | null;
+/** What the kit holds of an item: its count, or that it is out, and how far short where more was used than it held. */
+function heldOf(quantity: number, unit: string): string {
+  if (quantity > 0) return amountOf(quantity, unit);
+  return copy.held.out(quantity === 0 ? null : amountOf(-quantity, unit));
 }
 
-function NotDone({ problem }: { problem: Problem | null }) {
-  if (problem === null) return null;
-  return (
-    <div role="alert">
-      <p className={styles.expired}>{problem.words}</p>
-      {problem.requestId !== null && <ErrorRef requestId={problem.requestId} words={reference} />}
-    </div>
-  );
+/** A lot's expiry as the kit says it: to use first, or when. */
+const lotWhen = (lot: { readonly use_first: boolean }, on: string): string =>
+  lot.use_first ? copy.held.useFirst(on) : copy.held.expires(on);
+
+/** The lines beneath an item the kit holds: low, its labelled pieces, and each lot not yet expired with its expiry. */
+function heldLines(item: Held, today: string, coming: boolean): string[] {
+  const lots = item.lots
+    .filter((lot) => lot.expires_on !== null && lot.expires_on >= today)
+    .map(
+      (lot) =>
+        `${lot.lot_code} · ${amountOf(lot.quantity, item.unit)} · ${lotWhen(lot, fullDate(lot.expires_on ?? today))}`,
+    );
+  return [
+    ...(item.low && item.quantity > 0 ? [copy.held.low(coming)] : []),
+    ...(item.hair_system ? [copy.held.pieces(item.units.length)] : []),
+    ...lots,
+  ];
 }
 
-/** Whether the pieces of a top-up not scanned are still to come, as they are unless the technician says otherwise. */
-function RestOf({
-  count,
-  rest,
-  onRest,
-}: {
-  count: number;
-  rest: "on_its_way" | "missing";
-  onRest: (rest: "on_its_way" | "missing") => void;
-}) {
-  const choices = [
-    ["on_its_way", copy.coming.stillToCome],
-    ["missing", copy.coming.missing],
-  ] as const;
-  return (
-    <div className={styles.buttons} role="group" aria-label={copy.coming.rest(count)}>
-      <p className={styles.note}>{copy.coming.rest(count)}</p>
-      {choices.map(([value, label]) => (
-        <ToggleButton
-          key={value}
-          onInk
-          pressed={rest === value}
-          onClick={() => {
-            onRest(value);
-          }}
-        >
-          {label}
-        </ToggleButton>
-      ))}
-    </div>
-  );
+/** An item's figure: out in red, low in the metal's words, otherwise quiet. */
+function amountLook(item: Held): string | undefined {
+  if (item.quantity <= 0) return styles.out;
+  return item.low ? styles.low : styles.amount;
 }
 
-/** One top-up on its way: received whole, or of a hair system the pieces scanned, the rest lost on the way. */
-function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onKit: (kit: Kit) => void }) {
-  const [scanned, setScanned] = useState<readonly string[]>([]);
-  const [rest, setRest] = useState<"on_its_way" | "missing">("on_its_way");
-  const [problem, setProblem] = useState<Problem | null>(null);
-  const [busy, once] = useOneAtATime();
-  const pieces = topUp.units.length > 0;
-  const unscanned = topUp.quantity - scanned.length;
-  const receive = () =>
-    once(async () => {
-      const answer = await api.receiveTopUp(topUp.id, pieces ? scanned : null, rest);
-      if (answer.ok) onKit(answer.body);
-      else
-        setProblem({ words: answer.status === 409 ? copy.coming.settled : copy.notDone, requestId: answer.requestId });
-    });
-  const label = pieces ? copy.coming.receiveScanned(scanned.length) : copy.coming.receive;
-  return (
-    <li>
-      <p className={styles.line}>
-        {topUp.name} · {amountOf(topUp.quantity, topUp.unit)}
-      </p>
-      <p className={styles.note}>{copy.coming.from(topUp.from, dayMonth(indiaDate(topUp.sent_at)))}</p>
-      {pieces && (
-        <>
-          <ScanField
-            onInk
-            className={styles.fieldLabel}
-            words={{ ...copy.scan, ...steps.piece.camera }}
-            onScan={(scan) => {
-              if (!topUp.units.includes(scan)) {
-                setProblem({ words: copy.coming.notOnIt, requestId: null });
-                return;
-              }
-              setProblem(null);
-              if (!scanned.includes(scan)) setScanned([...scanned, scan]);
-            }}
-          />
-          <p className={styles.note}>{copy.coming.scanned(scanned.length, topUp.units.length)}</p>
-          {scanned.length > 0 && unscanned > 0 && <RestOf count={unscanned} rest={rest} onRest={setRest} />}
-        </>
-      )}
-      <NotDone problem={problem} />
-      <div className={styles.buttons}>
-        <Button
-          variant="outlineOnInk"
-          size="small"
-          busy={busy}
-          disabled={offline || (pieces && scanned.length === 0)}
-          onClick={() => void receive()}
-        >
-          {offline ? copy.needsSignal : label}
-        </Button>
-      </div>
-    </li>
-  );
-}
-
-/** What the kit holds, each lot's expiry beside it, an expired one marked. */
-function Held({ kit }: { kit: Kit }) {
+/** What the kit holds, low and out in colour. */
+function InKit({ kit }: { readonly kit: Kit }) {
   const coming = new Set(kit.coming.map((topUp) => topUp.code));
   return (
     <section className={styles.section} aria-labelledby="kit-held">
-      <h2 className={styles.sectionTitle} id="kit-held">
-        {copy.held.title}
-      </h2>
+      <SectionHead id="kit-held" title={copy.held.title} />
       {kit.held.length === 0 ? (
         <p className={styles.note}>{copy.held.none}</p>
       ) : (
-        <ul className={styles.list}>
+        <ul className={styles.rows}>
           {kit.held.map((item) => (
-            <li key={item.code}>
-              <p className={styles.line}>
-                {item.name} · {heldOf(item.quantity, item.unit)}
-              </p>
-              {item.low && <p className={styles.note}>{copy.held.low(coming.has(item.code))}</p>}
-              {item.hair_system && <p className={styles.note}>{copy.held.pieces(item.units.length)}</p>}
-              {item.lots
-                .filter((lot) => lot.expires_on !== null)
-                .map((lot) => {
-                  const on = fullDate(lot.expires_on ?? kit.today);
-                  const gone = (lot.expires_on ?? kit.today) < kit.today;
-                  return (
-                    <p className={gone ? styles.expired : styles.note} key={lot.lot_code}>
-                      {lot.lot_code} · {amountOf(lot.quantity, item.unit)} · {lotWhen(lot, on, gone)}
-                    </p>
-                  );
-                })}
+            <li key={item.code} className={styles.row}>
+              <div>
+                <p className={styles.name}>{item.name}</p>
+                {heldLines(item, kit.today, coming.has(item.code)).map((line) => (
+                  <p key={line} className={styles.note}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+              <p className={amountLook(item)}>{heldOf(item.quantity, item.unit)}</p>
             </li>
           ))}
         </ul>
@@ -171,27 +86,24 @@ function Held({ kit }: { kit: Kit }) {
   );
 }
 
-/** What the kit holds of an item: its count, or that it is out, and how far short where more was used than it held. */
-function heldOf(quantity: number, unit: string): string {
-  if (quantity > 0) return amountOf(quantity, unit);
-  return copy.held.out(quantity === 0 ? null : amountOf(-quantity, unit));
-}
-
-/** A lot's expiry as the kit says it: gone, to use first, or when. */
-function lotWhen(lot: { readonly use_first: boolean }, on: string, gone: boolean): string {
-  if (gone) return copy.held.expired(on);
-  return lot.use_first ? copy.held.useFirst(on) : copy.held.expires(on);
-}
+/** The kit's lots past their expiry, each a line to hand back. */
+const expiredLots = (kit: Kit) =>
+  kit.held.flatMap((item) =>
+    item.lots
+      .filter((lot) => lot.expires_on !== null && lot.expires_on < kit.today)
+      .map((lot) => ({ item, lot, on: fullDate(lot.expires_on ?? kit.today) })),
+  );
 
 /** The pieces that came off clients, and the kit's expired stock, handed back together or apart. */
-function HandBack({ kit, offline, onKit }: { kit: Kit; offline: boolean; onKit: (kit: Kit) => void }) {
+function ReturnToOps(props: { readonly kit: Kit; readonly offline: boolean; readonly onKit: (kit: Kit) => void }) {
+  const { kit, offline } = props;
   const [done, setDone] = useState(false);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [busy, once] = useOneAtATime();
-  const expired = kit.held.some((item) =>
-    item.lots.some((lot) => lot.expires_on !== null && lot.expires_on < kit.today),
-  );
-  if (kit.returned.length === 0 && !expired) return done ? <p className={styles.status}>{copy.handedBack}</p> : null;
+  const expired = expiredLots(kit);
+  if (kit.returned.length === 0 && expired.length === 0) {
+    return done ? <p className={styles.status}>{copy.handedBack}</p> : null;
+  }
   const hand = (body: { pieces: string[]; expired: boolean }) =>
     once(async () => {
       const answer = await api.handBack(body);
@@ -201,17 +113,29 @@ function HandBack({ kit, offline, onKit }: { kit: Kit; offline: boolean; onKit: 
       }
       setProblem(null);
       setDone(true);
-      onKit(answer.body);
+      props.onKit(answer.body);
     });
   return (
     <section className={styles.section} aria-labelledby="kit-returned">
-      <h2 className={styles.sectionTitle} id="kit-returned">
-        {copy.returned.title}
-      </h2>
-      <ul className={styles.list}>
+      <SectionHead id="kit-returned" title={copy.returned.title} />
+      <ul className={styles.rows}>
         {kit.returned.map((piece) => (
-          <li className={styles.line} key={piece.piece_code}>
-            {copy.returned.line(piece.piece_code, dayMonth(indiaDate(piece.returned_at)))}
+          <li key={piece.piece_code} className={styles.row}>
+            <div>
+              <p className={styles.name}>{piece.piece_code}</p>
+              <p className={styles.note}>{copy.returned.line(dayMonth(indiaDate(piece.returned_at)))}</p>
+            </div>
+          </li>
+        ))}
+        {expired.map(({ item, lot, on }) => (
+          <li key={`${item.code}/${lot.lot_code}`} className={styles.row}>
+            <div>
+              <p className={styles.name}>
+                {item.name} {lot.lot_code} · {amountOf(lot.quantity, item.unit)}
+              </p>
+              <p className={styles.note}>{copy.held.expired(on)}</p>
+            </div>
+            <p className={styles.out}>{copy.expired.word}</p>
           </li>
         ))}
       </ul>
@@ -219,8 +143,8 @@ function HandBack({ kit, offline, onKit }: { kit: Kit; offline: boolean; onKit: 
       <div className={styles.buttons}>
         {kit.returned.length > 0 && (
           <Button
-            variant="outlineOnInk"
-            size="small"
+            variant="outline"
+            size="action"
             busy={busy}
             disabled={offline}
             onClick={() => void hand({ pieces: kit.returned.map((piece) => piece.piece_code), expired: false })}
@@ -228,10 +152,10 @@ function HandBack({ kit, offline, onKit }: { kit: Kit; offline: boolean; onKit: 
             {offline ? copy.needsSignal : copy.returned.handBack(kit.returned.length)}
           </Button>
         )}
-        {expired && (
+        {expired.length > 0 && (
           <Button
-            variant="outlineOnInk"
-            size="small"
+            variant="outline"
+            size="action"
             busy={busy}
             disabled={offline}
             onClick={() => void hand({ pieces: [], expired: true })}
@@ -251,46 +175,27 @@ export function KitScreen() {
   const [after, setAfter] = useState<Kit | null>(null);
   const kit = after ?? (loaded.state === "loaded" ? loaded.value : null);
   return (
-    <main className={styles.screen}>
-      <header className={frame.head}>
-        <IconButton
-          className={styles.back}
-          d={ICONS.back}
-          size="lg"
-          weight="heavy"
-          label={copy.back}
-          onClick={() => {
-            go("/");
-          }}
-        />
+    <main className={styles.screen} data-look="light">
+      <header className={styles.head}>
         <h1 className={styles.title} ref={heading} tabIndex={-1}>
           {copy.title}
         </h1>
+        <SyncLabel />
       </header>
-      {offline && <Offline />}
+      {offline && <NoSignal />}
       {kit === null && loaded.state === "loading" && <Loading />}
       {kit === null && loaded.state === "failed" && (
         <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={loaded.requestId} />
       )}
       {kit !== null && (
         <>
-          {kit.coming.length > 0 && (
-            <section className={styles.section} aria-labelledby="kit-coming">
-              <h2 className={styles.sectionTitle} id="kit-coming">
-                {copy.coming.title}
-              </h2>
-              <ul className={styles.list}>
-                {kit.coming.map((topUp) => (
-                  <TopUp key={topUp.id} topUp={topUp} offline={offline} onKit={setAfter} />
-                ))}
-              </ul>
-            </section>
-          )}
-          <Held kit={kit} />
-          <HandBack kit={kit} offline={offline} onKit={setAfter} />
+          <Forecast forecast={kit.forecast} />
+          <Arriving kit={kit} offline={offline} onKit={setAfter} />
+          <ReturnToOps kit={kit} offline={offline} onKit={setAfter} />
+          <InKit kit={kit} />
         </>
       )}
-      <ReachOps className={styles.reach} />
+      <ReachOps className={styles.reach} onPaper />
     </main>
   );
 }

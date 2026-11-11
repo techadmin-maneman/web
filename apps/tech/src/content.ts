@@ -1168,15 +1168,25 @@ export const leave = {
 };
 
 export const kit = {
-  title: "Your kit",
-  link: "Your kit",
-  back: "Back to today",
+  title: "Kit",
   failed: "Your kit didn’t load.",
   retry: "Try again",
   needsSignal: "Needs signal",
   notDone: "That didn’t go through. Try again.",
+  forecast: {
+    title: "Next 7 days",
+    none: "Nothing booked needs consumables.",
+    item: "Item",
+    need: "Need",
+    have: "Have",
+    status: "Status",
+    short: (count: number) => `Short ${String(count)}`,
+    enough: "Enough",
+  },
   coming: {
-    title: "On its way",
+    title: "Arriving",
+    /** "Mane Man Essential · 2 pieces" */
+    line: (name: string, amount: string) => `${name} · ${amount}`,
     /** "From Gurgaon stockroom · sent Mon 21 Sep" */
     from: (place: string, sent: string) => `From ${place} · sent ${sent}`,
     receive: "Receive all",
@@ -1191,7 +1201,7 @@ export const kit = {
   },
   scan: { label: "Scan or type each label", add: "Add", camera: "Scan", stop: "Stop scanning" },
   held: {
-    title: "In your kit",
+    title: "In kit",
     none: "Your kit is empty.",
     /** A count the kit's ledger has at nought or below: more was used than it held. */
     out: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
@@ -1201,14 +1211,14 @@ export const kit = {
     expired: (date: string) => `Expired ${date}`,
     pieces: (count: number) => `${String(count)} labelled`,
     /** At or below the level ops keep a kit at: ops are alerted on their own, and send more. */
-    low: (coming: boolean) => (coming ? "Running low. More is on its way." : "Running low. Ops have been told."),
+    low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops told"),
   },
   returned: {
-    title: "To hand back",
-    /** "MM-ESS-0000007-H · came off Mon 21 Sep" */
-    line: (code: string, date: string) => `${code} · came off ${date}`,
+    title: "Return to ops",
+    /** "Old hair system, removed 7 Nov" */
+    line: (date: string) => `Old hair system, removed ${date}`,
     handBack: (count: number) => `Hand back ${String(count)} ${count === 1 ? "hair system" : "hair systems"}`,
   },
-  expired: { handBack: "Hand back expired stock" },
+  expired: { handBack: "Hand back expired stock", word: "Expired" },
   handedBack: "Handed back. Ops receive it from you.",
 } as const;

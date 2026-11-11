@@ -55,7 +55,9 @@ test("opens from its tab, shows each lot’s expiry, and receives a top-up by th
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 
   const held = page.getByRole("region", { name: copy.held.title });
-  await expect(held).toContainText("SV-1 · 20 ml · Expired 31 Jan");
+  // An expired lot goes back to ops, and is listed there rather than as held.
+  await expect(page.getByRole("region", { name: copy.returned.title })).toContainText(/SV-1 · 20 ml\s*Expired 31 Jan/);
+  await expect(held).not.toContainText("SV-1");
   await expect(held).toContainText("SV-2 · 60 ml · Expires 31 Jan");
   await expect(held).toContainText("SV-3 · 40 ml · Use first · expires 20 Jul");
 
@@ -85,7 +87,7 @@ test("says an item is out, and how far short, rather than a count below nought",
   if (solvent !== undefined) fake.kit = { ...fake.kit, held: [{ ...solvent, quantity: -4, lots: [] }] };
   await page.goto("/kit");
   const held = page.getByRole("region", { name: copy.held.title });
-  await expect(held).toContainText(`Solvent · ${copy.held.out("4 ml")}`);
+  await expect(held.getByRole("listitem")).toContainText(["Solvent" + copy.held.out("4 ml")]);
 });
 
 test("hands back the pieces that came off, and the expired stock", async ({ page }) => {
@@ -93,7 +95,7 @@ test("hands back the pieces that came off, and the expired stock", async ({ page
   withAKit(fake);
   await page.goto("/kit");
   const back = page.getByRole("region", { name: copy.returned.title });
-  await expect(back).toContainText(copy.returned.line("MM-STD-4417-B", "1 Jul"));
+  await expect(back.getByRole("listitem").first()).toContainText("MM-STD-4417-B" + copy.returned.line("1 Jul"));
   await back.getByRole("button", { name: copy.returned.handBack(1) }).click();
   await back.getByRole("button", { name: copy.expired.handBack }).click();
   await expect.poll(() => writesTo(fake, "hand-back").length).toBe(2);
@@ -139,4 +141,21 @@ test("says its writes need signal, with none", async ({ page, context }) => {
   fake.online = false;
   await context.setOffline(true);
   await expect(page.getByRole("button", { name: copy.needsSignal }).first()).toBeDisabled();
+});
+
+test("weighs the next seven days' need against the kit, a shortfall in red", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  fake.kit = {
+    ...fake.kit,
+    forecast: [
+      { code: "shampoo", name: "Shampoo sachet", unit: "sachets", need: 6, have: 0 },
+      { code: "solvent", name: "Solvent", unit: "ml", need: 80, have: 120 },
+    ],
+  };
+  await page.goto("/kit");
+  const days = page.getByRole("region", { name: copy.forecast.title });
+  await expect(days.getByRole("row", { name: /Shampoo sachet/ })).toContainText(copy.forecast.short(6));
+  await expect(days.getByRole("row", { name: /Solvent/ })).toContainText(copy.forecast.enough);
+  expect(await axeViolations(page)).toEqual([]);
 });

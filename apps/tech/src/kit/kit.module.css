@@ -1,76 +1,161 @@
-/* The kit: what is on its way, what the kit holds, and what goes back, one section under another on the ink. */
+/* Kit (./KitScreen.tsx) in the new look: a section under each rule, rows split by hairlines, a figure at a row's end;
+   short, low and out in colour. */
 
 .screen {
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--ink-deep);
+  padding-bottom: var(--sp-24);
 }
 
-.back {
-  --icon-button-size: var(--tech-min);
-
-  margin-left: calc(-1 * var(--sp-12));
-  color: var(--paper);
+.head {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(var(--sp-64) - var(--sp-4));
+  padding: var(--sp-8) var(--screen-gutter);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .title {
   margin: 0;
-  outline: none;
   font-size: var(--fs-17);
-  font-weight: var(--weight-regular);
-  color: var(--paper);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
 }
 
 .section {
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
+  margin-top: var(--sp-20);
+  padding: 0 var(--screen-gutter);
 }
 
-.sectionTitle {
-  margin: 0 0 var(--sp-12);
+.note {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.problem {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-error);
+}
+
+.status {
+  margin: var(--sp-20) var(--screen-gutter) 0;
   font-size: var(--fs-15);
-  font-weight: var(--weight-regular);
-  color: var(--ink-muted);
+  line-height: var(--lh-145);
 }
 
-.list {
-  display: grid;
-  gap: var(--sp-16);
+/* The forecast: the item's name, then need, have and how it stands, the figures lined up at the right. */
+.forecast {
+  width: 100%;
+  margin-top: var(--sp-8);
+  border-collapse: collapse;
+  font-size: var(--fs-15);
+  font-variant-numeric: tabular-nums;
+}
+
+.forecast thead th {
+  padding: var(--sp-8) 0 var(--sp-4);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-regular);
+  color: var(--ui-text-soft);
+  text-align: end;
+}
+
+.forecast thead th:first-child,
+.forecast tbody th {
+  text-align: start;
+}
+
+.forecast tbody th,
+.forecast td {
+  padding: var(--sp-8) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
+  font-weight: var(--weight-regular);
+  text-align: end;
+}
+
+.short {
+  font-weight: var(--weight-semibold);
+  color: var(--ui-error);
+}
+
+.enough {
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text-soft);
+}
+
+.list,
+.rows {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.line {
-  font-size: var(--fs-17);
-  color: var(--paper);
+.item {
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
-.note {
-  margin: var(--sp-4) 0 0;
-  font-size: var(--fs-15);
-  color: var(--ink-muted);
+.row {
+  display: flex;
+  gap: var(--sp-12);
+  justify-content: space-between;
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
-.expired {
-  margin: var(--sp-4) 0 0;
-  font-size: var(--fs-15);
-  color: var(--error-on-ink);
-}
-
-.status {
+.name {
   margin: 0;
-  padding: var(--sp-16) var(--sp-20);
-  font-size: var(--fs-16);
-  color: var(--paper);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-145);
+}
+
+.amount,
+.low,
+.out {
+  margin: 0;
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  color: var(--ui-text-soft);
+}
+
+.low {
+  color: var(--gold-700);
+}
+
+.out {
+  color: var(--ui-error);
+}
+
+.progress {
+  display: flex;
+  gap: var(--sp-8);
+  align-items: center;
+  margin-top: var(--sp-8);
+}
+
+.track {
+  flex: 1;
+}
+
+.count {
+  font-size: var(--fs-14);
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text-soft);
 }
 
 .buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-12);
+  gap: var(--sp-8);
   margin-top: var(--sp-12);
 }
 
@@ -79,7 +164,6 @@
   margin: var(--sp-12) 0 var(--sp-8);
 }
 
-/* The way to ops, beneath the last section. */
 .reach {
-  padding: var(--sp-24) var(--sp-20);
+  margin: var(--sp-24) var(--screen-gutter) 0;
 }
