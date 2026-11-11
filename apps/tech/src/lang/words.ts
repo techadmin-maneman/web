@@ -7,8 +7,24 @@ import { languageNow } from "./language.ts";
 
 const worded = new WeakMap<object, unknown>();
 
-const said = (value: unknown): unknown =>
-  typeof value === "string" && languageNow() === "hi" ? toHindi(value) : value;
+// Ops' words inside a catalog line, as `theirs` marks them: hidden behind a placeholder no rule can split while the
+// line is put into Hindi, then put back as typed. In English the marks are taken out.
+const OPEN = "\uE000";
+const CLOSE = "\uE001";
+const MARKED = /\uE000([^\uE000\uE001]*)\uE001/g;
+const PLACE = /\uE002(\d+)\uE003/g;
+
+/** Ops' words (a reason, a consumable's or a product's name) given to a catalog line, kept as typed within it. */
+export const theirs = (text: string): string => (text === "" ? text : `${OPEN}${text}${CLOSE}`);
+
+function inLanguageNow(line: string): string {
+  if (languageNow() !== "hi") return line.replace(MARKED, "$1");
+  const held: string[] = [];
+  const hidden = line.replace(MARKED, (_, text: string) => `\uE002${String(held.push(text) - 1)}\uE003`);
+  return toHindi(hidden).replace(PLACE, (_, at: string) => held[Number(at)] ?? "");
+}
+
+const said = (value: unknown): unknown => (typeof value === "string" ? inLanguageNow(value) : value);
 
 /** A part of the catalog, its words said in the language now. */
 export function localised<T extends object>(words: T): T {
@@ -31,7 +47,7 @@ export function localised<T extends object>(words: T): T {
 }
 
 /** One line in the language now: for a line the catalog writes outside an object of it. */
-export const sayNow = (text: string): string => (languageNow() === "hi" ? toHindi(text) : text);
+export const sayNow = (text: string): string => inLanguageNow(text);
 
 /**
  * A line ops wrote in the console (a checklist item, a reason, a consumable's name) in the language now: in Hindi

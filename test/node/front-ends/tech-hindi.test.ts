@@ -6,9 +6,9 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import * as content from "../../../apps/tech/src/content.ts";
-import { hasHindi, toHindi } from "../../../apps/tech/src/lang/hindi.ts";
+import { hasHindi, readsHindi, toHindi } from "../../../apps/tech/src/lang/hindi.ts";
 import { speak } from "../../../apps/tech/src/lang/language.ts";
-import { localised, sayKnown } from "../../../apps/tech/src/lang/words.ts";
+import { localised, sayKnown, theirs } from "../../../apps/tech/src/lang/words.ts";
 import { taskFor } from "../../../apps/tech/src/visit/tasks.ts";
 import { CHECKLIST, LOST_REASONS, PARTIAL_REASONS } from "../../../src/config/job-sheet.ts";
 import catalog from "../../../design/tech-redesign/strings-hi.json" with { type: "json" };
@@ -62,6 +62,8 @@ describe("a line in Hindi", () => {
     expect(toHindi("2 pm की सर्विस विज़िट moved to 4:15 pm")).toBe("2 pm की सर्विस विज़िट का समय 4:15 pm हुआ");
     expect(toHindi("Note from Imran: ")).toBe("Imran का नोट: ");
     expect(toHindi("18 min drive to Sun City, Sector 54")).toBe("Sun City, Sector 54 तक 18 मिनट ड्राइव");
+    // The week's span on Schedule.
+    expect(toHindi("12 Nov to 25 Nov · 14 jobs")).toBe("12 नवं से 25 नवं · 14 जॉब");
   });
 
   it("tries no rule on a line longer than any the catalogs word", () => {
@@ -83,6 +85,22 @@ describe("a line ops wrote in the console", () => {
     expect(sayKnown("Lace and skin remover")).toBe("Lace and skin remover");
     expect(sayKnown("Moved to another city")).toBe("Moved to another city");
     expect(sayKnown("Open the template box")).toBe("Open the template box");
+  });
+
+  it("stays as typed inside a catalog line, which is worded around it, and is unmarked in English", () => {
+    speak("hi");
+    expect(content.visit.sentBack(theirs("Front view out of focus"))).toBe(
+      "ऑप्स ने यह लौटाया: Front view out of focus",
+    );
+    expect(content.steps.consumables.count(theirs("Roll of tape"), 3)).toBe("Roll of tape: 3");
+    expect(content.oneVisit.inKit(theirs("French lace of 8 x 10"))).toBe("French lace of 8 x 10 आपकी किट में है");
+    // A reason past the length any catalog line has still leaves the line around it worded.
+    const long = "Retake the front view ".repeat(14).trim();
+    expect(content.visit.sentBack(theirs(long))).toBe(`ऑप्स ने यह लौटाया: ${long}`);
+    speak("en");
+    expect(content.visit.sentBack(theirs("Front view out of focus"))).toBe(
+      "Ops sent this back: Front view out of focus",
+    );
   });
 });
 
@@ -198,7 +216,8 @@ const sampled = (line: string): boolean =>
 
 describe("the lines still in English", () => {
   it("are those REPORT.md lists for the native speaker, and no other", () => {
-    const untold = inBoth().filter(([line, hindi]) => !sampled(line) && !hasHindi(hindi, [SAMPLE_NAME]));
+    // Each line judged as the screen shows it in Hindi, not as the rules would word it again.
+    const untold = inBoth().filter(([line, hindi]) => !sampled(line) && !readsHindi(hindi, [SAMPLE_NAME]));
     const english = [...new Set(untold.map(([line]) => spaced(line)))].sort();
     expect(listed().sort()).toEqual(english);
   });

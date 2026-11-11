@@ -25,6 +25,8 @@ of `01-sign-in`, which no PR of the plan had named.
    and without a reload. A label read once at load would keep its first language, so a list of labels is read as it is
    drawn. A line ops write in the console (a checklist item, a reason, a consumable's name) goes through `sayKnown`
    where it is drawn: in Hindi only where a catalog holds the whole line, as written otherwise, never worded in part.
+   Where ops' words sit inside a catalog line ("Ops sent this back: …", a consumable's or a product's name), the
+   caller marks them with `theirs`: the line is worded around them and they stay exactly as typed.
 2. **Hindi as the prototype derives it.** `toHindi` (`apps/tech/src/lang/hindi.ts`) tries the exact line, then each
    pattern and template, then a line's parts across " · ", then a lower-case part with its capital, then weekdays and
    months beside a figure. Whatever a rule holds is worded in turn, so "Map · 12 min drive" is Hindi throughout, while a
@@ -66,4 +68,4 @@ of `01-sign-in`, which no PR of the plan had named.
 ## Consequences
 
 - A new line in `content.ts` needs Hindi in `app-hi.json`, or a place on REPORT.md's list, before the test passes.
-- The catalogs travel in the technician app's bundle: 188.4 KB gzipped with them, of its 200 KB budget.
+- The catalogs travel in the technician app's bundle: 188.5 KB gzipped with them, of its 200 KB budget.

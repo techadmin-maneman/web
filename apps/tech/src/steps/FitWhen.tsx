@@ -5,6 +5,7 @@ import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { oneVisit } from "../content.ts";
 import shared from "./steps.module.css";
+import { theirs } from "../lang/index.ts";
 
 /**
  * When the chosen hair system is fitted: today, only where the kit holds one, or another day ops book with the
@@ -31,7 +32,7 @@ export function When({
           className={shared.choice}
           pressed={!later}
           disabled={!canFitToday}
-          sub={canFitToday ? oneVisit.inKit(product) : oneVisit.notInKit(product)}
+          sub={canFitToday ? oneVisit.inKit(theirs(product)) : oneVisit.notInKit(theirs(product))}
           onClick={() => {
             onLater(false);
           }}

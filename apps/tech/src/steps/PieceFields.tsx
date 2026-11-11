@@ -2,7 +2,7 @@
 // the label with its lookup and the client's pieces to pick from, the base and the lot, and on a replacement the piece
 // that came off.
 
-import { sayKnown } from "../lang/index.ts";
+import { sayKnown, theirs } from "../lang/index.ts";
 import { GLYPHS } from "@maneman/brand/icons";
 import { Field, TextInput, type FieldControl } from "@maneman/ui/Field";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
@@ -312,7 +312,7 @@ function LookedNote({ looked }: { looked: Looked }) {
   if (found.in_kit) {
     return (
       <p className={shared.note} role="status">
-        {copy.piece.inKit(found.piece.base ?? found.piece.piece_code, found.piece.supplier_lot)}
+        {copy.piece.inKit(theirs(found.piece.base ?? found.piece.piece_code), found.piece.supplier_lot)}
       </p>
     );
   }

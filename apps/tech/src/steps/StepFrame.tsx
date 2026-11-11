@@ -28,6 +28,7 @@ import { useSession } from "../session.ts";
 import { keptJob } from "../store/jobs.ts";
 import { screensOf } from "../visit/index.ts";
 import styles from "./step-frame.module.css";
+import { theirs } from "../lang/index.ts";
 
 /** The slide's 300 ms and a little: a second tap of a gloved double tap lands inside it. */
 const SETTLE_MS = 350;
@@ -107,6 +108,10 @@ function labelOf(where: Where | null): string {
   return where.sentBack === null ? visit.close : visit.sendFix;
 }
 
+/** What ops said when they sent the step back, their words as they wrote them. */
+const sentBackLine = (reason: string | null): string | null =>
+  reason === null ? null : visit.sentBack(theirs(reason));
+
 export function StepFrame({
   title,
   at,
@@ -143,8 +148,7 @@ export function StepFrame({
   const where = useWhere();
   const label = action ?? labelOf(where);
   // A refusal says what to put right; failing one, what ops said when they sent the step back.
-  const said =
-    notice ?? (where?.sentBack === undefined || where.sentBack === null ? null : visit.sentBack(where.sentBack));
+  const said = notice ?? sentBackLine(where?.sentBack ?? null);
   return (
     <main className={styles.screen} data-look="light">
       <header className={styles.head}>

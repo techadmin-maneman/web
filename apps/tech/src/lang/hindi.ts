@@ -115,10 +115,15 @@ const KEPT =
  * keeps as it is (a Norwood stage, "SOS"): the test that lists the lines still in English asks.
  */
 export function hasHindi(text: string, names: readonly string[] = []): boolean {
-  if (own(text.trim()) !== undefined) return true;
-  const hindi = names.reduce(
+  return own(text.trim()) !== undefined || readsHindi(toHindi(text), names);
+}
+
+/** Whether a line as a screen shows it reads as Hindi: nothing but what stays as written, and its names, in Latin. */
+export function readsHindi(shown: string, names: readonly string[] = []): boolean {
+  if (own(shown.trim()) !== undefined) return true;
+  const rest = names.reduce(
     (line, name) => line.replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), ""),
-    toHindi(text),
+    shown,
   );
-  return !/[A-Za-z]{2,}/.test(hindi.replace(KEPT, ""));
+  return !/[A-Za-z]{2,}/.test(rest.replace(KEPT, ""));
 }

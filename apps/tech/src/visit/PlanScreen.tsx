@@ -21,6 +21,7 @@ import { stepPath } from "../route.ts";
 import type { Queued } from "../store/outbox.ts";
 import { screensOf } from "./engine.ts";
 import styles from "./plan.module.css";
+import { theirs } from "../lang/index.ts";
 
 type State = MarkState;
 
@@ -85,7 +86,7 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
           {toFix
             .map((screen) => {
               const reason = sentBackFor(job, queued, screen.event);
-              return reason === null ? screen.title : copy.plan.sentBack(screen.title, reason);
+              return reason === null ? screen.title : copy.plan.sentBack(screen.title, theirs(reason));
             })
             .join(". ")}
         </ProblemCard>
