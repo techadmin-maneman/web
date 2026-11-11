@@ -1156,6 +1156,30 @@ export const schedule = {
   },
 };
 
+/** Guides, from Me: each kind of visit's steps, and each task read alone (./guides/GuidesScreen.tsx). */
+export const guides = {
+  title: "Guides",
+  sub: "How each visit is done",
+  kinds: "4 visit types",
+  /** "6 steps" */
+  steps: (count: number) => counted(count, "step", "steps"),
+  /** What each step is, beneath its name; a step of tasks lists them instead. */
+  what: {
+    before_photos: "Front, top, left, right, hair",
+    tasks: "",
+    hair_profile: "Norwood stage, head and base",
+    hair_system: "Scan the new piece",
+    consumables: "Record what you used",
+    after_photos: "The same five shots",
+    outcome: "Result and close",
+  },
+  /** "Service visit · Service", beneath a task's name. */
+  where: (kind: string, step: string) => `${kind} · ${step}`,
+  gone: "This task isn’t in the guide any more.",
+  /** The way to a kind of visit's guide, from a later job's preview. */
+  howDone: "How this visit is done",
+} as const;
+
 /** Ask ops to reschedule, from the job (./job/Reschedule.tsx). */
 export const reschedule = {
   open: "Ask ops to reschedule",

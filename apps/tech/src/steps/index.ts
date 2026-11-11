@@ -2,3 +2,4 @@
 
 export { useStep } from "./useStep.ts";
 export { OptionsList } from "./OptionsList.tsx";
+export { TaskGuide } from "./TaskGuide.tsx";

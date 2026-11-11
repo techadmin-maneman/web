@@ -165,6 +165,7 @@ const REDRAWN = [
   "apps/tech/src/frame/interrupted.module.css",
   "apps/tech/src/frame/Interrupted.tsx",
   "apps/tech/src/waiting/",
+  "apps/tech/src/guides/",
 ];
 const slashed = (file: string) => file.replace(/\\/g, "/");
 const isRedrawn = (file: string) => REDRAWN.some((place) => slashed(file).startsWith(place));

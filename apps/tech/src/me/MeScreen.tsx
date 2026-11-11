@@ -9,7 +9,7 @@ import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { formatMobileField } from "@maneman/web-kit/mobile";
 import { useEffect, useState } from "react";
-import { leaving as leavingCopy, me as copy } from "../content.ts";
+import { guides, leaving as leavingCopy, me as copy } from "../content.ts";
 import { ReachOps } from "../frame/ReachOps.tsx";
 import { SyncLabel, useUnsent } from "../frame/SyncLabel.tsx";
 import { photoSets } from "../lib/sets.ts";
@@ -97,6 +97,7 @@ export function MeScreen() {
 
       <SectionHead title={copy.account} className={styles.section} />
       <ListRows className={styles.rows} label={copy.account}>
+        <ListRow title={guides.title} meta={guides.kinds} to="/guides" />
         <ListRow title={copy.leave} to="/leave" />
         <ListRow
           title={copy.pending}

@@ -1,0 +1,51 @@
+/* Guides (./GuidesScreen.tsx) in the new look: the list of kinds of visit, a guide's steps numbered down the page with
+   a step of tasks listing them, and a task read alone. */
+
+/* A row's words on the gutter's line: the row's own padding taken back from the margin, as Me's rows. */
+.rows {
+  margin: var(--sp-8) 0 0;
+  border-top: var(--hairline) solid var(--ui-line);
+}
+
+.page {
+  padding: 0 var(--screen-gutter);
+}
+
+.steps {
+  margin: var(--sp-8) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.step {
+  padding: var(--sp-12) var(--screen-gutter);
+  border-bottom: var(--hairline) solid var(--ui-line);
+  counter-increment: step;
+}
+
+/* The step's number before its name, as the visit's plan numbers them. */
+.stepName {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-145);
+}
+
+.stepName::before {
+  content: counter(step) "  ";
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text-soft);
+}
+
+.stepWhat {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+/* A step's tasks, each a row, taking back the step's gutter so the rows run edge to edge. */
+.tasks {
+  margin: var(--sp-8) calc(-1 * var(--screen-gutter)) calc(-1 * var(--sp-12));
+}
