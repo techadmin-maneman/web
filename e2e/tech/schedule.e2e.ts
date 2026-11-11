@@ -79,6 +79,26 @@ test("with no signal shows the days the phone keeps, says the rest didn't load, 
   await expect(page.getByText(copy.nothing)).toBeVisible();
 });
 
+test("keeps the days it showed when it reads the week again with no signal", async ({ page, context }) => {
+  const fake = await fakeTech(page);
+  await page.goto("/week");
+  await page.getByRole("radio").last().check();
+  await expect(page.getByText(copy.nothing)).toBeVisible();
+  let unanswered = 0;
+  page.on("requestfailed", (request) => {
+    if (request.url().includes("/api/tech/jobs?date=")) unanswered += 1;
+  });
+  fake.online = false;
+  await context.setOffline(true);
+  // The app back in front: the week is read again, and no day answers.
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect.poll(() => unanswered).toBeGreaterThanOrEqual(7);
+  await expect(page.getByText(copy.nothing)).toBeVisible();
+  await expect(page.getByText(copy.dayFailed)).toHaveCount(0);
+});
+
 test("a job today opened from Schedule goes back to Schedule", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/week");

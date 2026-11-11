@@ -39,7 +39,7 @@ const lotWhen = (lot: { readonly use_first: boolean }, on: string): string =>
 /** The lines beneath an item the kit holds: low, its labelled pieces, and each lot not yet expired with its expiry. */
 function heldLines(item: Held, today: string, coming: boolean): string[] {
   const lots = item.lots
-    .filter((lot) => lot.expires_on !== null && lot.expires_on >= today)
+    .filter((lot) => !lot.recalled && lot.expires_on !== null && lot.expires_on >= today)
     .map(
       (lot) =>
         `${lot.lot_code} · ${amountOf(lot.quantity, item.unit)} · ${lotWhen(lot, fullDate(lot.expires_on ?? today))}`,
@@ -86,11 +86,11 @@ function InKit({ kit }: { readonly kit: Kit }) {
   );
 }
 
-/** The kit's lots past their expiry, each a line to hand back. */
+/** The kit's lots past their expiry or in a recall, each a line to hand back. */
 const expiredLots = (kit: Kit) =>
   kit.held.flatMap((item) =>
     item.lots
-      .filter((lot) => lot.expires_on !== null && lot.expires_on < kit.today)
+      .filter((lot) => lot.recalled || (lot.expires_on !== null && lot.expires_on < kit.today))
       .map((lot) => ({ item, lot, on: fullDate(lot.expires_on ?? kit.today) })),
   );
 
@@ -133,9 +133,9 @@ function ReturnToOps(props: { readonly kit: Kit; readonly offline: boolean; read
               <p className={styles.name}>
                 {item.name} {lot.lot_code} · {amountOf(lot.quantity, item.unit)}
               </p>
-              <p className={styles.note}>{copy.held.expired(on)}</p>
+              <p className={styles.note}>{lot.recalled ? copy.held.recalled : copy.held.expired(on)}</p>
             </div>
-            <p className={styles.out}>{copy.expired.word}</p>
+            <p className={styles.out}>{lot.recalled ? copy.expired.recalledWord : copy.expired.word}</p>
           </li>
         ))}
       </ul>

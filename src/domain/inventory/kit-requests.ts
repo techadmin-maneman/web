@@ -34,7 +34,7 @@ export async function askForKit(
   db: D1Database,
   input: { kit: string; today: string; now: Date },
 ): Promise<KitAsked | "nothing_short"> {
-  const short = (await weekAheadOf(db, input.kit, input.today, await kitView(db, input.kit)))
+  const short = (await weekAheadOf(db, input.kit, input.today, await kitView(db, input.kit, input.today)))
     .map((item) => ({ code: item.code, quantity: item.need - Math.max(item.have, 0) }))
     .filter((item) => item.quantity > 0);
   const open = await kitAskedOf(db, input.kit);

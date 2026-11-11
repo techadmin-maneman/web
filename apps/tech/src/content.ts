@@ -1135,7 +1135,7 @@ export const schedule = {
   day: (weekday: string, date: string) => `${weekday}, ${date}`,
   jobs: (count: number) => counted(count, "job", "jobs"),
   nothing: "Nothing booked",
-  dayView: "The day, 8 am to 8 pm",
+  dayView: "The day, by the hour",
   now: "Now",
   /** "18 min · leave 9:12 am" */
   drive: (minutes: number, leave: string) => `${String(minutes)} min · leave ${leave}`,
@@ -1275,6 +1275,7 @@ export const kit = {
     /** A lot inside the days ops are warned before it expires. */
     useFirst: (date: string) => `Use first · expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
+    recalled: "In a recall: not to be used",
     pieces: (count: number) => `${String(count)} labelled`,
     /** At or below the level ops keep a kit at: ops are alerted on their own, and send more. */
     low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops told"),
@@ -1285,6 +1286,6 @@ export const kit = {
     line: (date: string) => `Old hair system, removed ${date}`,
     handBack: (count: number) => `Hand back ${String(count)} ${count === 1 ? "hair system" : "hair systems"}`,
   },
-  expired: { handBack: "Hand back expired stock", word: "Expired" },
+  expired: { handBack: "Hand back expired stock", word: "Expired", recalledWord: "Recalled" },
   handedBack: "Handed back. Ops receive it from you.",
 } as const;

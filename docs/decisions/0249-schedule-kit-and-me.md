@@ -28,7 +28,8 @@ every business rule is an ops setting.
    read again when signal returns, as Today is.
 2. **Kit** gains "Next 7 days". `GET /api/tech/kit` carries `forecast`: each consumable the technician's visits booked
    from today to six days on are expected to use, by the job sheet, against what the kit holds fit to use: each held
-   item carries `usable`, its count less its expired lots, which In kit, the forecast and an ask all read. A shortfall
+   item carries `usable`, its count less its expired and recalled lots (ADR 0187), which In kit, its low mark, the
+   forecast and an ask all read. A recalled lot is listed under Return to ops beside an expired one. A shortfall
    shows in red.
    Hair systems are left to the evening's check, as the week's top-up leaves them (ADR 0181). The rest of the screen is
    redrawn in the new look in the prototype's order: Arriving, Return to ops, In kit. An expired lot is listed under

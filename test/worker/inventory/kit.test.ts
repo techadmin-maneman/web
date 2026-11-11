@@ -173,6 +173,43 @@ describe("the week ahead", () => {
   });
 });
 
+describe("what the kit holds fit to use", () => {
+  it("counts nothing recalled, which goes back to ops, and is low by what is left", async () => {
+    await job.opsPost("/api/consumables", { name: "Solvent", unit: "ml", unit_cost: 50 });
+    await job.opsPost("/api/consumables/solvent", { reorder_kit: 5 });
+    await job.opsPost("/api/service-usage", {
+      visit_type: "service",
+      tier: "standard",
+      items: [{ code: "solvent", quantity: 10 }],
+    });
+    for (const [lot, quantity] of [
+      ["SV-RECALLED", 10],
+      ["SV-GOOD", 2],
+    ] as const) {
+      await job.opsPost("/api/stock/deliveries", {
+        consumable_code: "solvent",
+        quantity,
+        lot_code: lot,
+        expires_on: "2027-12-31",
+      });
+    }
+    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 12, from: "central", to: IMRAN });
+    await env.DB.prepare("UPDATE stock_lots SET recalled_at = ?1 WHERE lot_code = 'SV-RECALLED'")
+      .bind(NOW.toISOString())
+      .run();
+    const kit = await (
+      await job.get("/api/tech/kit")
+    ).json<{
+      forecast: { have: number }[];
+      held: { code: string; quantity: number; usable: number; low: boolean; lots: { recalled: boolean }[] }[];
+    }>();
+    const solvent = kit.held.find((item) => item.code === "solvent");
+    expect(solvent).toMatchObject({ quantity: 12, usable: 2, low: true });
+    expect(solvent?.lots.some((each) => each.recalled)).toBe(true);
+    expect(kit.forecast).toMatchObject([{ have: 2 }]);
+  });
+});
+
 describe("the kit's hair systems", () => {
   it("leaves out one it holds none of, and never calls one running low", async () => {
     await job.opsPost(`/api/consumables/${code}`, { reorder_kit: 2 });

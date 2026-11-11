@@ -56,22 +56,26 @@ export async function addTheWeek(
 /** How many days the technician's own forecast looks ahead, today's included. */
 const FORECAST_DAYS = 7;
 
-/** An item the kit holds, with its lots as the kit lists them (./kit.ts). */
-interface HeldItem {
-  readonly code: string;
+/** A lot the kit holds, as the kit lists it (./kit.ts). */
+interface HeldLot {
+  readonly expiresOn: string | null;
   readonly quantity: number;
-  readonly lots: readonly { readonly expiresOn: string | null; readonly quantity: number }[];
+  /** In a recall (docs/decisions/0187-recalls.md): it goes back to ops, as an expired lot does. */
+  readonly recalled: boolean;
 }
 
 /**
- * What the kit holds of an item fit to use: its count less its lots expired before `today`, as the kit lists them,
- * which go back to ops. Below nought where more was used than it held.
+ * What the kit holds of an item fit to use: its count less its lots expired before `today` or recalled, as the kit
+ * lists them, which go back to ops. Below nought where more was used than it held.
  */
-export function usableOf(item: Omit<HeldItem, "code">, today: string): number {
-  const expired = item.lots
-    .filter((lot) => lot.expiresOn !== null && lot.expiresOn < today)
+export function usableOf(
+  item: { readonly quantity: number; readonly lots: readonly HeldLot[] },
+  today: string,
+): number {
+  const gone = item.lots
+    .filter((lot) => lot.recalled || (lot.expiresOn !== null && lot.expiresOn < today))
     .reduce((sum, lot) => sum + lot.quantity, 0);
-  return item.quantity - expired;
+  return item.quantity - gone;
 }
 
 /** A consumable the kit's visits are expected to use over the forecast's days. */
@@ -96,9 +100,9 @@ export async function weekAheadOf(
   db: D1Database,
   kit: string,
   today: string,
-  view: { readonly held: readonly HeldItem[] },
+  view: { readonly held: readonly { readonly code: string; readonly usable: number }[] },
 ): Promise<WeekAhead[]> {
-  const usable = new Map(view.held.map((item) => [item.code, usableOf(item, today)]));
+  const usable = new Map(view.held.map((item) => [item.code, item.usable]));
   return (await weekNeedOf(db, kit, today)).map((item) => ({
     ...item,
     have: Math.max(0, usable.get(item.code) ?? 0),

@@ -10731,7 +10731,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           },
           "usable": {
             "type": "integer",
-            "description": "What it holds fit to use: its count less its expired lots, which go back to ops."
+            "description": "What it holds fit to use: its count less its expired and recalled lots, which go back to ops."
           },
           "hair_system": {
             "type": "boolean"
@@ -10761,13 +10761,18 @@ One of the client's try-on looks, under the card's own unlock, never cached
                 "use_first": {
                   "type": "boolean",
                   "description": "It expires within the days ops are warned before, and has not yet: use it first."
+                },
+                "recalled": {
+                  "type": "boolean",
+                  "description": "In a recall: it goes back to ops, as expired stock does."
                 }
               },
               "required": [
                 "lot_code",
                 "expires_on",
                 "quantity",
-                "use_first"
+                "use_first",
+                "recalled"
               ],
               "additionalProperties": false
             },
@@ -10929,7 +10934,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           },
           "have": {
             "type": "integer",
-            "description": "What the kit holds of it now."
+            "description": "What the kit holds of it fit to use now."
           }
         },
         "required": [
@@ -11162,12 +11167,12 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "fits": {
       "type": "integer",
       "minimum": 0,
-      "description": "First fits done in the last 30 days."
+      "description": "First fits done or left partly done in the last 30 days; a no-show or one closed \"Can't fit today\" is none."
     },
     "redone": {
       "type": "integer",
       "minimum": 0,
-      "description": "Of them, those followed by another first fit within 30 days."
+      "description": "Of them, those whose free refit was booked within 30 days."
     }
   },
   "required": [

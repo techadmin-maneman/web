@@ -1,5 +1,6 @@
-// A later day's job, from Schedule (docs/prompts/tech-redesign.md, "Schedule"): read-only, its time and length, the
-// area and how it is paid, and that the client's name and address come at 6 pm the day before. Back goes to its day.
+// A later day's job still locked, from Schedule (docs/prompts/tech-redesign.md, "Schedule"): read-only, its time and
+// length, the area and how it is paid, and when the client's name and address come, by the hour ops set. Back goes to
+// its day.
 
 import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { useLoad } from "@maneman/ui/useLoad";

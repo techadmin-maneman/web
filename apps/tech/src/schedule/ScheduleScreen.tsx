@@ -10,7 +10,7 @@ import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, dayClock, indiaTimeOf, minutesBetween, weekdayName } from "@maneman/web-kit/dates";
-import { useCallback, useId } from "react";
+import { useCallback, useId, useRef } from "react";
 import { api, type JobSummary } from "../api.ts";
 import { NoSignal } from "../frame/Banners.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
@@ -46,17 +46,22 @@ interface Day {
 
 /**
  * Each day of the strip with its jobs. A day that will not load is read from the phone where it keeps that day, as it
- * keeps today's and tomorrow's (../lib/useDay.ts); the week fails only where no day can be shown.
+ * keeps today's and tomorrow's (../lib/useDay.ts), else as this screen last had it; the week fails only where no day
+ * can be shown. `known` keeps each day as last read, so a read again with no signal leaves what showed.
  */
-async function readWeek(today: string, _tick: number) {
+async function readWeek(today: string, known: Map<string, readonly JobSummary[]>) {
   const dates = Array.from({ length: SCHEDULE_DAYS }, (_, at) => addDays(today, at));
   const answers = await Promise.all(dates.map((date) => api.jobs(date)));
   const days = await Promise.all(
     dates.map(async (date, at): Promise<Day> => {
       const answer = answers[at];
-      if (answer?.ok === true) return { date, jobs: answer.body.jobs, requestId: null };
+      if (answer?.ok === true) {
+        known.set(date, answer.body.jobs);
+        return { date, jobs: answer.body.jobs, requestId: null };
+      }
       const requestId = answer === undefined ? null : answer.requestId;
-      return { date, jobs: await keptDay(date).catch(() => null), requestId };
+      const kept = await keptDay(date).catch(() => null);
+      return { date, jobs: kept ?? known.get(date) ?? null, requestId };
     }),
   );
   const failed = answers.find((answer) => !answer.ok);
@@ -195,7 +200,9 @@ export function ScheduleScreen({ date }: { readonly date: string | null }) {
   const stripId = useId();
   // Read again as Today is: the app back in front, the phone finding signal, and every few minutes.
   const tick = useRefreshTick();
-  const read = useCallback(() => readWeek(today, tick), [today, tick]);
+  const known = useRef(new Map<string, readonly JobSummary[]>());
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the tick is what asks for the read again
+  const read = useCallback(() => readWeek(today, known.current), [today, tick]);
   const [loaded, retry] = useLoad(read);
   const days = loaded.state === "loaded" ? loaded.value : [];
   const shown = days.find((day) => day.date === date) ?? days[0];

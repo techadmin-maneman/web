@@ -6,7 +6,7 @@
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { handBack, kitView } from "../../domain/inventory/kit.ts";
-import { usableOf, weekAheadOf } from "../../domain/inventory/kit-week.ts";
+import { weekAheadOf } from "../../domain/inventory/kit-week.ts";
 import { askForKit, kitAskedOf } from "../../domain/inventory/kit-requests.ts";
 import { tellOfLowStock } from "../../domain/inventory/stock.ts";
 import { receiveTransfer } from "../../domain/inventory/stock-transit.ts";
@@ -36,7 +36,8 @@ const KitSchema = z
           quantity: z.number().int(),
           low: z.boolean().openapi({ description: "At or below the kit level ops set for it." }),
           usable: z.number().int().openapi({
-            description: "What it holds fit to use: its count less its expired lots, which go back to ops.",
+            description:
+              "What it holds fit to use: its count less its expired and recalled lots, which go back to ops.",
           }),
           hair_system: z.boolean(),
           lots: z
@@ -46,6 +47,9 @@ const KitSchema = z
                 use_first: z.boolean().openapi({
                   description: "It expires within the days ops are warned before, and has not yet: use it first.",
                 }),
+                recalled: z
+                  .boolean()
+                  .openapi({ description: "In a recall: it goes back to ops, as expired stock does." }),
               }).strict(),
             )
             .openapi({ description: "The lots it holds some of, soonest to expire first." }),
@@ -98,7 +102,7 @@ const KitSchema = z
             name: z.string(),
             unit: z.string(),
             need: z.number().int().openapi({ description: "What the visits booked are expected to use." }),
-            have: z.number().int().openapi({ description: "What the kit holds of it now." }),
+            have: z.number().int().openapi({ description: "What the kit holds of it fit to use now." }),
           })
           .strict(),
       )
@@ -209,7 +213,7 @@ const handBackRoute = techRoute({
 async function kitAnswer(c: Context<AppEnv>, kit: string) {
   const today = indiaDate(c.var.deps.now());
   const [view, { stockWatch }, asked] = await Promise.all([
-    kitView(c.env.DB, kit),
+    kitView(c.env.DB, kit, today),
     opsInputs(c),
     kitAskedOf(c.env.DB, kit),
   ]);
@@ -223,13 +227,14 @@ async function kitAnswer(c: Context<AppEnv>, kit: string) {
       unit: item.unit,
       quantity: item.quantity,
       low: item.low,
-      usable: usableOf(item, today),
+      usable: item.usable,
       hair_system: item.hairSystem,
       lots: item.lots.map((lot) => ({
         lot_code: lot.lotCode,
         expires_on: lot.expiresOn,
         quantity: lot.quantity,
         use_first: useFirst(lot.expiresOn),
+        recalled: lot.recalled,
       })),
       units: item.units.map((unit) => ({ code: unit.code, lot_code: unit.lotCode, expires_on: unit.expiresOn })),
     })),

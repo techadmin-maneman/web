@@ -24,9 +24,9 @@ function withAKit(fake: Fake): void {
         usable: 100,
         hair_system: false,
         lots: [
-          { lot_code: "SV-1", expires_on: "2020-01-31", quantity: 20, use_first: false },
-          { lot_code: "SV-2", expires_on: "2031-01-31", quantity: 60, use_first: false },
-          { lot_code: "SV-3", expires_on: "2030-07-20", quantity: 40, use_first: true },
+          { lot_code: "SV-1", expires_on: "2020-01-31", quantity: 20, use_first: false, recalled: false },
+          { lot_code: "SV-2", expires_on: "2031-01-31", quantity: 60, use_first: false, recalled: false },
+          { lot_code: "SV-3", expires_on: "2030-07-20", quantity: 40, use_first: true, recalled: false },
         ],
         units: [],
       },

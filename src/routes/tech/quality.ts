@@ -14,8 +14,11 @@ const QualitySchema = z
   .object({
     visits: count.openapi({ description: "Visits checked in, booked in the last 30 days." }),
     on_time: count.openapi({ description: "Of them, those checked in by the booked start." }),
-    fits: count.openapi({ description: "First fits done in the last 30 days." }),
-    redone: count.openapi({ description: "Of them, those followed by another first fit within 30 days." }),
+    fits: count.openapi({
+      description:
+        'First fits done or left partly done in the last 30 days; a no-show or one closed "Can\'t fit today" is none.',
+    }),
+    redone: count.openapi({ description: "Of them, those whose free refit was booked within 30 days." }),
   })
   .strict()
   .openapi("TechnicianQuality");

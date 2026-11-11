@@ -5535,7 +5535,7 @@ export interface components {
                 quantity: number;
                 /** @description At or below the kit level ops set for it. */
                 low: boolean;
-                /** @description What it holds fit to use: its count less its expired lots, which go back to ops. */
+                /** @description What it holds fit to use: its count less its expired and recalled lots, which go back to ops. */
                 usable: number;
                 hair_system: boolean;
                 /** @description The lots it holds some of, soonest to expire first. */
@@ -5545,6 +5545,8 @@ export interface components {
                     quantity: number;
                     /** @description It expires within the days ops are warned before, and has not yet: use it first. */
                     use_first: boolean;
+                    /** @description In a recall: it goes back to ops, as expired stock does. */
+                    recalled: boolean;
                 }[];
                 /** @description A hair system's pieces the kit holds labelled. */
                 units: {
@@ -5581,7 +5583,7 @@ export interface components {
                 unit: string;
                 /** @description What the visits booked are expected to use. */
                 need: number;
-                /** @description What the kit holds of it now. */
+                /** @description What the kit holds of it fit to use now. */
                 have: number;
             }[];
             /** @description The kit's ask of ops for what it is short of, open until ops settle it; null for none. */
@@ -5635,9 +5637,9 @@ export interface components {
             visits: number;
             /** @description Of them, those checked in by the booked start. */
             on_time: number;
-            /** @description First fits done in the last 30 days. */
+            /** @description First fits done or left partly done in the last 30 days; a no-show or one closed "Can't fit today" is none. */
             fits: number;
-            /** @description Of them, those followed by another first fit within 30 days. */
+            /** @description Of them, those whose free refit was booked within 30 days. */
             redone: number;
         };
         TechnicianRescheduleRequest: {
