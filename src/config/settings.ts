@@ -321,7 +321,6 @@ export function readSettings(
     read.problems.push("DEV_ROUTES is set outside local: its routes would close jobs no technician worked");
   }
 
-  const tryon = readTryon(read, providers, isLocal);
   const messaging = readMessaging(read, providers, environment);
 
   const settings: Settings = {
@@ -346,7 +345,7 @@ export function readSettings(
     routes: { apiKey: providers.ROUTES_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null },
     analytics: { clientKeySecret: readClientKeySecret(read, providers) },
     login,
-    tryon,
+    tryon: readTryon(read, providers, isLocal),
     push: readPush(read),
     messaging,
     devRoutes: environment === "local" && devRoutes === "on",
