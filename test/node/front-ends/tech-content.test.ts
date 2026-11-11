@@ -72,8 +72,8 @@ describe("the technician app’s content", () => {
     // the client would pay, and on the technician's own month, what they earned.
     const amounts = sources.filter((path) => readFileSync(path, "utf8").includes("@maneman/web-kit/money"));
     expect(amounts.map((path) => path.replaceAll("\\", "/")).sort()).toEqual([
-      "apps/tech/src/job/OptionsScreen.tsx",
       "apps/tech/src/mine/MonthScreen.tsx",
+      "apps/tech/src/steps/OptionsList.tsx",
     ]);
   });
 

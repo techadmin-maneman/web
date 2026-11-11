@@ -4,7 +4,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { steps as copy } from "../content.ts";
@@ -13,11 +13,14 @@ import { Loading } from "../frame/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import {
   choiceSent,
-  declinedTheFit,
+  DECLINED,
+  inKit,
+  fitsNothingToday,
   afterLabel,
   labelWarning,
   given,
   kitChoices,
+  profileToMatch,
   noticeFor,
   onTheHead,
   pieceBody,
@@ -37,7 +40,8 @@ import {
   PaidFor,
   type Looked,
 } from "./PieceFields.tsx";
-import { pieceSent } from "./sent-before.ts";
+import { isLabel } from "./label.ts";
+import { pieceSent, type PieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./piece.module.css";
@@ -88,26 +92,65 @@ function useLookup(
 ) {
   const [looked, setLooked] = useState<Looked>(NOT_LOOKED);
   const [looking, once] = useOneAtATime();
-  const look = () =>
-    once(async () => {
-      const answer = await api.piece(form.code, job.id);
-      if (answer.ok) {
-        setLooked({ state: "found", found: answer.body });
-        // Another client's piece is refused, and its base and lot are no part of this job.
-        if (!answer.body.belongs_to_this_job) return;
-        if (!given(form.base)) fill.base(answer.body.piece.base ?? "");
-        if (!given(form.lot)) fill.lot(answer.body.piece.supplier_lot ?? "");
-        return;
-      }
-      setLooked(unreachable(answer) ? { state: "offline" } : { state: "unknown" });
-    });
+  const { code, base, lot } = form;
+  const { base: fillBase, lot: fillLot } = fill;
+  // The label now in the field, so an answer for one taken over since is never put on it.
+  const current = useRef(code);
+  useEffect(() => {
+    current.current = code;
+  }, [code]);
+  const look = useCallback(
+    () =>
+      once(async () => {
+        const answer = await api.piece(code, job.id);
+        if (current.current !== code) return;
+        if (answer.ok) {
+          setLooked({ state: "found", found: answer.body });
+          // Another client's piece is refused, and its base and lot are no part of this job.
+          if (!answer.body.belongs_to_this_job) return;
+          if (!given(base)) fillBase(answer.body.piece.base ?? "");
+          if (!given(lot)) fillLot(answer.body.piece.supplier_lot ?? "");
+          return;
+        }
+        setLooked(unreachable(answer) ? { state: "offline" } : { state: "unknown" });
+      }),
+    [once, code, job.id, base, lot, fillBase, fillLot],
+  );
+  // A label is checked as soon as it reads, typed whole or scanned (docs/prompts/tech-redesign.md, "Hair system"); one
+  // taken while another was checked, once that check is done.
+  useEffect(() => {
+    if (isLabel(code) && looked.state === "none" && !looking) void look();
+  }, [code, looked.state, looking, look]);
   return { looked, setLooked, looking, look } as const;
 }
 
-/** What the step asks first: a one visit's client's choice, or what any other fit was paid for. */
-function Asked({ job, choice, onChoose }: { job: Job; choice: Choice; onChoose: (choice: Choice) => void }) {
+/** A one visit's decision as it is made: the product, or against the fit, and whether its fit is booked for later. */
+function useDecision(sent: PieceSent | null) {
+  const [choice, setChoice] = useState<Choice>(choiceSent(sent));
+  const [later, setLater] = useState(sent?.later ?? false);
+  return [
+    { choice, later },
+    { choice: setChoice, later: setLater },
+  ] as const;
+}
+
+type Decision = ReturnType<typeof useDecision>;
+
+/** What the step asks first: a one visit's client's choice and when it is fitted, or what any other fit was paid for. */
+function Asked({ job, decided, decide }: { job: Job; decided: Decision[0]; decide: Decision[1] }) {
   return job.one_visit ? (
-    <ChoiceList products={job.products} choice={choice} onChoose={onChoose} />
+    <ChoiceList
+      products={job.products}
+      choice={decided.choice}
+      later={decided.later}
+      canFitToday={decided.choice !== null && inKit(job, decided.choice)}
+      onChoose={(choice) => {
+        decide.choice(choice);
+        // A hair system the kit does not hold cannot be fitted today, so its fit is booked for later.
+        if (choice !== DECLINED && !inKit(job, choice)) decide.later(true);
+      }}
+      onLater={decide.later}
+    />
   ) : (
     <PaidFor job={job} />
   );
@@ -116,11 +159,14 @@ function Asked({ job, choice, onChoose }: { job: Job; choice: Choice; onChoose: 
 /** The step once the job is in hand: a refused piece starts as it was sent, so nothing is typed twice. */
 function Fitting({
   job,
+  matchTo,
   refused,
   onFinish,
   onBack,
 }: {
   job: Job;
+  /** The profile the kit is matched to: the one the phone holds, else the card's. */
+  matchTo: ReturnType<typeof profileToMatch>;
   refused: Queued | null;
   onFinish: (body: EventBody<"piece"> | typeof CANNOT_FIT_TODAY) => void;
   onBack: () => void;
@@ -134,9 +180,9 @@ function Fitting({
   const [oldCode, setOldCode] = useState(sent?.oldCode ?? "");
   const [oldReason, setOldReason] = useState(sent?.oldReason ?? "");
   const [picking, setPicking] = useState<"new" | "old" | null>(null);
-  const [choice, setChoice] = useState<Choice>(choiceSent(sent));
+  const [{ choice, later }, decide] = useDecision(sent);
 
-  const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice };
+  const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice, later };
   const checked = looked.state === "found" && !looked.found.belongs_to_this_job ? "another_client" : looked.state;
   const missing = stillMissing(form, job, checked);
   /** A label typed or scanned: one of the kit's pieces picks its hair system and fills in its lot. */
@@ -170,15 +216,15 @@ function Fitting({
         onFinish(pieceBody(form, job));
       }}
     >
-      <Asked job={job} choice={choice} onChoose={setChoice} />
-      {!declinedTheFit(form, job) && (
+      <Asked job={job} decided={{ choice, later }} decide={decide} />
+      {!fitsNothingToday(form, job) && (
         <>
-          <KitPieces choices={kitChoices(job, choice)} stock={stock} onStock={setStock} />
+          <KitPieces choices={kitChoices({ ...job, profile: matchTo }, choice)} stock={stock} onStock={setStock} />
           <LabelField
             code={code}
             looked={looked}
             looking={looking}
-            warning={labelWarning(job, form)}
+            warning={labelWarning({ ...job, profile: matchTo }, form)}
             pieces={(job.pieces ?? []).filter(toFit)}
             picking={picking === "new"}
             onCode={takeLabel}
@@ -210,7 +256,7 @@ function Fitting({
 }
 
 export function Piece({ id }: { id: string }) {
-  const { loaded, retry, refused, finish, closeWith, back } = useStep(id, "piece");
+  const { loaded, retry, refused, queued, finish, closeWith, back } = useStep(id, "piece");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
@@ -218,5 +264,8 @@ export function Piece({ id }: { id: string }) {
   }
   const finishing = (body: EventBody<"piece"> | typeof CANNOT_FIT_TODAY) =>
     void (body === CANNOT_FIT_TODAY ? closeWith(CANNOT_FIT) : finish(body));
-  return <Fitting job={loaded.value} refused={refused} onFinish={finishing} onBack={back} />;
+  const job = loaded.value;
+  return (
+    <Fitting job={job} matchTo={profileToMatch(job, queued)} refused={refused} onFinish={finishing} onBack={back} />
+  );
 }

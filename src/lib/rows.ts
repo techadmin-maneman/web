@@ -1761,6 +1761,7 @@ export interface Rows {
     readonly going_ahead: number | null;
     readonly finish_ask: string | null;
     readonly finish_asked_at: string | null;
+    readonly picked_tier: string | null;
   };
   readonly visit_pay_rates: {
     readonly id: string;

@@ -3625,7 +3625,7 @@ Indexes:
 
 What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`, `0205_finish_the_work.sql`.
+Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`, `0205_finish_the_work.sql`, `0206_consultation_pick.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3644,6 +3644,7 @@ Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`, `0205_finish
 | `going_ahead` | INTEGER | yes |  |  | After a consultation, the client's yes to a fit, kept beside the reason for a no (lost_reason): 1 for yes, 0 for no, NULL where the technician was not asked or the visit is no consultation. Only a new column, which the code deployed neither reads nor writes. |
 | `finish_ask` | TEXT | yes |  |  | Migration number: 0205 When a technician who left a visit partly done, or could not fit, suggests finishing it: tomorrow morning, tomorrow evening, or ops to call the client (docs/decisions/0246-closed-and-sent-back.md). Ops read it on the visit's task. Only new columns, which the code deployed neither reads nor writes. |
 | `finish_asked_at` | TEXT | yes |  |  |  |
+| `picked_tier` | TEXT | yes |  |  | Migration number: 0206 The hair system a consultation's client picked from Options, going ahead with a fit, by its tier (docs/decisions/0247-the-steps-left.md). Ops read it on the client's First fit to book task. Only a new column, which the code deployed neither reads nor writes. |
 
 Indexes:
 

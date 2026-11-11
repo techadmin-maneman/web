@@ -738,7 +738,9 @@ export const steps = {
     // The board draws no label typed wrong.
     malformed: "Type it as on the label, like MM-ESS-0000123-K.",
     checkFirst: "Check the label to continue",
-    look: "Check the label",
+    /** A label is checked as soon as it reads; again only once there is signal (docs/prompts/tech-redesign.md). */
+    checking: "Checking the label…",
+    checkAgain: "Check again",
     unknown: "Not in your kit. Check the label, or close with Can’t fit today.",
     notInKitAction: "That label isn’t in your kit",
     uncheckedAction: "Waiting for the label check",
@@ -786,6 +788,8 @@ export const steps = {
     goingAhead: "Going ahead with a fit?",
     yes: "Yes",
     notNow: "Not now",
+    /** The product the client picked on Options, which goes with a yes. */
+    picked: (name: string) => `Their pick: ${name}.`,
     why: "Why not?",
     pickWhy: "Pick why to continue",
     answerFirst: "Say if they’re going ahead",
@@ -802,6 +806,8 @@ export const closeOut = {
   notFitted: "not fitted",
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
+  /** A one visit whose fit the client booked for another day. */
+  fitToBook: "fit to book",
   duration: "Duration",
   why: "Why",
   fit: "Fit",
@@ -902,6 +908,19 @@ export const oneVisit = {
   noProducts: "No hair system is offered for this visit. Speak to ops before you fit anything.",
   chooseFirst: "Choose the hair system, or mark it declined",
   declinedNote: "Nothing is fitted. The visit ends as a free consultation.",
+  /** When the chosen hair system is fitted: today, or another day ops book (docs/decisions/0247-the-steps-left.md). */
+  when: "When",
+  fitToday: "Fit today",
+  bookLater: "Book the first fit",
+  bookLaterSub: "Ops will call to book it",
+  /** Fit today's line: whether the technician's kit holds the hair system chosen, which a fit today needs. */
+  inKit: (product: string) => `${product} is in your kit`,
+  notInKit: (product: string) => `${product} isn’t in your kit`,
+  notInKitAction: "Not in your kit: book the first fit",
+  laterNote: "Nothing is fitted today. Nothing to pay now.",
+  /** Closing as done, once the client booked the fit for another day: by the hair system's name. */
+  endsGoingAhead: (product: string) =>
+    `Ends as a consultation. Ops will call to book ${product}; it’s paid at that visit.`,
   /** Closing as done, once the client decided against the fit. */
   endsAsConsultation: "Ends as a free consultation. Nothing to pay.",
   /** Closing as done, once the client chose a hair system: by its name in the console. */
@@ -1091,11 +1110,16 @@ export const options = {
   retry: "Try again",
   none: "Nothing on sale yet.",
   firstFit: "First fit",
-  /** "Service visit · every 30 days" */
-  service: (days: number) => `Service visit · every ${String(days)} days`,
-  /** "Replacement · every 6 months" */
-  replacement: (months: number) => `Replacement · every ${String(months)} months`,
-  noPrice: "No price set yet",
+  /** "Service visit, every 30 days" */
+  service: (days: number) => `Service visit, every ${String(days)} days`,
+  /** "Replacement, every 6 months" */
+  replacement: (months: number) => `Replacement, every ${String(months)} months`,
+  noPrice: "Price not set",
+  /** The consultation's Options step: the products with their prices, and the client's pick marked. */
+  prices: "Products and prices",
+  inclGst: "Incl. GST",
+  markPick: "Mark the client’s pick.",
+  pricesFailed: "Prices didn’t load.",
   looksTitle: "Their looks",
   /** A look's description for a screen reader: "Look made 20 Sep". */
   look: (date: string) => `Look made ${date}`,

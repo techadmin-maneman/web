@@ -14,6 +14,7 @@ import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
+import { When } from "./FitWhen.tsx";
 import { DECLINED, given, type Choice, type ClientPiece, type KitHairSystem } from "./piece-form.ts";
 import shared from "./steps.module.css";
 import styles from "./piece-fields.module.css";
@@ -34,42 +35,62 @@ function InkField(props: { label: string; children: (control: FieldControl) => R
     </Field>
   );
 }
-/** The products the client may choose, by name, and the choice against the fit: one tap each. */
+/**
+ * The products the client may choose, by name, and the choice against the fit: one tap each. A product chosen asks
+ * when it is fitted: today, or another day ops book.
+ */
 export function ChoiceList({
   products,
   choice,
+  later,
+  canFitToday,
   onChoose,
+  onLater,
 }: {
   products: Job["products"];
   choice: Choice;
+  later: boolean;
+  /** Whether the kit holds the hair system chosen, which a fit today needs. */
+  canFitToday: boolean;
   onChoose: (choice: string) => void;
+  onLater: (later: boolean) => void;
 }) {
   const options = [
     ...products.map((product) => ({ id: product.tier, label: product.name })),
     { id: DECLINED, label: oneVisit.declined },
   ];
   return (
-    <section className={shared.field} aria-labelledby="client-choice-title">
-      <h2 className={capsLook(shared.fieldTitle)} id="client-choice-title">
-        {oneVisit.choice}
-      </h2>
-      {products.length === 0 && <p className={shared.note}>{oneVisit.noProducts}</p>}
-      <div className={shared.choiceList}>
-        {options.map((option) => (
-          <ToggleButton
-            key={option.id}
-            className={shared.choice}
-            pressed={choice === option.id}
-            onClick={() => {
-              onChoose(option.id);
-            }}
-          >
-            {option.label}
-          </ToggleButton>
-        ))}
-      </div>
-      {choice === DECLINED && <p className={shared.note}>{oneVisit.declinedNote}</p>}
-    </section>
+    <>
+      <section className={shared.field} aria-labelledby="client-choice-title">
+        <h2 className={capsLook(shared.fieldTitle)} id="client-choice-title">
+          {oneVisit.choice}
+        </h2>
+        {products.length === 0 && <p className={shared.note}>{oneVisit.noProducts}</p>}
+        <div className={shared.choiceList}>
+          {options.map((option) => (
+            <ToggleButton
+              key={option.id}
+              className={shared.choice}
+              pressed={choice === option.id}
+              onClick={() => {
+                onChoose(option.id);
+              }}
+            >
+              {option.label}
+            </ToggleButton>
+          ))}
+        </div>
+        {choice === DECLINED && <p className={shared.note}>{oneVisit.declinedNote}</p>}
+      </section>
+      {choice !== null && choice !== DECLINED && (
+        <When
+          product={products.find((product) => product.tier === choice)?.name ?? choice}
+          canFitToday={canFitToday}
+          later={later}
+          onLater={onLater}
+        />
+      )}
+    </>
   );
 }
 
@@ -247,16 +268,18 @@ export function LabelField(props: {
           )}
         </Field>
         <ScanButton onCode={props.onCode} />
-        <Button
-          variant="outline"
-          size="control"
-          className={shared.second}
-          disabled={!isLabel(code) || props.looking}
-          busy={props.looking}
-          onClick={props.onLook}
-        >
-          {copy.piece.look}
-        </Button>
+        {/* Checked as it reads, with no step of its own; tried again once a check found no signal. */}
+        {props.looked.state === "offline" && (
+          <Button
+            variant="outline"
+            size="control"
+            className={shared.second}
+            busy={props.looking}
+            onClick={props.onLook}
+          >
+            {copy.piece.checkAgain}
+          </Button>
+        )}
         <Picker pieces={props.pieces} open={props.picking} onToggle={props.onTogglePicking} onPick={props.onPick} />
       </div>
       {props.warning !== null && (
@@ -264,7 +287,12 @@ export function LabelField(props: {
           {props.warning}
         </p>
       )}
-      <LookedNote looked={props.looked} />
+      {props.looking && (
+        <p className={shared.note} role="status">
+          {copy.piece.checking}
+        </p>
+      )}
+      {!props.looking && <LookedNote looked={props.looked} />}
     </>
   );
 }

@@ -26,6 +26,8 @@ export interface PieceSent {
   readonly declined: boolean;
   /** A one visit's product, by its tier; null where none was sent. */
   readonly product: string | null;
+  /** A one visit's product with its fit booked for another day. */
+  readonly later: boolean;
   readonly code: string;
   readonly base: string;
   readonly lot: string;
@@ -37,12 +39,13 @@ export interface PieceSent {
 
 /** The piece the refused step sent, or null where there is no refused step. */
 export function pieceSent(refused: Queued | null): PieceSent | null {
-  const sent: Unchecked<PieceFitted & PieceDeclined> | null = fieldsOf(refused?.body);
+  const sent: Unchecked<PieceFitted & PieceDeclined & { fit_later: true }> | null = fieldsOf(refused?.body);
   if (sent === null) return null;
   const old: Unchecked<NonNullable<PieceFitted["old_piece"]>> | null = fieldsOf(sent.old_piece);
   return {
     declined: sent.declined === true,
     product: typeof sent.product === "string" ? sent.product : null,
+    later: sent.fit_later === true,
     code: textOf(sent.piece_code),
     base: textOf(sent.base),
     lot: textOf(sent.supplier_lot),

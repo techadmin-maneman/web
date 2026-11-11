@@ -93,6 +93,7 @@ export function closeVisit({
   partialReason,
   lostReason = null,
   goingAhead = null,
+  pickedTier = null,
   at,
   byHand = null,
 }: {
@@ -105,14 +106,16 @@ export function closeVisit({
   lostReason?: string | null;
   /** After a consultation, whether the client said they are going ahead with a fit; null where not asked. */
   goingAhead?: boolean | null;
+  /** After a consultation going ahead, the hair system the client picked from Options, by its tier (ADR 0247). */
+  pickedTier?: string | null;
   at: string;
   byHand?: ClosedByHand | null;
 }): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO visit_outcomes (id, appointment_id, started_at, ended_at, duration_minutes, outcome, partial_reason,
-         updated_at, closed_by, close_reason, lost_reason, going_ahead)
-       SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11, ?12, ?13 FROM appointments
+         updated_at, closed_by, close_reason, lost_reason, going_ahead, picked_tier)
+       SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11, ?12, ?13, ?14 FROM appointments
        WHERE id = ?2 AND deleted_at IS NULL AND status = ?9
          AND NOT EXISTS (SELECT 1 FROM visit_outcomes WHERE appointment_id = ?2)`,
     )
@@ -130,6 +133,7 @@ export function closeVisit({
       byHand?.reason ?? null,
       lostReason,
       goingAhead === null ? null : Number(goingAhead),
+      pickedTier,
     );
 }
 

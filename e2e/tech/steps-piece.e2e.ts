@@ -31,8 +31,8 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await label.fill("mm-std-7193 c");
     await expect(label).toHaveValue("MM-STD-7193-C");
-    // Not in the kit, so it is checked before the fit goes on.
-    await expect(page.getByText(techCopy.steps.piece.uncheckedAction, { exact: true })).toBeVisible();
+    // Checked as it reads, with no step of its own: not in the kit, so the fit does not go on.
+    await expect(page.getByText(techCopy.steps.piece.notInKitAction, { exact: true })).toBeVisible();
     await expect(stepAction(page)).toBeDisabled();
 
     await label.fill("MM-STD-71");
@@ -164,8 +164,10 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(kit.getByRole("button").first()).toHaveAttribute("aria-pressed", "true");
     await stepAction(page).click();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    // The label checked as it read, the kit's hair system names its base.
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-ESS-0000007-H",
+      base: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density",
       supplier_lot: "HS-1",
       stock_code: "hs_exact",
     });
@@ -191,19 +193,44 @@ test.describe("the piece (board B3, step 4)", () => {
 
   test("with no signal says the label is not checked, rather than unknown", async ({ page }) => {
     const fake = await onThePiece(page);
-    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-7193-C");
     fake.online = false;
-    await page.getByRole("button", { name: techCopy.steps.piece.look }).click();
+    // Checked as it reads: no button to press first.
+    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-7193-C");
 
     await expect(page.getByText(techCopy.steps.piece.offline)).toBeVisible();
+    // It can be tried again once there is signal.
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.checkAgain })).toBeVisible();
     await expect(page.getByText(/We do not know that label/)).toHaveCount(0);
     await expect(stepAction(page)).toBeEnabled();
+  });
+
+  // A label taken while another is still being checked gets its own answer, and nothing of the first's.
+  test("checks a label taken while another is still being checked, and fills nothing of the first", async ({
+    page,
+  }) => {
+    await onThePiece(page);
+    let first = true;
+    await page.route("**/api/tech/pieces/lookup**", async (route) => {
+      if (first) {
+        first = false;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      await route.fallback();
+    });
+    const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
+    await label.fill(ROHITS_PIECE.piece_code);
+    await label.fill("MM-STD-9998-Z");
+
+    await expect(page.getByText(techCopy.steps.piece.unknown)).toBeVisible();
+    await page.waitForTimeout(1800);
+    await expect(page.getByText(techCopy.steps.piece.unknown)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.base, exact: true })).toHaveValue("");
+    await expect(stepAction(page)).toBeDisabled();
   });
 
   test("will not record another client’s piece", async ({ page }) => {
     await onThePiece(page);
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-9999-Z");
-    await page.getByRole("button", { name: techCopy.steps.piece.look }).click();
 
     await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.notThisClient })).toBeVisible();
     await expect(page.getByText(techCopy.steps.piece.notThisClientAction, { exact: true })).toBeVisible();
@@ -283,14 +310,18 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(stepAction(page)).toBeDisabled();
     expect(await axeViolations(page)).toEqual([]);
 
-    await page.getByRole("button", { name: "Mane Man Natural" }).click();
-    await expect(page.getByRole("button", { name: "Mane Man Natural" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Mane Man Natural", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Mane Man Natural", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
     await stepAction(page).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-NAT-5120-A",
+      base: "Kit stock MM-NAT-5120-A",
       product: "natural",
       stock_code: "hs_natural",
     });
@@ -336,6 +367,77 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
     await expect(page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist })).toBeVisible();
     await expect(page.getByText(techCopy.visit.task(1, 9))).toBeVisible();
+  });
+
+  // A fit today needs the hair system in the kit (docs/prompts/tech-redesign.md, "Outcome").
+  test("books the fit for later for a hair system the kit does not hold, and offers no fit today", async ({ page }) => {
+    await onTheChoice(page);
+    await page.getByRole("button", { name: "Mane Man Essential", exact: true }).click();
+
+    const today = page.getByRole("button", { name: new RegExp(`^${techCopy.oneVisit.fitToday}`) });
+    await expect(today).toBeDisabled();
+    await expect(today).toContainText(techCopy.oneVisit.notInKit("Mane Man Essential"));
+    await expect(page.getByRole("button", { name: new RegExp(techCopy.oneVisit.bookLater) })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
+    expect(await axeViolations(page)).toEqual([]);
+  });
+
+  // The client chose the product and books the fit for another day (docs/decisions/0247-the-steps-left.md).
+  test("books the fit for another day: no label asked, the product sent, the consultation’s checklist", async ({
+    page,
+  }) => {
+    const fake = await onTheChoice(page);
+    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    // Fit today, unless the client books it for later.
+    await expect(page.getByRole("button", { name: new RegExp(`^${techCopy.oneVisit.fitToday}`) })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await page.getByRole("button", { name: new RegExp(techCopy.oneVisit.bookLater) }).click();
+    await expect(page.getByText(techCopy.oneVisit.laterNote)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
+    expect(await axeViolations(page)).toEqual([]);
+    await stepAction(page).click();
+
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({ product: "natural", fit_later: true });
+    await expect(
+      page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.consultation }),
+    ).toBeVisible();
+  });
+
+  // Nothing is fitted, so nothing used is what was expected, and asks no reason, as the API asks none.
+  test("counts nothing used on a fit booked for later with no reason asked", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    fake.clientChoice = { product: "natural", fit_later: true };
+    startedThrough(fake, "before_photos", "piece", "checklist", "profile");
+    await page.goto(`/jobs/${JOB_ID}/consumables`);
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
+
+    await expect(page.getByText(techCopy.steps.consumables.whyNone)).toHaveCount(0);
+    await stepAction(page).click();
+    await expect.poll(() => writesTo(fake, "consumables").length).toBe(1);
+    expect(writesTo(fake, "consumables")[0]?.body).toEqual({ items: [] });
+  });
+
+  test("closes a fit booked for later as a consultation going ahead, with nothing to pay now", async ({ page }) => {
+    const fake = await atTheOutcome(page, { product: "natural", fit_later: true });
+    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+
+    await expect(page.getByText(techCopy.oneVisit.endsGoingAhead("Mane Man Natural"))).toBeVisible();
+    await expect(page.getByText(/payment link/)).toHaveCount(0);
+    await expect(page.getByLabel(techCopy.oneVisit.code.label)).toHaveCount(0);
+    await expect(stepAction(page)).toHaveText(techCopy.visit.close);
+    expect(await axeViolations(page)).toEqual([]);
+
+    await stepAction(page).click();
+    await expect(page.getByText(/^Rohit M\. · .+ · fit to book$/)).toBeVisible();
+    expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: true, product: "natural" });
   });
 
   // A declined visit offers no code and promises no link, and closes as what it became.

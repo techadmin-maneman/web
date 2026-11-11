@@ -82,6 +82,8 @@ export interface Fake {
   movedTo: string | null;
   /** Set to make the no-show refuse with `409 too_early_to_close`, as it does before the wait runs. */
   tooEarly: boolean;
+  /** Set to make a check-in refuse with `409 too_early_to_arrive`, as it does before the job's earliest check-in. */
+  checkInEarly: boolean;
   /** Set to a photograph's slot, as `before-top`, to refuse its file with `422 photo_invalid_file`, as an empty one is. */
   refusedPhoto: string | null;
   /** What the check-in answers: pass, or a distance outside the radius. */
@@ -181,6 +183,9 @@ function reply(route: Route, status: number, body?: unknown): Promise<void> {
   return body === undefined ? route.fulfill({ status }) : route.fulfill({ status, json: body });
 }
 
+/** A piece in our records that is another client's: the API refuses to fit it on this job. */
+const ANOTHER_CLIENTS_PIECE = "MM-STD-9999-Z";
+
 /** A card as the API answers it once the visit has locked again, the day after: nothing of the client's. */
 const relockedOf = (card: Card): Card => ({
   ...card,
@@ -242,6 +247,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     moved: false,
     movedTo: null,
     tooEarly: false,
+    checkInEarly: false,
     refusedPhoto: null,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
@@ -436,20 +442,24 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (changed !== null) return refuse(route, 409, "superseded", changed, fake.wentTo);
       if (fake.closedByOps) return refuse(route, 409, "already_closed");
       if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 409, "too_early_to_close");
+      if (path.endsWith("/checkin") && fake.checkInEarly) return refuse(route, 409, "too_early_to_arrive");
 
-      // A one visit's client may decide against the fit, when the piece step carries no label.
+      // A one visit's client may decide against the fit, or book it for later, when the piece step carries no label.
       const body = route.request().postDataJSON() as {
         piece_code?: string;
         declined?: boolean;
         product?: string;
+        fit_later?: boolean;
       } | null;
       const declined = body?.declined === true;
-      if (path.endsWith("/piece") && !declined && !isPieceCode(body?.piece_code ?? "")) {
+      const later = body?.fit_later === true;
+      if (path.endsWith("/piece") && !declined && !later && !isPieceCode(body?.piece_code ?? "")) {
         return refuse(route, 400, "invalid_request", ["piece_code"]);
       }
       fake.writes.push({ path, eventId, startsAt, body });
       if (path.endsWith("/piece") && fake.oneVisit) {
-        fake.clientChoice = declined ? { declined: true } : { product: body?.product ?? "" };
+        const product = body?.product ?? "";
+        fake.clientChoice = declined ? { declined: true } : later ? { product, fit_later: true } : { product };
       }
 
       if (path.endsWith("/checkin")) {
@@ -544,6 +554,19 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (path === "/api/tech/pieces/lookup") {
       const code = url.searchParams.get("code") ?? "";
       if (!isPieceCode(code)) return refuse(route, 404, "not_found");
+      // As the API answers (src/routes/tech/pieces.ts): a unit in the technician's kit is theirs to fit, named by its
+      // hair system; a piece in our records is this client's or another's; any other label is not found.
+      const system = fake.kitHairSystems.find((each) => each.units.some((one) => one.code === code));
+      const unit = system?.units.find((one) => one.code === code);
+      if (system !== undefined && unit !== undefined) {
+        const piece = { ...ROHITS_PIECE, piece_code: code, base: system.name, supplier_lot: unit.lot_code };
+        return reply(route, 200, {
+          piece: { ...piece, fitted_at: null, replacement_due_at: null },
+          belongs_to_this_job: true,
+          in_kit: true,
+        });
+      }
+      if (code !== ROHITS_PIECE.piece_code && code !== ANOTHER_CLIENTS_PIECE) return refuse(route, 404, "not_found");
       return reply(route, 200, {
         piece: { ...ROHITS_PIECE, piece_code: code },
         belongs_to_this_job: code === ROHITS_PIECE.piece_code,

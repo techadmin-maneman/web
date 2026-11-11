@@ -340,7 +340,16 @@ export const QUEUES: readonly Queue[] = [
   {
     group: "first_fit_to_book",
     sql: `SELECT 'first_fit_to_book' AS "group", s.person_id AS id, s.person_id AS person_id, pe.name AS person_name,
-         s.consulted_start AS detail, json_object('consulted_at', s.consulted_start) AS facts,
+         s.consulted_start AS detail,
+         json_object('consulted_at', s.consulted_start,
+           -- The hair system the client picked at the consultation, by name (docs/decisions/0247-the-steps-left.md).
+           'picked', (SELECT COALESCE((SELECT sv.name FROM services sv
+                                       WHERE sv.kind = 'first_fit' AND sv.tier = v.picked_tier LIMIT 1),
+                                      v.picked_tier)
+                        FROM appointments ca JOIN visit_outcomes v ON v.appointment_id = ca.id
+                       WHERE ca.person_id = s.person_id AND ca.type = 'consultation'
+                         AND ca.window_start = s.consulted_start AND v.picked_tier IS NOT NULL
+                       LIMIT 1)) AS facts,
          s.consulted_start AS since, NULL AS due_by,
          ${FIRST_FIT_EPISODE} AS episode
     FROM last_visits s JOIN people pe ON pe.id = s.person_id

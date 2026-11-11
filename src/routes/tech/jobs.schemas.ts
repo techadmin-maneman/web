@@ -227,12 +227,14 @@ export const JobDetailSchema = JobSummarySchema.extend({
       z
         .object({ product: z.string().openapi({ description: "The product's tier, from the card's products." }) })
         .strict(),
+      z.object({ product: z.string(), fit_later: z.literal(true) }).strict(),
       z.null(),
     ])
     .openapi({
       description:
-        "On a one visit, what the client decided as its piece step recorded it: the product they chose, or that " +
-        "they decided against the fit. Null until the piece step lands, and on any other visit.",
+        "On a one visit, what the client decided as its piece step recorded it: the product they chose, fitted " +
+        "then or with its fit booked for another day, or that they decided against the fit. Null until the piece " +
+        "step lands, and on any other visit.",
     }),
   profile: z.union([HairProfileSchema, z.null()]).openapi({
     description:

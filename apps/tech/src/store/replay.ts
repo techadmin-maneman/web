@@ -147,13 +147,25 @@ export function account(queue: readonly Queued[]): JobAccount[] {
   return [...accounts].map(([job_id, held]) => ({ job_id, ...held }));
 }
 
-const refusedEarly = (queue: readonly Queued[], jobId: string, kind: EventKind): boolean =>
-  queue.some((event) => event.job_id === jobId && event.kind === kind && event.state === "early");
+const earlyOf = (queue: readonly Queued[], jobId: string, kind: EventKind): Queued | undefined =>
+  queue.find((event) => event.job_id === jobId && event.kind === kind && event.state === "early");
 
-/** Whether the job's last no-show was refused as before the wait ran out, so the card says so and stays. */
+/**
+ * Whether the job's last no-show was refused as before the wait ran out, so the card says so and stays, until one
+ * lands.
+ */
 export const refusedAsEarly = (queue: readonly Queued[], jobId: string): boolean =>
-  refusedEarly(queue, jobId, "no_show");
+  earlyOf(queue, jobId, "no_show") !== undefined;
 
-/** Whether the job's last check-in was refused as before the earliest check-in, so the card says when it opens. */
-export const checkInRefusedAsEarly = (queue: readonly Queued[], jobId: string): boolean =>
-  refusedEarly(queue, jobId, "check_in");
+/**
+ * Whether the job's last check-in was refused as before the earliest check-in, so the card says when it opens. A tap
+ * since, still on its way, is the last word: with no signal it waits at the door to land, and may.
+ */
+export function checkInRefusedAsEarly(queue: readonly Queued[], jobId: string): boolean {
+  const early = earlyOf(queue, jobId, "check_in");
+  if (early === undefined) return false;
+  return !queue.some(
+    (event) =>
+      event.job_id === jobId && event.kind === "check_in" && event.state === "waiting" && event.seq > early.seq,
+  );
+}

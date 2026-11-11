@@ -74,6 +74,8 @@ export type TaskFacts =
       readonly consulted_at: Instant;
       /** The window the fit is offered in, the consultation's; null where a fit cannot start in it. */
       readonly fit_window: BookingWindow | null;
+      /** The hair system the client picked at the consultation, by its name; null where none was. */
+      readonly picked: string | null;
     }
   | {
       readonly group: "upi_due";

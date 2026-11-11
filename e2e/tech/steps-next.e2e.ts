@@ -56,7 +56,8 @@ const VISITS: readonly { name: string; type: VisitType; oneVisit: boolean; stops
     stops: [
       ["checklist", ["before_photos"], visit.next(visit.screens.hair_profile)],
       ["profile", ["before_photos", "checklist"], visit.next(techCopy.profile.match.title)],
-      ["outcome", ["before_photos", "checklist", "profile"], visit.close],
+      // The outcome opens on the consultation's Options.
+      ["outcome", ["before_photos", "checklist", "profile"], visit.next(steps.titles.outcome)],
     ],
   },
   {

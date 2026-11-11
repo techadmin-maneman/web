@@ -4,6 +4,7 @@
 
 import type { EventBody, Job } from "../api.ts";
 import { oneVisit, steps as copy } from "../content.ts";
+import type { Queued } from "../store/outbox.ts";
 import { isLabel } from "./label.ts";
 import type { PieceSent } from "./sent-before.ts";
 
@@ -26,6 +27,8 @@ export interface PieceForm {
   readonly oldCode: string;
   readonly oldReason: string;
   readonly choice: Choice;
+  /** On a one visit, a product chosen with its fit booked for another day (docs/decisions/0247-the-steps-left.md). */
+  readonly later: boolean;
 }
 
 export const given = (text: string): boolean => text.trim() !== "";
@@ -38,7 +41,7 @@ export const onTheHead = (piece: ClientPiece): boolean =>
   piece.fitted_at !== null && piece.failed_at === null && piece.replaced_at === null;
 
 /** The product a piece is fitted as: chosen on a one visit, paid for on a first fit, the profile's on a replacement. */
-function productFitted(job: Pick<Job, "profile" | "service" | "one_visit" | "type">, choice: Choice): string | null {
+function productFitted(job: Matched, choice: Choice): string | null {
   if (job.one_visit) return choice;
   if (job.type === "first_fit") return job.service?.tier ?? null;
   return job.profile?.fit.product ?? null;
@@ -46,8 +49,31 @@ function productFitted(job: Pick<Job, "profile" | "service" | "one_visit" | "typ
 
 type Fit = NonNullable<NonNullable<Job["profile"]>["fit"]>;
 
+/** What a hair system is matched on: the product, the base, colour, grey and density. */
+type MatchFit = Pick<
+  Fit,
+  "product" | "base_width_in" | "base_length_in" | "colour" | "grey_percent" | "density_percent"
+>;
+
+/** A job with the profile its kit is matched to: the card's, or one measured on the phone that has not landed. */
+type Matched = Omit<Pick<Job, "kit_hair_systems" | "service" | "one_visit" | "type">, never> & {
+  readonly profile: { readonly fit: MatchFit } | null;
+};
+
+/**
+ * The profile the kit is matched to (docs/decisions/0245-the-steps.md): the one the phone measured and still holds,
+ * as with no signal, else the card's. The phone's is what was measured on the head today.
+ */
+export function profileToMatch(job: Job, queued: readonly Queued[]): Matched["profile"] {
+  const held = queued.filter(
+    (event) => event.job_id === job.id && event.kind === "profile" && event.state !== "superseded",
+  );
+  const fit = (held.at(-1)?.body as { readonly fit?: MatchFit } | null | undefined)?.fit;
+  return fit === undefined ? job.profile : { fit };
+}
+
 /** Whether a kit hair system is made to the profile's base, colour, grey and density exactly. */
-const madeTo = (each: KitHairSystem, fit: Fit): boolean =>
+const madeTo = (each: KitHairSystem, fit: MatchFit): boolean =>
   each.base_width_in === fit.base_width_in &&
   each.base_length_in === fit.base_length_in &&
   each.colour === fit.colour &&
@@ -58,11 +84,7 @@ const madeTo = (each: KitHairSystem, fit: Fit): boolean =>
  * Whether the kit hair system chosen is not the one this fit is for: another product than the one paid for or chosen,
  * or, with a hair profile, made to another fit. False for none chosen, or a piece from elsewhere.
  */
-function otherThanFitted(
-  job: Pick<Job, "kit_hair_systems" | "profile" | "service" | "one_visit" | "type">,
-  choice: Choice,
-  stock: string | null,
-): boolean {
+function otherThanFitted(job: Matched, choice: Choice, stock: string | null): boolean {
   const hairSystem = job.kit_hair_systems.find((each) => each.code === stock);
   if (hairSystem === undefined) return false;
   const product = productFitted(job, choice);
@@ -75,7 +97,7 @@ function otherThanFitted(
  * for on a first fit, or the profile's on a replacement, and the profile's base, colour, grey and density exactly.
  */
 export function kitChoices(
-  job: Pick<Job, "kit_hair_systems" | "profile" | "service" | "one_visit" | "type">,
+  job: Matched,
   choice: Choice,
 ): { readonly hairSystem: KitHairSystem; readonly matches: boolean }[] {
   const fit = job.profile?.fit ?? null;
@@ -116,10 +138,7 @@ function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string
 }
 
 /** What the label warns of: a piece of the kit that has expired, or a hair system not the one this fit is for. */
-export function labelWarning(
-  job: Pick<Job, "kit_hair_systems" | "date" | "profile" | "service" | "one_visit" | "type">,
-  form: PieceForm,
-): string | null {
+export function labelWarning(job: Matched & Pick<Job, "date">, form: PieceForm): string | null {
   if (expiredInKit(job, form.code)) return copy.piece.expired;
   return otherThanFitted(job, form.choice, form.stock) ? copy.piece.otherThanFitted : null;
 }
@@ -140,8 +159,20 @@ export function afterLabel(
 }
 
 /** Whether a one visit's client decided against the fit, which fits nothing and asks for no label. */
-export const declinedTheFit = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
+const declinedTheFit = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
   job.one_visit && form.choice === DECLINED;
+
+/** Whether a one visit's client chose a product and booked its fit for another day, which fits nothing today. */
+const fitLater = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
+  job.one_visit && form.later && form.choice !== null && form.choice !== DECLINED;
+
+/** Whether the technician's kit holds a piece of the product, which a one visit's fit today needs. */
+export const inKit = (job: Pick<Job, "kit_hair_systems">, product: string): boolean =>
+  job.kit_hair_systems.some((each) => each.product === product && each.held > 0);
+
+/** Whether the step fits nothing today, so asks for no label: the fit declined, or booked for later. */
+export const fitsNothingToday = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
+  declinedTheFit(form, job) || fitLater(form, job);
 
 /** What a label's check found: not checked yet, unknown to us, no signal to check, this client's, or another's. */
 export type LabelChecked = "none" | "unknown" | "offline" | "found" | "another_client";
@@ -156,9 +187,12 @@ export function stillMissing(
   job: Pick<Job, "one_visit" | "kit_hair_systems" | "date">,
   checked: LabelChecked,
 ): string | null {
-  if (expiredInKit(job, form.code)) return copy.piece.expiredAction;
   if (job.one_visit && form.choice === null) return oneVisit.chooseFirst;
-  if (declinedTheFit(form, job)) return null;
+  // Fitting nothing today asks for no label, so a label left typed holds nothing back.
+  if (fitsNothingToday(form, job)) return null;
+  // A one visit fits today only a hair system the kit holds; one it does not is booked for later.
+  if (job.one_visit && form.choice !== null && !inKit(job, form.choice)) return oneVisit.notInKitAction;
+  if (expiredInKit(job, form.code)) return copy.piece.expiredAction;
   if (!isLabel(form.code)) return copy.piece.checkFirst;
   if (checked === "another_client") return copy.piece.notThisClientAction;
   // A row picked whose pieces carry no labels in our records takes the label on the piece; one whose pieces do, only one
@@ -179,6 +213,7 @@ const oldPieceOf = (form: PieceForm) =>
 /** The step's body: against the fit, or the piece with what was said of it, and on a replacement the one off. */
 export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBody<"piece"> {
   if (declinedTheFit(form, job)) return { declined: true };
+  if (fitLater(form, job) && form.choice !== null) return { product: form.choice, fit_later: true };
   return {
     piece_code: form.code,
     ...(job.one_visit && form.choice !== null ? { product: form.choice } : {}),

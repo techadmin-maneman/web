@@ -93,7 +93,7 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   at_risk_client: (facts, _, now) =>
     copy.at_risk_client(weeksBetween(facts.last_visit_at, now), shortDate(facts.due_on)),
   first_fit_to_book: (facts) =>
-    copy.first_fit_to_book(shortDate(indiaDate(facts.consulted_at)), fitWindow(facts.fit_window)),
+    copy.first_fit_to_book(shortDate(indiaDate(facts.consulted_at)), fitWindow(facts.fit_window), facts.picked),
   payment_owed: (facts) => copy.payment_owed(facts.product, rupees(facts.amount), facts.state),
   upi_due: (facts) => copy.upi_due(dispatch.typeNames[facts.kind], dayAndTime(facts.starts_at), rupees(facts.amount)),
   // What the charge kept, or, where it kept no money, the credit it spent.

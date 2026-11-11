@@ -384,3 +384,61 @@ describe("closing a one visit the client decided against", () => {
     expect(await visitRow()).toMatchObject({ one_visit: "declined" });
   });
 });
+
+// The client chose the product and books the fit for another day (docs/decisions/0247-the-steps-left.md).
+describe("a one visit whose fit the client books for another day", () => {
+  const later = async (job: Working) => {
+    await job.workTo("piece");
+    const answer = await job.post(path("piece"), { product: NATURAL.tier, fit_later: true }, "event-piece-01");
+    await job.post(path("checklist"), { done: [] }, "event-checklist-01");
+    // Nothing fitted, so nothing used asks no reason.
+    expect((await job.post(path("consumables"), { items: [] }, "event-consumables-01")).status).toBe(202);
+    return answer;
+  };
+
+  it("closes as a consultation going ahead, with nothing charged or sent, and ops see the pick", async () => {
+    const payments = createStubPayments();
+    const job = await oneVisit({ payments });
+    expect((await later(job)).status).toBe(202);
+    expect(await (await job.get(`/api/tech/jobs/${JOB}`)).json()).toMatchObject({
+      client_choice: { product: NATURAL.tier, fit_later: true },
+    });
+    // Nothing fitted, so nothing photographed after: the close follows the consumables.
+    const close = { outcome: "done", going_ahead: true };
+    expect((await job.post(path("outcome"), close, "event-outcome-01")).status).toBe(202);
+
+    expect(await visitRow()).toEqual({ type: "consultation", tier: "standard", one_visit: "declined" });
+    expect(payments.made.links).toEqual([]);
+    expect(await linkRow()).toBeNull();
+    const kept = await env.DB.prepare("SELECT picked_tier FROM visit_outcomes WHERE appointment_id = ?1")
+      .bind(JOB)
+      .first();
+    expect(kept).toEqual({ picked_tier: NATURAL.tier });
+
+    const { tasks } = await outstandingTasks(env.DB, TWO_WEEKS_ON, TASK_SLA_HOURS);
+    const task = tasks.find((one) => one.group === "first_fit_to_book");
+    expect(task?.facts).toMatchObject({ group: "first_fit_to_book", picked: NATURAL.name });
+  });
+
+  it("is refused a product not on offer that day, and a close that contradicts it", async () => {
+    const job = await oneVisit({ payments: createStubPayments() });
+    await job.workTo("piece");
+    const unknown = { product: "platinum", fit_later: true };
+    expect((await job.post(path("piece"), unknown, "event-piece-01")).status).toBe(400);
+
+    await later(job);
+    const notGoingAhead = { outcome: "done", going_ahead: false };
+    expect((await job.post(path("outcome"), notGoingAhead, "event-outcome-01")).status).toBe(400);
+    const another = { outcome: "done", going_ahead: true, product: "standard" };
+    expect((await job.post(path("outcome"), another, "event-outcome-02")).status).toBe(400);
+    const lost = { outcome: "done", lost_reason: "price" };
+    expect((await job.post(path("outcome"), lost, "event-outcome-03")).status).toBe(400);
+  });
+
+  it("is refused on a visit that is no one visit", async () => {
+    const job = await working("first_fit");
+    await job.workTo("piece");
+    const body = { product: NATURAL.tier, fit_later: true };
+    expect((await job.post(path("piece"), body, "event-piece-01")).status).toBe(400);
+  });
+});

@@ -4284,13 +4284,17 @@ export interface components {
                  */
                 given_by: "client" | "technician" | "ops";
             } | null;
-            /** @description On a one visit, what the client decided as its piece step recorded it: the product they chose, or that they decided against the fit. Null until the piece step lands, and on any other visit. */
+            /** @description On a one visit, what the client decided as its piece step recorded it: the product they chose, fitted then or with its fit booked for another day, or that they decided against the fit. Null until the piece step lands, and on any other visit. */
             client_choice: {
                 /** @enum {boolean} */
                 declined: true;
             } | {
                 /** @description The product's tier, from the card's products. */
                 product: string;
+            } | {
+                product: string;
+                /** @enum {boolean} */
+                fit_later: true;
             } | null;
             /** @description The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded. */
             profile: components["schemas"]["HairProfile"] | null;
@@ -4673,7 +4677,7 @@ export interface components {
              */
             short_reason?: "client_supplies" | "ran_out" | "not_needed" | "other";
         };
-        PieceRequest: components["schemas"]["PieceFitted"] | components["schemas"]["PieceDeclined"];
+        PieceRequest: components["schemas"]["PieceFitted"] | components["schemas"]["PieceDeclined"] | components["schemas"]["PieceFitLater"];
         /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */
         PieceFitted: {
             piece_code: string;
@@ -4694,6 +4698,12 @@ export interface components {
         PieceDeclined: {
             /** @enum {boolean} */
             declined: true;
+        };
+        /** @description On a one visit, and only there: the client chose the product, by its tier from the card's products, and books the fit for another day, so nothing is fitted today. Closing the visit as done makes it a consultation going ahead, with the product as the client's pick; nothing is charged (docs/decisions/0247-the-steps-left.md). */
+        PieceFitLater: {
+            product: string;
+            /** @enum {boolean} */
+            fit_later: true;
         };
         /** @description Kept in our records alone. */
         TechnicianProfileRecorded: {
@@ -4772,6 +4782,8 @@ export interface components {
             lost_reason?: string;
             /** @description On a consultation, whether the client said they are going ahead with a fit; left out where not asked. */
             going_ahead?: boolean;
+            /** @description On a consultation going ahead, the hair system the client picked from Options, by its tier: one offered on the visit's day. Left out where none was picked (ADR 0247). */
+            product?: string;
             /** @description A note for the next technician, shown on this client's next job whoever takes it. */
             handoff_note?: string;
             /** @description An alert every technician reads before they start, kept on the client until ops take it off. */

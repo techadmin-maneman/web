@@ -27,7 +27,7 @@ import { earliestCheckIn, doneOn, isOnVisitDay, tooEarlyToArrive, type PhoneCloc
 import type { WorkableJob } from "./workable-job.ts";
 import { z } from "zod";
 import { storedJson } from "../../lib/stored-json.ts";
-import { pieceBodyOf } from "./job-event-bodies.ts";
+import { fitsNothing, pieceBodyOf } from "./job-event-bodies.ts";
 
 /** As job_events.write_state holds it: "written" once landed, "rejected" when superseded. */
 type WriteState = "pending" | "written" | "rejected";
@@ -173,8 +173,8 @@ async function replayOf(db: D1Database, held: JobEvent, input: EventInput): Prom
  */
 export async function landInOrder(db: D1Database, input: LandingInput, landed?: Set<string>): Promise<Landing> {
   const done = new Set(landed ?? (await kindsLanded(db, input.job.id)));
-  // A one visit whose client decided against the fit fits nothing, so nothing is photographed after it.
-  if (input.job.oneVisit !== null && input.kind === "outcome" && (await declinedAtVisit(db, input.job.id))) {
+  // A one visit that fitted nothing that day, the client against it or booked for later, photographs nothing after.
+  if (input.job.oneVisit !== null && input.kind === "outcome" && (await fittedNothingAtVisit(db, input.job.id))) {
     done.add("after_photos");
   }
   if (isNoShow(input.kind, input.body) && done.has("start")) return { kind: "already_started" };
@@ -310,11 +310,11 @@ export async function eventByClientId(
   return row === null ? null : eventOf(row);
 }
 
-/** Whether a one visit's client decided against the fit at its piece step. */
-async function declinedAtVisit(db: D1Database, appointmentId: string): Promise<boolean> {
+/** Whether a one visit's piece step fitted nothing that day: the client decided against it, or booked it for later. */
+async function fittedNothingAtVisit(db: D1Database, appointmentId: string): Promise<boolean> {
   const piece = (await eventsOf(db, appointmentId)).findLast((event) => event.kind === "piece");
   const body = piece === undefined ? null : pieceBodyOf(piece.body);
-  return body !== null && "declined" in body;
+  return body !== null && fitsNothing(body);
 }
 
 /** Every event of a job that landed, oldest first. */

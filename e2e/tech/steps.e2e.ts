@@ -82,6 +82,9 @@ test("a consultation’s outcome asks whether the client is going ahead, and why
   fake.type = "consultation";
   startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
+  // The outcome opens on the consultation's Options; a pick goes only with a yes.
+  await page.getByRole("button", { name: /^Mane Man Essential/ }).click();
+  await stepAction(page).click();
 
   await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
   await expect(page.getByText(techCopy.steps.outcome.goingAhead)).toBeVisible();
@@ -104,6 +107,8 @@ test("a consultation’s outcome sends the client’s yes", async ({ page }) => 
   fake.type = "consultation";
   startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
+  // Nothing picked on Options: the yes goes alone.
+  await stepAction(page).click();
 
   await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
   // Unanswered, the question holds Next back: it is never recorded as a yes by default.
@@ -112,6 +117,41 @@ test("a consultation’s outcome sends the client’s yes", async ({ page }) => 
   await page.getByRole("button", { name: techCopy.steps.outcome.yes }).click();
   await stepAction(page).click();
   await expect.poll(() => writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: true });
+});
+
+// The client's pick on Options goes with their yes, and ops see it on the First fit to book task (ADR 0247).
+test("a consultation’s outcome opens on Options, and the client’s pick goes with their yes", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "consultation";
+  startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
+  await page.goto(`/jobs/${JOB_ID}/outcome`);
+
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.options.title })).toBeVisible();
+  await expect(page.getByText(techCopy.options.markPick)).toBeVisible();
+  // Prices come with signal; the products are the card's.
+  await expect(page.getByText("Rs. 37,760")).toBeVisible();
+  await expect(stepAction(page)).toHaveText(techCopy.visit.next(techCopy.steps.titles.outcome));
+  expect(await axeViolations(page)).toEqual([]);
+
+  const natural = page.getByRole("button", { name: /^Mane Man Natural/ });
+  await natural.click();
+  await expect(natural).toHaveAttribute("aria-pressed", "true");
+  await stepAction(page).click();
+
+  await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.yes }).click();
+  await expect(page.getByText(techCopy.steps.outcome.picked("Mane Man Natural"))).toBeVisible();
+  // Back on Options the pick is as it was left.
+  await page.getByRole("button", { name: techCopy.steps.back }).click();
+  await expect(natural).toHaveAttribute("aria-pressed", "true");
+  await stepAction(page).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.yes }).click();
+  await stepAction(page).click();
+
+  await expect
+    .poll(() => writesTo(fake, "outcome").at(-1)?.body)
+    .toEqual({ outcome: "done", going_ahead: true, product: "natural" });
 });
 
 test("ticks the whole checklist with one tap when everything was done, and shows how far through the job", async ({

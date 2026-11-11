@@ -46,6 +46,7 @@ describe("a refused piece", () => {
     expect(pieceSent(sent)).toEqual({
       declined: false,
       product: null,
+      later: false,
       code: "MM-STD-7193 C",
       base: "Lace",
       lot: "LOT-5120",
@@ -55,10 +56,16 @@ describe("a refused piece", () => {
     });
   });
 
-  it("keeps a one visit’s product, or that the client decided against the fit", () => {
+  it("keeps a one visit’s product, its fit booked for later, or that the client decided against the fit", () => {
     expect(pieceSent(refused("piece", { piece_code: "MM-STD-7193-C", product: "premium" }))).toMatchObject({
       declined: false,
       product: "premium",
+      later: false,
+    });
+    expect(pieceSent(refused("piece", { product: "premium", fit_later: true }))).toMatchObject({
+      product: "premium",
+      later: true,
+      code: "",
     });
     expect(pieceSent(refused("piece", { declined: true }))).toMatchObject({ declined: true, code: "" });
   });

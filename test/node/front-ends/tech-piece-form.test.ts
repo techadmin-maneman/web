@@ -1,17 +1,28 @@
 // The piece step's rules (apps/tech/src/steps/piece-form.ts): what keeps Next dim, and the body the step sends.
 
 import { describe, expect, it } from "vitest";
+import type { Queued } from "../../../apps/tech/src/store/outbox.ts";
 import { steps as copy, oneVisit } from "../../../apps/tech/src/content.ts";
 import {
   DECLINED,
   kitChoices,
   pieceBody,
+  profileToMatch,
   stillMissing,
   type KitHairSystem,
   type PieceForm,
 } from "../../../apps/tech/src/steps/piece-form.ts";
 
-const EMPTY: PieceForm = { code: "", base: "", lot: "", stock: null, oldCode: "", oldReason: "", choice: null };
+const EMPTY: PieceForm = {
+  code: "",
+  base: "",
+  lot: "",
+  stock: null,
+  oldCode: "",
+  oldReason: "",
+  choice: null,
+  later: false,
+};
 const FIRST_FIT = { one_visit: false, kit_hair_systems: [], date: "2026-09-21" };
 const ONE_VISIT = { one_visit: true, kit_hair_systems: [], date: "2026-09-21" };
 const LABEL = "MM-STD-4417-B";
@@ -56,6 +67,31 @@ describe("the piece step", () => {
     expect(stillMissing(EMPTY, ONE_VISIT, "found")).toBe(oneVisit.chooseFirst);
     expect(stillMissing({ ...EMPTY, choice: DECLINED }, ONE_VISIT, "found")).toBeNull();
     expect(pieceBody({ ...EMPTY, choice: DECLINED }, ONE_VISIT)).toEqual({ declined: true });
+  });
+
+  it("on a one visit, sends the product alone, with no label asked, once its fit is booked for later", () => {
+    const later = { ...EMPTY, choice: "natural", later: true };
+    expect(stillMissing(later, ONE_VISIT, "none")).toBeNull();
+    // Fit today needs the hair system in the kit, which ONE_VISIT's holds none of.
+    expect(stillMissing({ ...later, later: false }, ONE_VISIT, "found")).toBe(oneVisit.notInKitAction);
+    expect(pieceBody(later, ONE_VISIT)).toEqual({ product: "natural", fit_later: true });
+    // An expired kit label left in the field holds back neither a fit booked for later nor one declined.
+    const expired = {
+      ...ONE_VISIT,
+      kit_hair_systems: [
+        {
+          code: "hs_natural",
+          product: "natural",
+          held: 1,
+          units: [{ code: LABEL, lot_code: null, expires_on: "2026-09-01" }],
+        },
+      ],
+    } as unknown as typeof ONE_VISIT;
+    expect(stillMissing({ ...later, code: LABEL }, expired, "none")).toBeNull();
+    expect(stillMissing({ ...later, code: LABEL, choice: DECLINED }, expired, "none")).toBeNull();
+    expect(stillMissing({ ...later, code: LABEL, later: false }, expired, "none")).toBe(copy.piece.expiredAction);
+    // Booked for later means nothing on any other visit, nor once the fit is declined.
+    expect(pieceBody({ ...later, choice: DECLINED }, ONE_VISIT)).toEqual({ declined: true });
   });
 
   it("sends only what was said, trimmed, with the product on a one visit and the piece that came off", () => {
@@ -117,5 +153,27 @@ describe("the kit’s hair systems", () => {
     } as unknown as Parameters<typeof kitChoices>[0];
     expect(kitChoices(job, "natural")[0]?.matches).toBe(false);
     expect(kitChoices(job, "essential")[0]?.matches).toBe(true);
+  });
+
+  // Measured on the head with no signal (docs/decisions/0245-the-steps.md): the kit is matched to what the phone holds.
+  it("matches the profile the phone holds, measured with no signal, over the card's", () => {
+    const card = { id: "a", profile } as unknown as Parameters<typeof profileToMatch>[0];
+    const measured = { ...spec, density_percent: 120 };
+    const held = (state: string) =>
+      ({ job_id: "a", kind: "profile", state, body: { fit: measured } }) as unknown as Queued;
+
+    expect(profileToMatch(card, [])).toBe(profile);
+    expect(profileToMatch(card, [held("waiting")])).toEqual({ fit: measured });
+    // A profile ops took the job from under does not count.
+    expect(profileToMatch(card, [held("superseded")])).toBe(profile);
+
+    const job = {
+      kit_hair_systems: [kit("denser", { density_percent: 120 }), kit("exact", {})],
+      profile: profileToMatch(card, [held("waiting")]),
+      service: { tier: "essential" },
+      one_visit: false,
+      type: "first_fit",
+    } as unknown as Parameters<typeof kitChoices>[0];
+    expect(kitChoices(job, null)[0]?.hairSystem.code).toBe("denser");
   });
 });
