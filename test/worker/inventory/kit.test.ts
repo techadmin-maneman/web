@@ -182,15 +182,15 @@ describe("what the kit holds fit to use", () => {
       tier: "standard",
       items: [{ code: "solvent", quantity: 10 }],
     });
-    for (const [lot, quantity] of [
-      ["SV-RECALLED", 10],
-      ["SV-GOOD", 2],
+    for (const [lot, quantity, expires] of [
+      ["SV-RECALLED", 10, "2027-12-31"],
+      ["SV-GOOD", 2, "2028-06-30"],
     ] as const) {
       await job.opsPost("/api/stock/deliveries", {
         consumable_code: "solvent",
         quantity,
         lot_code: lot,
-        expires_on: "2027-12-31",
+        expires_on: expires,
       });
     }
     await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 12, from: "central", to: IMRAN });
@@ -208,6 +208,11 @@ describe("what the kit holds fit to use", () => {
     expect(solvent).toMatchObject({ quantity: 12, usable: 2, low: true, ops_told: false });
     expect(solvent?.lots.some((each) => each.recalled)).toBe(true);
     expect(kit.forecast).toMatchObject([{ have: 2 }]);
+
+    // Handed back, the kit holds 2 ml against the level of 5: ops' own count now finds it low too, so ops are told.
+    const back = await job.post("/api/tech/kit/hand-back", { pieces: [], expired: true }, "kit-back");
+    const after = await back.json<{ held: { code: string; quantity: number; ops_told: boolean }[] }>();
+    expect(after.held.find((item) => item.code === "solvent")).toMatchObject({ quantity: 2, ops_told: true });
   });
 });
 

@@ -111,7 +111,9 @@ test("lists a recalled lot to hand back, not as held, and says low until it goes
   const held = page.getByRole("region", { name: copy.held.title });
   await expect(held).not.toContainText("SV-9");
   await expect(held).toContainText(copy.held.lowUntilBack);
-  await expect(held).toContainText("2 ml");
+  // The figure is what is fit to use, not the 12 ml the kit's count holds.
+  await expect(held.getByText("2 ml", { exact: true })).toBeVisible();
+  await expect(held.getByText("12 ml", { exact: true })).toHaveCount(0);
 });
 
 // The kit read "Contour tape strip · -4 strips".
