@@ -23,7 +23,7 @@ import type { Queued } from "../store/outbox.ts";
 import styles from "./schedule.module.css";
 
 /** The day the strip shows, today's included. */
-export const SCHEDULE_DAYS = 7;
+const SCHEDULE_DAYS = 7;
 const FIRST_HOUR = 8 * 60;
 const LAST_HOUR = 20 * 60;
 

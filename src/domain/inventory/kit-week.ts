@@ -54,7 +54,7 @@ export async function addTheWeek(
 }
 
 /** How many days the technician's own forecast looks ahead, today's included. */
-export const FORECAST_DAYS = 7;
+const FORECAST_DAYS = 7;
 
 /** A consumable the kit's visits are expected to use over the forecast's days, against what the kit holds. */
 export interface WeekAhead {

@@ -6,10 +6,10 @@ import { statusNotIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 
 /** The days each count looks back over. */
-export const QUALITY_DAYS = 30;
+const QUALITY_DAYS = 30;
 
 /** The days after a first fit within which another for the same client counts it redone. */
-export const REDO_DAYS = 30;
+const REDO_DAYS = 30;
 
 export interface Quality {
   /** Visits checked in, and how many of them by the booked start. */
