@@ -9936,6 +9936,40 @@ One of the client's try-on looks, under the card's own unlock, never cached
       },
       "description": "Pieces that came off clients, held to hand back, the oldest first."
     },
+    "forecast": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "need": {
+            "type": "integer",
+            "description": "What the visits booked are expected to use."
+          },
+          "have": {
+            "type": "integer",
+            "description": "What the kit holds of it now."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "unit",
+          "need",
+          "have"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out."
+    },
     "today": {
       "type": "string",
       "format": "date"
@@ -9945,6 +9979,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "held",
     "coming",
     "returned",
+    "forecast",
     "today"
   ],
   "additionalProperties": false

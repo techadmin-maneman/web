@@ -52,3 +52,42 @@ export async function addTheWeek(
   }
   return levels;
 }
+
+/** How many days the technician's own forecast looks ahead, today's included. */
+export const FORECAST_DAYS = 7;
+
+/** A consumable the kit's visits are expected to use over the forecast's days, against what the kit holds. */
+export interface WeekAhead {
+  readonly code: string;
+  readonly name: string;
+  readonly unit: string;
+  readonly need: number;
+  readonly have: number;
+}
+
+/**
+ * The technician's own week ahead, for their Kit screen: each consumable their visits booked from today to six days on
+ * are expected to use, and what their kit holds of it. Hair systems are left to the evening's check, as above.
+ */
+export async function weekAheadOf(db: D1Database, kit: string, today: string): Promise<WeekAhead[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT u.consumable_code AS code, c.name, c.unit, SUM(u.quantity) AS need,
+              COALESCE((SELECT b.quantity FROM stock_balances b
+                         WHERE b.place = ?3 AND b.consumable_code = u.consumable_code), 0) AS have
+         FROM appointments a INDEXED BY appointments_by_technician
+         JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
+         JOIN consumables c ON c.code = u.consumable_code
+        WHERE a.technician_id = ?3 AND ${bookedAhead("a")}
+          AND NOT EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = u.consumable_code)
+        GROUP BY u.consumable_code, c.name, c.unit
+        ORDER BY c.name COLLATE NOCASE`,
+    )
+    .bind(
+      indiaInstant(today, "00:00").toISOString(),
+      indiaInstant(addDays(today, FORECAST_DAYS), "00:00").toISOString(),
+      kit,
+    )
+    .all<WeekAhead>();
+  return results;
+}

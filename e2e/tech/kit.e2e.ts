@@ -43,6 +43,7 @@ function withAKit(fake: Fake): void {
       },
     ],
     returned: [{ piece_code: "MM-STD-4417-B", returned_at: "2030-07-01T05:00:00.000Z", reason: "Base lifting" }],
+    forecast: [],
   };
 }
 

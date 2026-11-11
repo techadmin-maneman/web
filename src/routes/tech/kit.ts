@@ -6,6 +6,7 @@
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { handBack, kitView } from "../../domain/inventory/kit.ts";
+import { weekAheadOf } from "../../domain/inventory/kit-week.ts";
 import { tellOfLowStock } from "../../domain/inventory/stock.ts";
 import { receiveTransfer } from "../../domain/inventory/stock-transit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -85,6 +86,23 @@ const KitSchema = z
           .strict(),
       )
       .openapi({ description: "Pieces that came off clients, held to hand back, the oldest first." }),
+    forecast: z
+      .array(
+        z
+          .object({
+            code: z.string(),
+            name: z.string(),
+            unit: z.string(),
+            need: z.number().int().openapi({ description: "What the visits booked are expected to use." }),
+            have: z.number().int().openapi({ description: "What the kit holds of it now." }),
+          })
+          .strict(),
+      )
+      .openapi({
+        description:
+          "The consumables the technician's visits from today to six days on are expected to use, by the job sheet, " +
+          "against what the kit holds. Hair systems are left out.",
+      }),
     today: z.iso.date(),
   })
   .strict()
@@ -160,7 +178,11 @@ const handBackRoute = techRoute({
 
 async function kitAnswer(c: Context<AppEnv>, kit: string) {
   const today = indiaDate(c.var.deps.now());
-  const [view, { stockWatch }] = await Promise.all([kitView(c.env.DB, kit), opsInputs(c)]);
+  const [view, { stockWatch }, forecast] = await Promise.all([
+    kitView(c.env.DB, kit),
+    opsInputs(c),
+    weekAheadOf(c.env.DB, kit, today),
+  ]);
   const warnedBy = addDays(today, stockWatch.expiry_warning_days);
   const useFirst = (expiresOn: string | null) => expiresOn !== null && expiresOn >= today && expiresOn <= warnedBy;
   return {
@@ -194,6 +216,7 @@ async function kitAnswer(c: Context<AppEnv>, kit: string) {
       returned_at: piece.returnedAt,
       reason: piece.reason,
     })),
+    forecast: forecast.map((item) => ({ ...item })),
     today,
   };
 }

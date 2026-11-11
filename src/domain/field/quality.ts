@@ -2,6 +2,7 @@
 // 10 November 2026): on time, their visits checked in by the booked start; and the hairline redo rate, their first fits
 // followed by another first fit for the same client within 30 days. The client rating follows once ratings exist.
 
+import { statusNotIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 
 /** The days each count looks back over. */
@@ -37,7 +38,7 @@ export async function qualityOf(db: D1Database, technicianId: string, now: Date)
                 COALESCE(SUM(EXISTS (
                   SELECT 1 FROM appointments later INDEXED BY appointments_by_person
                    WHERE later.person_id = a.person_id AND later.type = 'first_fit' AND later.deleted_at IS NULL
-                     AND later.status NOT IN ('cancelled', 'terminated') AND later.window_start > a.window_start
+                     AND ${statusNotIn("later.status", VISIT_CALLED_OFF)} AND later.window_start > a.window_start
                      AND later.window_start <= strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, ?4))), 0) AS counted
            FROM appointments a INDEXED BY appointments_by_technician
           WHERE a.technician_id = ?1 AND a.window_start >= ?2 AND a.window_start < ?3 AND a.type = 'first_fit'

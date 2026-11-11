@@ -8,7 +8,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, NOW, request } from "../helpers.ts";
-import { IMRAN, JOB, working, type Working } from "../job-fixtures.ts";
+import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
 let job: Working;
 let code: string;
@@ -122,6 +122,36 @@ describe("the kit", () => {
     const [item] = (await response.json<Kit>()).held;
     expect(item).toMatchObject({ code, quantity: 2, lots: [{ lot_code: "HS-1" }] });
     expect(item?.units).toHaveLength(2);
+  });
+});
+
+describe("the week ahead", () => {
+  it("weighs what the visits booked from today to six days on will use against what the kit holds", async () => {
+    await job.opsPost("/api/consumables", { name: "Solvent", unit: "ml", unit_cost: 50 });
+    await job.opsPost("/api/service-usage", {
+      visit_type: "service",
+      tier: "standard",
+      items: [{ code: "solvent", quantity: 10 }],
+    });
+    await job.opsPost("/api/stock/counts", { consumable_code: "solvent", place_id: IMRAN, counted: 4 });
+    // The fixture's service today, one six days on, and one a week on, past the forecast.
+    await env.DB.batch(
+      [6, 7].map((days) =>
+        env.DB.prepare(
+          `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id,
+             synced_at)
+           VALUES (?1, ?1, ?2, 'service', 'scheduled', ?3, ?3, ?4, ?5)`,
+        ).bind(
+          `service-in-${String(days)}`,
+          PERSON,
+          new Date(NOW.getTime() + days * 24 * 60 * 60_000).toISOString(),
+          IMRAN,
+          NOW.toISOString(),
+        ),
+      ),
+    );
+    const { forecast } = await (await job.get("/api/tech/kit")).json<{ forecast: unknown[] }>();
+    expect(forecast).toEqual([{ code: "solvent", name: "Solvent", unit: "ml", need: 20, have: 4 }]);
   });
 });
 

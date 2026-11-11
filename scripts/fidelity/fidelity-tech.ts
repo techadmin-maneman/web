@@ -41,6 +41,9 @@ const ME: Schemas["TechnicianMe"] = {
   name: "Imran Qureshi",
   first_name: "Imran",
   initials: "IQ",
+  grade: null,
+  city: "Gurgaon",
+  mobile: "+919811000000",
   device: { device_id: "fidelity", label: "Chrome", enrolled_at: "2030-09-01T04:00:00.000Z" },
 };
 

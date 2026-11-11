@@ -261,7 +261,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     clientChoice: null,
     pieces: [],
     kitHairSystems: [],
-    kit: { held: [], coming: [], returned: [] },
+    kit: { held: [], coming: [], returned: [], forecast: [] },
     kitAfter: null,
     profile: null,
     checklist: CHECKLIST,

@@ -4942,6 +4942,16 @@ export interface components {
                 returned_at: string;
                 reason: string | null;
             }[];
+            /** @description The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out. */
+            forecast: {
+                code: string;
+                name: string;
+                unit: string;
+                /** @description What the visits booked are expected to use. */
+                need: number;
+                /** @description What the kit holds of it now. */
+                have: number;
+            }[];
             /** Format: date */
             today: string;
         };

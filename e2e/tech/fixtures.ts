@@ -38,6 +38,9 @@ export const ME = {
   name: "Imran Qureshi",
   first_name: "Imran",
   initials: "IQ",
+  grade: "Senior",
+  city: "Gurugram",
+  mobile: "+919810000009",
   device: {
     device_id: "01000000-0000-7000-8000-000000000001",
     label: "Chrome on Android",
