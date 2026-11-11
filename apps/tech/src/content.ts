@@ -88,7 +88,6 @@ export const today = {
     before_photos: "the before photos",
     checklist: "the tasks",
     consumables: "the consumables",
-    piece: "the hair system",
     after_photos: "the after photos",
   },
   offline: {
@@ -327,11 +326,13 @@ export function whatStopped(why: Why, now: Date = apiDate(), startsNow: string |
 }
 
 /**
- * A job ops cancelled, or gave to another technician, while the phone held it: said once over whatever screen is
- * showing (docs/decisions/0246-closed-and-sent-back.md). What was recorded stays in Pending uploads.
+ * A job ops cancelled, gave to another technician, or closed, while the phone held it: said once over the screen
+ * showing. What was recorded stays in Pending uploads.
  */
 export const interrupted = {
   cancelled: (job: string) => `${job}: cancelled`,
+  closed: (job: string) => `${job}: closed`,
+  closedBody: "This visit was closed. What you recorded is kept on this phone, in Pending uploads.",
   moved: (job: string, to: string) => `${job}: moved to ${to}`,
   cancelledBody: "Ops cancelled this visit. What you recorded is kept on this phone, in Pending uploads.",
   movedBody: (to: string) =>
@@ -453,6 +454,9 @@ export const job = {
     title: "Not yet",
     // The board draws no locked card. The hour is the API's unlocks_at.
     opens: opensAt,
+    /** A past visit's card, locked again the day after it: a step ops sent back is still put right from it. */
+    pastTitle: "Details closed",
+    past: "A visit’s client details close the day after it.",
   },
   // The board draws the profile's rows inside the piece card; they are a section of their own.
   profileTitle: "Hair profile",
@@ -582,6 +586,8 @@ export const visit = {
   allSteps: "All steps",
   next: (title: string) => `Next: ${title.toLowerCase()}`,
   close: "Close visit",
+  /** A step ops sent back with nothing after it to do: it sends the step, and closes nothing. */
+  sendFix: "Send",
   /** A guided task (./visit/tasks.ts): one a screen. */
   task: (at: number, total: number) => `Task ${String(at)} of ${String(total)}`,
   nextTask: "Next task",
@@ -823,7 +829,7 @@ export const closeOut = {
       refused: "Razorpay refused it. Ops are told.",
     },
     failed: {
-      rate_limited: "Sent three times today already.",
+      rate_limited: "Sent as often as today allows. Ops can send it.",
       offline: "No signal. Try again.",
       unknown: "Couldn’t send. Try again.",
     },
@@ -838,6 +844,7 @@ export const closeOut = {
       ops_call: "Ops to call the client",
     },
     sent: "Sent to ops. They’ll confirm with the client.",
+    saved: "Saved. It goes to ops with the visit’s close.",
     failed: "Couldn’t send. Try again.",
   },
   next: {

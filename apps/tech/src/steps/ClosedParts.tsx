@@ -13,6 +13,7 @@ import { api, unreachable, type FinishAsk, type Job, type JobSummary } from "../
 import { closeOut as copy, job as jobCopy } from "../content.ts";
 import { kindName } from "../lib/kind.ts";
 import { wayTo } from "../lib/navigate.ts";
+import { dropFinishAsk, keepFinishAsk } from "../store/finish-asks.ts";
 import { clock } from "../lib/when.ts";
 import styles from "./close-out.module.css";
 
@@ -25,9 +26,10 @@ export function PaymentLink({ job, link }: { job: Job; link: NonNullable<Job["pa
   const resend = () =>
     once(async () => {
       const answer = await api.resendLink(job.id);
+      // A 429 and a 5xx count as unreachable too: what is said turns on the API's own code.
       if (answer.ok) setSaid(copy.payment.said[answer.body.outcome]);
-      else if (unreachable(answer)) setSaid(copy.payment.failed.offline);
-      else setSaid(answer.code === "rate_limited" ? copy.payment.failed.rate_limited : copy.payment.failed.unknown);
+      else if (answer.code === "rate_limited") setSaid(copy.payment.failed.rate_limited);
+      else setSaid(answer.code === "offline" ? copy.payment.failed.offline : copy.payment.failed.unknown);
     });
   return (
     <section className={styles.section} aria-labelledby="closed-payment">
@@ -51,16 +53,27 @@ export function PaymentLink({ job, link }: { job: Job; link: NonNullable<Job["pa
   );
 }
 
-/** A visit left partly done, or not fitted: how the technician suggests finishing it, for ops to book. */
-export function FinishTheWork({ job }: { job: Job }) {
+/**
+ * A visit left partly done, or not fitted: how the technician suggests finishing it, for ops to book. With no signal,
+ * or while the close itself is still on the phone (`closing`), it is kept and goes once the close has reached us.
+ */
+export function FinishTheWork({ job, closing }: { job: Job; closing: boolean }) {
   const [asked, setAsked] = useState<FinishAsk | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const [, once] = useOneAtATime();
   const ask = (what: FinishAsk) =>
     once(async () => {
       const answer = await api.finishAsk(job.id, what);
-      if (answer.ok) setAsked(what);
-      setSaid(answer.ok ? copy.finish.sent : copy.finish.failed);
+      if (answer.ok) {
+        // Sent straight: a choice kept from before, with no signal, must not follow it and take its place.
+        await dropFinishAsk(job.id).catch(() => undefined);
+        setAsked(what);
+        setSaid(copy.finish.sent);
+      } else if (unreachable(answer) || closing) {
+        await keepFinishAsk(job.id, what).catch(() => undefined);
+        setAsked(what);
+        setSaid(copy.finish.saved);
+      } else setSaid(copy.finish.failed);
     });
   return (
     <section className={styles.section} aria-labelledby="closed-finish">

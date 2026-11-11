@@ -29,6 +29,8 @@ test("a count ops sent back is on Today, opens from the job, says why, and close
   await page.getByRole("button", { name: job.putRight }).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await expect(page.getByText(visit.sentBack("Count the tape strips again."))).toBeVisible();
+  // Nothing after it is left to do: the action sends the step, and closes nothing.
+  await expect(stepAction(page)).toHaveText(visit.sendFix);
   expect(await axeViolations(page)).toEqual([]);
 
   await stepAction(page).click();
@@ -59,4 +61,22 @@ test("a set of photographs ops sent back opens the camera again from its first a
 
   await expect(page.getByRole("alert").filter({ hasText: visit.sentBack("The front is blurred.") })).toBeVisible();
   await expect(page.getByText(capture.angles.front, { exact: false }).first()).toBeVisible();
+});
+
+// A visit locks again the day after it; ops may send a step back later than that.
+test("a step sent back on a visit that has locked again is put right from its card", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, ...ALL_DONE);
+  fake.progress = { ...fake.progress, outcome: "done" };
+  fake.relocked = true;
+  fake.sentBack = [{ kind: "checklist", reason: "Tick the scalp check.", sent_at: new Date().toISOString() }];
+  await page.goto(`/jobs/${JOB_ID}`);
+
+  await expect(page.getByText(job.locked.pastTitle)).toBeVisible();
+  await expect(page.getByText(job.locked.past)).toBeVisible();
+  await page.getByRole("button", { name: job.putRight }).click();
+  await expect(page.getByText(visit.sentBack("Tick the scalp check."))).toBeVisible();
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await stepAction(page).click();
+  await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);
 });

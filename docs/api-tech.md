@@ -5888,7 +5888,6 @@ One of the client's try-on looks, under the card's own unlock, never cached
                 "before_photos",
                 "checklist",
                 "consumables",
-                "piece",
                 "after_photos"
               ]
             }
@@ -7145,7 +7144,6 @@ One of the client's try-on looks, under the card's own unlock, never cached
               "before_photos",
               "checklist",
               "consumables",
-              "piece",
               "after_photos"
             ]
           },

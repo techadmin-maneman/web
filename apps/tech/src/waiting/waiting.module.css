@@ -136,3 +136,8 @@
   line-height: var(--lh-160);
   color: var(--ui-text-soft);
 }
+
+/* The screen's last line, so the last thing waiting to send sits clear of the home indicator above it. */
+.never {
+  padding-bottom: calc(var(--sp-16) + env(safe-area-inset-bottom));
+}

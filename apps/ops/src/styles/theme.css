@@ -16,6 +16,7 @@
   --ui-text-soft: var(--ink-tag);
   --ui-text-muted: var(--ink-muted);
   --ui-text-quiet: var(--ink-muted);
+  --ui-toggle-text: var(--ink-muted);
   --ui-hint: var(--ink-muted);
   --ui-line: var(--ink-line);
   --ui-line-control: var(--ink-line-strong);
@@ -54,6 +55,7 @@
     --ui-text-soft: var(--ink-tag);
     --ui-text-muted: var(--ink-muted);
     --ui-text-quiet: var(--ink-muted);
+    --ui-toggle-text: var(--ink-muted);
     --ui-hint: var(--ink-muted);
     --ui-line: var(--ink-line);
     --ui-line-control: var(--ink-line-strong);

@@ -238,6 +238,7 @@
   --ui-text-soft: var(--text-soft);
   --ui-text-muted: var(--text-muted);
   --ui-text-quiet: var(--text-quiet); /* the words of a control not yet usable */
+  --ui-toggle-text: var(--ui-text-muted); /* a toggle's words before it is chosen */
   --ui-hint: var(--paper-hint);
   --ui-line: var(--paper-line); /* rules and borders */
   --ui-line-control: var(--paper-control); /* a control's edge */

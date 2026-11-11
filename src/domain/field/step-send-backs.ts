@@ -3,7 +3,7 @@
 // clears it. One is open at a time for each step of a visit. Audited by the visit and the step, never the words.
 
 import type { VisitType } from "../../config/visit-types.ts";
-import { mayBeSentBack, SENT_BACK_KINDS, type SentBackKind } from "../../policy/in-job-steps.ts";
+import { SENT_BACK_KINDS, type SentBackKind } from "../../policy/in-job-steps.ts";
 import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import { unlocked } from "../../policy/job-visibility.ts";
 
@@ -17,8 +17,8 @@ export interface SentBack {
 export type SendingBack = "sent" | "not_found" | "not_landed" | "already_sent_back";
 
 /**
- * Sends a landed step of a visit back to its technician: refused where the visit is cancelled or the step is one it
- * may not be (a one visit's piece), where the step has not landed, or where it is sent back already.
+ * Sends a landed step of a visit back to its technician: refused where the visit is cancelled, where the step has not
+ * landed, or where it is sent back already.
  */
 export async function sendBackStep(
   db: D1Database,
@@ -33,8 +33,7 @@ export async function sendBackStep(
 ): Promise<SendingBack> {
   const visit = await db
     .prepare(
-      `SELECT a.one_visit IS NOT NULL AS one_visit,
-              EXISTS (SELECT 1 FROM job_events e
+      `SELECT EXISTS (SELECT 1 FROM job_events e
                        WHERE e.appointment_id = a.id AND e.kind = ?2 AND e.superseded = 0) AS landed,
               EXISTS (SELECT 1 FROM step_send_backs s
                        WHERE s.appointment_id = a.id AND s.kind = ?2 AND s.cleared_at IS NULL) AS open
@@ -42,8 +41,8 @@ export async function sendBackStep(
         WHERE a.id = ?1 AND a.status <> 'cancelled' AND a.deleted_at IS NULL`,
     )
     .bind(input.appointmentId, input.kind)
-    .first<{ one_visit: number; landed: number; open: number }>();
-  if (visit === null || !mayBeSentBack(input.kind, visit.one_visit === 1)) return "not_found";
+    .first<{ landed: number; open: number }>();
+  if (visit === null) return "not_found";
   if (visit.landed === 0) return "not_landed";
   if (visit.open === 1) return "already_sent_back";
 
@@ -95,19 +94,14 @@ export async function sendBacksOf(
 ): Promise<{ open: SentBack[]; may: SentBackKind[] }> {
   const [visit, open] = await Promise.all([
     db
-      .prepare(
-        `SELECT one_visit IS NOT NULL AS one_visit FROM appointments
-          WHERE id = ?1 AND status <> 'cancelled' AND deleted_at IS NULL`,
-      )
+      .prepare("SELECT 1 FROM appointments WHERE id = ?1 AND status <> 'cancelled' AND deleted_at IS NULL")
       .bind(appointmentId)
-      .first<{ one_visit: number }>(),
+      .first(),
     sentBackOf(db, appointmentId),
   ]);
   if (visit === null) return { open, may: [] };
   const sent = new Set(open.map((one) => one.kind));
-  const may = SENT_BACK_KINDS.filter(
-    (kind) => landed.has(kind) && !sent.has(kind) && mayBeSentBack(kind, visit.one_visit === 1),
-  );
+  const may = SENT_BACK_KINDS.filter((kind) => landed.has(kind) && !sent.has(kind));
   return { open, may };
 }
 

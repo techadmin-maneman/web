@@ -46,7 +46,8 @@ function stateLine(stage: Stage, job: Job, queued: readonly Queued[]): string | 
  * (docs/decisions/0246-closed-and-sent-back.md), or the way to its summary.
  */
 function footFor(stage: Stage, job: Job, queued: readonly Queued[]): ReactNode {
-  const toFix = stage === "closed" ? stepsToFix(job, queued)[0] : undefined;
+  // A step ops sent back stays to fix after the visit locks again, when the card no longer names the client.
+  const toFix = stage === "closed" || stage === "locked" ? stepsToFix(job, queued)[0] : undefined;
   if (toFix !== undefined) {
     return (
       <Button

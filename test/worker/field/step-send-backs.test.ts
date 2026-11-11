@@ -4,8 +4,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { DAY_MS, HOUR_MS } from "../../../src/lib/durations.ts";
-import { markDatabase, NOW, request } from "../helpers.ts";
-import { JOB, working } from "../job-fixtures.ts";
+import { eraseByMobile, markDatabase, NOW, request } from "../helpers.ts";
+import { JOB, SAMEER, working } from "../job-fixtures.ts";
 
 interface Story {
   sent_back: { kind: string; reason: string }[];
@@ -47,10 +47,10 @@ describe("a step sent back", () => {
     expect(story.may_send_back).toEqual(["before_photos", "checklist", "after_photos"]);
   });
 
-  it("lands again hours after the close, which clears it, while a step not sent back is still refused", async () => {
+  it("lands again days after the close, which clears it, while a step not sent back is still refused", async () => {
     const { job, clock } = await closedVisit();
     await job.opsPost(`/api/visits/${JOB}/send-back`, { step: "consumables", reason: "Count again." });
-    clock.now = new Date(NOW.getTime() + 3 * HOUR_MS);
+    clock.now = new Date(NOW.getTime() + 3 * DAY_MS);
 
     const again = await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
@@ -82,6 +82,43 @@ describe("a step sent back", () => {
     // Days later the visit has locked again: it is still to fix, and its client is no longer named.
     clock.now = new Date(NOW.getTime() + 3 * DAY_MS);
     expect(await listed()).toEqual([expect.objectContaining({ id: JOB, client_name: null })]);
+  });
+
+  // A visit closed partly done is the technician's own close, not a change made under them.
+  it("lands again on a visit closed partly done", async () => {
+    const clock = { now: NOW };
+    const job = await working("service", { now: () => clock.now });
+    await job.workTo("outcome");
+    await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "partial", reason: "client_stopped_it" }, "outcome-1");
+    await job.opsPost(`/api/visits/${JOB}/send-back`, { step: "checklist", reason: "Tick the scalp check." });
+    clock.now = new Date(NOW.getTime() + 2 * HOUR_MS);
+
+    const again = await job.post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-02");
+    expect(again.status).toBe(202);
+  });
+
+  it("groups a visit's steps, and lists none of another technician's or a cancelled visit", async () => {
+    const { job } = await closedVisit();
+    await job.opsPost(`/api/visits/${JOB}/send-back`, { step: "checklist", reason: "Tick the scalp check." });
+    await job.opsPost(`/api/visits/${JOB}/send-back`, { step: "consumables", reason: "Count again." });
+    const listed = async () =>
+      (await (await job.get("/api/tech/jobs")).json<{ sent_back: { id: string; steps: string[] }[] }>()).sent_back;
+    expect(await listed()).toEqual([expect.objectContaining({ id: JOB, steps: ["checklist", "consumables"] })]);
+
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(JOB).run();
+    expect(await listed()).toEqual([]);
+    await env.DB.prepare("UPDATE appointments SET status = 'completed', technician_id = ?2 WHERE id = ?1")
+      .bind(JOB, SAMEER)
+      .run();
+    expect(await listed()).toEqual([]);
+  });
+
+  it("goes with the client's erasure", async () => {
+    const { job } = await closedVisit();
+    await job.opsPost(`/api/visits/${JOB}/send-back`, { step: "checklist", reason: "Tick the scalp check." });
+    await eraseByMobile("+919810000001");
+    const left = await env.DB.prepare("SELECT COUNT(*) AS rows FROM step_send_backs").first<{ rows: number }>();
+    expect(left?.rows).toBe(0);
   });
 
   it("is audited by the visit and the step, never a word of why", async () => {

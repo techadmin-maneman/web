@@ -45123,7 +45123,6 @@ Request body:
               "before_photos",
               "checklist",
               "consumables",
-              "piece",
               "after_photos"
             ]
           },
@@ -45152,7 +45151,6 @@ Request body:
           "before_photos",
           "checklist",
           "consumables",
-          "piece",
           "after_photos"
         ]
       },
@@ -45180,10 +45178,9 @@ Request body:
         "before_photos",
         "checklist",
         "consumables",
-        "piece",
         "after_photos"
       ],
-      "description": "The step: a set of photographs, the checklist, the consumables, or the piece (not a one visit's)."
+      "description": "The step: a set of photographs, the checklist, or the consumables."
     },
     "reason": {
       "type": "string",

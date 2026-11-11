@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { ANGLES } from "../../../src/domain/field/visit-photos.ts";
 import {
   landsAfterClose,
-  mayBeSentBack,
   PHOTO_ANGLES,
   SENT_BACK_KINDS,
   stepBefore,
@@ -146,10 +145,8 @@ describe("a closed job", () => {
     expect(landsAfterClose("consumables", closedAt, minutesLater(61))).toBe(false);
   });
 
-  it("lets ops send back a set of photographs, a checklist, a count or a fit's piece, never a one visit's piece", () => {
-    for (const kind of SENT_BACK_KINDS) expect(mayBeSentBack(kind, false), kind).toBe(true);
-    expect(mayBeSentBack("checklist", true)).toBe(true);
-    expect(mayBeSentBack("piece", true)).toBe(false);
+  it("lets ops send back a set of photographs, a checklist or a count, never the hair system or the close", () => {
+    expect(SENT_BACK_KINDS).toEqual(["before_photos", "checklist", "consumables", "after_photos"]);
   });
 
   it("takes no other step at all: no second outcome, no check-in, no photographs, no piece", () => {
