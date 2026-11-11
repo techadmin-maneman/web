@@ -130,3 +130,92 @@ test("the close-out says what was decided in Hindi around ops' own reason, which
   await goInApp(page, closeOut);
   await expect(page.getByText("अभी नहीं · Client moved to another city", { exact: true })).toBeVisible();
 });
+
+const HAIR = "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density";
+
+/** A phone that kept Hindi, as the app reads it before it first draws. */
+const keptHindi = (page: Page) =>
+  page.addInitScript(() => {
+    window.localStorage.setItem("mm-tech-language", "hi");
+  });
+
+test("Kit says its names and amounts in Hindi where the catalog holds them, and a product's name whole", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.kit = {
+    held: [
+      {
+        code: "solvent",
+        name: "Solvent",
+        unit: "ml",
+        quantity: 120,
+        low: false,
+        ops_told: false,
+        usable: 120,
+        hair_system: false,
+        lots: [{ lot_code: "SV-2", expires_on: "2031-01-31", quantity: 120, use_first: false, recalled: false }],
+        units: [],
+      },
+      {
+        code: "tape_strips",
+        name: "Tape strips",
+        unit: "strip",
+        quantity: 5,
+        low: false,
+        ops_told: false,
+        usable: 5,
+        hair_system: false,
+        lots: [{ lot_code: "TS-1", expires_on: "2031-03-31", quantity: 5, use_first: false, recalled: false }],
+        units: [],
+      },
+    ],
+    coming: [
+      {
+        id: "tr-1",
+        code: "hs_exact",
+        name: HAIR,
+        unit: "piece",
+        quantity: 2,
+        from: "Gurgaon stockroom",
+        sent_at: "2030-07-01T05:00:00.000Z",
+        units: ["MM-ESS-0000007-H", "MM-ESS-0000008-J"],
+      },
+    ],
+    returned: [],
+    forecast: [{ code: "shampoo", name: "Shampoo sachet", unit: "sachet", need: 6, have: 0 }],
+    asked: null,
+  };
+  await keptHindi(page);
+  await page.goto("/kit");
+
+  await expect(page.getByText("सॉल्वेंट", { exact: true })).toBeVisible();
+  await expect(page.getByText("टेप स्ट्रिप", { exact: true })).toBeVisible();
+  await expect(page.locator("main")).toContainText("TS-1 · 5 स्ट्रिप");
+  await expect(page.locator("main")).toContainText(`${HAIR} · 2 पीस`);
+  await expect(page.getByRole("rowheader", { name: "शैम्पू पाउच" })).toBeVisible();
+  await expect(page.locator("main")).not.toContainText("strips");
+});
+
+test("the client's history says a consumable the catalog holds in Hindi", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.history = {
+    alerts: [],
+    visits: [
+      {
+        id: "b0000000-0000-4000-8000-000000000042",
+        date: "2026-09-01",
+        type: "service",
+        technician: "Imran",
+        result: "done",
+        note: null,
+        photos: [],
+        consumables: [{ name: "Tape strips", quantity: 2 }],
+        piece: null,
+      },
+    ],
+  };
+  await keptHindi(page);
+  await page.goto(`/jobs/${JOB_ID}/history`);
+  await expect(page.locator("main")).toContainText("टेप स्ट्रिप × 2");
+});
