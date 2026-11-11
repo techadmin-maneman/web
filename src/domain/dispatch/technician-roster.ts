@@ -286,6 +286,12 @@ export async function deleteTechnician(
       theirs("DELETE FROM leave_requests WHERE technician_id = ?1"),
       theirs("DELETE FROM technician_leave WHERE technician_id = ?1"),
       theirs("DELETE FROM technician_hours WHERE technician_id = ?1"),
+      // Their alerts, the kinds they turned off, and their phones' pushes, before the phones.
+      theirs("DELETE FROM tech_alerts WHERE technician_id = ?1"),
+      theirs("DELETE FROM tech_alert_kinds_off WHERE technician_id = ?1"),
+      theirs(
+        "DELETE FROM push_subscriptions WHERE device_id IN (SELECT id FROM technician_devices WHERE technician_id = ?1)",
+      ),
       theirs("DELETE FROM technician_devices WHERE technician_id = ?1"),
       theirs("DELETE FROM visit_positions WHERE technician_id = ?1"),
       theirs("DELETE FROM otp_challenges WHERE technician_id = ?1"),

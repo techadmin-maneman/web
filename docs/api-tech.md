@@ -5552,6 +5552,288 @@ The technician's visits in a month, and what they earned at their rates
 }
 ```
 
+### GET /api/tech/alerts
+
+The technician's alerts of the last seven days, newest first, and the kinds they have on
+
+**200**: The inbox
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianAlerts"
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/alerts/read
+
+Every alert the technician has, read: they opened the inbox
+
+**204**: Read
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### PATCH /api/tech/alerts/settings
+
+Kinds of alert turned on or off
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianAlertSettingsChange"
+}
+```
+
+**200**: The kinds on, as they now are
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianAlertSettings"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/push-subscriptions
+
+This phone takes the technician's pushes, until it is signed out or revoked
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPushSubscription"
+}
+```
+
+**201**: Kept
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPushSubscribed"
+}
+```
+
+**400**: invalid_request: not a browser's push service
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/tech/quality
 
 The technician's on-time visits and hairline redo rate over the last 30 days
@@ -11150,6 +11432,274 @@ One of the client's try-on looks, under the card's own unlock, never cached
   ],
   "additionalProperties": false,
   "description": "The visits closed in the month, by kind and city, at the rate in force."
+}
+```
+
+### TechnicianAlerts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "alerts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/TechnicianAlert"
+      },
+      "description": "The last seven days', newest first."
+    },
+    "settings": {
+      "$ref": "#/components/schemas/TechnicianAlertSettings"
+    },
+    "push_key": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The public key to subscribe to pushes with; null where pushes are not sent."
+    }
+  },
+  "required": [
+    "alerts",
+    "settings",
+    "push_key"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianAlert
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "time_to_leave",
+        "day_ahead",
+        "job_moved",
+        "job_cancelled",
+        "job_reassigned",
+        "running_over"
+      ]
+    },
+    "read": {
+      "type": "boolean"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "job_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The job it is about; the day ahead's first job."
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date of the job, or of the day ahead."
+    },
+    "type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement",
+        null
+      ],
+      "description": "Null once the job is no longer the technician's."
+    },
+    "sector": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "client_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "While the job is the technician's and unlocked; null otherwise."
+    },
+    "starts_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "was_starts_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "A moved job's start before the move."
+    },
+    "leave_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Time to leave: when to set off."
+    },
+    "drive_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "finish_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Running over: when the job under way must be done."
+    },
+    "jobs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "exclusiveMinimum": 0,
+      "description": "The day ahead: how many jobs."
+    },
+    "navigate": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Navigate's map link, for an alert about driving to a job that is unlocked."
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "read",
+    "sent_at",
+    "job_id",
+    "date",
+    "type",
+    "sector",
+    "client_name",
+    "starts_at",
+    "was_starts_at",
+    "leave_by",
+    "drive_minutes",
+    "finish_by",
+    "jobs",
+    "navigate"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianAlertSettings
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "time_to_leave": {
+      "type": "boolean"
+    },
+    "day_ahead": {
+      "type": "boolean"
+    },
+    "job_changes": {
+      "type": "boolean"
+    },
+    "running_over": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "time_to_leave",
+    "day_ahead",
+    "job_changes",
+    "running_over"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianAlertSettingsChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "time_to_leave": {
+      "type": "boolean"
+    },
+    "day_ahead": {
+      "type": "boolean"
+    },
+    "job_changes": {
+      "type": "boolean"
+    },
+    "running_over": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### TechnicianPushSubscribed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "type": "string"
+    },
+    "subscribed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "endpoint",
+    "subscribed_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianPushSubscription
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "type": "string",
+      "maxLength": 2048,
+      "description": "The push service's address for this phone, as the browser gave it."
+    }
+  },
+  "required": [
+    "endpoint"
+  ],
+  "additionalProperties": false
 }
 ```
 

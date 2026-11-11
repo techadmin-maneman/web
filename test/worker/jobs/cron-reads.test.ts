@@ -37,6 +37,8 @@ import { DAY_MS, AGO, IN_TWO_MONTHS, over, rowsReadBy } from "./cron-reads-fixtu
 import { aTechnician } from "../fixtures/index.ts";
 
 const AGO_PLUS_HOUR = new Date(NOW.getTime() - 60 * DAY_MS + 60 * 60 * 1000).toISOString();
+/** Within the inbox's week, which the hourly deletion of old alerts leaves. */
+const HOURS_AGO = new Date(NOW.getTime() - 3 * 60 * 60 * 1000).toISOString();
 
 /** NOW's day in India, as a counter's window names it. */
 const TODAY = "2026-09-21";
@@ -160,6 +162,18 @@ const HISTORY = [
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
   `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)
    SELECT 't-history', 'resource-history', 'A Technician', 'AT', 1, '${AGO}' FROM n LIMIT 1`,
+  // Their alerts of the inbox's week, pushed and read, as the hourly deletion leaves them; a phone signed in long ago
+  // that took their pushes; a kind they turned off.
+  `INSERT INTO tech_alerts (id, technician_id, kind, appointment_id, date, starts_at, once_key, sent_at, pushed_at,
+     read_at)
+   SELECT 'al-' || i, 't-history', 'job_moved', 'a-' || i, date('${AGO}'), '${AGO}', 'job_moved:' || i,
+     '${HOURS_AGO}', '${HOURS_AGO}', '${HOURS_AGO}' FROM n`,
+  `INSERT INTO technician_devices (id, technician_id, device_id, created_at, last_seen_at)
+   SELECT 'td-' || i, 't-history', 'phone-' || i, '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO push_subscriptions (device_id, endpoint, subscribed_at)
+   SELECT 'td-' || i, 'https://fcm.googleapis.com/fcm/send/' || i, '${AGO}' FROM n`,
+  `INSERT OR IGNORE INTO tech_alert_kinds_off (technician_id, kind, set_at)
+   SELECT 't-history', 'day_ahead', '${AGO}' FROM n LIMIT 1`,
   // Their week: a row a day at the most, however long the history.
   `INSERT OR IGNORE INTO technician_hours (technician_id, weekday, starts, ends, set_by, set_at)
    SELECT 't-history', i % 7, '09:00', '18:00', 'ops', '${AGO}' FROM n`,

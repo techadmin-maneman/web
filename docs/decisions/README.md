@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0250. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0251. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -141,6 +141,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0247](0247-the-steps-left.md) The steps left from PR 7
 - [0248](0248-safety.md) A technician's safety on a visit
 - [0249](0249-schedule-kit-and-me.md) Schedule, Kit and Me
+- [0250](0250-guides-and-alerts.md) Guides and alerts
 
 ### Money and Books
 
@@ -534,3 +535,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0247](0247-the-steps-left.md) | The steps left from PR 7 | 2026-11-11 | accepted |  |
 | [0248](0248-safety.md) | A technician's safety on a visit | 2026-11-11 | accepted |  |
 | [0249](0249-schedule-kit-and-me.md) | Schedule, Kit and Me | 2026-11-11 | accepted |  |
+| [0250](0250-guides-and-alerts.md) | Guides and alerts | 2026-11-11 | accepted |  |

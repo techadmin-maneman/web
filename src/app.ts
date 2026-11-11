@@ -36,6 +36,7 @@ import { registerTechCloseActions } from "./routes/tech/jobs.close.ts";
 import { registerTechSafety } from "./routes/tech/safety.ts";
 import { registerTechKit } from "./routes/tech/kit.ts";
 import { registerTechMonth } from "./routes/tech/month.ts";
+import { registerTechAlerts } from "./routes/tech/alerts.ts";
 import { registerTechQuality } from "./routes/tech/quality.ts";
 import { registerTechReschedule } from "./routes/tech/reschedule.ts";
 import { registerTechLeave } from "./routes/tech/leave.ts";
@@ -154,6 +155,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // The technician's kit (docs/decisions/0164-the-kit-screen.md).
     registerTechKit,
     registerTechMonth,
+    registerTechAlerts,
     registerTechQuality,
     registerTechReschedule,
     registerTechLeave,

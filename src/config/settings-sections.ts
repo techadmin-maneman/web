@@ -1,5 +1,5 @@
 // Each section of the settings, read from the Worker's vars and secrets (./settings.ts): Zoho and Books, the GST
-// registration, Razorpay, geocoding, Access, the sign-in, the try-on, WhatsApp and the watchers.
+// registration, Razorpay, geocoding, Access, the sign-in, the try-on, WhatsApp, the watchers and web push.
 
 import type { Reader } from "./env-reader.ts";
 import { ACCESS_TEAM_DOMAIN, ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
@@ -18,6 +18,8 @@ import type {
 import { type GstRegistration, GSTIN_FORMAT, STATE_CODE_FORMAT, SAC_FORMAT } from "./gst.ts";
 import type { EvolutionSettings } from "./evolution.ts";
 import { parseDsn } from "../lib/sentry-dsn.ts";
+import { fromBase64Url } from "../lib/base64url.ts";
+import type { VapidKeys } from "./web-push.ts";
 import type { Msg91Settings, Msg91SmsSettings } from "./msg91.ts";
 
 /**
@@ -347,4 +349,28 @@ export function readMessaging(
   }
   if (environment === "production" && everyone) read.problems.push('MESSAGING_ALLOWLIST is never "*" in production');
   return messaging;
+}
+
+/** Who the push services may contact about our pushes (RFC 8292): the site, which names us. */
+const VAPID_SUBJECT = "https://maneman.in";
+
+/**
+ * The key pair the technicians' pushes are signed with, set together; none where pushes are not sent yet, as locally,
+ * where each push is logged instead (src/providers/web-push.ts).
+ */
+export function readPush(read: Reader): VapidKeys | null {
+  const publicKey = read.optionalText("VAPID_PUBLIC_KEY");
+  const privateKey = read.optionalText("VAPID_PRIVATE_KEY");
+  if (publicKey === null && privateKey === null) return null;
+  if (publicKey === null || privateKey === null) {
+    read.problems.push("VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are set together");
+    return null;
+  }
+  if (fromBase64Url(publicKey)?.length !== 65) {
+    read.problems.push("VAPID_PUBLIC_KEY must be a P-256 public key, 65 bytes in base64url");
+  }
+  if (fromBase64Url(privateKey)?.length !== 32) {
+    read.problems.push("VAPID_PRIVATE_KEY must be a P-256 private key, 32 bytes in base64url");
+  }
+  return { publicKey, privateKey, subject: VAPID_SUBJECT };
 }

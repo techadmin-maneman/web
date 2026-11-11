@@ -18,6 +18,36 @@ export interface AddressParts {
   readonly pincode: string;
 }
 
+/** Where a map is sent: the address's pin, or its parts where it has none. */
+export interface WayToParts {
+  readonly building?: string | null;
+  readonly line1: string;
+  readonly line2?: string | null;
+  readonly locality: string;
+  readonly city: string;
+  readonly pincode: string;
+  readonly lat: number | null;
+  readonly lng: number | null;
+}
+
+/** What a map is asked for when there is no pin: the building and the area. A flat number only confuses it. */
+function placeOf(parts: WayToParts): string {
+  const building = given(parts.building) ? parts.building : parts.line1;
+  return [building, parts.line2, parts.locality, `${parts.city} ${parts.pincode}`].filter(given).join(", ");
+}
+
+/**
+ * Where Navigate goes, in Google's Maps URLs, which need no key and open on any phone (an iPhone registers no `geo:`
+ * link; docs/decisions/0054-address-capture.md): the address's own pin when it has one, because a coordinate is the
+ * door rather than a map's reading of a sentence; the typed address when it has none. `api=1` is required, and the
+ * one stated limit, 2,048 characters, is beyond an address in six short parts.
+ */
+export function wayTo(address: WayToParts): string {
+  const pin = address.lat !== null && address.lng !== null ? `${String(address.lat)},${String(address.lng)}` : null;
+  const destination = pin ?? placeOf(address);
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}
+
 /**
  * The address on one line, narrowest part first, as an envelope is written: the flat, the floor, the tower and the
  * building, then the street, the area, and the city with its pincode. Words already written are written once, as a

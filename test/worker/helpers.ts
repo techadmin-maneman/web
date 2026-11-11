@@ -86,6 +86,7 @@ export const LOCAL_SETTINGS: Settings = {
   },
   messaging: { enabled: true, allowlist: [], everyone: false, evolution: null, msg91: null },
   devRoutes: false,
+  push: null,
 };
 
 export const LOCAL_CONFIG: StaticConfig = {
@@ -272,12 +273,15 @@ export interface TestDependencies extends Dependencies {
   readonly leadNotices: string[];
   /** Every login code sent, as the phone would receive it. */
   readonly sentCodes: SentCode[];
+  /** Every push sent, by the push service's address: a fake push service that takes them all. */
+  readonly pushes: string[];
 }
 
 export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDependencies {
   const alerts: string[] = [];
   const leadNotices: string[] = [];
   const sentCodes: SentCode[] = [];
+  const pushes: string[] = [];
   const now = overrides.now ?? (() => NOW);
   const alert =
     overrides.alert ??
@@ -314,6 +318,11 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     books: createStubBooks(),
     payments: createStubPayments(),
     cards: recordingCards(),
+    push: (endpoint) => {
+      pushes.push(endpoint);
+      return Promise.resolve("sent");
+    },
+    pushes,
     ...overrides,
   };
 }

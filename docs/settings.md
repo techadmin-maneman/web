@@ -71,6 +71,8 @@ Set with `wrangler secret put` in each environment (docs/provisioning.md); never
 - `SENTRY_DSN`
 - `TURNSTILE_SECRET`
 - `URGENT_WEBHOOK_URL`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_PUBLIC_KEY`
 - `YOUCAM_API_KEY`
 - `ZOHO_ACCOUNTS_HOST`
 - `ZOHO_API_HOST`

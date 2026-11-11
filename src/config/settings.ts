@@ -11,6 +11,7 @@ import type { Msg91Settings, Msg91SmsSettings } from "./msg91.ts";
 import { ENABLED_SURFACES, type EnvironmentName } from "./environments.ts";
 import { type GstRegistration } from "./gst.ts";
 import { Reader, type Env } from "./env-reader.ts";
+import type { VapidKeys } from "./web-push.ts";
 import {
   type ProvidersRead,
   readAccess,
@@ -18,6 +19,7 @@ import {
   readLogin,
   readMessaging,
   readRazorpay,
+  readPush,
   readTryon,
   readWatchers,
   readZohoClients,
@@ -243,6 +245,8 @@ export interface Settings {
   readonly analytics: { readonly clientKeySecret: string | null };
   readonly login: LoginSettings;
   readonly tryon: TryonSettings;
+  /** The key pair the technicians' pushes are signed with; null where none is set, and no push is sent. */
+  readonly push: VapidKeys | null;
   readonly messaging: MessagingSettings;
   /**
    * DEV_ROUTES=on, locally only: the routes that stand in on a laptop for what a technician's phone does, such as
@@ -343,6 +347,7 @@ export function readSettings(
     analytics: { clientKeySecret: readClientKeySecret(read, providers) },
     login,
     tryon,
+    push: readPush(read),
     messaging,
     devRoutes: environment === "local" && devRoutes === "on",
   };

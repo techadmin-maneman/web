@@ -89,10 +89,10 @@ this map, or when the map names something that no longer exists.
 
 ### The technician's work in the field
 
-- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `client-history` (a client's past visits for the technician), `step-send-backs` (steps ops sent back to the technician), `safety` (where the technician is on a visit, and their SOS), `workable-job`, `job-events`, `job-event-bodies`,
+- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `client-history` (a client's past visits for the technician), `step-send-backs` (steps ops sent back to the technician), `safety` (where the technician is on a visit, and their SOS), `tech-alerts`, `alert-settings` and `alert-sends` (their alerts: the inbox, the kinds on, and what the cron writes and pushes), `workable-job`, `job-events`, `job-event-bodies`,
   `job-record`, `job-use`, `consumable-shortfalls` (a job short of what its service expects, and why), `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `job-options` (a
   consultation's packages, prices and the client's try-on looks)
-- **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `consumable-shortfall`
+- **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `consumable-shortfall`, `tech-alerts`
 - **Data** (`src/config/`): `job-sheet`, `pieces`
 - **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/job-sheet`
 - **Screens:** `apps/tech/src/`

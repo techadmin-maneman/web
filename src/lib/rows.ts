@@ -1091,6 +1091,11 @@ export interface Rows {
     readonly updated_at: string;
     readonly change_id: string | null;
   };
+  readonly push_subscriptions: {
+    readonly device_id: string;
+    readonly endpoint: string;
+    readonly subscribed_at: string;
+  };
   readonly quick_replies: {
     readonly id: string;
     readonly title: string;
@@ -1622,6 +1627,28 @@ export interface Rows {
     readonly city: string | null;
     readonly opened_at: string;
     readonly closed_at: string | null;
+  };
+  readonly tech_alert_kinds_off: {
+    readonly technician_id: string;
+    readonly kind: string;
+    readonly set_at: string;
+  };
+  readonly tech_alerts: {
+    readonly id: string;
+    readonly technician_id: string;
+    readonly kind: string;
+    readonly appointment_id: string | null;
+    readonly date: string;
+    readonly starts_at: string | null;
+    readonly was_starts_at: string | null;
+    readonly leave_by: string | null;
+    readonly drive_minutes: number | null;
+    readonly finish_by: string | null;
+    readonly jobs: number | null;
+    readonly once_key: string;
+    readonly sent_at: string;
+    readonly pushed_at: string | null;
+    readonly read_at: string | null;
   };
   readonly technician_devices: {
     readonly id: string;

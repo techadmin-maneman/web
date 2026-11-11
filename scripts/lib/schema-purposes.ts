@@ -27,6 +27,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).",
   po_lines:
     "Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).",
+  push_subscriptions:
+    "The phone that takes a technician's pushes, one subscription a phone, by the push service's address; a phone signed out or revoked takes none (ADR 0250).",
   receipts:
     "Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).",
   receipt_lines:
@@ -75,6 +77,9 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   care_weekly_off: "Each Care team member's weekly days off, as a Customer Care manager sets them (ADR 0134).",
   care_leave: "Leave for a Care team member, from one date to another; their chats are covered meanwhile (ADR 0134).",
   care_names: "The first name each Care team member is known by to clients, as their Support card shows it (ADR 0136).",
+  tech_alert_kinds_off: "The kinds of alert a technician turned off; every kind is on until then (ADR 0250).",
+  tech_alerts:
+    "A technician's alerts, the inbox the phone reads over the last seven days: time to leave, the day ahead, a job moved, called off or given to another, and running over; when each was pushed and read (ADR 0250).",
   technician_updates:
     "A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).",
   remedies:

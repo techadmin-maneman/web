@@ -5,7 +5,8 @@
 import { describe, expect, it } from "vitest";
 import { fromBase64Url, toBase64Url } from "../../../src/lib/base64url.ts";
 import { createLogger } from "../../../src/log.ts";
-import { createPush, isPushEndpoint, type VapidKeys } from "../../../src/providers/web-push.ts";
+import type { VapidKeys } from "../../../src/config/web-push.ts";
+import { createPush, isPushEndpoint } from "../../../src/providers/web-push.ts";
 
 const ENDPOINT = "https://fcm.googleapis.com/fcm/send/abc123";
 const NOW = new Date("2026-11-11T09:00:00Z");

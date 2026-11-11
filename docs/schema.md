@@ -21,6 +21,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes`, `step_send_backs` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | A technician's position and their SOS | `visit_positions`, `sos_alerts` | A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was | The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since |
 | A technician's asks of ops: kit, and a visit to move | `kit_requests`, `reschedule_requests` | An ask made since is lost, and one ops settled since is open again on the Tasks board | Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost |
+| A technician's alerts, the kinds they turned off, and the phones that take their pushes | `tech_alerts`, `tech_alert_kinds_off`, `push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a kind turned off since is on, and a phone that allowed pushes since takes none | Nothing: the cron writes the day's alerts again as they fall due, a kind is turned off again in Alerts, and the phone subscribes again when the app next opens |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
@@ -141,6 +142,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [po_lines](#po_lines): Each line of a purchase order: the stock code, how many, the price it was ordered at, and how many have arrived (ADR 0166).
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 - [purchase_orders](#purchase_orders): Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
+- [push_subscriptions](#push_subscriptions): The phone that takes a technician's pushes, one subscription a phone, by the push service's address; a phone signed out or revoked takes none (ADR 0250).
 - [quick_replies](#quick_replies): Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
 - [recall_pieces](#recall_pieces): Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).
@@ -188,6 +190,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [task_closures](#task_closures): A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
 - [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
 - [task_spans](#task_spans): Each task the Tasks board has held, by its group, row and episode: the client's city, when it opened and the night it was first found gone, from which the reporting copy counts Care cases (ADR 0147).
+- [tech_alert_kinds_off](#tech_alert_kinds_off): The kinds of alert a technician turned off; every kind is on until then (ADR 0250).
+- [tech_alerts](#tech_alerts): A technician's alerts, the inbox the phone reads over the last seven days: time to leave, the day ahead, a job moved, called off or given to another, and running over; when each was pushed and read (ADR 0250).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_hours](#technician_hours): A technician's own week: a row for each day they work, with its hours. One with no rows works their city's hours every day (ADR 0210).
 - [technician_leave](#technician_leave): A technician's leave, in whole days or between two times of one day, which the clash check reads beside `slot_claims` (ADR 0062, ADR 0210).
@@ -270,7 +274,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`, `0168_upkeep_out_of_triggers.sql`, `0169_visits_whole.sql`, `0173_fsm_columns_read_the_new.sql`, `0207_safety.sql`, `0208_kit_and_reschedule_requests.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`, `0168_upkeep_out_of_triggers.sql`, `0169_visits_whole.sql`, `0173_fsm_columns_read_the_new.sql`, `0207_safety.sql`, `0208_kit_and_reschedule_requests.sql`, `0209_tech_alerts.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -325,7 +329,7 @@ Indexes:
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
-Triggers: `appointments_kept_whole`, `appointments_whole`, `reschedule_requests_settled`, `visit_positions_end`.
+Triggers: `appointments_kept_whole`, `appointments_whole`, `reschedule_requests_settled`, `tech_alerts_job_cancelled`, `tech_alerts_job_moved`, `tech_alerts_job_reassigned`, `visit_positions_end`.
 
 ## audit_log
 
@@ -2343,6 +2347,22 @@ Indexes:
 - `purchase_orders_open`: on (`expected_on`), where `state IN ('approved', 'sent', 'part_received')`
 - A `UNIQUE` constraint: unique on (`number`)
 
+## push_subscriptions
+
+The phone that takes a technician's pushes, one subscription a phone, by the push service's address; a phone signed out or revoked takes none (ADR 0250).
+
+Made by `0209_tech_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `device_id` | TEXT | no |  | primary key; → `technician_devices.id` |  |
+| `endpoint` | TEXT | no |  |  |  |
+| `subscribed_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`endpoint`)
+
 ## quick_replies
 
 Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
@@ -3412,6 +3432,48 @@ Indexes:
 
 - `task_spans_by_close`: on (`closed_at`)
 - `task_spans_open`: unique on (`task_group`, `subject_id`, `episode`), where `closed_at IS NULL`
+
+## tech_alert_kinds_off
+
+The kinds of alert a technician turned off; every kind is on until then (ADR 0250).
+
+Made by `0209_tech_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `technician_id` | TEXT | no |  | primary key; → `technicians.id` |  |
+| `kind` | TEXT | no |  | primary key |  |
+| `set_at` | TEXT | no |  |  |  |
+
+## tech_alerts
+
+A technician's alerts, the inbox the phone reads over the last seven days: time to leave, the day ahead, a job moved, called off or given to another, and running over; when each was pushed and read (ADR 0250).
+
+Made by `0209_tech_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `kind` | TEXT | no |  |  |  |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` | The job it is about: for the day ahead, the day's first. |
+| `date` | TEXT | no |  |  | India's date the alert is for: the job's day, or the day ahead's. |
+| `starts_at` | TEXT | yes |  |  | The job's start, or the day ahead's first; and a moved job's start before the move. |
+| `was_starts_at` | TEXT | yes |  |  |  |
+| `leave_by` | TEXT | yes |  |  | Time to leave: when to set off, and the drive. |
+| `drive_minutes` | INTEGER | yes |  |  |  |
+| `finish_by` | TEXT | yes |  |  | Running over: when the job under way must be done to reach this one on time. |
+| `jobs` | INTEGER | yes |  |  | The day ahead: how many jobs it holds. |
+| `once_key` | TEXT | no |  |  | One alert of a kind for a job, a day, or a move to a time. |
+| `sent_at` | TEXT | no |  |  |  |
+| `pushed_at` | TEXT | yes |  |  | When the push went; NULL while it is to go. |
+| `read_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`technician_id`, `once_key`)
+- `tech_alerts_by_time`: on (`sent_at`)
+- `tech_alerts_inbox`: on (`technician_id`, `sent_at`)
 
 ## technician_devices
 

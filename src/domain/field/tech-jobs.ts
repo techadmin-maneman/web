@@ -196,6 +196,13 @@ export const SELECT_JOB = `
   WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`;
 
 /**
+ * "only time, type and sector": the area, never the street, whether the job is unlocked or not. The client's own
+ * locality names it first, as the dispatch board does; a pincode's area can be a neighbour of the client's.
+ */
+export const sectorOf = (row: Pick<JobRow, "locality" | "pincode_area" | "service_city">): string | null =>
+  row.locality ?? row.pincode_area ?? row.service_city;
+
+/**
  * The jobs on one India date, in time order. Statuses the technician can still act on, and what they closed today;
  * each with its address once unlocked, the drive to the next job still to do, and the drive to it from the job before
  * or from the technician's home.
@@ -331,9 +338,7 @@ export function listingOf({
     type: row.type,
     one_visit: row.one_visit !== null,
     service: soldServiceOf(row),
-    // "only time, type and sector": the area, never the street, whether the job is unlocked or not. The client's own
-    // locality names it first, as the dispatch board does; a pincode's area can be a neighbour of the client's.
-    sector: row.locality ?? row.pincode_area ?? row.service_city,
+    sector: sectorOf(row),
     status: row.status,
     badge: badgeOf(row),
     slots: slotsFor(unitsFor(bookedMinutes(row))),

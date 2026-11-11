@@ -3,6 +3,7 @@
 // browser's push service, so there is nothing to encrypt. A subscription the push service says is gone comes back as
 // `gone`, for the caller to delete; any other failure is left, since the alert waits in the inbox either way.
 
+import type { VapidKeys } from "../config/web-push.ts";
 import { fromBase64Url, toBase64Url } from "../lib/base64url.ts";
 import type { Logger } from "../log.ts";
 import { vendorFetch, VendorUnreachable } from "./vendor-fetch.ts";
@@ -25,15 +26,6 @@ export function isPushEndpoint(endpoint: string): boolean {
   const url = new URL(endpoint);
   if (url.protocol !== "https:" || url.port !== "" || url.username !== "" || url.password !== "") return false;
   return PUSH_HOSTS.some((host) => host.test(url.hostname));
-}
-
-export interface VapidKeys {
-  /** The public key the phone subscribes with: the uncompressed P-256 point, 65 bytes, base64url. */
-  readonly publicKey: string;
-  /** The private scalar, 32 bytes, base64url. */
-  readonly privateKey: string;
-  /** Who the push service may contact about our pushes: an https: or mailto: URL. */
-  readonly subject: string;
 }
 
 export type PushAnswer = "sent" | "gone" | "failed";

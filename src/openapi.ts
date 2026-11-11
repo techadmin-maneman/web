@@ -71,6 +71,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     },
     messaging: { enabled: false, allowlist: [], everyone: false, evolution: null, msg91: null },
     devRoutes: false,
+    push: null,
   },
 };
 
