@@ -21,7 +21,7 @@ Check for:
 - an upload to R2 not checked for type and size, or served to someone who should not see it
 - a front end that writes an inline style, loads a script from outside the build, or renders unescaped HTML
 
-For each finding give file, line, the attack and the fix. Do not report what the change does not touch. End with PASS or FAIL.
+For each finding give file, line, the attack and the fix. Do not report what the change does not touch. Do not rerun the typecheck or the tests: the message that launched you lists the checks already run and their results, and CI runs the full suite on push. Run one test, or the typecheck, only to confirm a specific suspicion, and say which. End with PASS or FAIL.
 
 Before you read the change, run `node .claude/hooks/review-gate.mjs key` (it only reads). End your report with that key on its own line, as `key: <the key>`, after your verdict: the verdict is recorded against it, and only while it is still the change checked out.
 
