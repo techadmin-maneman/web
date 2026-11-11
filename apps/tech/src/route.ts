@@ -8,7 +8,6 @@
 //   /week/:date              Schedule on another of those days
 //   /week/:date/:id          a later day's job, read-only
 //   /me                      Me: their month, their leave, what waits to send, ops, and signing out (a tab)
-//   /month                   their visits this month, and what they earned
 //   /leave                   their asks for leave, and a new one
 //   /jobs/:id                one job's card, and the evidence chain
 //   /jobs/:id/options        a consultation's packages and prices, and the client's try-on looks
@@ -52,7 +51,6 @@ export type Route =
   | { readonly page: "kit" }
   | { readonly page: "week"; readonly date: string | null }
   | { readonly page: "preview"; readonly date: string; readonly id: string }
-  | { readonly page: "month" }
   | { readonly page: "leave" }
   | { readonly page: "me" }
   | { readonly page: "job"; readonly id: string }
@@ -73,7 +71,6 @@ export function routeOf(path: string): Route {
   if (second === undefined) {
     if (first === "waiting") return { page: "waiting" };
     if (first === "week") return { page: "week", date: null };
-    if (first === "month") return { page: "month" };
     if (first === "leave") return { page: "leave" };
     if (first === "me") return { page: "me" };
     return first === "kit" ? { page: "kit" } : TODAY;

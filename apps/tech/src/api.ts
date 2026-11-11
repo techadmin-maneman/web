@@ -207,6 +207,8 @@ export const api = {
   kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),
   /** This month's visits closed, by kind and city, at the technician's own rates. */
   month: () => client.get("/api/tech/month", { patience: PATIENCE_MS.read }),
+  /** The technician's on-time visits and hairline redo rate over the last 30 days. */
+  quality: () => client.get("/api/tech/quality", { patience: PATIENCE_MS.read }),
   /** A consultation's packages and what each costs the client, and the looks they made with the try-on. */
   options: (id: string) => client.get("/api/tech/jobs/{id}/options", { path: { id }, patience: PATIENCE_MS.read }),
   /** The client's alerts and their visits closed before this job (docs/decisions/0242-client-record.md). */

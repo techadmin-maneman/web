@@ -119,6 +119,8 @@ export interface Fake {
   kitAfter: Omit<TechReply<"/api/tech/kit">, "today"> | null;
   /** The technician's month, as GET /api/tech/month answers. */
   month: TechReply<"/api/tech/month">;
+  /** The technician's quality over the last 30 days, for Me. */
+  quality: TechReply<"/api/tech/quality">;
   /** A consultation's options: its packages and prices, and the client's try-on looks. */
   options: TechReply<"/api/tech/jobs/{id}/options">;
   /** The client's alerts and the last technician's note on the card; none unless a test gives them. */
@@ -272,6 +274,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     yesterday: false,
     dayFails: false,
     writes: [],
+    quality: { visits: 18, on_time: 17, fits: 9, redone: 1 },
     month: {
       month: "2026-10",
       lines: [
@@ -530,6 +533,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     }
     if (path === "/api/tech/kit") return reply(route, 200, { ...fake.kit, today });
     if (path === "/api/tech/month") return reply(route, 200, fake.month);
+    if (path === "/api/tech/quality") return reply(route, 200, fake.quality);
     if (method === "GET" && path === "/api/tech/leave") return reply(route, 200, fake.leave);
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";

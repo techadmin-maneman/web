@@ -1,4 +1,5 @@
-/* Me (./MeScreen.tsx), in the new look: its head with the sync label, the technician's name, the rows, and ops. */
+/* Me (./MeScreen.tsx), in the new look: its head with the sync label, the technician's name and who they are, their
+   quality and incentives (./Standing.tsx), the rows, and ops. */
 
 .screen {
   display: flex;
@@ -24,10 +25,57 @@
 }
 
 .name {
-  margin: var(--sp-20) 0 var(--sp-24);
+  margin: var(--sp-20) 0 0;
   font-size: var(--fs-22);
   font-weight: var(--weight-semibold);
   line-height: var(--lh-130);
+}
+
+.who {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.quiet {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.lines {
+  margin: 0;
+}
+
+/* A figure's name and its value on one line, split by a hairline from the next. */
+.line {
+  display: flex;
+  gap: var(--sp-16);
+  justify-content: space-between;
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+}
+
+.line dt {
+  color: var(--ui-text-soft);
+}
+
+.line dd {
+  margin: 0;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  margin: var(--sp-8) 0 var(--sp-4);
+  font-size: var(--fs-28);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-115);
+  font-variant-numeric: tabular-nums;
 }
 
 /* A row's words on the gutter's line, as the heading's: the row's own padding taken back from the margin. */
@@ -45,7 +93,7 @@
 }
 
 .section {
-  margin-top: var(--sp-32);
+  margin-top: var(--sp-24);
 }
 
 .ops {

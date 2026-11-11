@@ -114,7 +114,35 @@ export const tabs = {
 /** Me: the technician's own pages, what waits to send, ops, and signing out. */
 export const me = {
   title: "Me",
-  month: "This month",
+  /** "Senior · Gurugram · +91 98100 00009"; "Technician" for one with no grade. */
+  who: (grade: string | null, city: string | null, phone: string | null) =>
+    [grade ?? "Technician", city, phone].filter((part) => part !== null).join(" · "),
+  quality: {
+    title: "Your quality",
+    days: "Last 30 days",
+    redo: "Hairline redo rate",
+    /** "11% · 1 of 9 fits" */
+    redone: (redone: number, fits: number) =>
+      `${String(Math.round((redone / fits) * 100))}% · ${String(redone)} of ${counted(fits, "fit", "fits")}`,
+    onTime: "On time",
+    /** "94% of visits" */
+    onTimeShare: (onTime: number, visits: number) => `${String(Math.round((onTime / visits) * 100))}% of visits`,
+    none: "None yet",
+    failed: "Your quality didn’t load.",
+  },
+  incentives: {
+    /** "Incentives, November" */
+    title: (month: string) => `Incentives, ${month}`,
+    /** "to 10 Nov" */
+    upTo: (date: string) => `to ${date}`,
+    /** "Service visits · 14 · Rs. 450" */
+    line: (kind: string, visits: number, rate: string | null) =>
+      [kind, String(visits), rate].filter((part) => part !== null).join(" · "),
+    noRate: "Rate not set",
+    none: "No visits closed yet this month.",
+    failed: "Your incentives didn’t load.",
+  },
+  account: "Account",
   leave: "Leave",
   pending: "Pending uploads",
   nothingPending: "None",
@@ -1099,14 +1127,8 @@ export const schedule = {
   },
 };
 
-/** The technician's own month: the visits they closed, by kind, and what each earned at their rates. */
+/** Each kind of visit as Me's incentives name it (./me/Standing.tsx). */
 export const month = {
-  title: "Your month",
-  link: "Your month",
-  back: "Back to today",
-  failed: "Your month didn’t load.",
-  retry: "Try again",
-  none: "No visits closed yet this month.",
   kinds: {
     consultation: "Consultations",
     one_visit: "Consultation and fit",
@@ -1115,10 +1137,6 @@ export const month = {
     replacement: "Replacements",
     no_show: "Not home",
   },
-  /** "Service visits · 12" */
-  line: (kind: string, visits: number) => `${kind} · ${String(visits)}`,
-  noRate: "No rate set yet",
-  total: "So far",
 };
 
 /** A consultation's Options: each package and what it costs the client, and the looks they made with the try-on. */

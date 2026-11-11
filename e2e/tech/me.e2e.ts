@@ -1,5 +1,6 @@
-// Me, in the new look: reached from its tab, with the technician's month, leave, what waits to send, ops, and signing
-// out, which the shell's own test runs through (e2e/tech/shell.e2e.ts).
+// Me, in the new look: reached from its tab, with who the technician is, their quality and incentives
+// (./mine.e2e.ts), leave, what waits to send, ops, and signing out, which the shell's own test runs through
+// (e2e/tech/shell.e2e.ts).
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -7,14 +8,13 @@ import { fakeTech } from "./fake-tech.ts";
 import { tab } from "./tabs.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
-test("opens from its tab, and lists the month, leave, what waits to send, and the way to ops", async ({ page }) => {
+test("opens from its tab, and lists leave, what waits to send, and the way to ops", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/");
   await tab(page, techCopy.tabs.me).click();
 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.me.title })).toBeVisible();
   await expect(tab(page, techCopy.tabs.me)).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { name: techCopy.me.month })).toHaveAttribute("href", "/month");
   await expect(page.getByRole("link", { name: techCopy.me.leave, exact: true })).toHaveAttribute("href", "/leave");
   await expect(page.getByRole("link", { name: new RegExp(`^${techCopy.me.pending}`) })).toContainText(
     techCopy.me.nothingPending,
