@@ -13,7 +13,7 @@ import type { Job } from "../api.ts";
 import { closeOut as closeOutCopy, job as copy, visit as visitCopy, whatStopped } from "../content.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
-import { nextStep, outcomeOf, stageOf, type Stage } from "../lib/progress.ts";
+import { nextStep, outcomeOf, stageOf, stepsToFix, type Stage } from "../lib/progress.ts";
 import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { apiDate, dayAfter, todayInIndia } from "../lib/when.ts";
@@ -41,8 +41,25 @@ function stateLine(stage: Stage, job: Job, queued: readonly Queued[]): string | 
   return null;
 }
 
-/** The bar's action: the next step of a started job, or the way to a closed one's summary. */
+/**
+ * The bar's action: the next step of a started job; on a closed one, the first step ops sent back
+ * (docs/decisions/0246-closed-and-sent-back.md), or the way to its summary.
+ */
 function footFor(stage: Stage, job: Job, queued: readonly Queued[]): ReactNode {
+  const toFix = stage === "closed" ? stepsToFix(job, queued)[0] : undefined;
+  if (toFix !== undefined) {
+    return (
+      <Button
+        variant="primary"
+        size="action"
+        onClick={() => {
+          go(stepPath(job.id, toFix));
+        }}
+      >
+        {copy.putRight}
+      </Button>
+    );
+  }
   if (stage === "started") {
     const step = nextStep(job, queued);
     return (

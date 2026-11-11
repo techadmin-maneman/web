@@ -329,4 +329,13 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       return { ...card, client_alerts: card.client_alerts ?? [], handoff: card.handoff ?? null };
     });
   },
+  // Version 11: a card carries the steps ops sent back (docs/decisions/0246-closed-and-sent-back.md). One kept before
+  // says none until the card is read again.
+  (_db, upgrade) => {
+    eachAgain(upgrade.objectStore("cards"), (value) => {
+      // What an earlier build wrote, which may lack the field this step adds.
+      const card = value as Partial<Pick<Job, "sent_back">>;
+      return card.sent_back === undefined ? { ...card, sent_back: [] } : null;
+    });
+  },
 ];

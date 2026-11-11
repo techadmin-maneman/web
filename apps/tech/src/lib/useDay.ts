@@ -11,7 +11,17 @@
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useCallback, useMemo } from "react";
 import { api, unreachable, type Job, type JobSummary } from "../api.ts";
-import { forgetOld, keepDay, keepJob, keptDay, keptJob, keptJobs, keptNames, type HeldJob } from "../store/jobs.ts";
+import {
+  forgetOld,
+  keepDay,
+  keepJob,
+  keepToFix,
+  keptDay,
+  keptJob,
+  keptJobs,
+  keptNames,
+  type HeldJob,
+} from "../store/jobs.ts";
 import { unsentJobs } from "../store/outbox.ts";
 import { todayInIndia } from "./when.ts";
 
@@ -43,6 +53,7 @@ export async function loadDay(date: string): Promise<KeptLoad<readonly JobSummar
   const answer = await api.jobs(date);
   if (answer.ok) {
     await keepDay(date, answer.body.jobs).catch(() => undefined);
+    await keepToFix(answer.body.sent_back).catch(() => undefined);
     await forgetStale().catch(() => undefined);
     return { state: "loaded", value: answer.body.jobs, fromPhone: false };
   }

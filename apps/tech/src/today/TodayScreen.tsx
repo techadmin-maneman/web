@@ -21,7 +21,7 @@ import { kindName } from "../lib/kind.ts";
 import { nextOf, titleOf } from "../lib/today.ts";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
-import { type Heard, keptStates } from "../store/jobs.ts";
+import { type Heard, keptStates, keptToFix } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
 import { LaterToday, Tomorrow } from "./LaterToday.tsx";
 import { NextJob } from "./NextJob.tsx";
@@ -82,6 +82,36 @@ function Head(props: { readonly date: string; readonly title: string; readonly h
   );
 }
 
+/**
+ * The visits ops sent steps back on, from whatever day, as cards at the top until the phone sends the steps again
+ * (docs/decisions/0246-closed-and-sent-back.md). The list is the one the day's list last brought.
+ */
+function ToFix(props: {
+  readonly day: unknown;
+  readonly queued: readonly Queued[];
+  readonly names: ReadonlyMap<string, string>;
+}) {
+  const visits = valueOr(useAsync(keptToFix, props.day)[0], []);
+  const resent = (id: string, step: string) =>
+    props.queued.some((event) => event.job_id === id && event.kind === step && event.state === "waiting");
+  return visits.flatMap((visit) => {
+    const steps = visit.steps.filter((step) => !resent(visit.id, step));
+    if (steps.length === 0) return [];
+    const who = props.names.get(visit.id) ?? visit.client_name ?? kindName({ ...visit, one_visit: false });
+    return (
+      <ProblemCard
+        key={visit.id}
+        title={copy.toFix(clock(visit.starts_at), who)}
+        onOpen={() => {
+          go(`/jobs/${visit.id}`);
+        }}
+      >
+        {copy.toFixBody(steps.map((step) => copy.toFixSteps[step]))}
+      </ProblemCard>
+    );
+  });
+}
+
 /** Yesterday's jobs still open, as a card at the top: each can be finished and sent. */
 function LeftOpen(props: {
   readonly date: string;
@@ -134,6 +164,7 @@ export function TodayScreen() {
       {offline && <NoSignal />}
 
       <div className={styles.problems}>
+        <ToFix day={day} queued={waiting.events} names={names} />
         <LeftOpen date={date} queued={waiting.events} names={names} />
         {atRisk && unsentOnPhone && <ProblemCard title={atRiskCopy.title}>{atRiskCopy.body}</ProblemCard>}
       </div>

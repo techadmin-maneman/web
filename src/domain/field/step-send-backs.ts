@@ -2,6 +2,7 @@
 // opens the step again and says why; the step may land after the visit has closed until it does; landing it again
 // clears it. One is open at a time for each step of a visit. Audited by the visit and the step, never the words.
 
+import type { VisitType } from "../../config/visit-types.ts";
 import { mayBeSentBack, SENT_BACK_KINDS, type SentBackKind } from "../../policy/in-job-steps.ts";
 import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 
@@ -107,6 +108,42 @@ export async function sendBacksOf(
     (kind) => landed.has(kind) && !sent.has(kind) && mayBeSentBack(kind, visit.one_visit === 1),
   );
   return { open, may };
+}
+
+/** A visit of the technician's with steps sent back and not yet landed again, whatever its day. */
+export interface VisitToFix {
+  readonly id: string;
+  readonly starts_at: string;
+  readonly type: VisitType | null;
+  readonly client_name: string | null;
+  readonly steps: SentBackKind[];
+}
+
+/**
+ * The technician's visits with a step sent back and not yet landed again, oldest first: their Today lists each, from
+ * whatever day, until it is put right. Read from the open rows alone.
+ */
+export async function visitsToFix(db: D1Database, technicianId: string): Promise<VisitToFix[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT a.id, a.window_start AS starts_at, a.type, p.name AS client_name, s.kind
+         FROM step_send_backs s
+         JOIN appointments a ON a.id = s.appointment_id
+         LEFT JOIN people p ON p.id = a.person_id
+        WHERE s.cleared_at IS NULL AND a.technician_id = ?1 AND a.deleted_at IS NULL AND a.status <> 'cancelled'
+        ORDER BY a.window_start, s.sent_at`,
+    )
+    .bind(technicianId)
+    .all<{ id: string; starts_at: string; type: VisitType | null; client_name: string | null; kind: SentBackKind }>();
+  const visits = new Map<string, VisitToFix>();
+  for (const row of results) {
+    const known = visits.get(row.id);
+    if (known === undefined) {
+      const { kind, ...visit } = row;
+      visits.set(row.id, { ...visit, steps: [kind] });
+    } else known.steps.push(row.kind);
+  }
+  return [...visits.values()];
 }
 
 /** Whether this step of the visit is sent back and not yet landed again: it may land after the close. */

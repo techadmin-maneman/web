@@ -41,6 +41,8 @@ export type JobSummary = Schema["TechnicianDayJob"];
 export type Job = Omit<Schema["TechnicianJobDetail"], "checkin_radius_m"> & {
   readonly checkin_radius_m: Schema["TechnicianJobDetail"]["checkin_radius_m"] | null;
 };
+/** A visit of the technician's, of any day, with steps ops sent back (docs/decisions/0246-closed-and-sent-back.md). */
+export type VisitToFix = Schema["TechnicianJobs"]["sent_back"][number];
 /** What the day's list carries of a job's progress: when it began and how it closed. */
 export type JobState = Schema["TechnicianJobState"];
 export type CheckIn = Schema["CheckIn"];

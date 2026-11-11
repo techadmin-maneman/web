@@ -3777,6 +3777,16 @@ export interface components {
             /** Format: date */
             date: string;
             jobs: components["schemas"]["TechnicianDayJob"][];
+            /** @description The technician's visits, of any day, with steps ops sent back that have not landed again, oldest first (ADR 0246). */
+            sent_back: {
+                /** Format: uuid */
+                id: string;
+                /** Format: date-time */
+                starts_at: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                client_name: string | null;
+                steps: ("before_photos" | "checklist" | "consumables" | "piece" | "after_photos")[];
+            }[];
         };
         TechnicianDayJob: {
             /** Format: uuid */

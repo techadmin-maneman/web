@@ -220,6 +220,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     profile: null,
     client_alerts: [],
     handoff: null,
+    sent_back: [],
   };
 };
 

@@ -12,7 +12,9 @@ import {
   done,
   nextStep,
   rowState,
+  sentBackFor,
   stageOf,
+  stepsToFix,
   theWait,
 } from "../../../apps/tech/src/lib/progress.ts";
 import type { Queued } from "../../../apps/tech/src/store/replay.ts";
@@ -59,6 +61,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   steps: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
   client_alerts: [],
   handoff: null,
+  sent_back: [],
   checklist: [],
   checklist_if_declined: [],
   partial_reasons: [],
@@ -109,6 +112,35 @@ describe("what the job has done", () => {
     expect(closed(job({}, { outcome: "done" }), [])).toBe(true);
     expect(closed(job(), [queued("no_show")])).toBe(true);
     expect(closed(job(), [queued("no_show", { state: "refused" })])).toBe(false);
+  });
+});
+
+// A step ops sent back (docs/decisions/0246-closed-and-sent-back.md).
+describe("a step ops sent back", () => {
+  const closedVisit = job(
+    { sent_back: [{ kind: "consumables", reason: "Count the strips again", sent_at: "2030-09-19T08:00:00.000Z" }] },
+    {
+      checked_in_at: "t",
+      started_at: "t",
+      steps_done: ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
+      outcome: "done",
+    },
+  );
+
+  it("is to do again on a closed visit, says why, and is done once the phone sends it again", () => {
+    expect(done(closedVisit, []).has("consumables")).toBe(false);
+    expect(sentBackFor(closedVisit, [], "consumables")).toBe("Count the strips again");
+    expect(stepsToFix(closedVisit, [])).toEqual(["consumables"]);
+
+    const resent = [queued("consumables")];
+    expect(done(closedVisit, resent).has("consumables")).toBe(true);
+    expect(sentBackFor(closedVisit, resent, "consumables")).toBeNull();
+    expect(stepsToFix(closedVisit, resent)).toEqual([]);
+  });
+
+  it("leaves every other step as it was", () => {
+    expect(sentBackFor(closedVisit, [], "checklist")).toBeNull();
+    expect(done(closedVisit, []).has("checklist")).toBe(true);
   });
 });
 

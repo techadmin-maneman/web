@@ -13,7 +13,7 @@ import { useCamera } from "@maneman/ui/useCamera";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
-import { capture as copy, storage } from "../content.ts";
+import { capture as copy, storage, visit as visitCopy } from "../content.ts";
 import { NoSignal } from "../frame/Banners.tsx";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
@@ -38,6 +38,10 @@ function refusalNotice(refused: readonly Angle[], taken: readonly TakenAngle[]):
   if (stillToTake.length === 0) return null;
   return copy.refusedPhotos(stillToTake.map((angle) => copy.angles[angle].toLowerCase()));
 }
+
+/** Why a set ops sent back is open again, as they said it; null for a set not sent back. */
+const sentBackNotice = (sentBack: string | null): string | null =>
+  sentBack === null ? null : visitCopy.sentBack(sentBack);
 
 /**
  * While the phone has no room for another photograph, a red bar says so. The shutter stays: the phone learns it has
@@ -258,7 +262,7 @@ function useView(stream: MediaStream | null) {
 export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const title = phase === "before" ? copy.before : copy.after;
   const heading = useScreen(title);
-  const { loaded, retry, refused, finish } = useStep(id, phase === "before" ? "before_photos" : "after_photos");
+  const { loaded, retry, refused, sentBack, finish } = useStep(id, `${phase}_photos`);
   const [camera, reopen] = useCamera(openCamera);
   const stream = camera.state === "open" ? camera.stream : null;
   const { video, attach, ready, setReady } = useView(stream);
@@ -302,7 +306,8 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   if (loaded.state === "failed") return <JobFailed failed={loaded} onRetry={retry} />;
 
   const all = angle === undefined;
-  const notice = refused === null ? null : refusalNotice(refusedAngles, taken);
+  // A refused set says which angles to take again; one ops sent back, what they said (ADR 0246).
+  const notice = refused === null ? sentBackNotice(sentBack) : refusalNotice(refusedAngles, taken);
   const canCompare = comparable !== null && comparable === compareUrl;
   return (
     <div className={styles.look} data-look="light">

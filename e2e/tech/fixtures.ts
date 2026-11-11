@@ -365,6 +365,7 @@ export interface CardOptions {
   readonly kitHairSystems?: Card["kit_hair_systems"];
   readonly alerts?: Card["client_alerts"];
   readonly handoff?: Card["handoff"];
+  readonly sentBack?: Card["sent_back"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -422,6 +423,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     profile: options.profile ?? null,
     client_alerts: options.alerts ?? [],
     handoff: options.handoff ?? null,
+    sent_back: options.sentBack ?? [],
   };
 }
 
@@ -454,6 +456,7 @@ export function lockedCard(date: string): Card {
     profile: null,
     client_alerts: [],
     handoff: null,
+    sent_back: [],
   };
 }
 

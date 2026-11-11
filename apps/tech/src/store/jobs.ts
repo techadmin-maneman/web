@@ -9,7 +9,7 @@
 // to. So is the job's start as the card showed it at check-in, which every
 // later step is sent with. Each has a store of its own (./db.ts).
 
-import type { CheckIn, Job, JobState, JobSummary, OutcomeRequest } from "../api.ts";
+import type { CheckIn, Job, JobState, JobSummary, OutcomeRequest, VisitToFix } from "../api.ts";
 import { dayAfter } from "../lib/when.ts";
 import { all, clear, get, put, remove } from "./db.ts";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -160,6 +160,21 @@ export async function keptJobs(): Promise<Map<string, HeldJob>> {
 export async function dropCards(): Promise<void> {
   await clear("days");
   await clear("cards");
+  await remove("device", "to_fix");
+}
+
+/** The visits with steps ops sent back, as the day's list said them, kept for Today with no signal. */
+export async function keepToFix(visits: readonly VisitToFix[]): Promise<void> {
+  await put("device", { key: "to_fix", visits });
+}
+
+/** Whether a kept list is one: a broken answer can leave anything. */
+const isList = (value: unknown): value is readonly VisitToFix[] => Array.isArray(value);
+
+export async function keptToFix(): Promise<readonly VisitToFix[]> {
+  const kept = await get("device", "to_fix");
+  // A list a broken answer left unreadable reads as none, until the day is read again.
+  return kept?.key === "to_fix" && isList(kept.visits) ? kept.visits : [];
 }
 
 /** Everything the phone holds of the jobs, gone. */

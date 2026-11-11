@@ -5485,11 +5485,76 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "items": {
         "$ref": "#/components/schemas/TechnicianDayJob"
       }
+    },
+    "sent_back": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "before_photos",
+                "checklist",
+                "consumables",
+                "piece",
+                "after_photos"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "starts_at",
+          "type",
+          "client_name",
+          "steps"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The technician's visits, of any day, with steps ops sent back that have not landed again, oldest first (ADR 0246)."
     }
   },
   "required": [
     "date",
-    "jobs"
+    "jobs",
+    "sent_back"
   ],
   "additionalProperties": false,
   "description": "Jobs further out carry only time, type and sector."

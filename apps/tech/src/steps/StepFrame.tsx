@@ -19,7 +19,7 @@ import type { Job } from "../api.ts";
 import { steps as copy, visit } from "../content.ts";
 import { NoSignal } from "../frame/Banners.tsx";
 import { kindNameLower } from "../lib/kind.ts";
-import { done } from "../lib/progress.ts";
+import { done, sentBackFor } from "../lib/progress.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { routeOf, usePath } from "../route.ts";
@@ -58,6 +58,8 @@ interface Where {
   readonly states: readonly StepState[];
   /** The step the visit goes to after this one, by its name: the first after it not yet sent; null where none is. */
   readonly next: string | null;
+  /** Why ops sent this step back, while the phone has not sent it again; null for a step not sent back. */
+  readonly sentBack: string | null;
 }
 
 function useWhere(): Where | null {
@@ -77,7 +79,7 @@ function useWhere(): Where | null {
     return sent.has(screen.event) ? "done" : "todo";
   });
   const next = screens.slice(here + 1).find((screen) => screen.event !== route.step && !sent.has(screen.event));
-  return { job, at: here + 1, states, next: next?.title ?? null };
+  return { job, at: here + 1, states, next: next?.title ?? null, sentBack: sentBackFor(job, events, route.step) };
 }
 
 /** The visit's steps as a bar, with which one this is, opening the visit's plan. */
@@ -137,6 +139,9 @@ export function StepFrame({
   const { offline } = useSession();
   const where = useWhere();
   const label = action ?? labelOf(where);
+  // A refusal says what to put right; failing one, what ops said when they sent the step back.
+  const said =
+    notice ?? (where?.sentBack === undefined || where.sentBack === null ? null : visit.sentBack(where.sentBack));
   return (
     <main className={styles.screen} data-look="light">
       <header className={styles.head}>
@@ -155,9 +160,9 @@ export function StepFrame({
       {offline && <NoSignal />}
       {where !== null && <StepBar where={where} />}
       <div className={styles.body}>
-        {notice !== undefined && notice !== null && (
+        {said !== null && (
           <ProblemCard className={styles.notice} title={visit.plan.needsFix} live>
-            {notice}
+            {said}
           </ProblemCard>
         )}
         {at !== undefined && of !== undefined && (

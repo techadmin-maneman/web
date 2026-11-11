@@ -81,6 +81,16 @@ export const today = {
   /** Yesterday's jobs not yet closed, as a card at the top: their work can still be finished and sent. */
   leftOpen: (time: string, who: string) => `Still open from yesterday · ${time} · ${who}`,
   leftOpenBody: "Finish it and send it.",
+  /** A visit with steps ops sent back, from whatever day, until they are done again (docs/decisions/0246-closed-and-sent-back.md). */
+  toFix: (time: string, who: string) => `Needs a fix · ${time} · ${who}`,
+  toFixBody: (steps: readonly string[]) => `Ops sent back ${steps.join(" and ")}.`,
+  toFixSteps: {
+    before_photos: "the before photos",
+    checklist: "the tasks",
+    consumables: "the consumables",
+    piece: "the hair system",
+    after_photos: "the after photos",
+  },
   offline: {
     title: "No signal",
     body: "Today’s jobs and cards are on the phone.",
@@ -409,6 +419,8 @@ export const job = {
   start: "Start visit",
   continueJob: "Continue",
   viewSummary: "View summary",
+  /** A closed visit with a step ops sent back: the way to it. */
+  putRight: "Put it right",
   // The board draws no job's state on its card or its row.
   states: { inProgress: "In progress", closed: "Closed out", atTheDoor: "At the door" },
   closedAs: (outcome: string) => `Closed out · ${outcome}`,
@@ -567,7 +579,11 @@ export const visit = {
     states: { done: "Done", now: "Now", todo: "To do" },
     needsFix: "Needs a fix",
     open: (title: string) => `Open ${title}`,
+    /** A step ops sent back, and what they said to fix. */
+    sentBack: (title: string, reason: string) => `${title}: ${reason}`,
   },
+  /** Above a step ops sent back: what they said to fix, as they wrote it. */
+  sentBack: (reason: string) => `Ops sent this back: ${reason}`,
 } as const;
 
 export const capture = {

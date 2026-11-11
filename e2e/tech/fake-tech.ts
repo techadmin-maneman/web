@@ -122,6 +122,8 @@ export interface Fake {
   /** The client's alerts and the last technician's note on the card; none unless a test gives them. */
   alerts: Card["client_alerts"];
   handoff: Card["handoff"];
+  /** The steps ops sent back on the first job, with why (docs/decisions/0246-closed-and-sent-back.md); none to begin. */
+  sentBack: Card["sent_back"];
   /** Whether there is a photograph to compare each angle with, before the visit and after it. */
   compare: boolean;
   /** The client's history, as GET /api/tech/jobs/{id}/client-history answers. */
@@ -266,6 +268,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     },
     alerts: [],
     handoff: null,
+    sentBack: [],
     history: { alerts: [], visits: [] },
     compare: false,
     photos: [],
@@ -273,6 +276,20 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     thumbnails: [],
     progress: NOTHING_DONE,
   };
+
+  /** The first job, as the day's list names it while steps of it are sent back. */
+  const toFix = (today: string) =>
+    fake.sentBack.length === 0
+      ? []
+      : [
+          {
+            id: JOB_ID,
+            starts_at: jobCard(today).starts_at,
+            type: fake.type,
+            client_name: "Rohit M.",
+            steps: fake.sentBack.map((one) => one.kind),
+          },
+        ];
 
   const jobCard = (today: string) =>
     card(today, fake.progress, {
@@ -293,6 +310,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       kitHairSystems: fake.kitHairSystems,
       alerts: fake.alerts,
       handoff: fake.handoff,
+      sentBack: fake.sentBack,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -450,6 +468,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       const step = stepOf(path, body as { phase?: string } | null);
       if (step !== null) {
         fake.progress = { ...fake.progress, steps_done: [...fake.progress.steps_done, step] };
+        // A step sent back is cleared by landing again, as the API's is.
+        fake.sentBack = fake.sentBack.filter((one) => one.kind !== step);
         if (step === "outcome") {
           const outcome = (body as { outcome?: string } | null)?.outcome ?? "done";
           fake.progress = { ...fake.progress, outcome };
@@ -471,13 +491,20 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       // Outside the contract on purpose: what a broken release might send, which the app must survive.
       if (fake.malformed) return route.fulfill({ json: { date, jobs: null } });
       if (date === today && fake.dayFails) return route.abort("failed");
-      if (date === dayBefore(today) && fake.yesterday) return reply(route, 200, { date, jobs: jobsYesterday(today) });
+      // The visits with steps sent back come with every day's list, whatever its date.
+      const sent_back = toFix(today);
+      if (date === dayBefore(today) && fake.yesterday) {
+        return reply(route, 200, { date, jobs: jobsYesterday(today), sent_back });
+      }
       if (date === today) {
         const progress = { started_at: fake.progress.started_at, outcome: fake.progress.outcome };
-        return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type, progress, fake.oneVisit) });
+        const jobs = empty ? [] : jobsToday(date, fake.type, progress, fake.oneVisit);
+        return reply(route, 200, { date, jobs, sent_back });
       }
-      if (date === dayAfter(today) && fake.tomorrow) return reply(route, 200, { date, jobs: jobsTomorrow(today) });
-      return reply(route, 200, { date, jobs: [] });
+      if (date === dayAfter(today) && fake.tomorrow) {
+        return reply(route, 200, { date, jobs: jobsTomorrow(today), sent_back });
+      }
+      return reply(route, 200, { date, jobs: [], sent_back });
     }
     if (path === "/api/tech/pieces/lookup") {
       const code = url.searchParams.get("code") ?? "";
