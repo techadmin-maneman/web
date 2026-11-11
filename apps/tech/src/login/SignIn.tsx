@@ -1,5 +1,5 @@
-// The technician's sign-in, from the Prototype's technician screen: the number, then the code, the session bound to
-// this phone (docs/decisions/0052-technician-sessions.md). Once a code is out there is always a way on, since an
+// The technician's sign-in, in the redesign's look (docs/prompts/tech-redesign.md, "Sign in"): the number, then the
+// code, the session bound to this phone (docs/decisions/0052-technician-sessions.md). Once a code is out there is always a way on, since an
 // installed app has no reload, and the screen says why it is showing: ended, revoked, switched off, or an iPhone's
 // second sign-in.
 
@@ -9,10 +9,12 @@ import { Field } from "@maneman/ui/Field";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { CodeField } from "@maneman/ui/CodeField";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
+import { ActionBar } from "@maneman/ui/ActionBar";
 import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Mark } from "@maneman/ui/Mark";
 import { LanguageToggle } from "../lang/index.ts";
-import { fieldDigits, mobileDigits } from "@maneman/web-kit/mobile";
+import { fieldDigits, formatMobileField, mobileDigits } from "@maneman/web-kit/mobile";
 import { apiNow } from "@maneman/web-kit/clock";
 import { useEffect, useRef, useState, type Ref } from "react";
 import { flushSync } from "react-dom";
@@ -22,7 +24,6 @@ import { installed } from "../lib/installed.ts";
 import type { Out } from "../session.ts";
 import { deviceId, enrolled } from "../store/device.ts";
 import { ReachOps } from "../frame/ReachOps.tsx";
-import frame from "../frame/frame.module.css";
 import styles from "./login.module.css";
 
 /** What the sign-in says before the code is asked for: what ops did, or why an installed app is out. */
@@ -77,18 +78,14 @@ function verdictOf(answer: Awaited<ReturnType<typeof api.verify>> | null): Verdi
 function Again(props: { resendIn: number; busy: boolean; onChangeNumber: () => void; onResend: () => void }) {
   return (
     <div className={styles.again}>
-      <Button variant="outlineOnInk" size="small" className={styles.againButton} onClick={props.onChangeNumber}>
-        {copy.changeNumber}
-      </Button>
-      <Button
-        variant="outlineOnInk"
-        size="small"
-        className={styles.againButton}
-        disabled={props.resendIn > 0 || props.busy}
-        onClick={props.onResend}
-      >
-        {props.resendIn > 0 ? copy.resendIn(props.resendIn) : copy.resend}
-      </Button>
+      <TextButton onClick={props.onChangeNumber}>{copy.changeNumber}</TextButton>
+      {props.resendIn > 0 ? (
+        <p className={styles.countdown}>{copy.resendIn(props.resendIn)}</p>
+      ) : (
+        <TextButton disabled={props.busy} onClick={props.onResend}>
+          {copy.resend}
+        </TextButton>
+      )}
     </div>
   );
 }
@@ -98,7 +95,7 @@ function NewNumber() {
   return (
     <div className={styles.help}>
       <p className={styles.note}>{copy.notRegistered}</p>
-      <ReachOps className={styles.helpReach} />
+      <ReachOps className={styles.helpReach} onPaper />
     </div>
   );
 }
@@ -208,6 +205,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   return (
     <form
       className={styles.screen}
+      data-look="light"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
@@ -216,14 +214,15 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
     >
       <Top />
       <h1 className={styles.title}>{copy.title}</h1>
+      {challenge !== null && (
+        <p className={styles.sent}>{copy.codeSent(`${copy.prefix} ${formatMobileField(mobile)}`)}</p>
+      )}
 
-      <Field onInk labelHidden label={copy.mobileLabel}>
+      <Field label={copy.mobileLabel} look={{ label: styles.label }}>
         {(control) => (
           <MobileInput
             {...control}
-            onInk
             ref={number}
-            className={styles.mobile}
             prefix={copy.prefix}
             value={mobile}
             onChange={(event) => {
@@ -267,28 +266,20 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
         />
       )}
 
-      {challenge !== null && error === null && <p className={styles.note}>{copy.codeSent}</p>}
       {note !== null && <p className={styles.note}>{note}</p>}
       {shown !== null && (
-        <InlineMessage tone="error" ground="ink" className={styles.error}>
+        <InlineMessage tone="error" className={styles.error}>
           {shown}
         </InlineMessage>
       )}
 
       {challenge === null && <NewNumber />}
 
-      <div className={styles.foot}>
-        <Button
-          variant="gold"
-          size="action"
-          type="submit"
-          className={frame.action}
-          disabled={!ready || working}
-          busy={working}
-        >
+      <ActionBar className={styles.foot}>
+        <Button variant="primary" size="action" type="submit" disabled={!ready || working} busy={working}>
           {challenge === null ? copy.sendCode : copy.submit}
         </Button>
-      </div>
+      </ActionBar>
     </form>
   );
 }

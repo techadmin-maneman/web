@@ -11,7 +11,7 @@ import { apiDate, clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts"
 import { localised, sayNow } from "./lang/words.ts";
 
 export const signIn = localised({
-  title: "Technician sign in",
+  title: "Sign in",
   prefix: "+91",
   mobileLabel: "Mobile number",
   mobilePlaceholder: "98110 00000",
@@ -30,18 +30,20 @@ export const signIn = localised({
     unknown: "That didn’t go through. Try again.",
   },
   attemptsLeft: (left: number) => `That code didn’t match. ${String(left)} ${left === 1 ? "try" : "tries"} left.`,
-  sendCode: "Send the code",
-  // The Prototype shows the code field from the start.
-  codeSent: "A 6-digit code is on its way.",
+  sendCode: "Get code",
+  /** "Code sent to +91 98110 00000", beneath the title once the code is out. */
+  codeSent: (number: string) => `Code sent to ${number}`,
   // The Prototype draws no way back from a code sent to the wrong number, or one that never came.
   changeNumber: "Change number",
   resend: "Send a new code",
-  resendIn: (seconds: number) => `New code in ${String(seconds)} s`,
+  /** "Resend in 0:24" */
+  resendIn: (seconds: number) =>
+    `Resend in ${String(Math.floor(seconds / 60))}:${String(seconds % 60).padStart(2, "0")}`,
   // Neither file draws the app opened from the home screen. An
   // installed iPhone app has its own cookie jar, so the first sign-in inside it
   // is a second one and looks like the account has gone (ADR 0053's update).
   installed: "Sign in here once, then use the home-screen app. Anything waiting in the browser still sends.",
-  notRegistered: "New, or your number changed? Ask ops to add it.",
+  notRegistered: "Number not registered? Call ops.",
 } as const);
 
 export const today = localised({

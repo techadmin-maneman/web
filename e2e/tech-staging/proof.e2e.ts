@@ -146,7 +146,7 @@ test("the code request carries the phone’s own ID, and a wrong code is not an 
   const unlistedBody = (await unlisted).postDataJSON() as { device_id?: string };
   record("otp for an unlisted number", { device_id_sent: unlistedBody.device_id !== undefined });
   expect(unlistedBody.device_id ?? "").toMatch(/^[A-Za-z0-9_-]{8,64}$/);
-  await expect(page.getByText(signInWords.codeSent)).toBeVisible();
+  await expect(page.getByText(/^Code sent to \+91 /)).toBeVisible();
 
   // The seeded technician stays active: an inactive technician's session, the one the seed wrote, ends on its next
   // call (ADR 0065).

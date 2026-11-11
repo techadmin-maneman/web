@@ -142,11 +142,12 @@ test("once a code is sent, the number can be changed, and a new code asked for a
   const number = page.getByRole("textbox", { name: techCopy.signIn.mobileLabel });
   await number.fill("9811000000");
   await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
-  await expect(page.getByText(techCopy.signIn.codeSent)).toBeVisible();
+  await expect(page.getByText(techCopy.signIn.codeSent("+91 98110 00000"))).toBeVisible();
   await expect(number).toBeDisabled();
 
   // Not at once: WhatsApp has half a minute to deliver the first.
-  await expect(page.getByRole("button", { name: /^New code in \d+ s$/ })).toBeDisabled();
+  await expect(page.getByText(/^Resend in 0:\d\d$/)).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.signIn.resend })).toHaveCount(0);
   await page.clock.runFor(30_000);
   await page.getByRole("button", { name: techCopy.signIn.resend }).click();
   await expect.poll(() => fake.codesSent).toEqual(["9811000000", "9811000000"]);
@@ -175,7 +176,7 @@ test("a number pasted with +91 or 0 in front becomes its own ten digits, and the
     await expect(number).toHaveValue("9811000000");
   }
   await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
-  await expect(page.getByText(techCopy.signIn.codeSent)).toBeVisible();
+  await expect(page.getByText(techCopy.signIn.codeSent("+91 98110 00000"))).toBeVisible();
   expect(fake.codesSent).toEqual(["9811000000"]);
 });
 

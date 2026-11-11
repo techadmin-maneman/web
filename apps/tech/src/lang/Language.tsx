@@ -1,10 +1,10 @@
 // Where the technician chooses the language (docs/prompts/tech-redesign.md, "Hindi and language switching"): under Me,
 // a row that opens a sheet of the two; and on the sign-in screen, the other language by its own name, one tap away.
 
+import { Button } from "@maneman/ui/Button";
 import { ChoiceGroup, Radio } from "@maneman/ui/Field";
 import { ListRow } from "@maneman/ui/ListRow";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
-import { TextButton } from "@maneman/ui/TextLink";
 import { useId, useState } from "react";
 import { languageNames, me as copy } from "../content.ts";
 import { chooseLanguage } from "./kept.ts";
@@ -71,7 +71,9 @@ export function LanguageRow() {
 export function LanguageToggle({ className }: { readonly className?: string }) {
   const other: Language = useLanguage() === "hi" ? "en" : "hi";
   return (
-    <TextButton
+    <Button
+      variant="outline"
+      size="small"
       className={className}
       lang={other}
       onClick={() => {
@@ -79,6 +81,6 @@ export function LanguageToggle({ className }: { readonly className?: string }) {
       }}
     >
       {languageNames[other]}
-    </TextButton>
+    </Button>
   );
 }
