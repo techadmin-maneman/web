@@ -139,26 +139,28 @@ export function LeaveScreen() {
   return (
     <CardFrame title={copy.title} sub={copy.sub} back="/me" foot={null}>
       {offline && <NoSignal />}
-      <SectionHead title={copy.askTitle} ruled={false} />
-      <Ask offline={offline} onAsked={setAfter} />
-      <SectionHead title={copy.askedTitle} className={styles.section} />
-      {asks === null && loaded.state === "loading" && <Loading />}
-      {asks === null && loaded.state === "failed" && (
-        <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={loaded.requestId} />
-      )}
-      {asks !== null &&
-        (asks.requests.length === 0 ? (
-          <p className={styles.quiet}>{copy.none}</p>
-        ) : (
-          <ul className={styles.list}>
-            {asks.requests.map((each) => (
-              <li key={each.id} className={styles.row}>
-                <span>{copy.days(dayMonth(each.from), dayMonth(each.to))}</span>
-                <span className={TONES[each.state]}>{copy.states[each.state]}</span>
-              </li>
-            ))}
-          </ul>
-        ))}
+      <div className={styles.page}>
+        <SectionHead title={copy.askTitle} ruled={false} />
+        <Ask offline={offline} onAsked={setAfter} />
+        <SectionHead title={copy.askedTitle} className={styles.section} />
+        {asks === null && loaded.state === "loading" && <Loading onPaper />}
+        {asks === null && loaded.state === "failed" && (
+          <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={loaded.requestId} onPaper />
+        )}
+        {asks !== null &&
+          (asks.requests.length === 0 ? (
+            <p className={styles.quiet}>{copy.none}</p>
+          ) : (
+            <ul className={styles.list}>
+              {asks.requests.map((each) => (
+                <li key={each.id} className={styles.row}>
+                  <span>{copy.days(dayMonth(each.from), dayMonth(each.to))}</span>
+                  <span className={TONES[each.state]}>{copy.states[each.state]}</span>
+                </li>
+              ))}
+            </ul>
+          ))}
+      </div>
     </CardFrame>
   );
 }

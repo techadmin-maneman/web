@@ -1,13 +1,16 @@
 // A day down the hours, for the technician's Schedule (docs/prompts/tech-redesign.md, "Schedule"): a line at each hour
 // with its time, each visit a block as long as it lasts, the drive before it hatched, and a line at the minute it is
 // now. A row of the table for every five minutes, so a block is as tall as its length and nothing is placed by hand,
-// as in DayTimeline. A block that would start inside the one before starts where that one ends.
+// as in DayTimeline. A block that would start inside the one before starts where that one ends, and one wholly inside
+// it is listed in its cell, so no block goes undrawn. DayTimeline draws a day along the hours, a row for each person, on
+// the console; this draws one person's day down the hours, on a phone.
 //
 //   <DayColumn label="Thursday's visits" from={8 * 60} to={20 * 60} hour={clockOf} blocks={blocks} now={null} />
 
 import type { ReactNode } from "react";
 import { classes } from "./classes.ts";
 import { Link } from "./router.tsx";
+import { VisuallyHidden } from "./VisuallyHidden.tsx";
 import styles from "./day-column.module.css";
 
 /** The minutes a row of the column stands for. */
@@ -31,6 +34,8 @@ interface Cell {
   readonly from: number;
   readonly to: number;
   readonly block: DayBlock | null;
+  /** The blocks wholly inside this one, listed in its cell beneath its own words. */
+  readonly within: readonly DayBlock[];
   /** The block's own words are in the cell it starts in alone. */
   readonly first: boolean;
   readonly atNow: boolean;
@@ -45,12 +50,19 @@ function stretchesOf(from: number, to: number, blocks: readonly DayBlock[]): Omi
   for (const block of [...blocks].sort((one, other) => one.start - other.start)) {
     const start = Math.max(at, onStep(block.start));
     const end = Math.min(to, onStep(block.start + block.minutes));
-    if (end <= start) continue;
-    if (start > at) stretches.push({ key: `gap-${String(at)}`, from: at, to: start, block: null });
-    stretches.push({ key: block.key, from: start, to: end, block });
+    const before = stretches.at(-1);
+    if (end <= start) {
+      // Wholly inside the block before: listed in its cell. One outside the hours drawn is the caller's to widen.
+      if (before !== undefined && before.block !== null && block.look !== "drive" && start < to) {
+        stretches[stretches.length - 1] = { ...before, within: [...before.within, block] };
+      }
+      continue;
+    }
+    if (start > at) stretches.push({ key: `gap-${String(at)}`, from: at, to: start, block: null, within: [] });
+    stretches.push({ key: block.key, from: start, to: end, block, within: [] });
     at = end;
   }
-  if (at < to) stretches.push({ key: `gap-${String(at)}`, from: at, to, block: null });
+  if (at < to) stretches.push({ key: `gap-${String(at)}`, from: at, to, block: null, within: [] });
   return stretches;
 }
 
@@ -81,7 +93,7 @@ const LOOKS: Readonly<Record<DayBlock["look"], string | undefined>> = {
   drive: styles.drive,
 };
 
-function Words({ block }: { readonly block: DayBlock }) {
+function Label({ block }: { readonly block: DayBlock }) {
   const words = (
     <>
       <span className={styles.title}>{block.title}</span>
@@ -89,11 +101,23 @@ function Words({ block }: { readonly block: DayBlock }) {
     </>
   );
   return block.to === undefined ? (
-    <span className={styles.words}>{words}</span>
+    <span className={styles.label}>{words}</span>
   ) : (
-    <Link className={styles.words} to={block.to}>
+    <Link className={styles.label} to={block.to}>
       {words}
     </Link>
+  );
+}
+
+/** A block's words, and those of any block wholly inside it, from the top of its cell. */
+function Words({ block, within }: { readonly block: DayBlock; readonly within: readonly DayBlock[] }) {
+  return (
+    <span className={styles.words}>
+      <Label block={block} />
+      {within.map((each) => (
+        <Label key={each.key} block={each} />
+      ))}
+    </span>
   );
 }
 
@@ -143,9 +167,9 @@ export function DayColumn({
                     cell.atNow && styles.now,
                   )}
                   rowSpan={(cell.to - cell.from) / DAY_STEP}
-                  aria-label={cell.atNow && cell.block === null ? nowLabel : undefined}
                 >
-                  {cell.block !== null && cell.first && <Words block={cell.block} />}
+                  {cell.block !== null && cell.first && <Words block={cell.block} within={cell.within} />}
+                  {cell.atNow && nowLabel !== undefined && <VisuallyHidden>{nowLabel}</VisuallyHidden>}
                 </td>
               )}
             </tr>

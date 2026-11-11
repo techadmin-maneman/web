@@ -67,14 +67,18 @@ export interface WeekAhead {
 
 /**
  * The technician's own week ahead, for their Kit screen: each consumable their visits booked from today to six days on
- * are expected to use, and what their kit holds of it. Hair systems are left to the evening's check, as above.
+ * are expected to use, and what their kit holds of it fit to use, less what has expired or been recalled, which goes
+ * back to ops. Hair systems are left to the evening's check, as above.
  */
 export async function weekAheadOf(db: D1Database, kit: string, today: string): Promise<WeekAhead[]> {
   const { results } = await db
     .prepare(
       `SELECT u.consumable_code AS code, c.name, c.unit, SUM(u.quantity) AS need,
-              COALESCE((SELECT b.quantity FROM stock_balances b
-                         WHERE b.place = ?3 AND b.consumable_code = u.consumable_code), 0) AS have
+              MAX(0, COALESCE((SELECT b.quantity FROM stock_balances b
+                                WHERE b.place = ?3 AND b.consumable_code = u.consumable_code), 0)
+                - COALESCE((SELECT SUM(lb.quantity) FROM stock_lot_balances lb JOIN stock_lots l ON l.id = lb.lot_id
+                             WHERE lb.place = ?3 AND l.consumable_code = u.consumable_code AND lb.quantity > 0
+                               AND (l.expires_on < ?4 OR l.recalled_at IS NOT NULL)), 0)) AS have
          FROM appointments a INDEXED BY appointments_by_technician
          JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
          JOIN consumables c ON c.code = u.consumable_code
@@ -87,6 +91,7 @@ export async function weekAheadOf(db: D1Database, kit: string, today: string): P
       indiaInstant(today, "00:00").toISOString(),
       indiaInstant(addDays(today, FORECAST_DAYS), "00:00").toISOString(),
       kit,
+      today,
     )
     .all<WeekAhead>();
   return results;

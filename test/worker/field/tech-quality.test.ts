@@ -5,9 +5,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, NOW } from "../helpers.ts";
-import { aVisit } from "../fixtures/index.ts";
+import { REMAKE_BOOKED } from "../../../src/domain/booking/remakes.ts";
 import { AT, writeRow } from "../fixtures/rows.ts";
-import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
+import { IMRAN, JOB, working, type Working } from "../job-fixtures.ts";
 
 const ago = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000).toISOString();
 const DAY = 24 * 60;
@@ -33,9 +33,19 @@ async function checkedInAt(at: string, starts: string): Promise<void> {
   ]);
 }
 
-/** Another first fit for the same client, by `technician`, `daysAgo` days ago. */
-const fittedAgain = (technician: string, daysAgo: number) =>
-  aVisit({ person_id: PERSON, type: "first_fit", window_start: ago(daysAgo * DAY), technician_id: technician });
+/** The visit as a first fit, ended `status`, `daysAgo` days ago. */
+const fitEnded = (status: "completed" | "terminated", daysAgo: number) =>
+  env.DB.prepare("UPDATE appointments SET type = 'first_fit', status = ?2, window_start = ?3 WHERE id = ?1")
+    .bind(JOB, status, ago(daysAgo * DAY))
+    .run();
+
+/** Its free refit booked `daysAgo` days ago, which closes its Tasks row as the booking does. */
+const refitBooked = (daysAgo: number) =>
+  writeRow(
+    "task_closures",
+    { id: crypto.randomUUID(), task_group: "partial_visit", subject_id: JOB, reason: REMAKE_BOOKED },
+    { closed_by: "ops@maneman.in", closed_at: ago(daysAgo * DAY) },
+  );
 
 describe("the technician's quality", () => {
   it("counts a visit checked in by its booked start on time", async () => {
@@ -48,19 +58,28 @@ describe("the technician's quality", () => {
     expect(await quality()).toEqual({ visits: 1, on_time: 0, fits: 0, redone: 0 });
   });
 
-  it("counts a first fit redone where the client is fitted again within 30 days, by whoever", async () => {
-    await env.DB.prepare("UPDATE appointments SET status = 'completed', window_start = ?2 WHERE id = ?1")
-      .bind(JOB, ago(10 * DAY))
-      .run();
-    await fittedAgain(SAMEER, 5);
+  it("counts a first fit left partly done as redone once its free refit is booked within 30 days", async () => {
+    await fitEnded("terminated", 20);
+    expect(await quality()).toMatchObject({ fits: 1, redone: 0 });
+    await refitBooked(10);
     expect(await quality()).toMatchObject({ fits: 1, redone: 1 });
   });
 
-  it("does not count a fit again more than 30 days on, nor a visit older than 30 days", async () => {
-    await env.DB.prepare("UPDATE appointments SET status = 'completed', window_start = ?2 WHERE id = ?1")
-      .bind(JOB, ago(40 * DAY))
-      .run();
-    await fittedAgain(SAMEER, 5);
+  it("counts a fit done as a fit, not redone, and none older than 30 days", async () => {
+    await fitEnded("completed", 10);
+    expect(await quality()).toMatchObject({ fits: 1, redone: 0 });
+    await fitEnded("terminated", 40);
+    await refitBooked(5);
+    expect(await quality()).toMatchObject({ fits: 0, redone: 0 });
+  });
+
+  it("leaves out a first fit nobody was home for", async () => {
+    await fitEnded("terminated", 10);
+    await writeRow(
+      "visit_outcomes",
+      { appointment_id: JOB, outcome: "partial", partial_reason: "no_show", updated_at: AT },
+      {},
+    );
     expect(await quality()).toMatchObject({ fits: 0, redone: 0 });
   });
 });

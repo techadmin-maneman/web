@@ -68,9 +68,20 @@
   margin: 0;
   text-align: end;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A rate inside a line's name: kept whole, so "Rs. 450" never breaks. */
+.figure {
+  white-space: nowrap;
+}
+
+.failedLine {
+  margin: 0 0 var(--sp-4);
 }
 
 .total {
+  white-space: nowrap;
   margin: var(--sp-8) 0 var(--sp-4);
   font-size: var(--fs-28);
   font-weight: var(--weight-semibold);

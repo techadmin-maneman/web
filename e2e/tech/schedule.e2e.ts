@@ -5,7 +5,7 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { dayAfter, JOB_ID, todayInIndia, TOMORROW_JOB_ID } from "./fixtures.ts";
+import { dayAfter, JOB_ID, jobsTomorrow, todayInIndia, TOMORROW_JOB_ID } from "./fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { tab } from "./tabs.ts";
 
@@ -23,17 +23,33 @@ test("opens today and the six days after it, today down the hours with the drive
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("opens a later job's preview from tomorrow, and goes back to that day", async ({ page }) => {
+test("opens tomorrow's job, its card open since 6 pm, from Schedule, and goes back to that day", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.tomorrow = true;
   const tomorrow = dayAfter(todayInIndia());
   await page.goto("/");
   await page.getByRole("link", { name: new RegExp(`^${techCopy.today.tomorrow}`) }).click();
   await expect(page).toHaveURL(new RegExp(`/week/${tomorrow}$`));
+  await page.locator(`a[href="/jobs/${TOMORROW_JOB_ID}"]`).click();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${TOMORROW_JOB_ID}$`));
+  await page.getByRole("button", { name: techCopy.job.back }).click();
+  await expect(page).toHaveURL(new RegExp(`/week/${tomorrow}$`));
+});
+
+test("opens a later job still locked as a preview, which says when its card opens", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.tomorrow = true;
+  const tomorrow = dayAfter(todayInIndia());
+  const locked = jobsTomorrow(todayInIndia()).map((job) => ({ ...job, unlocked: false }));
+  // Registered after the fake, so it answers first: tomorrow's job before its card opens.
+  await page.route(`**/api/tech/jobs?date=${tomorrow}`, (route) =>
+    route.fulfill({ json: { date: tomorrow, jobs: locked, sent_back: [] } }),
+  );
+  await page.goto(`/week/${tomorrow}`);
   await page.locator(`a[href="/week/${tomorrow}/${TOMORROW_JOB_ID}"]`).click();
   await expect(page.getByText(copy.preview.time)).toBeVisible();
-  await expect(page.getByText(copy.preview.area)).toBeVisible();
   await expect(page.getByText(copy.preview.payment)).toBeVisible();
+  await expect(page.getByText(/^Name and address from /)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
   await page.getByRole("button", { name: techCopy.job.back }).click();
   await expect(page).toHaveURL(new RegExp(`/week/${tomorrow}$`));

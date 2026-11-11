@@ -100,6 +100,31 @@ describe("an ask to reschedule", () => {
     expect((await card()).reschedule_asked).toBeNull();
   });
 
+  it("is settled once the visit is given to another technician, closed or called off", async () => {
+    for (const change of [
+      "technician_id = '33333333-3333-4333-8333-333333333332'",
+      "status = 'completed'",
+      "status = 'cancelled'",
+    ]) {
+      await env.DB.prepare(
+        "UPDATE appointments SET technician_id = ?2, status = 'scheduled', window_start = '2026-09-21T07:30:00.000Z' WHERE id = ?1",
+      )
+        .bind(JOB, IMRAN)
+        .run();
+      await env.DB.prepare(
+        "UPDATE reschedule_requests SET settled_at = '2026-09-21T06:00:00.000Z' WHERE settled_at IS NULL",
+      ).run();
+      expect((await ask("client_asked", `ask-${change}`)).status).toBe(200);
+      await env.DB.prepare(`UPDATE appointments SET ${change} WHERE id = ?1`).bind(JOB).run();
+      const { results } = await env.DB.prepare(
+        "SELECT id FROM reschedule_requests WHERE appointment_id = ?1 AND settled_at IS NULL",
+      )
+        .bind(JOB)
+        .all();
+      expect(results, change).toEqual([]);
+    }
+  });
+
   it("is refused for a visit not the technician's, or one called off", async () => {
     await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
     expect((await ask()).status).toBe(404);

@@ -31,8 +31,15 @@
   color: var(--ui-text-soft);
 }
 
+/* Seven squares across at 360 px, each a thumb's 44 px or wider: a narrower gutter and gap than the page's. */
 .strip {
-  padding: var(--sp-12) var(--screen-gutter) 0;
+  gap: var(--sp-4);
+  padding: var(--sp-12) var(--sp-12) 0;
+}
+
+/* A screen inside the job's frame, whose body keeps no gutter of its own. */
+.page {
+  padding: 0 var(--screen-gutter);
 }
 
 .day {

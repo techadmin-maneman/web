@@ -146,6 +146,24 @@ describe("the week ahead", () => {
     const { forecast } = await (await job.get("/api/tech/kit")).json<{ forecast: unknown[] }>();
     expect(forecast).toEqual([{ code: "solvent", name: "Solvent", unit: "ml", need: 20, have: 4 }]);
   });
+
+  it("counts nothing expired as held, which goes back to ops instead", async () => {
+    await job.opsPost("/api/consumables", { name: "Solvent", unit: "ml", unit_cost: 50 });
+    await job.opsPost("/api/service-usage", {
+      visit_type: "service",
+      tier: "standard",
+      items: [{ code: "solvent", quantity: 10 }],
+    });
+    await job.opsPost("/api/stock/deliveries", {
+      consumable_code: "solvent",
+      quantity: 10,
+      lot_code: "SV-OLD",
+      expires_on: "2026-09-20",
+    });
+    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 10, from: "central", to: IMRAN });
+    const { forecast } = await (await job.get("/api/tech/kit")).json<{ forecast: unknown[] }>();
+    expect(forecast).toEqual([{ code: "solvent", name: "Solvent", unit: "ml", need: 10, have: 0 }]);
+  });
 });
 
 describe("the kit's hair systems", () => {

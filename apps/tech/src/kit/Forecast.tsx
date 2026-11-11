@@ -8,36 +8,46 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, type Kit } from "../api.ts";
 import { kit as kitCopy } from "../content.ts";
-import { clock } from "../lib/when.ts";
+import { stamp } from "../lib/when.ts";
+import { NotDone, type Problem } from "./NotDone.tsx";
 import styles from "./kit.module.css";
 
 const copy = kitCopy.forecast;
 
 /** The one tap that asks ops for what is short, straight with signal; or, once asked, when, until ops settle it. */
 function Request(props: { readonly kit: Kit; readonly offline: boolean; readonly onKit: (kit: Kit) => void }) {
-  const [failed, setFailed] = useState(false);
+  const [problem, setProblem] = useState<Problem | null>(null);
   const [busy, once] = useOneAtATime();
   if (props.kit.asked !== null) {
     return (
       <p className={styles.note} role="status">
-        {copy.requested(clock(props.kit.asked.asked_at))}
+        {copy.requested(stamp(props.kit.asked.asked_at))}
       </p>
     );
   }
-  if (!props.kit.forecast.some((item) => item.need > Math.max(item.have, 0))) return null;
+  if (!props.kit.forecast.some((item) => item.need > Math.max(item.have, 0))) {
+    return problem === null ? null : <NotDone problem={problem} />;
+  }
   const ask = () =>
     once(async () => {
       const answer = await api.kitRequest();
-      setFailed(!answer.ok);
-      if (answer.ok) props.onKit(answer.body);
+      if (answer.ok) {
+        setProblem(null);
+        props.onKit(answer.body);
+        return;
+      }
+      // Short of nothing now: the forecast is read again, and says so.
+      if (answer.status === 409) {
+        setProblem({ words: copy.nothingShort, requestId: null });
+        const fresh = await api.kit();
+        if (fresh.ok) props.onKit(fresh.body);
+        return;
+      }
+      setProblem({ words: copy.requestFailed, requestId: answer.requestId });
     });
   return (
     <div className={styles.buttons}>
-      {failed && (
-        <p className={styles.problem} role="alert">
-          {copy.requestFailed}
-        </p>
-      )}
+      <NotDone problem={problem} />
       <Button variant="primary" size="action" busy={busy} disabled={props.offline} onClick={() => void ask()}>
         {props.offline ? kitCopy.needsSignal : copy.request}
       </Button>

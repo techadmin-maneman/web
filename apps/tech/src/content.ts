@@ -143,6 +143,8 @@ export const me = {
     failed: "Your incentives didn’t load.",
   },
   account: "Account",
+  loading: "Loading…",
+  retry: "Try again",
   leave: "Leave",
   pending: "Pending uploads",
   nothingPending: "None",
@@ -1121,9 +1123,12 @@ export const schedule = {
   title: "Schedule",
   /** "12 Nov to 18 Nov · 12 jobs" */
   range: (from: string, to: string, jobs: number) => `${from} to ${to} · ${counted(jobs, "job", "jobs")}`,
-  /** What a screen reader hears for a day in the strip: "Thursday 12 Nov, 4 jobs". */
-  dayLabel: (weekday: string, date: string, jobs: number) =>
-    `${weekday} ${date}, ${jobs === 0 ? "nothing booked" : counted(jobs, "job", "jobs")}`,
+  /** What a screen reader hears for a day in the strip: "Thursday 12 Nov, 4 jobs"; null for a day that did not load. */
+  dayLabel: (weekday: string, date: string, jobs: number | null) => {
+    if (jobs === null) return `${weekday} ${date}, didn’t load`;
+    return `${weekday} ${date}, ${jobs === 0 ? "nothing booked" : counted(jobs, "job", "jobs")}`;
+  },
+  dayFailed: "This day didn’t load. It shows once there’s signal.",
   noJobs: "–",
   /** "Thu, 12 Nov" */
   day: (weekday: string, date: string) => `${weekday}, ${date}`,
@@ -1144,7 +1149,8 @@ export const schedule = {
     payment: "Payment",
     /** "11:30 am · 1 h 30 min" */
     when: (time: string, length: string) => `${time} · ${length}`,
-    locked: "Name and address from 6 pm the day before.",
+    /** "Name and address from 6 pm tomorrow.": when the card opens, by the hour ops set. */
+    locked: (unlocksAt: string) => `Name and address from ${timeAndDay(unlocksAt, apiDate())}.`,
     gone: "This job is no longer on your schedule.",
   },
 };
@@ -1158,6 +1164,8 @@ export const reschedule = {
   close: "Close",
   needsSignal: "Needs signal",
   failed: "That didn’t reach ops. Try again.",
+  closed: "This visit is closed or called off.",
+  gone: "This visit isn’t yours any more.",
   /** "Reschedule asked 9:05 am · Client asked · ops will confirm with the client" */
   asked: (time: string, reason: string) => `Reschedule asked ${time} · ${reason} · ops will confirm with the client`,
 } as const;
@@ -1231,6 +1239,7 @@ export const kit = {
     /** "Requested 9:05 am · ops will add it to your next transfer" */
     requested: (time: string) => `Requested ${time} · ops will add it to your next transfer`,
     requestFailed: "That didn’t reach ops. Try again.",
+    nothingShort: "Nothing’s short now.",
     none: "Nothing booked needs consumables.",
     item: "Item",
     need: "Need",

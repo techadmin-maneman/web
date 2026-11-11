@@ -1,6 +1,11 @@
 /* Leave (./LeaveScreen.tsx) in the new look: the two days side by side, the line why, Ask; then the asks, each with
    where it stands, approved in the ink, declined in the error's colour. */
 
+/* The screen inside the job's frame, whose body keeps no gutter of its own. */
+.page {
+  padding: 0 var(--screen-gutter);
+}
+
 .form {
   display: grid;
   gap: var(--sp-12);

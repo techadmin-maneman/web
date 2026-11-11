@@ -18,6 +18,8 @@ export const DECIDED_IN: Partial<Record<Group, { readonly page: SectionPath; rea
   unanswered_chat: { page: "/messages", row: null },
   remedy_approval: { page: "/messages", row: null },
   leave_conflict: { page: "/dispatch", row: null },
+  // A technician's ask to move a visit: the client is called, then the visit moved there.
+  reschedule_request: { page: "/dispatch", row: null },
   // Operations' own: a visit with no technician is given one, and one left open is closed by hand, in its drawer.
   unassigned_visit: { page: "/dispatch", row: null },
   visit_left_open: { page: "/dispatch", row: null },

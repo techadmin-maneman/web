@@ -25,9 +25,15 @@ export function PreviewScreen({ date, id }: { readonly date: string; readonly id
     return (
       <CardFrame title={schedule.title} sub={day} back={back} foot={null}>
         {loaded.state === "loading" ? (
-          <Loading />
+          <Loading onPaper />
         ) : (
-          <Failed message={schedule.failed} retry={schedule.retry} onRetry={retry} requestId={loaded.requestId} />
+          <Failed
+            message={schedule.failed}
+            retry={schedule.retry}
+            onRetry={retry}
+            requestId={loaded.requestId}
+            onPaper
+          />
         )}
       </CardFrame>
     );
@@ -36,23 +42,25 @@ export function PreviewScreen({ date, id }: { readonly date: string; readonly id
   if (job === undefined) {
     return (
       <CardFrame title={schedule.title} sub={day} back={back} foot={null}>
-        <p className={styles.note}>{copy.gone}</p>
+        <p className={styles.page}>{copy.gone}</p>
       </CardFrame>
     );
   }
   const length = lengthOf(job);
   return (
     <CardFrame title={kindName(job)} sub={copy.sub(day, clock(job.starts_at))} back={back} foot={null}>
-      <DescriptionList
-        className={styles.facts}
-        layout="list"
-        items={[
-          { term: copy.time, details: copy.when(clock(job.starts_at), jobCopy.minutes(length)) },
-          { term: copy.area, details: job.sector ?? "" },
-          { term: copy.payment, details: badges[job.badge] },
-        ]}
-      />
-      {!job.unlocked && <p className={styles.note}>{copy.locked}</p>}
+      <div className={styles.page}>
+        <DescriptionList
+          className={styles.facts}
+          layout="list"
+          items={[
+            { term: copy.time, details: copy.when(clock(job.starts_at), jobCopy.minutes(length)) },
+            { term: copy.area, details: job.sector ?? "" },
+            { term: copy.payment, details: badges[job.badge] },
+          ]}
+        />
+        {!job.unlocked && <p className={styles.note}>{copy.locked(job.unlocks_at)}</p>}
+      </div>
     </CardFrame>
   );
 }

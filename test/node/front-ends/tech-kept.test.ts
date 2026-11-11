@@ -31,6 +31,7 @@ import { queue } from "../../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
 import {
   eighthRelease,
+  eleventhRelease,
   firstRelease,
   ninthRelease,
   seventhRelease,
@@ -504,6 +505,20 @@ describe("a card kept before it carried the steps ops sent back", () => {
     const { sent_back: _sentBack, ...earlier } = card("a", TODAY);
     await tenthRelease([{ ...earlier, v: 2 }]);
     expect(await keptJob("a")).toMatchObject({ sent_back: [] });
+  });
+});
+
+describe("what the build before the asks of ops kept", () => {
+  it("reads a card with no ask to reschedule, until the card is read again", async () => {
+    const { reschedule_asked: _asked, ...earlier } = card("a", TODAY);
+    await eleventhRelease([{ ...earlier, v: 2 }]);
+    expect(await keptJob("a")).toMatchObject({ reschedule_asked: null });
+  });
+
+  it("reads who is signed in with no grade, city or number, until they are read again", async () => {
+    const before = { name: "Imran Qureshi", first_name: "Imran", initials: "IQ", device: { device_id: "x" } };
+    await eleventhRelease([], before);
+    expect(await keptMe()).toMatchObject({ name: "Imran Qureshi", grade: null, city: null, mobile: null });
   });
 });
 

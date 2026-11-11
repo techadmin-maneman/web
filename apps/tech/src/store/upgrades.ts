@@ -4,7 +4,7 @@
 // here, once, and never as it is read.
 
 import { CENTIMETRES, inchesOf } from "@maneman/web-kit/hair-profile";
-import type { Job, JobState, JobSummary } from "../api.ts";
+import type { Job, JobState, JobSummary, Me } from "../api.ts";
 import type { KeptArrival, KeptClosure, KeptDay, KeptStart } from "./records.ts";
 import type { Queued } from "./replay.ts";
 
@@ -336,6 +336,21 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       // What an earlier build wrote, which may lack the field this step adds.
       const card = value as Partial<Pick<Job, "sent_back">>;
       return card.sent_back === undefined ? { ...card, sent_back: [] } : null;
+    });
+  },
+  // Version 12: a card carries the technician's open ask that ops move the visit, and who is signed in their grade,
+  // city and number (docs/decisions/0249-schedule-kit-and-me.md). One kept before says none until it is read again.
+  (_db, upgrade) => {
+    eachAgain(upgrade.objectStore("cards"), (value) => {
+      // What an earlier build wrote, which may lack the field this step adds.
+      const card = value as Partial<Pick<Job, "reschedule_asked">>;
+      return card.reschedule_asked === undefined ? { ...card, reschedule_asked: null } : null;
+    });
+    eachAgain(upgrade.objectStore("device"), (value) => {
+      // What an earlier build wrote: who is signed in, without the fields this step adds.
+      const record = value as { readonly key: string; readonly me?: Partial<Pick<Me, "grade" | "city" | "mobile">> };
+      if (record.key !== "me" || record.me === undefined || record.me.mobile !== undefined) return null;
+      return { ...record, me: { ...record.me, grade: null, city: null, mobile: null } };
     });
   },
 ];

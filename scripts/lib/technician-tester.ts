@@ -36,6 +36,8 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     // Where they were on a visit, and any SOS they tried (docs/decisions/0248-safety.md).
     `DELETE FROM visit_positions WHERE technician_id IN (${ids});`,
     `DELETE FROM sos_alerts WHERE technician_id IN (${ids});`,
+    `DELETE FROM kit_requests WHERE technician_id IN (${ids});`,
+    `DELETE FROM reschedule_requests WHERE technician_id IN (${ids});`,
     // A hair profile is never deleted (migration 0064), so a job one was taken at, the invented client it is of and
     // the technician who took it stay, the technician made inactive so nothing books or dispatches them; the rest of
     // what they left goes.

@@ -253,8 +253,8 @@ export async function reactivateTechnician(
 }
 
 /**
- * Whether anything records work of theirs: a visit, a hold, a step, a check-in, a move or one asked, a claim, stock or
- * an SOS. A hair profile names its technician too; it is never read here, and its foreign key refuses the delete
+ * Whether anything records work of theirs: a visit, a hold, a step, a check-in, a move or one asked, a claim, stock,
+ * an SOS, or an ask of ops for kit or to move a visit. A hair profile names its technician too; it is never read here, and its foreign key refuses the delete
  * instead.
  */
 const HAS_WORK = `(EXISTS (SELECT 1 FROM appointments WHERE technician_id = ?1)

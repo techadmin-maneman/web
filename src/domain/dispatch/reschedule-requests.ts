@@ -45,7 +45,8 @@ export async function askToReschedule(
   await db
     .prepare(
       `INSERT OR IGNORE INTO reschedule_requests (id, appointment_id, technician_id, reason, requested_at)
-       VALUES (?1, ?2, ?3, ?4, ?5)`,
+       SELECT ?1, a.id, ?3, ?4, ?5 FROM appointments a
+        WHERE a.id = ?2 AND a.technician_id = ?3 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_LIVE)}`,
     )
     .bind(crypto.randomUUID(), input.appointmentId, input.technicianId, input.reason, input.now.toISOString())
     .run();
