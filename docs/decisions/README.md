@@ -526,5 +526,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0242](0242-client-record.md) | A client's record for the technicians: alerts, the handoff note, and their history | 2026-11-11 | accepted |  |
 | [0243](0243-job-and-the-door.md) | The job and the door in the new look | 2026-11-11 | accepted |  |
 | [0244](0244-the-visit-engine.md) | The visit engine, its plan, and the photographs | 2026-11-11 | accepted | [0245](0245-the-steps.md) |
-| [0245](0245-the-steps.md) | The visit's steps in the new look | 2026-11-12 | accepted |  |
+| [0245](0245-the-steps.md) | The visit's steps in the new look | 2026-11-12 | accepted | [0246](0246-closed-and-sent-back.md) |
 | [0246](0246-closed-and-sent-back.md) | Closed, and a step sent back | 2026-11-11 | accepted |  |

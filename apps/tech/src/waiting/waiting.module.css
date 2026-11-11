@@ -1,63 +1,42 @@
-/* The Waiting screen's upload queue, and the account of everything else still on the phone. */
-
-.screen {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--ink-deep);
-}
-
-.back {
-  --icon-button-size: var(--tech-min);
-
-  margin-left: calc(-1 * var(--sp-12));
-  color: var(--paper);
-}
-
-.title {
-  margin: 0;
-  outline: none;
-  font-size: var(--fs-17);
-  font-weight: var(--weight-regular);
-  color: var(--paper);
-}
+/* Pending uploads (./WaitingScreen.tsx), in the new look: the upload queue, and the account of everything else still
+   on the phone, under the frame's head. */
 
 /* A caution, not a failure: the phone would not promise to keep what is below. */
 .atRisk {
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
+  padding: var(--sp-16) var(--screen-gutter);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .atRiskTitle {
   margin: 0;
   font-size: var(--fs-17);
-  color: var(--paper);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
 }
 
 .atRiskBody {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-16);
   line-height: var(--lh-160);
-  color: var(--ink-soft);
+  color: var(--ui-text-soft);
 }
 
 .sets {
   display: flex;
   gap: var(--sp-12);
   align-items: center;
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
+  padding: var(--sp-16) var(--screen-gutter);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .setsIcon {
   flex-shrink: 0;
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 .setsLine {
   font-size: var(--fs-17);
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 .list {
@@ -67,8 +46,8 @@
 }
 
 .job {
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
+  padding: var(--sp-16) var(--screen-gutter);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .jobTop {
@@ -80,17 +59,19 @@
 
 .who {
   font-size: var(--fs-17);
-  color: var(--paper);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
 }
 
 .state {
   font-size: var(--fs-15);
-  color: var(--paper);
+  color: var(--ui-text-soft);
 }
 
 .stateStopped {
   font-size: var(--fs-15);
-  color: var(--error-on-ink);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-error);
 }
 
 .bar {
@@ -98,38 +79,38 @@
 
   height: var(--sp-4);
   margin-top: var(--sp-12);
-  background: var(--ink-rule);
+  background: var(--ui-shade);
 }
 
 .barDone {
   width: var(--at);
   height: 100%;
-  background: var(--paper);
+  background: var(--ui-strong);
 }
 
 .count {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
-  color: var(--ink-muted);
+  color: var(--ui-text-soft);
 }
 
 .stopped {
   margin-top: var(--sp-16);
   padding: var(--sp-16);
-  border: var(--hairline) solid var(--error-on-paper);
+  border: var(--hairline) solid var(--ui-error);
 }
 
 .stoppedLine {
   margin: 0 0 var(--sp-16);
   font-size: var(--fs-17);
   line-height: var(--lh-145);
-  color: var(--paper);
+  color: var(--ui-text);
 }
 
 .reference {
   margin-bottom: var(--sp-16);
   font-size: var(--fs-15);
-  color: var(--ink-muted);
+  color: var(--ui-text-soft);
 }
 
 .button {
@@ -150,8 +131,8 @@
 .nothing,
 .never {
   margin: 0;
-  padding: var(--sp-16) var(--sp-20);
+  padding: var(--sp-16) var(--screen-gutter);
   font-size: var(--fs-15);
   line-height: var(--lh-160);
-  color: var(--ink-muted);
+  color: var(--ui-text-soft);
 }

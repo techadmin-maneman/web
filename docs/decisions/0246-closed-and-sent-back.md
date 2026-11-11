@@ -3,7 +3,8 @@
 - Status: accepted
 - Date: 2026-11-11
 - Topic: Field work
-- Follows [0245](0245-the-steps.md)
+- Amends [0245](0245-the-steps.md), which stands except on when the items its section 7 names for PR 7 come: PR 7b
+  ("Left for later")
 
 ## Context
 
@@ -35,8 +36,23 @@ consultation going ahead. The same day they asked that a set of photographs can 
 7. **A visit left partly done, or not fitted, asks ops for a time to finish it** (`POST /api/tech/jobs/{id}/finish-ask`):
    tomorrow morning, tomorrow evening, or ops to call the client. The choice is kept on the visit's outcome
    (`visit_outcomes.finish_ask`), and ops read it on the visit's Partly done task, where they book the visit as before.
-8. **The technician app's 150 KB counts what ships.** A local build's parts page, which no phone is served, is left out
-   of the count (`scripts/lib/spa-build.ts`).
+8. **A job ops cancelled, or gave to another technician, under the phone opens a dialog once** over whatever screen is
+   showing (`apps/tech/src/frame/Interrupted.tsx`), with Call ops and Back to Today. The prototype says the work so far
+   is "saved and sent to ops"; the phone keeps it in Pending uploads, as it did, so the dialog says that. The banner
+   above every screen goes on saying it.
+9. **Pending uploads and the error screen take the new look**: Pending uploads with "n waiting" under its title and
+   each job's state in the new words (Uploading, No signal, Failed), keeping every action it had.
+10. **The technician app's 150 KB counts what ships.** A local build's parts page, which no phone is served, is left out
+    of the count (`scripts/lib/spa-build.ts`).
+
+## Left for later
+
+- **Photos on Wi-Fi only.** The API takes a visit's steps in their order, so photographs held back for Wi-Fi would hold
+  every later step of the visit, its close among them, until the phone found Wi-Fi. That needs the owner's word before
+  it is a switch.
+- **Options as a step with the client's pick, the one visit's "When" (Book the first fit), checking a label as it
+  reads, matching the hair system to a profile measured with no signal, and the door's rare cases** move from PR 7 to
+  PR 7b, which follows it, so this PR stays one to review. ADR 0245 named PR 7 for them.
 
 ## Consequences
 

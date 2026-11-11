@@ -280,6 +280,10 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   await expect(
     page.getByRole("alert").filter({ hasText: `9:30 am service visit · Sector 65: ${movedToSameer}` }),
   ).toBeVisible();
+  // And once, over the first screen past Pending uploads, which says it job by job (ADR 0246).
+  const told = page.getByRole("dialog", { name: /: moved to Sameer$/ });
+  await expect(told).toBeVisible();
+  await told.getByRole("button", { name: techCopy.interrupted.today }).click();
   await page.getByText("Rohit M.").first().click();
   await expect(page.getByRole("heading", { level: 2, name: techCopy.job.changed.title })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.job.continueJob })).toHaveCount(0);
@@ -354,7 +358,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await openPending(page);
-  await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
+  await expect(page.getByText(techCopy.today.offline.bar)).toBeVisible();
   await expect(page.getByText("Before photos · 0 of 5 sent")).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.queue.retry })).toHaveCount(0);
 

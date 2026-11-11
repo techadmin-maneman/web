@@ -204,16 +204,19 @@ export const queue = {
   retry: "Retry",
   states: {
     uploading: "Uploading…",
-    waiting: "Waiting",
+    waiting: "No signal",
     failed: "Failed",
   },
+  /** Beneath the title: how many jobs still have work on the phone. */
+  jobsWaiting: (count: number) => `${String(count)} waiting`,
+  noneWaiting: "None waiting",
   // The board writes "7 of 10"; each set is counted on its own, by the photographs the API confirmed.
   phases: { before: "Before photos", after: "After photos" },
   sent: (phase: string, done: number, total: number) => `${phase} · ${String(done)} of ${String(total)} sent`,
   taking: (phase: string, taken: number, total: number) => `${phase} · ${String(taken)} of ${String(total)} taken`,
   // The board draws the photo sets; these name the writes beside them.
-  title: "Waiting to reach us",
-  nothing: "Everything has reached us.",
+  title: "Pending uploads",
+  nothing: "Everything is uploaded.",
   events: (count: number) => `${String(count)} ${count === 1 ? "action" : "actions"} waiting`,
   // The board draws no step the API refused, and no way to put one right.
   correct: "Correct it",
