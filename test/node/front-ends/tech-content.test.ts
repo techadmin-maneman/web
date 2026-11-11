@@ -74,6 +74,7 @@ describe("the technician app’s content", () => {
     expect(amounts.map((path) => path.replaceAll("\\", "/")).sort()).toEqual([
       "apps/tech/src/job/OptionsScreen.tsx",
       "apps/tech/src/mine/MonthScreen.tsx",
+      "apps/tech/src/steps/OptionsPick.tsx",
     ]);
   });
 

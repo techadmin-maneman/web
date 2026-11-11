@@ -147,22 +147,25 @@ export function account(queue: readonly Queued[]): JobAccount[] {
   return [...accounts].map(([job_id, held]) => ({ job_id, ...held }));
 }
 
+const earlyOf = (queue: readonly Queued[], jobId: string, kind: EventKind): Queued | undefined =>
+  queue.find((event) => event.job_id === jobId && event.kind === kind && event.state === "early");
+
 /**
- * Whether the job's last write of a kind was refused as early. A tap since, still on its way, is the last word: with
- * no signal it waits to land, and may.
+ * Whether the job's last no-show was refused as before the wait ran out, so the card says so and stays, until one
+ * lands.
  */
-function refusedEarly(queue: readonly Queued[], jobId: string, kind: EventKind): boolean {
-  const early = queue.find((event) => event.job_id === jobId && event.kind === kind && event.state === "early");
+export const refusedAsEarly = (queue: readonly Queued[], jobId: string): boolean =>
+  earlyOf(queue, jobId, "no_show") !== undefined;
+
+/**
+ * Whether the job's last check-in was refused as before the earliest check-in, so the card says when it opens. A tap
+ * since, still on its way, is the last word: with no signal it waits at the door to land, and may.
+ */
+export function checkInRefusedAsEarly(queue: readonly Queued[], jobId: string): boolean {
+  const early = earlyOf(queue, jobId, "check_in");
   if (early === undefined) return false;
   return !queue.some(
-    (event) => event.job_id === jobId && event.kind === kind && event.state === "waiting" && event.seq > early.seq,
+    (event) =>
+      event.job_id === jobId && event.kind === "check_in" && event.state === "waiting" && event.seq > early.seq,
   );
 }
-
-/** Whether the job's last no-show was refused as before the wait ran out, so the card says so and stays. */
-export const refusedAsEarly = (queue: readonly Queued[], jobId: string): boolean =>
-  refusedEarly(queue, jobId, "no_show");
-
-/** Whether the job's last check-in was refused as before the earliest check-in, so the card says when it opens. */
-export const checkInRefusedAsEarly = (queue: readonly Queued[], jobId: string): boolean =>
-  refusedEarly(queue, jobId, "check_in");

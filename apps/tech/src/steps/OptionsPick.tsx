@@ -71,11 +71,11 @@ export function OptionsPick({
           <span>{copy.inclGst}</span>
         </h2>
         <p className={styles.quiet}>{job.products.length === 0 ? copy.none : copy.markPick}</p>
-        <ul className={styles.list} role="radiogroup" aria-labelledby="prices-title">
+        <div className={styles.list} role="radiogroup" aria-labelledby="prices-title">
           {job.products.map((product) => {
             const option = priced.get(product.tier);
             return (
-              <li key={product.tier}>
+              <div key={product.tier}>
                 <ToggleButton
                   className={styles.pick}
                   asRadio
@@ -88,10 +88,10 @@ export function OptionsPick({
                   {typeof option?.description === "string" && <span className={styles.line}>{option.description}</span>}
                 </ToggleButton>
                 {option !== undefined && <Prices option={option} />}
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
         {loaded.state === "failed" && (
           <div className={styles.failed}>
             <p className={styles.quiet}>{copy.pricesFailed}</p>
