@@ -6,7 +6,7 @@
 CREATE TABLE step_send_backs (
   id TEXT PRIMARY KEY,
   appointment_id TEXT NOT NULL REFERENCES appointments (id),
-  kind TEXT NOT NULL CHECK (kind IN ('before_photos', 'checklist', 'consumables', 'piece', 'after_photos')),
+  kind TEXT NOT NULL CHECK (kind IN ('before_photos', 'checklist', 'consumables', 'after_photos')),
   reason TEXT NOT NULL CHECK (length(reason) BETWEEN 1 AND 300),
   -- The member of staff who sent it back, by their work e-mail; never shown on a phone.
   sent_by TEXT NOT NULL,

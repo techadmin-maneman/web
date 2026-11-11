@@ -40,6 +40,7 @@ import {
   type Queued,
 } from "./replay.ts";
 import { uuidv7 } from "./uuidv7.ts";
+import { sendFinishAsks } from "./finish-asks.ts";
 import { classify, type Refused, type Verdict } from "./verdict.ts";
 
 export type { EventKind, Frame, JobAccount, Queued };
@@ -360,6 +361,10 @@ export function replay(): Promise<Replayed> {
     running = null;
     changed();
     void wakeForNextTry();
+    // A suggestion for finishing a visit, kept until its close had reached us (./finish-asks.ts).
+    void events()
+      .then(sendFinishAsks)
+      .catch(() => undefined);
   });
   return running;
 }

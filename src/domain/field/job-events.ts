@@ -206,9 +206,20 @@ export async function jobChangesSince(
   technicianId: string,
   expectedStart: Date | null,
 ): Promise<Superseding> {
-  const changed = supersededBy(job, technicianId, expectedStart);
+  // A visit the technician's own close ended partly done is theirs still: only ops ending it changed it under them.
+  const ownClose = job.status === "terminated" && (await closedByThePhone(db, job.id));
+  const changed = supersededBy(job, technicianId, expectedStart, ownClose);
   const moved = namesTheOtherTechnician(changed) ? await movedTo(db, job) : null;
   return { changed, moved };
+}
+
+/** Whether the phone's own close landed on the visit, rather than ops closing it. */
+async function closedByThePhone(db: D1Database, appointmentId: string): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT 1 FROM job_events WHERE appointment_id = ?1 AND kind = 'outcome' AND superseded = 0 LIMIT 1")
+    .bind(appointmentId)
+    .first();
+  return row !== null;
 }
 
 /**
@@ -231,9 +242,9 @@ export async function wasTechniciansJob(db: D1Database, job: WorkableJob, techni
 }
 
 /** What changed under the phone, by field name, a cancellation first. Empty when nothing did. */
-function supersededBy(job: WorkableJob, technicianId: string, expectedStart: Date | null): string[] {
+function supersededBy(job: WorkableJob, technicianId: string, expectedStart: Date | null, ownClose: boolean): string[] {
   const changed: string[] = [];
-  if (job.status === "cancelled" || job.status === "terminated") changed.push("status");
+  if (job.status === "cancelled" || (job.status === "terminated" && !ownClose)) changed.push("status");
   if (job.technicianId !== technicianId) changed.push("technician");
   if (expectedStart !== null && expectedStart.getTime() !== job.windowStart.getTime()) changed.push("time");
   return changed;

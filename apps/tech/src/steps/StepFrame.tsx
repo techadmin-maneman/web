@@ -101,7 +101,9 @@ function StepBar({ where }: { where: Where }) {
 /** "Next: <the step it goes to>", "Close visit" where none is left, or plain Next where the visit's place is not known. */
 function labelOf(where: Where | null): string {
   if (where === null) return copy.next;
-  return where.next === null ? visit.close : visit.next(where.next);
+  if (where.next !== null) return visit.next(where.next);
+  // A step ops sent back sends itself; the visit's close is behind it.
+  return where.sentBack === null ? visit.close : visit.sendFix;
 }
 
 export function StepFrame({

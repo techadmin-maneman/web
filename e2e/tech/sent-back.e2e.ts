@@ -29,6 +29,8 @@ test("a count ops sent back is on Today, opens from the job, says why, and close
   await page.getByRole("button", { name: job.putRight }).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await expect(page.getByText(visit.sentBack("Count the tape strips again."))).toBeVisible();
+  // Nothing after it is left to do: the action sends the step, and closes nothing.
+  await expect(stepAction(page)).toHaveText(visit.sendFix);
   expect(await axeViolations(page)).toEqual([]);
 
   await stepAction(page).click();

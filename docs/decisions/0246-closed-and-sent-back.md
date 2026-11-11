@@ -5,6 +5,8 @@
 - Topic: Field work
 - Amends [0245](0245-the-steps.md), which stands except on when the items its section 7 names for PR 7 come: PR 7b
   ("Left for later")
+- Amends [0028](0028-photographs-from-the-app.md), which stands except on a replaced take: it is deleted
+  with its small copy (section 4), no longer kept under the visit's prefix
 
 ## Context
 
@@ -17,18 +19,22 @@ consultation going ahead. The same day they asked that a set of photographs can 
 ## Decision
 
 1. **Ops send a landed step back from the visit's drawer on the dispatch board, with why**
-   (`POST /api/visits/{id}/send-back`, Operations · Act). A step that takes a correction can be sent back: either set
-   of photographs, the checklist, the consumables, and a fit's hair system. A one visit's hair system is its decision
-   and the source of its payment link, so it is never sent back (`src/policy/in-job-steps.ts`). One is open at a time
-   for each step of a visit (`step_send_backs`). The audit entry names the visit and the step, never the reason.
+   (`POST /api/visits/{id}/send-back`, Operations · Act). A step that lands again in place of the one before can be
+   sent back: either set of photographs, the checklist and the consumables (`src/policy/in-job-steps.ts`). One is open
+   at a time for each step of a visit (`step_send_backs`). The audit entry names the visit and the step, never the
+   reason.
 2. **The technician's card carries what was sent back** (`sent_back`, with the reason and when), and the phone opens
    the step again with the reason in red. The day's list carries the visits to fix, of any day, naming the client only
    while the visit is unlocked, as the list does (`src/policy/job-visibility.ts`): past it, the visit by its kind.
 3. **A step sent back lands even after the close, however long after,** until it lands again, which clears it. Every
-   other step keeps the hour after the close that a corrected checklist or count has (ADR 0038).
+   other step keeps the hour after the close that a corrected checklist or count has (ADR 0038). A visit the
+   technician's own close left partly done is still theirs: only ops ending a visit is a change made under the phone.
+   Once the visit has locked again, its card offers Put it right without naming the client.
 4. **A retake keeps one photograph an angle.** The new take replaces the angle's photograph, and the take it replaced
    goes from storage with its small copy. This holds for the camera's own Retake too, which until now left the first
-   take in storage with nothing naming it.
+   take in storage with nothing naming it. The replaced take is no longer the visit's photograph, so its going is part
+   of taking the angle again, not a deletion of its own: the send-back's audit entry, and the set landing, are its
+   trail.
 5. **Closed is redrawn** (`apps/tech/src/steps/CloseOut.tsx`): the result as the heading ("Visit closed", "Closed as
    no-show", "Closed, not fitted"), the client, the visit and the result beneath, the rows, then what follows from the
    result. A no-show keeps its evidence in place of the rows.
@@ -37,10 +43,12 @@ consultation going ahead. The same day they asked that a set of photographs can 
 7. **A visit left partly done, or not fitted, asks ops for a time to finish it** (`POST /api/tech/jobs/{id}/finish-ask`):
    tomorrow morning, tomorrow evening, or ops to call the client. The choice is kept on the visit's outcome
    (`visit_outcomes.finish_ask`), and ops read it on the visit's Partly done task, where they book the visit as before.
-8. **A job ops cancelled, or gave to another technician, under the phone opens a dialog once** over whatever screen is
-   showing (`apps/tech/src/frame/Interrupted.tsx`), with Call ops and Back to Today. The prototype says the work so far
-   is "saved and sent to ops"; the phone keeps it in Pending uploads, as it did, so the dialog says that. The banner
-   above every screen goes on saying it.
+   With no signal, or while the close is still on the phone, the choice is kept and goes once the close has reached us.
+8. **A job ops cancelled, gave to another technician, or closed, under the phone opens a dialog once** over any screen
+   but Pending uploads, which says it job by job (`apps/tech/src/frame/Interrupted.tsx`), with Call ops and Back to
+   Today. The prototype says the work so far is "saved and sent to ops"; the phone keeps it in Pending uploads, as it
+   did, so the dialog says that. The banner above every screen goes on saying it. A card that comes back moved to
+   another time is said on the job and in the banner, as it was, not in the dialog; the job-change push is PR 10's.
 9. **Pending uploads and the error screen take the new look**: Pending uploads with "n waiting" under its title and
    each job's state in the new words (Uploading, No signal, Failed), keeping every action it had.
 10. **The technician app's 150 KB counts what ships.** A local build's parts page, which no phone is served, is left out
@@ -48,6 +56,8 @@ consultation going ahead. The same day they asked that a set of photographs can 
 
 ## Left for later
 
+- **Sending back the hair system.** A piece landing again leaves the first one fitted in the records and its unit in
+  the kit, so correcting a fitted piece needs its records replaced, a change of its own.
 - **Photos on Wi-Fi only.** The API takes a visit's steps in their order, so photographs held back for Wi-Fi would hold
   every later step of the visit, its close among them, until the phone found Wi-Fi. That needs the owner's word before
   it is a switch.

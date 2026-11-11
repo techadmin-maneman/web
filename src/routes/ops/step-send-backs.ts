@@ -25,8 +25,7 @@ const sendBackRoute = opsRoute({
         z
           .object({
             step: z.enum(SENT_BACK_KINDS).openapi({
-              description:
-                "The step: a set of photographs, the checklist, the consumables, or the piece (not a one visit's).",
+              description: "The step: a set of photographs, the checklist, or the consumables.",
             }),
             reason: z.string().trim().max(REASON_MAX_CHARS).openapi({
               description: "Why, as ops write it: shown to the technician on the step.",

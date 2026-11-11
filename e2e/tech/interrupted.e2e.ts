@@ -42,3 +42,15 @@ test("a job given to another technician names them", async ({ page }) => {
   const dialog = page.getByRole("dialog", { name: /: moved to Sandeep$/ });
   await expect(dialog).toContainText(interrupted.movedBody("Sandeep"));
 });
+
+test("a job ops closed under the phone says so", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos");
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  fake.closedByOps = true;
+  await stepAction(page).click();
+
+  const dialog = page.getByRole("dialog", { name: /: closed$/ });
+  await expect(dialog).toContainText(interrupted.closedBody);
+});

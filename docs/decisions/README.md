@@ -311,7 +311,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0025](0025-phase-2-conflicts-register.md) | Phase 2: the conflicts register | 2026-09-22 | accepted, and kept up to date | [0200](0200-staging-tenants-of-its-own.md) |
 | [0026](0026-hosts-and-surfaces.md) | Hosts and surfaces | 2026-09-22 | accepted |  |
 | [0027](0027-referral-landing.md) | The referral landing: a Worker beside the site's assets | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md) |
-| [0028](0028-photographs-from-the-app.md) | Photographs from the technician app | 2026-09-23 | accepted | [0093](0093-the-storage-meter.md) |
+| [0028](0028-photographs-from-the-app.md) | Photographs from the technician app | 2026-09-23 | accepted | [0093](0093-the-storage-meter.md), [0246](0246-closed-and-sent-back.md) |
 | [0029](0029-sessions.md) | Sessions for the client app | 2026-09-22 | accepted |  |
 | [0030](0030-one-time-codes.md) | One-time codes for the client app's login | 2026-09-22 | accepted | [0070](0070-vendor-correctness.md), [0097](0097-staging-logins-open-reminders-fenced.md) |
 | [0031](0031-access-and-audit.md) | Access on the ops surface, and the audit log | 2026-09-22 | accepted | [0072](0072-ops-clients-and-queues.md) |

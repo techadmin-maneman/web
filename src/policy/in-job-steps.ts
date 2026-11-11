@@ -93,13 +93,12 @@ export function landsAfterClose(kind: JobEventKind, closedAt: Date, now: Date): 
 
 /**
  * The steps ops may send back to the technician with why (docs/decisions/0246-closed-and-sent-back.md): those that
- * take a correction, each landing again in place of the one before, and the photographs, each angle taken again in
- * place of its first take. A one visit's piece is its decision and its payment link, so it is never sent back.
+ * land again in place of the one before, the checklist and the count of what was used, and the photographs, each
+ * angle taken again in place of its first take. The hair system is not: a piece landing again leaves the first one
+ * fitted in the records, and its unit in the kit.
  */
-export const SENT_BACK_KINDS = ["before_photos", "checklist", "consumables", "piece", "after_photos"] as const;
+export const SENT_BACK_KINDS = ["before_photos", "checklist", "consumables", "after_photos"] as const;
 export type SentBackKind = (typeof SENT_BACK_KINDS)[number];
-
-export const mayBeSentBack = (kind: SentBackKind, oneVisit: boolean): boolean => !(oneVisit && kind === "piece");
 
 /**
  * Whether a close the phone sent again may still leave its note and alert (docs/decisions/0242-client-record.md): within

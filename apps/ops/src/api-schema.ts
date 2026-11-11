@@ -27843,20 +27843,20 @@ export interface components {
             /** @description The steps sent back to the technician and not yet landed again (ADR 0246). */
             sent_back: {
                 /** @enum {string} */
-                kind: "before_photos" | "checklist" | "consumables" | "piece" | "after_photos";
+                kind: "before_photos" | "checklist" | "consumables" | "after_photos";
                 reason: string;
                 /** Format: date-time */
                 sent_at: string;
             }[];
             /** @description The landed steps ops may send back now: POST /api/visits/{id}/send-back. */
-            may_send_back: ("before_photos" | "checklist" | "consumables" | "piece" | "after_photos")[];
+            may_send_back: ("before_photos" | "checklist" | "consumables" | "after_photos")[];
         };
         SendBack: {
             /**
-             * @description The step: a set of photographs, the checklist, the consumables, or the piece (not a one visit's).
+             * @description The step: a set of photographs, the checklist, or the consumables.
              * @enum {string}
              */
-            step: "before_photos" | "checklist" | "consumables" | "piece" | "after_photos";
+            step: "before_photos" | "checklist" | "consumables" | "after_photos";
             /** @description Why, as ops write it: shown to the technician on the step. */
             reason: string;
         };

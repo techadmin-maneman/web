@@ -556,7 +556,6 @@
                       "before_photos",
                       "checklist",
                       "consumables",
-                      "piece",
                       "after_photos"
                     ]
                   }
@@ -1788,7 +1787,6 @@
                     "before_photos",
                     "checklist",
                     "consumables",
-                    "piece",
                     "after_photos"
                   ]
                 },

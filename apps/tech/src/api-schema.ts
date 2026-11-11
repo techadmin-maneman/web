@@ -4026,7 +4026,7 @@ export interface components {
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
                 /** @description While the visit is unlocked, as on the day's list; null past it. */
                 client_name: string | null;
-                steps: ("before_photos" | "checklist" | "consumables" | "piece" | "after_photos")[];
+                steps: ("before_photos" | "checklist" | "consumables" | "after_photos")[];
             }[];
         };
         TechnicianDayJob: {
@@ -4300,7 +4300,7 @@ export interface components {
             /** @description The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and leaves this list once it has (ADR 0246). */
             sent_back: {
                 /** @enum {string} */
-                kind: "before_photos" | "checklist" | "consumables" | "piece" | "after_photos";
+                kind: "before_photos" | "checklist" | "consumables" | "after_photos";
                 /** @description Why ops sent it back, as they wrote it. */
                 reason: string;
                 /** Format: date-time */

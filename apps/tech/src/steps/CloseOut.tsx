@@ -172,6 +172,7 @@ export function CloseOut({ id }: { id: string }) {
   const queuedFrames = waiting.frames.filter((frame) => frame.job_id === id).length;
   const later = day.state === "loaded" ? nextAfter(day.value, job, states ?? NOTHING_HEARD) : null;
   const notFitted = outcome === "partial" && said?.outcome === "partial" && said.reason === NO_PIECE;
+  const closing = waiting.events.some((event) => event.job_id === id && event.kind === "outcome");
 
   return (
     <main className={classes(frame.screen, light.paperScreen)} data-look="light">
@@ -196,7 +197,7 @@ export function CloseOut({ id }: { id: string }) {
         )}
         {/* A card the phone kept from before one visits names no link. */}
         {job.one_visit && job.payment_link !== null && <PaymentLink job={job} link={job.payment_link} />}
-        {outcome === "partial" && <FinishTheWork job={job} />}
+        {outcome === "partial" && <FinishTheWork job={job} closing={closing} />}
         {later !== null && <NextUp next={later} name={names.get(later.id) ?? where(later.sector)} />}
       </section>
 
