@@ -68,13 +68,12 @@ export function LanguageRow() {
 }
 
 /** The sign-in's switch: the other language, by its own name. */
-export function LanguageToggle({ className }: { readonly className?: string }) {
+export function LanguageToggle() {
   const other: Language = useLanguage() === "hi" ? "en" : "hi";
   return (
     <Button
       variant="outline"
       size="small"
-      className={className}
       lang={other}
       onClick={() => {
         chooseLanguage(other);
