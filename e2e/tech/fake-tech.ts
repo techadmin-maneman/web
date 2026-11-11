@@ -442,7 +442,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         return reply(route, 201, fake.sos);
       }
       if (fake.sos !== null && path === `/api/tech/sos/${fake.sos.id}/position`) {
-        fake.positions.push(route.request().postDataJSON() as unknown);
+        fake.writes.push({ path, eventId, startsAt, body: route.request().postDataJSON() as unknown });
         return reply(route, 204);
       }
       if (fake.sos !== null && path === `/api/tech/sos/${fake.sos.id}/safe`) {

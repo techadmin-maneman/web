@@ -3438,7 +3438,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Raise an SOS: ops are paged at once with the technician, the visit and where they are */
+        /** Raise an SOS: ops are paged at once with the technician and the visit; the console's banner shows where they are */
         post: {
             parameters: {
                 query?: never;

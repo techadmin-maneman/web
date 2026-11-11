@@ -60,6 +60,10 @@ test("an SOS held for three seconds goes with the visit and where the phone is, 
   await expect(page.getByText(safety.sentBody)).toBeVisible();
   const sent = fake.writes.find((write) => write.path === "/api/tech/sos");
   expect(sent?.body).toMatchObject({ job_id: JOB_ID, position: { lat: 28.39, lng: 77.07 } });
+  // The closer reading follows to the SOS itself, and raises nothing again.
+  const closer = `/api/tech/sos/${fake.sos?.id ?? ""}/position`;
+  await expect.poll(() => fake.writes.filter((write) => write.path === closer).length).toBe(1);
+  expect(fake.writes.filter((write) => write.path === "/api/tech/sos")).toHaveLength(1);
 
   await page.getByRole("button", { name: safety.safe }).click();
   await expect(page.getByText(safety.safeSaid)).toBeVisible();
@@ -98,6 +102,29 @@ test("says ops can see the location only while the visit is under way", async ({
   await expect(page.getByText(safety.sharing)).toHaveCount(0);
 });
 
+test("still says the location is shared once a check-in made with no signal lands", async ({ page, context }) => {
+  const fake = await fakeTech(page);
+  fake.startsAt = new Date(Date.now() - 60 * 60_000).toISOString();
+  await atTheDoor(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toBeVisible();
+  fake.online = false;
+  await context.setOffline(true);
+  await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.notHome.door.title })).toBeVisible();
+  await page.getByRole("button", { name: safety.open }).click();
+  await expect(page.getByText(safety.sharing)).toBeVisible();
+  await page.getByRole("dialog", { name: safety.title }).getByRole("button", { name: safety.close }).click();
+
+  // Signal back: the check-in lands on the same screen, and leaves the outbox.
+  fake.online = true;
+  await context.setOffline(false);
+  await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/checkin")).length).toBe(1);
+  await expect(page.getByText(/^No signal\. The wait counts from your tap/)).toHaveCount(0);
+  await page.getByRole("button", { name: safety.open }).click();
+  await expect(page.getByText(safety.sharing)).toBeVisible();
+});
+
 test("an SOS that cannot go says to call ops or 112 now", async ({ page }) => {
   const fake = await onAStep(page);
   fake.sosRefused = true;
@@ -105,7 +132,7 @@ test("an SOS that cannot go says to call ops or 112 now", async ({ page }) => {
   await expect(page.getByRole("alert").filter({ hasText: safety.failed })).toBeVisible();
 });
 
-test("an I'm safe that cannot go says to call ops, and the SOS stands", async ({ page }) => {
+test("an I'm safe that cannot go says to call ops, and forgets it for the next SOS", async ({ page }) => {
   const fake = await onAStep(page);
   await hold(page, 3400);
   await expect(page.getByText(safety.sentBody)).toBeVisible();
@@ -113,6 +140,15 @@ test("an I'm safe that cannot go says to call ops, and the SOS stands", async ({
   await page.getByRole("button", { name: safety.safe }).click();
   await expect(page.getByRole("alert").filter({ hasText: safety.safeFailed })).toBeVisible();
   await expect(page.getByText(safety.safeSaid)).toHaveCount(0);
+
+  // Ops handle it; a new SOS on the same screen says nothing of the failed word before it.
+  fake.sosRefused = false;
+  fake.sos = null;
+  await page.getByRole("button", { name: safety.close }).click();
+  await page.getByRole("button", { name: safety.open }).click();
+  await hold(page, 3400);
+  await expect(page.getByText(safety.sentBody)).toBeVisible();
+  await expect(page.getByText(safety.safeFailed)).toHaveCount(0);
 });
 
 test("shares where the phone is every two minutes while a visit is under way", async ({ page }) => {

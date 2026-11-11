@@ -29,7 +29,7 @@ function OneSos({ sos, mayHandle, onHandled }: { sos: OpenSos; mayHandle: boolea
       <div className={styles.what}>
         <p className={styles.title}>{copy.title(sos.technician.name, indiaClock(sos.sent_at))}</p>
         <p className={styles.line}>
-          {sos.visit === null ? copy.noVisit : copy.visit(sos.visit.client_name ?? "", indiaClock(sos.visit.starts_at))}
+          {sos.visit === null ? copy.noVisit : copy.visit(sos.visit.client_name, indiaClock(sos.visit.starts_at))}
           {" · "}
           {sos.safe_at === null ? copy.call : copy.safe(indiaClock(sos.safe_at))}
         </p>

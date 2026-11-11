@@ -72,7 +72,8 @@ const ownSosRoute = techRoute({
 const sosRoute = techRoute({
   method: "post",
   path: "/api/tech/sos",
-  summary: "Raise an SOS: ops are paged at once with the technician, the visit and where they are",
+  summary:
+    "Raise an SOS: ops are paged at once with the technician and the visit; the console's banner shows where they are",
   request: {
     body: {
       required: true,

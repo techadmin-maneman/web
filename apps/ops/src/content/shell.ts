@@ -14,8 +14,9 @@ export const shell = {
   sos: {
     /** "SOS from Imran Qureshi, 9:41 am" */
     title: (technician: string, time: string) => `SOS from ${technician}, ${time}`,
-    /** "Rohit Malhotra's visit, 11:30 am" */
-    visit: (client: string, time: string) => `${client}’s visit, ${time}`,
+    /** "Rohit Malhotra's visit, 11:30 am"; "Visit at 11:30 am" for a client since erased */
+    visit: (client: string | null, time: string) =>
+      client === null ? `Visit at ${time}` : `${client}’s visit, ${time}`,
     noVisit: "Not on a visit",
     /** "Where they were at 9:41 am": the last position heard, which may not be where they are now. */
     map: (time: string) => `Where they were at ${time}`,

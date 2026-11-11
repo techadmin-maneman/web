@@ -108,7 +108,7 @@ describe("an SOS", () => {
   const raise = (job: Working, position: object | null = reading(0)) =>
     job.post("/api/tech/sos", { job_id: JOB, position }, "sos");
 
-  it("pages ops once, urgently, with whose it is, the visit and a map", async () => {
+  it("pages ops once, urgently, with whose it is and the visit, and no position", async () => {
     const job = await checkedIn();
     const raised = await raise(job);
     expect(raised.status).toBe(201);
@@ -165,17 +165,36 @@ describe("an SOS", () => {
     expect(job.deps.alerts.filter((alert) => alert.startsWith("SOS from"))).toHaveLength(2);
   });
 
-  it("pages ops at most once in five minutes, however often it is raised and said safe", async () => {
-    const job = await checkedIn();
+  it("pages a raise after a safe ops were told at once, and no more within five minutes", async () => {
+    let now = NOW;
+    const job = await working("service", { now: () => now });
+    await job.post(`/api/tech/jobs/${JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
     const { id } = await (await raise(job)).json<{ id: string }>();
     for (const round of [1, 2, 3, 4, 5]) {
+      now = new Date(NOW.getTime() + round * 30_000);
       await job.post(`/api/tech/sos/${id}/safe`, undefined, `safe-${String(round)}`);
+      now = new Date(now.getTime() + 10_000);
       await raise(job, reading(round));
     }
-    expect(job.deps.alerts.filter((alert) => alert.startsWith("SOS from"))).toHaveLength(1);
+    // Raised, said safe, raised again: each is paged. The flip-flops after them, inside the five minutes, page nothing.
+    expect(job.deps.alerts.filter((alert) => alert.startsWith("SOS from"))).toHaveLength(2);
     expect(job.deps.alerts.filter((alert) => alert.includes("says they are safe"))).toHaveLength(1);
-    // The banner says where it stands all the same: raised again, not safe.
+    // Ops' last word is the SOS: its alert stands open, and the safe one is closed.
+    const { results } = await env.DB.prepare(
+      "SELECT key FROM alerts WHERE key LIKE 'sos%' AND resolved_at IS NULL",
+    ).all<{ key: string }>();
+    expect(results.map((row) => row.key)).toEqual([`sos:${id}`]);
     expect(await (await job.get("/api/tech/sos")).json()).toMatchObject({ sos: { id, safe: false } });
+  });
+
+  it("is raised again on the visit and with the position it carries, not the first one's", async () => {
+    const job = await checkedIn();
+    const { id } = await (await raise(job)).json<{ id: string }>();
+    await job.post(`/api/tech/sos/${id}/safe`, undefined, "safe");
+    await job.post("/api/tech/sos", { job_id: null, position: reading(3, 28.5) }, "sos-again");
+    const { open } = await (await job.opsGet("/api/sos")).json<{ open: unknown[] }>();
+    expect(open).toHaveLength(1);
+    expect(open[0]).toMatchObject({ id, visit: null, position: { lat: 28.5 }, safe_at: null });
   });
 
   it("takes a closer reading on the open SOS without raising it again", async () => {

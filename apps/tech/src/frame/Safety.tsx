@@ -149,12 +149,16 @@ function useSos(jobId: string | null) {
   const [safeFailed, setSafeFailed] = useState(false);
   const [sending, once] = useOneAtATime();
   const ownId = useRef<string | null>(null);
+  // Counts the raises, so a read that set out before one never undoes what it answered.
+  const raised = useRef(0);
   const read = async () => {
+    const before = raised.current;
     const answer = await api.ownSos();
-    if (!answer.ok) return;
+    if (!answer.ok || raised.current !== before) return;
     // Handled by ops since: the sheet starts afresh.
     if (answer.body.sos === null) {
       ownId.current = null;
+      setSafeFailed(false);
       setSos((was) => (was.state === "sent" ? { state: "none" } : was));
       return;
     }
@@ -163,6 +167,8 @@ function useSos(jobId: string | null) {
   };
   const raise = () =>
     once(async () => {
+      raised.current += 1;
+      setSafeFailed(false);
       const answer = await api.sos(jobId, await readPosition("quick"));
       if (!answer.ok) {
         setSos({ state: "failed" });

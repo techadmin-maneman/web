@@ -117,8 +117,8 @@ export async function openSosOf(db: D1Database, technicianId: string): Promise<O
 
 /**
  * Raises the technician's SOS, on the visit they are on where there is one. A second while the first is open is the
- * first, its position brought up to date; one after they said they are safe raises it again, from now. `fresh` says
- * whether this one raised it, so ops are paged once for each.
+ * first, its position brought up to date; one after they said they are safe raises it again, from now, on the visit
+ * and with the position this one carries. `fresh` says whether this one raised it, so ops are paged for each.
  */
 export async function raiseSos(
   db: D1Database,
@@ -144,10 +144,19 @@ export async function raiseSos(
     // Said safe, and in need again: it is raised again, from now.
     db
       .prepare(
-        `UPDATE sos_alerts SET safe_at = NULL, sent_at = ?2
+        `UPDATE sos_alerts SET safe_at = NULL, sent_at = ?2, appointment_id = ?3, lat = ?4, lng = ?5, accuracy_m = ?6,
+                position_at = ?7
           WHERE technician_id = ?1 AND handled_at IS NULL AND safe_at IS NOT NULL`,
       )
-      .bind(input.technicianId, input.now.toISOString()),
+      .bind(
+        input.technicianId,
+        input.now.toISOString(),
+        input.appointmentId,
+        position?.lat ?? null,
+        position?.lng ?? null,
+        position?.accuracy_m ?? null,
+        position?.at ?? null,
+      ),
     ...(position === null ? [] : [sosPositionStatement(db, input.technicianId, position)]),
   ]);
   const open = await openSosOf(db, input.technicianId);
@@ -158,7 +167,8 @@ export async function raiseSos(
 
 /**
  * Whether ops are to be paged now with the SOS, or with its "I'm safe": once, and again only once
- * PAGE_AGAIN_AFTER_MINUTES have passed since the last, which it notes. Between, the banner says where it stands.
+ * PAGE_AGAIN_AFTER_MINUTES have passed since the last, which it notes. An SOS raised again after a safe ops were told
+ * is paged at once all the same, so ops' last word is never "safe" while it stands.
  */
 export async function pageDue(
   db: D1Database,
@@ -170,7 +180,8 @@ export async function pageDue(
     input.kind === "sos"
       ? db.prepare(
           `UPDATE sos_alerts SET paged_at = ?2
-            WHERE id = ?1 AND handled_at IS NULL AND (paged_at IS NULL OR paged_at < ?3)`,
+            WHERE id = ?1 AND handled_at IS NULL
+              AND (paged_at IS NULL OR paged_at < ?3 OR (safe_paged_at IS NOT NULL AND safe_paged_at >= paged_at))`,
         )
       : db.prepare(
           `UPDATE sos_alerts SET safe_paged_at = ?2
