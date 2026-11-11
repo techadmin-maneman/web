@@ -2,6 +2,7 @@
 // many are new and opens the inbox, newest first, which reads them; a row opens its job; Send me turns a kind off; Me
 // opens Alerts too, and says how many kinds are on.
 
+import { generateKeyPairSync } from "node:crypto";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -13,6 +14,20 @@ import * as techCopy from "../../apps/tech/src/content.ts";
 const copy = techCopy.alerts;
 
 type Alert = Fake["inbox"]["alerts"][number];
+
+/**
+ * The public key the API gives for the phone's push service: a P-256 point, uncompressed and base64url, made for this
+ * run so no key is written in the test.
+ */
+function aPushKey(): string {
+  const { x = "", y = "" } = generateKeyPairSync("ec", { namedCurve: "prime256v1" }).publicKey.export({
+    format: "jwk",
+  });
+  return Buffer.concat([Buffer.from([4]), Buffer.from(x, "base64url"), Buffer.from(y, "base64url")]).toString(
+    "base64url",
+  );
+}
+const pushKey = aPushKey();
 
 function alertOf(fields: Partial<Alert>): Alert {
   const sent = new Date(Date.now() - 60_000);
@@ -144,7 +159,7 @@ test("Turn on asks the phone, once tapped, and gives the API the phone's push ad
   const fake = await fakeTech(page);
   fake.inbox = {
     ...fake.inbox,
-    push_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U",
+    push_key: pushKey,
   };
   await phoneNotifications(page, "default", "takes");
   await page.goto("/alerts");
@@ -158,7 +173,7 @@ test("says when the push service refuses, and Turn on can be tried again", async
   const fake = await fakeTech(page);
   fake.inbox = {
     ...fake.inbox,
-    push_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U",
+    push_key: pushKey,
   };
   await phoneNotifications(page, "default", "refuses");
   await page.goto("/alerts");
@@ -172,7 +187,7 @@ test("says when the phone's settings block notifications", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.inbox = {
     ...fake.inbox,
-    push_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U",
+    push_key: pushKey,
   };
   await phoneNotifications(page, "denied", "takes");
   await page.goto("/alerts");
@@ -229,7 +244,7 @@ test("a phone subscribed with a key since replaced subscribes again with the new
   const fake = await fakeTech(page);
   fake.inbox = {
     ...fake.inbox,
-    push_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U",
+    push_key: pushKey,
   };
   await phoneNotifications(page, "granted", "held");
   await page.goto("/");
