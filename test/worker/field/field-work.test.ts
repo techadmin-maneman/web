@@ -348,6 +348,33 @@ describe("a closed job", () => {
     expect(await afterFront()).toEqual(kept);
   });
 
+  // Ops sent a blurred set back (docs/decisions/0246-closed-and-sent-back.md).
+  it("takes a set ops sent back, hours after the close, each angle in place of its first take, which goes", async () => {
+    await work(CLOSED_AT, TODAY_JOB, UP_TO_THE_OUTCOME);
+    const first = await (await askForUploadLinkAt(CLOSED_AT)).json<{ upload_url: string }>();
+    await putPhotoAt(CLOSED_AT, first.upload_url, syntheticJpeg(1200, 1600, "first"));
+    const firstTake = (await afterFront()) as { r2_key: string };
+    await work(CLOSED_AT, TODAY_JOB, [["outcome", { outcome: "done" }, 80]]);
+    const sentBack = await opsPost(
+      `/api/visits/${TODAY_JOB}/send-back`,
+      { step: "after_photos", reason: "The front is blurred." },
+      fakeDependencies({ now: () => minutesAfterClose(120) }),
+    );
+    expect(sentBack.status).toBe(204);
+
+    const later = minutesAfterClose(180);
+    const link = await (await askForUploadLinkAt(later)).json<{ upload_url: string }>();
+    expect((await putPhotoAt(later, link.upload_url, syntheticJpeg(1200, 1600, "retake"))).status).toBe(200);
+    const retake = (await afterFront()) as { r2_key: string };
+    expect(retake.r2_key).not.toBe(firstTake.r2_key);
+    expect(await env.CLIENT_PHOTOS.head(firstTake.r2_key)).toBeNull();
+    expect(await env.CLIENT_PHOTOS.head(retake.r2_key)).not.toBeNull();
+
+    // The set lands again, and with that it is closed like the rest.
+    expect((await postAt(later, stepPath("photos"), { phase: "after" }, uuidv7At(200))).status).toBe(202);
+    await refusedAsClosed(await askForUploadLinkAt(minutesAfterClose(181)));
+  });
+
   it("takes a corrected checklist and count of what was used for an hour after the close, and nothing after", async () => {
     await closedAsDone();
 

@@ -25,7 +25,11 @@ describe("a visit's story", () => {
 
   it("is nothing before the technician arrives, and no visit outside the caller's reach", async () => {
     const job = await working("service");
-    expect(await (await request(job.ops, `/api/visits/${JOB}/story`)).json()).toEqual({ steps: [] });
+    expect(await (await request(job.ops, `/api/visits/${JOB}/story`)).json()).toEqual({
+      steps: [],
+      sent_back: [],
+      may_send_back: [],
+    });
     expect((await request(job.ops, "/api/visits/00000000-0000-4000-8000-000000000000/story")).status).toBe(404);
   });
 });

@@ -1,0 +1,37 @@
+/* The dialog a job cancelled or given away opens (./Interrupted.tsx): a panel on paper, in the new look, over the
+   screen. The dialog itself draws nothing: it opens outside every screen's look, so the panel carries it. */
+
+.dialog {
+  max-width: calc(100% - 2 * var(--sp-16));
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.panel {
+  padding: var(--sp-24) var(--screen-gutter);
+  border-radius: var(--ui-radius-button);
+  background: var(--ui-ground);
+  color: var(--ui-text);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+  color: var(--ui-strong);
+}
+
+.body {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-145);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin-top: var(--sp-24);
+}

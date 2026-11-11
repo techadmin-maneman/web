@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0246. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0247. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -137,6 +137,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0243](0243-job-and-the-door.md) The job and the door in the new look
 - [0244](0244-the-visit-engine.md) The visit engine, its plan, and the photographs
 - [0245](0245-the-steps.md) The visit's steps in the new look
+- [0246](0246-closed-and-sent-back.md) Closed, and a step sent back
 
 ### Money and Books
 
@@ -310,7 +311,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0025](0025-phase-2-conflicts-register.md) | Phase 2: the conflicts register | 2026-09-22 | accepted, and kept up to date | [0200](0200-staging-tenants-of-its-own.md) |
 | [0026](0026-hosts-and-surfaces.md) | Hosts and surfaces | 2026-09-22 | accepted |  |
 | [0027](0027-referral-landing.md) | The referral landing: a Worker beside the site's assets | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md) |
-| [0028](0028-photographs-from-the-app.md) | Photographs from the technician app | 2026-09-23 | accepted | [0093](0093-the-storage-meter.md) |
+| [0028](0028-photographs-from-the-app.md) | Photographs from the technician app | 2026-09-23 | accepted | [0093](0093-the-storage-meter.md), [0246](0246-closed-and-sent-back.md) |
 | [0029](0029-sessions.md) | Sessions for the client app | 2026-09-22 | accepted |  |
 | [0030](0030-one-time-codes.md) | One-time codes for the client app's login | 2026-09-22 | accepted | [0070](0070-vendor-correctness.md), [0097](0097-staging-logins-open-reminders-fenced.md) |
 | [0031](0031-access-and-audit.md) | Access on the ops surface, and the audit log | 2026-09-22 | accepted | [0072](0072-ops-clients-and-queues.md) |
@@ -525,4 +526,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0242](0242-client-record.md) | A client's record for the technicians: alerts, the handoff note, and their history | 2026-11-11 | accepted |  |
 | [0243](0243-job-and-the-door.md) | The job and the door in the new look | 2026-11-11 | accepted |  |
 | [0244](0244-the-visit-engine.md) | The visit engine, its plan, and the photographs | 2026-11-11 | accepted | [0245](0245-the-steps.md) |
-| [0245](0245-the-steps.md) | The visit's steps in the new look | 2026-11-12 | accepted |  |
+| [0245](0245-the-steps.md) | The visit's steps in the new look | 2026-11-12 | accepted | [0246](0246-closed-and-sent-back.md) |
+| [0246](0246-closed-and-sent-back.md) | Closed, and a step sent back | 2026-11-11 | accepted |  |

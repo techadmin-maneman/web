@@ -23,6 +23,8 @@
   --ui-text-soft: var(--ink-500);
   --ui-text-muted: var(--ink-500);
   --ui-text-quiet: var(--ink-500);
+  /* A toggle not yet chosen reads in the text's full ink, as the brief's choices do: muted, it read as switched off. */
+  --ui-toggle-text: var(--ink-900);
   --ui-hint: var(--ink-500);
   --ui-line: var(--line-200);
   --ui-line-control: var(--stone);
@@ -120,6 +122,7 @@
   --ui-text-soft: var(--mist-300);
   --ui-text-muted: var(--mist-300);
   --ui-text-quiet: var(--mist-300);
+  --ui-toggle-text: var(--mist-300);
   --ui-hint: var(--mist-300);
   --ui-tint: var(--camera-700);
   --ui-raised: var(--camera-900);

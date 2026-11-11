@@ -12,7 +12,7 @@ import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { CardFrame, nameOf } from "../frame/CardFrame.tsx";
 import { kindNameLower } from "../lib/kind.ts";
-import { done, nextStep } from "../lib/progress.ts";
+import { done, nextStep, sentBackFor } from "../lib/progress.ts";
 import { useMinute } from "../lib/useMinute.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useJob } from "../lib/useDay.ts";
@@ -64,8 +64,9 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
   const refused = new Set<string>(
     queued.filter((event) => event.job_id === job.id && event.state === "refused").map((event) => event.kind),
   );
+  // A step ops sent back needs a fix as a refused one does, and says what they want put right (ADR 0246).
   const stateOf = (event: string): State => {
-    if (refused.has(event)) return "fix";
+    if (refused.has(event) || sentBackFor(job, queued, event) !== null) return "fix";
     if (sent.has(event)) return "done";
     return event === now ? "now" : "todo";
   };
@@ -84,7 +85,12 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
       </section>
       {toFix.length > 0 && (
         <ProblemCard className={styles.fixCard} title={copy.plan.needsFix}>
-          {toFix.map((screen) => screen.title).join(", ")}
+          {toFix
+            .map((screen) => {
+              const reason = sentBackFor(job, queued, screen.event);
+              return reason === null ? screen.title : copy.plan.sentBack(screen.title, reason);
+            })
+            .join(". ")}
         </ProblemCard>
       )}
       <ListRows className={styles.list} label={copy.plan.title}>

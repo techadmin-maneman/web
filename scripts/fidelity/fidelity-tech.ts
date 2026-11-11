@@ -220,6 +220,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     profile: null,
     client_alerts: [],
     handoff: null,
+    sent_back: [],
   };
 };
 
@@ -521,7 +522,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
   await done.getByRole("button", { name: "Done", exact: true }).click();
   await done.clock.runFor(400);
   await done.getByRole("button", { name: "Next" }).click();
-  await done.getByText("Closed out").waitFor();
+  await done.getByText("Visit closed").waitFor();
   await settle(done);
   await pair({ dir: OUT, width: WIDTH, name: "b4-closed-out", design: outcomeBoard, built: await shot(done) });
   await done.close();

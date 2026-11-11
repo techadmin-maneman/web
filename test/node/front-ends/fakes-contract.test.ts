@@ -116,12 +116,16 @@ describe("the technician app’s fakes", () => {
 
   it("answers who is signed in and the day’s jobs as the document says", () => {
     expect(contractErrors("tech", "GET", "/api/tech/me", 200, tech.ME)).toEqual([]);
-    expect(contractErrors("tech", "GET", "/api/tech/jobs", 200, { date: today, jobs: tech.jobsToday(today) })).toEqual(
-      [],
-    );
+    expect(
+      contractErrors("tech", "GET", "/api/tech/jobs", 200, { date: today, jobs: tech.jobsToday(today), sent_back: [] }),
+    ).toEqual([]);
     const tomorrow = tech.dayAfter(today);
     expect(
-      contractErrors("tech", "GET", "/api/tech/jobs", 200, { date: tomorrow, jobs: tech.jobsTomorrow(today) }),
+      contractErrors("tech", "GET", "/api/tech/jobs", 200, {
+        date: tomorrow,
+        jobs: tech.jobsTomorrow(today),
+        sent_back: [],
+      }),
     ).toEqual([]);
   });
 

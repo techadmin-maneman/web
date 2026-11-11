@@ -158,3 +158,27 @@ export function ninthRelease(cards: readonly object[]): Promise<void> {
     };
   });
 }
+
+/** A database as the build before the card carried the steps ops sent back left it, at version 10, with these cards. */
+export function tenthRelease(cards: readonly object[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE, 10);
+    request.onupgradeneeded = (event) => {
+      const upgrade = request.transaction;
+      if (upgrade === null) return;
+      for (const step of UPGRADES.slice(event.oldVersion, 10)) step(request.result, upgrade);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction("cards", "readwrite");
+      for (const card of cards) transaction.objectStore("cards").put(card);
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onabort = () => {
+        reject(new Error("could not seed the tenth release’s cards"));
+      };
+    };
+  });
+}

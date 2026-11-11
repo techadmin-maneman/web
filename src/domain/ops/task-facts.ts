@@ -2,6 +2,7 @@
 // as one JSON object, and the board answers them typed, so the console reads fields rather than words by position.
 
 import type { ShortReason } from "../../policy/consumable-shortfall.ts";
+import type { FinishAsk } from "../../policy/finish-the-work.ts";
 import { PARTIAL_REASONS } from "../../config/job-sheet.ts";
 import type { BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
@@ -56,6 +57,8 @@ export type TaskFacts =
       readonly reason_code: string | null;
       /** The reason in the words ops gave it, or the job sheet's. */
       readonly reason: string | null;
+      /** How the technician suggested finishing it (docs/decisions/0246-closed-and-sent-back.md); null for none. */
+      readonly ask: FinishAsk | null;
     }
   | {
       readonly group: "consumables_short";

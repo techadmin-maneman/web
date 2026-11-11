@@ -33,6 +33,8 @@ export const stepsOf = (job: Job): InJobStep[] => {
 /** Everything this job has sent, whether it reached us or is still on the phone. */
 export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   const sent = new Set<string>(job.progress.steps_done);
+  // A step ops sent back is to do again, until the phone sends it again (docs/decisions/0246-closed-and-sent-back.md).
+  for (const back of job.sent_back) sent.delete(back.kind);
   if (job.progress.checked_in_at !== null) sent.add("check_in");
   if (job.progress.started_at !== null) sent.add("start");
   for (const event of queued) {
@@ -72,6 +74,17 @@ export function outcomeOf(job: Tracked, queued: readonly Queued[]): Outcome | nu
 }
 
 export const closed = (job: Tracked, queued: readonly Queued[]): boolean => outcomeOf(job, queued) !== null;
+
+/** Why ops sent this step back, while the phone has not sent it again; null for a step not sent back. */
+export function sentBackFor(job: Job, queued: readonly Queued[], step: string): string | null {
+  const resent = queued.some((event) => event.job_id === job.id && event.kind === step && event.state === "waiting");
+  if (resent) return null;
+  return job.sent_back.find((one) => one.kind === step)?.reason ?? null;
+}
+
+/** The steps ops sent back that the phone has not sent again, in the visit's order. */
+export const stepsToFix = (job: Job, queued: readonly Queued[]): InJobStep[] =>
+  stepsOf(job).filter((step) => sentBackFor(job, queued, step) !== null);
 
 /** What a one visit's client decided at the piece step: the product's tier, or that they decided against the fit. */
 export type ClientChoice = NonNullable<Job["client_choice"]>;

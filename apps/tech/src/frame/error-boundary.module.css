@@ -1,7 +1,8 @@
 /* What ./ErrorBoundary.tsx alone draws; what it shares is in ./states.module.css. */
 
-/* A screen that failed to draw: the ink ground, filling the column as every screen does. */
+/* A screen that failed to draw: the new look's paper, filling the column as every screen does. */
 .broken {
   flex: 1;
-  background: var(--ink-deep);
+  background: var(--ui-ground);
+  color: var(--ui-text);
 }

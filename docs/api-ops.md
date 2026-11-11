@@ -13445,6 +13445,165 @@ What happened on a visit: each step the technician's phone landed, in order, and
 }
 ```
 
+### POST /api/visits/{id}/send-back
+
+Send a landed step back to the visit's technician, with why: their phone opens it again
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SendBack"
+}
+```
+
+**204**: Sent back: the step lands again, even after the close
+
+**400**: invalid_request: no reason
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such visit in the caller's cities, or a step it cannot send back
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: not_changeable: the step has not landed, or it is sent back already
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_changeable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/clients/{id}/remedies
 
 Give a client free service visits, with why: at once within the limit ops set, else for a manager
@@ -44952,10 +45111,86 @@ Request body:
         ],
         "additionalProperties": false
       }
+    },
+    "sent_back": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "before_photos",
+              "checklist",
+              "consumables",
+              "after_photos"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "kind",
+          "reason",
+          "sent_at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The steps sent back to the technician and not yet landed again (ADR 0246)."
+    },
+    "may_send_back": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "before_photos",
+          "checklist",
+          "consumables",
+          "after_photos"
+        ]
+      },
+      "description": "The landed steps ops may send back now: POST /api/visits/{id}/send-back."
     }
   },
   "required": [
-    "steps"
+    "steps",
+    "sent_back",
+    "may_send_back"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SendBack
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "step": {
+      "type": "string",
+      "enum": [
+        "before_photos",
+        "checklist",
+        "consumables",
+        "after_photos"
+      ],
+      "description": "The step: a set of photographs, the checklist, or the consumables."
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "Why, as ops write it: shown to the technician on the step."
+    }
+  },
+  "required": [
+    "step",
+    "reason"
   ],
   "additionalProperties": false
 }
@@ -46026,6 +46261,7 @@ Request body:
         "visit.close",
         "visit.checkin_waive",
         "visit.lost_reason",
+        "visit.step_send_back",
         "visit.move_accepted",
         "hair_profile.correct",
         "staff_note.write",
@@ -49544,13 +49780,27 @@ Request body:
             "null"
           ],
           "description": "In the words ops gave it, or the job sheet's."
+        },
+        "ask": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "tomorrow_morning",
+            "tomorrow_evening",
+            "ops_call",
+            null
+          ],
+          "description": "How the technician suggested finishing it: a time, or ops to call; null for none."
         }
       },
       "required": [
         "group",
         "kind",
         "reason_code",
-        "reason"
+        "reason",
+        "ask"
       ],
       "additionalProperties": false
     },

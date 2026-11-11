@@ -14,6 +14,7 @@ import { type PhoneClock, earliestCheckIn } from "../../policy/phone-clock.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "../clients/hair-profiles.ts";
 import { alertsForTechnician, type TechnicianAlert } from "../clients/client-alerts.ts";
 import { handoffFor, type Handoff } from "../clients/handoff-notes.ts";
+import { sentBackOf, type SentBack } from "./step-send-backs.ts";
 import { afterPhotosOf, type HistoryPhoto } from "./client-history.ts";
 import { codeOnVisit, type VisitCode } from "../money/discount-code-uses.ts";
 import { decisionAtVisit } from "../visits/one-visit.ts";
@@ -114,6 +115,8 @@ interface JobDetail extends JobSummary {
   readonly handoff: (Handoff & { readonly photos: HistoryPhoto[] }) | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
   readonly steps: CardStep[];
+  /** The steps ops sent back to the technician, with why, not yet landed again. */
+  readonly sent_back: SentBack[];
 }
 
 /** A one visit's discount code, and who gave it: the client as they booked, ops, or the technician. */
@@ -160,12 +163,13 @@ export async function jobDetail(
   const oneVisit = row.one_visit !== null;
   const windowStart = new Date(row.window_start);
   const job = { id: row.id, type, windowStart, technicianId: options.technicianId };
-  const [progress, products, paymentLink, discountCode, clientChoice, unlockedParts] = await Promise.all([
+  const [progress, products, paymentLink, discountCode, clientChoice, sentBack, unlockedParts] = await Promise.all([
     progressOf(db, job, options.waits),
     takesProfile(type, oneVisit) ? productsOn(db, indiaDate(windowStart)) : [],
     oneVisit ? paymentLinkOf(db, row.id) : null,
     oneVisit ? jobCodeOf(db, row.id) : null,
     oneVisit ? decisionAtVisit(db, row.id) : null,
+    sentBackOf(db, row.id),
     unlocked(windowStart, options.now, options.unlockHour) ? unlockedPartsOf(db, row) : null,
   ]);
   const summary = listingOf({
@@ -195,6 +199,7 @@ export async function jobDetail(
     client_alerts: [],
     handoff: null,
     steps: cardStepsFor(type, oneVisit),
+    sent_back: sentBack,
   };
   if (unlockedParts === null) return locked;
   return {

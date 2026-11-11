@@ -34,6 +34,7 @@ import {
   firstRelease,
   ninthRelease,
   seventhRelease,
+  tenthRelease,
   sixthRelease,
   thirdRelease,
 } from "./tech-first-release.ts";
@@ -122,6 +123,7 @@ const card = (id: string, date: string) =>
     profile: null,
     client_alerts: [],
     handoff: null,
+    sent_back: [],
   }) as Job;
 
 const arrival = {
@@ -493,6 +495,14 @@ describe("a card kept before it carried the client's alerts", () => {
     const { client_alerts: _alerts, handoff: _handoff, ...earlier } = card("a", TODAY);
     await ninthRelease([{ ...earlier, v: 2 }]);
     expect(await keptJob("a")).toMatchObject({ client_alerts: [], handoff: null });
+  });
+});
+
+describe("a card kept before it carried the steps ops sent back", () => {
+  it("says none were, until the card is read again", async () => {
+    const { sent_back: _sentBack, ...earlier } = card("a", TODAY);
+    await tenthRelease([{ ...earlier, v: 2 }]);
+    expect(await keptJob("a")).toMatchObject({ sent_back: [] });
   });
 });
 

@@ -275,6 +275,15 @@ interface ResendRow extends UnsentRow {
   paid_at: string | null;
 }
 
+/** A visit's payment link, by its own ID; null for a visit with none. */
+export async function linkOfVisit(db: D1Database, appointmentId: string): Promise<string | null> {
+  const row = await db
+    .prepare("SELECT id FROM payment_links WHERE appointment_id = ?1")
+    .bind(appointmentId)
+    .first<{ id: string }>();
+  return row?.id ?? null;
+}
+
 /**
  * Ops send a client's unpaid link again: Razorpay texts the link it made once more, and a link the close could not
  * have made is asked for now rather than at the cron's next run. A link already paid is not sent, nor one Razorpay

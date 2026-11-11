@@ -181,6 +181,25 @@ export const dispatch = {
       /** What the technician wrote at the door on a no-show, as they wrote it. */
       doorNote: (note: string) => `“${note}”`,
       doorPhoto: "Door photo in Charges",
+      /** A landed step ops send back to the technician, with why; their phone opens it again (ADR 0246). */
+      sendBack: {
+        action: "Send back",
+        /** Beneath a step sent back and not yet done again: why, as ops wrote it. */
+        sent: (reason: string) => `Sent back: ${reason}`,
+        reason: "What to fix",
+        needsReason: "Say what to fix to send it back.",
+        confirm: "Send back",
+        sending: "Sending back…",
+        errors: {
+          invalid_request: "Say what to fix.",
+          not_changeable: changed("Sent back already, or not done yet."),
+          not_found: changed("No longer on the board."),
+          not_permitted: NOT_PERMITTED,
+          offline: OFFLINE,
+          unconfirmed: UNCONFIRMED,
+          unknown: FAILED,
+        },
+      },
     },
     /** The way past the geofence, for a visit today they have not checked in to. */
     letIn: "Allow check-in",

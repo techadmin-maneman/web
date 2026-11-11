@@ -122,6 +122,16 @@ export interface Fake {
   /** The client's alerts and the last technician's note on the card; none unless a test gives them. */
   alerts: Card["client_alerts"];
   handoff: Card["handoff"];
+  /** The steps ops sent back on the first job, with why (docs/decisions/0246-closed-and-sent-back.md); none to begin. */
+  sentBack: Card["sent_back"];
+  /** A one visit's payment link on the card; none to begin. */
+  paymentLink: Card["payment_link"];
+  /** Set to refuse the link texted again with this code, as the API does past three a day. */
+  resendRefused: string | null;
+  /** True once ops have closed the job by hand: a write answers `409 already_closed`. */
+  closedByOps: boolean;
+  /** True for a past visit whose card has locked again, the day after it: no client, no address. */
+  relocked: boolean;
   /** Whether there is a photograph to compare each angle with, before the visit and after it. */
   compare: boolean;
   /** The client's history, as GET /api/tech/jobs/{id}/client-history answers. */
@@ -170,6 +180,21 @@ function reply(route: Route, status: number, body?: unknown): Promise<void> {
   assertInContract("tech", request.method(), new URL(request.url()).pathname, status, body);
   return body === undefined ? route.fulfill({ status }) : route.fulfill({ status, json: body });
 }
+
+/** A card as the API answers it once the visit has locked again, the day after: nothing of the client's. */
+const relockedOf = (card: Card): Card => ({
+  ...card,
+  day: "past",
+  unlocked: false,
+  address: null,
+  access_notes: null,
+  client: null,
+  pieces: null,
+  last_visit: null,
+  profile: null,
+  client_alerts: [],
+  handoff: null,
+});
 
 /** Whom a job went to, by first name, and when, as a `409 superseded` names the other technician. */
 type WentTo = { technician: string; at: string | null } | null;
@@ -266,6 +291,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     },
     alerts: [],
     handoff: null,
+    sentBack: [],
+    paymentLink: null,
+    resendRefused: null,
+    closedByOps: false,
+    relocked: false,
     history: { alerts: [], visits: [] },
     compare: false,
     photos: [],
@@ -273,6 +303,20 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     thumbnails: [],
     progress: NOTHING_DONE,
   };
+
+  /** The first job, as the day's list names it while steps of it are sent back. */
+  const toFix = (today: string) =>
+    fake.sentBack.length === 0
+      ? []
+      : [
+          {
+            id: JOB_ID,
+            starts_at: jobCard(today).starts_at,
+            type: fake.type,
+            client_name: "Rohit M.",
+            steps: fake.sentBack.map((one) => one.kind),
+          },
+        ];
 
   const jobCard = (today: string) =>
     card(today, fake.progress, {
@@ -293,6 +337,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       kitHairSystems: fake.kitHairSystems,
       alerts: fake.alerts,
       handoff: fake.handoff,
+      sentBack: fake.sentBack,
+      paymentLink: fake.paymentLink,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -388,6 +434,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
 
       const changed = fake.supersede;
       if (changed !== null) return refuse(route, 409, "superseded", changed, fake.wentTo);
+      if (fake.closedByOps) return refuse(route, 409, "already_closed");
       if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 409, "too_early_to_close");
 
       // A one visit's client may decide against the fit, when the piece step carries no label.
@@ -437,6 +484,12 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       }
       // A word to the client from the job (docs/decisions/0145-technician-presets.md).
       if (path.endsWith("/updates")) return reply(route, 200, { sent: true });
+      // From the close (docs/decisions/0246-closed-and-sent-back.md): the link texted again, and how to finish.
+      if (path.endsWith("/payment-link/resend")) {
+        if (fake.resendRefused !== null) return refuse(route, 429, fake.resendRefused);
+        return reply(route, 200, { outcome: "resent" });
+      }
+      if (path.endsWith("/finish-ask")) return reply(route, 204);
       if (path.endsWith("/no-show")) {
         fake.progress = { ...fake.progress, outcome: "no_show" };
         return reply(route, 200, {
@@ -450,6 +503,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       const step = stepOf(path, body as { phase?: string } | null);
       if (step !== null) {
         fake.progress = { ...fake.progress, steps_done: [...fake.progress.steps_done, step] };
+        // A step sent back is cleared by landing again, as the API's is.
+        fake.sentBack = fake.sentBack.filter((one) => one.kind !== step);
         if (step === "outcome") {
           const outcome = (body as { outcome?: string } | null)?.outcome ?? "done";
           fake.progress = { ...fake.progress, outcome };
@@ -471,13 +526,20 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       // Outside the contract on purpose: what a broken release might send, which the app must survive.
       if (fake.malformed) return route.fulfill({ json: { date, jobs: null } });
       if (date === today && fake.dayFails) return route.abort("failed");
-      if (date === dayBefore(today) && fake.yesterday) return reply(route, 200, { date, jobs: jobsYesterday(today) });
+      // The visits with steps sent back come with every day's list, whatever its date.
+      const sent_back = toFix(today);
+      if (date === dayBefore(today) && fake.yesterday) {
+        return reply(route, 200, { date, jobs: jobsYesterday(today), sent_back });
+      }
       if (date === today) {
         const progress = { started_at: fake.progress.started_at, outcome: fake.progress.outcome };
-        return reply(route, 200, { date, jobs: empty ? [] : jobsToday(date, fake.type, progress, fake.oneVisit) });
+        const jobs = empty ? [] : jobsToday(date, fake.type, progress, fake.oneVisit);
+        return reply(route, 200, { date, jobs, sent_back });
       }
-      if (date === dayAfter(today) && fake.tomorrow) return reply(route, 200, { date, jobs: jobsTomorrow(today) });
-      return reply(route, 200, { date, jobs: [] });
+      if (date === dayAfter(today) && fake.tomorrow) {
+        return reply(route, 200, { date, jobs: jobsTomorrow(today), sent_back });
+      }
+      return reply(route, 200, { date, jobs: [], sent_back });
     }
     if (path === "/api/tech/pieces/lookup") {
       const code = url.searchParams.get("code") ?? "";
@@ -511,7 +573,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (path === `/api/tech/jobs/${JOB_ID}`) {
       if (fake.slowCardMs > 0) await new Promise((resolve) => setTimeout(resolve, fake.slowCardMs));
       if (fake.moved) return refuse(route, 404, "not_found");
-      const answered = jobCard(today);
+      const answered = fake.relocked ? relockedOf(jobCard(today)) : jobCard(today);
       return reply(route, 200, fake.movedTo === null ? answered : { ...answered, starts_at: fake.movedTo });
     }
     if (path === `/api/tech/jobs/${LOCKED_JOB_ID}`) return reply(route, 200, lockedCard(today));

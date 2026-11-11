@@ -6,7 +6,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useState } from "react";
 import { apiNow } from "@maneman/web-kit/clock";
 import type { EventBody, Job, OutcomeRequest } from "../api.ts";
-import { closed, done, stepsOf } from "../lib/progress.ts";
+import { closed, done, sentBackFor, stepsOf } from "../lib/progress.ts";
 import type { KeptLoad } from "../lib/useDay.ts";
 import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
@@ -28,6 +28,8 @@ interface Standing<K extends InJobStep> {
   readonly retry: () => void;
   /** This step as it was sent and refused, when the technician is putting it right. */
   readonly refused: Queued | null;
+  /** Why ops sent this step back, while the phone has not sent it again (docs/decisions/0246-closed-and-sent-back.md). */
+  readonly sentBack: string | null;
   /** Every write still on the phone, of every job. */
   readonly queued: readonly Queued[];
   /** Queues this step's write, once however often it is tapped, and opens the next screen. */
@@ -46,9 +48,10 @@ export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
   const job = loaded.state === "loaded" ? loaded.value : null;
   const refused =
     waiting.events.find((event) => event.job_id === id && event.kind === step && event.state === "refused") ?? null;
-  // A step being put right opens: the outcome queued behind it has not landed. Finishing a step can close the job,
-  // and then the screen moves on by itself.
-  const leaves = !finishing && job !== null && refused === null && closed(job, waiting.events);
+  const sentBack = job === null ? null : sentBackFor(job, waiting.events, step);
+  // A step being put right opens, refused or sent back by ops: the job's close does not shut it. Finishing a step can
+  // close the job, and then the screen moves on by itself.
+  const leaves = !finishing && job !== null && refused === null && sentBack === null && closed(job, waiting.events);
 
   useEffect(() => {
     if (leaves) redirect(`/jobs/${id}`);
@@ -88,5 +91,14 @@ export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
     go(`/jobs/${id}/plan`);
   };
 
-  return { loaded: leaves ? LOADING : loaded, retry, refused, queued: waiting.events, finish, closeWith, back };
+  return {
+    loaded: leaves ? LOADING : loaded,
+    retry,
+    refused,
+    sentBack,
+    queued: waiting.events,
+    finish,
+    closeWith,
+    back,
+  };
 }

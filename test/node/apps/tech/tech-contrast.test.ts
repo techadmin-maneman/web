@@ -155,6 +155,11 @@ const REDRAWN = [
   "apps/tech/src/visit/",
   "apps/tech/src/steps/",
   "apps/tech/src/frame/light.module.css",
+  "apps/tech/src/frame/error-boundary.module.css",
+  "apps/tech/src/frame/ErrorBoundary.tsx",
+  "apps/tech/src/frame/interrupted.module.css",
+  "apps/tech/src/frame/Interrupted.tsx",
+  "apps/tech/src/waiting/",
 ];
 const slashed = (file: string) => file.replace(/\\/g, "/");
 const isRedrawn = (file: string) => REDRAWN.some((place) => slashed(file).startsWith(place));

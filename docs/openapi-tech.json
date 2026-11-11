@@ -507,11 +507,76 @@
             "items": {
               "$ref": "#/components/schemas/TechnicianDayJob"
             }
+          },
+          "sent_back": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "starts_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "type": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "consultation",
+                        "first_fit",
+                        "service",
+                        "replacement"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "client_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "While the visit is unlocked, as on the day's list; null past it."
+                },
+                "steps": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "before_photos",
+                      "checklist",
+                      "consumables",
+                      "after_photos"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "starts_at",
+                "type",
+                "client_name",
+                "steps"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The technician's visits, of any day, with steps ops sent back that have not landed again, oldest first (ADR 0246)."
           }
         },
         "required": [
           "date",
-          "jobs"
+          "jobs",
+          "sent_back"
         ],
         "additionalProperties": false,
         "description": "Jobs further out carry only time, type and sector."
@@ -1710,6 +1775,38 @@
           },
           "handoff": {
             "$ref": "#/components/schemas/Handoff"
+          },
+          "sent_back": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "before_photos",
+                    "checklist",
+                    "consumables",
+                    "after_photos"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "Why ops sent it back, as they wrote it."
+                },
+                "sent_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "kind",
+                "reason",
+                "sent_at"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and leaves this list once it has (ADR 0246)."
           }
         },
         "required": [
@@ -1754,7 +1851,8 @@
           "client_choice",
           "profile",
           "client_alerts",
-          "handoff"
+          "handoff",
+          "sent_back"
         ],
         "additionalProperties": false
       },
@@ -3891,6 +3989,44 @@
         },
         "required": [
           "code"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianLinkResent": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "resent",
+              "sent",
+              "not_texted",
+              "paid",
+              "refused"
+            ],
+            "description": "resent or sent: texted; not_texted: messaging may not text this number; paid: the client has paid; refused: Razorpay would not make it, and ops are told on the Tasks board."
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianFinishAsk": {
+        "type": "object",
+        "properties": {
+          "ask": {
+            "type": "string",
+            "enum": [
+              "tomorrow_morning",
+              "tomorrow_evening",
+              "ops_call"
+            ],
+            "description": "Tomorrow morning, tomorrow evening, or ops to call the client. A later one replaces it."
+          }
+        },
+        "required": [
+          "ask"
         ],
         "additionalProperties": false
       },
@@ -9517,6 +9653,411 @@
                               "type": "string",
                               "enum": [
                                 "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tech/jobs/{id}/payment-link/resend": {
+      "post": {
+        "summary": "Text a one visit's client its payment link again, from the visit's close",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What sending it again came to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianLinkResent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required; device_revoked; technician_inactive: ops switched the technician off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required",
+                                "device_revoked",
+                                "technician_inactive"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such job of this technician's, or no payment link on it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: texted three times today already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable: Razorpay did not answer; try again in a minute",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "unavailable"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tech/jobs/{id}/finish-ask": {
+      "post": {
+        "summary": "Suggest to ops how to finish a visit left partly done, or not fitted",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicianFinishAsk"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Kept on the visit's task, for ops to book"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required; device_revoked; technician_inactive: ops switched the technician off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required",
+                                "device_revoked",
+                                "technician_inactive"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such job of this technician's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_changeable: the visit is not closed partly done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_changeable"
                               ]
                             }
                           },

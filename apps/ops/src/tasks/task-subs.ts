@@ -75,7 +75,11 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   // The technician's reason in the job sheet's words, and the day they closed the visit.
   partial_visit: (facts, task) => {
     const reason = facts.reason_code === NO_PIECE ? copy.noPiece : (facts.reason ?? copy.noReason);
-    return copy.partial_visit(reason, shortDate(indiaDate(task.since)));
+    return copy.partial_visit(
+      reason,
+      shortDate(indiaDate(task.since)),
+      facts.ask === null ? null : copy.finishAsks[facts.ask],
+    );
   },
   // Why, whose job, and each consumable short of what was expected.
   consumables_short: (facts) =>

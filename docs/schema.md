@@ -18,7 +18,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Consents given and withdrawn | `consents` | Someone who said stop is messaged again | Adding the rows since `<T>`: they are only ever added |
 | Terms agreed to | `terms_acceptances` | A booking made since `<T>` has no record of the terms its client agreed to | Adding the rows since `<T>`: they are only ever added |
 | Revoked sessions and phones | `sessions`, `technician_devices` | A lost phone, or a session that was ended, works again | Revoking again: a phone in the console, a client's session with `sessions.revoked_at` |
-| Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
+| Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes`, `step_send_backs` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
@@ -163,6 +163,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [staff_notes](#staff_notes): Staff's short notes on a client, at the top of their page: a change writes a new note in the place of the one before, and one taken off is marked so, never deleted, until an erasure.
 - [staff_service_tokens](#staff_service_tokens): The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).
 - [standard_costs](#standard_costs): What each first fit and replacement product costs us, from its date, for the margin figures until stock lots carry what was paid; an old row stays for the visits under it (ADR 0152).
+- [step_send_backs](#step_send_backs): A landed step of a visit ops sent back to its technician with why; it lands again even after the close, which clears it (ADR 0246).
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 - [stock_lot_balances](#stock_lot_balances): What each place holds of each lot: the sum of its rows in `stock_lot_moves`, kept by triggers as each is written (ADR 0157).
 - [stock_lot_moves](#stock_lot_moves): What each movement moved of each lot, soonest to expire first, at the movement's place (ADR 0157).
@@ -2906,6 +2907,27 @@ Made by `0130_standard_costs.sql`.
 | `set_by` | TEXT | no |  |  |  |
 | `set_at` | TEXT | no |  |  |  |
 
+## step_send_backs
+
+A landed step of a visit ops sent back to its technician with why; it lands again even after the close, which clears it (ADR 0246).
+
+Made by `0204_step_send_backs.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `kind` | TEXT | no |  |  |  |
+| `reason` | TEXT | no |  |  |  |
+| `sent_by` | TEXT | no |  |  | The member of staff who sent it back, by their work e-mail; never shown on a phone. |
+| `sent_at` | TEXT | no |  |  |  |
+| `cleared_at` | TEXT | yes |  |  | When the step landed again, which clears it. |
+
+Indexes:
+
+- `step_send_backs_open`: unique on (`appointment_id`, `kind`), where `cleared_at IS NULL`
+- `step_send_backs_visit`: on (`appointment_id`, `sent_at`)
+
 ## stock_balances
 
 What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
@@ -3603,7 +3625,7 @@ Indexes:
 
 What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`.
+Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`, `0205_finish_the_work.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3620,6 +3642,8 @@ Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`.
 | `close_reason` | TEXT | yes |  |  |  |
 | `lost_reason` | TEXT | yes |  |  |  |
 | `going_ahead` | INTEGER | yes |  |  | After a consultation, the client's yes to a fit, kept beside the reason for a no (lost_reason): 1 for yes, 0 for no, NULL where the technician was not asked or the visit is no consultation. Only a new column, which the code deployed neither reads nor writes. |
+| `finish_ask` | TEXT | yes |  |  | Migration number: 0205 When a technician who left a visit partly done, or could not fit, suggests finishing it: tomorrow morning, tomorrow evening, or ops to call the client (docs/decisions/0246-closed-and-sent-back.md). Ops read it on the visit's task. Only new columns, which the code deployed neither reads nor writes. |
+| `finish_asked_at` | TEXT | yes |  |  |  |
 
 Indexes:
 

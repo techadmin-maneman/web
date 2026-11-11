@@ -6,6 +6,7 @@ import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { APPOINTMENT_STATUSES, STATUS_MEANINGS } from "../../domain/visits/visit-status.ts";
 import { PAYMENT_BADGES } from "../../policy/job-visibility.ts";
+import { SENT_BACK_KINDS } from "../../policy/in-job-steps.ts";
 
 const ServiceSchema = z
   .object({
@@ -126,6 +127,28 @@ const DayJobSchema = JobSummarySchema.extend({
 }).openapi("TechnicianDayJob");
 
 export const JobsSchema = z
-  .object({ date: z.iso.date(), jobs: z.array(DayJobSchema) })
+  .object({
+    date: z.iso.date(),
+    jobs: z.array(DayJobSchema),
+    sent_back: z
+      .array(
+        z
+          .object({
+            id: z.uuid(),
+            starts_at: z.iso.datetime(),
+            type: z.union([z.enum(VISIT_TYPES), z.null()]),
+            client_name: z.union([z.string(), z.null()]).openapi({
+              description: "While the visit is unlocked, as on the day's list; null past it.",
+            }),
+            steps: z.array(z.enum(SENT_BACK_KINDS)),
+          })
+          .strict(),
+      )
+      .openapi({
+        description:
+          "The technician's visits, of any day, with steps ops sent back that have not landed again, oldest first " +
+          "(ADR 0246).",
+      }),
+  })
   .strict()
   .openapi("TechnicianJobs", { description: "Jobs further out carry only time, type and sector." });

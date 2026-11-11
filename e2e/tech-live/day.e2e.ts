@@ -102,7 +102,7 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
   const closing = page.waitForResponse((answer) => answer.url().endsWith(`/api/tech/jobs/${id}/outcome`));
   await page.getByRole("button", { name: visit.close }).click();
   expect((await closing).status()).toBe(202);
-  await expect(page.getByText(`${day.client} · done`)).toBeVisible();
+  await expect(page.getByText(new RegExp(`^${day.client} · .+ · done$`))).toBeVisible();
 
   // Every write carried the start the phone holds, which is the API's own.
   expect(new Set(written)).toEqual(new Set([startsAt]));

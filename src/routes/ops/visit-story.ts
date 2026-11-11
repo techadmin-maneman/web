@@ -9,7 +9,8 @@ import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";
-import { JOB_EVENT_KINDS } from "../../policy/in-job-steps.ts";
+import { JOB_EVENT_KINDS, SENT_BACK_KINDS } from "../../policy/in-job-steps.ts";
+import { sendBacksOf } from "../../domain/field/step-send-backs.ts";
 
 const StorySchema = z
   .object({
@@ -35,6 +36,12 @@ const StorySchema = z
         })
         .strict(),
     ),
+    sent_back: z
+      .array(z.object({ kind: z.enum(SENT_BACK_KINDS), reason: z.string(), sent_at: z.iso.datetime() }).strict())
+      .openapi({ description: "The steps sent back to the technician and not yet landed again (ADR 0246)." }),
+    may_send_back: z.array(z.enum(SENT_BACK_KINDS)).openapi({
+      description: "The landed steps ops may send back now: POST /api/visits/{id}/send-back.",
+    }),
   })
   .strict()
   .openapi("VisitStory");
@@ -56,6 +63,7 @@ export function registerOpsVisitStory(app: App): void {
     if (!(await withinRouteReach(c, "visit", visitId))) return refuse(c, "not_found");
     const steps = await visitStory(c.env.DB, visitId);
     if (steps === null) return refuse(c, "not_found");
-    return c.json({ steps }, 200);
+    const sendBacks = await sendBacksOf(c.env.DB, visitId, new Set(steps.map((step) => step.kind)));
+    return c.json({ steps, sent_back: sendBacks.open, may_send_back: sendBacks.may }, 200);
   });
 }

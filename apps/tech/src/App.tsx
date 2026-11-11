@@ -6,6 +6,7 @@ import { CaptureScreen } from "./camera/CaptureScreen.tsx";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { classes } from "@maneman/ui/classes";
 import { Stopped, StorageFull } from "./frame/Banners.tsx";
+import { Interrupted } from "./frame/Interrupted.tsx";
 import { update } from "./content.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
 import { OptionsScreen } from "./job/OptionsScreen.tsx";
@@ -97,6 +98,9 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
         <UpdateReady copy={update} resting={route.page === "today"} onInk={!drawnLight(route.page)} />
         {/* A job's work stopped reaching us, said above every screen; the waiting screen says it job by job. */}
         {route.page !== "waiting" && <Stopped />}
+        {/* A job cancelled or given away under the phone, said once over any screen but the one that says it job by
+            job (ADR 0246). */}
+        {route.page !== "waiting" && <Interrupted />}
         {/* Keyed by the path, so each screen opens at its top with its own data, and one that failed stays behind. */}
         {tabbed ? (
           <>

@@ -199,6 +199,12 @@ function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] 
     // Found through the visit, which each is keyed on, so the lookups are indexed.
     db
       .prepare(
+        `DELETE FROM step_send_backs
+         WHERE appointment_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
+      )
+      .bind(personId),
+    db
+      .prepare(
         `UPDATE visit_changes SET cancel_reason = NULL
          WHERE appointment_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
       )

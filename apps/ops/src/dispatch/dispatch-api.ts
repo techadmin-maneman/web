@@ -3,6 +3,10 @@
 // client's (../api.ts), one function a route, so a call is found, and changed, in one place.
 
 import { client, type Landing, type Shown, type BoardQuery, moveBody, setOnly } from "../api.ts";
+import type { components } from "../api-schema.ts";
+
+/** A step ops may send back to the technician (docs/decisions/0246-closed-and-sent-back.md). */
+export type SentBackKind = components["schemas"]["SendBack"]["step"];
 
 export const dispatchApi = {
   /** What happened on a visit, step by step. */
@@ -43,4 +47,6 @@ export const dispatchApi = {
     client.post("/api/dispatch/proposals/{id}/withdraw", { path: { id: proposalId } }),
   /** Let the technician check in to the visit wherever their phone puts them, with why. */
   letIn: (id: string, reason: string) => client.post("/api/visits/{id}/let-in", { path: { id }, body: { reason } }),
+  sendBack: (id: string, step: SentBackKind, reason: string) =>
+    client.post("/api/visits/{id}/send-back", { path: { id }, body: { step, reason } }),
 };

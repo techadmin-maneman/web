@@ -58,6 +58,9 @@ export const RATE_LIMITS = {
   ops_address_suggest: { per: "day", limit: SUGGESTIONS_PER_DAY },
   // A visitor to the site's booking form, by their address's salted hash.
   site_address_suggest: { per: "day", limit: SUGGESTIONS_PER_DAY },
+  // A one visit's payment link texted again from the technician's phone, so a tap cannot flood the client
+  // (docs/decisions/0246-closed-and-sent-back.md).
+  "payment_link_resend:visit": { per: "day", limit: 3 },
   // A discount code checked, right or wrong, so none can be found by guessing (docs/decisions/0108-discount-codes.md).
   "discount_code:ip": { per: "hour", limit: CODE_CHECKS.perAddressHourly },
   "discount_code:person": { per: "day", limit: CODE_CHECKS.perNumberDaily },

@@ -6,8 +6,9 @@
 //
 // The link the app uploads to is a signed path on this host, good for fifteen
 // minutes and for one phase and angle. Each angle's latest upload is the
-// visit's photograph for that angle; the one it replaces stays in the bucket,
-// as a photograph is deleted only on purpose and audited.
+// visit's photograph for that angle; the take it replaces goes from the bucket
+// with its small copy (docs/decisions/0246-closed-and-sent-back.md), so a retake
+// keeps one photograph an angle.
 //
 // The phone also makes a small copy of each photograph for the client app's
 // rows (docs/decisions/0093-the-storage-meter.md). Each upload of a photograph
@@ -99,8 +100,8 @@ export async function storeTechnicianPhoto({
   if (info === null) return { kind: "not_an_image" };
 
   const at = now.toISOString();
-  // The set, made if it is the phase's first photograph, and its ID, in one round trip to D1.
-  const [, chosen] = await db.batch<{ id: string }>([
+  // The set, made if it is the phase's first photograph, its ID, and the take this one replaces, in one round trip.
+  const [, chosen, held] = await db.batch<{ id: string } | { r2_key: string; thumbnail_key: string | null }>([
     db
       .prepare(
         `INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, ?3, ?4)
@@ -110,9 +111,16 @@ export async function storeTechnicianPhoto({
     db
       .prepare("SELECT id FROM photo_sets WHERE appointment_id = ?1 AND phase = ?2")
       .bind(slot.appointmentId, slot.phase),
+    db
+      .prepare(
+        `SELECT p.r2_key, p.thumbnail_key FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id
+         WHERE s.appointment_id = ?1 AND s.phase = ?2 AND p.angle = ?3`,
+      )
+      .bind(slot.appointmentId, slot.phase, slot.angle),
   ]);
-  const set = chosen?.results[0];
+  const set = chosen?.results[0] as { id: string } | undefined;
   if (set === undefined) throw new Error("the photo set was not written");
+  const replaced = held?.results[0] as { r2_key: string; thumbnail_key: string | null } | undefined;
 
   const take = crypto.randomUUID();
   const key = `${takeKey(slot, take)}.${fileExtension(info.type)}`;
@@ -141,6 +149,11 @@ export async function storeTechnicianPhoto({
     )
     .first<{ id: string }>();
   if (row === null) throw new Error("the photograph was not written");
+  // A retake keeps one photograph an angle: the take it replaced goes, with its small copy.
+  if (replaced !== undefined) {
+    const gone = [replaced.r2_key, replaced.thumbnail_key].filter((old): old is string => old !== null && old !== key);
+    await deleteCounted(db, bucket, gone);
+  }
   return { kind: "stored", photoId: row.id, take, width: info.width, height: info.height };
 }
 

@@ -21,6 +21,7 @@
 
 import { firstNameOf } from "../../lib/names.ts";
 import { isNoShow, landsAfterClose, stepBefore, type JobEventKind } from "../../policy/in-job-steps.ts";
+import { clearSentBackStatement, isSentBack } from "./step-send-backs.ts";
 import { namesTheOtherTechnician } from "../../policy/job-visibility.ts";
 import { earliestCheckIn, doneOn, isOnVisitDay, tooEarlyToArrive, type PhoneClock } from "../../policy/phone-clock.ts";
 import type { WorkableJob } from "./workable-job.ts";
@@ -147,7 +148,10 @@ async function answeredWith(
     return { kind: "superseded", ...superseding };
   }
 
-  if (closed !== null && !landsAfterClose(input.kind, closed, input.now)) return { kind: "already_closed" };
+  // A step ops sent back lands after the close until it has landed again.
+  if (closed !== null && !landsAfterClose(input.kind, closed, input.now)) {
+    if (!(await isSentBack(db, input.job.id, input.kind))) return { kind: "already_closed" };
+  }
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
   if (startsTheDay && !isOnVisitDay(doneOn(input), input.job.windowStart)) return { kind: "not_today" };
@@ -202,9 +206,20 @@ export async function jobChangesSince(
   technicianId: string,
   expectedStart: Date | null,
 ): Promise<Superseding> {
-  const changed = supersededBy(job, technicianId, expectedStart);
+  // A visit the technician's own close ended partly done is theirs still: only ops ending it changed it under them.
+  const ownClose = job.status === "terminated" && (await closedByThePhone(db, job.id));
+  const changed = supersededBy(job, technicianId, expectedStart, ownClose);
   const moved = namesTheOtherTechnician(changed) ? await movedTo(db, job) : null;
   return { changed, moved };
+}
+
+/** Whether the phone's own close landed on the visit, rather than ops closing it. */
+async function closedByThePhone(db: D1Database, appointmentId: string): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT 1 FROM job_events WHERE appointment_id = ?1 AND kind = 'outcome' AND superseded = 0 LIMIT 1")
+    .bind(appointmentId)
+    .first();
+  return row !== null;
 }
 
 /**
@@ -227,9 +242,9 @@ export async function wasTechniciansJob(db: D1Database, job: WorkableJob, techni
 }
 
 /** What changed under the phone, by field name, a cancellation first. Empty when nothing did. */
-function supersededBy(job: WorkableJob, technicianId: string, expectedStart: Date | null): string[] {
+function supersededBy(job: WorkableJob, technicianId: string, expectedStart: Date | null, ownClose: boolean): string[] {
   const changed: string[] = [];
-  if (job.status === "cancelled" || job.status === "terminated") changed.push("status");
+  if (job.status === "cancelled" || (job.status === "terminated" && !ownClose)) changed.push("status");
   if (job.technicianId !== technicianId) changed.push("technician");
   if (expectedStart !== null && expectedStart.getTime() !== job.windowStart.getTime()) changed.push("time");
   return changed;
@@ -344,6 +359,7 @@ async function record(db: D1Database, input: LandingInput): Promise<JobEvent | n
     eventStatement({ db, input, state: "written", superseded: false }),
     ...(input.withEvent ?? []),
     ...input.records,
+    clearSentBackStatement(db, { appointmentId: input.job.id, kind: input.kind, now: input.now }),
   ]);
   const row = inserted?.results[0];
   return row === undefined ? null : eventOf(row);

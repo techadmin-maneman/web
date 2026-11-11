@@ -243,6 +243,9 @@ export const AUDIT_ACTIONS = [
   "visit.close",
   "visit.checkin_waive",
   "visit.lost_reason",
+  // A landed step ops sent back to the technician (docs/decisions/0246-closed-and-sent-back.md). The entry names the
+  // visit and the step, never a word of why.
+  "visit.step_send_back",
   "visit.move_accepted",
   // Ops correcting a client's hair profile, which keeps every version (docs/decisions/0106-a-clients-hair-profile.md).
   // The entry names the client and the version, never a word of the profile.
@@ -369,6 +372,7 @@ export function auditStatementIfWritten(
       | "partner_payouts"
       | "slot_times"
       | "technicians"
+      | "step_send_backs"
       | "visit_changes";
     readonly id: string;
   },

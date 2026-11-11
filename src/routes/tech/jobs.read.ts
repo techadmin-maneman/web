@@ -29,6 +29,7 @@ import {
 import { clientHistory, comparePhoto, historyPhoto } from "../../domain/field/client-history.ts";
 import { alertsForTechnician } from "../../domain/clients/client-alerts.ts";
 import { workableJob } from "../../domain/field/workable-job.ts";
+import { visitsToFix } from "../../domain/field/step-send-backs.ts";
 import { unlocked } from "../../policy/job-visibility.ts";
 import type { Ctx } from "./jobs.record.ts";
 
@@ -86,7 +87,11 @@ export function registerTechJobReads(app: App): void {
     const inputs = await opsInputs(c);
     const rules = { booking: inputs.bookingRules, drive: inputs.driveEstimate };
     const unlockHour = inputs.addressUnlockHour;
-    return c.json({ date, jobs: await jobsOn({ db: c.env.DB, technicianId, date, now, unlockHour, rules }) }, 200);
+    const [jobs, sentBack] = await Promise.all([
+      jobsOn({ db: c.env.DB, technicianId, date, now, unlockHour, rules }),
+      visitsToFix(c.env.DB, { technicianId, now, unlockHour }),
+    ]);
+    return c.json({ date, jobs, sent_back: sentBack }, 200);
   });
 
   app.openapi(jobRoute, async (c) => {

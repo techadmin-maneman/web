@@ -6,28 +6,27 @@
 // in the app's words — the API answers a code and the fields behind it, never a
 // sentence (apps/tech/src/content.ts). A step the API refused can be put right
 // where it stands, a refused photograph set retaken; deleting the job's work asks
-// a second time, since what it deletes never reaches us.
+// a second time, since what it deletes never reaches us. It is drawn in the new look
+// (docs/decisions/0246-closed-and-sent-back.md).
 
-import { IconButton } from "@maneman/ui/IconButton";
-import { ICONS, APP_ICONS } from "@maneman/brand/icons";
+import { APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
-import { Offline } from "../frame/Banners.tsx";
+import { NoSignal } from "../frame/Banners.tsx";
+import { CardFrame } from "../frame/CardFrame.tsx";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../content.ts";
 import { jobLabel } from "../lib/kind.ts";
 import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
-import { useScreen } from "../lib/useScreen.ts";
 import { apiDate, clock } from "../lib/when.ts";
 import { go, STEP_PATHS, stepPath, type InJobStep } from "../route.ts";
 import { useSession } from "../session.ts";
 import { account, forget, replay, sendAgain, STUCK, type EventKind, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
 import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "../lib/sets.ts";
-import frame from "../frame/frame.module.css";
 import styles from "./waiting.module.css";
 
 const PHOTO_STEPS: ReadonlySet<InJobStep> = new Set(["before_photos", "after_photos"]);
@@ -57,13 +56,13 @@ function Stopped(props: {
       )}
       <div className={styles.buttons}>
         {stopped.note === STUCK && (
-          <Button variant="outlineOnInk" size="small" className={styles.button} onClick={() => void sendAgain(jobId)}>
+          <Button variant="outline" size="small" className={styles.button} onClick={() => void sendAgain(jobId)}>
             {copy.retry}
           </Button>
         )}
         {toCorrect !== null && (
           <Button
-            variant="outlineOnInk"
+            variant="outline"
             size="small"
             className={styles.button}
             onClick={() => {
@@ -73,7 +72,7 @@ function Stopped(props: {
             {PHOTO_STEPS.has(toCorrect) ? copy.retake : copy.correct}
           </Button>
         )}
-        <Button variant="outlineOnInk" size="small" className={styles.button} onClick={props.onForget}>
+        <Button variant="outline" size="small" className={styles.button} onClick={props.onForget}>
           {copy.forget.open}
         </Button>
       </div>
@@ -130,7 +129,7 @@ function WaitingJob(props: {
       )}
       {stopped === null && !offline && (
         <Button
-          variant="outlineOnInk"
+          variant="outline"
           size="small"
           className={styles.button}
           onClick={() => {
@@ -148,7 +147,6 @@ export function WaitingScreen() {
   const { offline, atRisk } = useSession();
   const waiting = useOutbox();
   const kept = useHeldJobs(waiting);
-  const heading = useScreen(copy.title);
   const [forgetting, setForgetting] = useState<string | null>(null);
 
   const held = account(waiting.events);
@@ -175,24 +173,12 @@ export function WaitingScreen() {
   const actionsOf = (id: string) => waiting.events.filter((event) => event.job_id === id).length;
 
   return (
-    <main className={styles.screen}>
-      <header className={frame.head}>
-        <IconButton
-          className={styles.back}
-          d={ICONS.back}
-          size="lg"
-          weight="heavy"
-          label={copy.back}
-          onClick={() => {
-            go("/");
-          }}
-        />
-        <h1 className={styles.title} ref={heading} tabIndex={-1}>
-          {copy.title}
-        </h1>
-      </header>
-
-      {offline && <Offline />}
+    <CardFrame
+      title={copy.title}
+      sub={jobs.length === 0 ? copy.noneWaiting : copy.jobsWaiting(jobs.length)}
+      foot={null}
+    >
+      {offline && <NoSignal />}
 
       {jobs.length === 0 ? (
         <p className={styles.nothing}>{copy.nothing}</p>
@@ -245,6 +231,6 @@ export function WaitingScreen() {
           }}
         />
       )}
-    </main>
+    </CardFrame>
   );
 }
