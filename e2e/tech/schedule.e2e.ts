@@ -95,6 +95,8 @@ test("keeps the days it showed when it reads the week again with no signal", asy
     document.dispatchEvent(new Event("visibilitychange"));
   });
   await expect.poll(() => unanswered).toBeGreaterThanOrEqual(7);
+  // The read goes on to the phone's kept days once the calls fail; nothing on screen marks its end, so let it.
+  await page.waitForTimeout(1000);
   await expect(page.getByText(copy.nothing)).toBeVisible();
   await expect(page.getByText(copy.dayFailed)).toHaveCount(0);
 });

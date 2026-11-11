@@ -21,6 +21,7 @@ function withAKit(fake: Fake): void {
         unit: "ml",
         quantity: 120,
         low: false,
+        ops_told: false,
         usable: 100,
         hair_system: false,
         lots: [
@@ -79,6 +80,38 @@ test("opens from its tab, shows each lot’s expiry, and receives a top-up by th
     units: ["MM-ESS-0000007-H"],
     rest: "on_its_way",
   });
+});
+
+test("lists a recalled lot to hand back, not as held, and says low until it goes back", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  const [solvent] = fake.kit.held;
+  if (solvent !== undefined) {
+    fake.kit = {
+      ...fake.kit,
+      held: [
+        {
+          ...solvent,
+          quantity: 12,
+          usable: 2,
+          low: true,
+          ops_told: false,
+          lots: [
+            { lot_code: "SV-9", expires_on: "2031-01-31", quantity: 10, use_first: false, recalled: true },
+            { lot_code: "SV-2", expires_on: "2031-01-31", quantity: 2, use_first: false, recalled: false },
+          ],
+        },
+      ],
+    };
+  }
+  await page.goto("/kit");
+  const back = page.getByRole("region", { name: copy.returned.title });
+  await expect(back.getByRole("listitem").filter({ hasText: "SV-9" })).toContainText(copy.held.recalled);
+  await expect(back.getByRole("listitem").filter({ hasText: "SV-9" })).toContainText(copy.expired.recalledWord);
+  const held = page.getByRole("region", { name: copy.held.title });
+  await expect(held).not.toContainText("SV-9");
+  await expect(held).toContainText(copy.held.lowUntilBack);
+  await expect(held).toContainText("2 ml");
 });
 
 // The kit read "Contour tape strip · -4 strips".

@@ -34,7 +34,14 @@ const KitSchema = z
           name: z.string(),
           unit: z.string(),
           quantity: z.number().int(),
-          low: z.boolean().openapi({ description: "At or below the kit level ops set for it." }),
+          low: z
+            .boolean()
+            .openapi({ description: "What it holds fit to use, at or below the kit level ops set for it." }),
+          ops_told: z.boolean().openapi({
+            description:
+              "Whether ops' own count, the whole balance, finds it low, so they have been told; where it is low only " +
+              "for its expired or recalled lots, they are told once those are handed back.",
+          }),
           usable: z.number().int().openapi({
             description:
               "What it holds fit to use: its count less its expired and recalled lots, which go back to ops.",
@@ -227,6 +234,7 @@ async function kitAnswer(c: Context<AppEnv>, kit: string) {
       unit: item.unit,
       quantity: item.quantity,
       low: item.low,
+      ops_told: item.opsTold,
       usable: item.usable,
       hair_system: item.hairSystem,
       lots: item.lots.map((lot) => ({

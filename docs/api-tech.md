@@ -10727,7 +10727,11 @@ One of the client's try-on looks, under the card's own unlock, never cached
           },
           "low": {
             "type": "boolean",
-            "description": "At or below the kit level ops set for it."
+            "description": "What it holds fit to use, at or below the kit level ops set for it."
+          },
+          "ops_told": {
+            "type": "boolean",
+            "description": "Whether ops' own count, the whole balance, finds it low, so they have been told; where it is low only for its expired or recalled lots, they are told once those are handed back."
           },
           "usable": {
             "type": "integer",
@@ -10824,6 +10828,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "unit",
           "quantity",
           "low",
+          "ops_told",
           "usable",
           "hair_system",
           "lots",

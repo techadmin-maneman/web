@@ -31,6 +31,11 @@ interface KitItem {
   readonly usable: number;
   /** What it holds fit to use, at or below the kit level ops set for it: time to ask for more. */
   readonly low: boolean;
+  /**
+   * Whether ops' own count, the whole balance, finds it low, so they have been told (./low-stock.ts). Where it is low
+   * only for its expired or recalled lots, ops are told once those are handed back.
+   */
+  readonly opsTold: boolean;
   readonly hairSystem: boolean;
   readonly lots: readonly KitLot[];
   /** Its pieces the kit holds labelled, of a hair system. */
@@ -126,6 +131,7 @@ function heldItemOf(
     usable,
     // What runs low is what a technician uses up, fit to use; a hair system comes for its own fit.
     low: row.hair_system !== 1 && isLow(usable, row.reorder_kit),
+    opsTold: row.hair_system !== 1 && isLow(row.quantity, row.reorder_kit),
     hairSystem: row.hair_system === 1,
     lots: itsLots,
     units: units

@@ -46,8 +46,9 @@ interface Day {
 
 /**
  * Each day of the strip with its jobs. A day that will not load is read from the phone where it keeps that day, as it
- * keeps today's and tomorrow's (../lib/useDay.ts), else as this screen last had it; the week fails only where no day
- * can be shown. `known` keeps each day as last read, so a read again with no signal leaves what showed.
+ * keeps today's and tomorrow's (../lib/useDay.ts), this screen's own last read of it first, which is the newer while it
+ * is open; the week fails only where no day can be shown. `known` keeps each day as last read, so a read again with no
+ * signal leaves what showed.
  */
 async function readWeek(today: string, known: Map<string, readonly JobSummary[]>) {
   const dates = Array.from({ length: SCHEDULE_DAYS }, (_, at) => addDays(today, at));
@@ -61,7 +62,7 @@ async function readWeek(today: string, known: Map<string, readonly JobSummary[]>
       }
       const requestId = answer === undefined ? null : answer.requestId;
       const kept = await keptDay(date).catch(() => null);
-      return { date, jobs: kept ?? known.get(date) ?? null, requestId };
+      return { date, jobs: known.get(date) ?? kept, requestId };
     }),
   );
   const failed = answers.find((answer) => !answer.ok);

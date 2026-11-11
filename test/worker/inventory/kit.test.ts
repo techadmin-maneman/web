@@ -204,7 +204,8 @@ describe("what the kit holds fit to use", () => {
       held: { code: string; quantity: number; usable: number; low: boolean; lots: { recalled: boolean }[] }[];
     }>();
     const solvent = kit.held.find((item) => item.code === "solvent");
-    expect(solvent).toMatchObject({ quantity: 12, usable: 2, low: true });
+    // Low for what is fit to use; ops' own count, the whole balance, does not find it so until the lot goes back.
+    expect(solvent).toMatchObject({ quantity: 12, usable: 2, low: true, ops_told: false });
     expect(solvent?.lots.some((each) => each.recalled)).toBe(true);
     expect(kit.forecast).toMatchObject([{ have: 2 }]);
   });

@@ -5533,8 +5533,10 @@ export interface components {
                 name: string;
                 unit: string;
                 quantity: number;
-                /** @description At or below the kit level ops set for it. */
+                /** @description What it holds fit to use, at or below the kit level ops set for it. */
                 low: boolean;
+                /** @description Whether ops' own count, the whole balance, finds it low, so they have been told; where it is low only for its expired or recalled lots, they are told once those are handed back. */
+                ops_told: boolean;
                 /** @description What it holds fit to use: its count less its expired and recalled lots, which go back to ops. */
                 usable: number;
                 hair_system: boolean;

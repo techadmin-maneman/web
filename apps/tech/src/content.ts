@@ -1279,6 +1279,8 @@ export const kit = {
     pieces: (count: number) => `${String(count)} labelled`,
     /** At or below the level ops keep a kit at: ops are alerted on their own, and send more. */
     low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops told"),
+    /** Low only for stock that goes back: ops' count sees it until it does. */
+    lowUntilBack: "Low · hand back the expired stock and ops are told",
   },
   returned: {
     title: "Return to ops",

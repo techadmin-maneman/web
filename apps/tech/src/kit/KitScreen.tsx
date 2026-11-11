@@ -45,10 +45,16 @@ function heldLines(item: Held, today: string, coming: boolean): string[] {
         `${lot.lot_code} · ${amountOf(lot.quantity, item.unit)} · ${lotWhen(lot, fullDate(lot.expires_on ?? today))}`,
     );
   return [
-    ...(item.low && item.usable > 0 ? [copy.held.low(coming)] : []),
+    ...(item.low && item.usable > 0 ? [lowLine(item, coming)] : []),
     ...(item.hair_system ? [copy.held.pieces(item.units.length)] : []),
     ...lots,
   ];
+}
+
+/** Why an item is low: ops told, or more on its way; or low only for stock to hand back, which tells ops once back. */
+function lowLine(item: Held, coming: boolean): string {
+  if (coming) return copy.held.low(true);
+  return item.ops_told ? copy.held.low(false) : copy.held.lowUntilBack;
 }
 
 /** An item's figure, what it holds fit to use: out in red, low in the metal's words, otherwise quiet. */
