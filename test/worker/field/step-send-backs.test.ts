@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { HOUR_MS } from "../../../src/lib/durations.ts";
+import { DAY_MS, HOUR_MS } from "../../../src/lib/durations.ts";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { JOB, working } from "../job-fixtures.ts";
 
@@ -69,6 +69,19 @@ describe("a step sent back", () => {
       "event-consumables-03",
     );
     expect(await third.json()).toMatchObject({ error: { code: "already_closed" } });
+  });
+
+  it("is on the day's list from whatever day, naming the client only while the visit is unlocked", async () => {
+    const { job, clock } = await closedVisit();
+    await job.opsPost(`/api/visits/${JOB}/send-back`, { step: "checklist", reason: "Tick the scalp check." });
+    const listed = async () =>
+      (await (await job.get("/api/tech/jobs")).json<{ sent_back: { id: string; client_name: string | null }[] }>())
+        .sent_back;
+    expect(await listed()).toEqual([expect.objectContaining({ id: JOB, client_name: "Rohit Malhotra" })]);
+
+    // Days later the visit has locked again: it is still to fix, and its client is no longer named.
+    clock.now = new Date(NOW.getTime() + 3 * DAY_MS);
+    expect(await listed()).toEqual([expect.objectContaining({ id: JOB, client_name: null })]);
   });
 
   it("is audited by the visit and the step, never a word of why", async () => {

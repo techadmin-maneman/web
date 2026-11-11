@@ -6,8 +6,9 @@
 //
 // The link the app uploads to is a signed path on this host, good for fifteen
 // minutes and for one phase and angle. Each angle's latest upload is the
-// visit's photograph for that angle; the one it replaces stays in the bucket,
-// as a photograph is deleted only on purpose and audited.
+// visit's photograph for that angle; the take it replaces goes from the bucket
+// with its small copy (docs/decisions/0246-closed-and-sent-back.md), so a retake
+// keeps one photograph an angle.
 //
 // The phone also makes a small copy of each photograph for the client app's
 // rows (docs/decisions/0093-the-storage-meter.md). Each upload of a photograph

@@ -89,7 +89,7 @@ export function registerTechJobReads(app: App): void {
     const unlockHour = inputs.addressUnlockHour;
     const [jobs, sentBack] = await Promise.all([
       jobsOn({ db: c.env.DB, technicianId, date, now, unlockHour, rules }),
-      visitsToFix(c.env.DB, technicianId),
+      visitsToFix(c.env.DB, { technicianId, now, unlockHour }),
     ]);
     return c.json({ date, jobs, sent_back: sentBack }, 200);
   });

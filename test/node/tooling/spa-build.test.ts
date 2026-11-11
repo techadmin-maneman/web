@@ -14,10 +14,16 @@ const PAGE = `<!doctype html><html><head>
 
 let dist = "";
 
-/** A built app: its page, the scripts it loads, a section loaded when it opens, and a service worker if asked. */
-function built(page: string, withWorker: boolean): string {
-  dist = mkdtempSync(join(tmpdir(), "spa-build-"));
-  mkdirSync(join(dist, "assets"));
+let root = "";
+
+/**
+ * A built app: its page, the scripts it loads, a section loaded when it opens, a local build's parts page, and a
+ * service worker if asked; built for the environment named.
+ */
+function built(page: string, withWorker: boolean, environment = "staging"): string {
+  root = mkdtempSync(join(tmpdir(), "spa-build-"));
+  dist = join(root, environment);
+  mkdirSync(join(dist, "assets"), { recursive: true });
   writeFileSync(join(dist, "index.html"), page);
   for (const file of ["index-a1.js", "shared-b2.js", "SettingsScreen-d4.js", "PartsScreen-e5.js"]) {
     writeFileSync(join(dist, "assets", file), "export {};");
@@ -29,7 +35,7 @@ function built(page: string, withWorker: boolean): string {
 const names = (files: readonly string[]) => files.map((file) => file.slice(dist.length + 1)).sort();
 
 afterEach(() => {
-  rmSync(dist, { recursive: true, force: true });
+  rmSync(root, { recursive: true, force: true });
 });
 
 describe("the JavaScript a first visit fetches", () => {
@@ -37,9 +43,19 @@ describe("the JavaScript a first visit fetches", () => {
     expect(names(firstLoadScripts(built(PAGE, false)))).toEqual(["assets/index-a1.js", "assets/shared-b2.js"]);
   });
 
-  // The parts page a local build adds is never served to a phone (apps/tech/src/main.tsx).
-  it("is every script, and the worker, where a service worker precaches them all, but a local build's parts page", () => {
+  it("is every script, and the worker, where a service worker precaches them all", () => {
     expect(names(firstLoadScripts(built(PAGE, true)))).toEqual([
+      "assets/PartsScreen-e5.js",
+      "assets/SettingsScreen-d4.js",
+      "assets/index-a1.js",
+      "assets/shared-b2.js",
+      "sw.js",
+    ]);
+  });
+
+  // The parts page a local build adds is never served to a phone (apps/tech/src/main.tsx); any other build counts it.
+  it("leaves out a local build's parts page, and only a local build's", () => {
+    expect(names(firstLoadScripts(built(PAGE, true, "local")))).toEqual([
       "assets/SettingsScreen-d4.js",
       "assets/index-a1.js",
       "assets/shared-b2.js",
