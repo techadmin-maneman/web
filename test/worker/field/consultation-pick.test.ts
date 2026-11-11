@@ -1,4 +1,4 @@
-// A consultation's pick from Options (src/routes/tech/jobs.steps.ts, ADR 0247): sent with a close going ahead, kept on
+// A consultation's pick from Options (src/routes/tech/jobs.outcome.ts, ADR 0247): sent with a close going ahead, kept on
 // the visit's outcome, and read by ops on the client's First fit to book task; refused on any other close.
 
 import { env } from "cloudflare:workers";

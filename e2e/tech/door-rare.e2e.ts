@@ -1,4 +1,4 @@
-// The door's rare cases (docs/decisions/0243-job-and-the-door.md, left from PR 5): a check-in refused as early and made
+// The door's rare cases (docs/decisions/0247-the-steps-left.md): a check-in refused as early and made
 // again with no signal stays at the door, and one measured too far says Try again at once, never Check in.
 
 import { expect, test } from "../support.ts";

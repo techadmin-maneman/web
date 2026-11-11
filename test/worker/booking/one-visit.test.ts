@@ -391,7 +391,8 @@ describe("a one visit whose fit the client books for another day", () => {
     await job.workTo("piece");
     const answer = await job.post(path("piece"), { product: NATURAL.tier, fit_later: true }, "event-piece-01");
     await job.post(path("checklist"), { done: [] }, "event-checklist-01");
-    await job.post(path("consumables"), { items: [], short_reason: "other" }, "event-consumables-01");
+    // Nothing fitted, so nothing used asks no reason.
+    expect((await job.post(path("consumables"), { items: [] }, "event-consumables-01")).status).toBe(202);
     return answer;
   };
 
@@ -430,6 +431,8 @@ describe("a one visit whose fit the client books for another day", () => {
     expect((await job.post(path("outcome"), notGoingAhead, "event-outcome-01")).status).toBe(400);
     const another = { outcome: "done", going_ahead: true, product: "standard" };
     expect((await job.post(path("outcome"), another, "event-outcome-02")).status).toBe(400);
+    const lost = { outcome: "done", lost_reason: "price" };
+    expect((await job.post(path("outcome"), lost, "event-outcome-03")).status).toBe(400);
   });
 
   it("is refused on a visit that is no one visit", async () => {

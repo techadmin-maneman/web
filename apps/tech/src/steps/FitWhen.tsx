@@ -6,8 +6,21 @@ import { capsLook } from "@maneman/ui/Caps";
 import { oneVisit } from "../content.ts";
 import shared from "./steps.module.css";
 
-/** When the chosen hair system is fitted: today, or another day ops book with the client. */
-export function When({ later, onLater }: { later: boolean; onLater: (later: boolean) => void }) {
+/**
+ * When the chosen hair system is fitted: today, only where the kit holds one, or another day ops book with the
+ * client.
+ */
+export function When({
+  product,
+  canFitToday,
+  later,
+  onLater,
+}: {
+  product: string;
+  canFitToday: boolean;
+  later: boolean;
+  onLater: (later: boolean) => void;
+}) {
   return (
     <section className={shared.field} aria-labelledby="client-when-title">
       <h2 className={capsLook(shared.fieldTitle)} id="client-when-title">
@@ -17,6 +30,8 @@ export function When({ later, onLater }: { later: boolean; onLater: (later: bool
         <ToggleButton
           className={shared.choice}
           pressed={!later}
+          disabled={!canFitToday}
+          sub={canFitToday ? oneVisit.inKit(product) : oneVisit.notInKit(product)}
           onClick={() => {
             onLater(false);
           }}

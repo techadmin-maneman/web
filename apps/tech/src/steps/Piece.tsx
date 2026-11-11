@@ -4,7 +4,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { steps as copy } from "../content.ts";
@@ -13,6 +13,8 @@ import { Loading } from "../frame/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import {
   choiceSent,
+  DECLINED,
+  inKit,
   fitsNothingToday,
   afterLabel,
   labelWarning,
@@ -92,10 +94,16 @@ function useLookup(
   const [looking, once] = useOneAtATime();
   const { code, base, lot } = form;
   const { base: fillBase, lot: fillLot } = fill;
+  // The label now in the field, so an answer for one taken over since is never put on it.
+  const current = useRef(code);
+  useEffect(() => {
+    current.current = code;
+  }, [code]);
   const look = useCallback(
     () =>
       once(async () => {
         const answer = await api.piece(code, job.id);
+        if (current.current !== code) return;
         if (answer.ok) {
           setLooked({ state: "found", found: answer.body });
           // Another client's piece is refused, and its base and lot are no part of this job.
@@ -108,10 +116,11 @@ function useLookup(
       }),
     [once, code, job.id, base, lot, fillBase, fillLot],
   );
-  // A label is checked as soon as it reads, typed whole or scanned (docs/prompts/tech-redesign.md, "Hair system").
+  // A label is checked as soon as it reads, typed whole or scanned (docs/prompts/tech-redesign.md, "Hair system"); one
+  // taken while another was checked, once that check is done.
   useEffect(() => {
-    if (isLabel(code) && looked.state === "none") void look();
-  }, [code, looked.state, look]);
+    if (isLabel(code) && looked.state === "none" && !looking) void look();
+  }, [code, looked.state, looking, look]);
   return { looked, setLooked, looking, look } as const;
 }
 
@@ -134,7 +143,12 @@ function Asked({ job, decided, decide }: { job: Job; decided: Decision[0]; decid
       products={job.products}
       choice={decided.choice}
       later={decided.later}
-      onChoose={decide.choice}
+      canFitToday={decided.choice !== null && inKit(job, decided.choice)}
+      onChoose={(choice) => {
+        decide.choice(choice);
+        // A hair system the kit does not hold cannot be fitted today, so its fit is booked for later.
+        if (choice !== DECLINED && !inKit(job, choice)) decide.later(true);
+      }}
       onLater={decide.later}
     />
   ) : (

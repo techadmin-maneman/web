@@ -167,7 +167,12 @@ describe("GET /api/tasks, the next visit", () => {
       {
         id: PERSON,
         person: { id: PERSON, name: "Rohit Malhotra" },
-        facts: { group: "first_fit_to_book", consulted_at: "2026-09-10T04:30:00.000Z", fit_window: "morning" },
+        facts: {
+          group: "first_fit_to_book",
+          consulted_at: "2026-09-10T04:30:00.000Z",
+          fit_window: "morning",
+          picked: null,
+        },
         detail: "2026-09-10T04:30:00.000Z morning",
         since: "2026-09-16T18:30:00.000Z",
         due: "2026-09-18T18:30:00.000Z",

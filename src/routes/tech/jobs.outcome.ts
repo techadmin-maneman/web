@@ -1,6 +1,6 @@
 // The outcome step's body (./jobs.steps.ts): done, with what a consultation's client said and picked, or partly done
-// for one of ops' reasons (docs/decisions/0149-lost-reasons.md, docs/decisions/0247-the-steps-left.md). A reason ops
-// have taken off since the phone kept the job is still taken.
+// for one of ops' reasons (docs/decisions/0247-the-steps-left.md). A reason ops have taken off since the phone kept the
+// job is still taken.
 
 import { z } from "@hono/zod-openapi";
 import { offeredProducts } from "../../domain/booking/services.ts";
@@ -14,6 +14,13 @@ import { type Ctx, type StepBody } from "./jobs.record.ts";
 
 type OutcomeBody = z.infer<typeof OutcomeRequestSchema>;
 
+/** The product a one visit's piece step booked for another day; null for one fitted, declined or still to decide. */
+async function bookedLater(c: Ctx, job: WorkableJob): Promise<string | null> {
+  if (job.oneVisit === null) return null;
+  const decision = await decisionAtVisit(c.env.DB, job.id);
+  return decision !== null && "fit_later" in decision ? decision.product : null;
+}
+
 /**
  * A one visit whose fit the client booked for another day: going ahead, with the product its piece step chose as their
  * pick, whether or not the close names it. Nothing where the visit was not booked for later; null for a close that
@@ -25,8 +32,7 @@ async function laterPick(
   goingAhead: boolean,
   product: string | undefined,
 ): Promise<{ product?: string } | null> {
-  const decision = await decisionAtVisit(c.env.DB, job.id);
-  const later = decision !== null && "fit_later" in decision ? decision.product : null;
+  const later = await bookedLater(c, job);
   if (later === null) return product === undefined ? {} : null;
   if (!goingAhead || (product !== undefined && product !== later)) return null;
   return { product: later };
@@ -59,6 +65,8 @@ async function doneBody(c: Ctx, job: WorkableJob, body: Extract<OutcomeBody, { o
     return picked === null ? { invalid: ["product"] } : { outcome: "done", going_ahead: body.going_ahead, ...picked };
   }
   if (body.product !== undefined) return { invalid: ["product"] };
+  // A client who booked the fit for later is going ahead: a reason they are not contradicts the piece step.
+  if ((await bookedLater(c, job)) !== null) return { invalid: ["lost_reason"] };
   const lost = knownCodes((await jobSheet(c.env.DB)).lostReasons);
   return lost.has(body.lost_reason)
     ? { outcome: "done", lost_reason: body.lost_reason, going_ahead: false }

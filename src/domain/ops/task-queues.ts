@@ -343,7 +343,8 @@ export const QUEUES: readonly Queue[] = [
          s.consulted_start AS detail,
          json_object('consulted_at', s.consulted_start,
            -- The hair system the client picked at the consultation, by name (docs/decisions/0247-the-steps-left.md).
-           'picked', (SELECT COALESCE((SELECT sv.name FROM services sv WHERE sv.tier = v.picked_tier LIMIT 1),
+           'picked', (SELECT COALESCE((SELECT sv.name FROM services sv
+                                       WHERE sv.kind = 'first_fit' AND sv.tier = v.picked_tier LIMIT 1),
                                       v.picked_tier)
                         FROM appointments ca JOIN visit_outcomes v ON v.appointment_id = ca.id
                        WHERE ca.person_id = s.person_id AND ca.type = 'consultation'

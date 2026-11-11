@@ -913,6 +913,10 @@ export const oneVisit = {
   fitToday: "Fit today",
   bookLater: "Book the first fit",
   bookLaterSub: "Ops will call to book it",
+  /** Fit today's line: whether the technician's kit holds the hair system chosen, which a fit today needs. */
+  inKit: (product: string) => `${product} is in your kit`,
+  notInKit: (product: string) => `${product} isn’t in your kit`,
+  notInKitAction: "Not in your kit: book the first fit",
   laterNote: "Nothing is fitted today. Nothing to pay now.",
   /** Closing as done, once the client booked the fit for another day: by the hair system's name. */
   endsGoingAhead: (product: string) =>

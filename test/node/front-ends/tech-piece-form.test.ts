@@ -72,6 +72,8 @@ describe("the piece step", () => {
   it("on a one visit, sends the product alone, with no label asked, once its fit is booked for later", () => {
     const later = { ...EMPTY, choice: "natural", later: true };
     expect(stillMissing(later, ONE_VISIT, "none")).toBeNull();
+    // Fit today needs the hair system in the kit, which ONE_VISIT's holds none of.
+    expect(stillMissing({ ...later, later: false }, ONE_VISIT, "found")).toBe(oneVisit.notInKitAction);
     expect(pieceBody(later, ONE_VISIT)).toEqual({ product: "natural", fit_later: true });
     // Booked for later means nothing on any other visit, nor once the fit is declined.
     expect(pieceBody({ ...later, choice: DECLINED }, ONE_VISIT)).toEqual({ declined: true });

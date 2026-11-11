@@ -36,10 +36,13 @@ the door's rare cases. On 11 November 2026 the owner made four rulings:
    the step or closing the app loses none of it. It goes once the close is sent. A pick of a product no longer on the
    card is not sent. A refused close opens on the close itself, with the pick it sent.
 5. **A one visit's fit can be booked for another day.** Once a product is chosen at the head of the hair system step,
-   "When" offers Fit today, the default, or Book the first fit. A fit booked for later sends the piece step as
-   `{product, fit_later: true}` and asks for no label. The visit then runs as a declined one does: the consultation's
-   checklist alone, nothing expected of the kit, and no photographs after. Its close, done, goes ahead with the product
-   as the client's pick, so ops see it on the First fit to book task. The visit becomes a consultation with nothing
+   "When" offers Fit today, the default, or Book the first fit. Fit today is open only while the kit holds a piece of
+   the product, as the brief draws it; a product the kit does not hold is booked for later. The payment link stays at
+   the close, as the owner answered on 10 November, so there is no "Send link and start the fit". A fit booked for
+   later sends the piece step as `{product, fit_later: true}` and asks for no label. The visit then runs as a declined one does: the consultation's
+   checklist alone, nothing expected of the kit and no reason asked where nothing was used, and no photographs after. Its close, done, goes ahead with the product
+   as the client's pick, so ops see it on the First fit to book task; a close saying the client is not going ahead is
+   refused. The visit becomes a consultation with nothing
    charged or sent (`one_visit` reads `declined`: fitted nothing that day), and the fit is booked and paid as any first
    fit. The card's `client_choice` carries `fit_later`.
 6. **A label is checked as soon as it reads,** with no tap: "Checking the label…" while the API looks it up, and

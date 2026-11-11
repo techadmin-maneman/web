@@ -43,12 +43,15 @@ export function ChoiceList({
   products,
   choice,
   later,
+  canFitToday,
   onChoose,
   onLater,
 }: {
   products: Job["products"];
   choice: Choice;
   later: boolean;
+  /** Whether the kit holds the hair system chosen, which a fit today needs. */
+  canFitToday: boolean;
   onChoose: (choice: string) => void;
   onLater: (later: boolean) => void;
 }) {
@@ -79,7 +82,14 @@ export function ChoiceList({
         </div>
         {choice === DECLINED && <p className={shared.note}>{oneVisit.declinedNote}</p>}
       </section>
-      {choice !== null && choice !== DECLINED && <When later={later} onLater={onLater} />}
+      {choice !== null && choice !== DECLINED && (
+        <When
+          product={products.find((product) => product.tier === choice)?.name ?? choice}
+          canFitToday={canFitToday}
+          later={later}
+          onLater={onLater}
+        />
+      )}
     </>
   );
 }

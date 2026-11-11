@@ -286,8 +286,11 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(stepAction(page)).toBeDisabled();
     expect(await axeViolations(page)).toEqual([]);
 
-    await page.getByRole("button", { name: "Mane Man Natural" }).click();
-    await expect(page.getByRole("button", { name: "Mane Man Natural" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Mane Man Natural", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Mane Man Natural", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
     await stepAction(page).click();
 
@@ -349,7 +352,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     const fake = await onTheChoice(page);
     await page.getByRole("button", { name: "Mane Man Natural" }).click();
     // Fit today, unless the client books it for later.
-    await expect(page.getByRole("button", { name: techCopy.oneVisit.fitToday, exact: true })).toHaveAttribute(
+    await expect(page.getByRole("button", { name: new RegExp(`^${techCopy.oneVisit.fitToday}`) })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -364,6 +367,22 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.consultation }),
     ).toBeVisible();
+  });
+
+  // Nothing is fitted, so nothing used is what was expected, and asks no reason, as the API asks none.
+  test("counts nothing used on a fit booked for later with no reason asked", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    fake.clientChoice = { product: "natural", fit_later: true };
+    startedThrough(fake, "before_photos", "piece", "checklist", "profile");
+    await page.goto(`/jobs/${JOB_ID}/consumables`);
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
+
+    await expect(page.getByText(techCopy.steps.consumables.whyNone)).toHaveCount(0);
+    await stepAction(page).click();
+    await expect.poll(() => writesTo(fake, "consumables").length).toBe(1);
+    expect(writesTo(fake, "consumables")[0]?.body).toEqual({ items: [] });
   });
 
   test("closes a fit booked for later as a consultation going ahead, with nothing to pay now", async ({ page }) => {

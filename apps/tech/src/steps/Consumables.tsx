@@ -316,9 +316,15 @@ export function Consumables({ id }: { id: string }) {
   if (loaded.state === "failed") {
     return <JobFailed failed={loaded} onRetry={retry} />;
   }
-  // A consultation and fit that fitted nothing today, declined or booked for later: nothing is expected of the kit.
+  // A consultation and fit that fitted nothing today, declined or booked for later, is counted as the consultation it
+  // ends as: nothing is expected of the kit, and nothing used asks no reason, as the API asks none.
   const job = fitsNothingToday(loaded.value, queued)
-    ? { ...loaded.value, consumables: loaded.value.consumables.map((each) => ({ ...each, expected: 0 })) }
+    ? {
+        ...loaded.value,
+        one_visit: false,
+        type: "consultation" as const,
+        consumables: loaded.value.consumables.map((each) => ({ ...each, expected: 0 })),
+      }
     : loaded.value;
   return <Counting job={job} refused={refused} onFinish={(body) => void finish(body)} onBack={back} />;
 }

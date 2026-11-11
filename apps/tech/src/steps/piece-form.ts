@@ -166,6 +166,10 @@ const declinedTheFit = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =
 const fitLater = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
   job.one_visit && form.later && form.choice !== null && form.choice !== DECLINED;
 
+/** Whether the technician's kit holds a piece of the product, which a one visit's fit today needs. */
+export const inKit = (job: Pick<Job, "kit_hair_systems">, product: string): boolean =>
+  job.kit_hair_systems.some((each) => each.product === product && each.held > 0);
+
 /** Whether the step fits nothing today, so asks for no label: the fit declined, or booked for later. */
 export const fitsNothingToday = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
   declinedTheFit(form, job) || fitLater(form, job);
@@ -183,9 +187,12 @@ export function stillMissing(
   job: Pick<Job, "one_visit" | "kit_hair_systems" | "date">,
   checked: LabelChecked,
 ): string | null {
-  if (expiredInKit(job, form.code)) return copy.piece.expiredAction;
   if (job.one_visit && form.choice === null) return oneVisit.chooseFirst;
+  // Fitting nothing today asks for no label, so a label left typed holds nothing back.
   if (fitsNothingToday(form, job)) return null;
+  // A one visit fits today only a hair system the kit holds; one it does not is booked for later.
+  if (job.one_visit && form.choice !== null && !inKit(job, form.choice)) return oneVisit.notInKitAction;
+  if (expiredInKit(job, form.code)) return copy.piece.expiredAction;
   if (!isLabel(form.code)) return copy.piece.checkFirst;
   if (checked === "another_client") return copy.piece.notThisClientAction;
   // A row picked whose pieces carry no labels in our records takes the label on the piece; one whose pieces do, only one
