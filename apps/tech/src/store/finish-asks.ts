@@ -16,18 +16,26 @@ export async function keepFinishAsk(jobId: string, ask: FinishAsk): Promise<void
   await put("device", { key: "finish_asks", asks: { ...(await held()), [jobId]: ask } });
 }
 
+/** Lets go of the visit's kept suggestion: one sent since, or only `sent`, where another was kept meanwhile. */
+export async function dropFinishAsk(jobId: string, sent?: FinishAsk): Promise<void> {
+  const kept = await held();
+  if (kept[jobId] === undefined || (sent !== undefined && kept[jobId] !== sent)) return;
+  const left = Object.fromEntries(Object.entries(kept).filter(([visit]) => visit !== jobId));
+  await put("device", { key: "finish_asks", asks: left });
+}
+
 /**
  * Sends each suggestion kept: one the API takes goes, as does one it refuses for good. One it cannot take yet stays:
- * with no signal, or while the visit's close is still among the writes on the phone.
+ * with no signal, or while the visit's close is still among the writes on the phone. Each is read again before it
+ * goes, so one replaced or sent straight meanwhile is never sent over the newer.
  */
 export async function sendFinishAsks(onThePhone: readonly Queued[]): Promise<void> {
   const kept = await held();
   if (Object.keys(kept).length === 0) return;
   const closing = new Set(onThePhone.filter((event) => event.kind === "outcome").map((event) => event.job_id));
-  const left: Record<string, FinishAsk> = {};
   for (const [jobId, ask] of Object.entries(kept)) {
+    if ((await held())[jobId] !== ask) continue;
     const answer = await api.finishAsk(jobId, ask);
-    if (!answer.ok && (unreachable(answer) || closing.has(jobId))) left[jobId] = ask;
+    if (answer.ok || !(unreachable(answer) || closing.has(jobId))) await dropFinishAsk(jobId, ask);
   }
-  await put("device", { key: "finish_asks", asks: left });
 }

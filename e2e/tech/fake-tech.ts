@@ -130,6 +130,8 @@ export interface Fake {
   resendRefused: string | null;
   /** True once ops have closed the job by hand: a write answers `409 already_closed`. */
   closedByOps: boolean;
+  /** True for a past visit whose card has locked again, the day after it: no client, no address. */
+  relocked: boolean;
   /** Whether there is a photograph to compare each angle with, before the visit and after it. */
   compare: boolean;
   /** The client's history, as GET /api/tech/jobs/{id}/client-history answers. */
@@ -178,6 +180,21 @@ function reply(route: Route, status: number, body?: unknown): Promise<void> {
   assertInContract("tech", request.method(), new URL(request.url()).pathname, status, body);
   return body === undefined ? route.fulfill({ status }) : route.fulfill({ status, json: body });
 }
+
+/** A card as the API answers it once the visit has locked again, the day after: nothing of the client's. */
+const relockedOf = (card: Card): Card => ({
+  ...card,
+  day: "past",
+  unlocked: false,
+  address: null,
+  access_notes: null,
+  client: null,
+  pieces: null,
+  last_visit: null,
+  profile: null,
+  client_alerts: [],
+  handoff: null,
+});
 
 /** Whom a job went to, by first name, and when, as a `409 superseded` names the other technician. */
 type WentTo = { technician: string; at: string | null } | null;
@@ -278,6 +295,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     paymentLink: null,
     resendRefused: null,
     closedByOps: false,
+    relocked: false,
     history: { alerts: [], visits: [] },
     compare: false,
     photos: [],
@@ -555,7 +573,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (path === `/api/tech/jobs/${JOB_ID}`) {
       if (fake.slowCardMs > 0) await new Promise((resolve) => setTimeout(resolve, fake.slowCardMs));
       if (fake.moved) return refuse(route, 404, "not_found");
-      const answered = jobCard(today);
+      const answered = fake.relocked ? relockedOf(jobCard(today)) : jobCard(today);
       return reply(route, 200, fake.movedTo === null ? answered : { ...answered, starts_at: fake.movedTo });
     }
     if (path === `/api/tech/jobs/${LOCKED_JOB_ID}`) return reply(route, 200, lockedCard(today));

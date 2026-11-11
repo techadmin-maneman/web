@@ -454,6 +454,9 @@ export const job = {
     title: "Not yet",
     // The board draws no locked card. The hour is the API's unlocks_at.
     opens: opensAt,
+    /** A past visit's card, locked again the day after it: a step ops sent back is still put right from it. */
+    pastTitle: "Details closed",
+    past: "A visit’s client details close the day after it.",
   },
   // The board draws the profile's rows inside the piece card; they are a section of their own.
   profileTitle: "Hair profile",

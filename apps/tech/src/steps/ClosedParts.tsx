@@ -13,7 +13,7 @@ import { api, unreachable, type FinishAsk, type Job, type JobSummary } from "../
 import { closeOut as copy, job as jobCopy } from "../content.ts";
 import { kindName } from "../lib/kind.ts";
 import { wayTo } from "../lib/navigate.ts";
-import { keepFinishAsk } from "../store/finish-asks.ts";
+import { dropFinishAsk, keepFinishAsk } from "../store/finish-asks.ts";
 import { clock } from "../lib/when.ts";
 import styles from "./close-out.module.css";
 
@@ -65,6 +65,8 @@ export function FinishTheWork({ job, closing }: { job: Job; closing: boolean }) 
     once(async () => {
       const answer = await api.finishAsk(job.id, what);
       if (answer.ok) {
+        // Sent straight: a choice kept from before, with no signal, must not follow it and take its place.
+        await dropFinishAsk(job.id).catch(() => undefined);
         setAsked(what);
         setSaid(copy.finish.sent);
       } else if (unreachable(answer) || closing) {

@@ -164,10 +164,12 @@ function LastVisit({ last }: { last: NonNullable<Job["last_visit"]> }) {
 
 export function JobCard({ job }: { job: Job }) {
   if (job.address === null) {
+    // A past visit's card has locked again, and opens no more: only one to come opens, at its hour.
+    const past = job.day === "past";
     return (
       <section className={styles.locked}>
-        <p className={styles.lockedTitle}>{copy.locked.title}</p>
-        <p className={styles.lockedBody}>{copy.locked.opens(job.unlocks_at)}</p>
+        <p className={styles.lockedTitle}>{past ? copy.locked.pastTitle : copy.locked.title}</p>
+        <p className={styles.lockedBody}>{past ? copy.locked.past : copy.locked.opens(job.unlocks_at)}</p>
         <p className={styles.sector}>{where(job.sector)}</p>
       </section>
     );
