@@ -204,6 +204,9 @@ export const ALERT_WORDS = {
   photos_unavailable: (a: { readonly phase: "before" | "after"; readonly day: string; readonly reached: number }) =>
     `Check the ${a.phase} photographs of the visit on ${fullDate(a.day)}: the technician's camera would not open, and ` +
     `${String(a.reached)} of 5 reached us.`,
+  fit_undone: (a: { readonly visit: string }) =>
+    `Check visit ${a.visit}: its hair system was recorded as fitted, then changed to no fit today before the close. ` +
+    `Nothing will be charged; check the piece is back in the kit.`,
   fit_without_piece: (a: {
     readonly day: string;
     readonly item: string;

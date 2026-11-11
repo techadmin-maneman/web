@@ -69,7 +69,7 @@ import {
 } from "./jobs.record.ts";
 
 import { outcomeBody } from "./jobs.outcome.ts";
-import { pieceBody } from "./jobs.piece.ts";
+import { pieceBody, tellOfUndoneFit, undoesTheFit } from "./jobs.piece.ts";
 import { registerPhotographs } from "./jobs.photos.ts";
 import { takesStep } from "../../policy/in-job-steps.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
@@ -297,6 +297,8 @@ function registerSteps(app: App): void {
   // The hair system fitted comes out of the technician's kit as the step lands, once however often it does.
   app.openapi(pieceRoute, (c) => {
     const body = c.req.valid("json");
+    // Set once the step is built: whether it takes back a fit already landed, which ops are told of once it lands.
+    let undone = false;
     return step(
       c,
       "piece",
@@ -305,6 +307,7 @@ function registerSteps(app: App): void {
         if ("invalid" in built) return built;
         // A step sent again is answered as it landed the first time, whatever has been recorded since.
         if (await isReplay(c, job)) return built;
+        undone = await undoesTheFit(c, job, built);
         const taken = await pieceLabelTaken(c.env.DB, job, pieceStepOf(built));
         return taken === null ? built : { labelTaken: taken };
       },
@@ -316,6 +319,7 @@ function registerSteps(app: App): void {
           touched: [technicianId],
           lowered: fitted.lowered ? [technicianId] : [],
         });
+        if (undone) await tellOfUndoneFit(c, job);
       },
     );
   });

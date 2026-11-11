@@ -100,6 +100,7 @@ const OPERATIONS_KINDS = [
   "fully_booked",
   "low_stock",
   "fit_without_piece",
+  "fit_undone",
   "photos_unavailable",
   "stock_expiring",
   "transfer_overdue",
