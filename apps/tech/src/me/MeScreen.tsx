@@ -9,6 +9,7 @@ import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { formatMobileField } from "@maneman/web-kit/mobile";
 import { useEffect, useState } from "react";
+import { AlertsRow } from "../alerts/index.ts";
 import { guides, leaving as leavingCopy, me as copy } from "../content.ts";
 import { ReachOps } from "../frame/ReachOps.tsx";
 import { SyncLabel, useUnsent } from "../frame/SyncLabel.tsx";
@@ -99,6 +100,7 @@ export function MeScreen() {
       <ListRows className={styles.rows} label={copy.account}>
         <ListRow title={guides.title} meta={guides.kinds} to="/guides" />
         <ListRow title={copy.leave} to="/leave" />
+        <AlertsRow />
         <ListRow
           title={copy.pending}
           to="/waiting"

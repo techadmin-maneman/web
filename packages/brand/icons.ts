@@ -98,6 +98,8 @@ export const GLYPHS = {
   /** A list item's moves in the console: a place up, a place down. */
   up: "M6 15 L12 9 L18 15",
   down: "M6 9 L12 15 L18 9",
+  /** The technician's alerts, at the head of Today, with how many are new. */
+  bell: "M6 16.5 V11 A6 6 0 0 1 18 11 V16.5 L19.5 18.5 H4.5 Z M10 20.5 A2 2 0 0 0 14 20.5",
   /** The technician's Navigate, on the next job: the arrow a map's directions draw. */
   navigate: "M20 4 L3.5 11 L10.5 13.5 L13 20.5 Z",
   /** The technician's day, saved and sent: a cloud. */

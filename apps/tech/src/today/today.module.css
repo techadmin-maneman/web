@@ -19,6 +19,13 @@
   padding: var(--sp-16) var(--screen-gutter) var(--sp-12);
 }
 
+/* The sync label and the bell, side by side at the head's right. */
+.headEnd {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: center;
+}
+
 .date {
   margin: 0;
   font-size: var(--fs-14);

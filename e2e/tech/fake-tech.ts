@@ -121,6 +121,8 @@ export interface Fake {
   month: TechReply<"/api/tech/month">;
   /** The technician's quality over the last 30 days, for Me. */
   quality: TechReply<"/api/tech/quality">;
+  /** The technician's alerts, the kinds on, and the push key; empty, all on and no key to begin. */
+  inbox: TechReply<"/api/tech/alerts">;
   /** A consultation's options: its packages and prices, and the client's try-on looks. */
   options: TechReply<"/api/tech/jobs/{id}/options">;
   /** The client's alerts and the last technician's note on the card; none unless a test gives them. */
@@ -285,6 +287,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     dayFails: false,
     writes: [],
     quality: { visits: 18, on_time: 17, fits: 9, redone: 1 },
+    inbox: {
+      alerts: [],
+      settings: { time_to_leave: true, day_ahead: true, job_changes: true, running_over: true },
+      push_key: null,
+    },
     month: {
       month: "2026-10",
       lines: [
@@ -460,6 +467,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         fake.sos = { ...fake.sos, safe: true };
         return reply(route, 204);
       }
+      if (path === "/api/tech/alerts/read") {
+        fake.writes.push({ path, eventId, startsAt, body: null });
+        fake.inbox = { ...fake.inbox, alerts: fake.inbox.alerts.map((alert) => ({ ...alert, read: true })) };
+        return reply(route, 204);
+      }
       // The technician's asks of ops go straight, never queued (docs/decisions/0249-schedule-kit-and-me.md).
       if (path === "/api/tech/kit/requests") {
         fake.writes.push({ path, eventId, startsAt, body: null });
@@ -592,6 +604,14 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     }
     if (path === "/api/tech/month") return reply(route, 200, fake.month);
     if (path === "/api/tech/quality") return reply(route, 200, fake.quality);
+    if (method === "GET" && path === "/api/tech/alerts") return reply(route, 200, fake.inbox);
+    // The kinds on, changed with signal (docs/decisions/0250-guides-and-alerts.md).
+    if (method === "PATCH" && path === "/api/tech/alerts/settings") {
+      const change = route.request().postDataJSON() as Partial<Fake["inbox"]["settings"]>;
+      fake.writes.push({ path, eventId: null, startsAt: null, body: change });
+      fake.inbox = { ...fake.inbox, settings: { ...fake.inbox.settings, ...change } };
+      return reply(route, 200, fake.inbox.settings);
+    }
     if (method === "GET" && path === "/api/tech/leave") return reply(route, 200, fake.leave);
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";

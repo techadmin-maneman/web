@@ -42,6 +42,7 @@
     "./Icon": "./Icon.tsx",
     "./Initials": "./Initials.tsx",
     "./IconButton": "./IconButton.tsx",
+    "./IconLink": "./IconLink.tsx",
     "./InlineMessage": "./InlineMessage.tsx",
     "./Layout": "./Layout.tsx",
     "./ListRow": "./ListRow.tsx",

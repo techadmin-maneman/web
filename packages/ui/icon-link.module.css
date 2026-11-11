@@ -1,0 +1,26 @@
+/* A link that is only its icon (./IconLink.tsx): the icon button's look, and its count over the icon's corner. */
+
+@layer base, ui;
+
+@layer ui {
+  .iconLink {
+    position: relative;
+    text-decoration: none;
+  }
+
+  /* How many wait, in the strong role, over the icon's top right. */
+  .count {
+    position: absolute;
+    top: var(--sp-4);
+    right: var(--sp-4);
+    min-width: var(--sp-16);
+    padding: 0 var(--sp-4);
+    background: var(--ui-strong);
+    color: var(--ui-on-strong);
+    font-size: var(--fs-13);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--lh-115);
+    text-align: center;
+  }
+}

@@ -188,6 +188,7 @@ export const safety = {
 
 /** "1 photo set", "3 actions": a count and the word for it. */
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
+const capital = (words: string) => words.charAt(0).toUpperCase() + words.slice(1);
 
 /** "top", "top and left", "top, left and hair". */
 const listed = (words: readonly string[]) => new Intl.ListFormat("en-IN", { type: "conjunction" }).format(words);
@@ -1162,6 +1163,7 @@ export const schedule = {
  */
 export const alerts = {
   title: "Alerts",
+  sub: "The last 7 days",
   /** The bell's name, with how many are new. */
   bell: (unread: number) => (unread === 0 ? "Alerts" : `Alerts, ${String(unread)} new`),
   none: "No alerts in the last 7 days.",
@@ -1177,24 +1179,34 @@ export const alerts = {
     running_over: { label: "Running over", sub: "When a visit will make you late for the next" },
   },
   settingFailed: "Not saved. Try again with signal.",
-  /** "Leave in 10 min for Rohit M." */
-  leave: (minutes: number, client: string) => `Leave in ${String(minutes)} min for ${client}`,
+  /** Notifications on this phone, beneath Send me: asked for once the technician taps. */
+  phoneOff: "Alerts don’t show on this phone yet.",
+  turnOn: "Turn on",
+  blocked: "Notifications are blocked for this app in the phone’s settings.",
+  /** "the 2 pm service visit": a job whose client the phone may not name. */
+  job: (time: string, kind: string) => `the ${time} ${kind}`,
+  /** "Leave in 8 min for Rohit M." */
+  leave: (minutes: number, who: string) => `Leave in ${String(minutes)} min for ${who}`,
   /** "18 min drive to Sector 65" */
   drive: (minutes: number, sector: string) => `${String(minutes)} min drive to ${sector}`,
   /** "Sameer J. moved to 4:15 pm" */
-  moved: (client: string, time: string) => `${client} moved to ${time}`,
-  cancelled: (client: string) => `${client}’s visit cancelled`,
-  reassigned: (client: string) => `${client} moved to another technician`,
+  moved: (who: string, time: string) => `${capital(who)} moved to ${time}`,
+  cancelled: (client: string | null, job: string) =>
+    client === null ? `${capital(job)} was cancelled` : `${client}’s visit was cancelled`,
+  reassigned: (who: string) => `${capital(who)} went to another technician`,
   /** "First fit · Sector 43 · was 2 pm" */
-  was: (parts: readonly string[], time: string) => [...parts, `was ${time}`].join(" · "),
+  was: (parts: readonly (string | null)[], time: string) =>
+    [...parts.filter((part) => part !== null && part !== ""), `was ${time}`].join(" · "),
   /** "Running over · finish by 11:10 am" */
   over: (finishBy: string) => `Running over · finish by ${finishBy}`,
   /** "for the 11:30 am job, Sector 65" */
-  overNext: (next: string, sector: string) => `for the ${next} job, ${sector}`,
+  overNext: (next: string, sector: string | null) =>
+    sector === null ? `for the ${next} job` : `for the ${next} job, ${sector}`,
   /** "Tomorrow: 4 jobs from 9:30 am" */
   dayAhead: (jobs: number, first: string) => `Tomorrow: ${counted(jobs, "job", "jobs")} from ${first}`,
   /** "First: Rohit M., Sector 65" */
-  first: (client: string, sector: string) => `First: ${client}, ${sector}`,
+  first: (client: string | null, sector: string | null) =>
+    `First: ${[client, sector].filter((part) => part !== null).join(", ")}`,
   /** When it came: "9:02 am", "Yesterday, 8 pm", "Mon 9 Nov, 8 pm" */
   yesterday: (time: string) => `Yesterday, ${time}`,
   earlier: (day: string, time: string) => `${day}, ${time}`,

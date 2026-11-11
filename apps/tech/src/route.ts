@@ -7,6 +7,7 @@
 //   /week                    Schedule: today and the six days after it, today down the hours (a tab)
 //   /week/:date              Schedule on another of those days
 //   /week/:date/:id          a later day's job, read-only
+//   /alerts                  Alerts: the inbox and the kinds on, from Today's bell and from Me
 //   /guides                  Guides: each kind of visit's steps, from Me
 //   /guides/:type            one kind of visit's guide
 //   /guides/:type/:task      one of its tasks, read-only
@@ -55,6 +56,7 @@ export type Route =
   | { readonly page: "kit" }
   | { readonly page: "week"; readonly date: string | null }
   | { readonly page: "preview"; readonly date: string; readonly id: string }
+  | { readonly page: "alerts" }
   | { readonly page: "guides" }
   | { readonly page: "guide"; readonly type: VisitType }
   | { readonly page: "guideTask"; readonly type: VisitType; readonly task: string }
@@ -83,6 +85,7 @@ export function routeOf(path: string): Route {
     if (first === "leave") return { page: "leave" };
     if (first === "me") return { page: "me" };
     if (first === "guides") return { page: "guides" };
+    if (first === "alerts") return { page: "alerts" };
     return first === "kit" ? { page: "kit" } : TODAY;
   }
   if (first === "guides") {
