@@ -74,6 +74,14 @@
   color: var(--ui-text-muted);
 }
 
+/* A step's words, with why it was sent back and its Send back beneath them. */
+.storyWhat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-8);
+}
+
 .storyBy,
 .storyNone {
   color: var(--ui-text-muted);

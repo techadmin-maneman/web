@@ -1,5 +1,5 @@
 import { expect, test } from "../support.ts";
-import { BOARD, fails, json, ROHIT, VIKRAM } from "./fixtures.ts";
+import { BOARD, empty, fails, json, ROHIT, VIKRAM } from "./fixtures.ts";
 import {
   MOVE_IT,
   READ_BOARD,
@@ -243,6 +243,8 @@ test("tells what happened on a visit in its drawer, step by step, and opens its 
         },
         { kind: "outcome", at: "2025-09-19T05:00:00.000Z", technician: "Imran Qureshi", outcome: "done", door: null },
       ],
+      sent_back: [],
+      may_send_back: [],
     }),
   });
   await press(page, ROHIT_BLOCK);
@@ -278,4 +280,46 @@ test("marks each block done, not done, or with a move proposed, and keys the boa
   await open(page, { [READ_BOARD]: json(marked("terminated")) });
   const rohitNotDone = page.getByRole("button", { name: ROHIT_BLOCK, exact: true });
   await expect(rohitNotDone).toContainText(opsCopy.dispatch.chips.terminated);
+});
+
+// A landed step goes back to the technician with what to fix (docs/decisions/0246-closed-and-sent-back.md).
+test("sends a landed step back to the technician with what to fix, and says so beneath it", async ({ page }) => {
+  const visit = ROHIT_JOB?.appointment_id ?? "";
+  const step = {
+    kind: "before_photos",
+    at: "2025-09-19T03:40:00.000Z",
+    technician: "Imran Qureshi",
+    outcome: null,
+    door: null,
+  };
+  let sentBack = false;
+  const sent = sentTo(page, `/api/visits/${visit}/send-back`);
+  await open(page, {
+    "GET /api/visits/{id}/story": (route) =>
+      json({
+        steps: [step],
+        sent_back: sentBack
+          ? [{ kind: "before_photos", reason: "Front is blurred", sent_at: "2025-09-19T06:00:00.000Z" }]
+          : [],
+        may_send_back: sentBack ? [] : ["before_photos"],
+      })(route),
+    "POST /api/visits/{id}/send-back": async (route) => {
+      sentBack = true;
+      await empty()(route);
+    },
+  });
+  await press(page, ROHIT_BLOCK);
+  const story = page
+    .getByRole("dialog", { name: "Rohit Malhotra" })
+    .getByRole("region", { name: opsCopy.dispatch.drawer.story.title });
+  const words = opsCopy.dispatch.drawer.story.sendBack;
+  await story.getByRole("button", { name: words.action }).click();
+  const confirm = story.getByRole("button", { name: words.confirm });
+  await expect(confirm).toBeDisabled();
+  await story.getByRole("textbox", { name: words.reason }).fill("Front is blurred");
+  await confirm.click();
+
+  await expect(story.getByText(words.sent("Front is blurred"))).toBeVisible();
+  await expect(story.getByRole("button", { name: words.action })).toHaveCount(0);
+  expect(sent).toEqual([{ step: "before_photos", reason: "Front is blurred" }]);
 });

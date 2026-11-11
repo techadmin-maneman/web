@@ -4046,6 +4046,15 @@ export interface components {
             /** @description The client's alerts still on, newest first. */
             client_alerts: components["schemas"]["TechnicianClientAlert"][];
             handoff: components["schemas"]["Handoff"];
+            /** @description The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and leaves this list once it has (ADR 0246). */
+            sent_back: {
+                /** @enum {string} */
+                kind: "before_photos" | "checklist" | "consumables" | "piece" | "after_photos";
+                /** @description Why ops sent it back, as they wrote it. */
+                reason: string;
+                /** Format: date-time */
+                sent_at: string;
+            }[];
         };
         TechnicianJobProgress: {
             checked_in_at: string | null;

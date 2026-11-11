@@ -3,7 +3,7 @@
 import { z } from "@hono/zod-openapi";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
 import { REMINDER_STATES } from "../../domain/field/job-card.ts";
-import { CARD_STEPS } from "../../policy/in-job-steps.ts";
+import { CARD_STEPS, SENT_BACK_KINDS } from "../../policy/in-job-steps.ts";
 import { BasedOnSchema, FitSpecWriteSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
 import { PieceSchema } from "./pieces.ts";
 import { HandoffSchema, TechnicianAlertsSchema } from "../schemas/client-record.ts";
@@ -241,6 +241,21 @@ export const JobDetailSchema = JobSummarySchema.extend({
   }),
   client_alerts: TechnicianAlertsSchema,
   handoff: HandoffSchema,
+  sent_back: z
+    .array(
+      z
+        .object({
+          kind: z.enum(SENT_BACK_KINDS),
+          reason: z.string().openapi({ description: "Why ops sent it back, as they wrote it." }),
+          sent_at: z.iso.datetime(),
+        })
+        .strict(),
+    )
+    .openapi({
+      description:
+        "The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and " +
+        "leaves this list once it has (ADR 0246).",
+    }),
 }).openapi("TechnicianJobDetail");
 
 export const AcceptedSchema = z

@@ -95,6 +95,7 @@ import { registerOpsVisitChanges } from "./visit-changes.ts";
 import { registerOpsUpiPayments } from "./upi-payments.ts";
 import { registerOpsVisitLostReason } from "./visit-lost-reason.ts";
 import { registerOpsVisitStory } from "./visit-story.ts";
+import { registerOpsStepSendBacks } from "./step-send-backs.ts";
 import { registerOpsVisits } from "./visits.ts";
 import { registerOpsWaitlist } from "./waitlist.ts";
 import { registerOpsWhoami } from "./whoami.ts";
@@ -161,6 +162,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsTargets,
   registerOpsVisitLostReason,
   registerOpsVisitStory,
+  registerOpsStepSendBacks,
   registerOpsRemedies,
   registerOpsCareNumbers,
   registerOpsReferralChannels,

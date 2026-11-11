@@ -2,7 +2,15 @@
 
 import { describe, expect, it } from "vitest";
 import { ANGLES } from "../../../src/domain/field/visit-photos.ts";
-import { landsAfterClose, PHOTO_ANGLES, stepBefore, stepsFor, takesStep } from "../../../src/policy/in-job-steps.ts";
+import {
+  landsAfterClose,
+  mayBeSentBack,
+  PHOTO_ANGLES,
+  SENT_BACK_KINDS,
+  stepBefore,
+  stepsFor,
+  takesStep,
+} from "../../../src/policy/in-job-steps.ts";
 
 const done = (...kinds: string[]): ReadonlySet<string> => new Set(kinds);
 
@@ -136,6 +144,12 @@ describe("a closed job", () => {
     expect(landsAfterClose("consumables", closedAt, minutesLater(59))).toBe(true);
     expect(landsAfterClose("checklist", closedAt, minutesLater(60))).toBe(false);
     expect(landsAfterClose("consumables", closedAt, minutesLater(61))).toBe(false);
+  });
+
+  it("lets ops send back a set of photographs, a checklist, a count or a fit's piece, never a one visit's piece", () => {
+    for (const kind of SENT_BACK_KINDS) expect(mayBeSentBack(kind, false), kind).toBe(true);
+    expect(mayBeSentBack("checklist", true)).toBe(true);
+    expect(mayBeSentBack("piece", true)).toBe(false);
   });
 
   it("takes no other step at all: no second outcome, no check-in, no photographs, no piece", () => {

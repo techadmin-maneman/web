@@ -6713,6 +6713,39 @@ One of the client's try-on looks, under the card's own unlock, never cached
     },
     "handoff": {
       "$ref": "#/components/schemas/Handoff"
+    },
+    "sent_back": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "before_photos",
+              "checklist",
+              "consumables",
+              "piece",
+              "after_photos"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why ops sent it back, as they wrote it."
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "kind",
+          "reason",
+          "sent_at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and leaves this list once it has (ADR 0246)."
     }
   },
   "required": [
@@ -6757,7 +6790,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "client_choice",
     "profile",
     "client_alerts",
-    "handoff"
+    "handoff",
+    "sent_back"
   ],
   "additionalProperties": false
 }

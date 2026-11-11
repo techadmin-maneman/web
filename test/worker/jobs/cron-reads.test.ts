@@ -93,6 +93,8 @@ const HISTORY = [
    SELECT 'a-' || i, 'fsm-' || i, 'wo-' || i, 'p-' || i, 'service', '${AGO}', '${AGO_PLUS_HOUR}', 'completed',
      'Completed', '${AGO}', '${AGO}', '${AGO}', '${AGO}', 'inv-' || i, '${AGO}' FROM n`,
   `INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) SELECT 'v-' || i, 'a-' || i, 'done', '${AGO}' FROM n`,
+  `INSERT INTO step_send_backs (id, appointment_id, kind, reason, sent_by, sent_at, cleared_at)
+   SELECT 'sb-' || i, 'a-' || i, 'checklist', 'Tick the scalp again.', 'ops@maneman.in', '${AGO}', '${AGO}' FROM n`,
   // Each client's last visit, as a visit's write keeps it (src/domain/visits/visit-upkeep.ts).
   `INSERT OR REPLACE INTO last_visits (person_id, visit_id, visit_start, consulted_start)
    SELECT 'p-' || i, 'a-' || i, '${AGO}', NULL FROM n`,

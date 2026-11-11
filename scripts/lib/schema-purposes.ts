@@ -198,6 +198,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Staff's short notes on a client, at the top of their page: a change writes a new note in the place of the one before, and one taken off is marked so, never deleted, until an erasure.",
   staff_service_tokens:
     "The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).",
+  step_send_backs:
+    "A landed step of a visit ops sent back to its technician with why; it lands again even after the close, which clears it (ADR 0246).",
   stock_balances:
     "What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).",
   stock_places:

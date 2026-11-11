@@ -1384,6 +1384,15 @@ export interface Rows {
     readonly set_by: string;
     readonly set_at: string;
   };
+  readonly step_send_backs: {
+    readonly id: string;
+    readonly appointment_id: string;
+    readonly kind: string;
+    readonly reason: string;
+    readonly sent_by: string;
+    readonly sent_at: string;
+    readonly cleared_at: string | null;
+  };
   readonly stock_balances: {
     readonly consumable_code: string;
     readonly place: string;

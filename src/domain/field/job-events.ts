@@ -21,6 +21,7 @@
 
 import { firstNameOf } from "../../lib/names.ts";
 import { isNoShow, landsAfterClose, stepBefore, type JobEventKind } from "../../policy/in-job-steps.ts";
+import { clearSentBackStatement, isSentBack } from "./step-send-backs.ts";
 import { namesTheOtherTechnician } from "../../policy/job-visibility.ts";
 import { earliestCheckIn, doneOn, isOnVisitDay, tooEarlyToArrive, type PhoneClock } from "../../policy/phone-clock.ts";
 import type { WorkableJob } from "./workable-job.ts";
@@ -147,7 +148,10 @@ async function answeredWith(
     return { kind: "superseded", ...superseding };
   }
 
-  if (closed !== null && !landsAfterClose(input.kind, closed, input.now)) return { kind: "already_closed" };
+  // A step ops sent back lands after the close until it has landed again.
+  if (closed !== null && !landsAfterClose(input.kind, closed, input.now)) {
+    if (!(await isSentBack(db, input.job.id, input.kind))) return { kind: "already_closed" };
+  }
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
   if (startsTheDay && !isOnVisitDay(doneOn(input), input.job.windowStart)) return { kind: "not_today" };
@@ -344,6 +348,7 @@ async function record(db: D1Database, input: LandingInput): Promise<JobEvent | n
     eventStatement({ db, input, state: "written", superseded: false }),
     ...(input.withEvent ?? []),
     ...input.records,
+    clearSentBackStatement(db, { appointmentId: input.job.id, kind: input.kind, now: input.now }),
   ]);
   const row = inserted?.results[0];
   return row === undefined ? null : eventOf(row);

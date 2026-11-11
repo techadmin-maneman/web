@@ -3,6 +3,7 @@
 
 import type { App } from "../../http/context.ts";
 import { jobChangesSince } from "../../domain/field/job-events.ts";
+import { isSentBack } from "../../domain/field/step-send-backs.ts";
 import { mayUpload } from "../../domain/platform/storage-meter.ts";
 import { workableJob, type WorkableJob } from "../../domain/field/workable-job.ts";
 import {
@@ -34,10 +35,24 @@ import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 
 /**
- * Whether the job has closed, and whether the technician's phone may upload another today, read together. The body is
- * read first, which needs nothing of D1; bytes too large to take count for nothing.
+ * Whether the job has closed to this set: it has closed, and ops have not sent the set back to be taken again
+ * (docs/decisions/0246-closed-and-sent-back.md).
  */
-function roomInOpenJob(c: Ctx, appointmentId: string, bytes: Uint8Array | null): Promise<[boolean, boolean]> {
+async function closedToSet(c: Ctx, appointmentId: string, phase: Phase): Promise<boolean> {
+  if (!(await hasClosed(c, appointmentId))) return false;
+  return !(await isSentBack(c.env.DB, appointmentId, photoStepOf(phase)));
+}
+
+/**
+ * Whether the job has closed, to the set where one is named, and whether the technician's phone may upload another
+ * today, read together. The body is read first, which needs nothing of D1; bytes too large to take count for nothing.
+ */
+function roomInOpenJob(
+  c: Ctx,
+  appointmentId: string,
+  bytes: Uint8Array | null,
+  phase?: Phase,
+): Promise<[boolean, boolean]> {
   const uploader = {
     scope: "photo_upload:technician",
     key: technicianOf(c).technicianId,
@@ -45,7 +60,7 @@ function roomInOpenJob(c: Ctx, appointmentId: string, bytes: Uint8Array | null):
     settings: c.var.config.settings,
   } as const;
   return Promise.all([
-    hasClosed(c, appointmentId),
+    phase === undefined ? hasClosed(c, appointmentId) : closedToSet(c, appointmentId, phase),
     bytes === null ? Promise.resolve(true) : mayUpload(c.env.DB, c.var.deps.alertOnce, uploader),
   ]);
 }
@@ -64,8 +79,8 @@ export function registerPhotographs(app: App): void {
       c.var.log.info("upload_link_superseded", { appointment_id: job.id, changed: superseding.changed });
       return c.json(refusalOf(c, superseded(superseding)), 409);
     }
-    if (await hasClosed(c, job.id)) return refuse(c, "already_closed");
     const { phase, angle } = c.req.valid("json");
+    if (await closedToSet(c, job.id, phase)) return refuse(c, "already_closed");
     if (!takesPhotoSet(job, phase)) return refuse(c, "invalid_request", ["phase"]);
     const link = await uploadLink(c.var.config.settings.tryon.linkSigningKey, { appointmentId: id, phase, angle }, now);
     return c.json(
@@ -80,7 +95,7 @@ export function registerPhotographs(app: App): void {
     const slot = await uploadSlot(c, c.req.valid("param").token);
     if (slot === null) return refuse(c, "not_found");
     const bytes = await cappedBody(c.req.raw, MAX_PHOTO_BYTES);
-    const [closed, room] = await roomInOpenJob(c, slot.appointmentId, bytes);
+    const [closed, room] = await roomInOpenJob(c, slot.appointmentId, bytes, slot.phase);
     if (closed) return refuse(c, "already_closed");
     if (bytes === null || bytes.byteLength === 0) return refuse(c, "photo_invalid_file");
     if (!room) return refuse(c, "busy");
@@ -101,7 +116,7 @@ export function registerPhotographs(app: App): void {
     const slot = await uploadSlot(c, c.req.valid("param").token);
     if (slot === null) return refuse(c, "not_found");
     const bytes = await cappedBody(c.req.raw, MAX_THUMBNAIL_BYTES);
-    const [closed, room] = await roomInOpenJob(c, slot.appointmentId, bytes);
+    const [closed, room] = await roomInOpenJob(c, slot.appointmentId, bytes, slot.phase);
     if (closed) return refuse(c, "already_closed");
     if (bytes === null) return refuse(c, "photo_invalid_file");
     if (!room) return refuse(c, "busy");
