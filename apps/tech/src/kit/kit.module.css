@@ -67,17 +67,18 @@
   text-align: end;
 }
 
-.forecast thead th:first-child,
-.forecast tbody th {
-  text-align: start;
-}
-
 .forecast tbody th,
 .forecast td {
   padding: var(--sp-8) 0;
   border-bottom: var(--hairline) solid var(--ui-line);
   font-weight: var(--weight-regular);
   text-align: end;
+}
+
+/* The item's name, and its head, at the start. */
+.forecast thead th:first-child,
+.forecast tbody th {
+  text-align: start;
 }
 
 .short {

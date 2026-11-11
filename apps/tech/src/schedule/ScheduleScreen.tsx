@@ -80,7 +80,7 @@ function blocksOf(day: Day, today: boolean, names: ReadonlyMap<string, string>, 
       start,
       minutes: length,
       look: closed ? "done" : "visit",
-      title: today ? (names.get(job.id) ?? kindName(job)) : kindName(job),
+      title: today ? (names.get(job.id) ?? job.client_name ?? kindName(job)) : kindName(job),
       meta: metaOf(job, today, closed, queued),
       to: today ? `/jobs/${job.id}` : `/week/${day.date}/${job.id}`,
     };
