@@ -127,6 +127,7 @@ const SHARED_BUTTONS = { file: "packages/ui/button.module.css", looks: [".gold",
  * folders of the screens it redraws; their colours are read as the look sets them and held to its 4.5:1.
  */
 const REDRAWN = [
+  "apps/tech/src/frame/safety.module.css",
   "apps/tech/src/parts/",
   "apps/tech/src/styles/look.css",
   "apps/tech/src/today/",

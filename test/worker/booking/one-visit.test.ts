@@ -435,6 +435,20 @@ describe("a one visit whose fit the client books for another day", () => {
     expect((await job.post(path("outcome"), lost, "event-outcome-03")).status).toBe(400);
   });
 
+  // A fit taken back before the close charges nothing at it: ops check the charge and the kit.
+  it("tells ops once when it takes back a hair system already recorded as fitted", async () => {
+    const job = await oneVisit({ payments: createStubPayments() });
+    await job.workTo("piece");
+    const fitted = { ...A_PIECE, product: NATURAL.tier };
+    expect((await job.post(path("piece"), fitted, "event-piece-01")).status).toBe(202);
+    expect(job.deps.alerts).toEqual([]);
+
+    const later = { product: NATURAL.tier, fit_later: true };
+    expect((await job.post(path("piece"), later, "event-piece-02")).status).toBe(202);
+    expect(job.deps.alerts).toHaveLength(1);
+    expect(job.deps.alerts[0]).toContain(`Check visit ${JOB}`);
+  });
+
   it("is refused on a visit that is no one visit", async () => {
     const job = await working("first_fit");
     await job.workTo("piece");

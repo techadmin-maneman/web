@@ -17,6 +17,7 @@
 //               try-on sessions once expired, app sessions 30 days after they ended, and holds nobody is paying for
 
 import { CRM_ORG_HAS_CARE_FIELDS } from "../config/crm.ts";
+import { sweepPositionsStatement } from "../domain/field/safety.ts";
 import { releaseDeadHolds } from "../domain/booking/hold-slot.ts";
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
@@ -314,6 +315,8 @@ export async function deleteExpiredRecords(context: SweepContext): Promise<void>
     db.prepare("DELETE FROM sessions WHERE revoked_at < ?1").bind(sessionsEnded),
     // A hold nobody is paying for, past its grace, would otherwise stand until someone else held a window.
     ...releaseDeadHolds(db, now),
+    // A technician's position from a visit whose close never came (docs/decisions/0248-safety.md).
+    sweepPositionsStatement(db, now),
   ]);
 }
 

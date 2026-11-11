@@ -74,6 +74,8 @@ export const GLYPHS = {
   copy: "M9 9 H19 V19 H9 Z M15 9 V5 H5 V15 H9",
   /** A label tied to a piece, beside the field it is typed in: typed, never scanned, so no barcode. */
   tag: "M3.5 3.5 H12 L20.5 12 L12 20.5 L3.5 12 Z M8 6.8 A1.2 1.2 0 0 1 8 9.2 A1.2 1.2 0 0 1 8 6.8",
+  /** Safety, in a visit's header: the SOS, ops' line and 112. */
+  shield: "M12 3 L19.5 6 V11.5 C19.5 16 16.3 19.7 12 21 C7.7 19.7 4.5 16 4.5 11.5 V6 Z",
   /** Navigate, on the address. */
   pin: "M12 21 C7 16 4.5 12.6 4.5 9.5 A7.5 7.5 0 0 1 19.5 9.5 C19.5 12.6 17 16 12 21 Z M12 7 A2.6 2.6 0 0 1 12 12.2 A2.6 2.6 0 0 1 12 7",
   /** The ops console's navigation, an entry each, and its search, its menu and its fold. */

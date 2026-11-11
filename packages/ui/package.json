@@ -38,6 +38,7 @@
     "./ErrorRef": "./ErrorRef.tsx",
     "./Field": "./Field.tsx",
     "./FigureGrid": "./FigureGrid.tsx",
+    "./HoldButton": "./HoldButton.tsx",
     "./Icon": "./Icon.tsx",
     "./Initials": "./Initials.tsx",
     "./IconButton": "./IconButton.tsx",

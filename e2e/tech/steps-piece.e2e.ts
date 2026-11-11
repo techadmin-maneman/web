@@ -332,6 +332,8 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("button", { name: techCopy.oneVisit.declined, exact: true }).click();
     await expect(page.getByText(techCopy.oneVisit.declinedNote)).toBeVisible();
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
+    await expect(stepAction(page)).toHaveText(techCopy.visit.next(techCopy.steps.checklistTitles.consultation));
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.cannotFit.action })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
     await stepAction(page).click();
 
@@ -399,6 +401,9 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("button", { name: new RegExp(techCopy.oneVisit.bookLater) }).click();
     await expect(page.getByText(techCopy.oneVisit.laterNote)).toBeVisible();
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
+    // Nothing is fitted today: the consultation's checklist is next, and there is no fit to give up on.
+    await expect(stepAction(page)).toHaveText(techCopy.visit.next(techCopy.steps.checklistTitles.consultation));
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.cannotFit.action })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
     await stepAction(page).click();
 

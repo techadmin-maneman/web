@@ -173,6 +173,7 @@
   --duration-quick: 300ms; /* a state changing: a colour, a fade, a step sliding in */
   --duration-travel: 420ms; /* something crossing a distance: a sheet rising, the try-on's progress bar */
   --duration-phrase: 3200ms; /* how long each phrase of the hero's opening line shows before the next */
+  --duration-hold: 3000ms; /* how long the SOS is held before it goes; letting go sooner sends nothing */
   --ease-house: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* ---- Layers: what sits over what, from low to high ---------------------- */

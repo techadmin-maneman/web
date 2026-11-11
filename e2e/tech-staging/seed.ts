@@ -251,6 +251,9 @@ export async function clearStaging(fixture: StagingFixture): Promise<void> {
     `DELETE FROM checkins WHERE appointment_id IN (${ids});`,
     `DELETE FROM photos WHERE photo_set_id IN (SELECT id FROM photo_sets WHERE appointment_id IN (${ids}));`,
     `DELETE FROM photo_sets WHERE appointment_id IN (${ids});`,
+    // Where they were on the visit, and any SOS tried (docs/decisions/0248-safety.md).
+    `DELETE FROM visit_positions WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
+    `DELETE FROM sos_alerts WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
     `DELETE FROM appointments WHERE id IN (${ids});`,
     `DELETE FROM addresses WHERE person_id = ${sqlLiteral(fixture.personId)};`,
     `DELETE FROM people WHERE id = ${sqlLiteral(fixture.personId)};`,

@@ -26,6 +26,8 @@ export const TRYON_PAUSED_KEYS = { key: "tryon_paused:key", credits: "tryon_paus
  * books or gives back, and a stop to every sign-in, every job or every try-on.
  */
 const URGENT_KINDS = [
+  "sos",
+  "sos_safe",
   "razorpay_payment_unheard",
   "razorpay_refund_unheard",
   "razorpay_catch_up_not_booked",
@@ -100,6 +102,9 @@ const OPERATIONS_KINDS = [
   "fully_booked",
   "low_stock",
   "fit_without_piece",
+  "fit_undone",
+  "sos",
+  "sos_safe",
   "photos_unavailable",
   "stock_expiring",
   "transfer_overdue",

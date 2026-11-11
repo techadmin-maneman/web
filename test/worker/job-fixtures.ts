@@ -29,6 +29,8 @@ export interface Working {
   readonly post: (path: string, body: unknown, eventId: string) => Promise<Response>;
   /** A write from the console. */
   readonly opsPost: (path: string, body?: unknown) => Promise<Response>;
+  /** A read from the console. */
+  readonly opsGet: (path: string) => Promise<Response>;
   /** Checks in, starts, and sends the steps before the one named; a one visit's piece follows the before photos. */
   readonly workTo: (step: "piece" | "checklist" | "consumables" | "outcome") => Promise<void>;
 }
@@ -105,6 +107,8 @@ export async function working(
       bindings,
     );
 
+  const opsGet = (path: string) => request(ops, path, { headers: { Origin: "https://maneman.test" } }, bindings);
+
   const workTo = async (step: "piece" | "checklist" | "consumables" | "outcome") => {
     await post(`/api/tech/jobs/${JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
     await post(`/api/tech/jobs/${JOB}/start`, undefined, "event-start-01");
@@ -118,5 +122,5 @@ export async function working(
     await post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
   };
 
-  return { tech, ops, deps, get, post, opsPost, workTo };
+  return { tech, ops, deps, get, post, opsPost, opsGet, workTo };
 }

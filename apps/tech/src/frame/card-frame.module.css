@@ -28,6 +28,14 @@
   color: var(--ui-text);
 }
 
+/* The shield at the header's far end, opening Safety: a gloved thumb's target, as the way back is. */
+.safety {
+  --icon-button-size: var(--tech-min);
+
+  margin-right: calc(-1 * var(--sp-12));
+  color: var(--ui-text);
+}
+
 .who {
   flex: 1;
   min-width: 0;
