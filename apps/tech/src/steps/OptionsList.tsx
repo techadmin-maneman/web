@@ -1,6 +1,8 @@
-// A consultation's Options, the first page of its outcome (docs/decisions/0247-the-steps-left.md): each product on sale
-// that day with what it costs the client, incl. GST, and the one they pick, which goes with the close of a client going
-// ahead. The products are the card's, so a pick is made with no signal; their prices and the client's looks need it.
+// A consultation's Options (src/routes/tech/options.ts, docs/decisions/0247-the-steps-left.md): each product on sale
+// that day with what it costs the client, incl. GST, and their try-on looks beneath. On the consultation's outcome each
+// product is a choice, and the one the client picks goes with the close of a client going ahead; the job's own Options
+// shows them alone. The products are the card's, so a pick is made with no signal; their prices and the looks need it.
+// A look is never kept on the phone.
 
 import { Button } from "@maneman/ui/Button";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
@@ -11,7 +13,7 @@ import { useCallback } from "react";
 import { api, type Job, type Options } from "../api.ts";
 import { options as copy } from "../content.ts";
 import shared from "./steps.module.css";
-import styles from "./options-pick.module.css";
+import styles from "./options-list.module.css";
 
 type Package = Options["packages"][number];
 
@@ -36,6 +38,39 @@ function Prices({ option }: { option: Package }) {
   );
 }
 
+/** One product: its name, a choice where the client picks one, and its prices once they have loaded. */
+function Product(props: {
+  product: Job["products"][number];
+  option: Package | undefined;
+  picked: boolean;
+  onPick: ((tier: string | null) => void) | undefined;
+}) {
+  const { product, option, picked, onPick } = props;
+  const description = option?.description ?? undefined;
+  return (
+    <section aria-label={product.name}>
+      {onPick === undefined ? (
+        <>
+          <h3 className={styles.name}>{product.name}</h3>
+          {description !== undefined && <p className={styles.quiet}>{description}</p>}
+        </>
+      ) : (
+        <ToggleButton
+          className={shared.choice}
+          pressed={picked}
+          sub={description}
+          onClick={() => {
+            onPick(picked ? null : product.tier);
+          }}
+        >
+          {product.name}
+        </ToggleButton>
+      )}
+      {option !== undefined && <Prices option={option} />}
+    </section>
+  );
+}
+
 function Looks({ looks }: { looks: Options["looks"] }) {
   return (
     <section className={shared.field} aria-labelledby="looks-title">
@@ -51,18 +86,20 @@ function Looks({ looks }: { looks: Options["looks"] }) {
   );
 }
 
-export function OptionsPick({
+/** The products and their prices, and the looks; with `onPick`, each product is a choice, a second tap undoing it. */
+export function OptionsList({
   job,
-  picked,
+  picked = null,
   onPick,
 }: {
   job: Job;
-  picked: string | null;
-  onPick: (tier: string) => void;
+  picked?: string | null;
+  onPick?: (tier: string | null) => void;
 }) {
   const read = useCallback(() => api.options(job.id), [job.id]);
   const [loaded, retry] = useLoad(read);
   const priced = new Map(loaded.state === "loaded" ? loaded.value.packages.map((one) => [one.code, one]) : []);
+  const choosing = onPick !== undefined && job.products.length > 0;
   return (
     <>
       <section className={shared.field} aria-labelledby="prices-title">
@@ -70,27 +107,18 @@ export function OptionsPick({
           <span>{copy.prices}</span>
           <span>{copy.inclGst}</span>
         </h2>
-        <p className={styles.quiet}>{job.products.length === 0 ? copy.none : copy.markPick}</p>
-        <div className={styles.list} role="radiogroup" aria-labelledby="prices-title">
-          {job.products.map((product) => {
-            const option = priced.get(product.tier);
-            return (
-              <div key={product.tier}>
-                <ToggleButton
-                  className={styles.pick}
-                  asRadio
-                  pressed={picked === product.tier}
-                  onClick={() => {
-                    onPick(product.tier);
-                  }}
-                >
-                  <span className={styles.name}>{product.name}</span>
-                  {typeof option?.description === "string" && <span className={styles.line}>{option.description}</span>}
-                </ToggleButton>
-                {option !== undefined && <Prices option={option} />}
-              </div>
-            );
-          })}
+        {job.products.length === 0 && <p className={styles.quiet}>{copy.none}</p>}
+        {choosing && <p className={styles.quiet}>{copy.markPick}</p>}
+        <div className={styles.list}>
+          {job.products.map((product) => (
+            <Product
+              key={product.tier}
+              product={product}
+              option={priced.get(product.tier)}
+              picked={picked === product.tier}
+              onPick={onPick}
+            />
+          ))}
         </div>
         {loaded.state === "failed" && (
           <div className={styles.failed}>

@@ -1,4 +1,4 @@
-/* What ./OptionsPick.tsx draws: each product with its prices, the client's pick marked, and their looks beneath. */
+/* What ./OptionsList.tsx draws: each product with its prices, a choice where the client picks one, and the looks. */
 
 .head {
   display: flex;
@@ -23,24 +23,15 @@
   gap: var(--sp-20);
 }
 
-.pick {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: var(--sp-4);
-  width: 100%;
-  min-height: var(--tech-primary);
-  text-align: left;
-}
-
 .name {
+  margin: 0 0 var(--sp-4);
   font-size: var(--fs-17);
+  font-weight: var(--weight-regular);
+  color: var(--ui-text);
 }
 
-.line {
-  font-size: var(--fs-15);
-  color: var(--ui-text-soft);
+.name + .quiet {
+  margin-bottom: 0;
 }
 
 .prices {
@@ -81,9 +72,10 @@
   margin: 0;
 }
 
+/* Three to a row, whatever the phone's width. */
 .looks {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sp-8);
 }
 

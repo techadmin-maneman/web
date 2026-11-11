@@ -15,7 +15,7 @@ import { put, remove } from "../store/db.ts";
 import type { Queued } from "../store/outbox.ts";
 import { DiscountCode } from "./DiscountCode.tsx";
 import { useDraft, type Draft } from "./drafts.ts";
-import { OptionsPick } from "./OptionsPick.tsx";
+import { OptionsList } from "./OptionsList.tsx";
 import { outcomeSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -336,9 +336,13 @@ function ConsultationOutcome({
   const [page, setPage] = useState<"options" | "close">(refused === null ? "options" : "close");
   const [picked, setPicked] = useState<string | null>(() => pickSent(refused) ?? draft?.picked ?? null);
 
-  // Kept as made: a full phone loses the pick, never the step.
+  // Kept as made, and let go once undone: a full phone loses the pick, never the step.
   useEffect(() => {
-    if (picked !== null) put("device", { key: "options_draft", job_id: job.id, picked }).catch(() => undefined);
+    const kept =
+      picked === null
+        ? remove("device", "options_draft")
+        : put("device", { key: "options_draft", job_id: job.id, picked });
+    kept.catch(() => undefined);
   }, [job.id, picked]);
 
   if (page === "options") {
@@ -353,7 +357,7 @@ function ConsultationOutcome({
           setPage("close");
         }}
       >
-        <OptionsPick job={job} picked={picked} onPick={setPicked} />
+        <OptionsList job={job} picked={picked} onPick={setPicked} />
       </StepFrame>
     );
   }

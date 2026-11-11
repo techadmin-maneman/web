@@ -83,7 +83,7 @@ test("a consultation’s outcome asks whether the client is going ahead, and why
   startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
   // The outcome opens on the consultation's Options; a pick goes only with a yes.
-  await page.getByRole("radio", { name: "Mane Man Essential" }).click();
+  await page.getByRole("button", { name: /^Mane Man Essential/ }).click();
   await stepAction(page).click();
 
   await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
@@ -133,9 +133,9 @@ test("a consultation’s outcome opens on Options, and the client’s pick goes 
   await expect(stepAction(page)).toHaveText(techCopy.visit.next(techCopy.steps.titles.outcome));
   expect(await axeViolations(page)).toEqual([]);
 
-  const natural = page.getByRole("radio", { name: "Mane Man Natural" });
+  const natural = page.getByRole("button", { name: /^Mane Man Natural/ });
   await natural.click();
-  await expect(natural).toHaveAttribute("aria-checked", "true");
+  await expect(natural).toHaveAttribute("aria-pressed", "true");
   await stepAction(page).click();
 
   await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
@@ -143,7 +143,7 @@ test("a consultation’s outcome opens on Options, and the client’s pick goes 
   await expect(page.getByText(techCopy.steps.outcome.picked("Mane Man Natural"))).toBeVisible();
   // Back on Options the pick is as it was left.
   await page.getByRole("button", { name: techCopy.steps.back }).click();
-  await expect(natural).toHaveAttribute("aria-checked", "true");
+  await expect(natural).toHaveAttribute("aria-pressed", "true");
   await stepAction(page).click();
   await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
   await page.getByRole("button", { name: techCopy.steps.outcome.yes }).click();

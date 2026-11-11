@@ -14,6 +14,25 @@
     cursor: pointer;
   }
 
+  /* A choice's words with a quieter line beneath, held off the edges as one line is by the control's height. */
+  .lines {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-4);
+    padding-block: var(--sp-12);
+    text-align: left;
+  }
+
+  .sub {
+    font-size: var(--fs-15);
+    color: var(--ui-text-soft);
+  }
+
+  .onInk .sub {
+    color: inherit;
+  }
+
   /* A filter's count, after its words, in their colour. */
   .count {
     margin-left: var(--sp-8);

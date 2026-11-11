@@ -5,7 +5,6 @@ import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { oneVisit } from "../content.ts";
 import shared from "./steps.module.css";
-import styles from "./fit-when.module.css";
 
 /** When the chosen hair system is fitted: today, or another day ops book with the client. */
 export function When({ later, onLater }: { later: boolean; onLater: (later: boolean) => void }) {
@@ -25,14 +24,14 @@ export function When({ later, onLater }: { later: boolean; onLater: (later: bool
           {oneVisit.fitToday}
         </ToggleButton>
         <ToggleButton
-          className={styles.later}
+          className={shared.choice}
           pressed={later}
+          sub={oneVisit.bookLaterSub}
           onClick={() => {
             onLater(true);
           }}
         >
-          <span>{oneVisit.bookLater}</span>
-          <span className={styles.laterSub}>{oneVisit.bookLaterSub}</span>
+          {oneVisit.bookLater}
         </ToggleButton>
       </div>
       {later && <p className={shared.note}>{oneVisit.laterNote}</p>}
