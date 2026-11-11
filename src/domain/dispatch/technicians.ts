@@ -108,6 +108,10 @@ export async function openTechnicianSession(
 /** A technician and the phone they are signed in on, for GET /api/tech/me. */
 interface SignedInTechnician {
   readonly name: string;
+  /** Their grade, as Finance names it; null for none. */
+  readonly grade: string | null;
+  readonly city: string | null;
+  readonly mobile: string | null;
   readonly deviceId: string;
   readonly label: string | null;
   readonly enrolledAt: string;
@@ -120,15 +124,33 @@ export async function signedInTechnician(
 ): Promise<SignedInTechnician | null> {
   const row = await db
     .prepare(
-      `SELECT t.name, d.device_id, d.label, d.created_at FROM technician_devices d
-       JOIN technicians t ON t.id = d.technician_id
-       WHERE d.id = ?1 AND d.technician_id = ?2`,
+      `SELECT t.name, g.name AS grade, t.city, t.mobile_e164, d.device_id, d.label, d.created_at
+         FROM technician_devices d
+         JOIN technicians t ON t.id = d.technician_id
+         LEFT JOIN pay_grades g ON g.id = t.pay_grade_id
+        WHERE d.id = ?1 AND d.technician_id = ?2`,
     )
     .bind(options.deviceRowId, options.technicianId)
-    .first<{ name: string; device_id: string; label: string | null; created_at: string }>();
+    .first<{
+      name: string;
+      grade: string | null;
+      city: string | null;
+      mobile_e164: string | null;
+      device_id: string;
+      label: string | null;
+      created_at: string;
+    }>();
   return row === null
     ? null
-    : { name: row.name, deviceId: row.device_id, label: row.label, enrolledAt: row.created_at };
+    : {
+        name: row.name,
+        grade: row.grade,
+        city: row.city,
+        mobile: row.mobile_e164,
+        deviceId: row.device_id,
+        label: row.label,
+        enrolledAt: row.created_at,
+      };
 }
 
 /** The device a live session belongs to, revoked or not, with whether its technician is still active. */

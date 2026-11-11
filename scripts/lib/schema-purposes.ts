@@ -49,6 +49,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each move the supply plan proposes from a forecast run, a transfer or an order, with the figures behind it and what ops decided (ADR 0180).",
   recall_pieces: "Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).",
   recalls: "Each lot recalled: why, who raised it and when, and when it was closed once dealt with (ADR 0187).",
+  reschedule_requests:
+    "A technician's ask that ops move a visit, with why, open until ops settle it or the visit moves, closes or is called off (ADR 0249).",
   stock_risks:
     "Each fit booked ahead found with no hair system in its city, or no profile to match one by, and when it was no longer at risk (ADR 0178).",
   supplier_claims:
@@ -117,6 +119,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).",
   last_visits:
     "Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.",
+  kit_requests:
+    "A technician's ask of ops for what their kit is short of over the next seven days, by the job sheet's counts, open until ops settle it (ADR 0249).",
   leave_requests:
     "A technician's ask for leave from their phone, which Operations approve or decline on Tasks; an approval records the leave and names it.",
   leads:

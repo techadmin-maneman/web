@@ -1,11 +1,13 @@
 // Me (docs/prompts/tech-redesign.md, "Me"), in the new look: the technician's own pages, what waits to send, the way to
 // ops, and signing out, which lives here alone. Signing out wipes the phone, so it always asks first: with work on it
 // that has not reached us, it offers to send it. With no signal the session stays open and nothing is wiped, and it
-// says so (apps/tech/src/App.tsx). Quality, incentives, guides, language and alerts come with their screens.
+// says so (apps/tech/src/App.tsx). Who they are, their quality and this month's incentives head it (./Standing.tsx).
+// Guides, language and alerts come with their screens.
 
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { SectionHead } from "@maneman/ui/SectionHead";
+import { formatMobileField } from "@maneman/web-kit/mobile";
 import { useEffect, useState } from "react";
 import { leaving as leavingCopy, me as copy } from "../content.ts";
 import { ReachOps } from "../frame/ReachOps.tsx";
@@ -15,6 +17,7 @@ import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { useSession } from "../session.ts";
 import { replay } from "../store/outbox.ts";
+import { Incentives, Quality } from "./Standing.tsx";
 import styles from "./me.module.css";
 
 /** Pending uploads' count: in the error's colour where the API stopped some, else marked while any wait. */
@@ -86,9 +89,14 @@ export function MeScreen() {
         <SyncLabel />
       </header>
       <p className={styles.name}>{me.name}</p>
+      <p className={styles.who}>
+        {copy.who(me.grade, me.city, me.mobile === null ? null : `+91 ${formatMobileField(me.mobile)}`)}
+      </p>
+      <Quality />
+      <Incentives />
 
-      <ListRows className={styles.rows} label={copy.title}>
-        <ListRow title={copy.month} to="/month" />
+      <SectionHead title={copy.account} className={styles.section} />
+      <ListRows className={styles.rows} label={copy.account}>
         <ListRow title={copy.leave} to="/leave" />
         <ListRow
           title={copy.pending}

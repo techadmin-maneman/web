@@ -612,3 +612,83 @@ test("approves a technician’s ask for leave from its drawer", async ({ page })
   await drawer.getByRole("button", { name: opsCopy.tasks.leave.approve }).click();
   await expect.poll(() => decided).toEqual([{ decision: "approved" }]);
 });
+
+// A technician's asks of ops from the phone (docs/decisions/0249-schedule-kit-and-me.md): each a task ops close with
+// what was done.
+test("lists a technician's asks, for kit and to move a visit, and closes one with what was done", async ({ page }) => {
+  const kitAsk = "97000000-0000-4000-8000-000000000011";
+  const board: OpsReply<"/api/tasks"> = {
+    overdue: 0,
+    truncated: false,
+    low_stock_places: 0,
+    lapsed: 0,
+    staff: [],
+    groups: [
+      {
+        group: "reschedule_request",
+        count: 1,
+        closable: true,
+        tasks: [
+          {
+            id: "97000000-0000-4000-8000-000000000012",
+            person: { id: "22000000-0000-4000-8000-000000000021", name: "Rohit Malhotra" },
+            facts: {
+              group: "reschedule_request",
+              kind: "service",
+              starts_at: "2027-09-22T05:00:00.000Z",
+              technician: "Imran Qureshi",
+              reason: "running_late",
+            },
+            detail: "running_late Imran Qureshi",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-21T10:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+      {
+        group: "kit_request",
+        count: 1,
+        closable: true,
+        tasks: [
+          {
+            id: kitAsk,
+            person: null,
+            facts: {
+              group: "kit_request",
+              technician: "Sameer Bhatt",
+              items: [{ name: "Shampoo sachet", unit: "sachet", quantity: 6 }],
+            },
+            detail: "Sameer Bhatt",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-22T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  };
+  const closed: unknown[] = [];
+  await open(page, board, NO_ALERTS, {
+    "POST /api/tasks/{group}/{id}/close": async (route) => {
+      closed.push({ url: new URL(route.request().url()).pathname, body: route.request().postDataJSON() as unknown });
+      await empty()(route);
+    },
+  });
+  await expect
+    .poll(() => kindsListed(page))
+    .toEqual([opsCopy.tasks.groups.kit_request, opsCopy.tasks.groups.reschedule_request].sort());
+  await expect(row(page, "Rohit Malhotra")).toContainText(
+    `${opsCopy.tasks.subs.rescheduleReasons.running_late} · Imran Qureshi`,
+  );
+  await expect(row(page, "Sameer Bhatt")).toContainText("Shampoo sachet 6 sachets");
+  expect(await axeViolations(page)).toEqual([]);
+
+  const drawer = await detail(page, "Sameer Bhatt");
+  await drawer.getByRole("button", { name: opsCopy.tasks.close.kitRequest.open }).click();
+  await drawer.getByLabel(opsCopy.tasks.close.kitRequest.label).fill("In Friday's transfer");
+  await drawer.getByRole("button", { name: opsCopy.tasks.close.confirm }).click();
+  await expect
+    .poll(() => closed)
+    .toEqual([{ url: `/api/tasks/kit_request/${kitAsk}/close`, body: { reason: "In Friday's transfer" } }]);
+});

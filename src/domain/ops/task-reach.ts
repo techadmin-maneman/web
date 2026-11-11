@@ -9,6 +9,7 @@ import type { TaskGroup } from "../../policy/tasks.ts";
 const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   untold_move: "move",
   move_unanswered: "visit",
+  reschedule_request: "reschedule_request",
   visit_left_open: "visit",
   unassigned_visit: "visit",
   unanswered_chat: "conversation",
@@ -25,6 +26,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   at_risk_client: "visit",
   partial_visit: "visit",
   consumables_short: "visit",
+  kit_request: "kit_request",
   referral_review: "referral",
   no_show_decision: "no_show",
   no_show_dispute: "dispute",

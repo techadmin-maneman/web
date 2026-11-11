@@ -14,11 +14,14 @@ const TABS = [
   { page: "me", to: "/me", icon: GLYPHS.person, name: copy.me },
 ] as const satisfies readonly { page: Route["page"]; to: string; icon: string; name: string }[];
 
-/** The pages a tab opens, under which the bar is drawn. */
-const TABBED: ReadonlySet<Route["page"]> = new Set(TABS.map((tab) => tab.page));
+/** The pages a tab opens, under which the bar is drawn; a later job's preview is Schedule's. */
+const TABBED: ReadonlySet<Route["page"]> = new Set([...TABS.map((tab) => tab.page), "preview"]);
 
 /** The tabbed pages already drawn in the new look. */
-const LIGHT: ReadonlySet<Route["page"]> = new Set(["today", "me"]);
+const LIGHT: ReadonlySet<Route["page"]> = new Set(["today", "week", "preview", "kit", "me"]);
+
+/** The tab a page is under. */
+const tabOf = (page: Route["page"]): Route["page"] => (page === "preview" ? "week" : page);
 
 export const hasTabs = (page: Route["page"]): boolean => TABBED.has(page);
 
@@ -29,7 +32,7 @@ export function Tabs({ page }: { readonly page: Route["page"] }) {
     <div data-look={drawnLight(page) ? "light" : undefined}>
       <TabBar label={copy.label}>
         {TABS.map((tab) => (
-          <TabBarItem key={tab.page} to={tab.to} icon={tab.icon} name={tab.name} current={tab.page === page} />
+          <TabBarItem key={tab.page} to={tab.to} icon={tab.icon} name={tab.name} current={tab.page === tabOf(page)} />
         ))}
       </TabBar>
     </div>

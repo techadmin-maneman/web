@@ -6,7 +6,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { queuedOnPhone } from "./on-phone.ts";
+import { deviceRecordOnPhone, queuedOnPhone } from "./on-phone.ts";
 import { startedThrough, stepAction, writesTo } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
@@ -27,6 +27,8 @@ test("a pick stays through leaving the step and a reload", async ({ page }) => {
   await atTheOutcome(page);
   await natural(page).click();
   await expect(natural(page)).toHaveAttribute("aria-pressed", "true");
+  // Kept on the phone before the page goes: a load straight after the tap can come before the write.
+  await expect.poll(() => deviceRecordOnPhone(page, "options_draft")).toContain('"picked":"');
 
   await page.goto(`/jobs/${JOB_ID}`);
   await page.goto(`/jobs/${JOB_ID}/outcome`);
@@ -37,6 +39,7 @@ test("a pick stays through leaving the step and a reload", async ({ page }) => {
   // A second tap undoes it, and the phone lets it go.
   await natural(page).click();
   await expect(natural(page)).toHaveAttribute("aria-pressed", "false");
+  await expect.poll(() => deviceRecordOnPhone(page, "options_draft")).toBeNull();
   await page.reload();
   await expect(natural(page)).toHaveAttribute("aria-pressed", "false");
 });

@@ -43,6 +43,21 @@ export async function closeTask(
             .bind(task.id, options.now.toISOString()),
         ]
       : []),
+    // A technician's ask closed leaves the open list its task is read from (migration 0208).
+    ...(task.group === "kit_request"
+      ? [
+          db
+            .prepare("UPDATE kit_requests SET settled_at = ?2 WHERE id = ?1 AND settled_at IS NULL")
+            .bind(task.id, options.now.toISOString()),
+        ]
+      : []),
+    ...(task.group === "reschedule_request"
+      ? [
+          db
+            .prepare("UPDATE reschedule_requests SET settled_at = ?2 WHERE id = ?1 AND settled_at IS NULL")
+            .bind(task.id, options.now.toISOString()),
+        ]
+      : []),
   ]);
 }
 

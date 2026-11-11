@@ -132,6 +132,8 @@ const REDRAWN = [
   "apps/tech/src/styles/look.css",
   "apps/tech/src/today/",
   "apps/tech/src/me/",
+  "apps/tech/src/schedule/",
+  "apps/tech/src/kit/",
   "apps/tech/src/job/client-history.module.css",
   "apps/tech/src/job/ClientHistoryScreen.tsx",
   "apps/tech/src/frame/card-frame.module.css",
@@ -146,6 +148,8 @@ const REDRAWN = [
   "apps/tech/src/job/JobCard.tsx",
   "apps/tech/src/job/job-screen.module.css",
   "apps/tech/src/job/JobScreen.tsx",
+  "apps/tech/src/job/reschedule.module.css",
+  "apps/tech/src/job/Reschedule.tsx",
   "apps/tech/src/job/tell-client.module.css",
   "apps/tech/src/job/TellClient.tsx",
   "apps/tech/src/camera/door-camera.module.css",
@@ -289,8 +293,9 @@ describe("what the older screens’ stylesheets use", () => {
   const used = coloursUsed(inkRules());
 
   it("reads every stylesheet’s colours, so the checks below check something", () => {
-    expect(used.texts.size).toBeGreaterThanOrEqual(6);
-    expect(used.both.length).toBeGreaterThanOrEqual(5);
+    // Fewer as the older screens are redrawn: Schedule, Kit and Leave took theirs to the new look.
+    expect(used.texts.size).toBeGreaterThanOrEqual(4);
+    expect(used.both.length).toBeGreaterThanOrEqual(4);
     expect(used.both).toContainEqual([".gold", "--ink-deep", "--gilt"]);
     const firstSelector = used.both.map(([selector, text, ground]) => [selector.split(",")[0], text, ground]);
     expect(firstSelector).toContainEqual([".outlineOnInk:disabled", "--ink-tag", "--ink-disabled"]);

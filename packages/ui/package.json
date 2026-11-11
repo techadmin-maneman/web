@@ -11,6 +11,7 @@
     "./arrival": "./arrival.ts",
     "./Badge": "./Badge.tsx",
     "./BarChart": "./BarChart.tsx",
+    "./DayColumn": "./DayColumn.tsx",
     "./DayTimeline": "./DayTimeline.tsx",
     "./base.css": "./base.css",
     "./Breadcrumbs": "./Breadcrumbs.tsx",

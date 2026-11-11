@@ -8,7 +8,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, NOW, request } from "../helpers.ts";
-import { IMRAN, JOB, working, type Working } from "../job-fixtures.ts";
+import { aVisit } from "../fixtures/index.ts";
+import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
 let job: Working;
 let code: string;
@@ -122,6 +123,132 @@ describe("the kit", () => {
     const [item] = (await response.json<Kit>()).held;
     expect(item).toMatchObject({ code, quantity: 2, lots: [{ lot_code: "HS-1" }] });
     expect(item?.units).toHaveLength(2);
+  });
+});
+
+describe("the week ahead", () => {
+  it("weighs what the visits booked from today to six days on will use against what the kit holds", async () => {
+    await job.opsPost("/api/consumables", { name: "Solvent", unit: "ml", unit_cost: 50 });
+    await job.opsPost("/api/service-usage", {
+      visit_type: "service",
+      tier: "standard",
+      items: [{ code: "solvent", quantity: 10 }],
+    });
+    await job.opsPost("/api/stock/counts", { consumable_code: "solvent", place_id: IMRAN, counted: 4 });
+    // The fixture's service today, one six days on, and one a week on, past the forecast.
+    for (const days of [6, 7]) {
+      await aVisit({
+        person_id: PERSON,
+        technician_id: IMRAN,
+        window_start: new Date(NOW.getTime() + days * 24 * 60 * 60_000).toISOString(),
+      });
+    }
+    const { forecast } = await (await job.get("/api/tech/kit")).json<{ forecast: unknown[] }>();
+    expect(forecast).toEqual([{ code: "solvent", name: "Solvent", unit: "ml", need: 20, have: 4 }]);
+  });
+
+  it("counts nothing expired as held, which goes back to ops instead", async () => {
+    await job.opsPost("/api/consumables", { name: "Solvent", unit: "ml", unit_cost: 50 });
+    await job.opsPost("/api/service-usage", {
+      visit_type: "service",
+      tier: "standard",
+      items: [{ code: "solvent", quantity: 10 }],
+    });
+    await job.opsPost("/api/stock/deliveries", {
+      consumable_code: "solvent",
+      quantity: 10,
+      lot_code: "SV-OLD",
+      expires_on: "2026-09-20",
+    });
+    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 10, from: "central", to: IMRAN });
+    const kit = await (
+      await job.get("/api/tech/kit")
+    ).json<{
+      forecast: unknown[];
+      held: { code: string; quantity: number; usable: number }[];
+    }>();
+    expect(kit.forecast).toEqual([{ code: "solvent", name: "Solvent", unit: "ml", need: 10, have: 0 }]);
+    // In kit says the same: held, and none of it fit to use.
+    expect(kit.held.find((item) => item.code === "solvent")).toMatchObject({ quantity: 10, usable: 0 });
+  });
+});
+
+describe("what the kit holds fit to use", () => {
+  it("counts nothing recalled, which goes back to ops, and is low by what is left", async () => {
+    await job.opsPost("/api/consumables", { name: "Solvent", unit: "ml", unit_cost: 50 });
+    await job.opsPost("/api/consumables/solvent", { reorder_kit: 5 });
+    await job.opsPost("/api/service-usage", {
+      visit_type: "service",
+      tier: "standard",
+      items: [{ code: "solvent", quantity: 10 }],
+    });
+    for (const [lot, quantity, expires] of [
+      ["SV-RECALLED", 10, "2027-12-31"],
+      ["SV-GOOD", 2, "2028-06-30"],
+    ] as const) {
+      await job.opsPost("/api/stock/deliveries", {
+        consumable_code: "solvent",
+        quantity,
+        lot_code: lot,
+        expires_on: expires,
+      });
+    }
+    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 12, from: "central", to: IMRAN });
+    await env.DB.prepare("UPDATE stock_lots SET recalled_at = ?1 WHERE lot_code = 'SV-RECALLED'")
+      .bind(NOW.toISOString())
+      .run();
+    const kit = await (
+      await job.get("/api/tech/kit")
+    ).json<{
+      forecast: { have: number }[];
+      held: { code: string; quantity: number; usable: number; low: boolean; lots: { recalled: boolean }[] }[];
+    }>();
+    const solvent = kit.held.find((item) => item.code === "solvent");
+    // Low for what is fit to use; ops' own count, the whole balance, does not find it so until the lot goes back.
+    expect(solvent).toMatchObject({ quantity: 12, usable: 2, low: true, ops_told: false });
+    expect(solvent?.lots.some((each) => each.recalled)).toBe(true);
+    expect(kit.forecast).toMatchObject([{ have: 2 }]);
+
+    // Handed back, the recalled lot itself goes: the kit holds the 2 ml of good stock, against the level of 5, which
+    // ops' own count now finds low too, so ops are told.
+    const back = await job.post("/api/tech/kit/hand-back", { pieces: [], expired: true }, "kit-back");
+    const after = await back.json<{
+      held: { code: string; quantity: number; usable: number; ops_told: boolean; lots: { lot_code: string }[] }[];
+    }>();
+    const left = after.held.find((item) => item.code === "solvent");
+    expect(left).toMatchObject({ quantity: 2, usable: 2, ops_told: true });
+    expect(left?.lots.map((lot) => lot.lot_code)).toEqual(["SV-GOOD"]);
+  });
+});
+
+describe("handing back expired stock", () => {
+  it("sends what Return to ops lists, the lots within the kit's count, and leaves what is fit to use", async () => {
+    await job.opsPost("/api/consumables", { name: "Solvent", unit: "ml", unit_cost: 50 });
+    // Used on a job before the kit held any: its count goes below nought while its lots hold nothing.
+    await job.workTo("consumables");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [{ code: "solvent", quantity: 2 }] }, "event-use-01");
+    for (const [lot, expires] of [
+      ["SV-OLD", "2026-09-20"],
+      ["SV-NEW", "2027-12-31"],
+    ] as const) {
+      await job.opsPost("/api/stock/deliveries", {
+        consumable_code: "solvent",
+        quantity: 5,
+        lot_code: lot,
+        expires_on: expires,
+      });
+    }
+    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 10, from: "central", to: IMRAN });
+
+    type Held = { code: string; quantity: number; usable: number; lots: { lot_code: string; quantity: number }[] };
+    const solventOf = async (answer: Response) =>
+      (await answer.json<{ held: Held[] }>()).held.find((item) => item.code === "solvent");
+    const before = await solventOf(await job.get("/api/tech/kit"));
+    // Count 8; the lots hold 10, so the 2 over come off the expired lot, which lists 3 to hand back.
+    expect(before).toMatchObject({ quantity: 8, usable: 5 });
+    const after = await solventOf(await job.post("/api/tech/kit/hand-back", { pieces: [], expired: true }, "kit-back"));
+    expect(after).toMatchObject({ quantity: 5, usable: 5 });
+    expect(after?.lots.map((lot) => lot.lot_code)).toEqual(["SV-NEW"]);
   });
 });
 

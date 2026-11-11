@@ -76,6 +76,7 @@ import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
 export const TASK_GROUPS = [
   "untold_move",
   "move_unanswered",
+  "reschedule_request",
   "visit_left_open",
   "unassigned_visit",
   "recall_call",
@@ -92,6 +93,7 @@ export const TASK_GROUPS = [
   "at_risk_client",
   "partial_visit",
   "consumables_short",
+  "kit_request",
   "referral_review",
   "no_show_decision",
   "no_show_dispute",
@@ -129,6 +131,8 @@ export const TASK_SLA_HOURS: Slas = {
   untold_move: 4,
   // A move to another day the client has not answered keeps them waiting on a day: a call the same day too.
   move_unanswered: 4,
+  // A technician asks ops to move a visit: the client is called the same day (docs/decisions/0249-schedule-kit-and-me.md).
+  reschedule_request: 4,
   // A visit nobody attended, or never closed, whose day has passed: the client is owed a new time the next day.
   visit_left_open: 24,
   // A visit with no technician: never later than the day before it (src/domain/ops/tasks.ts).
@@ -156,6 +160,8 @@ export const TASK_SLA_HOURS: Slas = {
   // A job that used less than its service expects, with the technician's reason: checked against the kit within the
   // two days (docs/decisions/0222-consumables-short-of-expected.md).
   consumables_short: 48,
+  // A kit short of what its week's visits need: in its next transfer, within the day.
+  kit_request: 24,
   referral_review: 48,
   no_show_decision: 48,
   no_show_dispute: 48,
@@ -182,14 +188,17 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
 
 /**
  * The groups ops close with a reason: a visit left partly done, whose follow-up the client may never want; an at-risk
- * client, closed with what came of the call; a City matter, closed with what was done; and consumables short of what
- * a job expects, closed once checked against the kit. Every other group leaves the board only when its thing is done.
+ * client, closed with what came of the call; a City matter, closed with what was done; consumables short of what a job
+ * expects, closed once checked against the kit; and a technician's asks, for their kit and to move a visit, closed with
+ * what was done. Every other group leaves the board only when its thing is done.
  */
 export const CLOSABLE_TASK_GROUPS = [
   "partial_visit",
   "consumables_short",
   "at_risk_client",
   "city_matter",
+  "kit_request",
+  "reschedule_request",
 ] as const satisfies readonly TaskGroup[];
 
 export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS as readonly TaskGroup[]).includes(group);

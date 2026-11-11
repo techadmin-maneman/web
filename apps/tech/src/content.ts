@@ -114,7 +114,37 @@ export const tabs = {
 /** Me: the technician's own pages, what waits to send, ops, and signing out. */
 export const me = {
   title: "Me",
-  month: "This month",
+  /** "Senior · Gurugram · +91 98100 00009"; "Technician" for one with no grade. */
+  who: (grade: string | null, city: string | null, phone: string | null) =>
+    [grade ?? "Technician", city, phone].filter((part) => part !== null).join(" · "),
+  quality: {
+    title: "Your quality",
+    days: "Last 30 days",
+    redo: "Hairline redo rate",
+    /** "11% · 1 of 9 fits" */
+    redone: (redone: number, fits: number) =>
+      `${String(Math.round((redone / fits) * 100))}% · ${String(redone)} of ${counted(fits, "fit", "fits")}`,
+    onTime: "On time",
+    /** "94% of visits" */
+    onTimeShare: (onTime: number, visits: number) => `${String(Math.round((onTime / visits) * 100))}% of visits`,
+    none: "None yet",
+    failed: "Your quality didn’t load.",
+  },
+  incentives: {
+    /** "Incentives, November" */
+    title: (month: string) => `Incentives, ${month}`,
+    /** "to 10 Nov" */
+    upTo: (date: string) => `to ${date}`,
+    /** "Service visits · 14 · Rs. 450" */
+    line: (kind: string, visits: number, rate: string | null) =>
+      [kind, String(visits), rate].filter((part) => part !== null).join(" · "),
+    noRate: "Rate not set",
+    none: "No visits closed yet this month.",
+    failed: "Your incentives didn’t load.",
+  },
+  account: "Account",
+  loading: "Loading…",
+  retry: "Try again",
   leave: "Leave",
   pending: "Pending uploads",
   nothingPending: "None",
@@ -1088,27 +1118,61 @@ export const session = {
 } as const;
 
 // The kit (docs/decisions/0164-the-kit-screen.md). No board draws it; every line is ours.
-/** The technician's next days, a day at a time, as the jobs route gives later days: time, kind and area. */
-export const week = {
-  title: "Your week",
-  link: "Your week",
-  back: "Back to today",
+/** Schedule: today and the six days after it, a day at a time down the hours; and a later job's preview. */
+export const schedule = {
+  title: "Schedule",
+  /** "12 Nov to 18 Nov · 12 jobs" */
+  range: (from: string, to: string, jobs: number) => `${from} to ${to} · ${counted(jobs, "job", "jobs")}`,
+  /** What a screen reader hears for a day in the strip: "Thursday 12 Nov, 4 jobs"; null for a day that did not load. */
+  dayLabel: (weekday: string, date: string, jobs: number | null) => {
+    if (jobs === null) return `${weekday} ${date}, didn’t load`;
+    return `${weekday} ${date}, ${jobs === 0 ? "nothing booked" : counted(jobs, "job", "jobs")}`;
+  },
+  dayFailed: "This day didn’t load. It shows once there’s signal.",
+  dayNotLoaded: "This day didn’t load.",
+  noJobs: "–",
+  /** "Thu, 12 Nov" */
+  day: (weekday: string, date: string) => `${weekday}, ${date}`,
+  jobs: (count: number) => counted(count, "job", "jobs"),
+  nothing: "Nothing booked",
+  dayView: "The day, by the hour",
+  now: "Now",
+  /** "18 min · leave 9:12 am" */
+  drive: (minutes: number, leave: string) => `${String(minutes)} min · leave ${leave}`,
   failed: "Your week didn’t load.",
   retry: "Try again",
-  none: "Nothing booked.",
-  /** "9:30 am · Service visit · Sector 65" */
-  job: (time: string, kind: string, area: string | null) =>
-    [time, kind, area].filter((part) => part !== null && part !== "").join(" · "),
+  preview: {
+    back: "Back to Schedule",
+    /** "Thu, 12 Nov · 11:30 am" */
+    sub: (day: string, time: string) => `${day} · ${time}`,
+    time: "Time",
+    area: "Area",
+    payment: "Payment",
+    /** "11:30 am · 1 h 30 min" */
+    when: (time: string, length: string) => `${time} · ${length}`,
+    /** "Name and address from 6 pm tomorrow.": when the card opens, by the hour ops set. */
+    locked: (unlocksAt: string) => `Name and address from ${timeAndDay(unlocksAt, apiDate())}.`,
+    gone: "This job is no longer on your schedule.",
+  },
 };
 
-/** The technician's own month: the visits they closed, by kind, and what each earned at their rates. */
+/** Ask ops to reschedule, from the job (./job/Reschedule.tsx). */
+export const reschedule = {
+  open: "Ask ops to reschedule",
+  why: "Why",
+  reasons: { client_asked: "Client asked", running_late: "I’m running late", kit_problem: "Kit problem" },
+  send: "Send to ops",
+  close: "Close",
+  needsSignal: "Needs signal",
+  failed: "That didn’t reach ops. Try again.",
+  closed: "This visit is closed or called off.",
+  gone: "This visit isn’t yours any more.",
+  /** "Reschedule asked 9:05 am · Client asked · ops will confirm with the client" */
+  asked: (time: string, reason: string) => `Reschedule asked ${time} · ${reason} · ops will confirm with the client`,
+} as const;
+
+/** Each kind of visit as Me's incentives name it (./me/Standing.tsx). */
 export const month = {
-  title: "Your month",
-  link: "Your month",
-  back: "Back to today",
-  failed: "Your month didn’t load.",
-  retry: "Try again",
-  none: "No visits closed yet this month.",
   kinds: {
     consultation: "Consultations",
     one_visit: "Consultation and fit",
@@ -1117,10 +1181,6 @@ export const month = {
     replacement: "Replacements",
     no_show: "Not home",
   },
-  /** "Service visits · 12" */
-  line: (kind: string, visits: number) => `${kind} · ${String(visits)}`,
-  noRate: "No rate set yet",
-  total: "So far",
 };
 
 /** A consultation's Options: each package and what it costs the client, and the looks they made with the try-on. */
@@ -1149,20 +1209,19 @@ export const options = {
 
 /** The technician's asks for leave: a new one, and where each stands once ops decide it. */
 export const leave = {
-  title: "Your leave",
-  link: "Your leave",
-  back: "Back to today",
+  title: "Leave",
+  sub: "Days off, asked of ops",
   failed: "Your leave didn’t load.",
   retry: "Try again",
   askTitle: "Ask for leave",
   from: "From",
   to: "To",
-  note: "Why, in a line",
+  note: "Reason",
   ask: "Ask",
   needsSignal: "Needs signal",
   badDates: "Pick days from today on, the last no earlier than the first.",
   notDone: "That didn’t go through. Try again.",
-  askedTitle: "Asked",
+  askedTitle: "Your requests",
   none: "Nothing asked for.",
   states: { asked: "With ops", approved: "Approved", declined: "Declined" },
   /** "26 Sep – 28 Sep", or "5 Oct" for one day. */
@@ -1170,15 +1229,30 @@ export const leave = {
 };
 
 export const kit = {
-  title: "Your kit",
-  link: "Your kit",
-  back: "Back to today",
+  title: "Kit",
   failed: "Your kit didn’t load.",
   retry: "Try again",
   needsSignal: "Needs signal",
   notDone: "That didn’t go through. Try again.",
+  forecast: {
+    title: "Next 7 days",
+    request: "Request what’s short",
+    /** "Requested 9:05 am · ops will add it to your next transfer" */
+    requested: (time: string) => `Requested ${time} · ops will add it to your next transfer`,
+    requestFailed: "That didn’t reach ops. Try again.",
+    nothingShort: "Nothing’s short now.",
+    none: "Nothing booked needs consumables.",
+    item: "Item",
+    need: "Need",
+    have: "Have",
+    status: "Status",
+    short: (count: number) => `Short ${String(count)}`,
+    enough: "Enough",
+  },
   coming: {
-    title: "On its way",
+    title: "Arriving",
+    /** "Mane Man Essential · 2 pieces" */
+    line: (name: string, amount: string) => `${name} · ${amount}`,
     /** "From Gurgaon stockroom · sent Mon 21 Sep" */
     from: (place: string, sent: string) => `From ${place} · sent ${sent}`,
     receive: "Receive all",
@@ -1193,7 +1267,7 @@ export const kit = {
   },
   scan: { label: "Scan or type each label", add: "Add", camera: "Scan", stop: "Stop scanning" },
   held: {
-    title: "In your kit",
+    title: "In kit",
     none: "Your kit is empty.",
     /** A count the kit's ledger has at nought or below: more was used than it held. */
     out: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
@@ -1201,16 +1275,19 @@ export const kit = {
     /** A lot inside the days ops are warned before it expires. */
     useFirst: (date: string) => `Use first · expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
+    recalled: "In a recall: not to be used",
     pieces: (count: number) => `${String(count)} labelled`,
     /** At or below the level ops keep a kit at: ops are alerted on their own, and send more. */
-    low: (coming: boolean) => (coming ? "Running low. More is on its way." : "Running low. Ops have been told."),
+    low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops told"),
+    /** Low only for stock that goes back: ops' count sees it until it does. */
+    lowUntilBack: "Low · hand back the expired stock and ops are told",
   },
   returned: {
-    title: "To hand back",
-    /** "MM-ESS-0000007-H · came off Mon 21 Sep" */
-    line: (code: string, date: string) => `${code} · came off ${date}`,
+    title: "Return to ops",
+    /** "Old hair system, removed 7 Nov" */
+    line: (date: string) => `Old hair system, removed ${date}`,
     handBack: (count: number) => `Hand back ${String(count)} ${count === 1 ? "hair system" : "hair systems"}`,
   },
-  expired: { handBack: "Hand back expired stock" },
+  expired: { handBack: "Hand back expired stock", word: "Expired", recalledWord: "Recalled" },
   handedBack: "Handed back. Ops receive it from you.",
 } as const;

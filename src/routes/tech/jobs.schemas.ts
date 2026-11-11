@@ -1,5 +1,6 @@
 // The technician API's schemas (./jobs.ts): what each call takes and answers.
 
+import { RescheduleAskedSchema } from "../schemas/reschedule.ts";
 import { z } from "@hono/zod-openapi";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
 import { REMINDER_STATES } from "../../domain/field/job-card.ts";
@@ -243,6 +244,9 @@ export const JobDetailSchema = JobSummarySchema.extend({
   }),
   client_alerts: TechnicianAlertsSchema,
   handoff: HandoffSchema,
+  reschedule_asked: z.union([RescheduleAskedSchema, z.null()]).openapi({
+    description: "The technician's open ask that ops move the visit, until it is settled; null for none.",
+  }),
   sent_back: z
     .array(
       z

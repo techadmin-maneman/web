@@ -114,6 +114,30 @@ export const QUEUES: readonly Queue[] = [
      AND pe.erased_at IS NULL`,
     binds: (at) => [at.now, new Date(Date.parse(at.now) - DAY_MS).toISOString()],
   },
+  // A technician's asks of ops from the phone (docs/decisions/0249-schedule-kit-and-me.md), each open until ops close
+  // it, which settles it; a visit moved, closed or called off settles its own (migration 0208).
+  {
+    group: "reschedule_request",
+    sql: `SELECT 'reschedule_request' AS "group", r.id AS id, a.person_id AS person_id, pe.name AS person_name,
+         r.reason || ' ' || t.name AS detail,
+         json_object('kind', a.type, 'starts_at', a.window_start, 'technician', t.name, 'reason', r.reason) AS facts,
+         r.requested_at AS since, a.window_start AS due_by, '' AS episode
+    FROM reschedule_requests r INDEXED BY reschedule_requests_open
+    JOIN appointments a ON a.id = r.appointment_id JOIN technicians t ON t.id = r.technician_id
+    JOIN people pe ON pe.id = a.person_id
+   WHERE r.settled_at IS NULL AND a.deleted_at IS NULL AND pe.erased_at IS NULL`,
+  },
+  {
+    group: "kit_request",
+    sql: `SELECT 'kit_request' AS "group", r.id AS id, NULL AS person_id, NULL AS person_name, t.name AS detail,
+         json_object('technician', t.name,
+           'items', (SELECT json_group_array(json_object('name', c.name, 'unit', c.unit,
+                       'quantity', j.value ->> 'quantity'))
+                     FROM json_each(r.items) j JOIN consumables c ON c.code = j.value ->> 'code')) AS facts,
+         r.requested_at AS since, NULL AS due_by, '' AS episode
+    FROM kit_requests r INDEXED BY kit_requests_open JOIN technicians t ON t.id = r.technician_id
+   WHERE r.settled_at IS NULL`,
+  },
   // A consultation asked for is read only while the client has no consultation booked or done, `booked`, which the
   // database keeps as their consultations are written (migration 0056). One asked for as a consultation and fit in
   // one visit is booked too once ops have booked the client's first fit (migration 0061).

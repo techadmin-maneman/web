@@ -3857,6 +3857,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/kit/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask ops for what the kit is short of over the next seven days, as the week ahead finds it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The technician's kit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianKit"];
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_changeable: the week ahead finds the kit short of nothing */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_changeable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/kit/hand-back": {
         parameters: {
             query?: never;
@@ -4002,6 +4074,174 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The technician's on-time visits and hairline redo rate over the last 30 days */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Their counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianQuality"];
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/jobs/{id}/reschedule-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask ops to move the visit, with why: a task on their board until they settle it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianRescheduleRequest"];
+                };
+            };
+            responses: {
+                /** @description The ask that stands, new or already open */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianRescheduleAsked"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such job of this technician's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_changeable: the visit is closed or called off */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_changeable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -4413,6 +4653,11 @@ export interface components {
             first_name: string;
             /** @description For the chip at the head of Today: the first and last initials. */
             initials: string;
+            /** @description Their grade, as Finance names it; null for none. */
+            grade: string | null;
+            city: string | null;
+            /** @description Their own number, E.164, as ops keep it. */
+            mobile: string | null;
             device: {
                 /** @description The phone's own ID, as it sent it at sign-in. */
                 device_id: string;
@@ -4711,6 +4956,8 @@ export interface components {
             /** @description The client's alerts still on, newest first. */
             client_alerts: components["schemas"]["TechnicianClientAlert"][];
             handoff: components["schemas"]["Handoff"];
+            /** @description The technician's open ask that ops move the visit, until it is settled; null for none. */
+            reschedule_asked: components["schemas"]["TechnicianRescheduleAsked"] | null;
             /** @description The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and leaves this list once it has (ADR 0246). */
             sent_back: {
                 /** @enum {string} */
@@ -4949,6 +5196,12 @@ export interface components {
                 url: string;
             }[];
         } | null;
+        TechnicianRescheduleAsked: {
+            /** Format: date-time */
+            asked_at: string;
+            /** @enum {string} */
+            reason: "client_asked" | "running_late" | "kit_problem";
+        };
         /** @description The client's visits closed before this job, newest first, every one. */
         TechnicianClientHistory: {
             /** @description The client's alerts still on, newest first. */
@@ -5280,8 +5533,12 @@ export interface components {
                 name: string;
                 unit: string;
                 quantity: number;
-                /** @description At or below the kit level ops set for it. */
+                /** @description What it holds fit to use, at or below the kit level ops set for it. */
                 low: boolean;
+                /** @description Whether ops' own count, the whole balance, finds it low, so they have been told; where it is low only for its expired or recalled lots, they are told once those are handed back. */
+                ops_told: boolean;
+                /** @description What it holds fit to use: its count less its expired and recalled lots, which go back to ops. */
+                usable: number;
                 hair_system: boolean;
                 /** @description The lots it holds some of, soonest to expire first. */
                 lots: {
@@ -5290,6 +5547,8 @@ export interface components {
                     quantity: number;
                     /** @description It expires within the days ops are warned before, and has not yet: use it first. */
                     use_first: boolean;
+                    /** @description In a recall: it goes back to ops, as expired stock does. */
+                    recalled: boolean;
                 }[];
                 /** @description A hair system's pieces the kit holds labelled. */
                 units: {
@@ -5319,6 +5578,26 @@ export interface components {
                 returned_at: string;
                 reason: string | null;
             }[];
+            /** @description The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out. */
+            forecast: {
+                code: string;
+                name: string;
+                unit: string;
+                /** @description What the visits booked are expected to use. */
+                need: number;
+                /** @description What the kit holds of it fit to use now. */
+                have: number;
+            }[];
+            /** @description The kit's ask of ops for what it is short of, open until ops settle it; null for none. */
+            asked: {
+                /** Format: date-time */
+                asked_at: string;
+                items: {
+                    name: string;
+                    unit: string;
+                    quantity: number;
+                }[];
+            } | null;
             /** Format: date */
             today: string;
         };
@@ -5354,6 +5633,23 @@ export interface components {
                 /** @description Paise in all; null where none was. */
                 amount: number | null;
             }[];
+        };
+        TechnicianQuality: {
+            /** @description Visits checked in, booked in the last 30 days. */
+            visits: number;
+            /** @description Of them, those checked in by the booked start. */
+            on_time: number;
+            /** @description First fits done or left partly done in the last 30 days; a no-show or one closed "Can't fit today" is none. */
+            fits: number;
+            /** @description Of them, those whose free refit was booked within 30 days. */
+            redone: number;
+        };
+        TechnicianRescheduleRequest: {
+            /**
+             * @description The client asked, the technician is running late, or a problem with the kit.
+             * @enum {string}
+             */
+            reason: "client_asked" | "running_late" | "kit_problem";
         };
         /** @description The asks not yet past, the latest first. */
         TechnicianLeaveRequests: {

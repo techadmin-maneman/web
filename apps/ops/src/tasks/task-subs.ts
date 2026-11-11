@@ -3,6 +3,7 @@
 
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { plainDate } from "@maneman/web-kit/plain-date";
+import { amountOf } from "@maneman/web-kit/figures";
 import { rupees } from "@maneman/web-kit/money";
 import type { Task } from "../api.ts";
 import { dispatch, referrals, tasks } from "../content.ts";
@@ -66,6 +67,10 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   visit_left_open: (facts) =>
     copy.visit_left_open(shortDate(indiaDate(facts.starts_at)), facts.status === "in_progress"),
   leave_conflict: (facts) => copy.leave_conflict(dayAndTime(facts.starts_at), facts.technician),
+  reschedule_request: (facts) =>
+    copy.reschedule_request(dayAndTime(facts.starts_at), copy.rescheduleReasons[facts.reason], facts.technician),
+  kit_request: (facts) =>
+    copy.kit_request(facts.items.map((item) => `${item.name} ${amountOf(item.quantity, item.unit)}`).join(", ")),
   leave_request: (facts) =>
     copy.leave_request(
       facts.from === facts.to ? shortDate(facts.from) : tasks.leave.days(shortDate(facts.from), shortDate(facts.to)),

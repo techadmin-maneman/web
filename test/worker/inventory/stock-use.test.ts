@@ -146,8 +146,8 @@ describe("a job's use", () => {
     expect(solvent?.quantity).toBe(120);
     // The 30 used before came off the lot that expires first.
     expect(solvent?.lots).toEqual([
-      { lot_code: "SV-SOON", expires_on: "2026-10-10", quantity: 70, use_first: true },
-      { lot_code: "SV-LATE", expires_on: "2027-06-30", quantity: 50, use_first: false },
+      { lot_code: "SV-SOON", expires_on: "2026-10-10", quantity: 70, use_first: true, recalled: false },
+      { lot_code: "SV-LATE", expires_on: "2027-06-30", quantity: 50, use_first: false, recalled: false },
     ]);
   });
 

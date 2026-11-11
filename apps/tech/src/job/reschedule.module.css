@@ -1,0 +1,40 @@
+/* Ask ops to reschedule (./Reschedule.tsx): the way to ask under the job's actions, the sheet with the reasons in a
+   column, and the line once asked, on the paper's tint. */
+
+.ask {
+  margin-top: var(--sp-8);
+  min-height: var(--tech-min);
+}
+
+.asked {
+  margin: var(--sp-8) 0 0;
+  padding: var(--sp-8) var(--sp-12);
+  background: var(--ui-tint);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.reasons {
+  display: grid;
+  gap: var(--sp-8);
+}
+
+.failed {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-error);
+}

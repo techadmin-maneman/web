@@ -69,10 +69,10 @@ describe("the technician app’s content", () => {
     // The fourth, a consultation and fit in one visit paid for once fitted, is one no board draws (ADR 0105).
     expect(DESIGN).not.toContain(badges.at_visit);
     // No money on a job's card: a Prepaid or Credit badge only. An amount shows only on a consultation's Options, what
-    // the client would pay, and on the technician's own month, what they earned.
+    // the client would pay, and on Me's incentives for this month, what the technician earned.
     const amounts = sources.filter((path) => readFileSync(path, "utf8").includes("@maneman/web-kit/money"));
     expect(amounts.map((path) => path.replaceAll("\\", "/")).sort()).toEqual([
-      "apps/tech/src/mine/MonthScreen.tsx",
+      "apps/tech/src/me/Standing.tsx",
       "apps/tech/src/steps/OptionsList.tsx",
     ]);
   });

@@ -8,6 +8,7 @@
 import { auditStatement } from "../platform/audit.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { isLow } from "../../policy/stock.ts";
+import { usableOf } from "./kit-week.ts";
 import { placeById, WAREHOUSE, type Place } from "./stock-places.ts";
 import { sendStock } from "./stock-transit.ts";
 import { kitUnits } from "./stock-units.ts";
@@ -18,6 +19,7 @@ interface KitLot {
   readonly lotCode: string;
   readonly expiresOn: string | null;
   readonly quantity: number;
+  readonly recalled: boolean;
 }
 
 interface KitItem {
@@ -25,8 +27,15 @@ interface KitItem {
   readonly name: string;
   readonly unit: string;
   readonly quantity: number;
-  /** At or below the kit level ops set for it: time to ask for more. */
+  /** What it holds fit to use: its count less its expired and recalled lots, which go back to ops. */
+  readonly usable: number;
+  /** What it holds fit to use, at or below the kit level ops set for it: time to ask for more. */
   readonly low: boolean;
+  /**
+   * Whether ops' own count, the whole balance, finds it low, so they have been told (./low-stock.ts). Where it is low
+   * only for its expired or recalled lots, ops are told once those are handed back.
+   */
+  readonly opsTold: boolean;
   readonly hairSystem: boolean;
   readonly lots: readonly KitLot[];
   /** Its pieces the kit holds labelled, of a hair system. */
@@ -69,7 +78,7 @@ type HeldRow = {
   reorder_kit: number | null;
   hair_system: number;
 };
-type LotRow = { code: string; lot_code: string; expires_on: string | null; quantity: number };
+type LotRow = { code: string; lot_code: string; expires_on: string | null; quantity: number; recalled: number };
 type ComingRow = {
   id: string;
   consumable_code: string;
@@ -86,7 +95,7 @@ type ComingRow = {
  * total below zero but never its lots, so a delivery after it left the lots above the total: what is over came off the
  * soonest to expire, which go first.
  */
-function lotsWithin(lots: readonly KitLot[], held: number): KitLot[] {
+function lotsWithin<Lot extends { readonly quantity: number }>(lots: readonly Lot[], held: number): Lot[] {
   let over = lots.reduce((sum, lot) => sum + lot.quantity, 0) - Math.max(held, 0);
   return lots.flatMap((lot) => {
     const cut = Math.min(Math.max(over, 0), lot.quantity);
@@ -95,8 +104,44 @@ function lotsWithin(lots: readonly KitLot[], held: number): KitLot[] {
   });
 }
 
+/** An item the kit holds, with its lots as far as its count reaches, what of it is fit to use, and its labels. */
+function heldItemOf(
+  row: HeldRow,
+  lots: readonly LotRow[],
+  units: Awaited<ReturnType<typeof kitUnits>>,
+  today: string,
+): KitItem {
+  const itsLots = lotsWithin(
+    lots
+      .filter((lot) => lot.code === row.consumable_code)
+      .map((lot) => ({
+        lotCode: lot.lot_code,
+        expiresOn: lot.expires_on,
+        quantity: lot.quantity,
+        recalled: lot.recalled === 1,
+      })),
+    row.quantity,
+  );
+  const usable = usableOf({ quantity: row.quantity, lots: itsLots }, today);
+  return {
+    code: row.consumable_code,
+    name: row.name,
+    unit: row.unit,
+    quantity: row.quantity,
+    usable,
+    // What runs low is what a technician uses up, fit to use; a hair system comes for its own fit.
+    low: row.hair_system !== 1 && isLow(usable, row.reorder_kit),
+    opsTold: row.hair_system !== 1 && isLow(row.quantity, row.reorder_kit),
+    hairSystem: row.hair_system === 1,
+    lots: itsLots,
+    units: units
+      .filter((unit) => unit.consumableCode === row.consumable_code)
+      .map((unit) => ({ code: unit.code, lotCode: unit.lotCode, expiresOn: unit.expiresOn })),
+  };
+}
+
 /** What a kit holds, what is coming to it, and its pieces to hand back. */
-export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
+export async function kitView(db: D1Database, kit: Place, today: string): Promise<KitView> {
   const [held, lots, units, coming, returned] = await Promise.all([
     db
       .prepare(
@@ -111,7 +156,7 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
       .all<HeldRow>(),
     db
       .prepare(
-        `SELECT l.consumable_code AS code, l.lot_code, l.expires_on, b.quantity
+        `SELECT l.consumable_code AS code, l.lot_code, l.expires_on, b.quantity, l.recalled_at IS NOT NULL AS recalled
          FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
          WHERE b.place = ?1 AND b.quantity > 0 ORDER BY l.expires_on IS NULL, l.expires_on, l.received_at`,
       )
@@ -141,24 +186,7 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
     coming.results.map((row) => row.id),
   );
   return {
-    held: held.results.map((row) => ({
-      code: row.consumable_code,
-      name: row.name,
-      unit: row.unit,
-      quantity: row.quantity,
-      // What runs low is what a technician uses up; a hair system comes for its own fit.
-      low: row.hair_system !== 1 && isLow(row.quantity, row.reorder_kit),
-      hairSystem: row.hair_system === 1,
-      lots: lotsWithin(
-        lots.results
-          .filter((lot) => lot.code === row.consumable_code)
-          .map((lot) => ({ lotCode: lot.lot_code, expiresOn: lot.expires_on, quantity: lot.quantity })),
-        row.quantity,
-      ),
-      units: units
-        .filter((unit) => unit.consumableCode === row.consumable_code)
-        .map((unit) => ({ code: unit.code, lotCode: unit.lotCode, expiresOn: unit.expiresOn })),
-    })),
+    held: held.results.map((row) => heldItemOf(row, lots.results, units, today)),
     coming: coming.results.map((row) => ({
       id: row.id,
       code: row.consumable_code,
@@ -222,8 +250,9 @@ export async function handBack(
     await db.batch(piecesHandedIn(db, { kit, to, pieces: handed.pieces }, written));
   }
   if (handed.expired) {
+    // Each lot by its own ID: the units that leave are the expired and recalled ones, not the soonest to expire.
     for (const lot of await expiredHeld(db, kit, indiaDate(written.now))) {
-      await sendStock(db, { code: lot.code, quantity: lot.quantity, from: kit, to }, written);
+      await sendStock(db, { code: lot.code, quantity: lot.quantity, lotId: lot.lotId, from: kit, to }, written);
     }
   }
   return { ok: true };
@@ -272,24 +301,38 @@ function piecesHandedIn(
 }
 
 /**
- * Each stock code's expired stock a kit holds, recalled stock among it (docs/decisions/0187-recalls.md): what its lots
- * that expired before today or were recalled hold, at most its balance.
+ * Each lot of expired stock a kit holds, recalled stock among it (docs/decisions/0187-recalls.md), as the kit lists it
+ * under Return to ops: every lot of a code read in the kit's own order and kept within its balance as `lotsWithin`
+ * keeps it, the excess off the soonest to expire, and of those the ones expired before today or recalled.
  */
 async function expiredHeld(
   db: D1Database,
   kit: Place,
   today: string,
-): Promise<{ readonly code: string; readonly quantity: number }[]> {
+): Promise<{ readonly code: string; readonly lotId: string; readonly quantity: number }[]> {
   const { results } = await db
     .prepare(
-      `SELECT l.consumable_code AS code,
-         MIN(SUM(b.quantity), COALESCE((SELECT quantity FROM stock_balances
-           WHERE consumable_code = l.consumable_code AND place = ?1), 0)) AS quantity
+      `SELECT l.consumable_code AS code, l.id AS lot_id, l.expires_on, l.recalled_at IS NOT NULL AS recalled, b.quantity,
+         COALESCE((SELECT quantity FROM stock_balances
+           WHERE consumable_code = l.consumable_code AND place = ?1), 0) AS balance
        FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
-       WHERE b.place = ?1 AND b.quantity > 0 AND (l.expires_on < ?2 OR l.recalled_at IS NOT NULL)
-       GROUP BY l.consumable_code`,
+       WHERE b.place = ?1 AND b.quantity > 0
+       ORDER BY l.expires_on IS NULL, l.expires_on, l.received_at`,
     )
-    .bind(kit, today)
-    .all<{ code: string; quantity: number }>();
-  return results.filter((row) => row.quantity > 0);
+    .bind(kit)
+    .all<{
+      code: string;
+      lot_id: string;
+      expires_on: string | null;
+      recalled: number;
+      quantity: number;
+      balance: number;
+    }>();
+  const codes = [...new Set(results.map((row) => row.code))];
+  return codes.flatMap((code) => {
+    const lots = results.filter((row) => row.code === code);
+    return lotsWithin(lots, lots[0]?.balance ?? 0)
+      .filter((lot) => lot.recalled === 1 || (lot.expires_on !== null && lot.expires_on < today))
+      .map((lot) => ({ code, lotId: lot.lot_id, quantity: lot.quantity }));
+  });
 }

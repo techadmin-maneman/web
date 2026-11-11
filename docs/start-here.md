@@ -68,7 +68,7 @@ this map, or when the map names something that no longer exists.
 
 ### Dispatch
 
-- **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
+- **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `reschedule-requests` (a technician's ask that ops move a visit), `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
   `technician-work`, `technician-days` (a technician's own week and home), `leave`, `leave-requests` (a technician's
   ask for leave, decided on Tasks), `blackouts`, `day-route`, `nearest`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`, `start-times`, `drive-estimate`, `reach` (how far a technician goes from home)
@@ -81,7 +81,7 @@ this map, or when the map names something that no longer exists.
 
 ### Technicians' pay
 
-- **Database work** (`src/domain/field/`): `technician-pay`, `pay-statement` (the month's pay at those rates, and its CSV)
+- **Database work** (`src/domain/field/`): `technician-pay`, `pay-statement` (the month's pay at those rates, and its CSV), `quality` (their on-time visits and redo rate, for Me)
 - **Routes** (`src/routes/`): `ops/technician-pay`
 - **Screens:** `apps/ops/src/technician-pay/TechnicianPay.tsx`, `apps/ops/src/technician-pay/PayRates.tsx`,
   `apps/ops/src/technician-pay/PayForms.tsx`
@@ -100,7 +100,7 @@ this map, or when the map names something that no longer exists.
 
 ### Inventory: what we hold, where, and what it is
 
-- **Database work** (`src/domain/inventory/`): `stock`, `stock-places`, `stock-lots`, `stock-units`, `stock-transit`,
+- **Database work** (`src/domain/inventory/`): `stock`, `kit-requests` (a technician's ask for what the kit is short of), `stock-places`, `stock-lots`, `stock-units`, `stock-transit`,
   `stock-view`, `stock-photos`, `stock-match`, `stock-risks`, `stock-usage`, `stock-quality`, `stock-watch`,
   `stock-gap`, `low-stock`, `pieces`, `piece-use`, `piece-returns`, `returned-pieces`, `kit`, `kit-check`, `kit-week`,
   `cycle-counts`, `count-tasks`, `count-labels`, `recalls`, `recall-notice`, `consumables`, `hair-systems`,

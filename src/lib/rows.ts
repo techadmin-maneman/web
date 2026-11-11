@@ -633,6 +633,13 @@ export interface Rows {
     readonly claimed_at: string | null;
     readonly write_state: string | null;
   };
+  readonly kit_requests: {
+    readonly id: string;
+    readonly technician_id: string;
+    readonly items: string;
+    readonly requested_at: string;
+    readonly settled_at: string | null;
+  };
   readonly last_visits: {
     readonly person_id: string;
     readonly visit_id: string | null;
@@ -1212,6 +1219,14 @@ export interface Rows {
     readonly state: string;
     readonly decided_by: string | null;
     readonly decided_at: string | null;
+  };
+  readonly reschedule_requests: {
+    readonly id: string;
+    readonly appointment_id: string;
+    readonly technician_id: string;
+    readonly reason: string;
+    readonly requested_at: string;
+    readonly settled_at: string | null;
   };
   readonly serviceable_pincodes: {
     readonly pincode: string;

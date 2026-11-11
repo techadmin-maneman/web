@@ -61,6 +61,13 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since",
   },
   {
+    what: "A technician's asks of ops: kit, and a visit to move",
+    tables: ["kit_requests", "reschedule_requests"],
+    leftAtT: "An ask made since is lost, and one ops settled since is open again on the Tasks board",
+    putBackBy:
+      "Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost",
+  },
+  {
     what: "Number changes, deletion requests, grievances",
     tables: ["number_change_requests", "people", "deletion_requests", "grievances"],
     leftAtT: "A client's new number stops working; a request, or its answer, is lost",

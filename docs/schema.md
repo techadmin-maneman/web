@@ -20,6 +20,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Revoked sessions and phones | `sessions`, `technician_devices` | A lost phone, or a session that was ended, works again | Revoking again: a phone in the console, a client's session with `sessions.revoked_at` |
 | Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes`, `step_send_backs` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | A technician's position and their SOS | `visit_positions`, `sos_alerts` | A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was | The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since |
+| A technician's asks of ops: kit, and a visit to move | `kit_requests`, `reschedule_requests` | An ask made since is lost, and one ops settled since is open again on the Tasks board | Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
@@ -104,6 +105,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [handoff_notes](#handoff_notes): The note a technician leaves at a visit's close for whoever takes the client's next job, one a visit, shown as Handoff on that job (ADR 0242).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
+- [kit_requests](#kit_requests): A technician's ask of ops for what their kit is short of over the next seven days, by the job sheet's counts, open until ops settle it (ADR 0249).
 - [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
 - [leads](#leads): Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
 - [leave_requests](#leave_requests): A technician's ask for leave from their phone, which Operations approve or decline on Tasks; an approval records the leave and names it.
@@ -150,6 +152,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [referral_codes](#referral_codes): A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).
 - [refunds](#refunds): The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 - [remedies](#remedies): Free service visits Customer Care gave a client, with why: given within the limit, or awaiting a manager (ADR 0143).
+- [reschedule_requests](#reschedule_requests): A technician's ask that ops move a visit, with why, open until ops settle it or the visit moves, closes or is called off (ADR 0249).
 - [serviceable_pincodes](#serviceable_pincodes): Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
 - [services](#services): What clients may book: each kind of visit's services, their names, the line clients read under each, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
@@ -267,7 +270,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`, `0168_upkeep_out_of_triggers.sql`, `0169_visits_whole.sql`, `0173_fsm_columns_read_the_new.sql`, `0207_safety.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`, `0168_upkeep_out_of_triggers.sql`, `0169_visits_whole.sql`, `0173_fsm_columns_read_the_new.sql`, `0207_safety.sql`, `0208_kit_and_reschedule_requests.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -322,7 +325,7 @@ Indexes:
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
-Triggers: `appointments_kept_whole`, `appointments_whole`, `visit_positions_end`.
+Triggers: `appointments_kept_whole`, `appointments_whole`, `reschedule_requests_settled`, `visit_positions_end`.
 
 ## audit_log
 
@@ -1454,6 +1457,24 @@ Indexes:
 - `job_events_unwritten`: on (`fsm_write_state`, `received_at`)
 - A `UNIQUE` constraint: unique on (`appointment_id`, `event_id`)
 
+## kit_requests
+
+A technician's ask of ops for what their kit is short of over the next seven days, by the job sheet's counts, open until ops settle it (ADR 0249).
+
+Made by `0208_kit_and_reschedule_requests.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `items` | TEXT | no |  |  | What the kit was short of when asked: [{ "code", "quantity" }], by the job sheet's counts. |
+| `requested_at` | TEXT | no |  |  |  |
+| `settled_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `kit_requests_open`: unique on (`technician_id`), where `settled_at IS NULL`
+
 ## last_visits
 
 Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
@@ -2581,6 +2602,25 @@ Indexes:
 - `remedies_awaiting`: on (`given_at`), where `state = 'awaiting'`
 - `remedies_by_given`: on (`given_at`)
 - `remedies_by_person`: on (`person_id`, `given_at`)
+
+## reschedule_requests
+
+A technician's ask that ops move a visit, with why, open until ops settle it or the visit moves, closes or is called off (ADR 0249).
+
+Made by `0208_kit_and_reschedule_requests.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `reason` | TEXT | no |  |  |  |
+| `requested_at` | TEXT | no |  |  |  |
+| `settled_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `reschedule_requests_open`: unique on (`appointment_id`), where `settled_at IS NULL`
 
 ## serviceable_pincodes
 

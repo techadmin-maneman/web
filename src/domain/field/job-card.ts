@@ -1,6 +1,7 @@
 // One job's card for the technician (./tech-jobs.ts): locked, the time, type and sector only; unlocked the day
 // before, the client, the address, the pieces, the last visit, the hair profile and what a one visit offers.
 
+import { type RescheduleAsked, rescheduleAskedOf } from "../dispatch/reschedule-requests.ts";
 import { takesProfile } from "../../policy/hair-profile.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -117,6 +118,8 @@ interface JobDetail extends JobSummary {
   readonly steps: CardStep[];
   /** The steps ops sent back to the technician, with why, not yet landed again. */
   readonly sent_back: SentBack[];
+  /** The technician's open ask that ops move the visit; null for none. */
+  readonly reschedule_asked: RescheduleAsked | null;
 }
 
 /** A one visit's discount code, and who gave it: the client as they booked, ops, or the technician. */
@@ -200,6 +203,7 @@ export async function jobDetail(
     handoff: null,
     steps: cardStepsFor(type, oneVisit),
     sent_back: sentBack,
+    reschedule_asked: await rescheduleAskedOf(db, row.id),
   };
   if (unlockedParts === null) return locked;
   return {

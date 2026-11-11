@@ -1,0 +1,67 @@
+/* Leave (./LeaveScreen.tsx) in the new look: the two days side by side, the line why, Ask; then the asks, each with
+   where it stands, approved in the ink, declined in the error's colour. */
+
+/* The screen inside the job's frame, whose body keeps no gutter of its own. */
+.page {
+  padding: 0 var(--screen-gutter);
+}
+
+.form {
+  display: grid;
+  gap: var(--sp-12);
+  margin-top: var(--sp-8);
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--sp-64) * 2), 1fr));
+  gap: var(--sp-12);
+}
+
+.problem {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-error);
+}
+
+.section {
+  margin-top: var(--sp-24);
+}
+
+.quiet {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  gap: var(--sp-12);
+  justify-content: space-between;
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+}
+
+.asked {
+  color: var(--ui-text-soft);
+}
+
+.approved {
+  font-weight: var(--weight-semibold);
+  color: var(--navy-900);
+}
+
+.declined {
+  font-weight: var(--weight-semibold);
+  color: var(--ui-error);
+}

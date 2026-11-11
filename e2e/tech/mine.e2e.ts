@@ -1,5 +1,5 @@
-// The technician saw only today and tomorrow: no week ahead, nothing of what they had done or earned this month, and no
-// way to ask for leave but a call.
+// The technician saw nothing of how they were doing or what they had earned this month, and had no way to ask for
+// leave but a call. Who they are, their quality and incentives are on Me; the week ahead is Schedule's (./schedule.e2e.ts).
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -7,31 +7,46 @@ import { fakeTech } from "./fake-tech.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { tab } from "./tabs.ts";
 
-test("opens the technician's next six days from the Schedule tab, a day at a time", async ({ page }) => {
-  await fakeTech(page);
-  await page.goto("/");
-  await tab(page, techCopy.tabs.schedule).click();
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.week.title })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2 })).toHaveCount(6);
-  await expect(page.getByText(techCopy.week.none).first()).toBeVisible();
-  expect(await axeViolations(page)).toEqual([]);
-});
-
-test("shows the technician's own month: visits by kind, what each earned, and a kind with no rate set yet", async ({
-  page,
-}) => {
+test("shows who they are, their quality and this month's incentives on Me", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/");
   await tab(page, techCopy.tabs.me).click();
-  await page.getByRole("link", { name: techCopy.me.month }).click();
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.month.title })).toBeVisible();
-  await expect(page.getByRole("term")).toHaveText([
-    techCopy.month.line(techCopy.month.kinds.service, 12),
-    techCopy.month.line(techCopy.month.kinds.first_fit, 2),
-    techCopy.month.total,
+  const { me, month } = techCopy;
+  await expect(page.getByText(me.who("Senior", "Gurugram", "+91 98100 00009"))).toBeVisible();
+  const quality = page.getByRole("region", { name: me.quality.title });
+  await expect(quality.getByRole("definition")).toHaveText([me.quality.redone(1, 9), me.quality.onTimeShare(17, 18)]);
+  const incentives = page.getByRole("region", { name: /^Incentives, / });
+  await expect(incentives).toContainText("Rs. 5,400");
+  await expect(incentives.getByRole("term")).toHaveText([
+    me.incentives.line(month.kinds.service, 12, "Rs. 450"),
+    me.incentives.line(month.kinds.first_fit, 2, null),
   ]);
-  await expect(page.getByRole("definition")).toHaveText(["Rs. 5,400", techCopy.month.noRate, "Rs. 5,400"]);
+  await expect(incentives.getByRole("definition")).toHaveText(["Rs. 5,400", me.incentives.noRate]);
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("says Me's quality didn't load, with the reference, and loads it on Try again", async ({ page }) => {
+  await fakeTech(page);
+  let asked = 0;
+  // Registered after the fake, so it answers first: the first read fails, the next goes to the fake.
+  await page.route("**/api/tech/quality", async (route) => {
+    asked += 1;
+    if (asked > 1) return route.fallback();
+    return route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "unavailable", request_id: "quality-ref-1", fields: [] } }),
+    });
+  });
+  await page.goto("/me");
+  const quality = page.getByRole("region", { name: techCopy.me.quality.title });
+  await expect(quality.getByRole("alert")).toContainText(techCopy.me.quality.failed);
+  await expect(quality.getByRole("alert")).toContainText("Ref quality-");
+  await quality.getByRole("button", { name: techCopy.me.retry }).click();
+  await expect(quality.getByRole("definition")).toHaveText([
+    techCopy.me.quality.redone(1, 9),
+    techCopy.me.quality.onTimeShare(17, 18),
+  ]);
 });
 
 test("asks for leave from the phone, and shows the ask with ops", async ({ page }) => {

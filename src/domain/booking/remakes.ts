@@ -85,6 +85,9 @@ export async function remakesOwed(db: D1Database, personId: string): Promise<Rem
   return [...seen.values()];
 }
 
+/** The reason a partly done visit's Tasks row is closed with as its free remake is booked, which the redo rate reads. */
+export const REMAKE_BOOKED = "Booked again, free";
+
 /** Closes the partly done visit's Tasks row as the remake is booked, so it is owed once. */
 export function remakeBookedStatement(
   db: D1Database,
@@ -95,7 +98,7 @@ export function remakeBookedStatement(
   return db
     .prepare(
       `INSERT OR IGNORE INTO task_closures (id, task_group, subject_id, reason, closed_by, closed_at)
-       VALUES (?1, 'partial_visit', ?2, 'Booked again, free', ?3, ?4)`,
+       VALUES (?1, 'partial_visit', ?2, ?5, ?3, ?4)`,
     )
-    .bind(crypto.randomUUID(), remake.id, by.actor, by.now.toISOString());
+    .bind(crypto.randomUUID(), remake.id, by.actor, by.now.toISOString(), REMAKE_BOOKED);
 }

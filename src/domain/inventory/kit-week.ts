@@ -52,3 +52,80 @@ export async function addTheWeek(
   }
   return levels;
 }
+
+/** How many days the technician's own forecast looks ahead, today's included. */
+const FORECAST_DAYS = 7;
+
+/** A lot the kit holds, as the kit lists it (./kit.ts). */
+interface HeldLot {
+  readonly expiresOn: string | null;
+  readonly quantity: number;
+  /** In a recall (docs/decisions/0187-recalls.md): it goes back to ops, as an expired lot does. */
+  readonly recalled: boolean;
+}
+
+/**
+ * What the kit holds of an item fit to use: its count less its lots expired before `today` or recalled, as the kit
+ * lists them, which go back to ops. Below nought where more was used than it held.
+ */
+export function usableOf(
+  item: { readonly quantity: number; readonly lots: readonly HeldLot[] },
+  today: string,
+): number {
+  const gone = item.lots
+    .filter((lot) => lot.recalled || (lot.expiresOn !== null && lot.expiresOn < today))
+    .reduce((sum, lot) => sum + lot.quantity, 0);
+  return item.quantity - gone;
+}
+
+/** A consumable the kit's visits are expected to use over the forecast's days. */
+interface WeekNeed {
+  readonly code: string;
+  readonly name: string;
+  readonly unit: string;
+  readonly need: number;
+}
+
+/** The same, against what the kit holds of it fit to use. */
+export interface WeekAhead extends WeekNeed {
+  readonly have: number;
+}
+
+/**
+ * The technician's own week ahead, for their Kit screen and an ask of ops: each consumable their visits booked from
+ * today to six days on are expected to use, against what their kit holds of it fit to use, as the kit's own view counts
+ * it (usableOf). Hair systems are left to the evening's check, as above.
+ */
+export async function weekAheadOf(
+  db: D1Database,
+  kit: string,
+  today: string,
+  view: { readonly held: readonly { readonly code: string; readonly usable: number }[] },
+): Promise<WeekAhead[]> {
+  const usable = new Map(view.held.map((item) => [item.code, item.usable]));
+  return (await weekNeedOf(db, kit, today)).map((item) => ({
+    ...item,
+    have: Math.max(0, usable.get(item.code) ?? 0),
+  }));
+}
+
+async function weekNeedOf(db: D1Database, kit: string, today: string): Promise<WeekNeed[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT u.consumable_code AS code, c.name, c.unit, SUM(u.quantity) AS need
+         FROM appointments a INDEXED BY appointments_by_technician
+         JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
+         JOIN consumables c ON c.code = u.consumable_code
+        WHERE a.technician_id = ?3 AND ${bookedAhead("a")}
+          AND NOT EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = u.consumable_code)
+        GROUP BY u.consumable_code, c.name, c.unit
+        ORDER BY c.name COLLATE NOCASE`,
+    )
+    .bind(
+      indiaInstant(today, "00:00").toISOString(),
+      indiaInstant(addDays(today, FORECAST_DAYS), "00:00").toISOString(),
+      kit,
+    )
+    .all<WeekNeed>();
+  return results;
+}

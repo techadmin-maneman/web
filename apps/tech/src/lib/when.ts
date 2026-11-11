@@ -4,7 +4,7 @@
 
 import { distance } from "@maneman/web-kit/figures";
 import { apiNow } from "@maneman/web-kit/clock";
-import { addDays, indiaClock, indiaTimeOf, todayInIndia as indiaToday } from "@maneman/web-kit/dates";
+import { addDays, dayMonth, indiaClock, indiaTimeOf, todayInIndia as indiaToday } from "@maneman/web-kit/dates";
 import { timeRange } from "@rules/lib/time-range.ts";
 // The schema rather than ../api.ts, so these can be read and tested in Node without the fetch client.
 import type { components } from "../api-schema.ts";
@@ -25,6 +25,12 @@ export { dayMonth } from "@maneman/web-kit/dates";
 
 /** "9:30 am", "4 pm": every time the app writes, the head of Today, a job's row and its card alike. */
 export const clock = indiaClock;
+
+/** When something was asked or done: its time today, or "12 Nov, 9:05 am" on an earlier day. */
+export function stamp(instant: string, now: Date = apiDate()): string {
+  const day = todayInIndia(new Date(instant));
+  return day === todayInIndia(now) ? indiaClock(instant) : `${dayMonth(day)}, ${indiaClock(instant)}`;
+}
 
 /** "11:30 am–12 pm": when the technician is to arrive, from the start to the end of the client's arrival window. */
 export const arrival = (job: { readonly starts_at: string; readonly arrives_by: string }): string =>

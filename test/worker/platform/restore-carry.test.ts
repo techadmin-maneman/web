@@ -147,6 +147,7 @@ describe("restoring the whole database", () => {
       "stock_places",
       "stock_lot_balances",
       "visit_positions",
+      "reschedule_requests",
     ]);
   });
 });

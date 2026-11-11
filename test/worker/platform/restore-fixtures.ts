@@ -229,6 +229,10 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('ap1', 't1', 28.4, 77.07, 12, '${AT}', '${AT}')`,
   `INSERT INTO sos_alerts (id, technician_id, appointment_id, lat, lng, accuracy_m, position_at, sent_at)
      VALUES ('so1', 't1', 'ap1', 28.4, 77.07, 12, '${AT}', '${AT}')`,
+  `INSERT INTO kit_requests (id, technician_id, items, requested_at)
+     VALUES ('kr1', 't1', '[{"code":"strip","quantity":2}]', '${AT}')`,
+  `INSERT INTO reschedule_requests (id, appointment_id, technician_id, reason, requested_at)
+     VALUES ('rr1', 'ap2', 't1', 'client_asked', '${AT}')`,
   `INSERT INTO step_send_backs (id, appointment_id, kind, reason, sent_by, sent_at)
      VALUES ('sb1', 'ap1', 'checklist', 'Tick the scalp check.', 'ops@example.com', '${AT}')`,
   // A setting changed in the console: ops_settings_snapshot follows it.

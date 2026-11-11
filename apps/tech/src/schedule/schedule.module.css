@@ -1,0 +1,77 @@
+/* Schedule (./ScheduleScreen.tsx) and a later job's preview (./PreviewScreen.tsx), in the new look: the head with the
+   week's range, the strip of days, then the day chosen down the hours. */
+
+.screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-bottom: var(--sp-24);
+}
+
+.head {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--sp-16) var(--screen-gutter) var(--sp-12);
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.range {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+/* Seven squares across at 360 px, each a thumb's 44 px or wider: a narrower gutter and gap than the page's. */
+.strip {
+  gap: var(--sp-4);
+  padding: var(--sp-12) var(--sp-12) 0;
+}
+
+/* A screen inside the job's frame, whose body keeps no gutter of its own. */
+.page {
+  padding: 0 var(--screen-gutter);
+}
+
+.day {
+  padding: 0 var(--screen-gutter);
+}
+
+.dayTitle {
+  margin: var(--sp-20) 0 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+  color: var(--navy-900);
+}
+
+.dayFailed {
+  margin: 0 0 var(--sp-4);
+}
+
+.daySub {
+  margin: var(--sp-2) 0 var(--sp-16);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.facts {
+  margin-top: var(--sp-16);
+}
+
+.note {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}

@@ -166,6 +166,9 @@ const TechMeSchema = z
     name: z.string(),
     first_name: z.string(),
     initials: z.string().openapi({ description: "For the chip at the head of Today: the first and last initials." }),
+    grade: z.union([z.string(), z.null()]).openapi({ description: "Their grade, as Finance names it; null for none." }),
+    city: z.union([z.string(), z.null()]),
+    mobile: z.union([z.string(), z.null()]).openapi({ description: "Their own number, E.164, as ops keep it." }),
     device: z
       .object({
         device_id: z.string().openapi({ description: "The phone's own ID, as it sent it at sign-in." }),
@@ -295,6 +298,9 @@ function registerTechSession(app: App): void {
         name: signedIn.name,
         first_name: firstNameOf(signedIn.name),
         initials: initialsOf(signedIn.name),
+        grade: signedIn.grade,
+        city: signedIn.city,
+        mobile: signedIn.mobile,
         device: { device_id: signedIn.deviceId, label: signedIn.label, enrolled_at: signedIn.enrolledAt },
       },
       200,
