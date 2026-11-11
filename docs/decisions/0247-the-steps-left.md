@@ -46,5 +46,7 @@ to ops.
 
 ## Left for later
 
-- **The one visit's "When"** (Fit today, or Book the first fit, which closes it as a consultation going ahead with the
-  link at the close) follows in this PR, under its own item here once built.
+- **The one visit's "When"** (Fit today, or Book the first fit, which closes it as a consultation going ahead) is PR
+  7c. With payments taken at the visit, a link sent at the close for a fit not yet made has nothing to settle against.
+  A link that is paid would also need to become a first fit paid ahead and still to book, which is a payments change.
+  How the fit is paid needs the owner's word first.

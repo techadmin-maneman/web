@@ -15,6 +15,8 @@ test("a check-in refused as early, made again with no signal, waits at the door"
   await atTheDoor(page);
   await page.goto(`/jobs/${JOB_ID}`);
   await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
+  // Refused as early: the job says when check-in opens.
+  await expect(page.getByText(new RegExp(techCopy.notHome.arrived.opensAt(".+")))).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
 
   // Later, in the basement: the tap waits for signal, and the technician waits at the door.
