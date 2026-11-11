@@ -40,8 +40,8 @@ export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   for (const event of queued) {
     if (event.job_id === job.id && event.state === "waiting") sent.add(event.kind);
   }
-  // A client who decided against the fit is fitted nothing, so nothing is photographed after.
-  if (declinedTheFit(job, queued)) sent.add("after_photos");
+  // A client who decided against the fit, or booked it for later, is fitted nothing, so nothing is photographed after.
+  if (fitsNothingToday(job, queued)) sent.add("after_photos");
   return sent;
 }
 
@@ -86,14 +86,18 @@ export function sentBackFor(job: Job, queued: readonly Queued[], step: string): 
 export const stepsToFix = (job: Job, queued: readonly Queued[]): InJobStep[] =>
   stepsOf(job).filter((step) => sentBackFor(job, queued, step) !== null);
 
-/** What a one visit's client decided at the piece step: the product's tier, or that they decided against the fit. */
+/**
+ * What a one visit's client decided at the piece step: the product's tier, fitted then or booked for another day, or
+ * that they decided against the fit.
+ */
 export type ClientChoice = NonNullable<Job["client_choice"]>;
 
-/** The choice a piece step's body records; null for one that records neither. */
+/** The choice a piece step's body records; null for one that records none. */
 function choiceIn(body: unknown): ClientChoice | null {
-  const sent = body as { declined?: unknown; product?: unknown } | null;
+  const sent = body as { declined?: unknown; product?: unknown; fit_later?: unknown } | null;
   if (sent?.declined === true) return { declined: true };
-  return typeof sent?.product === "string" ? { product: sent.product } : null;
+  if (typeof sent?.product !== "string") return null;
+  return sent.fit_later === true ? { product: sent.product, fit_later: true } : { product: sent.product };
 }
 
 /** A one visit's choice: the piece step still on the phone, else the one that reached us; null before either. */
@@ -111,6 +115,17 @@ export const declinedTheFit = (job: Job, queued: readonly Queued[]): boolean => 
   const choice = choiceOf(job, queued);
   return choice !== null && "declined" in choice;
 };
+
+/** Whether a one visit's client booked the fit for another day, so nothing is fitted or paid today. */
+export const fitBookedLater = (job: Job, queued: readonly Queued[]): boolean => {
+  if (!job.one_visit) return false;
+  const choice = choiceOf(job, queued);
+  return choice !== null && "fit_later" in choice;
+};
+
+/** Whether a one visit fits nothing today: the fit declined, or booked for another day. */
+export const fitsNothingToday = (job: Job, queued: readonly Queued[]): boolean =>
+  declinedTheFit(job, queued) || fitBookedLater(job, queued);
 
 /** Where a row of the day's list stands once its job has begun. */
 export type RowState = "closed" | "in_progress" | "at_the_door";

@@ -43,7 +43,14 @@ function linkNote(job: Job, chosen: Extract<ClientChoice, { product: string }> |
   return oneVisit.linkFor(product?.name ?? oneVisit.chosenProduct);
 }
 
-/** What closing a one visit as done does: ends it as a free consultation, or texts the client a payment link. */
+/** Whether a one visit's client booked the fit for another day, which closes it with nothing to pay now. */
+const bookedLater = (choice: ClientChoice | null): choice is Extract<ClientChoice, { fit_later: true }> =>
+  choice !== null && "fit_later" in choice;
+
+/**
+ * What closing a one visit as done does: ends it as a free consultation, or as one going ahead with the fit to book, or
+ * texts the client a payment link.
+ */
 function OneVisitClose({
   job,
   clientChoice,
@@ -55,6 +62,11 @@ function OneVisitClose({
 }) {
   if (clientChoice !== null && "declined" in clientChoice) {
     return <p className={shared.note}>{oneVisit.endsAsConsultation}</p>;
+  }
+  if (bookedLater(clientChoice)) {
+    return (
+      <p className={shared.note}>{oneVisit.endsGoingAhead(chosenName(job, clientChoice) ?? oneVisit.chosenProduct)}</p>
+    );
   }
   const standingCode = job.discount_code;
   return (
@@ -130,6 +142,8 @@ function doneOf(
   lost: string | null,
   choice: ClientChoice | null,
 ): OutcomeRequest {
+  // A one visit's fit booked for another day goes ahead, with the product as the client's pick.
+  if (bookedLater(choice)) return { outcome: "done", going_ahead: true, product: choice.product };
   if (!asked) return { outcome: "done" };
   if (!notGoingAhead) {
     const picked = choice !== null && "product" in choice ? { product: choice.product } : {};
@@ -245,7 +259,7 @@ function Choosing({
   const doneReady = !unanswered && (!mustSayWhy || lost !== null);
   const ready = !codeChecking && (choice === "done" ? doneReady : choice === "partial" && reason !== null);
   // The words follow the choice: a one visit closed as done sends the client its payment link.
-  const sendsLink = closesOneVisit && !declined;
+  const sendsLink = closesOneVisit && !declined && !bookedLater(clientChoice);
 
   return (
     <StepFrame

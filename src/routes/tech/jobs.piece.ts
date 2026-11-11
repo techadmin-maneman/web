@@ -1,11 +1,11 @@
-// The piece step's body (./jobs.steps.ts): on a one visit, the product the client chose or that they decided
-// against it; on any other job that takes one, the piece fitted or the one that failed. A hair system it names must be
-// one of ours, since it comes out of the technician's kit (src/domain/inventory/piece-use.ts). A label one of the kit's
-// units carries names the hair system and its lot itself, and an expired one is refused
-// (docs/decisions/0163-pieces-scanned-from-the-kit.md).
+// The piece step's body (./jobs.steps.ts): on a one visit, the product the client chose, fitted today or booked for
+// later, or that they decided against it; on any other job that takes one, the piece fitted or the one that failed.
+// A hair system it names must be one of ours, since it comes out of the technician's kit
+// (src/domain/inventory/piece-use.ts). A label one of the kit's units carries names the hair system and its lot
+// itself, and an expired one is refused (docs/decisions/0163-pieces-scanned-from-the-kit.md).
 
 import { z } from "@hono/zod-openapi";
-import { PieceRequestSchema } from "../../domain/field/job-event-bodies.ts";
+import { fitsNothing, PieceRequestSchema } from "../../domain/field/job-event-bodies.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
 import { isHairSystem } from "../../domain/inventory/hair-systems.ts";
 import { kitUnit } from "../../domain/inventory/stock-units.ts";
@@ -24,7 +24,7 @@ type PieceBody = z.infer<typeof PieceRequestSchema>;
  * whatever the step said; one that expired before the visit's day is refused.
  */
 async function asTheKitHoldsIt(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<PieceBody | null> {
-  if ("declined" in sent) return sent;
+  if (fitsNothing(sent)) return sent;
   const unit = await kitUnit(c.env.DB, technicianOf(c).technicianId, sent.piece_code);
   if (unit === null) return sent;
   if (unit.expiresOn !== null && unit.expiresOn < indiaDate(job.windowStart)) return null;
@@ -35,26 +35,28 @@ async function asTheKitHoldsIt(c: Ctx, job: WorkableJob, sent: PieceBody): Promi
 export async function pieceBody(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<StepBody> {
   const body = await asTheKitHoldsIt(c, job, sent);
   if (body === null) return { invalid: ["piece_code"] };
-  const stockCode = "declined" in body ? null : (body.stock_code ?? null);
+  const stockCode = fitsNothing(body) ? null : (body.stock_code ?? null);
   if (stockCode !== null && !(await isHairSystem(c.env.DB, stockCode))) return { invalid: ["stock_code"] };
   if (job.oneVisit !== null) return oneVisitPiece(c, job, body);
-  if ("declined" in body || body.product !== undefined) return { invalid: ["product"] };
+  if (fitsNothing(body) || body.product !== undefined) return { invalid: ["product"] };
   if (!takesStep("piece", job.type)) return { invalid: ["piece_code"] };
   return pieceRecorded(body);
 }
 
 /**
  * A one visit's piece step: the client decided against the fit, or chose one of the products offered on the visit's
- * day and was fitted with a new piece from the technician's kit, so nothing came off and nothing failed.
+ * day and was fitted with a new piece from the technician's kit, so nothing came off and nothing failed, or booked
+ * its fit for another day (docs/decisions/0247-the-steps-left.md).
  */
 async function oneVisitPiece(c: Ctx, job: WorkableJob, body: PieceBody): Promise<StepBody> {
   if ("declined" in body) return { declined: true };
   if (body.product === undefined) return { invalid: ["product"] };
+  const offered = await offeredProducts(c.env.DB, indiaDate(job.windowStart));
+  if (!offered.some((service) => service.tier === body.product)) return { invalid: ["product"] };
+  if ("fit_later" in body) return { product: body.product, fit_later: true };
   if ((body.old_piece ?? null) !== null || (body.failure_reason ?? null) !== null) {
     return { invalid: ["old_piece", "failure_reason"] };
   }
-  const offered = await offeredProducts(c.env.DB, indiaDate(job.windowStart));
-  if (!offered.some((service) => service.tier === body.product)) return { invalid: ["product"] };
   const fitted = pieceRecorded(body);
   return "invalid" in fitted ? fitted : { ...fitted, product: body.product };
 }

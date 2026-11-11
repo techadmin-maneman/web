@@ -11,7 +11,7 @@
 import { useStillToRecord } from "../../policy/stock.ts";
 import { latestStep, takenFor, takenFromKit } from "../field/job-use.ts";
 import { pieceStepOf } from "./pieces.ts";
-import { pieceBodyOf } from "../field/job-event-bodies.ts";
+import { fitsNothing, pieceBodyOf } from "../field/job-event-bodies.ts";
 import { pieceReturnStatements } from "./piece-returns.ts";
 import { givenBackToLots } from "./stock-lots.ts";
 import { takenFrom, takesOf, unitChanges, type Taken } from "./stock-units.ts";
@@ -57,7 +57,7 @@ async function pieceMove(
 /** The piece a replacement's step names as come off, with why where it failed; null for none. */
 function oldPieceOf(body: unknown): { readonly code: string; readonly reason: string | null } | null {
   const piece = pieceBodyOf(body);
-  if (piece === null || "declined" in piece || piece.old_piece === null || piece.old_piece === undefined) return null;
+  if (piece === null || fitsNothing(piece) || piece.old_piece === null || piece.old_piece === undefined) return null;
   return { code: piece.old_piece.piece_code, reason: piece.old_piece.failure_reason ?? null };
 }
 

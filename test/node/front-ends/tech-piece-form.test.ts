@@ -13,7 +13,16 @@ import {
   type PieceForm,
 } from "../../../apps/tech/src/steps/piece-form.ts";
 
-const EMPTY: PieceForm = { code: "", base: "", lot: "", stock: null, oldCode: "", oldReason: "", choice: null };
+const EMPTY: PieceForm = {
+  code: "",
+  base: "",
+  lot: "",
+  stock: null,
+  oldCode: "",
+  oldReason: "",
+  choice: null,
+  later: false,
+};
 const FIRST_FIT = { one_visit: false, kit_hair_systems: [], date: "2026-09-21" };
 const ONE_VISIT = { one_visit: true, kit_hair_systems: [], date: "2026-09-21" };
 const LABEL = "MM-STD-4417-B";
@@ -58,6 +67,14 @@ describe("the piece step", () => {
     expect(stillMissing(EMPTY, ONE_VISIT, "found")).toBe(oneVisit.chooseFirst);
     expect(stillMissing({ ...EMPTY, choice: DECLINED }, ONE_VISIT, "found")).toBeNull();
     expect(pieceBody({ ...EMPTY, choice: DECLINED }, ONE_VISIT)).toEqual({ declined: true });
+  });
+
+  it("on a one visit, sends the product alone, with no label asked, once its fit is booked for later", () => {
+    const later = { ...EMPTY, choice: "natural", later: true };
+    expect(stillMissing(later, ONE_VISIT, "none")).toBeNull();
+    expect(pieceBody(later, ONE_VISIT)).toEqual({ product: "natural", fit_later: true });
+    // Booked for later means nothing on any other visit, nor once the fit is declined.
+    expect(pieceBody({ ...later, choice: DECLINED }, ONE_VISIT)).toEqual({ declined: true });
   });
 
   it("sends only what was said, trimmed, with the product on a one visit and the piece that came off", () => {

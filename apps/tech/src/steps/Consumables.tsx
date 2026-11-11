@@ -26,7 +26,7 @@ import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import shared from "./steps.module.css";
 import styles from "./consumables.module.css";
-import { declinedTheFit } from "../lib/progress.ts";
+import { fitsNothingToday } from "../lib/progress.ts";
 import { needsReason, shortfallOf, SHORT_REASONS, type ShortReason } from "@rules/policy/consumable-shortfall.ts";
 import { Chips } from "./ProfileFields.tsx";
 
@@ -316,8 +316,8 @@ export function Consumables({ id }: { id: string }) {
   if (loaded.state === "failed") {
     return <JobFailed failed={loaded} onRetry={retry} />;
   }
-  // A consultation and fit the client said no to: nothing was fitted, so nothing is expected of the kit.
-  const job = declinedTheFit(loaded.value, queued)
+  // A consultation and fit that fitted nothing today, declined or booked for later: nothing is expected of the kit.
+  const job = fitsNothingToday(loaded.value, queued)
     ? { ...loaded.value, consumables: loaded.value.consumables.map((each) => ({ ...each, expected: 0 })) }
     : loaded.value;
   return <Counting job={job} refused={refused} onFinish={(body) => void finish(body)} onBack={back} />;

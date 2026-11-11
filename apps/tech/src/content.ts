@@ -806,6 +806,8 @@ export const closeOut = {
   notFitted: "not fitted",
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
+  /** A one visit whose fit the client booked for another day. */
+  fitToBook: "fit to book",
   duration: "Duration",
   why: "Why",
   fit: "Fit",
@@ -906,6 +908,15 @@ export const oneVisit = {
   noProducts: "No hair system is offered for this visit. Speak to ops before you fit anything.",
   chooseFirst: "Choose the hair system, or mark it declined",
   declinedNote: "Nothing is fitted. The visit ends as a free consultation.",
+  /** When the chosen hair system is fitted: today, or another day ops book (docs/decisions/0247-the-steps-left.md). */
+  when: "When",
+  fitToday: "Fit today",
+  bookLater: "Book the first fit",
+  bookLaterSub: "Ops will call to book it",
+  laterNote: "Nothing is fitted today. Nothing to pay now.",
+  /** Closing as done, once the client booked the fit for another day: by the hair system's name. */
+  endsGoingAhead: (product: string) =>
+    `Ends as a consultation. Ops will call to book ${product}; it’s paid at that visit.`,
   /** Closing as done, once the client decided against the fit. */
   endsAsConsultation: "Ends as a free consultation. Nothing to pay.",
   /** Closing as done, once the client chose a hair system: by its name in the console. */

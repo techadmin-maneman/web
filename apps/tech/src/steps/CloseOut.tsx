@@ -11,7 +11,7 @@ import { useCallback } from "react";
 import type { Job, JobSummary } from "../api.ts";
 import { closeOut as copy, titles } from "../content.ts";
 import { kindNameLower } from "../lib/kind.ts";
-import { declinedTheFit, outcomeOf, type Outcome } from "../lib/progress.ts";
+import { declinedTheFit, fitBookedLater, outcomeOf, type Outcome } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
@@ -47,10 +47,14 @@ function nextAfter(jobs: readonly JobSummary[], after: Job, heard: ReadonlyMap<s
   return atTheDoor ?? jobs.find((job) => job.starts_at > after.starts_at && open(job)) ?? null;
 }
 
-/** How the job closed, in a word: a one visit done once the client declined is a free consultation. */
+/**
+ * How the job closed, in a word: a one visit done once the client declined is a free consultation, and one whose fit
+ * was booked for another day a consultation with the fit to book.
+ */
 function closedAs(job: Job, outcome: Outcome, queued: readonly Queued[], notFitted: boolean): string {
   if (notFitted) return copy.notFitted;
   if (outcome === "done" && declinedTheFit(job, queued)) return copy.freeConsultation;
+  if (outcome === "done" && fitBookedLater(job, queued)) return copy.fitToBook;
   return copy.outcomes[outcome];
 }
 

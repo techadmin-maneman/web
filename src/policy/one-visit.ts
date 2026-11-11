@@ -52,10 +52,16 @@ export type OneVisitState = "booked" | "fitted" | "declined";
 
 /**
  * What the client decided at the visit, as the technician's piece step records it: the product they chose and were
- * fitted with, whose payment link closing the visit sends, or that they decided against it, which makes
- * the visit a consultation, with nothing to pay.
+ * fitted with, whose payment link closing the visit sends; that they decided against it; or the product they chose
+ * with its fit booked for another day (docs/decisions/0247-the-steps-left.md). Either of the last two makes the visit
+ * a consultation, with nothing to pay; the fit booked for later is paid at its own visit.
  */
-export type Decision = { readonly declined: true } | { readonly product: string };
+export type Decision =
+  { readonly declined: true } | { readonly product: string } | { readonly product: string; readonly fit_later: true };
+
+/** Whether the client was fitted at the visit: a product chosen and not booked for later. */
+export const fitsToday = (decision: Decision): decision is { readonly product: string } =>
+  "product" in decision && !("fit_later" in decision);
 
 /** Whether a visit is paid for at the visit: a one visit still to happen, or one the client was fitted at. */
 export const paidAtTheVisit = (state: OneVisitState | null): boolean => state === "booked" || state === "fitted";

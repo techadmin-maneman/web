@@ -444,19 +444,22 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 409, "too_early_to_close");
       if (path.endsWith("/checkin") && fake.checkInEarly) return refuse(route, 409, "too_early_to_arrive");
 
-      // A one visit's client may decide against the fit, when the piece step carries no label.
+      // A one visit's client may decide against the fit, or book it for later, when the piece step carries no label.
       const body = route.request().postDataJSON() as {
         piece_code?: string;
         declined?: boolean;
         product?: string;
+        fit_later?: boolean;
       } | null;
       const declined = body?.declined === true;
-      if (path.endsWith("/piece") && !declined && !isPieceCode(body?.piece_code ?? "")) {
+      const later = body?.fit_later === true;
+      if (path.endsWith("/piece") && !declined && !later && !isPieceCode(body?.piece_code ?? "")) {
         return refuse(route, 400, "invalid_request", ["piece_code"]);
       }
       fake.writes.push({ path, eventId, startsAt, body });
       if (path.endsWith("/piece") && fake.oneVisit) {
-        fake.clientChoice = declined ? { declined: true } : { product: body?.product ?? "" };
+        const product = body?.product ?? "";
+        fake.clientChoice = declined ? { declined: true } : later ? { product, fit_later: true } : { product };
       }
 
       if (path.endsWith("/checkin")) {

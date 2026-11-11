@@ -27,6 +27,8 @@ export interface PieceForm {
   readonly oldCode: string;
   readonly oldReason: string;
   readonly choice: Choice;
+  /** On a one visit, a product chosen with its fit booked for another day (docs/decisions/0247-the-steps-left.md). */
+  readonly later: boolean;
 }
 
 export const given = (text: string): boolean => text.trim() !== "";
@@ -157,8 +159,16 @@ export function afterLabel(
 }
 
 /** Whether a one visit's client decided against the fit, which fits nothing and asks for no label. */
-export const declinedTheFit = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
+const declinedTheFit = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
   job.one_visit && form.choice === DECLINED;
+
+/** Whether a one visit's client chose a product and booked its fit for another day, which fits nothing today. */
+const fitLater = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
+  job.one_visit && form.later && form.choice !== null && form.choice !== DECLINED;
+
+/** Whether the step fits nothing today, so asks for no label: the fit declined, or booked for later. */
+export const fitsNothingToday = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
+  declinedTheFit(form, job) || fitLater(form, job);
 
 /** What a label's check found: not checked yet, unknown to us, no signal to check, this client's, or another's. */
 export type LabelChecked = "none" | "unknown" | "offline" | "found" | "another_client";
@@ -175,7 +185,7 @@ export function stillMissing(
 ): string | null {
   if (expiredInKit(job, form.code)) return copy.piece.expiredAction;
   if (job.one_visit && form.choice === null) return oneVisit.chooseFirst;
-  if (declinedTheFit(form, job)) return null;
+  if (fitsNothingToday(form, job)) return null;
   if (!isLabel(form.code)) return copy.piece.checkFirst;
   if (checked === "another_client") return copy.piece.notThisClientAction;
   // A row picked whose pieces carry no labels in our records takes the label on the piece; one whose pieces do, only one
@@ -196,6 +206,7 @@ const oldPieceOf = (form: PieceForm) =>
 /** The step's body: against the fit, or the piece with what was said of it, and on a replacement the one off. */
 export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBody<"piece"> {
   if (declinedTheFit(form, job)) return { declined: true };
+  if (fitLater(form, job) && form.choice !== null) return { product: form.choice, fit_later: true };
   return {
     piece_code: form.code,
     ...(job.one_visit && form.choice !== null ? { product: form.choice } : {}),

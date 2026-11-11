@@ -13,7 +13,7 @@ import { Loading } from "../frame/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import {
   choiceSent,
-  declinedTheFit,
+  fitsNothingToday,
   afterLabel,
   labelWarning,
   given,
@@ -39,7 +39,7 @@ import {
   type Looked,
 } from "./PieceFields.tsx";
 import { isLabel } from "./label.ts";
-import { pieceSent } from "./sent-before.ts";
+import { pieceSent, type PieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./piece.module.css";
@@ -115,10 +115,28 @@ function useLookup(
   return { looked, setLooked, looking, look } as const;
 }
 
-/** What the step asks first: a one visit's client's choice, or what any other fit was paid for. */
-function Asked({ job, choice, onChoose }: { job: Job; choice: Choice; onChoose: (choice: Choice) => void }) {
+/** A one visit's decision as it is made: the product, or against the fit, and whether its fit is booked for later. */
+function useDecision(sent: PieceSent | null) {
+  const [choice, setChoice] = useState<Choice>(choiceSent(sent));
+  const [later, setLater] = useState(sent?.later ?? false);
+  return [
+    { choice, later },
+    { choice: setChoice, later: setLater },
+  ] as const;
+}
+
+type Decision = ReturnType<typeof useDecision>;
+
+/** What the step asks first: a one visit's client's choice and when it is fitted, or what any other fit was paid for. */
+function Asked({ job, decided, decide }: { job: Job; decided: Decision[0]; decide: Decision[1] }) {
   return job.one_visit ? (
-    <ChoiceList products={job.products} choice={choice} onChoose={onChoose} />
+    <ChoiceList
+      products={job.products}
+      choice={decided.choice}
+      later={decided.later}
+      onChoose={decide.choice}
+      onLater={decide.later}
+    />
   ) : (
     <PaidFor job={job} />
   );
@@ -148,9 +166,9 @@ function Fitting({
   const [oldCode, setOldCode] = useState(sent?.oldCode ?? "");
   const [oldReason, setOldReason] = useState(sent?.oldReason ?? "");
   const [picking, setPicking] = useState<"new" | "old" | null>(null);
-  const [choice, setChoice] = useState<Choice>(choiceSent(sent));
+  const [{ choice, later }, decide] = useDecision(sent);
 
-  const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice };
+  const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice, later };
   const checked = looked.state === "found" && !looked.found.belongs_to_this_job ? "another_client" : looked.state;
   const missing = stillMissing(form, job, checked);
   /** A label typed or scanned: one of the kit's pieces picks its hair system and fills in its lot. */
@@ -184,8 +202,8 @@ function Fitting({
         onFinish(pieceBody(form, job));
       }}
     >
-      <Asked job={job} choice={choice} onChoose={setChoice} />
-      {!declinedTheFit(form, job) && (
+      <Asked job={job} decided={{ choice, later }} decide={decide} />
+      {!fitsNothingToday(form, job) && (
         <>
           <KitPieces choices={kitChoices({ ...job, profile: matchTo }, choice)} stock={stock} onStock={setStock} />
           <LabelField

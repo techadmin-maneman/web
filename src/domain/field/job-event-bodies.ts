@@ -54,7 +54,19 @@ const PieceDeclinedSchema = z
       "visit as done makes it a consultation.",
   });
 
-export const PieceRequestSchema = z.union([PieceFittedSchema, PieceDeclinedSchema]).openapi("PieceRequest");
+const PieceLaterSchema = z
+  .object({ product: z.string().min(1).max(32), fit_later: z.literal(true) })
+  .strict()
+  .openapi("PieceFitLater", {
+    description:
+      "On a one visit, and only there: the client chose the product, by its tier from the card's products, and books " +
+      "the fit for another day, so nothing is fitted today. Closing the visit as done makes it a consultation going " +
+      "ahead, with the product as the client's pick; nothing is charged (docs/decisions/0247-the-steps-left.md).",
+  });
+
+export const PieceRequestSchema = z
+  .union([PieceFittedSchema, PieceDeclinedSchema, PieceLaterSchema])
+  .openapi("PieceRequest");
 
 type PieceBody = z.infer<typeof PieceRequestSchema>;
 
@@ -178,6 +190,12 @@ export function pieceBodyOf(body: unknown): PieceBody | null {
   const parsed = PieceRequestSchema.safeParse(body);
   return parsed.success ? parsed.data : null;
 }
+
+type FittedBody = z.infer<typeof PieceFittedSchema>;
+
+/** Whether a one visit's piece step fitted nothing that day: the client decided against it, or booked it for later. */
+export const fitsNothing = (piece: PieceBody): piece is Exclude<PieceBody, FittedBody> =>
+  "declined" in piece || "fit_later" in piece;
 
 /** The lines a stored consumables step names; none for a body that is not one. */
 export function usedLinesOf(body: unknown): UsedLine[] {

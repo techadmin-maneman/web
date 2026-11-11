@@ -7107,10 +7107,29 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "additionalProperties": false
         },
         {
+          "type": "object",
+          "properties": {
+            "product": {
+              "type": "string"
+            },
+            "fit_later": {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            }
+          },
+          "required": [
+            "product",
+            "fit_later"
+          ],
+          "additionalProperties": false
+        },
+        {
           "type": "null"
         }
       ],
-      "description": "On a one visit, what the client decided as its piece step recorded it: the product they chose, or that they decided against the fit. Null until the piece step lands, and on any other visit."
+      "description": "On a one visit, what the client decided as its piece step recorded it: the product they chose, fitted then or with its fit booked for another day, or that they decided against the fit. Null until the piece step lands, and on any other visit."
     },
     "profile": {
       "anyOf": [
@@ -8949,6 +8968,9 @@ One of the client's try-on looks, under the card's own unlock, never cached
     },
     {
       "$ref": "#/components/schemas/PieceDeclined"
+    },
+    {
+      "$ref": "#/components/schemas/PieceFitLater"
     }
   ]
 }
@@ -9054,6 +9076,33 @@ One of the client's try-on looks, under the card's own unlock, never cached
   ],
   "additionalProperties": false,
   "description": "On a one visit, and only there: the client decided against the fit, so nothing was fitted, and closing the visit as done makes it a consultation."
+}
+```
+
+### PieceFitLater
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "product": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "fit_later": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "product",
+    "fit_later"
+  ],
+  "additionalProperties": false,
+  "description": "On a one visit, and only there: the client chose the product, by its tier from the card's products, and books the fit for another day, so nothing is fitted today. Closing the visit as done makes it a consultation going ahead, with the product as the client's pick; nothing is charged (docs/decisions/0247-the-steps-left.md)."
 }
 ```
 

@@ -5,7 +5,7 @@
 //
 // The technician's label lookup reads these rows, so scanning a label works with no signal.
 
-import { pieceBodyOf } from "../field/job-event-bodies.ts";
+import { fitsNothing, pieceBodyOf } from "../field/job-event-bodies.ts";
 
 export interface Piece {
   readonly id: string;
@@ -79,11 +79,11 @@ export type PieceField = "piece_code" | "old_piece";
 
 /**
  * The pieces a piece step's body names. A failure_reason on the piece itself marks that piece failed and fits nothing;
- * a one visit the client decided against names none.
+ * a one visit that fitted nothing that day names none.
  */
 export function pieceStepOf(body: unknown): PieceStep {
   const piece = pieceBodyOf(body);
-  if (piece === null || "declined" in piece) return { fitted: null, failed: [] };
+  if (piece === null || fitsNothing(piece)) return { fitted: null, failed: [] };
   const failed: PieceFailure[] = [];
   // An old piece named with no reason was due: the fit retires it as replaced, not failed.
   const oldPiece = piece.old_piece ?? null;

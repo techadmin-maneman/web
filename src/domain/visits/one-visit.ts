@@ -11,7 +11,7 @@
 import { onPackageBooked } from "../clients/client-package.ts";
 import { STANDARD_TIER } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import type { Decision } from "../../policy/one-visit.ts";
+import { fitsToday, type Decision } from "../../policy/one-visit.ts";
 import { releaseDeclined } from "../money/discount-code-visits.ts";
 import { pieceBodyOf } from "../field/job-event-bodies.ts";
 import { eventsOf } from "../field/job-events.ts";
@@ -19,11 +19,12 @@ import { oweAtVisit, sendPaymentLink, type LinkDeps, type LinkSent } from "../mo
 import { takesPaymentsOnline } from "../../providers/payments/index.ts";
 import { boardMoved, visitUpkeep } from "./visit-upkeep.ts";
 
-/** The client's decision, from the piece step's body; null for a body that records neither. */
+/** The client's decision, from the piece step's body; null for a body that records none. */
 function decisionOf(body: unknown): Decision | null {
   const piece = pieceBodyOf(body);
   if (piece === null) return null;
   if ("declined" in piece) return { declined: true };
+  if ("fit_later" in piece) return { product: piece.product, fit_later: true };
   return piece.product === undefined ? null : { product: piece.product };
 }
 
@@ -42,8 +43,8 @@ interface ClosingJob {
 
 /**
  * Closes a one visit as done, by the client's decision at its latest piece step: the visit becomes a consultation,
- * or the product's, whose payment link is then asked for. Null where nothing is asked: a declined visit, or one
- * whose piece step records no decision.
+ * declined or with the fit booked for later, or the product's, whose payment link is then asked for. Null where
+ * nothing is asked: a visit that fitted nothing, or one whose piece step records no decision.
  */
 export async function closeOneVisit(
   db: D1Database,
@@ -54,7 +55,7 @@ export async function closeOneVisit(
   const decision = await decisionAtVisit(db, job.id);
   if (decision === null) return null;
 
-  if ("declined" in decision) {
+  if (!fitsToday(decision)) {
     await db.batch([
       db
         .prepare("UPDATE appointments SET one_visit = 'declined', type = 'consultation', tier = ?2 WHERE id = ?1")

@@ -1,0 +1,17 @@
+/* What ./FitWhen.tsx alone draws; what it shares is in ./steps.module.css. */
+
+/* Book the first fit: its words, and beneath them who books it. */
+.later {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--sp-4);
+  min-height: var(--tech-primary);
+  text-align: left;
+}
+
+.laterSub {
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}

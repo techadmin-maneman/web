@@ -342,6 +342,45 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(page.getByText(techCopy.visit.task(1, 9))).toBeVisible();
   });
 
+  // The client chose the product and books the fit for another day (docs/decisions/0247-the-steps-left.md).
+  test("books the fit for another day: no label asked, the product sent, the consultation’s checklist", async ({
+    page,
+  }) => {
+    const fake = await onTheChoice(page);
+    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    // Fit today, unless the client books it for later.
+    await expect(page.getByRole("button", { name: techCopy.oneVisit.fitToday, exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await page.getByRole("button", { name: new RegExp(techCopy.oneVisit.bookLater) }).click();
+    await expect(page.getByText(techCopy.oneVisit.laterNote)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
+    expect(await axeViolations(page)).toEqual([]);
+    await stepAction(page).click();
+
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({ product: "natural", fit_later: true });
+    await expect(
+      page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.consultation }),
+    ).toBeVisible();
+  });
+
+  test("closes a fit booked for later as a consultation going ahead, with nothing to pay now", async ({ page }) => {
+    const fake = await atTheOutcome(page, { product: "natural", fit_later: true });
+    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+
+    await expect(page.getByText(techCopy.oneVisit.endsGoingAhead("Mane Man Natural"))).toBeVisible();
+    await expect(page.getByText(/payment link/)).toHaveCount(0);
+    await expect(page.getByLabel(techCopy.oneVisit.code.label)).toHaveCount(0);
+    await expect(stepAction(page)).toHaveText(techCopy.visit.close);
+    expect(await axeViolations(page)).toEqual([]);
+
+    await stepAction(page).click();
+    await expect(page.getByText(/^Rohit M\. · .+ · fit to book$/)).toBeVisible();
+    expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: true, product: "natural" });
+  });
+
   // A declined visit offers no code and promises no link, and closes as what it became.
   test("ends a declined visit as a free consultation, with no code asked for, and closes as one", async ({ page }) => {
     const fake = await atTheOutcome(page, { declined: true }, { code: "AUDTEST", given_by: "client" });

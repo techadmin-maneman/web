@@ -15,7 +15,7 @@ import { ProblemCard } from "@maneman/ui/ProblemCard";
 import { useEffect, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
 import { clientRecord, oneVisit, steps as copy, visit } from "../content.ts";
-import { declinedTheFit } from "../lib/progress.ts";
+import { fitsNothingToday } from "../lib/progress.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { put, remove } from "../store/db.ts";
@@ -47,6 +47,7 @@ function Ticking({
   onBack,
 }: {
   job: Job;
+  /** Nothing fitted today, the fit declined or booked for later: the consultation's list alone. */
   declined: boolean;
   refused: Queued | null;
   draft: Draft<"checklist_draft"> | null;
@@ -187,7 +188,7 @@ export function Checklist({ id }: { id: string }) {
   return (
     <Ticking
       job={job}
-      declined={declinedTheFit(job, queued)}
+      declined={fitsNothingToday(job, queued)}
       refused={refused}
       draft={kept.draft}
       onFinish={(body) => void finish(body)}
