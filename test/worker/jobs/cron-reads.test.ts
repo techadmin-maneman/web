@@ -37,7 +37,7 @@ import { DAY_MS, AGO, IN_TWO_MONTHS, over, rowsReadBy } from "./cron-reads-fixtu
 import { aTechnician } from "../fixtures/index.ts";
 
 const AGO_PLUS_HOUR = new Date(NOW.getTime() - 60 * DAY_MS + 60 * 60 * 1000).toISOString();
-/** Within the inbox's week, which the hourly deletion of old alerts leaves. */
+/** Within the inbox's week, which the deletion of old alerts, in the day ahead's hour, leaves. */
 const HOURS_AGO = new Date(NOW.getTime() - 3 * 60 * 60 * 1000).toISOString();
 
 /** NOW's day in India, as a counter's window names it. */
@@ -162,7 +162,7 @@ const HISTORY = [
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
   `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)
    SELECT 't-history', 'resource-history', 'A Technician', 'AT', 1, '${AGO}' FROM n LIMIT 1`,
-  // Their alerts of the inbox's week, pushed and read, as the hourly deletion leaves them; a phone signed in long ago
+  // Their alerts of the inbox's week, pushed and read, as the day ahead's deletion of old alerts leaves them; a phone signed in long ago
   // that took their pushes; a kind they turned off.
   `INSERT INTO tech_alerts (id, technician_id, kind, appointment_id, date, starts_at, once_key, sent_at, pushed_at,
      read_at)

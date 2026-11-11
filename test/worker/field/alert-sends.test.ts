@@ -96,11 +96,17 @@ describe("a job in the coming week, changed", () => {
 
   it("called off or given to another as its technician waits at the door, after its time, tells them", async () => {
     const late = "22222222-2222-4222-8222-222222222298";
-    await appointment(late, IMRAN, new Date(Date.now() - 20 * MINUTE_MS).toISOString());
-    await env.DB.prepare("UPDATE appointments SET status = 'dispatched' WHERE id = ?1").bind(late).run();
+    const later = "22222222-2222-4222-8222-222222222297";
+    const twentyMinutesAgo = new Date(Date.now() - 20 * MINUTE_MS).toISOString();
+    await appointment(late, IMRAN, twentyMinutesAgo);
+    await appointment(later, IMRAN, twentyMinutesAgo);
+    await env.DB.prepare("UPDATE appointments SET status = 'dispatched' WHERE id IN (?1, ?2)").bind(late, later).run();
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(late).run();
-    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(AHEAD, SAMEER).run();
-    expect((await alerts()).map((alert) => alert.kind)).toEqual(["job_cancelled", "job_reassigned"]);
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(later, SAMEER).run();
+    expect(await alerts()).toMatchObject([
+      { technician_id: IMRAN, kind: "job_cancelled", appointment_id: late },
+      { technician_id: IMRAN, kind: "job_reassigned", appointment_id: later },
+    ]);
   });
 
   it("called off, tells the technician", async () => {
@@ -159,6 +165,12 @@ describe("the cron's alerts", () => {
       "2026-09-21T07:30:00.000Z",
       "2026-09-21T08:30:00.000Z",
     ]);
+  });
+
+  it("tells the technician to leave as long before setting off as ops set", async () => {
+    const leaveBy = await leaveByOf(NOW);
+    expect((await job.opsPost("/api/settings/leave_notice_min", { value: 20 })).status).toBe(200);
+    expect(await writeTimedAlerts(env.DB, { now: new Date(leaveBy - 15 * MINUTE_MS), rules: () => given() })).toBe(1);
   });
 
   it("tells nothing to leave once the technician has checked in at the door", async () => {

@@ -50,7 +50,7 @@ async function shownBefore(): Promise<Set<string>> {
   return new Set((await cache.keys()).map((request) => new URL(request.url).pathname.slice("/shown/".length)));
 }
 
-/** Notes what was shown, and forgets what the API no longer holds. */
+/** Notes what was shown, or is too old to show, and forgets what the API no longer holds. */
 async function noteShown(shown: readonly string[], held: readonly PushedAlert[]): Promise<void> {
   const cache = await caches.open(SHOWN);
   const kept = new Set(held.map((alert) => alert.id));
@@ -89,14 +89,9 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     (async () => {
       const [alerts, shown] = await Promise.all([alertsNow(), shownBefore().catch(() => new Set<string>())]);
-      const notices = noticesOf(alerts, shown, Date.now());
+      const { notices, noted } = noticesOf(alerts, shown, Date.now());
       for (const notice of notices) await show(notice);
-      if (alerts !== null) {
-        await noteShown(
-          notices.map((notice) => notice.tag),
-          alerts,
-        ).catch(() => undefined);
-      }
+      if (alerts !== null) await noteShown(noted, alerts).catch(() => undefined);
       await tellTheApp();
     })(),
   );

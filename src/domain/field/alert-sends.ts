@@ -1,7 +1,8 @@
 // The alerts the cron writes and sends (docs/decisions/0250-guides-and-alerts.md). Every five minutes: time to leave
 // and running over, read from each working technician's day as their phone reads it (./tech-jobs.ts); then a push for
-// each alert not yet pushed, to each phone signed in as its technician. At 8 pm, the next day's jobs. A job's changes
-// are written by triggers (migrations/0209_tech_alerts.sql), so whatever changed it, the next run pushes them.
+// each alert not yet pushed, to each phone signed in as its technician. In the hour ops set, the next day's jobs, and
+// the alerts older than the inbox shows deleted (src/scheduled/tech-alerts.ts). A job's changes are written by
+// triggers (migrations/0209_tech_alerts.sql), so whatever changed it, the next run pushes them.
 
 import { statusIn, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";

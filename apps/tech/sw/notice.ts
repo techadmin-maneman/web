@@ -1,5 +1,6 @@
-// What a push shows on the lock screen (./sw.ts): each alert not yet read that has not been shown, a notification each,
-// in words that name no client, since a locked phone is seen by others; a job on another day says which. Navigate and
+// What a push shows on the lock screen (./sw.ts): each alert not yet read, sent within the life of a push and not shown
+// before, a notification each, in words that name no client, since a locked phone is seen by others; a job on another
+// day says which. An alert older than a push lives, whose push this phone missed, waits in the inbox unshown. Navigate and
 // Open job where the alert is about a job; a tap opens the job, the day ahead's day, or the inbox. Its own words, not
 // the app's (../src/content.ts): the worker is built as one file and shares no module with the app.
 
@@ -46,6 +47,8 @@ export const WORDS = {
 } as const;
 
 const MINUTE_MS = 60_000;
+/** How long a push lives at the push service (src/policy/tech-alerts.ts, PUSH_TTL_SECONDS): an alert older is stale. */
+const FRESH_MS = 30 * MINUTE_MS;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 const INDIA_MS = (5 * 60 + 30) * MINUTE_MS;
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -108,7 +111,7 @@ function wordsOf(alert: PushedAlert, now: number): { title: string; body: string
       return { title: "A job went to another technician", body: job(alert, now) };
     case "day_ahead":
       return {
-        title: `Tomorrow: ${String(alert.jobs ?? 0)} ${alert.jobs === 1 ? "job" : "jobs"} from ${clock(Date.parse(alert.starts_at ?? ""))}`,
+        title: `${alert.date === dayOf(now) ? "Today" : "Tomorrow"}: ${String(alert.jobs ?? 0)} ${alert.jobs === 1 ? "job" : "jobs"} from ${clock(Date.parse(alert.starts_at ?? ""))}`,
         body: alert.sector === null ? "" : `First in ${alert.sector}`,
       };
   }
@@ -129,16 +132,27 @@ const noticeFor = (alert: PushedAlert, now: number): Notice => ({
 });
 
 /**
- * The notifications a push shows: each alert not yet read and not shown before, newest first. A push must show one,
- * so with none new the newest unread is shown again in its place, or, where none could be read, the one that says to
- * open the app.
+ * The notifications a push shows, newest first: each alert not yet read, sent within the life of a push and not shown
+ * before. A push must show one, so with none new the newest such alert is shown again in its place, or, where none
+ * could be read, the one that says to open the app. `noted` is every alert to remember as shown: those shown, and those
+ * too old to show, whose push this phone missed.
  */
-export function noticesOf(alerts: readonly PushedAlert[] | null, shown: ReadonlySet<string>, now: number): Notice[] {
+export function noticesOf(
+  alerts: readonly PushedAlert[] | null,
+  shown: ReadonlySet<string>,
+  now: number,
+): { readonly notices: Notice[]; readonly noted: string[] } {
   const unread = (alerts ?? []).filter((alert) => !alert.read);
-  const fresh = unread.filter((alert) => !shown.has(alert.id));
-  if (fresh.length > 0) return fresh.map((alert) => noticeFor(alert, now));
-  const [newest] = unread;
-  return newest === undefined
-    ? [{ ...WORDS.unread, tag: "alerts", open: "/alerts", navigate: null }]
-    : [noticeFor(newest, now)];
+  const fresh = unread.filter((alert) => now - Date.parse(alert.sent_at) <= FRESH_MS);
+  const stale = unread.filter((alert) => !fresh.includes(alert)).map((alert) => alert.id);
+  const fresher = fresh.filter((alert) => !shown.has(alert.id));
+  if (fresher.length > 0) {
+    return { notices: fresher.map((alert) => noticeFor(alert, now)), noted: [...fresher.map((a) => a.id), ...stale] };
+  }
+  const [newest] = fresh;
+  const notices =
+    newest === undefined
+      ? [{ ...WORDS.unread, tag: "alerts", open: "/alerts", navigate: null }]
+      : [noticeFor(newest, now)];
+  return { notices, noted: stale };
 }

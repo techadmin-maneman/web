@@ -97,7 +97,12 @@ test("says when there are none, and Send me turns a kind off, which Me then coun
 });
 
 /** The phone's notifications as a test sets them: the permission, and a push service that takes or refuses. */
-async function phoneNotifications(page: Page, permission: "default" | "denied", service: "takes" | "refuses") {
+/** "held" is a phone that already holds a subscription, made with a key since replaced. */
+async function phoneNotifications(
+  page: Page,
+  permission: "default" | "denied" | "granted",
+  service: "takes" | "refuses" | "held",
+) {
   await page.addInitScript(
     ([given, answer]) => {
       const state: { permission: string } = { permission: given };
@@ -113,12 +118,20 @@ async function phoneNotifications(page: Page, permission: "default" | "denied", 
           },
         },
       });
+      const held = {
+        endpoint: "https://fcm.googleapis.com/fcm/send/old-key-phone",
+        options: { applicationServerKey: new Uint8Array([4, 1, 2, 3]).buffer },
+        unsubscribe: () => {
+          document.documentElement.dataset.unsubscribed = "yes";
+          return Promise.resolve(true);
+        },
+      };
       const pushManager = {
-        getSubscription: () => Promise.resolve(null),
+        getSubscription: () => Promise.resolve(answer === "held" ? held : null),
         subscribe: () =>
-          answer === "takes"
-            ? Promise.resolve({ endpoint: "https://fcm.googleapis.com/fcm/send/test-phone" })
-            : Promise.reject(new Error("the push service refused")),
+          answer === "refuses"
+            ? Promise.reject(new Error("the push service refused"))
+            : Promise.resolve({ endpoint: "https://fcm.googleapis.com/fcm/send/test-phone" }),
       };
       // The tests block service workers; the app reads the one the phone would have.
       Object.defineProperty(navigator.serviceWorker, "ready", { value: Promise.resolve({ pushManager }) });
@@ -189,4 +202,37 @@ test("a job of today's called off, read from a push, opens the dialog that says 
   await expect(dialog.getByText(techCopy.interrupted.cancelledAlert)).toBeVisible();
   await dialog.getByRole("button", { name: techCopy.interrupted.today }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("a push read with the app open, of a job of today's called off, opens the dialog there and then", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  await page.goto("/");
+  await expect(bell(page)).toHaveAccessibleName(copy.bell(0));
+  fake.inbox = {
+    ...fake.inbox,
+    alerts: [alertOf({ kind: "job_cancelled", date: todayInIndia(), client_name: "Rohit M." })],
+  };
+  // The worker, having shown the push, tells the open app.
+  await page.evaluate(() => {
+    navigator.serviceWorker.dispatchEvent(new MessageEvent("message", { data: { kind: "mm-alerts" } }));
+  });
+  await expect(
+    page.getByRole("dialog").getByRole("heading", { name: techCopy.interrupted.cancelled("Rohit M.") }),
+  ).toBeVisible();
+});
+
+test("a phone subscribed with a key since replaced subscribes again with the new one, as the app opens", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.inbox = {
+    ...fake.inbox,
+    push_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U",
+  };
+  await phoneNotifications(page, "granted", "held");
+  await page.goto("/");
+  await expect.poll(() => fake.pushSubscriptions).toEqual(["https://fcm.googleapis.com/fcm/send/test-phone"]);
+  expect(await page.evaluate(() => document.documentElement.dataset.unsubscribed)).toBe("yes");
 });
