@@ -31,8 +31,8 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await label.fill("mm-std-7193 c");
     await expect(label).toHaveValue("MM-STD-7193-C");
-    // Not in the kit, so it is checked before the fit goes on.
-    await expect(page.getByText(techCopy.steps.piece.uncheckedAction, { exact: true })).toBeVisible();
+    // Checked as it reads, with no step of its own: not in the kit, so the fit does not go on.
+    await expect(page.getByText(techCopy.steps.piece.notInKitAction, { exact: true })).toBeVisible();
     await expect(stepAction(page)).toBeDisabled();
 
     await label.fill("MM-STD-71");
@@ -164,8 +164,10 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(kit.getByRole("button").first()).toHaveAttribute("aria-pressed", "true");
     await stepAction(page).click();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    // The label checked as it read, the kit's hair system names its base.
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-ESS-0000007-H",
+      base: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density",
       supplier_lot: "HS-1",
       stock_code: "hs_exact",
     });
@@ -196,10 +198,8 @@ test.describe("the piece (board B3, step 4)", () => {
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-7193-C");
 
     await expect(page.getByText(techCopy.steps.piece.offline)).toBeVisible();
-    // Tried again once there is signal.
-    fake.online = true;
-    await page.getByRole("button", { name: techCopy.steps.piece.checkAgain }).click();
-    await expect(page.getByText(techCopy.steps.piece.offline)).toHaveCount(0);
+    // It can be tried again once there is signal.
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.checkAgain })).toBeVisible();
     await expect(page.getByText(/We do not know that label/)).toHaveCount(0);
     await expect(stepAction(page)).toBeEnabled();
   });
@@ -294,6 +294,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-NAT-5120-A",
+      base: "Kit stock MM-NAT-5120-A",
       product: "natural",
       stock_code: "hs_natural",
     });

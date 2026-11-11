@@ -175,6 +175,9 @@ function reply(route: Route, status: number, body?: unknown): Promise<void> {
   return body === undefined ? route.fulfill({ status }) : route.fulfill({ status, json: body });
 }
 
+/** A piece in our records that is another client's: the API refuses to fit it on this job. */
+const ANOTHER_CLIENTS_PIECE = "MM-STD-9999-Z";
+
 /** Whom a job went to, by first name, and when, as a `409 superseded` names the other technician. */
 type WentTo = { technician: string; at: string | null } | null;
 const refuse = (route: Route, status: number, code: string, fields: readonly string[] = [], moved: WentTo = null) =>
@@ -516,6 +519,19 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (path === "/api/tech/pieces/lookup") {
       const code = url.searchParams.get("code") ?? "";
       if (!isPieceCode(code)) return refuse(route, 404, "not_found");
+      // As the API answers (src/routes/tech/pieces.ts): a unit in the technician's kit is theirs to fit, named by its
+      // hair system; a piece in our records is this client's or another's; any other label is not found.
+      const system = fake.kitHairSystems.find((each) => each.units.some((one) => one.code === code));
+      const unit = system?.units.find((one) => one.code === code);
+      if (system !== undefined && unit !== undefined) {
+        const piece = { ...ROHITS_PIECE, piece_code: code, base: system.name, supplier_lot: unit.lot_code };
+        return reply(route, 200, {
+          piece: { ...piece, fitted_at: null, replacement_due_at: null },
+          belongs_to_this_job: true,
+          in_kit: true,
+        });
+      }
+      if (code !== ROHITS_PIECE.piece_code && code !== ANOTHER_CLIENTS_PIECE) return refuse(route, 404, "not_found");
       return reply(route, 200, {
         piece: { ...ROHITS_PIECE, piece_code: code },
         belongs_to_this_job: code === ROHITS_PIECE.piece_code,
