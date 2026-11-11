@@ -58,5 +58,5 @@
       "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ],
-  "vulnerabilityAlerts": { "labels": ["security"], "schedule": ["at any time"] }
+  "vulnerabilityAlerts": { "labels": ["dependencies", "security"], "schedule": ["at any time"] }
 }
