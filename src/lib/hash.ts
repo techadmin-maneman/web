@@ -18,7 +18,7 @@ export async function saltedHash(salt: string, value: string): Promise<string> {
 }
 
 /** A secret as an HMAC-SHA256 key, to sign with and verify by. */
-export function hmacKey(secret: string): Promise<CryptoKey> {
+function hmacKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
     "sign",
     "verify",
