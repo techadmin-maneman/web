@@ -42,19 +42,6 @@ export function NoSignal() {
   );
 }
 
-/**
- * The offline banner: one paper strip, the line and a few words on what the phone keeps: Today's, or a job step's.
- */
-export function Offline({ body = todayCopy.offline.body }: { readonly body?: string }) {
-  return (
-    <p className={styles.offline} role="status">
-      <Icon d={APP_ICONS.offline} size="md" weight="heavy" />
-      <span className={styles.offlineTitle}>{todayCopy.offline.title}</span>
-      <span className={styles.offlineBody}>{body}</span>
-    </p>
-  );
-}
-
 type StoppedJob = NonNullable<JobAccount["stopped"]>;
 
 /** "4 pm consultation · Gurgaon: Ops moved this job to 9 am tomorrow.", from what the phone holds of the job. */
