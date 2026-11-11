@@ -1,7 +1,8 @@
 // A technician's quality over the last 30 days, on their Me screen (src/policy/quality.ts): on time, their visits
 // checked in by the booked start; and the hairline redo rate, their first fits done or left partly done, and of them
 // those whose free refit was booked within 30 days (docs/decisions/0192-free-remakes.md), the partly done visit's Tasks
-// row closed as it was. The client rating follows once ratings exist.
+// row closed as it was. A no-show is no fit, nor is one closed "Can't fit today", which fitted no hairline; payroll
+// counts that one a consultation too. The client rating follows once ratings exist.
 
 import { statusIn, VISIT_ENDED } from "../../config/statuses.ts";
 import { DAY_MS } from "../../lib/durations.ts";
@@ -40,7 +41,8 @@ export async function qualityOf(db: D1Database, technicianId: string, now: Date)
           WHERE a.technician_id = ?1 AND a.window_start >= ?2 AND a.window_start < ?3 AND a.type = 'first_fit'
             AND ${statusIn("a.status", VISIT_ENDED)} AND a.deleted_at IS NULL
             AND NOT EXISTS (SELECT 1 FROM visit_outcomes v
-                             WHERE v.appointment_id = a.id AND COALESCE(v.partial_reason, '') = 'no_show')`,
+                             WHERE v.appointment_id = a.id
+                               AND (v.outcome = 'no_show' OR COALESCE(v.partial_reason, '') = 'no_piece'))`,
       )
       .bind(technicianId, since, until, `+${String(REDO_DAYS)} days`, REMAKE_BOOKED),
   ]);

@@ -10729,6 +10729,10 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "type": "boolean",
             "description": "At or below the kit level ops set for it."
           },
+          "usable": {
+            "type": "integer",
+            "description": "What it holds fit to use: its count less its expired lots, which go back to ops."
+          },
           "hair_system": {
             "type": "boolean"
           },
@@ -10815,6 +10819,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "unit",
           "quantity",
           "low",
+          "usable",
           "hair_system",
           "lots",
           "units"

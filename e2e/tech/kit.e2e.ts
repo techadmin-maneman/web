@@ -21,6 +21,7 @@ function withAKit(fake: Fake): void {
         unit: "ml",
         quantity: 120,
         low: false,
+        usable: 100,
         hair_system: false,
         lots: [
           { lot_code: "SV-1", expires_on: "2020-01-31", quantity: 20, use_first: false },
@@ -85,7 +86,7 @@ test("says an item is out, and how far short, rather than a count below nought",
   const fake = await fakeTech(page);
   withAKit(fake);
   const [solvent] = fake.kit.held;
-  if (solvent !== undefined) fake.kit = { ...fake.kit, held: [{ ...solvent, quantity: -4, lots: [] }] };
+  if (solvent !== undefined) fake.kit = { ...fake.kit, held: [{ ...solvent, quantity: -4, usable: -4, lots: [] }] };
   await page.goto("/kit");
   const held = page.getByRole("region", { name: copy.held.title });
   await expect(held.getByRole("listitem")).toContainText(["Solvent" + copy.held.out("4 ml")]);
@@ -142,6 +143,35 @@ test("says its writes need signal, with none", async ({ page, context }) => {
   fake.online = false;
   await context.setOffline(true);
   await expect(page.getByRole("button", { name: copy.needsSignal }).first()).toBeDisabled();
+});
+
+test("says nothing's short now where the API finds the kit short of nothing, and reads the kit again", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  fake.kit = {
+    ...fake.kit,
+    forecast: [{ code: "shampoo", name: "Shampoo sachet", unit: "sachet", need: 6, have: 0 }],
+  };
+  await page.route("**/api/tech/kit/requests", async (route) => {
+    // Meanwhile a top-up came: the week ahead is short of nothing.
+    fake.kit = {
+      ...fake.kit,
+      forecast: [{ code: "shampoo", name: "Shampoo sachet", unit: "sachet", need: 6, have: 6 }],
+    };
+    await route.fulfill({
+      status: 409,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "not_changeable", request_id: "kit-ref-2", fields: [] } }),
+    });
+  });
+  await page.goto("/kit");
+  const days = page.getByRole("region", { name: copy.forecast.title });
+  await days.getByRole("button", { name: copy.forecast.request }).click();
+  await expect(days.getByRole("alert")).toHaveText(copy.forecast.nothingShort);
+  await expect(days.getByRole("row", { name: /Shampoo sachet/ })).toContainText(copy.forecast.enough);
+  await expect(days.getByRole("button", { name: copy.forecast.request })).toHaveCount(0);
 });
 
 test("weighs the next seven days' need against the kit, a shortfall in red", async ({ page }) => {

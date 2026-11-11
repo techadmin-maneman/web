@@ -12,6 +12,7 @@ let job: Working;
 interface Task {
   readonly id: string;
   readonly facts: Record<string, unknown>;
+  readonly visit: { readonly id: string } | null;
 }
 
 const tasksOf = async (group: string): Promise<Task[]> => {
@@ -81,6 +82,8 @@ describe("an ask to reschedule", () => {
     const [task, ...more] = await tasksOf("reschedule_request");
     expect(more).toEqual([]);
     expect(task?.facts).toMatchObject({ kind: "service", technician: "Imran Qureshi", reason: "client_asked" });
+    // It opens its visit on the dispatch board.
+    expect(task?.visit).toMatchObject({ id: JOB });
   });
 
   it("is settled once ops move the visit, or close the task", async () => {

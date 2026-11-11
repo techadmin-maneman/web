@@ -25,6 +25,30 @@ test("shows who they are, their quality and this month's incentives on Me", asyn
   expect(await axeViolations(page)).toEqual([]);
 });
 
+test("says Me's quality didn't load, with the reference, and loads it on Try again", async ({ page }) => {
+  await fakeTech(page);
+  let asked = 0;
+  // Registered after the fake, so it answers first: the first read fails, the next goes to the fake.
+  await page.route("**/api/tech/quality", async (route) => {
+    asked += 1;
+    if (asked > 1) return route.fallback();
+    return route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "unavailable", request_id: "quality-ref-1", fields: [] } }),
+    });
+  });
+  await page.goto("/me");
+  const quality = page.getByRole("region", { name: techCopy.me.quality.title });
+  await expect(quality.getByRole("alert")).toContainText(techCopy.me.quality.failed);
+  await expect(quality.getByRole("alert")).toContainText("Ref quality-");
+  await quality.getByRole("button", { name: techCopy.me.retry }).click();
+  await expect(quality.getByRole("definition")).toHaveText([
+    techCopy.me.quality.redone(1, 9),
+    techCopy.me.quality.onTimeShare(17, 18),
+  ]);
+});
+
 test("asks for leave from the phone, and shows the ask with ops", async ({ page }) => {
   const fake = await fakeTech(page);
   await page.goto("/");

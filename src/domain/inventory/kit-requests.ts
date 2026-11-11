@@ -2,6 +2,7 @@
 // and-me.md): the shortfall the week ahead finds, worked out here rather than taken from the phone, kept as it was when
 // asked. A task on the board until ops close it, which settles it. One open a kit at a time.
 
+import { kitView } from "./kit.ts";
 import { weekAheadOf } from "./kit-week.ts";
 
 /** An open ask, as the Kit screen shows it: when, and what. */
@@ -33,7 +34,7 @@ export async function askForKit(
   db: D1Database,
   input: { kit: string; today: string; now: Date },
 ): Promise<KitAsked | "nothing_short"> {
-  const short = (await weekAheadOf(db, input.kit, input.today))
+  const short = (await weekAheadOf(db, input.kit, input.today, await kitView(db, input.kit)))
     .map((item) => ({ code: item.code, quantity: item.need - Math.max(item.have, 0) }))
     .filter((item) => item.quantity > 0);
   const open = await kitAskedOf(db, input.kit);

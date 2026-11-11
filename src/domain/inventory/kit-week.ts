@@ -56,29 +56,59 @@ export async function addTheWeek(
 /** How many days the technician's own forecast looks ahead, today's included. */
 const FORECAST_DAYS = 7;
 
-/** A consumable the kit's visits are expected to use over the forecast's days, against what the kit holds. */
-export interface WeekAhead {
+/** An item the kit holds, with its lots as the kit lists them (./kit.ts). */
+interface HeldItem {
+  readonly code: string;
+  readonly quantity: number;
+  readonly lots: readonly { readonly expiresOn: string | null; readonly quantity: number }[];
+}
+
+/**
+ * What the kit holds of an item fit to use: its count less its lots expired before `today`, as the kit lists them,
+ * which go back to ops. Below nought where more was used than it held.
+ */
+export function usableOf(item: Omit<HeldItem, "code">, today: string): number {
+  const expired = item.lots
+    .filter((lot) => lot.expiresOn !== null && lot.expiresOn < today)
+    .reduce((sum, lot) => sum + lot.quantity, 0);
+  return item.quantity - expired;
+}
+
+/** A consumable the kit's visits are expected to use over the forecast's days. */
+interface WeekNeed {
   readonly code: string;
   readonly name: string;
   readonly unit: string;
   readonly need: number;
+}
+
+/** The same, against what the kit holds of it fit to use. */
+export interface WeekAhead extends WeekNeed {
   readonly have: number;
 }
 
 /**
- * The technician's own week ahead, for their Kit screen: each consumable their visits booked from today to six days on
- * are expected to use, and what their kit holds of it fit to use, less what has expired or been recalled, which goes
- * back to ops. Hair systems are left to the evening's check, as above.
+ * The technician's own week ahead, for their Kit screen and an ask of ops: each consumable their visits booked from
+ * today to six days on are expected to use, against what their kit holds of it fit to use, as the kit's own view counts
+ * it (usableOf). Hair systems are left to the evening's check, as above.
  */
-export async function weekAheadOf(db: D1Database, kit: string, today: string): Promise<WeekAhead[]> {
+export async function weekAheadOf(
+  db: D1Database,
+  kit: string,
+  today: string,
+  view: { readonly held: readonly HeldItem[] },
+): Promise<WeekAhead[]> {
+  const usable = new Map(view.held.map((item) => [item.code, usableOf(item, today)]));
+  return (await weekNeedOf(db, kit, today)).map((item) => ({
+    ...item,
+    have: Math.max(0, usable.get(item.code) ?? 0),
+  }));
+}
+
+async function weekNeedOf(db: D1Database, kit: string, today: string): Promise<WeekNeed[]> {
   const { results } = await db
     .prepare(
-      `SELECT u.consumable_code AS code, c.name, c.unit, SUM(u.quantity) AS need,
-              MAX(0, COALESCE((SELECT b.quantity FROM stock_balances b
-                                WHERE b.place = ?3 AND b.consumable_code = u.consumable_code), 0)
-                - COALESCE((SELECT SUM(lb.quantity) FROM stock_lot_balances lb JOIN stock_lots l ON l.id = lb.lot_id
-                             WHERE lb.place = ?3 AND l.consumable_code = u.consumable_code AND lb.quantity > 0
-                               AND (l.expires_on < ?4 OR l.recalled_at IS NOT NULL)), 0)) AS have
+      `SELECT u.consumable_code AS code, c.name, c.unit, SUM(u.quantity) AS need
          FROM appointments a INDEXED BY appointments_by_technician
          JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
          JOIN consumables c ON c.code = u.consumable_code
@@ -91,8 +121,7 @@ export async function weekAheadOf(db: D1Database, kit: string, today: string): P
       indiaInstant(today, "00:00").toISOString(),
       indiaInstant(addDays(today, FORECAST_DAYS), "00:00").toISOString(),
       kit,
-      today,
     )
-    .all<WeekAhead>();
+    .all<WeekNeed>();
   return results;
 }

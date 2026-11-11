@@ -73,13 +73,20 @@ describe("the technician's quality", () => {
     expect(await quality()).toMatchObject({ fits: 0, redone: 0 });
   });
 
-  it("leaves out a first fit nobody was home for", async () => {
+  it("leaves out a first fit nobody was home for, as the app closes one", async () => {
+    await fitEnded("terminated", 10);
+    await writeRow("visit_outcomes", { appointment_id: JOB, outcome: "no_show", updated_at: AT }, {});
+    expect(await quality()).toMatchObject({ fits: 0, redone: 0 });
+  });
+
+  it('leaves out a first fit closed "Can\'t fit today", which fitted no hairline, and its refit', async () => {
     await fitEnded("terminated", 10);
     await writeRow(
       "visit_outcomes",
-      { appointment_id: JOB, outcome: "partial", partial_reason: "no_show", updated_at: AT },
+      { appointment_id: JOB, outcome: "partial", partial_reason: "no_piece", updated_at: AT },
       {},
     );
+    await refitBooked(5);
     expect(await quality()).toMatchObject({ fits: 0, redone: 0 });
   });
 });

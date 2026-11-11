@@ -5535,6 +5535,8 @@ export interface components {
                 quantity: number;
                 /** @description At or below the kit level ops set for it. */
                 low: boolean;
+                /** @description What it holds fit to use: its count less its expired lots, which go back to ops. */
+                usable: number;
                 hair_system: boolean;
                 /** @description The lots it holds some of, soonest to expire first. */
                 lots: {

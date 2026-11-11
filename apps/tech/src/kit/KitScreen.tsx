@@ -45,22 +45,15 @@ function heldLines(item: Held, today: string, coming: boolean): string[] {
         `${lot.lot_code} · ${amountOf(lot.quantity, item.unit)} · ${lotWhen(lot, fullDate(lot.expires_on ?? today))}`,
     );
   return [
-    ...(item.low && usable(item, today) > 0 ? [copy.held.low(coming)] : []),
+    ...(item.low && item.usable > 0 ? [copy.held.low(coming)] : []),
     ...(item.hair_system ? [copy.held.pieces(item.units.length)] : []),
     ...lots,
   ];
 }
 
-/** What the kit holds of an item fit to use: its count less its expired lots, which go back to ops. */
-const usable = (item: Held, today: string): number =>
-  item.quantity -
-  item.lots
-    .filter((lot) => lot.expires_on !== null && lot.expires_on < today)
-    .reduce((sum, lot) => sum + lot.quantity, 0);
-
-/** An item's figure: out in red, low in the metal's words, otherwise quiet. */
-function amountLook(item: Held, today: string): string | undefined {
-  if (usable(item, today) <= 0) return styles.out;
+/** An item's figure, what it holds fit to use: out in red, low in the metal's words, otherwise quiet. */
+function amountLook(item: Held): string | undefined {
+  if (item.usable <= 0) return styles.out;
   return item.low ? styles.low : styles.amount;
 }
 
@@ -84,7 +77,7 @@ function InKit({ kit }: { readonly kit: Kit }) {
                   </p>
                 ))}
               </div>
-              <p className={amountLook(item, kit.today)}>{heldOf(usable(item, kit.today), item.unit)}</p>
+              <p className={amountLook(item)}>{heldOf(item.usable, item.unit)}</p>
             </li>
           ))}
         </ul>

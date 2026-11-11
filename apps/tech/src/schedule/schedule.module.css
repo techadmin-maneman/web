@@ -54,6 +54,10 @@
   color: var(--navy-900);
 }
 
+.dayFailed {
+  margin: 0 0 var(--sp-4);
+}
+
 .daySub {
   margin: var(--sp-2) 0 var(--sp-16);
   font-size: var(--fs-14);

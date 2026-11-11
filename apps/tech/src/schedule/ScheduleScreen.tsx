@@ -6,6 +6,8 @@
 
 import { DateStrip, type StripDate } from "@maneman/ui/DateStrip";
 import { type DayBlock, DayColumn } from "@maneman/ui/DayColumn";
+import { ErrorRef } from "@maneman/ui/ErrorRef";
+import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, dayClock, indiaTimeOf, minutesBetween, weekdayName } from "@maneman/web-kit/dates";
 import { useCallback, useId } from "react";
@@ -13,12 +15,13 @@ import { api, type JobSummary } from "../api.ts";
 import { NoSignal } from "../frame/Banners.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
-import { job as jobCopy, schedule as copy } from "../content.ts";
+import { job as jobCopy, reference, schedule as copy } from "../content.ts";
 import { kindName } from "../lib/kind.ts";
 import { rowState } from "../lib/progress.ts";
 import { closedAs } from "../lib/today.ts";
 import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
+import { useRefreshTick } from "../lib/useRefreshTick.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { apiDate, clock, dayMonth, todayInIndia } from "../lib/when.ts";
 import { redirect } from "../route.ts";
@@ -37,20 +40,23 @@ interface Day {
   readonly date: string;
   /** Null for a day that would not load and that the phone does not keep. */
   readonly jobs: readonly JobSummary[] | null;
+  /** The failed call's reference, for a day that would not load; null when the API never answered. */
+  readonly requestId: string | null;
 }
 
 /**
  * Each day of the strip with its jobs. A day that will not load is read from the phone where it keeps that day, as it
  * keeps today's and tomorrow's (../lib/useDay.ts); the week fails only where no day can be shown.
  */
-async function readWeek(today: string) {
+async function readWeek(today: string, _tick: number) {
   const dates = Array.from({ length: SCHEDULE_DAYS }, (_, at) => addDays(today, at));
   const answers = await Promise.all(dates.map((date) => api.jobs(date)));
   const days = await Promise.all(
     dates.map(async (date, at): Promise<Day> => {
       const answer = answers[at];
-      if (answer?.ok === true) return { date, jobs: answer.body.jobs };
-      return { date, jobs: await keptDay(date).catch(() => null) };
+      if (answer?.ok === true) return { date, jobs: answer.body.jobs, requestId: null };
+      const requestId = answer === undefined ? null : answer.requestId;
+      return { date, jobs: await keptDay(date).catch(() => null), requestId };
     }),
   );
   const failed = answers.find((answer) => !answer.ok);
@@ -132,7 +138,26 @@ const stripDay = (day: Day): StripDate => ({
   note: noteOf(day),
 });
 
-function DayView({ day, today, stripId }: { readonly day: Day; readonly today: string; readonly stripId: string }) {
+/** A day that would not load: with no signal, that it shows once there is some; with signal, Try again. */
+function DayFailed({ day, onRetry }: { readonly day: Day; readonly onRetry: () => void }) {
+  const { offline } = useSession();
+  if (offline) return <p className={styles.daySub}>{copy.dayFailed}</p>;
+  return (
+    <div className={styles.daySub} role="alert">
+      <p className={styles.dayFailed}>{copy.dayNotLoaded}</p>
+      <TextButton onClick={onRetry}>{copy.retry}</TextButton>
+      {day.requestId !== null && <ErrorRef requestId={day.requestId} words={reference} />}
+    </div>
+  );
+}
+
+function DayView(props: {
+  readonly day: Day;
+  readonly today: string;
+  readonly stripId: string;
+  readonly onRetry: () => void;
+}) {
+  const { day, today, stripId } = props;
   const { events } = useOutbox();
   const names = useNames(0);
   const blocks = blocksOf(day, day.date === today, names, events);
@@ -144,7 +169,7 @@ function DayView({ day, today, stripId }: { readonly day: Day; readonly today: s
         {copy.day(weekdayName(day.date).slice(0, 3), dayMonth(day.date))}
       </h2>
       {jobs === null ? (
-        <p className={styles.daySub}>{copy.dayFailed}</p>
+        <DayFailed day={day} onRetry={props.onRetry} />
       ) : (
         <>
           <p className={styles.daySub}>{jobs.length === 0 ? copy.nothing : copy.jobs(jobs.length)}</p>
@@ -168,7 +193,9 @@ export function ScheduleScreen({ date }: { readonly date: string | null }) {
   const { offline } = useSession();
   const heading = useScreen(copy.title);
   const stripId = useId();
-  const read = useCallback(() => readWeek(today), [today]);
+  // Read again as Today is: the app back in front, the phone finding signal, and every few minutes.
+  const tick = useRefreshTick();
+  const read = useCallback(() => readWeek(today, tick), [today, tick]);
   const [loaded, retry] = useLoad(read);
   const days = loaded.state === "loaded" ? loaded.value : [];
   const shown = days.find((day) => day.date === date) ?? days[0];
@@ -205,7 +232,7 @@ export function ScheduleScreen({ date }: { readonly date: string | null }) {
               redirect(chosen === today ? "/week" : `/week/${chosen}`);
             }}
           />
-          <DayView day={shown} today={today} stripId={stripId} />
+          <DayView day={shown} today={today} stripId={stripId} onRetry={retry} />
         </>
       )}
     </main>

@@ -161,8 +161,15 @@ describe("the week ahead", () => {
       expires_on: "2026-09-20",
     });
     await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 10, from: "central", to: IMRAN });
-    const { forecast } = await (await job.get("/api/tech/kit")).json<{ forecast: unknown[] }>();
-    expect(forecast).toEqual([{ code: "solvent", name: "Solvent", unit: "ml", need: 10, have: 0 }]);
+    const kit = await (
+      await job.get("/api/tech/kit")
+    ).json<{
+      forecast: unknown[];
+      held: { code: string; quantity: number; usable: number }[];
+    }>();
+    expect(kit.forecast).toEqual([{ code: "solvent", name: "Solvent", unit: "ml", need: 10, have: 0 }]);
+    // In kit says the same: held, and none of it fit to use.
+    expect(kit.held.find((item) => item.code === "solvent")).toMatchObject({ quantity: 10, usable: 0 });
   });
 });
 

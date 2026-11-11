@@ -18,19 +18,25 @@ every business rule is an ops setting.
 
 1. **Schedule** is today and the six days after it. The strip is the shared `DateStrip`, each day with its count of jobs,
    rather than the prototype's underlined row: one strip of days, one look. The day chosen is drawn by a new shared part,
-   `DayColumn`, from 8 am to 8 pm at a pixel a minute. It is a table of five-minute rows, as `DayTimeline` is one of half
-   hours, so no block is placed by an inline style. A drive is hatched before its job, with when to leave, and today has a
-   line in the brand's metal at the minute it is now. A job today opens its card, whose way back is then Schedule. A later
-   job opens a read-only preview: its time and length, area and payment, and that the client's name and address come at
-   6 pm the day before. Today's "Tomorrow" row opens Schedule on tomorrow.
+   `DayColumn`, from 8 am to 8 pm at a pixel a minute, widened to the whole hours around any job outside them. It is a
+   table of five-minute rows, as `DayTimeline` is one of half hours, so no block is placed by an inline style; a job
+   lying wholly inside another is listed in that one's cell. A drive is hatched before its job, with when to leave, and
+   today has a line in the brand's metal at the minute it is now. A job today, or a later one whose card has opened,
+   opens its card, whose way back is then Schedule. A later job still locked opens a read-only preview: its time and
+   length, area and payment, and when the client's name and address come, by the hour ops set for it. Today's "Tomorrow"
+   row opens Schedule on tomorrow. With no signal, the days the phone keeps show and the rest say so, and the week is
+   read again when signal returns, as Today is.
 2. **Kit** gains "Next 7 days". `GET /api/tech/kit` carries `forecast`: each consumable the technician's visits booked
-   from today to six days on are expected to use, by the job sheet, against what the kit holds. A shortfall shows in red.
+   from today to six days on are expected to use, by the job sheet, against what the kit holds fit to use: each held
+   item carries `usable`, its count less its expired lots, which In kit, the forecast and an ask all read. A shortfall
+   shows in red.
    Hair systems are left to the evening's check, as the week's top-up leaves them (ADR 0181). The rest of the screen is
    redrawn in the new look in the prototype's order: Arriving, Return to ops, In kit. An expired lot is listed under
    Return to ops, not as held.
 3. **Me** names the technician's grade, city and number (`GET /api/tech/me`). "Technician" stands for one with no grade.
-   It shows their quality over the last 30 days (`GET /api/tech/quality`): the hairline redo rate, first fits followed by
-   another first fit for the same client within 30 days, whoever fits it; and on time, visits checked in by the booked
+   It shows their quality over the last 30 days (`GET /api/tech/quality`, `src/policy/quality.ts`): the hairline redo
+   rate, their first fits done or left partly done, and of them those whose free refit was booked within 30 days (ADR
+   0192), a no-show or a fit closed "Can't fit today" being no fit; and on time, visits checked in by the booked
    start. There is no client rating until ratings exist. This month's incentives sit on Me itself, a line a kind of visit
    with its count and rate, and the total. The separate month screen is gone. Leave is redrawn in the new look, reached
    from Me.
@@ -45,6 +51,9 @@ every business rule is an ops setting.
 ## Departures, and what is owed
 
 - **The week strip** is `DateStrip`'s squares, not an underlined row (item 1).
+- **The day** widens past 8 am to 8 pm where a job lies outside them, since ops' booking hours may run wider.
+- **A later job** opens its card once it has opened, as the plan has tomorrow's job, and a preview only while locked;
+  the preview's line says when the card opens by the hour ops set, rather than "6 pm the day before".
 - **"How this visit is done"** on the preview waits for the guides, in PR 10.
 - **Contact ops' hours** wait for an ops setting that holds them. No hours are written into the app.
 - **The reschedule sheet** leaves out the prototype's "Free for the client until 24 h before the visit.": a fee rule

@@ -29,6 +29,28 @@ test("asks ops to move the visit, with why, and says so on the card", async ({ p
   await expect(page.getByRole("button", { name: copy.open })).toHaveCount(0);
 });
 
+for (const [status, code, words] of [
+  [409, "not_changeable", copy.closed],
+  [404, "not_found", copy.gone],
+] as const) {
+  test(`says why an ask refused with ${String(status)} did not go, rather than to try again`, async ({ page }) => {
+    await fakeTech(page);
+    await page.route(`**/api/tech/jobs/${JOB_ID}/reschedule-request`, (route) =>
+      route.fulfill({
+        status,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { code, request_id: "ask-ref-1", fields: [] } }),
+      }),
+    );
+    await page.goto(`/jobs/${JOB_ID}`);
+    await page.getByRole("button", { name: copy.open }).click();
+    const sheet = page.getByRole("dialog", { name: copy.open });
+    await sheet.getByRole("button", { name: copy.reasons.kit_problem }).click();
+    await sheet.getByRole("button", { name: copy.send }).click();
+    await expect(sheet.getByRole("alert")).toHaveText(words);
+  });
+}
+
 test("shows an ask already open on the card, and offers no other", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.rescheduleAsked = { asked_at: new Date().toISOString(), reason: "client_asked" };

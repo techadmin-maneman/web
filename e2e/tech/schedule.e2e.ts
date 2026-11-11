@@ -55,6 +55,30 @@ test("opens a later job still locked as a preview, which says when its card open
   await expect(page).toHaveURL(new RegExp(`/week/${tomorrow}$`));
 });
 
+test("with no signal shows the days the phone keeps, says the rest didn't load, and reads them all once back", async ({
+  page,
+  context,
+}) => {
+  const fake = await fakeTech(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  fake.online = false;
+  await context.setOffline(true);
+  await tab(page, techCopy.tabs.schedule).click();
+  await expect(page.getByText(techCopy.today.offline.bar)).toBeVisible();
+  await expect(page.getByRole("table", { name: copy.dayView })).toBeVisible();
+  await page
+    .getByRole("radio", { name: /^Saturday|^Sunday|^Monday|^Tuesday|^Wednesday|^Thursday|^Friday/ })
+    .last()
+    .check();
+  await expect(page.getByText(copy.dayFailed)).toBeVisible();
+
+  fake.online = true;
+  await context.setOffline(false);
+  await expect(page.getByText(copy.dayFailed)).toHaveCount(0);
+  await expect(page.getByText(copy.nothing)).toBeVisible();
+});
+
 test("a job today opened from Schedule goes back to Schedule", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/week");

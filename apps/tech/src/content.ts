@@ -1129,6 +1129,7 @@ export const schedule = {
     return `${weekday} ${date}, ${jobs === 0 ? "nothing booked" : counted(jobs, "job", "jobs")}`;
   },
   dayFailed: "This day didn’t load. It shows once there’s signal.",
+  dayNotLoaded: "This day didn’t load.",
   noJobs: "–",
   /** "Thu, 12 Nov" */
   day: (weekday: string, date: string) => `${weekday}, ${date}`,
