@@ -204,6 +204,30 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(stepAction(page)).toBeEnabled();
   });
 
+  // A label taken while another is still being checked gets its own answer, and nothing of the first's.
+  test("checks a label taken while another is still being checked, and fills nothing of the first", async ({
+    page,
+  }) => {
+    await onThePiece(page);
+    let first = true;
+    await page.route("**/api/tech/pieces/lookup**", async (route) => {
+      if (first) {
+        first = false;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      await route.fallback();
+    });
+    const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
+    await label.fill(ROHITS_PIECE.piece_code);
+    await label.fill("MM-STD-9998-Z");
+
+    await expect(page.getByText(techCopy.steps.piece.unknown)).toBeVisible();
+    await page.waitForTimeout(1800);
+    await expect(page.getByText(techCopy.steps.piece.unknown)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.base, exact: true })).toHaveValue("");
+    await expect(stepAction(page)).toBeDisabled();
+  });
+
   test("will not record another client’s piece", async ({ page }) => {
     await onThePiece(page);
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-9999-Z");
@@ -343,6 +367,22 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
     await expect(page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist })).toBeVisible();
     await expect(page.getByText(techCopy.visit.task(1, 9))).toBeVisible();
+  });
+
+  // A fit today needs the hair system in the kit (docs/prompts/tech-redesign.md, "Outcome").
+  test("books the fit for later for a hair system the kit does not hold, and offers no fit today", async ({ page }) => {
+    await onTheChoice(page);
+    await page.getByRole("button", { name: "Mane Man Essential", exact: true }).click();
+
+    const today = page.getByRole("button", { name: new RegExp(`^${techCopy.oneVisit.fitToday}`) });
+    await expect(today).toBeDisabled();
+    await expect(today).toContainText(techCopy.oneVisit.notInKit("Mane Man Essential"));
+    await expect(page.getByRole("button", { name: new RegExp(techCopy.oneVisit.bookLater) })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
+    expect(await axeViolations(page)).toEqual([]);
   });
 
   // The client chose the product and books the fit for another day (docs/decisions/0247-the-steps-left.md).

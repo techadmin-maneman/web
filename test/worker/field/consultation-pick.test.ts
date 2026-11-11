@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { NEXT_VISIT_DAYS } from "../../../src/policy/next-visit.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
-import { aPackage } from "../fixtures/index.ts";
+import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 import { JOB, working } from "../job-fixtures.ts";
 
@@ -33,6 +33,20 @@ describe("a consultation's pick from Options", () => {
     const { tasks } = await outstandingTasks(env.DB, later, TASK_SLA_HOURS);
     const task = tasks.find((one) => one.group === "first_fit_to_book");
     expect(task?.facts).toMatchObject({ group: "first_fit_to_book", picked: "Mane Man Natural" });
+  });
+
+  // Every product has its consultation, first fit, service and replacement under one tier: the pick is its first fit.
+  it("is named on the task by its first fit, whichever of the product's services comes first", async () => {
+    await aGenericFirstFit();
+    const job = await working("consultation");
+    await job.workTo("outcome");
+    const close = { outcome: "done", going_ahead: true, product: "standard" };
+    expect((await job.post(`/api/tech/jobs/${JOB}/outcome`, close, "outcome-1")).status).toBe(202);
+
+    const later = new Date(NOW.getTime() + NEXT_VISIT_DAYS.first_fit_to_book * 24 * 60 * 60 * 1000);
+    const { tasks } = await outstandingTasks(env.DB, later, TASK_SLA_HOURS);
+    const task = tasks.find((one) => one.group === "first_fit_to_book");
+    expect(task?.facts).toMatchObject({ picked: "First fit" });
   });
 
   it("is refused with a client not going ahead, and of a product not on offer that day", async () => {

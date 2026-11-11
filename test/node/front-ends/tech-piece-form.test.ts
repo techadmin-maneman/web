@@ -75,6 +75,21 @@ describe("the piece step", () => {
     // Fit today needs the hair system in the kit, which ONE_VISIT's holds none of.
     expect(stillMissing({ ...later, later: false }, ONE_VISIT, "found")).toBe(oneVisit.notInKitAction);
     expect(pieceBody(later, ONE_VISIT)).toEqual({ product: "natural", fit_later: true });
+    // An expired kit label left in the field holds back neither a fit booked for later nor one declined.
+    const expired = {
+      ...ONE_VISIT,
+      kit_hair_systems: [
+        {
+          code: "hs_natural",
+          product: "natural",
+          held: 1,
+          units: [{ code: LABEL, lot_code: null, expires_on: "2026-09-01" }],
+        },
+      ],
+    } as unknown as typeof ONE_VISIT;
+    expect(stillMissing({ ...later, code: LABEL }, expired, "none")).toBeNull();
+    expect(stillMissing({ ...later, code: LABEL, choice: DECLINED }, expired, "none")).toBeNull();
+    expect(stillMissing({ ...later, code: LABEL, later: false }, expired, "none")).toBe(copy.piece.expiredAction);
     // Booked for later means nothing on any other visit, nor once the fit is declined.
     expect(pieceBody({ ...later, choice: DECLINED }, ONE_VISIT)).toEqual({ declined: true });
   });
