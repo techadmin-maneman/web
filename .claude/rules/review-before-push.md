@@ -6,7 +6,8 @@ are the one exception to working without agents.
 
 1. Commit the change. Screenshot every screen it touches at 360 and 390 px, and the technician app's with text at 130%,
    and note the files' paths.
-2. Spawn the three reviewers in parallel, in one message:
+2. Spawn the three reviewers in parallel, in one message, each given the checks run since the last edit, with their
+   commands and result lines; a reviewer reads them rather than running them again:
    - `ui-guard`, given the screenshots' paths and the design file the screens follow
    - `security-reviewer`
    - `reviewer`, given the brief and the plan the change answers to
@@ -14,7 +15,8 @@ are the one exception to working without agents.
    agrees, on its next look, that it can wait and still gives PASS; the PR's note says which, and why. A secret found
    in a commit is not fixed by a later commit, since the push sends every commit: rebuild the unpushed branch without
    it (a fresh branch from origin/main, the commits picked onto it), and have the secret rotated. A fix is a new
-   change, so each reviewer looks again, told the commit it last reviewed and what it found:
+   change, so each reviewer looks again, told the commit it last reviewed, what it found, and the checks run since the
+   fix, with their commands and result lines:
    - `reviewer` reviews every fix in full: a fix is always a change of logic.
    - `ui-guard` and `security-reviewer`, where their last verdict was PASS, review the change again only where the fix
      touches their part (what is drawn: `apps/`, `packages/ui`, `packages/brand`, `site/`, `design/`; what runs or
