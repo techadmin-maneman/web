@@ -240,6 +240,7 @@ jobs:
       # Every switched-on host's pages, once each Worker is on its new version. Cloudflare adds scripts to pages at its
       # edge, which no local run sees: a zone setting switched back on would break production's pages with nobody
       # told (docs/provisioning.md, step 14).
+      - uses: ./.github/actions/ubuntu-mirror
       - name: Chromium for the policy check
         run: npx playwright install --with-deps chromium
       - name: No production page refuses anything under its content security policy
