@@ -5877,7 +5877,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "While the visit is unlocked, as on the day's list; null past it."
           },
           "steps": {
             "type": "array",

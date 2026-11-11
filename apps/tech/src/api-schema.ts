@@ -4024,6 +4024,7 @@ export interface components {
                 /** Format: date-time */
                 starts_at: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                /** @description While the visit is unlocked, as on the day's list; null past it. */
                 client_name: string | null;
                 steps: ("before_photos" | "checklist" | "consumables" | "piece" | "after_photos")[];
             }[];

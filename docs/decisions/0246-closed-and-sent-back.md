@@ -22,7 +22,8 @@ consultation going ahead. The same day they asked that a set of photographs can 
    and the source of its payment link, so it is never sent back (`src/policy/in-job-steps.ts`). One is open at a time
    for each step of a visit (`step_send_backs`). The audit entry names the visit and the step, never the reason.
 2. **The technician's card carries what was sent back** (`sent_back`, with the reason and when), and the phone opens
-   the step again with the reason in red.
+   the step again with the reason in red. The day's list carries the visits to fix, of any day, naming the client only
+   while the visit is unlocked, as the list does (`src/policy/job-visibility.ts`): past it, the visit by its kind.
 3. **A step sent back lands even after the close, however long after,** until it lands again, which clears it. Every
    other step keeps the hour after the close that a corrected checklist or count has (ADR 0038).
 4. **A retake keeps one photograph an angle.** The new take replaces the angle's photograph, and the take it replaced

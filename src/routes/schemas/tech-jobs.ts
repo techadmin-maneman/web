@@ -137,7 +137,9 @@ export const JobsSchema = z
             id: z.uuid(),
             starts_at: z.iso.datetime(),
             type: z.union([z.enum(VISIT_TYPES), z.null()]),
-            client_name: z.union([z.string(), z.null()]),
+            client_name: z.union([z.string(), z.null()]).openapi({
+              description: "While the visit is unlocked, as on the day's list; null past it.",
+            }),
             steps: z.array(z.enum(SENT_BACK_KINDS)),
           })
           .strict(),

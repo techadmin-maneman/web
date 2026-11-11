@@ -5,6 +5,7 @@
 import type { VisitType } from "../../config/visit-types.ts";
 import { mayBeSentBack, SENT_BACK_KINDS, type SentBackKind } from "../../policy/in-job-steps.ts";
 import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
+import { unlocked } from "../../policy/job-visibility.ts";
 
 /** A step sent back and not yet landed again, as the phone and the console are told it. */
 export interface SentBack {
@@ -121,9 +122,13 @@ export interface VisitToFix {
 
 /**
  * The technician's visits with a step sent back and not yet landed again, oldest first: their Today lists each, from
- * whatever day, until it is put right. Read from the open rows alone.
+ * whatever day, until it is put right. Read from the open rows alone. The client is named only while the visit is
+ * unlocked, as on the day's list (src/policy/job-visibility.ts): past it, the phone names the visit by its kind.
  */
-export async function visitsToFix(db: D1Database, technicianId: string): Promise<VisitToFix[]> {
+export async function visitsToFix(
+  db: D1Database,
+  input: { technicianId: string; now: Date; unlockHour: number },
+): Promise<VisitToFix[]> {
   const { results } = await db
     .prepare(
       `SELECT a.id, a.window_start AS starts_at, a.type, p.name AS client_name, s.kind
@@ -133,14 +138,15 @@ export async function visitsToFix(db: D1Database, technicianId: string): Promise
         WHERE s.cleared_at IS NULL AND a.technician_id = ?1 AND a.deleted_at IS NULL AND a.status <> 'cancelled'
         ORDER BY a.window_start, s.sent_at`,
     )
-    .bind(technicianId)
+    .bind(input.technicianId)
     .all<{ id: string; starts_at: string; type: VisitType | null; client_name: string | null; kind: SentBackKind }>();
   const visits = new Map<string, VisitToFix>();
   for (const row of results) {
     const known = visits.get(row.id);
     if (known === undefined) {
-      const { kind, ...visit } = row;
-      visits.set(row.id, { ...visit, steps: [kind] });
+      const { kind, client_name: name, ...visit } = row;
+      const open = unlocked(new Date(row.starts_at), input.now, input.unlockHour);
+      visits.set(row.id, { ...visit, client_name: open ? name : null, steps: [kind] });
     } else known.steps.push(row.kind);
   }
   return [...visits.values()];

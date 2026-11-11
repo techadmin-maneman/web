@@ -62,8 +62,10 @@ function commitBuilt(): string {
 const LOCAL_ONLY = "PartsScreen-";
 
 function everyScript(dist: string): string[] {
+  // Only a local build's: any other carrying the page would count it, so nothing that ships is ever left out.
+  const local = /[\\/]local$/.test(dist);
   return readdirSync(`${dist}/assets`)
-    .filter((file) => file.endsWith(".js") && !file.startsWith(LOCAL_ONLY))
+    .filter((file) => file.endsWith(".js") && !(local && file.startsWith(LOCAL_ONLY)))
     .map((file) => `${dist}/assets/${file}`);
 }
 
