@@ -11,6 +11,7 @@ import { CodeField } from "@maneman/ui/CodeField";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
+import { LanguageToggle } from "../lang/index.ts";
 import { fieldDigits, mobileDigits } from "@maneman/web-kit/mobile";
 import { apiNow } from "@maneman/web-kit/clock";
 import { useEffect, useRef, useState, type Ref } from "react";
@@ -124,6 +125,16 @@ function CodeStep(props: {
   );
 }
 
+/** The mark, and the other language to switch to. */
+function Top() {
+  return (
+    <div className={styles.top}>
+      <Mark className={styles.mark} />
+      <LanguageToggle />
+    </div>
+  );
+}
+
 export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }) {
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
@@ -203,7 +214,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
         if (ready && !working) void (challenge === null ? send() : verify());
       }}
     >
-      <Mark className={styles.mark} />
+      <Top />
       <h1 className={styles.title}>{copy.title}</h1>
 
       <Field onInk labelHidden label={copy.mobileLabel}>

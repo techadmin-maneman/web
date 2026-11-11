@@ -6,6 +6,7 @@ import { keepUpToDate } from "@maneman/web-kit/sw-update";
 import { StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
+import { keptLanguage } from "./lang/kept.ts";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
 import "./styles/global.css";
 
@@ -21,19 +22,27 @@ const PartsScreen =
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("index.html has no #root");
-createRoot(root).render(
-  <StrictMode>
-    <ErrorBoundary>
-      {PartsScreen !== null && window.location.pathname === "/_parts" ? (
-        <Suspense fallback={null}>
-          <PartsScreen />
-        </Suspense>
-      ) : (
-        <App />
-      )}
-    </ErrorBoundary>
-  </StrictMode>,
-);
+const shell = root;
+
+function draw(): void {
+  createRoot(shell).render(
+    <StrictMode>
+      <ErrorBoundary>
+        {PartsScreen !== null && window.location.pathname === "/_parts" ? (
+          <Suspense fallback={null}>
+            <PartsScreen />
+          </Suspense>
+        ) : (
+          <App />
+        )}
+      </ErrorBoundary>
+    </StrictMode>,
+  );
+}
+
+// The language the phone kept, before the first screen is drawn, so it opens in it; a store it cannot read opens
+// in English.
+void keptLanguage().finally(draw);
 
 // The service worker keeps the shell, so a phone in a basement can close the app
 // and reopen it on the day its store kept (apps/tech/sw/sw.ts), and a new build waits for

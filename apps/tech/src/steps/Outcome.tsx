@@ -2,6 +2,7 @@
 // for the technician, so a gloved tap cannot close a job they have not finished (ADR 0025, "The technician boards").
 // After a consultation, Done asks whether the client goes ahead (docs/decisions/0149-lost-reasons.md).
 
+import { sayNow } from "../lang/index.ts";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "@rules/policy/client-record.ts";
@@ -98,7 +99,7 @@ function Pair<T extends string | boolean>(props: {
             props.onChoose(option.value);
           }}
         >
-          {option.label}
+          {sayNow(option.label)}
         </ToggleButton>
       ))}
     </div>
@@ -118,7 +119,7 @@ function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | n
               props.onPick(one.id);
             }}
           >
-            {one.label}
+            {sayNow(one.label)}
           </ToggleButton>
         </li>
       ))}

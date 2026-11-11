@@ -11,6 +11,14 @@
   background: var(--ink-deep);
 }
 
+/* The mark, and the other language by its name at the right, as the design's sign-in has them. */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+}
+
 .mark {
   width: var(--sp-48);
   height: auto;

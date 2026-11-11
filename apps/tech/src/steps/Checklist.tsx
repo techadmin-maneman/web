@@ -9,6 +9,7 @@
 // one, or the consultation's alone once the client decided against the fit at
 // the piece step before it.
 
+import { sayNow } from "../lang/index.ts";
 import { Button } from "@maneman/ui/Button";
 import { CheckRow } from "@maneman/ui/CheckRow";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
@@ -152,7 +153,7 @@ function Task(props: {
               props.onToggle(props.item.id);
             }}
           >
-            {props.item.label}
+            {sayNow(props.item.label)}
           </CheckRow>
         </li>
       </ul>

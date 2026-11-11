@@ -8,8 +8,9 @@ import { shortDate } from "@maneman/web-kit/dates";
 import { amountOf } from "@maneman/web-kit/figures";
 import type { Angle, FitSpec, History } from "./api.ts";
 import { apiDate, clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
+import { localised, sayNow } from "./lang/words.ts";
 
-export const signIn = {
+export const signIn = localised({
   title: "Technician sign in",
   prefix: "+91",
   mobileLabel: "Mobile number",
@@ -41,9 +42,9 @@ export const signIn = {
   // is a second one and looks like the account has gone (ADR 0053's update).
   installed: "Sign in here once, then use the home-screen app. Anything waiting in the browser still sends.",
   notRegistered: "New, or your number changed? Ask ops to add it.",
-} as const;
+} as const);
 
-export const today = {
+export const today = localised({
   /** The jobs still to do today: the count falls as each closes. */
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
   allDone: "All done today",
@@ -100,19 +101,19 @@ export const today = {
   },
   failed: "The day’s jobs didn’t load.",
   retry: "Try again",
-} as const;
+} as const);
 
 /** The tab bar at the foot of the top-level screens. */
-export const tabs = {
+export const tabs = localised({
   label: "Sections",
   today: "Today",
   schedule: "Schedule",
   kit: "Kit",
   me: "Me",
-} as const;
+} as const);
 
 /** Me: the technician's own pages, what waits to send, ops, and signing out. */
-export const me = {
+export const me = localised({
   title: "Me",
   /** "Senior · Gurugram · +91 98100 00009"; "Technician" for one with no grade. */
   who: (grade: string | null, city: string | null, phone: string | null) =>
@@ -146,6 +147,8 @@ export const me = {
   loading: "Loading…",
   retry: "Try again",
   leave: "Leave",
+  language: "Language",
+  closeLanguage: "Close",
   pending: "Pending uploads",
   nothingPending: "None",
   contact: "Contact ops",
@@ -156,16 +159,16 @@ export const me = {
     uploaded: "Everything is uploaded.",
     cancel: "Cancel",
   },
-} as const;
+} as const);
 
 /** The way to ops from anywhere the app says to ask them (./components/ReachOps.tsx). */
-export const ops = {
+export const ops = localised({
   call: "Call ops",
   whatsApp: "WhatsApp ops",
-} as const;
+} as const);
 
 /** The Safety sheet, from the shield in a visit's header (docs/prompts/tech-redesign.md, "Safety"). */
-export const safety = {
+export const safety = localised({
   open: "Safety",
   title: "Safety",
   sharing: "Ops can see your location until you close this visit.",
@@ -184,7 +187,7 @@ export const safety = {
   call112: "Call 112",
   close: "Close",
   failed: "SOS didn’t go through. Call ops or 112 now.",
-} as const;
+} as const);
 
 /** "1 photo set", "3 actions": a count and the word for it. */
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
@@ -197,7 +200,7 @@ const listed = (words: readonly string[]) => new Intl.ListFormat("en-IN", { type
  * Signing out wipes the phone, so it asks first when there is work on it that
  * has not reached us, and says so when there is no signal to sign out with.
  */
-export const leaving = {
+export const leaving = localised({
   // Neither file draws a sign-out with work still on the phone, or with no signal.
   unsent: (sets: number, actions: number) => {
     const held: string[] = [];
@@ -213,44 +216,44 @@ export const leaving = {
   send: "Send first",
   anyway: "Sign out anyway",
   stayed: "No signal. You’re still signed in. Try again with signal.",
-} as const;
+} as const);
 
 /** When the phone has no room left for what the app must keep: a photograph, a step. */
-export const storage = {
+export const storage = localised({
   // Neither file draws a phone that is full.
   title: "This phone’s storage is full",
   body: "Free up space by deleting photos or apps you don’t need, then try again.",
-} as const;
+} as const);
 
 /** A new version of the app, waiting to be taken (packages/web-kit/sw-update.ts). */
-export const update = {
+export const update = localised({
   // Neither file draws a new version.
   line: "A new version is ready.",
   action: "Update",
-} as const;
+} as const);
 
 /** A screen that failed to draw, which React would otherwise leave blank. */
-export const broken = {
+export const broken = localised({
   // Neither file draws a screen that failed.
   message: "Couldn’t open this screen.",
   reload: "Reload",
-} as const;
+} as const);
 
 /** A failed call's reference, to quote to ops. */
-export const reference = { label: "Ref", copy: "Copy", copied: "Copied" } as const;
+export const reference = localised({ label: "Ref", copy: "Copy", copied: "Copied" } as const);
 
 /**
  * When the phone would not promise to keep what the outbox holds: a warning,
  * not an error. Nothing is lost yet, and getting to signal is what saves it
  * (apps/tech/src/store/persist.ts).
  */
-export const atRisk = {
+export const atRisk = localised({
   // Neither file draws a phone that will not promise to keep its store.
   title: "Unsent work could be lost",
   body: "Get to signal today so everything sends.",
-} as const;
+} as const);
 
-export const queue = {
+export const queue = localised({
   waiting: (count: number) => `${String(count)} photo ${count === 1 ? "set" : "sets"} waiting`,
   never: "Kept out of the gallery.",
   retry: "Retry",
@@ -290,7 +293,7 @@ export const queue = {
     keep: "Keep them",
     delete: "Delete them",
   },
-} as const;
+} as const);
 
 /**
  * What a job's queue stopped for. The API answers a stable code and, on a 409
@@ -369,7 +372,7 @@ function startMoved(why: Why, startsNow: string | null): startsNow is string {
  * them; a job moved to another time names the new one once `startsNow`, the
  * start on the card the phone holds, differs; a cancellation is named first.
  */
-export function whatStopped(why: Why, now: Date = apiDate(), startsNow: string | null = null): string {
+function whatStoppedEn(why: Why, now: Date = apiDate(), startsNow: string | null = null): string {
   const field = why.fields.find((each) => stopped[each] !== undefined);
   const moved = why.moved ?? null;
   if (field === "technician" && moved !== null) return movedTo(moved, now);
@@ -382,7 +385,7 @@ export function whatStopped(why: Why, now: Date = apiDate(), startsNow: string |
  * A job ops cancelled, gave to another technician, or closed, while the phone held it: said once over the screen
  * showing. What was recorded stays in Pending uploads.
  */
-export const interrupted = {
+export const interrupted = localised({
   cancelled: (job: string) => `${job}: cancelled`,
   closed: (job: string) => `${job}: closed`,
   closedBody: "This visit was closed. What you recorded is kept on this phone, in Pending uploads.",
@@ -395,24 +398,24 @@ export const interrupted = {
   movedBody: (to: string) =>
     `Ops gave this visit to ${to}. What you recorded is kept on this phone, in Pending uploads.`,
   today: "Back to Today",
-} as const;
+} as const);
 
 /** The banner above every screen while a job's queue is stopped. */
-export const changed = {
+export const changed = localised({
   // The board draws what changed on the queue alone.
   line: (job: string, what: string) => `${job}: ${what}`,
   // A job the phone holds nothing of, not even its time.
   someJob: "A job",
   open: "See what is waiting",
-} as const;
+} as const);
 
 /** Each screen's name in the browser's title, after which the app's own. */
-export const titles = {
+export const titles = localised({
   app: "Mane Man technician",
   today: "Today",
   closeOut: "Closed out",
   of: (screen: string) => `${screen} · Mane Man technician`,
-} as const;
+} as const);
 
 /** When a locked card opens. One that opened while the screen was up says to open the job again. */
 function opensAt(unlocksAt: string, now: Date = apiDate()): string {
@@ -429,7 +432,7 @@ function lengthOf(minutes: number): string {
 }
 
 /** A client's record, which belongs to them and not the job (docs/decisions/0242-client-record.md). */
-export const clientRecord = {
+export const clientRecord = localised({
   alerts: "Before you start",
   handoff: "Handoff",
   /** "Imran · 1 Sep" */
@@ -449,9 +452,9 @@ export const clientRecord = {
   photo: (angle: string) => `After, ${angle}`,
   used: "Used",
   piece: (label: string) => `Piece fitted: ${label}`,
-} as const;
+} as const);
 
-export const job = {
+export const job = localised({
   back: "Back",
   /** "9:30 am · service · 1 h 30 min", and "Tomorrow · …" for a job on another day. */
   when: (parts: readonly string[]) => parts.join(" · "),
@@ -542,10 +545,10 @@ export const job = {
   retry: "Try again",
   gone: "This job isn’t on your list.",
   backToToday: "Back to today",
-} as const;
+} as const);
 
 /** Checking in at the door, and the no-show's evidence while the client does not answer. */
-export const notHome = {
+export const notHome = localised({
   arrived: {
     // The radius is ops' to set, and a card kept by an earlier build has none.
     body: (radiusM: number | null) =>
@@ -622,10 +625,10 @@ export const notHome = {
     atTheDoor: (who: string) => `${who} is at the door`,
     body: "The timer stops. Nothing is charged.",
   },
-} as const;
+} as const);
 
 /** The visit engine's screens and plan (docs/decisions/0244-the-visit-engine.md). */
-export const visit = {
+export const visit = localised({
   screens: {
     before_photos: "Before photos",
     service: "Service",
@@ -663,9 +666,9 @@ export const visit = {
   },
   /** Above a step ops sent back: what they said to fix, as they wrote it. */
   sentBack: (reason: string) => `Ops sent this back: ${reason}`,
-} as const;
+} as const);
 
-export const capture = {
+export const capture = localised({
   back: "Back",
   before: "Before photos",
   after: "After photos",
@@ -707,10 +710,10 @@ export const capture = {
       ? `The ${listed(angles)} photo wouldn’t upload. Take it again.`
       : `The ${listed(angles)} photos wouldn’t upload. Take them again.`,
   refusedSet: "We couldn’t record this set. Tap Done to send it again.",
-} as const;
+} as const);
 
 /** The six in-job steps (board B), and the hair profile no board draws, in the order the API runs them. */
-export const steps = {
+export const steps = localised({
   back: "Back",
   of: (done: number, total: number) => `${String(done)} of ${String(total)}`,
   place: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
@@ -851,10 +854,10 @@ export const steps = {
     pickWhy: "Pick why to continue",
     answerFirst: "Say if they’re going ahead",
   },
-} as const;
+} as const);
 
 /** The close-out, once the outcome is taken. */
-export const closeOut = {
+export const closeOut = localised({
   /** The heading, by how the visit closed. */
   titles: { closed: "Visit closed", no_show: "Closed as no-show", not_fitted: "Closed, not fitted" },
   /** "Rohit M. · service visit · done", beneath the heading. */
@@ -930,24 +933,34 @@ export const closeOut = {
   // The board draws no close-out opened before the job closed.
   notClosed: "This job isn’t closed yet.",
   backToJob: "Back to the job",
-} as const;
+} as const);
 
 /** The badge, and nothing else about money, anywhere in this app. */
-export const badges = {
+export const badges = localised({
   prepaid: "Prepaid",
   credit: "Free visit",
   free: "No charge",
   // No board draws a consultation and fit in one visit, paid for once the client is fitted.
   at_visit: "Pays at the visit",
-} as const;
+} as const);
 
 /** The badges in a line, after the visit's kind: "Service visit · prepaid". */
-export const badgesLower = {
+export const badgesLower = localised({
   prepaid: "prepaid",
   credit: "free visit",
   free: "no charge",
   at_visit: "pays at the visit",
-} as const satisfies Record<keyof typeof badges, string>;
+} as const satisfies Record<keyof typeof badges, string>);
+
+/** The discount code's refusals, by the code the API answers; any it sends, looked up. */
+const CODE_ERRORS: Readonly<Record<string, string>> = {
+  code_not_applicable: "That code doesn’t apply to this visit.",
+  already_discounted: "This visit already has a code.",
+  price_settled: "The payment link has gone, so the code can no longer change.",
+  rate_limited: "Too many codes tried. Try again tomorrow.",
+  offline: "You’re offline. Codes need signal.",
+  unknown: "That didn’t go through. Try again.",
+};
 
 /**
  * No board draws a consultation and fit in one visit
@@ -955,7 +968,7 @@ export const badgesLower = {
  * at the piece step, before the checklist, or decides against it; closing the visit as done then texts them a payment
  * link, or ends it as a free consultation. Never an amount.
  */
-export const oneVisit = {
+export const oneVisit = localised({
   name: "Consultation and fit",
   nameLower: "consultation and fit",
   checklist: "Consultation and fit checklist",
@@ -1001,16 +1014,9 @@ export const oneVisit = {
     applied: (code: string) => `Code ${code} applied. The payment link will take it off.`,
     /** A code the client gave as they booked, or ops on the booking: there is no box to type another in. */
     appliedAtBooking: (code: string) => `Code ${code} applied at booking. The payment link will take it off.`,
-    errors: {
-      code_not_applicable: "That code doesn’t apply to this visit.",
-      already_discounted: "This visit already has a code.",
-      price_settled: "The payment link has gone, so the code can no longer change.",
-      rate_limited: "Too many codes tried. Try again tomorrow.",
-      offline: "You’re offline. Codes need signal.",
-      unknown: "That didn’t go through. Try again.",
-    } as Readonly<Record<string, string>>,
+    errors: CODE_ERRORS,
   },
-} as const;
+} as const);
 
 /** Words for every code of one of the fit spec's lists, as the API names them. */
 type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, string>;
@@ -1019,7 +1025,7 @@ type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, st
  * No board draws the client's hair profile. The codes are the
  * API's.
  */
-export const profile = {
+export const profile = localised({
   sections: {
     stage: "Norwood stage",
     head: "Head (in)",
@@ -1095,24 +1101,24 @@ export const profile = {
     size: (width: number, length: number) => `${String(width)} × ${String(length)} in`,
     shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} / ${String(grey)}% grey`),
   },
-} as const;
+} as const);
 
-export const types = {
+export const types = localised({
   consultation: "Consultation",
   service: "Service visit",
   replacement: "Replacement",
   first_fit: "First fit",
-} as const;
+} as const);
 
 /** The job card writes the type in lower case, in its line: "9:30 am · service". */
-export const typesLower = {
+export const typesLower = localised({
   consultation: "consultation",
   service: "service visit",
   replacement: "replacement",
   first_fit: "first fit",
-} as const;
+} as const);
 
-export const session = {
+export const session = localised({
   // Neither file draws a revoked device.
   revoked: "This phone is no longer signed in. Ask ops, then sign in again.",
   // No board draws a technician ops switched off.
@@ -1120,11 +1126,11 @@ export const session = {
   workKept:
     "Your account is switched off. Unsent work stays on this phone for 7 days and sends once you’re switched back on and sign in.",
   checking: "Loading…",
-} as const;
+} as const);
 
 // The kit (docs/decisions/0164-the-kit-screen.md). No board draws it; every line is ours.
 /** Schedule: today and the six days after it, a day at a time down the hours; and a later job's preview. */
-export const schedule = {
+export const schedule = localised({
   title: "Schedule",
   /** "12 Nov to 18 Nov · 12 jobs" */
   range: (from: string, to: string, jobs: number) => `${from} to ${to} · ${counted(jobs, "job", "jobs")}`,
@@ -1159,13 +1165,13 @@ export const schedule = {
     locked: (unlocksAt: string) => `Name and address from ${timeAndDay(unlocksAt, apiDate())}.`,
     gone: "This job is no longer on your schedule.",
   },
-};
+});
 
 /**
  * Alerts, from Today's bell and from Me (./alerts/AlertsScreen.tsx): the inbox, newest first, and which kinds are sent.
  * Each alert's words in the inbox; on the lock screen, the worker's own (../sw/notice.ts).
  */
-export const alerts = {
+export const alerts = localised({
   title: "Alerts",
   sub: "The last 7 days",
   /** The bell's name, with how many are new. */
@@ -1222,10 +1228,10 @@ export const alerts = {
   earlier: (day: string, time: string) => `${day}, ${time}`,
   /** "tomorrow 4 pm": a job's time on the next day. */
   tomorrowAt: (time: string) => `tomorrow ${time}`,
-} as const;
+} as const);
 
 /** Guides, from Me: each kind of visit's steps, and each task read alone (./guides/GuidesScreen.tsx). */
-export const guides = {
+export const guides = localised({
   title: "Guides",
   sub: "How each visit is done",
   kinds: "4 visit types",
@@ -1246,10 +1252,10 @@ export const guides = {
   gone: "This task isn’t in the guide any more.",
   /** The way to a kind of visit's guide, from a later job's preview. */
   howDone: "How this visit is done",
-} as const;
+} as const);
 
 /** Ask ops to reschedule, from the job (./job/Reschedule.tsx). */
-export const reschedule = {
+export const reschedule = localised({
   open: "Ask ops to reschedule",
   why: "Why",
   reasons: { client_asked: "Client asked", running_late: "I’m running late", kit_problem: "Kit problem" },
@@ -1261,10 +1267,10 @@ export const reschedule = {
   gone: "This visit isn’t yours any more.",
   /** "Reschedule asked 9:05 am · Client asked · ops will confirm with the client" */
   asked: (time: string, reason: string) => `Reschedule asked ${time} · ${reason} · ops will confirm with the client`,
-} as const;
+} as const);
 
 /** Each kind of visit as Me's incentives name it (./me/Standing.tsx). */
-export const month = {
+export const month = localised({
   kinds: {
     consultation: "Consultations",
     one_visit: "Consultation and fit",
@@ -1273,10 +1279,10 @@ export const month = {
     replacement: "Replacements",
     no_show: "Not home",
   },
-};
+});
 
 /** A consultation's Options: each package and what it costs the client, and the looks they made with the try-on. */
-export const options = {
+export const options = localised({
   title: "Options",
   link: "Options and prices",
   back: "Back to the job",
@@ -1297,10 +1303,10 @@ export const options = {
   looksTitle: "Their looks",
   /** A look's description for a screen reader: "Look made 20 Sep". */
   look: (date: string) => `Look made ${date}`,
-};
+});
 
 /** The technician's asks for leave: a new one, and where each stands once ops decide it. */
-export const leave = {
+export const leave = localised({
   title: "Leave",
   sub: "Days off, asked of ops",
   failed: "Your leave didn’t load.",
@@ -1318,9 +1324,9 @@ export const leave = {
   states: { asked: "With ops", approved: "Approved", declined: "Declined" },
   /** "26 Sep – 28 Sep", or "5 Oct" for one day. */
   days: (from: string, to: string) => (from === to ? from : `${from} – ${to}`),
-};
+});
 
-export const kit = {
+export const kit = localised({
   title: "Kit",
   failed: "Your kit didn’t load.",
   retry: "Try again",
@@ -1382,4 +1388,11 @@ export const kit = {
   },
   expired: { handBack: "Hand back expired stock", word: "Expired", recalledWord: "Recalled" },
   handedBack: "Handed back. Ops receive it from you.",
-} as const;
+} as const);
+
+/** What stopped the visit, in the language now. */
+export const whatStopped = (why: Why, now: Date = apiDate(), startsNow: string | null = null): string =>
+  sayNow(whatStoppedEn(why, now, startsNow));
+
+/** Each language by its own name, never said in the other (./lang/Language.tsx). */
+export const languageNames = { en: "English", hi: "हिन्दी" } as const;

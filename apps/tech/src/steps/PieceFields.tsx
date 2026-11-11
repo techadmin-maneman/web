@@ -2,6 +2,7 @@
 // the label with its lookup and the client's pieces to pick from, the base and the lot, and on a replacement the piece
 // that came off.
 
+import { sayNow } from "../lang/index.ts";
 import { GLYPHS } from "@maneman/brand/icons";
 import { Field, TextInput, type FieldControl } from "@maneman/ui/Field";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
@@ -76,7 +77,7 @@ export function ChoiceList({
                 onChoose(option.id);
               }}
             >
-              {option.label}
+              {sayNow(option.label)}
             </ToggleButton>
           ))}
         </div>
