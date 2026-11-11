@@ -45399,62 +45399,78 @@ Request body:
       "additionalProperties": false
     },
     "visit": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "starts_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "client_name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "starts_at",
+            "client_name"
+          ],
+          "additionalProperties": false
         },
-        "starts_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "client_name": {
-          "type": [
-            "string",
-            "null"
-          ]
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "id",
-        "starts_at",
-        "client_name"
-      ],
-      "additionalProperties": false
+      ]
     },
     "position": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "properties": {
-        "lat": {
-          "type": "number"
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number"
+            },
+            "lng": {
+              "type": "number"
+            },
+            "accuracy_m": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "lat",
+            "lng",
+            "accuracy_m",
+            "at"
+          ],
+          "additionalProperties": false
         },
-        "lng": {
-          "type": "number"
-        },
-        "accuracy_m": {
-          "type": [
-            "number",
-            "null"
-          ]
-        },
-        "at": {
-          "type": "string",
-          "format": "date-time"
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "lat",
-        "lng",
-        "accuracy_m",
-        "at"
       ],
-      "additionalProperties": false,
       "description": "Where the technician was last heard, while the SOS is open."
     },
     "sent_at": {
@@ -45462,11 +45478,15 @@ Request body:
       "format": "date-time"
     },
     "safe_at": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
       ],
-      "format": "date-time",
       "description": "When the technician said they are safe."
     }
   },

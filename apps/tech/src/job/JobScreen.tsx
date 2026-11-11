@@ -153,7 +153,7 @@ export function JobScreen({ id }: { id: string }) {
 
   const line = stateLine(stage, job, queued);
   return (
-    <CardFrame title={nameOf(job)} sub={whenOf(job)} foot={footFor(stage, job, queued)}>
+    <CardFrame title={nameOf(job)} sub={whenOf(job)} foot={footFor(stage, job, queued)} safety={job.id}>
       {stage === "changed" && (
         <ProblemCard className={styles.changed} title={copy.changed.title} live level={2}>
           {whatChanged(job, queued)} {copy.changed.body}

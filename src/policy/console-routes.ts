@@ -36,6 +36,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/health": SIGNED_IN,
   "GET /api/whoami": SIGNED_IN,
   "POST /api/client-errors": SIGNED_IN,
+  // A technician's SOS still open, which every console screen shows to anyone signed in.
+  "GET /api/sos": SIGNED_IN,
 
   // Operations: dispatch, today's tasks, visits, technicians, leave and stock, each kept to the caller's cities.
   "GET /api/dispatch": inOwnPlaces("operations", "view"),
@@ -64,8 +66,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/visits/{id}/close": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/let-in": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/send-back": inOwnPlaces("operations", "act"),
-  // A technician's SOS: every console screen shows those still open to anyone signed in; Operations mark one handled.
-  "GET /api/sos": SIGNED_IN,
+  // A technician's SOS: Operations mark one handled (docs/decisions/0248-safety.md).
   "POST /api/sos/{id}/handled": need("operations", "act"),
   "POST /api/visits/{id}/lost-reason": inOwnPlaces("customer_care", "act"),
   "GET /api/technicians": inOwnPlaces("operations", "view"),

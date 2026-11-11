@@ -52,6 +52,7 @@ export type PieceLookup = Schema["PieceLookup"];
 export type Kit = Schema["TechnicianKit"];
 export type LeaveRequests = Schema["TechnicianLeaveRequests"];
 export type Options = Schema["TechnicianOptions"];
+export type Position = Schema["TechnicianPosition"];
 type PhotoTaken = Schema["TechnicianPhotoTaken"];
 /** The client's hair profile, which the profile step sends and the piece card reads (ADR 0106). */
 export type HairProfile = Schema["HairProfile"];
@@ -202,6 +203,17 @@ export const api = {
   /** How the technician suggests finishing a visit left partly done, for ops to book. Asked straight, with signal. */
   finishAsk: (jobId: string, ask: FinishAsk) =>
     client.post("/api/tech/jobs/{id}/finish-ask", { path: { id: jobId }, body: { ask }, patience: PATIENCE_MS.write }),
+
+  /** Where the technician is, from the visit's check-in to its close (docs/decisions/0248-safety.md). Never queued. */
+  position: (jobId: string, position: Position) =>
+    client.post("/api/tech/jobs/{id}/position", { path: { id: jobId }, body: position, patience: PATIENCE_MS.write }),
+  /** The technician's SOS not yet handled by ops, if any. */
+  ownSos: () => client.get("/api/tech/sos", { patience: PATIENCE_MS.read }),
+  /** Raises an SOS, with the visit and where they are: ops are paged at once. Asked straight, never queued. */
+  sos: (jobId: string | null, position: Position | null) =>
+    client.post("/api/tech/sos", { body: { job_id: jobId, position }, patience: PATIENCE_MS.write }),
+  /** The technician says they are safe after their SOS. */
+  sosSafe: (id: string) => client.post("/api/tech/sos/{id}/safe", { path: { id }, patience: PATIENCE_MS.write }),
 
   /** The kit: what it holds, what is coming to it, and its pieces to hand back (docs/decisions/0164-the-kit-screen.md). */
   kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),

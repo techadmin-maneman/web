@@ -14,17 +14,25 @@ const OpenSosSchema = z
   .object({
     id: z.uuid(),
     technician: z.object({ id: z.string(), name: z.string() }).strict(),
-    visit: z
-      .object({ id: z.string(), starts_at: z.iso.datetime(), client_name: z.string().nullable() })
-      .strict()
-      .nullable(),
+    visit: z.union([
+      z.object({ id: z.string(), starts_at: z.iso.datetime(), client_name: z.union([z.string(), z.null()]) }).strict(),
+      z.null(),
+    ]),
     position: z
-      .object({ lat: z.number(), lng: z.number(), accuracy_m: z.number().nullable(), at: z.iso.datetime() })
-      .strict()
-      .nullable()
+      .union([
+        z
+          .object({
+            lat: z.number(),
+            lng: z.number(),
+            accuracy_m: z.union([z.number(), z.null()]),
+            at: z.iso.datetime(),
+          })
+          .strict(),
+        z.null(),
+      ])
       .openapi({ description: "Where the technician was last heard, while the SOS is open." }),
     sent_at: z.iso.datetime(),
-    safe_at: z.iso.datetime().nullable().openapi({ description: "When the technician said they are safe." }),
+    safe_at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When the technician said they are safe." }),
   })
   .strict()
   .openapi("OpenSos");

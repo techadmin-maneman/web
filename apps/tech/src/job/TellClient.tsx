@@ -67,7 +67,7 @@ function MessageSheet({
   };
   return (
     <Sheet labelledBy={titleId} rises={false} onClose={onClose}>
-      <SheetClose quiet onClose={onClose}>
+      <SheetClose onClose={onClose}>
         {copy.tell.close}
       </SheetClose>
       <SheetPanel className={styles.panel}>

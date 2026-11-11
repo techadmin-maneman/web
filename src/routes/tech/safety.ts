@@ -25,7 +25,7 @@ const PositionSchema = z
   .object({
     lat: z.number().min(-90).max(90),
     lng: z.number().min(-180).max(180),
-    accuracy_m: z.number().min(0).max(100_000).nullable(),
+    accuracy_m: z.union([z.number().min(0).max(100_000), z.null()]),
     at: z.iso.datetime().openapi({ description: "When the phone read it." }),
   })
   .strict()
@@ -58,7 +58,12 @@ const ownSosRoute = techRoute({
   responses: {
     200: {
       description: "Theirs, or null",
-      ...json(z.object({ sos: OwnSosSchema.nullable() }).strict().openapi("TechnicianOwnSos")),
+      ...json(
+        z
+          .object({ sos: z.union([OwnSosSchema, z.null()]) })
+          .strict()
+          .openapi("TechnicianOwnSos"),
+      ),
     },
     401: errorResponse(UNSIGNED),
   },
@@ -74,10 +79,12 @@ const sosRoute = techRoute({
       ...json(
         z
           .object({
-            job_id: z.uuid().nullable().openapi({ description: "The visit they are on, where there is one." }),
-            position: PositionSchema.nullable().openapi({
-              description: "Where they are; null where the phone has none.",
-            }),
+            job_id: z
+              .union([z.uuid(), z.null()])
+              .openapi({ description: "The visit they are on, where there is one." }),
+            position: z
+              .union([PositionSchema, z.null()])
+              .openapi({ description: "Where they are; null where the phone has none." }),
           })
           .strict()
           .openapi("TechnicianSosRaised"),

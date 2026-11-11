@@ -7,10 +7,14 @@ import { classes } from "./classes.ts";
 import { cssToken } from "./cssToken.ts";
 import styles from "./hold-button.module.css";
 
-/** How long it is held before it acts, as tokens.css has it; three seconds where the page has no stylesheet. */
-function holdMs(): number {
-  const held = parseFloat(cssToken("--duration-hold"));
-  return Number.isFinite(held) && held > 0 ? held : 3000;
+/**
+ * How long it is held before it acts, as tokens.css has it, in milliseconds whether the built stylesheet says "3000ms"
+ * or "3s"; three seconds where the page has no stylesheet.
+ */
+export function holdMs(token: string = cssToken("--duration-hold")): number {
+  const held = parseFloat(token);
+  if (!Number.isFinite(held) || held <= 0) return 3000;
+  return token.trim().endsWith("ms") ? held : held * 1000;
 }
 
 export function HoldButton({

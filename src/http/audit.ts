@@ -36,13 +36,15 @@ const SUBJECT_ROUTES: readonly { readonly prefix: string; readonly kind: string 
 
 /**
  * A signed-in client's or technician's calls that write nothing to the log: a photograph's bytes going up, whose step
- * is written when the phone records it, and an address being typed, which changes nothing.
+ * is written when the phone records it, an address being typed, which changes nothing, and where a technician is,
+ * sent every two minutes on a visit and kept no longer than it (docs/decisions/0248-safety.md).
  */
 const UNAUDITED_SESSION_CALLS = new Set([
   "PUT /api/tech/photos/:token",
   "PUT /api/tech/photos/:token/small",
   "PUT /api/tech/door-photos/:token",
   "POST /api/address/suggestions",
+  "POST /api/tech/jobs/:id/position",
 ]);
 
 const ID = z.uuid();

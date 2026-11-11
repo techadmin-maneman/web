@@ -304,6 +304,7 @@ function AtTheDoor({ job, queued }: { job: Job; queued: readonly Queued[] }) {
       title={copy.door.title}
       sub={at === null ? nameOf(job) : copy.door.checkedIn(nameOf(job), timeOf(at))}
       back={`/jobs/${job.id}`}
+      safety={job.id}
       foot={
         <Button variant="primary" size="action" disabled={starting} busy={starting} onClick={start}>
           {jobCopy.start}

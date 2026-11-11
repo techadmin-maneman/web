@@ -28029,10 +28029,7 @@ export interface components {
             } | null;
             /** Format: date-time */
             sent_at: string;
-            /**
-             * Format: date-time
-             * @description When the technician said they are safe.
-             */
+            /** @description When the technician said they are safe. */
             safe_at: string | null;
         };
         RemedyNew: {

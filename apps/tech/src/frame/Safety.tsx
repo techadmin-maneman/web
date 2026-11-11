@@ -8,12 +8,17 @@ import { HoldButton } from "@maneman/ui/HoldButton";
 import { IconButton } from "@maneman/ui/IconButton";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { OPS_NUMBER } from "@maneman/web-kit/whatsapp";
-import { useId, useState } from "react";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { useId, useRef, useState } from "react";
+import { api } from "../api.ts";
 import { ops, safety as copy } from "../content.ts";
+import { buzz } from "../lib/haptics.ts";
+import { clock } from "../lib/when.ts";
+import { readPosition } from "../lib/where.ts";
 import styles from "./safety.module.css";
 
-/** Where an SOS stands on this phone: not sent, sent at a time, refused, or the technician said they are safe. */
-export type SosState =
+/** Where an SOS stands on this phone: not sent, sent at a time (and whether they said they are safe), or refused. */
+type SosState =
   | { readonly state: "none" }
   | { readonly state: "sent"; readonly at: string; readonly safe: boolean }
   | { readonly state: "failed" };
@@ -33,7 +38,7 @@ function SafetySheet({
   const holdId = useId();
   return (
     <Sheet labelledBy={titleId} rises={false} onClose={onClose}>
-      <SheetClose quiet onClose={onClose}>
+      <SheetClose onClose={onClose}>
         {copy.close}
       </SheetClose>
       <SheetPanel className={styles.panel}>
@@ -79,19 +84,51 @@ function SafetySheet({
   );
 }
 
+/**
+ * Where the technician's SOS stands, read from the API as the sheet opens, and the two things done from it: raised, with
+ * the visit and where the phone is, straight to the API and never queued, as it must reach ops now or say it did not;
+ * and "I'm safe".
+ */
+function useSos(jobId: string | null) {
+  const [sos, setSos] = useState<SosState>({ state: "none" });
+  const [busy, once] = useOneAtATime();
+  const ownId = useRef<string | null>(null);
+  const read = async () => {
+    const answer = await api.ownSos();
+    if (!answer.ok || answer.body.sos === null) return;
+    ownId.current = answer.body.sos.id;
+    setSos({ state: "sent", at: clock(answer.body.sos.sent_at), safe: answer.body.sos.safe });
+  };
+  const raise = () =>
+    once(async () => {
+      const answer = await api.sos(jobId, await readPosition());
+      if (!answer.ok) {
+        setSos({ state: "failed" });
+        return;
+      }
+      buzz();
+      ownId.current = answer.body.id;
+      setSos({ state: "sent", at: clock(answer.body.sent_at), safe: answer.body.safe });
+    });
+  const safe = () =>
+    once(async () => {
+      if (ownId.current === null) return;
+      const answer = await api.sosSafe(ownId.current);
+      if (answer.ok && sos.state === "sent") setSos({ ...sos, safe: true });
+    });
+  return { sos, busy, read, raise, safe };
+}
+
 /** The shield in a visit's header, and the sheet it opens. */
 export function Safety({
-  sos,
-  onSos,
-  onSafe,
+  jobId,
   className,
 }: {
-  readonly sos: SosState;
-  readonly onSos: () => void;
-  readonly onSafe: () => void;
+  readonly jobId: string | null;
   readonly className?: string | undefined;
 }) {
   const [open, setOpen] = useState(false);
+  const { sos, read, raise, safe } = useSos(jobId);
   return (
     <>
       <IconButton
@@ -101,13 +138,14 @@ export function Safety({
         label={copy.open}
         onClick={() => {
           setOpen(true);
+          void read();
         }}
       />
       {open && (
         <SafetySheet
           sos={sos}
-          onSos={onSos}
-          onSafe={onSafe}
+          onSos={() => void raise()}
+          onSafe={() => void safe()}
           onClose={() => {
             setOpen(false);
           }}

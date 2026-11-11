@@ -5165,7 +5165,7 @@ export interface components {
             at: string;
         };
         TechnicianOwnSos: {
-            sos: components["schemas"]["TechnicianSos"];
+            sos: components["schemas"]["TechnicianSos"] | null;
         };
         TechnicianSos: {
             /** Format: uuid */
@@ -5173,14 +5173,12 @@ export interface components {
             /** Format: date-time */
             sent_at: string;
             safe: boolean;
-        } | null;
+        };
         TechnicianSosRaised: {
-            /**
-             * Format: uuid
-             * @description The visit they are on, where there is one.
-             */
+            /** @description The visit they are on, where there is one. */
             job_id: string | null;
-            position: components["schemas"]["TechnicianPosition"] & (Record<string, never> | null);
+            /** @description Where they are; null where the phone has none. */
+            position: components["schemas"]["TechnicianPosition"] | null;
         };
         TechnicianKit: {
             held: {

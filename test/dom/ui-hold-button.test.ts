@@ -4,7 +4,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { HoldButton } from "../../packages/ui/HoldButton.tsx";
+import { HoldButton, holdMs } from "../../packages/ui/HoldButton.tsx";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -46,6 +46,15 @@ const key = (button: HTMLButtonElement, type: "keydown" | "keyup", name: string)
     button.dispatchEvent(new KeyboardEvent(type, { bubbles: true, key: name }));
   });
 };
+
+describe("how long it is held", () => {
+  // A built stylesheet writes 3000ms as 3s; read as a number alone, that was three milliseconds.
+  it("is read from the token in its own unit", () => {
+    expect(holdMs("3000ms")).toBe(3000);
+    expect(holdMs("3s")).toBe(3000);
+    expect(holdMs("")).toBe(3000);
+  });
+});
 
 describe("a button held to act", () => {
   it("acts once held its full time", () => {

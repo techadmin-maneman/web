@@ -10086,12 +10086,16 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "maximum": 180
     },
     "accuracy_m": {
-      "type": [
-        "number",
-        "null"
-      ],
-      "minimum": 0,
-      "maximum": 100000
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "at": {
       "type": "string",
@@ -10116,7 +10120,14 @@ One of the client's try-on looks, under the card's own unlock, never cached
   "type": "object",
   "properties": {
     "sos": {
-      "$ref": "#/components/schemas/TechnicianSos"
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/TechnicianSos"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [
@@ -10130,10 +10141,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
 
 ```json
 {
-  "type": [
-    "object",
-    "null"
-  ],
+  "type": "object",
   "properties": {
     "id": {
       "type": "string",
@@ -10163,26 +10171,27 @@ One of the client's try-on looks, under the card's own unlock, never cached
   "type": "object",
   "properties": {
     "job_id": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
       ],
-      "format": "uuid",
       "description": "The visit they are on, where there is one."
     },
     "position": {
-      "allOf": [
+      "anyOf": [
         {
           "$ref": "#/components/schemas/TechnicianPosition"
         },
         {
-          "type": [
-            "object",
-            "null"
-          ],
-          "description": "Where they are; null where the phone has none."
+          "type": "null"
         }
-      ]
+      ],
+      "description": "Where they are; null where the phone has none."
     }
   },
   "required": [
