@@ -11,10 +11,10 @@ import { oneVisit, options, steps as copy, visit } from "../content.ts";
 import { choiceOf, type ClientChoice } from "../lib/progress.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
-import { put, remove } from "../store/db.ts";
+import { put } from "../store/db.ts";
 import type { Queued } from "../store/outbox.ts";
 import { DiscountCode } from "./DiscountCode.tsx";
-import { useDraft, type Draft } from "./drafts.ts";
+import { forgetDraft, useDraft, type Draft } from "./drafts.ts";
 import { OptionsList } from "./OptionsList.tsx";
 import { outcomeSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
@@ -340,7 +340,7 @@ function ConsultationOutcome({
   useEffect(() => {
     const kept =
       picked === null
-        ? remove("device", "options_draft")
+        ? forgetDraft("options_draft", job.id)
         : put("device", { key: "options_draft", job_id: job.id, picked });
     kept.catch(() => undefined);
   }, [job.id, picked]);
@@ -369,7 +369,7 @@ function ConsultationOutcome({
       clientChoice={picked !== null && offered ? { product: picked } : null}
       refused={refused}
       onFinish={(body) => {
-        remove("device", "options_draft").catch(() => undefined);
+        forgetDraft("options_draft", job.id).catch(() => undefined);
         onFinish(body);
       }}
       onBack={() => {

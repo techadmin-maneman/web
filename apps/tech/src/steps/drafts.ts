@@ -2,7 +2,7 @@
 // step is sent (./Profile.tsx, ./Checklist.tsx).
 
 import { useEffect, useState } from "react";
-import { deviceRecord } from "../store/db.ts";
+import { deviceRecord, remove } from "../store/db.ts";
 import type { DeviceRecord } from "../store/records.ts";
 
 type DraftKey = "profile_draft" | "checklist_draft" | "options_draft";
@@ -10,6 +10,12 @@ type DraftKey = "profile_draft" | "checklist_draft" | "options_draft";
 type Kept = Extract<DeviceRecord, { readonly key: DraftKey }>;
 
 export type Draft<K extends DraftKey> = Extract<Kept, { readonly key: K }>;
+
+/** Lets go of this job's draft of a step, and never another job's: the phone keeps one of each kind. */
+export async function forgetDraft(key: DraftKey, jobId: string): Promise<void> {
+  const kept = await deviceRecord<DraftKey>(key);
+  if (kept?.job_id === jobId) await remove("device", key);
+}
 
 /** This job's draft of a step, kept on the phone; null for none, and while it is still being read. */
 export function useDraft<K extends DraftKey>(
