@@ -240,7 +240,23 @@ jobs:
       # Every switched-on host's pages, once each Worker is on its new version. Cloudflare adds scripts to pages at its
       # edge, which no local run sees: a zone setting switched back on would break production's pages with nobody
       # told (docs/provisioning.md, step 14).
-      - uses: ./.github/actions/ubuntu-mirror
+      # A copy of .github/actions/ubuntu-mirror, inline: the release checks out a commit that may predate that file.
+      - name: Ubuntu's Azure mirror, held to one address
+        if: runner.environment == 'github-hosted'
+        run: |
+          ip=""
+          for name in azure.archive.ubuntu.com ubuntu-archive-asm.trafficmanager.net; do
+            if found=$(getent ahostsv4 "$name"); then
+              ip=$(awk 'NR==1 {print $1}' <<< "$found")
+              break
+            fi
+          done
+          if [ -n "$ip" ]; then
+            echo "$ip azure.archive.ubuntu.com" | sudo tee -a /etc/hosts > /dev/null
+            echo "azure.archive.ubuntu.com held to $ip"
+          else
+            echo "::warning::Ubuntu's Azure mirror could not be found by either name; apt keeps its own lookup"
+          fi
       - name: Chromium for the policy check
         run: npx playwright install --with-deps chromium
       - name: No production page refuses anything under its content security policy
