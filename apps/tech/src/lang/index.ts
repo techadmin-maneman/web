@@ -2,4 +2,4 @@
 
 export { LanguageRow, LanguageToggle } from "./Language.tsx";
 export { useLanguage } from "./language.ts";
-export { localised, sayNow } from "./words.ts";
+export { localised, sayKnown, sayNow } from "./words.ts";

@@ -1,7 +1,7 @@
 // The hair profile's fields (./Profile.tsx): a field's choices as one group named by its title, a figure typed with
 // the range it must be in.
 
-import { sayNow } from "../lang/index.ts";
+import { sayKnown } from "../lang/index.ts";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
@@ -67,7 +67,7 @@ export function Chips<T extends string | number>({
                 onChoose(option.id);
               }}
             >
-              {sayNow(option.label)}
+              {sayKnown(option.label)}
             </ToggleButton>
           );
         })}

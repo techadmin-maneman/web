@@ -11,8 +11,11 @@ import app from "./app-hi.json" with { type: "json" };
 const STRINGS: Readonly<Record<string, string>> = { ...app.strings, ...catalog.strings };
 const TOKENS: Readonly<Record<string, string>> = { ...catalog.dateTokens, ...app.dateTokens };
 const NAMES = Object.keys(TOKENS).join("|");
-/** A weekday or month beside a figure, "Wed 11 Nov", "Mon, 5 Oct", "Nov 2026": never a word of a place's name. */
-const DATE_WORD = new RegExp(`(?<=\\d )\\b(?:${NAMES})\\b|\\b(?:${NAMES})\\b(?=,? \\d)`, "g");
+/**
+ * A weekday or month beside a figure, "Wed 11 Nov", "Mon, 5 Oct", "Nov 2026": never a word of a place's name. The
+ * figure before a month is matched, not looked behind for, since an iPhone before iOS 16.4 cannot read a lookbehind.
+ */
+const DATE_WORD = new RegExp(`(\\d )(${NAMES})\\b|\\b(${NAMES})(?=,? \\d)`, "g");
 
 /** "{first} is prepaid." as a rule: its words matched, each {name} any text, kept in the Hindi by its place. */
 function templateRule([english, hindi]: readonly [string, string]): readonly [RegExp, string] {
@@ -40,7 +43,17 @@ const own = (text: string): string | undefined =>
   Object.prototype.hasOwnProperty.call(STRINGS, text) ? STRINGS[text] : undefined;
 
 /** Weekdays and months in Hindi, where they stand beside a figure. */
-const dated = (text: string): string => text.replace(DATE_WORD, (token) => TOKENS[token] ?? token);
+const dated = (text: string): string =>
+  text.replace(DATE_WORD, (found: string, figure?: string, after?: string, before?: string) => {
+    if (figure !== undefined && after !== undefined) return figure + (TOKENS[after] ?? after);
+    return before === undefined ? found : (TOKENS[before] ?? before);
+  });
+
+/** Longer than any line the catalogs word: a line this long is not one of ours, and no rule is tried on it. */
+const LONGEST_LINE = 300;
+
+/** A line ops wrote in the console, in Hindi only where a catalog holds the whole of it; never worded in part. */
+export const wholeLine = (text: string): string | undefined => own(text) ?? own(text.trim());
 
 /** A rule's line, each part it holds put into Hindi in turn: "Map · 12 min drive", while a name or a time stays. */
 const ruled = (core: string, rule: RegExp, hindi: string): string =>
@@ -56,7 +69,7 @@ export function toHindi(text: string): string {
   const exact = own(text);
   if (exact !== undefined) return exact;
   const core = text.trim();
-  if (core === "") return text;
+  if (core === "" || core.length > LONGEST_LINE) return text;
   const worded = wordedCore(core);
   if (worded === core) return text;
   const at = text.indexOf(core);

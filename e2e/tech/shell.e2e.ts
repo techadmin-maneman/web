@@ -285,3 +285,65 @@ test("sends a code once: Sign in waits once the sixth digit has signed in", asyn
   await expect(page.getByRole("button", { name: techCopy.signIn.submit })).toBeDisabled();
   await expect.poll(() => verifies).toEqual(["POST"]);
 });
+
+test("the sign-in's action says what it waits for while it cannot be tapped, and nothing once it can", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  await page.goto("/");
+
+  const send = page.getByRole("button", { name: techCopy.signIn.sendCode });
+  await expect(send).toBeDisabled();
+  await expect(send).toHaveAccessibleDescription(techCopy.signIn.numberHelper);
+  await page.getByRole("textbox", { name: techCopy.signIn.mobileLabel }).fill("9811000000");
+  await expect(send).toBeEnabled();
+  await expect(page.getByText(techCopy.signIn.numberHelper)).toHaveCount(0);
+
+  await send.click();
+  const signIn = page.getByRole("button", { name: techCopy.signIn.submit });
+  await expect(signIn).toBeDisabled();
+  await expect(signIn).toHaveAccessibleDescription(techCopy.signIn.codeHelper);
+});
+
+test("a code taken shows the action busy, never the line asking for the code, while the app reads who signed in", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  await page.goto("/");
+  let answer: (() => void) | undefined;
+  const held = new Promise<void>((resolve) => {
+    answer = resolve;
+  });
+  await page.route("**/api/tech/me", async (route) => {
+    await held;
+    await route.fallback();
+  });
+
+  await page.getByRole("textbox", { name: techCopy.signIn.mobileLabel }).fill("9811000000");
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  await page.getByRole("textbox", { name: techCopy.signIn.codeLabel }).fill(LOCAL_LOGIN_CODE);
+  await expect(page.getByRole("button", { name: techCopy.signIn.submit })).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByText(techCopy.signIn.codeHelper)).toHaveCount(0);
+  answer?.();
+  await expect(page.getByRole("navigation", { name: techCopy.tabs.label })).toBeVisible();
+});
+
+test("a code taken but who signed in not read, with nothing kept, goes back to the number to try again", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  await page.goto("/");
+  // The signal drops as the app asks who signed in.
+  await page.route("**/api/tech/me", (route) => route.abort("internetdisconnected"));
+
+  await page.getByRole("textbox", { name: techCopy.signIn.mobileLabel }).fill("9811000000");
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  await page.getByRole("textbox", { name: techCopy.signIn.codeLabel }).fill(LOCAL_LOGIN_CODE);
+
+  await expect(page.getByRole("alert")).toHaveText(techCopy.signIn.errors.unknown);
+  await expect(page.getByRole("textbox", { name: techCopy.signIn.mobileLabel })).toBeEnabled();
+  await expect(page.getByRole("button", { name: techCopy.signIn.sendCode })).toBeEnabled();
+});

@@ -3,7 +3,7 @@
 // from the screens, for the training lead to edit. Each is keyed by the job sheet's item it guides
 // (src/config/job-sheet.ts); an item with none here shows its label alone.
 
-import { localised, sayNow } from "../lang/index.ts";
+import { localised, sayKnown } from "../lang/index.ts";
 export interface TaskWords {
   readonly title: string;
   /** What the reference photograph shows, until there is one. */
@@ -114,5 +114,5 @@ const TASKS: Readonly<Record<string, TaskWords>> = localised({
 
 /** A job sheet's item as a task: its words here, or its label alone. */
 export function taskFor(item: { readonly id: string; readonly label: string }): TaskWords {
-  return TASKS[item.id] ?? { title: sayNow(item.label), reference: "", how: [], watch: null };
+  return TASKS[item.id] ?? { title: sayKnown(item.label), reference: "", how: [], watch: null };
 }

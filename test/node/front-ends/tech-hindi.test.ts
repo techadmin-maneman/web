@@ -8,9 +8,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import * as content from "../../../apps/tech/src/content.ts";
 import { hasHindi, toHindi } from "../../../apps/tech/src/lang/hindi.ts";
 import { speak } from "../../../apps/tech/src/lang/language.ts";
-import { localised } from "../../../apps/tech/src/lang/words.ts";
+import { localised, sayKnown } from "../../../apps/tech/src/lang/words.ts";
 import { taskFor } from "../../../apps/tech/src/visit/tasks.ts";
 import { CHECKLIST, LOST_REASONS, PARTIAL_REASONS } from "../../../src/config/job-sheet.ts";
+import catalog from "../../../design/tech-redesign/strings-hi.json" with { type: "json" };
+import app from "../../../apps/tech/src/lang/app-hi.json" with { type: "json" };
 
 afterEach(() => {
   speak("en");
@@ -60,6 +62,27 @@ describe("a line in Hindi", () => {
     expect(toHindi("2 pm की सर्विस विज़िट moved to 4:15 pm")).toBe("2 pm की सर्विस विज़िट का समय 4:15 pm हुआ");
     expect(toHindi("Note from Imran: ")).toBe("Imran का नोट: ");
     expect(toHindi("18 min drive to Sun City, Sector 54")).toBe("Sun City, Sector 54 तक 18 मिनट ड्राइव");
+  });
+
+  it("tries no rule on a line longer than any the catalogs word", () => {
+    const long = "1 to ".repeat(500);
+    expect(toHindi(long)).toBe(long);
+  });
+
+  it("uses no lookbehind, which an iPhone before iOS 16.4 cannot read", () => {
+    const rules = [catalog, app].flatMap((each) => each.patterns.map((pattern) => pattern.match));
+    expect(rules.filter((rule) => rule.includes("(?<"))).toEqual([]);
+    expect(readFileSync("apps/tech/src/lang/hindi.ts", "utf8")).not.toContain("(?<");
+  });
+});
+
+describe("a line ops wrote in the console", () => {
+  it("is in Hindi where a catalog holds the whole of it, and as written otherwise, never in part", () => {
+    speak("hi");
+    expect(sayKnown("Hair system removed")).toBe("हेयर सिस्टम उतारा");
+    expect(sayKnown("Lace and skin remover")).toBe("Lace and skin remover");
+    expect(sayKnown("Moved to another city")).toBe("Moved to another city");
+    expect(sayKnown("Open the template box")).toBe("Open the template box");
   });
 });
 
@@ -146,18 +169,37 @@ function listed(): string[] {
     .map((line) => spaced(JSON.parse(line.slice(2)) as string));
 }
 
+/** Every line the app can show: the catalog's, the job sheet's committed lists with their tasks' words, each stop. */
+function everyLine(): string[] {
+  const { languageNames: _ownNames, ...words } = content;
+  const items = [...Object.values(CHECKLIST).flat(), ...PARTIAL_REASONS, ...LOST_REASONS];
+  const sheet = items.flatMap((item) => [sayKnown(item.label), ...shown(taskFor(item), [])]);
+  return [...shown(Object.values(words), []), ...sheet, ...stoppedLines()];
+}
+
+/** Each line in English, beside it as a Hindi screen draws it: read in Hindi, a list joined in Hindi. */
+function inBoth(): (readonly [string, string])[] {
+  speak("en");
+  const english = everyLine();
+  speak("hi");
+  const hindi = everyLine();
+  speak("en");
+  // Each sample writes the one line in either language, so the two lists pair up line by line.
+  expect(hindi).toHaveLength(english.length);
+  return english.map((line, at) => [line, hindi[at] ?? line] as const);
+}
+
+/**
+ * A sample of the wrong kind can write "null", "NaN" or "Invalid" where a value goes, or put a name, a time or a list
+ * where a count or a date goes ("leave in Rohit M. min"): no screen shows those.
+ */
+const sampled = (line: string): boolean =>
+  /undefined|null|NaN|Invalid/.test(line) || /(?:Rohit M\.|\+05:30|Sector 65) (?:min|to)\b/.test(line);
+
 describe("the lines still in English", () => {
   it("are those REPORT.md lists for the native speaker, and no other", () => {
-    const { languageNames: _ownNames, ...words } = content;
-    // The job sheet's committed lists stand until ops set their own, each checklist item with its task's words.
-    const items = [...Object.values(CHECKLIST).flat(), ...PARTIAL_REASONS, ...LOST_REASONS];
-    const sheet = items.flatMap((item) => [item.label, ...shown(taskFor(item), [])]);
-    // A sample of the wrong kind can write "null", "NaN" or "Invalid" where a value goes: no screen shows those.
-    const lines = [...new Set([...shown(Object.values(words), []), ...sheet, ...stoppedLines()])].filter(
-      // A count given a name, a time or a list, "leave in Rohit M. min", is no line a screen shows either.
-      (line) => !/undefined|null|NaN|Invalid/.test(line) && !/(?:Rohit M\.|\+05:30|Sector 65) min\b/.test(line),
-    );
-    const english = [...new Set(lines.filter((line) => !hasHindi(line, [SAMPLE_NAME])).map(spaced))].sort();
+    const untold = inBoth().filter(([line, hindi]) => !sampled(line) && !hasHindi(hindi, [SAMPLE_NAME]));
+    const english = [...new Set(untold.map(([line]) => spaced(line)))].sort();
     expect(listed().sort()).toEqual(english);
   });
 });

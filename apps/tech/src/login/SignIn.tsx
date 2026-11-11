@@ -161,7 +161,7 @@ function Foot(props: { asked: boolean; ready: boolean; working: boolean }) {
   );
 }
 
-export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }) {
+export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => Promise<void> }) {
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState<Refusal | null>(null);
@@ -219,7 +219,11 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       // The session cookie is set; who is signed in comes from GET /tech/me, which App asks next
       // and records the enrolment again, so a phone too full to record it here still signs in.
       await enrolled().catch(() => undefined);
-      onSignedIn();
+      await onSignedIn();
+      // Still here: the app could not read who signed in, and the code is spent. A new one starts again.
+      setThrough(false);
+      startAgain();
+      setError(refusal(() => copy.errors.unknown));
       return;
     }
     if (verdict.again) startAgain();
@@ -304,7 +308,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
       {challenge === null && <NewNumber />}
 
-      <Foot asked={challenge !== null} ready={ready} working={working} />
+      <Foot asked={challenge !== null} ready={ready} working={working || through} />
     </form>
   );
 }
