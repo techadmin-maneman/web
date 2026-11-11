@@ -34,14 +34,21 @@ every business rule is an ops setting.
    start. There is no client rating until ratings exist. This month's incentives sit on Me itself, a line a kind of visit
    with its count and rate, and the total. The separate month screen is gone. Leave is redrawn in the new look, reached
    from Me.
+4. **A technician's asks of ops** (owner's yes, 11 November 2026). Two tables, `kit_requests` and `reschedule_requests`
+   (migration 0208), each with one ask open at a time. "Request what's short" under Next 7 days asks for what the week
+   ahead finds short; the API works the amounts out rather than taking them from the phone, and keeps them as they were
+   when asked. "Ask ops to reschedule" on the job takes why: the client asked, running late, or a kit problem. Each goes
+   straight, with signal, and the phone then says when it was asked until it is settled. Each is a task on the board,
+   `kit_request` within the day and `reschedule_request` within four hours, which ops close with what was done; closing
+   settles the ask. A visit moved, given to another technician, closed or called off settles its own ask by trigger.
 
 ## Departures, and what is owed
 
 - **The week strip** is `DateStrip`'s squares, not an underlined row (item 1).
 - **"How this visit is done"** on the preview waits for the guides, in PR 10.
 - **Contact ops' hours** wait for an ops setting that holds them. No hours are written into the app.
-- **Request to ops and reschedule** need two tables, `kit_requests` and `reschedule_requests`. They wait for the owner's
-  yes on that schema change, asked on 11 November 2026.
+- **The reschedule sheet** leaves out the prototype's "Free for the client until 24 h before the visit.": a fee rule
+  is an ops setting, and none holds it yet.
 
 ## Consequences
 
