@@ -66,6 +66,17 @@
     color: var(--ui-text);
   }
 
+  /* Not usable now, as a disabled outlined button is drawn; the line beneath, where it has one, says why. */
+  .onPaper:disabled {
+    border-color: var(--ui-line);
+    color: var(--ui-text-quiet);
+    cursor: default;
+  }
+
+  .onPaper:disabled .sub {
+    color: inherit;
+  }
+
   /* Chosen and filled: a chip or a filter, its words on the ink. */
   .filled:is([aria-pressed="true"], [aria-checked="true"]) {
     border-color: var(--ui-strong);
@@ -79,7 +90,7 @@
       color: var(--paper);
     }
 
-    .onPaper:not(.filled[aria-pressed="true"], .filled[aria-checked="true"]):hover {
+    .onPaper:not(.filled[aria-pressed="true"], .filled[aria-checked="true"], :disabled):hover {
       color: var(--ui-text);
     }
   }
