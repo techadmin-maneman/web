@@ -4,6 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
+import { NEXT_VISIT_DAYS } from "../../../src/policy/next-visit.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { aPackage } from "../fixtures/index.ts";
 import { markDatabase, NOW } from "../helpers.ts";
@@ -27,7 +28,8 @@ describe("a consultation's pick from Options", () => {
     expect((await job.post(`/api/tech/jobs/${JOB}/outcome`, close, "outcome-1")).status).toBe(202);
     expect(await picked()).toEqual({ picked_tier: "natural" });
 
-    const later = new Date(NOW.getTime() + 3 * 24 * 60 * 60 * 1000);
+    // A consulted client is a task once they have waited the days ops give them to book themselves.
+    const later = new Date(NOW.getTime() + NEXT_VISIT_DAYS.first_fit_to_book * 24 * 60 * 60 * 1000);
     const { tasks } = await outstandingTasks(env.DB, later, TASK_SLA_HOURS);
     const task = tasks.find((one) => one.group === "first_fit_to_book");
     expect(task?.facts).toMatchObject({ group: "first_fit_to_book", picked: "Mane Man Natural" });

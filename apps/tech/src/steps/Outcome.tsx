@@ -5,14 +5,17 @@
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "@rules/policy/client-record.ts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { EventBody, Job, OutcomeRequest, PartialReason } from "../api.ts";
-import { oneVisit, steps as copy } from "../content.ts";
+import { oneVisit, options, steps as copy, visit } from "../content.ts";
 import { choiceOf, type ClientChoice } from "../lib/progress.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
+import { put, remove } from "../store/db.ts";
 import type { Queued } from "../store/outbox.ts";
 import { DiscountCode } from "./DiscountCode.tsx";
+import { useDraft, type Draft } from "./drafts.ts";
+import { OptionsPick } from "./OptionsPick.tsx";
 import { outcomeSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -111,13 +114,27 @@ function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | n
   );
 }
 
+/** The product a client chose, by name; null where they chose none, or decided against the fit. */
+function chosenName(job: Job, choice: ClientChoice | null): string | null {
+  if (choice === null || !("product" in choice)) return null;
+  return job.products.find((one) => one.tier === choice.product)?.name ?? null;
+}
+
 /**
- * A done close, with what the client said where they were asked: a yes, or a no and the reason picked, which a fit
- * the client declined may leave unpicked.
+ * A done close, with what the client said where they were asked: a yes, with the product a consultation's client
+ * picked on Options, or a no and the reason picked, which a fit the client declined may leave unpicked.
  */
-function doneOf(asked: boolean, notGoingAhead: boolean, lost: string | null): OutcomeRequest {
+function doneOf(
+  asked: boolean,
+  notGoingAhead: boolean,
+  lost: string | null,
+  choice: ClientChoice | null,
+): OutcomeRequest {
   if (!asked) return { outcome: "done" };
-  if (!notGoingAhead) return { outcome: "done", going_ahead: true };
+  if (!notGoingAhead) {
+    const picked = choice !== null && "product" in choice ? { product: choice.product } : {};
+    return { outcome: "done", going_ahead: true, ...picked };
+  }
   return lost === null
     ? { outcome: "done", going_ahead: false }
     : { outcome: "done", lost_reason: lost, going_ahead: false };
@@ -168,8 +185,8 @@ function useCloseNotes(sent: { readonly note: string; readonly alert: string } |
   return { add, fields };
 }
 
-/** After a consultation: whether the client is going ahead with a fit. */
-function GoingAhead(props: { answer: boolean | null; onAnswer: (value: boolean) => void }) {
+/** After a consultation: whether the client is going ahead with a fit, and with a yes, what they picked on Options. */
+function GoingAhead(props: { answer: boolean | null; pickedName: string | null; onAnswer: (value: boolean) => void }) {
   return (
     <>
       <p className={shared.note}>{copy.outcome.goingAhead}</p>
@@ -181,11 +198,17 @@ function GoingAhead(props: { answer: boolean | null; onAnswer: (value: boolean) 
         chosen={props.answer}
         onChoose={props.onAnswer}
       />
+      {props.answer === true && props.pickedName !== null && (
+        <p className={shared.note}>{copy.outcome.picked(props.pickedName)}</p>
+      )}
     </>
   );
 }
 
-/** The choice once the job is in hand: a refused outcome starts as it was chosen. */
+/**
+ * The choice once the job is in hand: a refused outcome starts as it was chosen. What the client chose is a one visit's
+ * decision at the hair system, or the product a consultation's client picked on Options, which goes with a yes.
+ */
 function Choosing({
   job,
   clientChoice,
@@ -234,7 +257,7 @@ function Choosing({
       onBack={onBack}
       onAction={() => {
         if (choice === "partial" && reason !== null) onFinish(notes.add({ outcome: "partial", reason }));
-        else onFinish(notes.add(doneOf(asksWhy, notGoingAhead, lost)));
+        else onFinish(notes.add(doneOf(asksWhy, notGoingAhead, lost, clientChoice)));
       }}
     >
       <Pair<"done" | "partial">
@@ -254,6 +277,7 @@ function Choosing({
       {asksWhy && !job.one_visit && (
         <GoingAhead
           answer={goingAhead}
+          pickedName={chosenName(job, clientChoice)}
           onAnswer={(value) => {
             setGoingAhead(value);
             setLost(null);
@@ -272,14 +296,91 @@ function Choosing({
   );
 }
 
+/** The product a refused close picked, so putting it right starts from it; null for none. */
+function pickSent(refused: Queued | null): string | null {
+  const sent = refused?.body as { product?: unknown } | null | undefined;
+  return typeof sent?.product === "string" ? sent.product : null;
+}
+
+/**
+ * A consultation's outcome, which opens on its Options (docs/decisions/0247-the-steps-left.md): the pick is kept on the
+ * phone as it is made and goes with a yes, while the product is still on the card. A refused close opens on the close.
+ */
+function ConsultationOutcome({
+  job,
+  refused,
+  draft,
+  onFinish,
+  onBack,
+}: {
+  job: Job;
+  refused: Queued | null;
+  draft: Draft<"options_draft"> | null;
+  onFinish: (body: EventBody<"outcome">) => void;
+  onBack: () => void;
+}) {
+  const [page, setPage] = useState<"options" | "close">(refused === null ? "options" : "close");
+  const [picked, setPicked] = useState<string | null>(() => pickSent(refused) ?? draft?.picked ?? null);
+
+  // Kept as made: a full phone loses the pick, never the step.
+  useEffect(() => {
+    if (picked !== null) put("device", { key: "options_draft", job_id: job.id, picked }).catch(() => undefined);
+  }, [job.id, picked]);
+
+  if (page === "options") {
+    return (
+      <StepFrame
+        key="options"
+        title={options.title}
+        action={visit.next(copy.titles.outcome)}
+        ready
+        onBack={onBack}
+        onAction={() => {
+          setPage("close");
+        }}
+      >
+        <OptionsPick job={job} picked={picked} onPick={setPicked} />
+      </StepFrame>
+    );
+  }
+  const offered = job.products.some((one) => one.tier === picked);
+  return (
+    <Choosing
+      key="close"
+      job={job}
+      clientChoice={picked !== null && offered ? { product: picked } : null}
+      refused={refused}
+      onFinish={(body) => {
+        remove("device", "options_draft").catch(() => undefined);
+        onFinish(body);
+      }}
+      onBack={() => {
+        setPage("options");
+      }}
+    />
+  );
+}
+
 export function Outcome({ id }: { id: string }) {
   const { loaded, retry, refused, queued, finish, back } = useStep(id, "outcome");
+  const kept = useDraft("options_draft", id);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading" || !kept.read) return <Loading />;
   if (loaded.state === "failed") {
     return <JobFailed failed={loaded} onRetry={retry} />;
   }
   const job = loaded.value;
+  if (job.type === "consultation" && !job.one_visit) {
+    return (
+      <ConsultationOutcome
+        job={job}
+        refused={refused}
+        draft={kept.draft}
+        onFinish={(body) => void finish(body)}
+        onBack={back}
+      />
+    );
+  }
   return (
     <Choosing
       job={job}

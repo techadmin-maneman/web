@@ -1,0 +1,99 @@
+/* What ./OptionsPick.tsx draws: each product with its prices, the client's pick marked, and their looks beneath. */
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  margin: 0 0 var(--sp-8);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-regular);
+  color: var(--ui-text-soft);
+}
+
+.quiet {
+  margin: 0 0 var(--sp-16);
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--sp-4);
+  width: 100%;
+  min-height: var(--tech-primary);
+  text-align: left;
+}
+
+.name {
+  font-size: var(--fs-17);
+}
+
+.line {
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}
+
+.prices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin: var(--sp-12) 0 0;
+}
+
+.price {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}
+
+.price dt,
+.price dd {
+  margin: 0;
+}
+
+.price dd {
+  color: var(--ui-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.failed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-12);
+  margin-top: var(--sp-20);
+}
+
+.failed .quiet {
+  margin: 0;
+}
+
+.looks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--sp-8);
+}
+
+.look {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--ui-radius-box);
+  background: var(--ui-tint);
+}

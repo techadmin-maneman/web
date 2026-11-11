@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { deviceRecord } from "../store/db.ts";
 import type { DeviceRecord } from "../store/records.ts";
 
-type DraftKey = "profile_draft" | "checklist_draft";
+type DraftKey = "profile_draft" | "checklist_draft" | "options_draft";
 
 type Kept = Extract<DeviceRecord, { readonly key: DraftKey }>;
 

@@ -788,6 +788,8 @@ export const steps = {
     goingAhead: "Going ahead with a fit?",
     yes: "Yes",
     notNow: "Not now",
+    /** The product the client picked on Options, which goes with a yes. */
+    picked: (name: string) => `Their pick: ${name}.`,
     why: "Why not?",
     pickWhy: "Pick why to continue",
     answerFirst: "Say if they’re going ahead",
@@ -1093,11 +1095,16 @@ export const options = {
   retry: "Try again",
   none: "Nothing on sale yet.",
   firstFit: "First fit",
-  /** "Service visit · every 30 days" */
-  service: (days: number) => `Service visit · every ${String(days)} days`,
-  /** "Replacement · every 6 months" */
-  replacement: (months: number) => `Replacement · every ${String(months)} months`,
-  noPrice: "No price set yet",
+  /** "Service visit, every 30 days" */
+  service: (days: number) => `Service visit, every ${String(days)} days`,
+  /** "Replacement, every 6 months" */
+  replacement: (months: number) => `Replacement, every ${String(months)} months`,
+  noPrice: "Price not set",
+  /** The consultation's Options step: the products with their prices, and the client's pick marked. */
+  prices: "Products and prices",
+  inclGst: "Incl. GST",
+  markPick: "Mark the client’s pick.",
+  pricesFailed: "Prices didn’t load.",
   looksTitle: "Their looks",
   /** A look's description for a screen reader: "Look made 20 Sep". */
   look: (date: string) => `Look made ${date}`,

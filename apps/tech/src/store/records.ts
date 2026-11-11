@@ -86,6 +86,8 @@ export type DeviceRecord =
     }
   /** The checklist's ticks as made, so closing the app loses none; gone once sent (../steps/Checklist.tsx). */
   | { readonly key: "checklist_draft"; readonly job_id: string; readonly done: readonly string[] }
+  /** A consultation's pick on Options, by the product's tier, until its close is sent (../steps/Outcome.tsx). */
+  | { readonly key: "options_draft"; readonly job_id: string; readonly picked: string | null }
   /** The visits with steps ops sent back, as the day's list last said, for Today with no signal (./jobs.ts). */
   | { readonly key: "to_fix"; readonly visits: readonly VisitToFix[] }
   /** How the technician suggested finishing each visit left partly done, still to reach ops (./finish-asks.ts). */

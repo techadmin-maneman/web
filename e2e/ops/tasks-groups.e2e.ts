@@ -90,7 +90,12 @@ test("names an At-risk client’s weeks since the last visit, a first fit to boo
           {
             id: "22000000-0000-4000-8000-000000000012",
             person: { id: "22000000-0000-4000-8000-000000000012", name: "Sanjay Arora" },
-            facts: { group: "first_fit_to_book", consulted_at: "2027-09-10T08:00:00.000Z", fit_window: "afternoon" },
+            facts: {
+              group: "first_fit_to_book",
+              consulted_at: "2027-09-10T08:00:00.000Z",
+              fit_window: "afternoon",
+              picked: "Mane Man Natural",
+            },
             detail: "2027-09-10T08:00:00.000Z afternoon",
             since: "2027-09-16T18:30:00.000Z",
             due: "2027-09-18T18:30:00.000Z",
@@ -127,7 +132,9 @@ test("names an At-risk client’s weeks since the last visit, a first fit to boo
       ].sort(),
     );
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep, afternoon + first fit, morning");
-  await expect(row(page, "Sanjay Arora")).toContainText("Consultation Fri 10 Sep, afternoon · not fitted");
+  await expect(row(page, "Sanjay Arora")).toContainText(
+    "Consultation Fri 10 Sep, afternoon · not fitted · picked Mane Man Natural",
+  );
   await expect(row(page, "Deepak Rao")).toContainText("9 weeks since last visit · due Fri 20 Aug");
   await expect(row(page, "Deepak Rao")).toContainText("24 days overdue");
   // The client books; ops reach them from their page, on their visits.
