@@ -57,7 +57,8 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await page.getByRole("button", { name: words.action }).click();
     await page.getByRole("dialog", { name: words.title }).getByRole("button", { name: words.yes }).click();
-    await expect(page.getByText("Rohit M. · partly done")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.not_fitted })).toBeVisible();
+    await expect(page.getByText(techCopy.closeOut.sub("Rohit M.", "replacement", "not fitted"))).toBeVisible();
     expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({
       outcome: "partial",
       reason: "no_piece",
@@ -349,7 +350,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     expect(await axeViolations(page)).toEqual([]);
 
     await stepAction(page).click();
-    await expect(page.getByText("Rohit M. · free consultation")).toBeVisible();
+    await expect(page.getByText(/^Rohit M\. · .+ · free consultation$/)).toBeVisible();
     // Declined, the client is not going ahead with the fit, and the close says so.
     expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: false });
   });

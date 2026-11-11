@@ -3625,7 +3625,7 @@ Indexes:
 
 What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`.
+Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`, `0205_finish_the_work.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3642,6 +3642,8 @@ Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`.
 | `close_reason` | TEXT | yes |  |  |  |
 | `lost_reason` | TEXT | yes |  |  |  |
 | `going_ahead` | INTEGER | yes |  |  | After a consultation, the client's yes to a fit, kept beside the reason for a no (lost_reason): 1 for yes, 0 for no, NULL where the technician was not asked or the visit is no consultation. Only a new column, which the code deployed neither reads nor writes. |
+| `finish_ask` | TEXT | yes |  |  | Migration number: 0205 When a technician who left a visit partly done, or could not fit, suggests finishing it: tomorrow morning, tomorrow evening, or ops to call the client (docs/decisions/0246-closed-and-sent-back.md). Ops read it on the visit's task. Only new columns, which the code deployed neither reads nor writes. |
+| `finish_asked_at` | TEXT | yes |  |  |  |
 
 Indexes:
 

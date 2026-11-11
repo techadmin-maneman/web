@@ -289,6 +289,7 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
               kind: "first_fit",
               reason_code: "piece_not_ready",
               reason: "Hair system not ready",
+              ask: null,
             },
             detail: "first_fit Hair system not ready",
             since: "2027-09-19T06:00:00.000Z",

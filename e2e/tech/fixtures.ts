@@ -366,6 +366,7 @@ export interface CardOptions {
   readonly alerts?: Card["client_alerts"];
   readonly handoff?: Card["handoff"];
   readonly sentBack?: Card["sent_back"];
+  readonly paymentLink?: Card["payment_link"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -417,7 +418,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     consumables: CONSUMABLES,
     kit_hair_systems: [...(options.kitHairSystems ?? [])],
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
-    payment_link: null,
+    payment_link: options.paymentLink ?? null,
     discount_code: options.discountCode ?? null,
     client_choice: oneVisit ? (options.clientChoice ?? null) : null,
     profile: options.profile ?? null,

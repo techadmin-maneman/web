@@ -28889,6 +28889,11 @@ export interface components {
             reason_code: string | null;
             /** @description In the words ops gave it, or the job sheet's. */
             reason: string | null;
+            /**
+             * @description How the technician suggested finishing it: a time, or ops to call; null for none.
+             * @enum {string|null}
+             */
+            ask: "tomorrow_morning" | "tomorrow_evening" | "ops_call" | null;
         } | {
             /** @enum {string} */
             group: "consumables_short";

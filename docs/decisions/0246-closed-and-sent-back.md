@@ -27,9 +27,21 @@ consultation going ahead. The same day they asked that a set of photographs can 
 4. **A retake keeps one photograph an angle.** The new take replaces the angle's photograph, and the take it replaced
    goes from storage with its small copy. This holds for the camera's own Retake too, which until now left the first
    take in storage with nothing naming it.
+5. **Closed is redrawn** (`apps/tech/src/steps/CloseOut.tsx`): the result as the heading ("Visit closed", "Closed as
+   no-show", "Closed, not fitted"), the client, the visit and the result beneath, the rows, then what follows from the
+   result. A no-show keeps its evidence in place of the rows.
+6. **A one visit's payment link can be texted again from Closed** (`POST /api/tech/jobs/{id}/payment-link/resend`),
+   by the same code as ops' Resend, three times a day at most for a visit, so a tap cannot flood the client.
+7. **A visit left partly done, or not fitted, asks ops for a time to finish it** (`POST /api/tech/jobs/{id}/finish-ask`):
+   tomorrow morning, tomorrow evening, or ops to call the client. The choice is kept on the visit's outcome
+   (`visit_outcomes.finish_ask`), and ops read it on the visit's Partly done task, where they book the visit as before.
+8. **The technician app's 150 KB counts what ships.** A local build's parts page, which no phone is served, is left out
+   of the count (`scripts/lib/spa-build.ts`).
 
 ## Consequences
 
 - The visit's drawer lists what is sent back and offers Send back only for a landed step that may be sent back now
   (`may_send_back` on the visit's story), so the rule lives in one place.
 - The table is keyed on the visit, so a client's erasure deletes their visits' rows; it holds no client's own words.
+- The shipped technician app is at 146 KB of its 150 KB, every script counted, as its service worker caches them all.
+  The screens still to come will need more than the 4 KB left.

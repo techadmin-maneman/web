@@ -275,7 +275,8 @@ export const QUEUES: readonly Queue[] = [
            v.partial_reason, v.close_reason, '') AS detail,
          json_object('kind', a.type, 'reason_code', COALESCE(v.partial_reason, v.close_reason),
            'reason', COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason),
-             CASE WHEN v.partial_reason IS NULL THEN v.close_reason END)) AS facts,
+             CASE WHEN v.partial_reason IS NULL THEN v.close_reason END),
+           'ask', v.finish_ask) AS facts,
          COALESCE(v.ended_at, a.window_end, v.updated_at) AS since, NULL AS due_by, '' AS episode
     FROM visit_outcomes v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
    WHERE v.outcome = 'partial' AND v.followed_up = 0 AND COALESCE(v.partial_reason, '') <> 'no_show'

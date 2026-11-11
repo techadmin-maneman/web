@@ -1,8 +1,121 @@
-/* What ./CloseOut.tsx alone draws; what it shares is in ./steps.module.css. */
+/* Closed (./CloseOut.tsx, ./ClosedParts.tsx): the result's mark and heading, its rows, the payment link, finishing the
+   work and the next job, scrolling above a foot of Today and Navigate. What it shares is in ./steps.module.css. */
 
-.closeNote {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-17);
-  line-height: var(--lh-160);
+.closed {
+  flex: 1;
+  padding: var(--sp-48) var(--screen-gutter) var(--sp-24);
+  overflow-y: auto;
+}
+
+/* The result's mark: navy for a visit closed, ink on the shade for a no-show or a fit not made. */
+.mark,
+.markQuiet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sp-48);
+  height: var(--sp-48);
+  border-radius: 50%;
+  color: var(--ui-on-strong);
+}
+
+.mark {
+  background: var(--ui-strong);
+}
+
+.markQuiet {
+  background: var(--ui-shade);
+  color: var(--ui-text);
+}
+
+.title {
+  margin: var(--sp-20) 0 0;
+  font-size: var(--fs-28);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-115);
+  color: var(--ui-strong);
+}
+
+.title:focus {
+  outline: none;
+}
+
+.sub {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-16);
   color: var(--ui-text-soft);
+}
+
+.rows {
+  margin-top: var(--sp-20);
+  padding: 0;
+}
+
+.section {
+  margin-top: var(--sp-24);
+}
+
+.note,
+.closeNote {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
+.linkLine {
+  display: flex;
+  gap: var(--sp-16);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-12) 0;
+}
+
+.paid,
+.notPaid {
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.paid {
+  color: var(--ui-strong);
+}
+
+.notPaid {
+  color: var(--ui-error);
+}
+
+.said {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  color: var(--ui-text);
+}
+
+.asks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  margin-top: var(--sp-12);
+}
+
+.nextWho {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
+}
+
+/* Today and Navigate side by side, Navigate the wider. */
+.foot {
+  display: flex;
+  gap: var(--sp-8);
+}
+
+.today {
+  flex: 1;
+}
+
+.navigate {
+  flex: 1.4;
+  gap: var(--sp-8);
 }

@@ -19,7 +19,7 @@ function built(page: string, withWorker: boolean): string {
   dist = mkdtempSync(join(tmpdir(), "spa-build-"));
   mkdirSync(join(dist, "assets"));
   writeFileSync(join(dist, "index.html"), page);
-  for (const file of ["index-a1.js", "shared-b2.js", "SettingsScreen-d4.js"]) {
+  for (const file of ["index-a1.js", "shared-b2.js", "SettingsScreen-d4.js", "PartsScreen-e5.js"]) {
     writeFileSync(join(dist, "assets", file), "export {};");
   }
   if (withWorker) writeFileSync(join(dist, "sw.js"), "self;");
@@ -37,7 +37,8 @@ describe("the JavaScript a first visit fetches", () => {
     expect(names(firstLoadScripts(built(PAGE, false)))).toEqual(["assets/index-a1.js", "assets/shared-b2.js"]);
   });
 
-  it("is every script, and the worker, where a service worker precaches them all", () => {
+  // The parts page a local build adds is never served to a phone (apps/tech/src/main.tsx).
+  it("is every script, and the worker, where a service worker precaches them all, but a local build's parts page", () => {
     expect(names(firstLoadScripts(built(PAGE, true)))).toEqual([
       "assets/SettingsScreen-d4.js",
       "assets/index-a1.js",

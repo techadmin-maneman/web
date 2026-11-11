@@ -41,6 +41,8 @@ export type JobSummary = Schema["TechnicianDayJob"];
 export type Job = Omit<Schema["TechnicianJobDetail"], "checkin_radius_m"> & {
   readonly checkin_radius_m: Schema["TechnicianJobDetail"]["checkin_radius_m"] | null;
 };
+/** How a technician suggests finishing a visit left partly done: a time, or ops to call the client. */
+export type FinishAsk = Schema["TechnicianFinishAsk"]["ask"];
 /** A visit of the technician's, of any day, with steps ops sent back (docs/decisions/0246-closed-and-sent-back.md). */
 export type VisitToFix = Schema["TechnicianJobs"]["sent_back"][number];
 /** What the day's list carries of a job's progress: when it began and how it closed. */
@@ -193,6 +195,13 @@ export const api = {
       body: { code },
       patience: PATIENCE_MS.write,
     }),
+
+  /** A one visit's payment link texted to the client again, from the close. Asked straight, with signal. */
+  resendLink: (jobId: string) =>
+    client.post("/api/tech/jobs/{id}/payment-link/resend", { path: { id: jobId }, patience: PATIENCE_MS.write }),
+  /** How the technician suggests finishing a visit left partly done, for ops to book. Asked straight, with signal. */
+  finishAsk: (jobId: string, ask: FinishAsk) =>
+    client.post("/api/tech/jobs/{id}/finish-ask", { path: { id: jobId }, body: { ask }, patience: PATIENCE_MS.write }),
 
   /** The kit: what it holds, what is coming to it, and its pieces to hand back (docs/decisions/0164-the-kit-screen.md). */
   kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),

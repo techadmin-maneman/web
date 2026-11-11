@@ -57,7 +57,7 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`, `visit-paid`,
   `visit-begun`, `client-visits`, `client-photo-keys`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
-  `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `open-proposals`, `visit-upkeep` (what a write to a
+  `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `finish-asks` (how a technician suggests finishing a visit), `open-proposals`, `visit-upkeep` (what a write to a
   visit keeps up beside it),
   `no-show-notes`, `visit-story` (a visit's steps, for its drawer)
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `follow-ups`, `one-visit`

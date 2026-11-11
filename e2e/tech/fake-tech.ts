@@ -124,6 +124,8 @@ export interface Fake {
   handoff: Card["handoff"];
   /** The steps ops sent back on the first job, with why (docs/decisions/0246-closed-and-sent-back.md); none to begin. */
   sentBack: Card["sent_back"];
+  /** A one visit's payment link on the card; none to begin. */
+  paymentLink: Card["payment_link"];
   /** Whether there is a photograph to compare each angle with, before the visit and after it. */
   compare: boolean;
   /** The client's history, as GET /api/tech/jobs/{id}/client-history answers. */
@@ -269,6 +271,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     alerts: [],
     handoff: null,
     sentBack: [],
+    paymentLink: null,
     history: { alerts: [], visits: [] },
     compare: false,
     photos: [],
@@ -311,6 +314,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       alerts: fake.alerts,
       handoff: fake.handoff,
       sentBack: fake.sentBack,
+      paymentLink: fake.paymentLink,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -455,6 +459,9 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       }
       // A word to the client from the job (docs/decisions/0145-technician-presets.md).
       if (path.endsWith("/updates")) return reply(route, 200, { sent: true });
+      // From the close (docs/decisions/0246-closed-and-sent-back.md): the link texted again, and how to finish.
+      if (path.endsWith("/payment-link/resend")) return reply(route, 200, { outcome: "resent" });
+      if (path.endsWith("/finish-ask")) return reply(route, 204);
       if (path.endsWith("/no-show")) {
         fake.progress = { ...fake.progress, outcome: "no_show" };
         return reply(route, 200, {

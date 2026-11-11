@@ -227,7 +227,14 @@ export const tasks = {
      * "The piece was not ready · 20 Sep": book the visit that finishes it. The reason is in the
      * words the job sheet gives it, which ops set in Settings (docs/decisions/0087-consumables-and-stock.md).
      */
-    partial_visit: (reason: string, date: string) => `${reason} · ${date}`,
+    partial_visit: (reason: string, date: string, ask: string | null) =>
+      ask === null ? `${reason} · ${date}` : `${reason} · ${date} · ${ask}`,
+    /** How the technician suggested finishing it, from the visit's close (docs/decisions/0246-closed-and-sent-back.md). */
+    finishAsks: {
+      tomorrow_morning: "Technician suggests tomorrow morning",
+      tomorrow_evening: "Technician suggests tomorrow evening",
+      ops_call: "Technician asks ops to call the client",
+    },
     /** "Ran out · Imran · Tape strips 2 of 5, Glue 0 of 10 ml", or "Nothing used" where nothing was recorded. */
     consumables_short: (reason: string, technician: string, short: string) => `${reason} · ${technician} · ${short}`,
     shortLine: (name: string, used: number, expected: number) => `${name} ${String(used)} of ${String(expected)}`,

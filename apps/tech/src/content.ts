@@ -323,6 +323,19 @@ export function whatStopped(why: Why, now: Date = apiDate(), startsNow: string |
   return stopped[field ?? why.note ?? ""] ?? stopped.unknown ?? "";
 }
 
+/**
+ * A job ops cancelled, or gave to another technician, while the phone held it: said once over whatever screen is
+ * showing (docs/decisions/0246-closed-and-sent-back.md). What was recorded stays in Pending uploads.
+ */
+export const interrupted = {
+  cancelled: (job: string) => `${job}: cancelled`,
+  moved: (job: string, to: string) => `${job}: moved to ${to}`,
+  cancelledBody: "Ops cancelled this visit. What you recorded is kept on this phone, in Pending uploads.",
+  movedBody: (to: string) =>
+    `Ops gave this visit to ${to}. What you recorded is kept on this phone, in Pending uploads.`,
+  today: "Back to Today",
+} as const;
+
 /** The banner above every screen while a job's queue is stopped. */
 export const changed = {
   // The board draws what changed on the queue alone.
@@ -772,10 +785,12 @@ export const steps = {
 
 /** The close-out, once the outcome is taken. */
 export const closeOut = {
-  label: "Closed out",
-  /** The name and the dot before how it closed, which is kept whole on one line: "no-show" never breaks. */
-  who: (name: string) => `${name} · `,
+  /** The heading, by how the visit closed. */
+  titles: { closed: "Visit closed", no_show: "Closed as no-show", not_fitted: "Closed, not fitted" },
+  /** "Rohit M. · service visit · done", beneath the heading. */
+  sub: (who: string, kind: string, result: string) => `${who} · ${kind} · ${result}`,
   outcomes: { done: "done", partial: "partly done", no_show: "no-show" },
+  notFitted: "not fitted",
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
   duration: "Duration",
@@ -788,7 +803,43 @@ export const closeOut = {
   photos: "Photos",
   queued: (count: number) => `${String(count)} queued`,
   sent: (count: number) => `${String(count)} sent`,
-  nextJob: (time: string, who: string) => `Next job · ${time}, ${who}`,
+  /** A one visit's link: whether it is paid, and texting it again. */
+  payment: {
+    title: "Payment link",
+    paid: "Paid",
+    notPaid: "Sent · not paid",
+    resend: "Resend",
+    sending: "Sending…",
+    said: {
+      resent: "Sent again.",
+      sent: "Sent.",
+      not_texted: "This number can’t be texted. Ops will send it.",
+      paid: "Paid already.",
+      refused: "Razorpay refused it. Ops are told.",
+    },
+    failed: {
+      rate_limited: "Sent three times today already.",
+      offline: "No signal. Try again.",
+      unknown: "Couldn’t send. Try again.",
+    },
+  },
+  /** A visit left partly done, or not fitted: how the technician suggests finishing it. */
+  finish: {
+    title: "Finish the work",
+    ask: "Suggest a time to ops",
+    asks: {
+      tomorrow_morning: "Tomorrow morning",
+      tomorrow_evening: "Tomorrow evening",
+      ops_call: "Ops to call the client",
+    },
+    sent: "Sent to ops. They’ll confirm with the client.",
+    failed: "Couldn’t send. Try again.",
+  },
+  next: {
+    title: "Next",
+    leaveBy: (time: string) => `Leave by ${time}`,
+    today: "Today",
+  },
   // The board draws the next job; the day ends without one.
   lastJob: "Back to today",
   // The evidence chain's close: the evidence summary, and what happens to it.

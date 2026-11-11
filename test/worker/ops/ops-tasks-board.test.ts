@@ -172,6 +172,7 @@ describe("GET /api/tasks", () => {
             kind: "service",
             reason_code: "piece_not_ready",
             reason: "Hair system not ready",
+            ask: null,
           },
           detail: "service Hair system not ready",
           since: "2026-09-20T05:40:00.000Z",

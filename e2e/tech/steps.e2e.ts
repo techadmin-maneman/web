@@ -72,7 +72,7 @@ test("the outcome has nothing chosen for the technician, and Next waits for thei
   // The choice is outlined, and the one gold thing is still Next.
   expect(await done.evaluate((button) => getComputedStyle(button).backgroundColor)).not.toBe("rgb(201, 163, 99)");
   await stepAction(page).click();
-  await expect(page.getByText("Rohit M. · done")).toBeVisible();
+  await expect(page.getByText(techCopy.closeOut.sub("Rohit M.", "service visit", "done"))).toBeVisible();
   expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
 });
 

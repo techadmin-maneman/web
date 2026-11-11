@@ -1,20 +1,22 @@
-// The close-out: the job, its outcome, how long it took, its photographs on their way, and the next job; a no-show's
-// evidence summary instead. It says what is true: a job whose outcome neither landed nor waits on the phone
-// is not called closed.
+// Closed (docs/prompts/tech-redesign.md, "Closed"; docs/decisions/0246-closed-and-sent-back.md): the visit's result in
+// its heading, what it came to in rows, a one visit's payment link with Resend, a way to finish a visit left partly
+// done, and the next job with Today and Navigate; a no-show's evidence in place of the rows. It says what is true: a
+// job whose outcome neither landed nor waits on the phone is not called closed.
 
-import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useCallback } from "react";
 import type { Job, JobSummary } from "../api.ts";
-import { closeOut as copy, oneVisit, titles } from "../content.ts";
+import { closeOut as copy, titles } from "../content.ts";
+import { kindNameLower } from "../lib/kind.ts";
 import { declinedTheFit, outcomeOf, type Outcome } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
+import { NO_PIECE } from "@rules/policy/in-job-steps.ts";
 import { go } from "../route.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
@@ -23,6 +25,7 @@ import type { Queued } from "../store/outbox.ts";
 import { classes } from "@maneman/ui/classes";
 import frame from "../frame/frame.module.css";
 import light from "../frame/light.module.css";
+import { FinishTheWork, NavigateNext, NextUp, PaymentLink } from "./ClosedParts.tsx";
 import shared from "./steps.module.css";
 import styles from "./close-out.module.css";
 
@@ -44,15 +47,18 @@ function nextAfter(jobs: readonly JobSummary[], after: Job, heard: ReadonlyMap<s
   return atTheDoor ?? jobs.find((job) => job.starts_at > after.starts_at && open(job)) ?? null;
 }
 
-/** How the job closed, in the heading's words: a one visit done once the client declined is a free consultation. */
-function closedAs(job: Job, outcome: Outcome, queued: readonly Queued[]): string {
+/** How the job closed, in a word: a one visit done once the client declined is a free consultation. */
+function closedAs(job: Job, outcome: Outcome, queued: readonly Queued[], notFitted: boolean): string {
+  if (notFitted) return copy.notFitted;
   if (outcome === "done" && declinedTheFit(job, queued)) return copy.freeConsultation;
   return copy.outcomes[outcome];
 }
 
-/** Where a one visit's payment link stands: texted to the client, or paid. */
-const linkState = (link: NonNullable<Job["payment_link"]>): string =>
-  link.paid ? oneVisit.linkPaid : oneVisit.linkSent;
+/** The heading: a no-show's, a fit closed at its piece's, or any other visit's. */
+function titleOf(outcome: Outcome, notFitted: boolean): string {
+  if (outcome === "no_show") return copy.titles.no_show;
+  return notFitted ? copy.titles.not_fitted : copy.titles.closed;
+}
 
 function Row({ name, value }: { name: string; value: string }) {
   return (
@@ -134,6 +140,9 @@ export function CloseOut({ id }: { id: string }) {
 
   const readClosed = useCallback(() => keptClosed(id), [id]);
   const closedAt = valueOr(useAsync(readClosed)[0], null);
+  // A fit closed at its piece, "Can't fit today", as the phone kept its close.
+  const readSaid = useCallback(() => keptOutcome(id), [id]);
+  const said = valueOr(useAsync(readSaid)[0], null);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
@@ -161,46 +170,48 @@ export function CloseOut({ id }: { id: string }) {
 
   const sets = job.progress.steps_done.filter((step) => step === "before_photos" || step === "after_photos").length;
   const queuedFrames = waiting.frames.filter((frame) => frame.job_id === id).length;
-
   const later = day.state === "loaded" ? nextAfter(day.value, job, states ?? NOTHING_HEARD) : null;
+  const notFitted = outcome === "partial" && said?.outcome === "partial" && said.reason === NO_PIECE;
 
   return (
     <main className={classes(frame.screen, light.paperScreen)} data-look="light">
-      <section className={shared.close}>
-        <p className={capsLook(shared.closeLabel)}>{copy.label}</p>
-        <Icon className={shared.closeTick} d={outcome === "done" ? ICONS.tick : ICONS.minus} size="xl" weight="heavy" />
-        <h1 className={shared.closeWho} ref={heading} tabIndex={-1}>
-          {copy.who(who)}
-          <span className={shared.closedAs}>{closedAs(job, outcome, waiting.events)}</span>
+      <section className={styles.closed}>
+        <span className={outcome === "no_show" || notFitted ? styles.markQuiet : styles.mark} aria-hidden="true">
+          <Icon d={ICONS.tick} size="lg" weight="heavy" />
+        </span>
+        <h1 className={styles.title} ref={heading} tabIndex={-1}>
+          {titleOf(outcome, notFitted)}
         </h1>
+        <p className={styles.sub}>
+          {copy.sub(who, kindNameLower(job), closedAs(job, outcome, waiting.events, notFitted))}
+        </p>
         {outcome === "no_show" ? (
           <Evidence job={job} />
         ) : (
-          <dl className={shared.rows}>
+          <dl className={classes(shared.rows, styles.rows)}>
             <Decided job={job} />
             {took !== null && <Row name={copy.duration} value={copy.length(took.hours, took.minutes)} />}
             <Row name={copy.photos} value={queuedFrames > 0 ? copy.queued(queuedFrames) : copy.sent(sets * IN_A_SET)} />
-            {/* A card the phone kept from before one visits names neither. */}
-            {job.one_visit && job.payment_link !== null && (
-              <Row name={oneVisit.payment} value={linkState(job.payment_link)} />
-            )}
           </dl>
         )}
+        {/* A card the phone kept from before one visits names no link. */}
+        {job.one_visit && job.payment_link !== null && <PaymentLink job={job} link={job.payment_link} />}
+        {outcome === "partial" && <FinishTheWork job={job} />}
+        {later !== null && <NextUp next={later} name={names.get(later.id) ?? where(later.sector)} />}
       </section>
 
-      <div className={classes(frame.foot, light.paperFoot)}>
+      <div className={classes(frame.foot, light.paperFoot, styles.foot)}>
         <Button
-          variant="primary"
+          variant={later?.address === null || later === null ? "primary" : "outline"}
           size="action"
-          className={frame.action}
+          className={styles.today}
           onClick={() => {
-            go(later === null ? "/" : `/jobs/${later.id}`);
+            go("/");
           }}
         >
-          {later === null
-            ? copy.lastJob
-            : copy.nextJob(clock(later.starts_at), names.get(later.id) ?? where(later.sector))}
+          {later === null ? copy.lastJob : copy.next.today}
         </Button>
+        {later !== null && <NavigateNext next={later} />}
       </div>
     </main>
   );

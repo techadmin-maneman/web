@@ -100,7 +100,13 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
           {
             id: "98000000-0000-4000-8000-000000000001",
             person: { id: "22000000-0000-4000-8000-000000000014", name: "Manish Tandon" },
-            facts: { group: "partial_visit", kind: "service", reason_code: "client_unwell", reason: "Client unwell" },
+            facts: {
+              group: "partial_visit",
+              kind: "service",
+              reason_code: "client_unwell",
+              reason: "Client unwell",
+              ask: null,
+            },
             detail: "service Client unwell",
             since: "2027-09-18T06:00:00.000Z",
             due: "2027-09-20T06:00:00.000Z",
@@ -114,6 +120,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
               kind: "service",
               reason_code: "piece_not_ready",
               reason: "The piece was not ready",
+              ask: null,
             },
             detail: "The piece was not ready",
             since: "2027-09-21T06:00:00.000Z",

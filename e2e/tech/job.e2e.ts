@@ -337,7 +337,7 @@ test("asks before closing as a no-show, since ops decide on the charge", async (
   await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.confirm.yes }).click();
 
   // The close: the evidence ops rule on, and what happens next.
-  await expect(page.getByRole("heading", { name: "Rohit M. · no-show" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.no_show })).toBeVisible();
   await expect(page.getByText(techCopy.closeOut.noShow.ops)).toBeVisible();
   await expect(page.getByText(techCopy.closeOut.noShow.checkedIn)).toBeVisible();
   await expect(page.getByText("40 m")).toBeVisible();
@@ -384,7 +384,7 @@ test("a no-show the API refuses as early stays open at the door, and never reads
 
   // And the close-out, opened by hand, does not claim the job was done.
   await page.goto(`/jobs/${JOB_ID}/done`);
-  await expect(page.getByText("Rohit M. · done")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.closed })).toHaveCount(0);
   await expect(page.getByText(techCopy.closeOut.notClosed)).toBeVisible();
 
   // Nor does Today's head call it a failed upload: it is tried again when its time comes.
@@ -483,7 +483,8 @@ test("a closed job reads as closed, with View summary", async ({ page }) => {
   await expect(page.getByText("Closed out · done")).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.job.continueJob })).toHaveCount(0);
   await page.getByRole("button", { name: techCopy.job.viewSummary }).click();
-  await expect(page.getByRole("heading", { name: "Rohit M. · done" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.closed })).toBeVisible();
+  await expect(page.getByText(techCopy.closeOut.sub("Rohit M.", "service visit", "done"))).toBeVisible();
 });
 
 test("tomorrow’s job shows its day, and cannot be checked in to today", async ({ page }) => {
@@ -547,9 +548,13 @@ test("walks the steps of a service visit and closes it out", async ({ page }) =>
   await stepAction(page).click();
 
   // The close-out.
-  await expect(page.getByText("Rohit M. · partly done")).toBeVisible();
+  await expect(page.getByText(techCopy.closeOut.sub("Rohit M.", "service visit", "partly done"))).toBeVisible();
   await expect(page.getByText(techCopy.closeOut.duration)).toBeVisible();
-  await expect(page.getByRole("button", { name: /Next job · 11:30/ })).toBeVisible();
+  // The next job, with the way to Today and to its door.
+  await expect(page.getByRole("region", { name: techCopy.closeOut.next.title })).toContainText("11:30 am");
+  await expect(page.getByRole("button", { name: techCopy.closeOut.next.today })).toBeVisible();
+  // A visit left partly done asks how to finish it.
+  await expect(page.getByRole("region", { name: techCopy.closeOut.finish.title })).toBeVisible();
 
   const sent = fake.writes.map((write) => write.path.replace(`/api/tech/jobs/${JOB_ID}`, ""));
   expect(sent).toEqual(["/checkin", "/start", "/photos", "/checklist", "/consumables", "/photos", "/outcome"]);

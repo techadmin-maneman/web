@@ -49783,13 +49783,27 @@ Request body:
             "null"
           ],
           "description": "In the words ops gave it, or the job sheet's."
+        },
+        "ask": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "tomorrow_morning",
+            "tomorrow_evening",
+            "ops_call",
+            null
+          ],
+          "description": "How the technician suggested finishing it: a time, or ops to call; null for none."
         }
       },
       "required": [
         "group",
         "kind",
         "reason_code",
-        "reason"
+        "reason",
+        "ask"
       ],
       "additionalProperties": false
     },

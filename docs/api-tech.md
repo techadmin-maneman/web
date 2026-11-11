@@ -4172,6 +4172,360 @@ Request body:
 }
 ```
 
+### POST /api/tech/jobs/{id}/payment-link/resend
+
+Text a one visit's client its payment link again, from the visit's close
+
+**200**: What sending it again came to
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianLinkResent"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such job of this technician's, or no payment link on it
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**429**: rate_limited: texted three times today already
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "rate_limited"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: Razorpay did not answer; try again in a minute
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/jobs/{id}/finish-ask
+
+Suggest to ops how to finish a visit left partly done, or not fitted
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianFinishAsk"
+}
+```
+
+**204**: Kept on the visit's task, for ops to book
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such job of this technician's
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: not_changeable: the visit is not closed partly done
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_changeable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/tech/kit
 
 What the kit holds, what is on its way to it, and the pieces to hand back
@@ -9188,6 +9542,54 @@ One of the client's try-on looks, under the card's own unlock, never cached
   },
   "required": [
     "code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianLinkResent
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "resent",
+        "sent",
+        "not_texted",
+        "paid",
+        "refused"
+      ],
+      "description": "resent or sent: texted; not_texted: messaging may not text this number; paid: the client has paid; refused: Razorpay would not make it, and ops are told on the Tasks board."
+    }
+  },
+  "required": [
+    "outcome"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianFinishAsk
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ask": {
+      "type": "string",
+      "enum": [
+        "tomorrow_morning",
+        "tomorrow_evening",
+        "ops_call"
+      ],
+      "description": "Tomorrow morning, tomorrow evening, or ops to call the client. A later one replaces it."
+    }
+  },
+  "required": [
+    "ask"
   ],
   "additionalProperties": false
 }

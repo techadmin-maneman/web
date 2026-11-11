@@ -55,9 +55,15 @@ function commitBuilt(): string {
   }
 }
 
+/**
+ * The pages a local build adds for the people building the app, which no other build carries and no phone is served:
+ * the technician app's parts page (apps/tech/src/main.tsx). The budget counts what ships, so they are left out of it.
+ */
+const LOCAL_ONLY = "PartsScreen-";
+
 function everyScript(dist: string): string[] {
   return readdirSync(`${dist}/assets`)
-    .filter((file) => file.endsWith(".js"))
+    .filter((file) => file.endsWith(".js") && !file.startsWith(LOCAL_ONLY))
     .map((file) => `${dist}/assets/${file}`);
 }
 
