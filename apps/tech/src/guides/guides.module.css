@@ -18,24 +18,35 @@
   counter-reset: step;
 }
 
+/* A step: its number in a column of its own, as the visit's plan numbers them, its name, and what it is or its tasks. */
 .step {
+  display: grid;
+  grid-template-columns: var(--sp-24) minmax(0, 1fr);
+  column-gap: var(--sp-8);
   padding: var(--sp-12) var(--screen-gutter);
   border-bottom: var(--hairline) solid var(--ui-line);
   counter-increment: step;
 }
 
-/* The step's number before its name, as the visit's plan numbers them. */
-.stepName {
-  margin: 0;
-  font-size: var(--fs-15);
+.step::before {
+  grid-row: 1;
+  content: counter(step);
+  font-size: var(--fs-16);
   font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
   line-height: var(--lh-145);
+  color: var(--ui-strong);
 }
 
-.stepName::before {
-  content: counter(step) "  ";
-  font-variant-numeric: tabular-nums;
-  color: var(--ui-text-soft);
+.step > * {
+  grid-column: 2;
+}
+
+.stepName {
+  margin: 0;
+  font-size: var(--fs-16);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-145);
 }
 
 .stepWhat {
@@ -45,7 +56,10 @@
   color: var(--ui-text-soft);
 }
 
-/* A step's tasks, each a row, taking back the step's gutter so the rows run edge to edge. */
+/* A step's tasks under its name, lighter than the step: the rows' own padding taken back, so their words line up. */
 .tasks {
-  margin: var(--sp-8) calc(-1 * var(--screen-gutter)) calc(-1 * var(--sp-12));
+  --row-title-text: var(--fs-15);
+  --row-title-weight: var(--weight-regular);
+
+  margin: var(--sp-4) calc(-1 * var(--sp-16)) calc(-1 * var(--sp-12));
 }
