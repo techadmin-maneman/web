@@ -209,10 +209,15 @@ describe("what the kit holds fit to use", () => {
     expect(solvent?.lots.some((each) => each.recalled)).toBe(true);
     expect(kit.forecast).toMatchObject([{ have: 2 }]);
 
-    // Handed back, the kit holds 2 ml against the level of 5: ops' own count now finds it low too, so ops are told.
+    // Handed back, the recalled lot itself goes: the kit holds the 2 ml of good stock, against the level of 5, which
+    // ops' own count now finds low too, so ops are told.
     const back = await job.post("/api/tech/kit/hand-back", { pieces: [], expired: true }, "kit-back");
-    const after = await back.json<{ held: { code: string; quantity: number; ops_told: boolean }[] }>();
-    expect(after.held.find((item) => item.code === "solvent")).toMatchObject({ quantity: 2, ops_told: true });
+    const after = await back.json<{
+      held: { code: string; quantity: number; usable: number; ops_told: boolean; lots: { lot_code: string }[] }[];
+    }>();
+    const left = after.held.find((item) => item.code === "solvent");
+    expect(left).toMatchObject({ quantity: 2, usable: 2, ops_told: true });
+    expect(left?.lots.map((lot) => lot.lot_code)).toEqual(["SV-GOOD"]);
   });
 });
 

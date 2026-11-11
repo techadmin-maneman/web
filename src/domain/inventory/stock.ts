@@ -245,6 +245,8 @@ export interface Moving {
   readonly quantity: number;
   readonly from: Place;
   readonly to: Place;
+  /** The lot it is of, taken alone; otherwise the lots that expire soonest first, a recalled one last (./stock-lots.ts). */
+  readonly lotId?: string | null;
   readonly units?: readonly string[] | null;
   /** To a kit: it arrives only once the technician scans it in, as any other place receives a transfer. */
   readonly waitForScan?: boolean;

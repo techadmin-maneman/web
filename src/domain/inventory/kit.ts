@@ -250,8 +250,9 @@ export async function handBack(
     await db.batch(piecesHandedIn(db, { kit, to, pieces: handed.pieces }, written));
   }
   if (handed.expired) {
+    // Each lot by its own ID: the units that leave are the expired and recalled ones, not the soonest to expire.
     for (const lot of await expiredHeld(db, kit, indiaDate(written.now))) {
-      await sendStock(db, { code: lot.code, quantity: lot.quantity, from: kit, to }, written);
+      await sendStock(db, { code: lot.code, quantity: lot.quantity, lotId: lot.lotId, from: kit, to }, written);
     }
   }
   return { ok: true };
@@ -300,24 +301,30 @@ function piecesHandedIn(
 }
 
 /**
- * Each stock code's expired stock a kit holds, recalled stock among it (docs/decisions/0187-recalls.md): what its lots
- * that expired before today or were recalled hold, at most its balance.
+ * Each lot of expired stock a kit holds, recalled stock among it (docs/decisions/0187-recalls.md): what each lot that
+ * expired before today or was recalled holds, and of a stock code no more in all than its balance.
  */
 async function expiredHeld(
   db: D1Database,
   kit: Place,
   today: string,
-): Promise<{ readonly code: string; readonly quantity: number }[]> {
+): Promise<{ readonly code: string; readonly lotId: string; readonly quantity: number }[]> {
   const { results } = await db
     .prepare(
-      `SELECT l.consumable_code AS code,
-         MIN(SUM(b.quantity), COALESCE((SELECT quantity FROM stock_balances
-           WHERE consumable_code = l.consumable_code AND place = ?1), 0)) AS quantity
+      `SELECT l.consumable_code AS code, l.id AS lot_id, b.quantity,
+         COALESCE((SELECT quantity FROM stock_balances
+           WHERE consumable_code = l.consumable_code AND place = ?1), 0) AS balance
        FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
        WHERE b.place = ?1 AND b.quantity > 0 AND (l.expires_on < ?2 OR l.recalled_at IS NOT NULL)
-       GROUP BY l.consumable_code`,
+       ORDER BY l.consumable_code, l.expires_on, l.id`,
     )
     .bind(kit, today)
-    .all<{ code: string; quantity: number }>();
-  return results.filter((row) => row.quantity > 0);
+    .all<{ code: string; lot_id: string; quantity: number; balance: number }>();
+  const left = new Map<string, number>();
+  return results.flatMap((row) => {
+    const room = left.get(row.code) ?? Math.max(row.balance, 0);
+    const quantity = Math.min(row.quantity, room);
+    left.set(row.code, room - quantity);
+    return quantity > 0 ? [{ code: row.code, lotId: row.lot_id, quantity }] : [];
+  });
 }
