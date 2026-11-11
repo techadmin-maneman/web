@@ -41,37 +41,45 @@ function noteFor(why: Out): string | null {
 function linesFor(at: {
   why: Out;
   asked: boolean;
-  error: string | null;
+  error: Refusal | null;
   left: boolean;
   mobile: string;
   digits: string | null;
 }): { note: string | null; shown: string | null } {
   const hint = at.left && !at.asked && at.mobile !== "" && at.digits === null ? copy.mobileError : null;
   const quiet = !at.asked && at.error === null && hint === null;
-  return { note: quiet ? noteFor(at.why) : null, shown: at.error ?? hint };
+  return { note: quiet ? noteFor(at.why) : null, shown: at.error?.say() ?? hint };
 }
 
 /** The API's error code in the app's words, or the line that fits when the code is one we do not know. */
 const MESSAGES: Readonly<Record<string, string>> = copy.errors;
 const messageFor = (code: string, fallback: string) => MESSAGES[code] ?? fallback;
 
+/** A refusal, worded as it is drawn, so a switch of language rewords one already showing. */
+interface Refusal {
+  readonly say: () => string;
+}
+const refusal = (say: () => string): Refusal => ({ say });
+const refusedWith = (code: string): Refusal => refusal(() => messageFor(code, copy.errors.unknown));
+
 /** What a check of the code came to: signed in, or the line to show, whether a new code is needed, or the code was wrong. */
 type Verdict =
   | { readonly signedIn: true }
-  | { readonly signedIn: false; readonly error: string; readonly again: boolean; readonly wrong: boolean };
+  | { readonly signedIn: false; readonly error: Refusal; readonly again: boolean; readonly wrong: boolean };
 
 function verdictOf(answer: Awaited<ReturnType<typeof api.verify>> | null): Verdict {
-  if (answer === null) return { signedIn: false, error: copy.errors.unknown, again: false, wrong: false };
+  if (answer === null) {
+    return { signedIn: false, error: refusal(() => copy.errors.unknown), again: false, wrong: false };
+  }
   if (!answer.ok) {
     // A closed code cannot be tried again: only a new one can, and none signs in a technician ops stopped.
     const closed = answer.status === 410 || answer.code === "sign_in_stopped";
-    return { signedIn: false, error: messageFor(answer.code, copy.errors.unknown), again: closed, wrong: false };
+    return { signedIn: false, error: refusedWith(answer.code), again: closed, wrong: false };
   }
   if (answer.body.verified) return { signedIn: true };
-  if (answer.body.attempts_left === 0) {
-    return { signedIn: false, error: copy.errors.code_expired, again: true, wrong: false };
-  }
-  return { signedIn: false, error: copy.attemptsLeft(answer.body.attempts_left), again: false, wrong: true };
+  const left = answer.body.attempts_left;
+  if (left === 0) return { signedIn: false, error: refusal(() => copy.errors.code_expired), again: true, wrong: false };
+  return { signedIn: false, error: refusal(() => copy.attemptsLeft(left)), again: false, wrong: true };
 }
 
 /** Once a code is out, the ways on: a number typed wrong, or a code that never came, once WhatsApp has had time. */
@@ -132,10 +140,31 @@ function Top() {
   );
 }
 
+/** The one action at the foot, and while it waits, the line that says what it waits for. */
+function Foot(props: { asked: boolean; ready: boolean; working: boolean }) {
+  const waiting = props.asked ? copy.codeHelper : copy.numberHelper;
+  return (
+    <ActionBar className={styles.foot} helper={!props.ready && !props.working && waiting}>
+      {(helperId) => (
+        <Button
+          variant="primary"
+          size="action"
+          type="submit"
+          disabled={!props.ready || props.working}
+          busy={props.working}
+          aria-describedby={helperId}
+        >
+          {props.asked ? copy.submit : copy.sendCode}
+        </Button>
+      )}
+    </ActionBar>
+  );
+}
+
 export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }) {
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Refusal | null>(null);
   // Signed in, while App reads who: the code is spent, so a second tap on Sign in would only be refused.
   const [through, setThrough] = useState(false);
   // The code sent, and when a new one may be asked for: time enough after the last for WhatsApp to deliver it.
@@ -155,7 +184,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
   async function sendOnce(): Promise<void> {
     if (digits === null) {
-      setError(copy.mobileError);
+      setError(refusal(() => copy.mobileError));
       return;
     }
     try {
@@ -164,10 +193,10 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
         otp.sent(answer.body);
         setCode("");
         setError(null);
-      } else setError(messageFor(answer.code, copy.errors.unknown));
+      } else setError(refusedWith(answer.code));
     } catch {
       // The phone's store would not give the device ID; the next tap asks it again.
-      setError(copy.errors.unknown);
+      setError(refusal(() => copy.errors.unknown));
     }
   }
   const send = () => once(sendOnce);
@@ -275,11 +304,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
       {challenge === null && <NewNumber />}
 
-      <ActionBar className={styles.foot}>
-        <Button variant="primary" size="action" type="submit" disabled={!ready || working} busy={working}>
-          {challenge === null ? copy.sendCode : copy.submit}
-        </Button>
-      </ActionBar>
+      <Foot asked={challenge !== null} ready={ready} working={working} />
     </form>
   );
 }

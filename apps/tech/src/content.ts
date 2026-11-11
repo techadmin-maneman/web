@@ -22,7 +22,7 @@ export const signIn = localised({
   // The Prototype draws one screen and no errors.
   errors: {
     mismatch: "That code didn’t match.",
-    code_expired: "That code no longer works. Send the code again.",
+    code_expired: "That code no longer works. Get a new one.",
     invalid_request: "Check the number and the code.",
     rate_limited: "Too many codes for this number today. Ask ops.",
     sign_in_stopped: "Ops have stopped sign-in on your number. Ask them to let you back in.",
@@ -32,6 +32,9 @@ export const signIn = localised({
   },
   attemptsLeft: (left: number) => `That code didn’t match. ${String(left)} ${left === 1 ? "try" : "tries"} left.`,
   sendCode: "Get code",
+  // The brief: a disabled button always shows one helper line.
+  numberHelper: "Type your number to continue",
+  codeHelper: "Type the code to continue",
   /** "Code sent to +91 98110 00000", beneath the title once the code is out. */
   codeSent: (number: string) => `Code sent to ${number}`,
   // The Prototype draws no way back from a code sent to the wrong number, or one that never came.

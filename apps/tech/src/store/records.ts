@@ -104,9 +104,7 @@ export type DeviceRecord =
   /** How the technician suggested finishing each visit left partly done, still to reach ops (./finish-asks.ts). */
   | { readonly key: "finish_asks"; readonly asks: Readonly<Record<string, FinishAsk>> }
   /** Every kind of visit's checklist as ops last set it, for Guides with no signal (../guides/checklists.ts). */
-  | { readonly key: "checklists"; readonly checklists: Checklists }
-  /** The language the technician chose, which the app opens in (../lang/language.ts). */
-  | { readonly key: "language"; readonly language: "en" | "hi" };
+  | { readonly key: "checklists"; readonly checklists: Checklists };
 
 export interface Records {
   readonly device: DeviceRecord;

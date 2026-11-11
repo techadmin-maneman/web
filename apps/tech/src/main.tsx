@@ -40,9 +40,9 @@ function draw(): void {
   );
 }
 
-// The language the phone kept, before the first screen is drawn, so it opens in it; a store it cannot read opens
-// in English.
-void keptLanguage().finally(draw);
+// The language the phone kept, before the first screen is drawn, so it opens in it.
+keptLanguage();
+draw();
 
 // The service worker keeps the shell, so a phone in a basement can close the app
 // and reopen it on the day its store kept (apps/tech/sw/sw.ts), and a new build waits for

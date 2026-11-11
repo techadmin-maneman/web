@@ -20,6 +20,8 @@
     "All five are on the phone.": "पाँचों फ़ोन में हैं।",
     "Already received or sent back.": "पहले ही ले लिया या लौटा दिया।",
     "Apply code": "कोड लगाएँ",
+    "April": "अप्रैल",
+    "August": "अगस्त",
     "Back to Schedule": "शेड्यूल पर वापस",
     "Back to the job": "जॉब पर वापस",
     "Back to today": "आज पर वापस",
@@ -66,6 +68,7 @@
     "Couldn’t send. Try again.": "भेजा नहीं जा सका। फिर से कोशिश करें।",
     "Cut and styled": "कट और स्टाइल किया",
     "Days off, asked of ops": "छुट्टी, ऑप्स से माँगी",
+    "December": "दिसंबर",
     "Decided against it": "मना कर दिया",
     "Delete them": "मिटा दें",
     "Delete this job’s work": "इस जॉब का काम मिटाएँ",
@@ -76,6 +79,7 @@
     "Distance": "दूरी",
     "Ends as a free consultation. Nothing to pay.": "फ़्री कंसल्टेशन के तौर पर बंद होगी। कोई पेमेंट नहीं।",
     "Enter your 10-digit mobile number.": "अपना 10 अंकों का मोबाइल नंबर डालें।",
+    "February": "फ़रवरी",
     "Finasteride": "फ़िनास्टेराइड",
     "Finish it and send it.": "पूरा करें और भेजें।",
     "Finish the tasks to continue": "आगे बढ़ने के लिए काम पूरे करें",
@@ -86,6 +90,7 @@
     "Fitted": "फ़िट किया",
     "Free up space by deleting photos or apps you don’t need, then try again.": "जो फ़ोटो या ऐप ज़रूरी नहीं, उन्हें मिटाकर जगह बनाएँ, फिर से कोशिश करें।",
     "Free visit": "फ़्री विज़िट",
+    "Friday": "शुक्रवार",
     "From your kit": "आपकी किट से",
     "Get to signal today so everything sends.": "आज नेटवर्क में आएँ ताकि सब भेजा जा सके।",
     "Go to the door and tap again. Still refused? Call ops.": "दरवाज़े पर जाकर फिर से टैप करें। फिर भी न हो तो ऑप्स को कॉल करें।",
@@ -107,6 +112,9 @@
     "IV": "IV",
     "In a recall: not to be used": "रिकॉल में है: इस्तेमाल न करें",
     "In progress": "चल रहा है",
+    "January": "जनवरी",
+    "July": "जुलाई",
+    "June": "जून",
     "Keep fitting": "फ़िटिंग जारी रखें",
     "Keep holding…": "दबाए रखें…",
     "Keep them": "रहने दें",
@@ -123,11 +131,13 @@
     "Mane Man technician": "Mane Man टेक्नीशियन",
     "Map": "नक्शा",
     "Map with a pin at the client’s address": "क्लाइंट के पते पर पिन वाला नक्शा",
+    "March": "मार्च",
     "Matches the profile": "प्रोफ़ाइल से मेल खाता है",
     "Measurements taken": "नाप लिया",
     "Minoxidil": "मिनोक्सिडिल",
     "Minutes": "मिनट",
     "Missing": "नहीं मिला",
+    "Monday": "सोमवार",
     "More time needed": "और समय चाहिए",
     "Needs signal": "नेटवर्क चाहिए",
     "New hair system checked against its label": "नया हेयर सिस्टम उसके लेबल से मिलाया",
@@ -169,6 +179,8 @@
     "Nothing used. Why?": "कुछ इस्तेमाल नहीं हुआ। क्यों?",
     "Nothing’s short now.": "अभी कुछ कम नहीं।",
     "Notifications are blocked for this app in the phone’s settings.": "फ़ोन की सेटिंग्स में इस ऐप की नोटिफ़िकेशन बंद हैं।",
+    "November": "नवंबर",
+    "October": "अक्टूबर",
     "Offline": "ऑफ़लाइन",
     "Old hair system removed": "पुराना हेयर सिस्टम उतारा",
     "Opening the camera…": "कैमरा खुल रहा है…",
@@ -209,6 +221,7 @@
     "Retake photos": "फ़ोटो फिर से लें",
     "SOS": "SOS",
     "SOS didn’t go through. Call ops or 112 now.": "SOS नहीं गया। अभी ऑप्स को या 112 पर कॉल करें।",
+    "Saturday": "शनिवार",
     "Saved on the phone. Sends when you’re back online.": "फ़ोन में सेव है। नेटवर्क आने पर भेजा जाएगा।",
     "Saved. It goes to ops with the visit’s close.": "सेव हुआ। विज़िट बंद होने पर ऑप्स को जाएगा।",
     "Say if they’re going ahead": "बताएँ कि वे आगे बढ़ रहे हैं या नहीं",
@@ -223,7 +236,6 @@
     "Send": "भेजें",
     "Send a new code": "नया कोड भेजें",
     "Send first": "पहले भेजें",
-    "Send the code": "कोड भेजें",
     "Sending now": "अभी भेज रहे हैं",
     "Sending your SOS…": "आपका SOS भेज रहे हैं…",
     "Sending…": "भेज रहे हैं…",
@@ -233,6 +245,7 @@
     "Sent on WhatsApp from Mane Man’s number.": "Mane Man के नंबर से WhatsApp पर भेजा।",
     "Sent, not delivered": "भेजा, पहुँचा नहीं",
     "Sent.": "भेज दिया।",
+    "September": "सितंबर",
     "Service checklist": "सर्विस की चेकलिस्ट",
     "Service visits": "सर्विस विज़िट",
     "Sign in here once, then use the home-screen app. Anything waiting in the browser still sends.": "यहाँ एक बार साइन इन करें, फिर होम स्क्रीन वाला ऐप इस्तेमाल करें। ब्राउज़र में जो बाकी है वह फिर भी जाएगा।",
@@ -247,16 +260,16 @@
     "Still open from yesterday": "कल से खुला है",
     "Still to come": "अभी बाकी",
     "Stop scanning": "स्कैन बंद करें",
+    "Sunday": "रविवार",
     "Supplier lot": "सप्लायर लॉट",
     "Take photo": "फ़ोटो लें",
     "Taken": "ली गई",
     "Tape placement on the base": "बेस पर टेप कहाँ लगे",
     "Technician": "टेक्नीशियन",
-    "Technician sign in": "टेक्नीशियन साइन इन",
     "Template checked against the head": "टेम्पलेट सिर पर जाँचा",
     "Template on the head, front": "सिर पर टेम्पलेट, सामने से",
     "That code didn’t match.": "कोड मेल नहीं खाया।",
-    "That code no longer works. Send the code again.": "यह कोड अब नहीं चलेगा। फिर से कोड भेजें।",
+    "That code no longer works. Get a new one.": "यह कोड अब नहीं चलेगा। नया कोड लें।",
     "That didn’t go through. Try again.": "नहीं हुआ। फिर से कोशिश करें।",
     "That didn’t reach ops. Call them.": "ऑप्स तक नहीं पहुँचा। उन्हें कॉल करें।",
     "That didn’t reach ops. Try again.": "ऑप्स तक नहीं पहुँचा। फिर से कोशिश करें।",
@@ -323,6 +336,7 @@
     "This visit is closed or called off.": "यह विज़िट बंद या रद्द हो चुकी है।",
     "This visit isn’t yours any more.": "यह विज़िट अब आपकी नहीं है।",
     "This visit was closed. What you recorded is kept on this phone, in Pending uploads.": "यह विज़िट बंद हो गई। आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।",
+    "Thursday": "गुरुवार",
     "Tick all: everything was done": "सब पर टिक करें: सब हो गया",
     "To do": "करना है",
     "Today’s jobs and cards are on the phone.": "आज के जॉब और कार्ड फ़ोन में हैं।",
@@ -332,8 +346,11 @@
     "Torch": "टॉर्च",
     "Transplant": "ट्रांसप्लांट",
     "Try again": "फिर से कोशिश करें",
+    "Tuesday": "मंगलवार",
     "Turn on": "चालू करें",
     "Turn on camera access for Mane Man in the phone’s settings, then try again.": "फ़ोन की सेटिंग्स में Mane Man के लिए कैमरा चालू करें, फिर से कोशिश करें।",
+    "Type the code to continue": "आगे बढ़ने के लिए कोड टाइप करें",
+    "Type your number to continue": "आगे बढ़ने के लिए नंबर टाइप करें",
     "Unsent work could be lost": "न भेजा गया काम खो सकता है",
     "Update": "अपडेट करें",
     "Uploading…": "अपलोड हो रहा है…",
@@ -350,6 +367,7 @@
     "We couldn’t record this set. Tap Done to send it again.": "यह सेट दर्ज नहीं हो सका। फिर से भेजने के लिए हो गया दबाएँ।",
     "We couldn’t record this step as it was. Correct it and tap Next.": "यह स्टेप जैसा था वैसा दर्ज नहीं हो सका। ठीक करें और आगे दबाएँ।",
     "We couldn’t record this. Tap Retry, or call ops.": "यह दर्ज नहीं हो सका। फिर से भेजें दबाएँ, या ऑप्स को कॉल करें।",
+    "Wednesday": "बुधवार",
     "WhatsApp ops": "ऑप्स को WhatsApp",
     "Why": "क्यों",
     "Why it failed, if it did": "अगर नहीं हुआ, तो क्यों",
@@ -532,6 +550,10 @@
       "hi": "रास्ते में हूँ, $1 मिनट"
     },
     {
+      "match": "^leave in ([^·]+) min$",
+      "hi": "$1 मिनट में निकलें"
+    },
+    {
       "match": "^Running ([^·]+) min late$",
       "hi": "$1 मिनट देर से पहुँचूँगा"
     },
@@ -592,8 +614,16 @@
       "hi": "कोड $1 पर भेजा गया"
     },
     {
-      "match": "^([^·]*\\d[^·]*) to ([^·]*\\d[^·]*)$",
+      "match": "^(\\d{1,2} [A-Z][a-z]{2}) to (\\d{1,2} [A-Z][a-z]{2})$",
       "hi": "$1 से $2"
+    },
+    {
+      "match": "^Opens at ([^·]+)\\.$",
+      "hi": "$1 खुलेगा।"
+    },
+    {
+      "match": "^was ([^·]+)$",
+      "hi": "पहले $1"
     },
     {
       "match": "^Resend in (\\d+:\\d\\d)$",
@@ -946,6 +976,18 @@
     {
       "match": "^the ([^·]+)$",
       "hi": "$1"
+    },
+    {
+      "match": "^([^·]+) to ([^·]+)$",
+      "hi": "$1 से $2"
+    },
+    {
+      "match": "^([^·]+?) and ([^·]+)$",
+      "hi": "$1 और $2"
+    },
+    {
+      "match": "^([^·,]+), ([^·]+)$",
+      "hi": "$1, $2"
     }
   ],
   "dateTokens": {

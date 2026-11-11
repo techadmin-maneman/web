@@ -32,12 +32,15 @@ describe("a line in Hindi", () => {
     expect(toHindi("Wed 11 Nov")).toBe("बुध 11 नवं");
   });
 
-  it("stays English where the catalog cannot word it, and a line with no words needs none", () => {
-    expect(toHindi("Sector 65")).toBe("Sector 65");
+  it("stays English where the catalog cannot word it, and a line with no words of ours needs none", () => {
+    expect(toHindi("Gate code 4417")).toBe("Gate code 4417");
     expect(hasHindi("+91")).toBe(true);
-    expect(hasHindi("Sector 65")).toBe(false);
-    // A code the catalog keeps as it is counts as worded.
+    expect(hasHindi("Gate code 4417")).toBe(false);
+    // A sector stays as written, and asks for no Hindi.
+    expect(hasHindi("Sector 65")).toBe(true);
+    // A code the catalog keeps as it is counts as worded; a line worded only in part does not.
     expect(hasHindi("SOS")).toBe(true);
+    expect(hasHindi("Navigate · Gate code 4417")).toBe(false);
   });
 
   it("words the app's own lines after the catalog's, the singular and a lower-case part among them", () => {
@@ -50,6 +53,13 @@ describe("a line in Hindi", () => {
     expect(toHindi("Map · 12 min drive")).toBe("नक्शा · 12 मिनट ड्राइव");
     expect(toHindi("Expired 31 Oct 2026")).toBe("31 अक्टू 2026 को एक्सपायर");
     expect(toHindi("Ops moved this job to 9 am on Mon 5 Oct.")).toBe("ऑप्स ने यह जॉब सोम 5 अक्टू, 9 am पर कर दिया।");
+    expect(toHindi("Opens at 9 am on Mon 16 Nov.")).toBe("सोम 16 नवं, 9 am खुलेगा।");
+  });
+
+  it("moves a job named by its time to a time, and keeps a space after a line and a place's own words", () => {
+    expect(toHindi("2 pm की सर्विस विज़िट moved to 4:15 pm")).toBe("2 pm की सर्विस विज़िट का समय 4:15 pm हुआ");
+    expect(toHindi("Note from Imran: ")).toBe("Imran का नोट: ");
+    expect(toHindi("18 min drive to Sun City, Sector 54")).toBe("Sun City, Sector 54 तक 18 मिनट ड्राइव");
   });
 });
 
@@ -62,9 +72,20 @@ describe("the catalog as the screens read it", () => {
   });
 });
 
-/** A name, a count, one, none and nothing: each function's every branch, from "1 job" to "Alerts" with none unread. */
+/**
+ * A name, a count, one, none and nothing: each function's every branch, from "1 job" to "Alerts" with none unread; and
+ * a time and a list, for the functions that take one.
+ */
 const SAMPLE_NAME = "Rohit M.";
-const SAMPLES: readonly unknown[] = [SAMPLE_NAME, 2, 1, 0, null];
+const SAMPLES: readonly unknown[] = [
+  SAMPLE_NAME,
+  2,
+  1,
+  0,
+  null,
+  "2026-11-12T18:00:00+05:30",
+  [SAMPLE_NAME, "Sector 65"],
+];
 /** As many values as the catalog's longest function takes: a function read through the catalog has no length. */
 const MOST_ARGUMENTS = 3;
 
@@ -83,6 +104,30 @@ function shown(value: unknown, out: string[]): string[] {
   } else if (Array.isArray(value)) value.forEach((each) => shown(each, out));
   else if (typeof value === "object" && value !== null) Object.values(value).forEach((each) => shown(each, out));
   return out;
+}
+
+/** Why a step was stopped, each way the API says it: a field or a note, a job given to another, a start moved. */
+function stoppedLines(): string[] {
+  const now = new Date("2026-11-12T06:00:00.000Z");
+  const codes = ["superseded", "technician", "time", "status", "out_of_order", "not_today", "too_early_to_arrive"];
+  const more = ["already_started", "photo_rejected", "stuck", "not_found", "already_closed", "piece_code", "old_piece"];
+  const last = ["product", "done", "reason", "invalid_request", "unknown", "a code not known"];
+  const moved = [null, "2026-11-12T05:10:00.000Z", "2026-11-10T05:10:00.000Z"].map((at) => ({
+    note: null,
+    fields: ["technician"],
+    moved: { technician: SAMPLE_NAME, at },
+  }));
+  const starts = ["2026-11-12T12:30:00.000Z", "2026-11-13T04:00:00.000Z", "2026-11-16T04:00:00.000Z"];
+  return [
+    ...[...codes, ...more, ...last].flatMap((code) => [
+      content.whatStopped({ note: null, fields: [code] }, now),
+      content.whatStopped({ note: code, fields: [] }, now),
+    ]),
+    ...moved.map((why) => content.whatStopped(why, now)),
+    ...starts.map((start) =>
+      content.whatStopped({ note: null, fields: ["time"], startsAt: "2026-11-12T09:00:00.000Z" }, now, start),
+    ),
+  ];
 }
 
 const REPORT = "docs/technician-redesign/REPORT.md";
@@ -107,13 +152,12 @@ describe("the lines still in English", () => {
     // The job sheet's committed lists stand until ops set their own, each checklist item with its task's words.
     const items = [...Object.values(CHECKLIST).flat(), ...PARTIAL_REASONS, ...LOST_REASONS];
     const sheet = items.flatMap((item) => [item.label, ...shown(taskFor(item), [])]);
-    // A sample of the wrong kind can write "null" or "NaN" where a value goes: no screen shows those.
-    const lines = [...new Set([...shown(Object.values(words), []), ...sheet])].filter(
-      (line) => !/undefined|null|NaN/.test(line),
+    // A sample of the wrong kind can write "null", "NaN" or "Invalid" where a value goes: no screen shows those.
+    const lines = [...new Set([...shown(Object.values(words), []), ...sheet, ...stoppedLines()])].filter(
+      // A count given a name, a time or a list, "leave in Rohit M. min", is no line a screen shows either.
+      (line) => !/undefined|null|NaN|Invalid/.test(line) && !/(?:Rohit M\.|\+05:30|Sector 65) min\b/.test(line),
     );
-    // A line whose Hindi is the sample name alone, "Rohit M. · Rohit M.", has none of the app's words left in English.
-    const untold = (line: string) => !hasHindi(line) && /[A-Za-z]/.test(toHindi(line).replaceAll(SAMPLE_NAME, ""));
-    const english = [...new Set(lines.filter(untold).map(spaced))].sort();
+    const english = [...new Set(lines.filter((line) => !hasHindi(line, [SAMPLE_NAME])).map(spaced))].sort();
     expect(listed().sort()).toEqual(english);
   });
 });

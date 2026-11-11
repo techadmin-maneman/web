@@ -79,7 +79,7 @@ Each gap of the plan's section 5, built in the PR named; none is mocked. The bro
 None. The prototype's catalog (`design/tech-redesign/strings-hi.json`) words the lines it draws. The app's own lines,
 the states and refusals the prototype does not draw and the words of the new parts, are worded in
 `apps/tech/src/lang/app-hi.json`, as are the job sheet's committed lists and each guided task's words. Every line the
-app can show from them is in Hindi when the app speaks it, for a name, a count of one, two or none, and nothing at all.
+app can show from them is in Hindi when the app speaks it, for a name, a count of one, two or none, nothing at all, a time and a list, with nothing left in English but names, units, brands, sectors and codes.
 The Hindi of both files is a draft for a native speaker's review, the guide steps first (the brief asks for it).
 `test/node/front-ends/tech-hindi.test.ts` holds this list to the app's lines, so a line added without Hindi is listed
 here.

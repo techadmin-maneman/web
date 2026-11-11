@@ -10,7 +10,9 @@ import app from "./app-hi.json" with { type: "json" };
 
 const STRINGS: Readonly<Record<string, string>> = { ...app.strings, ...catalog.strings };
 const TOKENS: Readonly<Record<string, string>> = { ...catalog.dateTokens, ...app.dateTokens };
-const TOKEN = new RegExp(`\\b(${Object.keys(TOKENS).join("|")})\\b`, "g");
+const NAMES = Object.keys(TOKENS).join("|");
+/** A weekday or month beside a figure, "Wed 11 Nov", "Mon, 5 Oct", "Nov 2026": never a word of a place's name. */
+const DATE_WORD = new RegExp(`(?<=\\d )\\b(?:${NAMES})\\b|\\b(?:${NAMES})\\b(?=,? \\d)`, "g");
 
 /** "{first} is prepaid." as a rule: its words matched, each {name} any text, kept in the Hindi by its place. */
 function templateRule([english, hindi]: readonly [string, string]): readonly [RegExp, string] {
@@ -37,9 +39,8 @@ const RULES: readonly (readonly [RegExp, string])[] = [
 const own = (text: string): string | undefined =>
   Object.prototype.hasOwnProperty.call(STRINGS, text) ? STRINGS[text] : undefined;
 
-/** Weekdays and months in Hindi, where the line holds a figure: "Wed 11 Nov". */
-const dated = (text: string): string =>
-  /\d/.test(text) ? text.replace(new RegExp(TOKEN.source, "g"), (token) => TOKENS[token] ?? token) : text;
+/** Weekdays and months in Hindi, where they stand beside a figure. */
+const dated = (text: string): string => text.replace(DATE_WORD, (token) => TOKENS[token] ?? token);
 
 /** A rule's line, each part it holds put into Hindi in turn: "Map · 12 min drive", while a name or a time stays. */
 const ruled = (core: string, rule: RegExp, hindi: string): string =>
@@ -50,17 +51,28 @@ const ruled = (core: string, rule: RegExp, hindi: string): string =>
     }),
   );
 
-/** The line in Hindi, or as it is where the catalog cannot word it. */
+/** The line in Hindi, or as it is where the catalog cannot word it; a space before or after it stays. */
 export function toHindi(text: string): string {
   const exact = own(text);
   if (exact !== undefined) return exact;
   const core = text.trim();
   if (core === "") return text;
+  const worded = wordedCore(core);
+  if (worded === core) return text;
+  const at = text.indexOf(core);
+  return text.slice(0, at) + worded + text.slice(at + core.length);
+}
+
+/** A line with no space at either end, in Hindi, or as it is. */
+function wordedCore(core: string): string {
   const trimmed = own(core);
   if (trimmed !== undefined) return trimmed;
+  // A catalog line begun in lower case inside another, "Front · face the camera, eyes level", before any rule splits it.
+  const capitalised = own(core.charAt(0).toUpperCase() + core.slice(1));
+  if (capitalised !== undefined) return capitalised;
   if (core.startsWith("· ")) {
     const rest = toHindi(core.slice(2));
-    return rest === core.slice(2) ? text : `· ${rest}`;
+    return rest === core.slice(2) ? core : `· ${rest}`;
   }
   for (const [rule, hindi] of RULES) {
     if (rule.test(core)) return ruled(core, rule, hindi);
@@ -78,16 +90,22 @@ export function toHindi(text: string): string {
     const worded = toHindi(capitalised);
     if (worded !== capitalised) return worded;
   }
-  const withDate = dated(core);
-  return withDate === core ? text : withDate;
+  return dated(core);
 }
 
+/** What a line in Hindi keeps as written: am and pm, a unit, a brand, a place's sector, a code with a figure in it. */
+const KEPT =
+  /\b(?:am|pm|Rs|ml|km|WhatsApp|Mane Man|SOS|Razorpay|Google Maps|GST|UPI|Wi-Fi|SMS|Sector)\b|\b[A-Z]{2,}[\w-]*\d[\w-]*/g;
+
 /**
- * Whether the line is in Hindi, has no words to put into it, or is one a catalog keeps as it is (a code, "SOS"): the
- * test that lists the lines still in English asks.
+ * Whether the line is wholly in Hindi but for what stays as written, the names it holds among it, or is one a catalog
+ * keeps as it is (a Norwood stage, "SOS"): the test that lists the lines still in English asks.
  */
-export function hasHindi(text: string): boolean {
+export function hasHindi(text: string, names: readonly string[] = []): boolean {
   if (own(text.trim()) !== undefined) return true;
-  const hindi = toHindi(text);
-  return /[ऀ-ॿ]/.test(hindi) || !/[A-Za-z]/.test(hindi);
+  const hindi = names.reduce(
+    (line, name) => line.replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), ""),
+    toHindi(text),
+  );
+  return !/[A-Za-z]{2,}/.test(hindi.replace(KEPT, ""));
 }
