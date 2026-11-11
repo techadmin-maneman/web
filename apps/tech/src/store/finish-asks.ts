@@ -26,13 +26,14 @@ export async function dropFinishAsk(jobId: string, sent?: FinishAsk): Promise<vo
 
 /**
  * Sends each suggestion kept: one the API takes goes, as does one it refuses for good. One it cannot take yet stays:
- * with no signal, or while the visit's close is still among the writes on the phone. Each is read again before it
- * goes, so one replaced or sent straight meanwhile is never sent over the newer.
+ * with no signal, or while the visit's close is still among the writes on the phone, read only when one is kept. Each
+ * is read again before it goes, so one replaced or sent straight meanwhile is never sent over the newer.
  */
-export async function sendFinishAsks(onThePhone: readonly Queued[]): Promise<void> {
+export async function sendFinishAsks(onThePhone: () => Promise<readonly Queued[]>): Promise<void> {
   const kept = await held();
   if (Object.keys(kept).length === 0) return;
-  const closing = new Set(onThePhone.filter((event) => event.kind === "outcome").map((event) => event.job_id));
+  const writes = await onThePhone();
+  const closing = new Set(writes.filter((event) => event.kind === "outcome").map((event) => event.job_id));
   for (const [jobId, ask] of Object.entries(kept)) {
     if ((await held())[jobId] !== ask) continue;
     const answer = await api.finishAsk(jobId, ask);

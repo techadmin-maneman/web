@@ -362,9 +362,7 @@ export function replay(): Promise<Replayed> {
     changed();
     void wakeForNextTry();
     // A suggestion for finishing a visit, kept until its close had reached us (./finish-asks.ts).
-    void events()
-      .then(sendFinishAsks)
-      .catch(() => undefined);
+    void sendFinishAsks(events).catch(() => undefined);
   });
   return running;
 }

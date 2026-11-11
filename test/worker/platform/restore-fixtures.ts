@@ -225,6 +225,8 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES ('ff1', 'p2', 'morning', '${AT}')`,
   `INSERT INTO visit_outcomes (id, appointment_id, outcome, partial_reason, updated_at)
      VALUES ('v1', 'ap1', 'partial', 'client_left', '${AT}')`,
+  `INSERT INTO step_send_backs (id, appointment_id, kind, reason, sent_by, sent_at)
+     VALUES ('sb1', 'ap1', 'checklist', 'Tick the scalp check.', 'ops@example.com', '${AT}')`,
   // A setting changed in the console: ops_settings_snapshot follows it.
   `INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('grace_minutes', '15', 'ops@example.com', '${AT}')`,
   `INSERT INTO po_letterhead (id, legal_name, gstin, deliver_to, set_by, set_at)

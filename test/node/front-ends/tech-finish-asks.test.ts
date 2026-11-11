@@ -25,7 +25,7 @@ describe("a suggestion for finishing a visit, kept on the phone", () => {
     await keepFinishAsk("visit-a", "tomorrow_morning");
     const finishAsk = vi.spyOn(api, "finishAsk").mockResolvedValue(sent());
 
-    await sendFinishAsks([]);
+    await sendFinishAsks(() => Promise.resolve([]));
 
     expect(finishAsk).toHaveBeenCalledWith("visit-a", "tomorrow_morning");
     expect(await kept()).toEqual({});
@@ -37,7 +37,7 @@ describe("a suggestion for finishing a visit, kept on the phone", () => {
     await dropFinishAsk("visit-a");
     const finishAsk = vi.spyOn(api, "finishAsk").mockResolvedValue(sent());
 
-    await sendFinishAsks([]);
+    await sendFinishAsks(() => Promise.resolve([]));
 
     expect(finishAsk).not.toHaveBeenCalled();
   });
