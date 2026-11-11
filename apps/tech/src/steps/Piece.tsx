@@ -7,7 +7,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
-import { steps as copy } from "../content.ts";
+import { steps as copy, visit } from "../content.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import type { Queued } from "../store/outbox.ts";
@@ -27,6 +27,7 @@ import {
   stillMissing,
   toFit,
   type Choice,
+  type LabelChecked,
   type ClientPiece,
   type PieceForm,
 } from "./piece-form.ts";
@@ -156,6 +157,10 @@ function Asked({ job, decided, decide }: { job: Job; decided: Decision[0]; decid
   );
 }
 
+/** What the label's check found, as the step asks it: a piece of another client's is never this one's. */
+const checkedOf = (looked: Looked): LabelChecked =>
+  looked.state === "found" && !looked.found.belongs_to_this_job ? "another_client" : looked.state;
+
 /** The step once the job is in hand: a refused piece starts as it was sent, so nothing is typed twice. */
 function Fitting({
   job,
@@ -183,8 +188,7 @@ function Fitting({
   const [{ choice, later }, decide] = useDecision(sent);
 
   const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice, later };
-  const checked = looked.state === "found" && !looked.found.belongs_to_this_job ? "another_client" : looked.state;
-  const missing = stillMissing(form, job, checked);
+  const missing = stillMissing(form, job, checkedOf(looked));
   /** A label typed or scanned: one of the kit's pieces picks its hair system and fills in its lot. */
   const takeLabel = (label: string) => {
     const next = afterLabel(job, { code, lot }, label);
@@ -208,6 +212,7 @@ function Fitting({
   return (
     <StepFrame
       title={copy.titles.piece}
+      action={fitsNothingToday(form, job) ? visit.next(copy.checklistTitles.consultation) : undefined}
       ready={missing === null}
       unfinished={missing ?? undefined}
       notice={refused === null ? null : noticeFor(refused.fields)}
@@ -248,9 +253,9 @@ function Fitting({
               }}
             />
           )}
+          <CannotFit onClose={onFinish} />
         </>
       )}
-      <CannotFit onClose={onFinish} />
     </StepFrame>
   );
 }
