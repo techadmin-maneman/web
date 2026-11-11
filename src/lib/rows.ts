@@ -1322,6 +1322,19 @@ export interface Rows {
     readonly set_by: string;
     readonly set_at: string;
   };
+  readonly sos_alerts: {
+    readonly id: string;
+    readonly technician_id: string;
+    readonly appointment_id: string | null;
+    readonly lat: number | null;
+    readonly lng: number | null;
+    readonly accuracy_m: number | null;
+    readonly position_at: string | null;
+    readonly sent_at: string;
+    readonly safe_at: string | null;
+    readonly handled_at: string | null;
+    readonly handled_by: string | null;
+  };
   readonly spend_entries: {
     readonly id: string;
     readonly month: string;
@@ -1772,6 +1785,15 @@ export interface Rows {
     readonly effective_from: string;
     readonly set_by: string;
     readonly set_at: string;
+  };
+  readonly visit_positions: {
+    readonly appointment_id: string;
+    readonly technician_id: string;
+    readonly lat: number;
+    readonly lng: number;
+    readonly accuracy_m: number | null;
+    readonly at: string;
+    readonly received_at: string;
   };
   readonly waitlist_entries: {
     readonly id: string;

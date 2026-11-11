@@ -53,6 +53,14 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "Erasing again (runbook, \"Erasure within the day\"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';`",
   },
   {
+    what: "A technician's position and their SOS",
+    tables: ["visit_positions", "sos_alerts"],
+    leftAtT:
+      "A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was",
+    putBackBy:
+      "The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since",
+  },
+  {
     what: "Number changes, deletion requests, grievances",
     tables: ["number_change_requests", "people", "deletion_requests", "grievances"],
     leftAtT: "A client's new number stops working; a request, or its answer, is lost",

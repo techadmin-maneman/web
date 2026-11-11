@@ -204,6 +204,12 @@ export const ALERT_WORDS = {
   photos_unavailable: (a: { readonly phase: "before" | "after"; readonly day: string; readonly reached: number }) =>
     `Check the ${a.phase} photographs of the visit on ${fullDate(a.day)}: the technician's camera would not open, and ` +
     `${String(a.reached)} of 5 reached us.`,
+  // A technician's SOS (docs/decisions/0248-safety.md): urgent, paged at once.
+  sos: (a: { readonly technician: string; readonly visit: string | null; readonly map: string | null }) =>
+    `SOS from ${a.technician}${a.visit === null ? "" : ` on visit ${a.visit}`}: call them now. ` +
+    (a.map === null ? "Their phone gave no location." : `Where they are: ${a.map}`),
+  sos_safe: (a: { readonly technician: string }) =>
+    `${a.technician} says they are safe after their SOS. Mark it handled on the console once you have spoken to them.`,
   fit_undone: (a: { readonly visit: string }) =>
     `Check visit ${a.visit}: its hair system was recorded as fitted, then changed to no fit today before the close. ` +
     `Nothing will be charged; check the piece is back in the kit.`,

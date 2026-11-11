@@ -19,6 +19,9 @@ const HANDLED: Readonly<Record<string, string>> = {
   // A technician deleted with nothing worked (src/domain/dispatch/technician-roster.ts): their asks for leave first.
   "leave_requests.technician_id -> technicians": "deleted first, in the same batch",
   "leave_requests.leave_id -> technician_leave": "deleted first, in the same batch",
+  "visit_positions.technician_id -> technicians": "deleted first, in the same batch",
+  // An SOS is kept as a record of the technician's: one who sent any has work, and is never deleted.
+  "sos_alerts.technician_id -> technicians": "a technician with an SOS has work, and the delete asks for none",
   // An erasure deletes a client's notes in one statement (src/domain/privacy/erasure-statements.ts).
   "staff_notes.replaces -> staff_notes": "deleted together, in the one statement",
   // The retention job's deletes of old rows (src/domain/privacy/retention.ts): a message held as a no-show's or a
