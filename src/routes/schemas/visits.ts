@@ -1,6 +1,7 @@
 // A visit as the client's app reads it in a list, with its photographs and any no-show note
 // (src/routes/client/visits.ts), which their home, payments and the console's client record answer in too.
 
+import { CLIENT_STEPS } from "../../policy/visit-plan.ts";
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { WindowHoursSchema } from "./booking.ts";
@@ -112,6 +113,44 @@ export const VisitSummarySchema = z
       description:
         "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they " +
         "accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none.",
+    }),
+    latest_update: z
+      .union([
+        z
+          .object({
+            kind: z.enum(["on_the_way", "running_late", "at_the_gate"]),
+            minutes: z.union([z.number().int(), z.null()]).openapi({
+              description: "On the way: minutes away; running late: minutes late; null at the gate.",
+            }),
+            at: z.iso.datetime().openapi({ description: "When the technician sent it." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone.",
+      }),
+    step: z
+      .union([
+        z
+          .object({
+            index: z.number().int().openapi({ description: "The step under way, counting from 1." }),
+            of: z.number().int().openapi({ description: "How many steps the client is told of." }),
+            name: z.enum(CLIENT_STEPS).openapi({ description: "The step, as the app names it." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null " +
+          "unless in progress.",
+      }),
+    waits_until: z.union([z.iso.datetime(), z.null()]).openapi({
+      description:
+        "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the " +
+        "check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise.",
     }),
   })
   .strict()

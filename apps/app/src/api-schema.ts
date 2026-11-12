@@ -4942,6 +4942,32 @@ export interface components {
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
             proposed_move: components["schemas"]["ProposedMove"] | null;
+            /** @description The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone. */
+            latest_update: {
+                /** @enum {string} */
+                kind: "on_the_way" | "running_late" | "at_the_gate";
+                /** @description On the way: minutes away; running late: minutes late; null at the gate. */
+                minutes: number | null;
+                /**
+                 * Format: date-time
+                 * @description When the technician sent it.
+                 */
+                at: string;
+            } | null;
+            /** @description The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress. */
+            step: {
+                /** @description The step under way, counting from 1. */
+                index: number;
+                /** @description How many steps the client is told of. */
+                of: number;
+                /**
+                 * @description The step, as the app names it.
+                 * @enum {string}
+                 */
+                name: "before_photos" | "service" | "scalp" | "hair_profile" | "hair_system" | "fitting" | "after_photos";
+            } | null;
+            /** @description Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise. */
+            waits_until: string | null;
         };
         /** @description Display name and initials only. */
         Technician: {
@@ -5269,6 +5295,32 @@ export interface components {
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
             proposed_move: components["schemas"]["ProposedMove"] | null;
+            /** @description The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone. */
+            latest_update: {
+                /** @enum {string} */
+                kind: "on_the_way" | "running_late" | "at_the_gate";
+                /** @description On the way: minutes away; running late: minutes late; null at the gate. */
+                minutes: number | null;
+                /**
+                 * Format: date-time
+                 * @description When the technician sent it.
+                 */
+                at: string;
+            } | null;
+            /** @description The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress. */
+            step: {
+                /** @description The step under way, counting from 1. */
+                index: number;
+                /** @description How many steps the client is told of. */
+                of: number;
+                /**
+                 * @description The step, as the app names it.
+                 * @enum {string}
+                 */
+                name: "before_photos" | "service" | "scalp" | "hair_profile" | "hair_system" | "fitting" | "after_photos";
+            } | null;
+            /** @description Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise. */
+            waits_until: string | null;
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
             /** @description Done, partly done, or a no-show: the client was not home. Null until it is closed. */

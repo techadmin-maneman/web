@@ -1346,6 +1346,101 @@
               }
             ],
             "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
+          },
+          "latest_update": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "on_the_way",
+                      "running_late",
+                      "at_the_gate"
+                    ]
+                  },
+                  "minutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "On the way: minutes away; running late: minutes late; null at the gate."
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the technician sent it."
+                  }
+                },
+                "required": [
+                  "kind",
+                  "minutes",
+                  "at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone."
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "description": "The step under way, counting from 1."
+                  },
+                  "of": {
+                    "type": "integer",
+                    "description": "How many steps the client is told of."
+                  },
+                  "name": {
+                    "type": "string",
+                    "enum": [
+                      "before_photos",
+                      "service",
+                      "scalp",
+                      "hair_profile",
+                      "hair_system",
+                      "fitting",
+                      "after_photos"
+                    ],
+                    "description": "The step, as the app names it."
+                  }
+                },
+                "required": [
+                  "index",
+                  "of",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress."
+          },
+          "waits_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
           }
         },
         "required": [
@@ -1368,7 +1463,10 @@
           "client_note",
           "pay_at_visit",
           "one_visit",
-          "proposed_move"
+          "proposed_move",
+          "latest_update",
+          "step",
+          "waits_until"
         ],
         "additionalProperties": false
       },
@@ -2631,6 +2729,101 @@
             ],
             "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
           },
+          "latest_update": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "on_the_way",
+                      "running_late",
+                      "at_the_gate"
+                    ]
+                  },
+                  "minutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "On the way: minutes away; running late: minutes late; null at the gate."
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the technician sent it."
+                  }
+                },
+                "required": [
+                  "kind",
+                  "minutes",
+                  "at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone."
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "description": "The step under way, counting from 1."
+                  },
+                  "of": {
+                    "type": "integer",
+                    "description": "How many steps the client is told of."
+                  },
+                  "name": {
+                    "type": "string",
+                    "enum": [
+                      "before_photos",
+                      "service",
+                      "scalp",
+                      "hair_profile",
+                      "hair_system",
+                      "fitting",
+                      "after_photos"
+                    ],
+                    "description": "The step, as the app names it."
+                  }
+                },
+                "required": [
+                  "index",
+                  "of",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress."
+          },
+          "waits_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+          },
           "duration_minutes": {
             "anyOf": [
               {
@@ -2785,6 +2978,9 @@
           "pay_at_visit",
           "one_visit",
           "proposed_move",
+          "latest_update",
+          "step",
+          "waits_until",
           "duration_minutes",
           "outcome",
           "what_was_done",
