@@ -8,7 +8,7 @@ import { LOCAL_LOGIN_CODE, PORTS } from "../../scripts/lib/local-stack.ts";
 import { addDays, indiaDate } from "../../src/lib/india-time.ts";
 import { expect, test } from "../support.ts";
 import { AT_THE_DOOR, liveDay } from "./day.ts";
-import { throughTheTasks } from "../tech/steps-fixtures.ts";
+import { shots, throughTheTasks } from "../tech/steps-fixtures.ts";
 import {
   signIn as signInWords,
   capture as captureWords,
@@ -37,7 +37,7 @@ async function photograph(page: Page): Promise<void> {
   await expect(capture).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: captureWords.finish }).click();
 }
@@ -99,7 +99,7 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
   await expect(page.getByRole("heading", { level: 1, name: captureWords.after })).toBeVisible();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: steps.titles.outcome })).toBeVisible();
-  await page.getByRole("button", { name: captureWords.finish, exact: true }).click();
+  await page.getByRole("radio", { name: steps.outcome.done, exact: true }).click();
   const closing = page.waitForResponse((answer) => answer.url().endsWith(`/api/tech/jobs/${id}/outcome`));
   await page.getByRole("button", { name: visit.close }).click();
   expect((await closing).status()).toBe(202);
