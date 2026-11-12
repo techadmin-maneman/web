@@ -82,6 +82,12 @@
   text-align: end;
 }
 
+/* Room between the figures, so they stay apart at a large text size. */
+.forecast thead th + th,
+.forecast td {
+  padding-left: var(--sp-12);
+}
+
 /* The item's name, and its head, at the start. */
 .forecast thead th:first-child,
 .forecast tbody th {
