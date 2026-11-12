@@ -1,5 +1,5 @@
-// The technician's sign-in, from the Prototype's technician screen: the number, then the code, the session bound to
-// this phone (docs/decisions/0052-technician-sessions.md). Once a code is out there is always a way on, since an
+// The technician's sign-in, in the redesign's look (docs/prompts/tech-redesign.md, "Sign in"): the number, then the
+// code, the session bound to this phone (docs/decisions/0052-technician-sessions.md). Once a code is out there is always a way on, since an
 // installed app has no reload, and the screen says why it is showing: ended, revoked, switched off, or an iPhone's
 // second sign-in.
 
@@ -9,9 +9,12 @@ import { Field } from "@maneman/ui/Field";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { CodeField } from "@maneman/ui/CodeField";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
+import { ActionBar } from "@maneman/ui/ActionBar";
 import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Mark } from "@maneman/ui/Mark";
-import { fieldDigits, mobileDigits } from "@maneman/web-kit/mobile";
+import { LanguageToggle } from "../lang/index.ts";
+import { fieldDigits, formatMobileField, mobileDigits } from "@maneman/web-kit/mobile";
 import { apiNow } from "@maneman/web-kit/clock";
 import { useEffect, useRef, useState, type Ref } from "react";
 import { flushSync } from "react-dom";
@@ -21,7 +24,6 @@ import { installed } from "../lib/installed.ts";
 import type { Out } from "../session.ts";
 import { deviceId, enrolled } from "../store/device.ts";
 import { ReachOps } from "../frame/ReachOps.tsx";
-import frame from "../frame/frame.module.css";
 import styles from "./login.module.css";
 
 /** What the sign-in says before the code is asked for: what ops did, or why an installed app is out. */
@@ -39,55 +41,59 @@ function noteFor(why: Out): string | null {
 function linesFor(at: {
   why: Out;
   asked: boolean;
-  error: string | null;
+  error: Refusal | null;
   left: boolean;
   mobile: string;
   digits: string | null;
 }): { note: string | null; shown: string | null } {
   const hint = at.left && !at.asked && at.mobile !== "" && at.digits === null ? copy.mobileError : null;
   const quiet = !at.asked && at.error === null && hint === null;
-  return { note: quiet ? noteFor(at.why) : null, shown: at.error ?? hint };
+  return { note: quiet ? noteFor(at.why) : null, shown: at.error?.say() ?? hint };
 }
 
 /** The API's error code in the app's words, or the line that fits when the code is one we do not know. */
 const MESSAGES: Readonly<Record<string, string>> = copy.errors;
 const messageFor = (code: string, fallback: string) => MESSAGES[code] ?? fallback;
 
+/** A refusal, worded as it is drawn, so a switch of language rewords one already showing. */
+interface Refusal {
+  readonly say: () => string;
+}
+const refusal = (say: () => string): Refusal => ({ say });
+const refusedWith = (code: string): Refusal => refusal(() => messageFor(code, copy.errors.unknown));
+
 /** What a check of the code came to: signed in, or the line to show, whether a new code is needed, or the code was wrong. */
 type Verdict =
   | { readonly signedIn: true }
-  | { readonly signedIn: false; readonly error: string; readonly again: boolean; readonly wrong: boolean };
+  | { readonly signedIn: false; readonly error: Refusal; readonly again: boolean; readonly wrong: boolean };
 
 function verdictOf(answer: Awaited<ReturnType<typeof api.verify>> | null): Verdict {
-  if (answer === null) return { signedIn: false, error: copy.errors.unknown, again: false, wrong: false };
+  if (answer === null) {
+    return { signedIn: false, error: refusal(() => copy.errors.unknown), again: false, wrong: false };
+  }
   if (!answer.ok) {
     // A closed code cannot be tried again: only a new one can, and none signs in a technician ops stopped.
     const closed = answer.status === 410 || answer.code === "sign_in_stopped";
-    return { signedIn: false, error: messageFor(answer.code, copy.errors.unknown), again: closed, wrong: false };
+    return { signedIn: false, error: refusedWith(answer.code), again: closed, wrong: false };
   }
   if (answer.body.verified) return { signedIn: true };
-  if (answer.body.attempts_left === 0) {
-    return { signedIn: false, error: copy.errors.code_expired, again: true, wrong: false };
-  }
-  return { signedIn: false, error: copy.attemptsLeft(answer.body.attempts_left), again: false, wrong: true };
+  const left = answer.body.attempts_left;
+  if (left === 0) return { signedIn: false, error: refusal(() => copy.errors.code_expired), again: true, wrong: false };
+  return { signedIn: false, error: refusal(() => copy.attemptsLeft(left)), again: false, wrong: true };
 }
 
 /** Once a code is out, the ways on: a number typed wrong, or a code that never came, once WhatsApp has had time. */
 function Again(props: { resendIn: number; busy: boolean; onChangeNumber: () => void; onResend: () => void }) {
   return (
     <div className={styles.again}>
-      <Button variant="outlineOnInk" size="small" className={styles.againButton} onClick={props.onChangeNumber}>
-        {copy.changeNumber}
-      </Button>
-      <Button
-        variant="outlineOnInk"
-        size="small"
-        className={styles.againButton}
-        disabled={props.resendIn > 0 || props.busy}
-        onClick={props.onResend}
-      >
-        {props.resendIn > 0 ? copy.resendIn(props.resendIn) : copy.resend}
-      </Button>
+      <TextButton onClick={props.onChangeNumber}>{copy.changeNumber}</TextButton>
+      {props.resendIn > 0 ? (
+        <p className={styles.countdown}>{copy.resendIn(props.resendIn)}</p>
+      ) : (
+        <TextButton disabled={props.busy} onClick={props.onResend}>
+          {copy.resend}
+        </TextButton>
+      )}
     </div>
   );
 }
@@ -97,7 +103,7 @@ function NewNumber() {
   return (
     <div className={styles.help}>
       <p className={styles.note}>{copy.notRegistered}</p>
-      <ReachOps className={styles.helpReach} />
+      <ReachOps className={styles.helpReach} onPaper />
     </div>
   );
 }
@@ -124,10 +130,41 @@ function CodeStep(props: {
   );
 }
 
-export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }) {
+/** The mark, and the other language to switch to. */
+function Top() {
+  return (
+    <div className={styles.top}>
+      <Mark className={styles.mark} />
+      <LanguageToggle />
+    </div>
+  );
+}
+
+/** The one action at the foot, and while it waits, the line that says what it waits for. */
+function Foot(props: { asked: boolean; ready: boolean; working: boolean }) {
+  const waiting = props.asked ? copy.codeHelper : copy.numberHelper;
+  return (
+    <ActionBar className={styles.foot} helper={!props.ready && !props.working && waiting}>
+      {(helperId) => (
+        <Button
+          variant="primary"
+          size="action"
+          type="submit"
+          disabled={!props.ready || props.working}
+          busy={props.working}
+          aria-describedby={helperId}
+        >
+          {props.asked ? copy.submit : copy.sendCode}
+        </Button>
+      )}
+    </ActionBar>
+  );
+}
+
+export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => Promise<void> }) {
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Refusal | null>(null);
   // Signed in, while App reads who: the code is spent, so a second tap on Sign in would only be refused.
   const [through, setThrough] = useState(false);
   // The code sent, and when a new one may be asked for: time enough after the last for WhatsApp to deliver it.
@@ -147,7 +184,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
   async function sendOnce(): Promise<void> {
     if (digits === null) {
-      setError(copy.mobileError);
+      setError(refusal(() => copy.mobileError));
       return;
     }
     try {
@@ -156,10 +193,10 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
         otp.sent(answer.body);
         setCode("");
         setError(null);
-      } else setError(messageFor(answer.code, copy.errors.unknown));
+      } else setError(refusedWith(answer.code));
     } catch {
       // The phone's store would not give the device ID; the next tap asks it again.
-      setError(copy.errors.unknown);
+      setError(refusal(() => copy.errors.unknown));
     }
   }
   const send = () => once(sendOnce);
@@ -182,7 +219,11 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       // The session cookie is set; who is signed in comes from GET /tech/me, which App asks next
       // and records the enrolment again, so a phone too full to record it here still signs in.
       await enrolled().catch(() => undefined);
-      onSignedIn();
+      await onSignedIn();
+      // Still here: the app could not read who signed in, and the code is spent. A new one starts again.
+      setThrough(false);
+      startAgain();
+      setError(refusal(() => copy.errors.unknown));
       return;
     }
     if (verdict.again) startAgain();
@@ -197,22 +238,24 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   return (
     <form
       className={styles.screen}
+      data-look="light"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
         if (ready && !working) void (challenge === null ? send() : verify());
       }}
     >
-      <Mark className={styles.mark} />
+      <Top />
       <h1 className={styles.title}>{copy.title}</h1>
+      {challenge !== null && (
+        <p className={styles.sent}>{copy.codeSent(`${copy.prefix} ${formatMobileField(mobile)}`)}</p>
+      )}
 
-      <Field onInk labelHidden label={copy.mobileLabel}>
+      <Field label={copy.mobileLabel} look={{ label: styles.label }}>
         {(control) => (
           <MobileInput
             {...control}
-            onInk
             ref={number}
-            className={styles.mobile}
             prefix={copy.prefix}
             value={mobile}
             onChange={(event) => {
@@ -256,28 +299,16 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
         />
       )}
 
-      {challenge !== null && error === null && <p className={styles.note}>{copy.codeSent}</p>}
       {note !== null && <p className={styles.note}>{note}</p>}
       {shown !== null && (
-        <InlineMessage tone="error" ground="ink" className={styles.error}>
+        <InlineMessage tone="error" className={styles.error}>
           {shown}
         </InlineMessage>
       )}
 
       {challenge === null && <NewNumber />}
 
-      <div className={styles.foot}>
-        <Button
-          variant="gold"
-          size="action"
-          type="submit"
-          className={frame.action}
-          disabled={!ready || working}
-          busy={working}
-        >
-          {challenge === null ? copy.sendCode : copy.submit}
-        </Button>
-      </div>
+      <Foot asked={challenge !== null} ready={ready} working={working || through} />
     </form>
   );
 }

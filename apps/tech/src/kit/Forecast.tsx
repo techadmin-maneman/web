@@ -11,6 +11,7 @@ import { kit as kitCopy } from "../content.ts";
 import { stamp } from "../lib/when.ts";
 import { NotDone, type Problem } from "./NotDone.tsx";
 import styles from "./kit.module.css";
+import { sayKnown } from "../lang/index.ts";
 
 const copy = kitCopy.forecast;
 
@@ -77,7 +78,7 @@ export function Forecast(props: { readonly kit: Kit; readonly offline: boolean; 
               const short = item.need - Math.max(item.have, 0);
               return (
                 <tr key={item.code}>
-                  <th scope="row">{item.name}</th>
+                  <th scope="row">{sayKnown(item.name)}</th>
                   <td>{item.need}</td>
                   <td>{item.have}</td>
                   <td className={short > 0 ? styles.short : styles.enough}>

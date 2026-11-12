@@ -28,6 +28,7 @@ import light from "../frame/light.module.css";
 import { FinishTheWork, NavigateNext, NextUp, PaymentLink } from "./ClosedParts.tsx";
 import shared from "./steps.module.css";
 import styles from "./close-out.module.css";
+import { sayKnown, theirs } from "../lang/index.ts";
 
 const NOTHING_HEARD: ReadonlyMap<string, Heard> = new Map();
 
@@ -104,14 +105,18 @@ function Decided({ job }: { job: Job }) {
   const readOutcome = useCallback(() => keptOutcome(job.id), [job.id]);
   const said = valueOr(useAsync(readOutcome)[0], null);
   if (said === null) return null;
-  const label = (reasons: Job["partial_reasons"], id: string | undefined) =>
-    reasons.find((reason) => reason.id === id)?.label ?? null;
+  // Ops' reasons, in Hindi where a catalog holds the whole of one, as they wrote it otherwise.
+  const label = (reasons: Job["partial_reasons"], id: string | undefined) => {
+    const found = reasons.find((reason) => reason.id === id)?.label;
+    return found === undefined ? null : sayKnown(found);
+  };
   if (said.outcome === "partial") {
     const why = label(job.partial_reasons, said.reason);
     return why === null ? null : <Row name={copy.why} value={why} />;
   }
   if (said.going_ahead === undefined) return null;
-  const fit = said.going_ahead ? copy.goingAhead : copy.notNow(label(job.lost_reasons, said.lost_reason));
+  const lost = label(job.lost_reasons, said.lost_reason);
+  const fit = said.going_ahead ? copy.goingAhead : copy.notNow(lost === null ? null : theirs(lost));
   return <Row name={copy.fit} value={fit} />;
 }
 

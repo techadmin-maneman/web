@@ -1,0 +1,13 @@
+/* The language sheet (./Language.tsx) in the new look: its title, then the two languages as ruled rows. */
+
+.panel {
+  display: grid;
+  gap: var(--sp-12);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-115);
+}

@@ -23,12 +23,13 @@ import { Arriving } from "./Arriving.tsx";
 import { Forecast } from "./Forecast.tsx";
 import { NotDone, type Problem } from "./NotDone.tsx";
 import styles from "./kit.module.css";
+import { sayKnown, sayNow } from "../lang/index.ts";
 
 type Held = Kit["held"][number];
 
 /** What the kit holds of an item: its count, or that it is out, and how far short where more was used than it held. */
 function heldOf(quantity: number, unit: string): string {
-  if (quantity > 0) return amountOf(quantity, unit);
+  if (quantity > 0) return sayNow(amountOf(quantity, unit));
   return copy.held.out(quantity === 0 ? null : amountOf(-quantity, unit));
 }
 
@@ -42,7 +43,7 @@ function heldLines(item: Held, today: string, coming: boolean): string[] {
     .filter((lot) => !lot.recalled && lot.expires_on !== null && lot.expires_on >= today)
     .map(
       (lot) =>
-        `${lot.lot_code} · ${amountOf(lot.quantity, item.unit)} · ${lotWhen(lot, fullDate(lot.expires_on ?? today))}`,
+        `${lot.lot_code} · ${sayNow(amountOf(lot.quantity, item.unit))} · ${lotWhen(lot, fullDate(lot.expires_on ?? today))}`,
     );
   return [
     ...(item.low && item.usable > 0 ? [lowLine(item, coming)] : []),
@@ -76,7 +77,7 @@ function InKit({ kit }: { readonly kit: Kit }) {
           {kit.held.map((item) => (
             <li key={item.code} className={styles.row}>
               <div>
-                <p className={styles.name}>{item.name}</p>
+                <p className={styles.name}>{sayKnown(item.name)}</p>
                 {heldLines(item, kit.today, coming.has(item.code)).map((line) => (
                   <p key={line} className={styles.note}>
                     {line}
@@ -137,7 +138,7 @@ function ReturnToOps(props: { readonly kit: Kit; readonly offline: boolean; read
           <li key={`${item.code}/${lot.lot_code}`} className={styles.row}>
             <div>
               <p className={styles.name}>
-                {item.name} {lot.lot_code} · {amountOf(lot.quantity, item.unit)}
+                {sayKnown(item.name)} {lot.lot_code} · {sayNow(amountOf(lot.quantity, item.unit))}
               </p>
               <p className={styles.note}>{lot.recalled ? copy.held.recalled : copy.held.expired(on)}</p>
             </div>

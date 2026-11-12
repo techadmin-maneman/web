@@ -5,6 +5,13 @@
   background: var(--ink-deep);
 }
 
+/* The sign-in's landmark: the column's full height, so its light ground reaches the foot. */
+.out {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
 /*
  * A top-level screen, above the tab bar: as tall as what it holds, so the column scrolls it, and its foot clear of the
  * bar and the home indicator.

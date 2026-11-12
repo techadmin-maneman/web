@@ -164,6 +164,8 @@ export interface Fake {
   profile: HairProfile | null;
   /** The checklist on the card: three items unless a test gives a longer one. */
   checklist: Card["checklist"];
+  /** Why a client may not go ahead, as ops set it; the committed list while null. */
+  lostReasons: Card["lost_reasons"] | null;
   /** Parts of the address beyond the fixture's two lines. */
   address: AddressParts;
   /** Whether the client has a last visit with an after photograph. */
@@ -285,6 +287,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     kitAfter: null,
     profile: null,
     checklist: CHECKLIST,
+    lostReasons: null,
     address: {},
     lastVisit: false,
     reminderDelivered: undefined,
@@ -372,6 +375,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       oneVisit: fake.oneVisit,
       profile: fake.profile,
       checklist: fake.checklist,
+      lostReasons: fake.lostReasons ?? undefined,
       discountCode: fake.discountCode,
       service: fake.service,
       clientChoice: fake.clientChoice,

@@ -18,6 +18,7 @@ import { dayMonth } from "../lib/when.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { go } from "../route.ts";
 import styles from "./client-history.module.css";
+import { sayKnown } from "../lang/index.ts";
 
 type Visit = components["schemas"]["TechnicianHistoryVisit"];
 
@@ -41,7 +42,7 @@ function VisitEntry({ visit }: { visit: Visit }) {
       )}
       {visit.consumables.length > 0 && (
         <p className={styles.detail}>
-          {copy.used}: {visit.consumables.map((each) => `${each.name} × ${String(each.quantity)}`).join(", ")}
+          {copy.used}: {visit.consumables.map((each) => `${sayKnown(each.name)} × ${String(each.quantity)}`).join(", ")}
         </p>
       )}
       {visit.piece !== null && <p className={styles.detail}>{copy.piece(visit.piece)}</p>}

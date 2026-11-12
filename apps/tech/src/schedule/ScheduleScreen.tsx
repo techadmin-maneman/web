@@ -16,6 +16,7 @@ import { NoSignal } from "../frame/Banners.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
 import { job as jobCopy, reference, schedule as copy } from "../content.ts";
+import { sayNow } from "../lang/index.ts";
 import { kindName } from "../lib/kind.ts";
 import { rowState } from "../lib/progress.ts";
 import { closedAs } from "../lib/today.ts";
@@ -137,7 +138,7 @@ function noteOf(day: Day): string | undefined {
 
 const stripDay = (day: Day): StripDate => ({
   date: day.date,
-  weekday: weekdayName(day.date).slice(0, 3),
+  weekday: sayNow(weekdayName(day.date).slice(0, 3)),
   number: String(Number(day.date.slice(8, 10))),
   label: copy.dayLabel(weekdayName(day.date), dayMonth(day.date), day.jobs?.length ?? null),
   open: true,

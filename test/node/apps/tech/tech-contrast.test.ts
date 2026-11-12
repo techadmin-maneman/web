@@ -167,6 +167,8 @@ const REDRAWN = [
   "apps/tech/src/waiting/",
   "apps/tech/src/guides/",
   "apps/tech/src/alerts/",
+  "apps/tech/src/login/",
+  "apps/tech/src/lang/",
 ];
 const slashed = (file: string) => file.replace(/\\/g, "/");
 const isRedrawn = (file: string) => REDRAWN.some((place) => slashed(file).startsWith(place));

@@ -7,6 +7,10 @@ import { weekdayName } from "@maneman/web-kit/dates";
 import type { components } from "../api-schema.ts";
 import { alerts as copy, typesLower, types } from "../content.ts";
 import { clock, dayAfter, dayBefore, dayMonth, todayInIndia } from "../lib/when.ts";
+import { theirs } from "../lang/index.ts";
+
+/** A client's name or a sector, as the API gives it, kept as written inside the line (../lang/words.ts). */
+const asGiven = (text: string | null): string | null => (text === null ? null : theirs(text));
 
 /** One alert in the inbox, as its row says it. */
 export interface AlertLine {
@@ -35,7 +39,7 @@ function atOn(instant: string | null, now: Date): string {
 
 /** The job, as the line names it: its client where the phone may, or its time and kind. */
 function whoOf(alert: Alert, instant: string | null, now: Date): string {
-  if (alert.client_name !== null) return alert.client_name;
+  if (alert.client_name !== null) return theirs(alert.client_name);
   return copy.job(atOn(instant, now), alert.type === null ? "job" : typesLower[alert.type]);
 }
 
@@ -57,27 +61,27 @@ function wordsOf(alert: Alert, now: Date): { title: string; body: string } {
       const drive =
         alert.drive_minutes === null || alert.sector === null
           ? (alert.sector ?? "")
-          : copy.drive(alert.drive_minutes, alert.sector);
+          : copy.drive(alert.drive_minutes, theirs(alert.sector));
       return { title: copy.leave(left, whoOf(alert, alert.starts_at, now)), body: drive };
     }
     case "job_moved":
       return {
         title: copy.moved(whoOf(alert, alert.was_starts_at, now), at(alert.starts_at)),
-        body: copy.was([kind, alert.sector], at(alert.was_starts_at)),
+        body: copy.was([kind, asGiven(alert.sector)], at(alert.was_starts_at)),
       };
     case "job_cancelled":
       return {
-        title: copy.cancelled(alert.client_name, whoOf(alert, alert.starts_at, now)),
+        title: copy.cancelled(asGiven(alert.client_name), whoOf(alert, alert.starts_at, now)),
         body: [kind, at(alert.starts_at)].filter((part) => part !== null && part !== "").join(" · "),
       };
     case "job_reassigned":
       return { title: copy.reassigned(whoOf(alert, alert.starts_at, now)), body: at(alert.starts_at) };
     case "running_over":
-      return { title: copy.over(at(alert.finish_by)), body: copy.overNext(at(alert.starts_at), alert.sector) };
+      return { title: copy.over(at(alert.finish_by)), body: copy.overNext(at(alert.starts_at), asGiven(alert.sector)) };
     case "day_ahead":
       return {
         title: copy.dayAhead(alert.jobs ?? 0, alert.starts_at === null ? "" : clock(alert.starts_at)),
-        body: copy.first(alert.client_name, alert.sector),
+        body: copy.first(asGiven(alert.client_name), asGiven(alert.sector)),
       };
   }
 }

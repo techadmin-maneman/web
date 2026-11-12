@@ -12,6 +12,7 @@ import { NoSignal } from "../frame/Banners.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
 import { atRisk as atRiskCopy, titles, today as copy } from "../content.ts";
+import { sayNow } from "../lang/index.ts";
 import { rowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
@@ -73,7 +74,7 @@ function Head(props: { readonly date: string; readonly title: string; readonly h
   return (
     <header className={styles.head}>
       <div>
-        <p className={styles.date}>{shortDate(props.date)}</p>
+        <p className={styles.date}>{sayNow(shortDate(props.date))}</p>
         <h1 className={styles.count} ref={props.heading} tabIndex={-1}>
           {props.title}
         </h1>
