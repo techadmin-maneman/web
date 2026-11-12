@@ -64,7 +64,11 @@ export const checkedIn = (job: Job, queued: readonly Queued[]): boolean => done(
 export function arrivedAt(job: Job, kept: CheckIn | null, queued: readonly Queued[]): number | null {
   if (job.progress.checked_in_at !== null) return Date.parse(job.progress.checked_in_at);
   if (kept?.passed === true) return Date.parse(kept.checked_in_at);
-  return queued.find((event) => event.job_id === job.id && event.kind === "check_in")?.queued_at ?? null;
+  // Only a tap still on its way: one the API refused as early stays queued until the next lands, and is no check-in.
+  const waiting = queued.find(
+    (event) => event.job_id === job.id && event.kind === "check_in" && event.state === "waiting",
+  );
+  return waiting?.queued_at ?? null;
 }
 
 export type Outcome = "done" | "partial" | "no_show";

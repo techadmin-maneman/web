@@ -279,6 +279,13 @@ describe("when the technician checked in, which a visit's length runs from", () 
     );
     expect(arrivedAt(job(), answer(false, "2030-09-19T03:30:00.000Z"), [])).toBeNull();
   });
+
+  it("is never a tap the API refused as early, still queued: the one on its way after it stands", () => {
+    const early = queued("check_in", { state: "early", queued_at: Date.parse("2030-09-19T03:40:00.000Z") });
+    const again = queued("check_in", { queued_at: Date.parse("2030-09-19T04:05:00.000Z") });
+    expect(arrivedAt(job(), null, [early, again])).toBe(Date.parse("2030-09-19T04:05:00.000Z"));
+    expect(arrivedAt(job(), null, [early])).toBeNull();
+  });
 });
 
 describe("the no-show wait", () => {
