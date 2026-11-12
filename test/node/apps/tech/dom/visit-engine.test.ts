@@ -32,6 +32,7 @@ describe("each visit type's screens", () => {
       "Fitting → checklist",
       "Consumables → consumables",
       "After photos → after_photos",
+      "Client sign-off → sign_off",
       "Outcome → outcome",
     ]);
   });
@@ -44,6 +45,7 @@ describe("each visit type's screens", () => {
       "Fitting → checklist",
       "Consumables → consumables",
       "After photos → after_photos",
+      "Client sign-off → sign_off",
       "Outcome → outcome",
     ]);
   });
@@ -65,6 +67,7 @@ describe("each visit type's screens", () => {
       "Fitting → checklist",
       "Consumables → consumables",
       "After photos → after_photos",
+      "Client sign-off → sign_off",
       "Outcome → outcome",
     ]);
   });

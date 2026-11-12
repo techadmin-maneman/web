@@ -2,7 +2,7 @@
 // mm-site's Worker writes it into the invite's page and /book, as it writes the prices, and the landing's island
 // asks for it itself where the Worker could not (docs/decisions/0073-prices-from-the-price-book.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { createRoute } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { ReferralRewardSchema } from "../schemas/referral-reward.ts";

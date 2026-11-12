@@ -41,16 +41,12 @@ current state and where it goes, the work in build order, the gaps, and the PRs.
      ADR 0209's rows stay.
    - **Not in this plan.** Retiring "UPI to record" (`upi_due`) waits until production has no unpaid visit of that
      kind (brief, Razorpay only, 4). It is a one-file PR then.
-2. **Reviews in rounds as A grows.** No reviewer reads all of A at once. The three reviewers run at four points:
-   - after the shell and Home;
-   - after booking and the replacement;
-   - after the live card, sign-off and alerts;
-   - at the end.
-
-   Each round after the first is the rule's second look: told the commit it last reviewed, a reviewer reads what
-   changed since. Only the last round's verdicts are recorded, against the key of the change pushed. Nothing is
-   committed while a round reads.
-
+2. **Reviews in rounds as A grows.** No reviewer reads all of A at once. The three reviewers run after each work item
+   lands on the branch, the first round covering everything committed before it. Each round after the first is the
+   rule's second look: told the commit it last reviewed, a reviewer reads what changed since. Only the last round's
+   verdicts are recorded, against the key of the change pushed. Nothing is committed while a round reads.
+   - **The backend comes first.** The work items' API (W1 to W9, G1 to G3) is built before the screens, so each screen
+     is drawn against the fields it reads, with no stand-in.
 3. **Staging moves to Razorpay test mode in A.** `PAYMENTS_PROVIDER: "razorpay"` and `SELF_SERVE_BOOKING: "true"` on
    staging, with the test key and secrets staging already holds (checked by name before the change). Checkout, links,
    webhooks and the brief's staging acceptance need it. Ops' paid bookings on staging then go out as test payment
