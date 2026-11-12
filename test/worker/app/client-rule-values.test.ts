@@ -25,6 +25,27 @@ const setRule = (name: string, value: unknown) =>
 const get = async <T>(who: { cookie: string }, path: string) =>
   (await request(app, path, { headers: { Cookie: who.cookie } })).json<T>();
 
+/** The fit's sign-off as it was left: signed, with the days then in force, or declined with the technician's why. */
+const signOff = (
+  appointmentId: string,
+  left: { state: "signed" | "declined"; signed_at?: string; reason?: string; guarantee_days: number },
+) =>
+  env.DB.prepare(
+    `INSERT INTO fit_sign_offs (appointment_id, state, declined_reason, asked_at, signed_at, signed_on, guarantee_days,
+       updated_at)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?4)`,
+  )
+    .bind(
+      appointmentId,
+      left.state,
+      left.reason ?? null,
+      "2026-09-10T06:40:00.000Z",
+      left.signed_at ?? null,
+      left.state === "signed" ? "client_app" : null,
+      left.guarantee_days,
+    )
+    .run();
+
 /** A visit closed done, as the technician's outcome closes it. */
 async function closedDone(appointmentId: string, at: string) {
   await env.DB.prepare(
@@ -69,10 +90,31 @@ describe("a visit's guarantee", () => {
     expect(await get(rohit, `/api/visits/${fit}`)).toMatchObject({ guarantee_until: "2026-09-30" });
   });
 
+  it("runs for the days in force when the fit was signed off, whatever ops set since", async () => {
+    const rohit = await client();
+    const fit = await visit(rohit.id, "first_fit", "completed", "2026-09-10T04:30:00.000Z", IMRAN);
+    await closedDone(fit, "2026-09-10T07:00:00.000Z");
+    await signOff(fit, { state: "signed", signed_at: "2026-09-10T06:50:00.000Z", guarantee_days: 14 });
+    await setRule("guarantee_days", 21);
+    app = appFor("local", fakeDependencies(), {}, "client");
+    expect(await get(rohit, `/api/visits/${fit}`)).toMatchObject({ guarantee_until: "2026-09-23" });
+  });
+
   it("is none for any other visit", async () => {
     const rohit = await client();
     const service = await visit(rohit.id, "service", "completed", "2026-09-10T04:30:00.000Z", IMRAN);
     await closedDone(service, "2026-09-10T06:00:00.000Z");
     expect(await get(rohit, `/api/visits/${service}`)).toMatchObject({ guarantee_until: null });
+  });
+});
+
+describe("a fit's sign-off, as the client is shown it", () => {
+  it("never carries the technician's why they did not sign", async () => {
+    const rohit = await client();
+    const fit = await visit(rohit.id, "first_fit", "completed", "2026-09-10T04:30:00.000Z", IMRAN);
+    await closedDone(fit, "2026-09-10T07:00:00.000Z");
+    await signOff(fit, { state: "declined", reason: "Client in a hurry", guarantee_days: 14 });
+    const detail = await get<{ sign_off: Record<string, unknown> }>(rohit, `/api/visits/${fit}`);
+    expect(detail.sign_off).toMatchObject({ state: "declined", declined_reason: null });
   });
 });

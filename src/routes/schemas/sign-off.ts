@@ -27,7 +27,9 @@ export const SignOffSchema = z
         "technician puts right and asks again; declined: closed without it, with why.",
     }),
     checks: z.union([ChecksSchema, z.null()]).openapi({ description: "As the client last answered; null till then." }),
-    flag_text: z.union([z.string(), z.null()]).openapi({ description: "What isn't right, in the client's words." }),
+    flag_text: z.union([z.string(), z.null()]).openapi({
+      description: "What the client last said isn't right, in their words; kept once they sign.",
+    }),
     declined_reason: z.union([z.string(), z.null()]).openapi({ description: "Why the client did not sign." }),
     asked_at: z.iso.datetime(),
     asks: z.number().int().openapi({ description: "How many times it was asked: again after each flag." }),

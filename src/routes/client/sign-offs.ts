@@ -3,7 +3,7 @@
 // right and asks again; a sign-off is final.
 
 import { z } from "@hono/zod-openapi";
-import { signOffInApp, type AnswerRefusal } from "../../domain/field/sign-offs.ts";
+import { clientsView, signOffInApp, type AnswerRefusal } from "../../domain/field/sign-offs.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -51,6 +51,6 @@ export function registerClientSignOff(app: App): void {
       now: c.var.deps.now(),
     });
     if (signed === "not_found") return refuse(c, "not_found");
-    return typeof signed === "string" ? refuse(c, REFUSALS[signed]) : c.json(signed, 200);
+    return typeof signed === "string" ? refuse(c, REFUSALS[signed]) : c.json(clientsView(signed), 200);
   });
 }

@@ -33,21 +33,28 @@ const NONE_TICKED: Checks = { hairline: false, blend: false, secure: false };
 /** Where the sign-off stands on this phone: the card's word, or what the phone still holds to send. */
 type Standing = "unasked" | "asked" | "flagged" | "signed" | "declined";
 
-/** What the client said on this phone, while it waits to be sent. */
-function answeredOnPhone(event: Queued): Standing {
-  const body = event.body as { readonly answer?: { readonly result?: string } } | null;
-  return body?.answer?.result === "flagged" ? "flagged" : "signed";
-}
+const SIGN_OFF_KINDS: readonly string[] = ["sign_off_request", "sign_off", "sign_off_declined"];
 
-function standingOf(job: Job, queued: readonly Queued[]): Standing {
-  const mine = queued.filter((event) => event.job_id === job.id && event.state === "waiting");
-  if (mine.some((event) => event.kind === "sign_off_declined")) return "declined";
-  const onPhone = mine.findLast((event) => event.kind === "sign_off");
-  if (onPhone !== undefined && job.sign_off?.state !== "signed") return answeredOnPhone(onPhone);
+/** The sign-off's latest write this phone still holds to send; none where everything has gone. */
+const heldOf = (job: Job, queued: readonly Queued[]): Queued | undefined =>
+  queued.findLast(
+    (event) => event.job_id === job.id && event.state === "waiting" && SIGN_OFF_KINDS.includes(event.kind),
+  );
+
+/** The words a held write carries: the client's answer, with what they flagged, or the technician's why. */
+const heldWords = (held: Queued | undefined) =>
+  held?.body as
+    | { readonly answer?: { readonly result?: string; readonly flag_text?: string }; readonly reason?: string }
+    | null
+    | undefined;
+
+/** Signed or declined on the card is final; otherwise the latest write the phone holds says where it stands. */
+function standingOf(job: Job, held: Queued | undefined): Standing {
   const state = job.sign_off?.state;
-  if (state === "signed" || state === "declined") return state;
-  if (mine.some((event) => event.kind === "sign_off_request")) return "asked";
-  return state ?? "unasked";
+  if (state === "signed" || state === "declined" || held === undefined) return state ?? "unasked";
+  if (held.kind === "sign_off_declined") return "declined";
+  if (held.kind === "sign_off_request") return "asked";
+  return heldWords(held)?.answer?.result === "flagged" ? "flagged" : "signed";
 }
 
 /** Sends what the phone queued now, where there is signal; the outbox tries again itself where there is none. */
@@ -76,7 +83,7 @@ function CheckList({ checks, onChecks }: { checks: Checks; onChecks: (checks: Ch
   );
 }
 
-/** The client signs here: a code asked for with signal, their three checks, and happy or what isn't right. */
+/** The client signs here, signal or none: their three checks, and happy or what isn't right. */
 function PhoneSheet({ job, onDone, onClose }: { job: Job; onDone: () => void; onClose: () => void }) {
   const titleId = useId();
   const [checks, setChecks] = useState<Checks>(NONE_TICKED);
@@ -167,21 +174,31 @@ function DeclineSheet({ job, onDone, onClose }: { job: Job; onDone: () => void; 
   );
 }
 
-/** What the screen says of the sign-off, as it stands. */
-function StandingLine({ job, standing }: { job: Job; standing: Standing }) {
+/** "Signed off · 1:42 pm · On this phone", each part it has; the phone's own while it holds the signature. */
+function signedLine(job: Job): string {
   const signOff = job.sign_off;
+  if (signOff?.state !== "signed" || signOff.signed_at === null) return [copy.signed, copy.onThisPhone].join(" · ");
+  const where = signOff.signed_on === "technician_phone" ? [copy.onThisPhone] : [];
+  return [copy.signed, stamp(signOff.signed_at), ...where].join(" · ");
+}
+
+/** What the screen says of the sign-off, as it stands, in the words the card has or the phone holds. */
+function StandingLine({ job, standing, held }: { job: Job; standing: Standing; held: Queued | undefined }) {
+  const signOff = job.sign_off;
+  const words = heldWords(held);
   if (standing === "flagged") {
+    const what = words?.answer?.flag_text ?? signOff?.flag_text ?? "";
     return (
       <ProblemCard className={styles.flag} title={copy.flagged}>
-        {signOff?.flag_text ?? ""}
+        {what === "" ? undefined : what}
       </ProblemCard>
     );
   }
-  if (standing === "signed" && signOff !== null && signOff.signed_at !== null) {
-    const where = signOff.signed_on === "technician_phone" ? [copy.onThisPhone] : [];
-    return <p className={styles.done}>{[copy.signed, stamp(signOff.signed_at), ...where].join(" · ")}</p>;
+  if (standing === "signed") return <p className={styles.done}>{signedLine(job)}</p>;
+  if (standing === "declined") {
+    const why = signOff?.state === "declined" ? signOff.declined_reason : words?.reason;
+    return <p className={styles.done}>{copy.declined(why ?? "")}</p>;
   }
-  if (standing === "declined") return <p className={styles.done}>{copy.declined(signOff?.declined_reason ?? "")}</p>;
   if (standing === "asked") {
     return (
       <div className={styles.waiting} role="status">
@@ -250,7 +267,8 @@ function Signing({
   retry: () => void;
   back: () => void;
 }) {
-  const standing = standingOf(job, queued);
+  const held = heldOf(job, queued);
+  const standing = standingOf(job, held);
   const [busy, once] = useOneAtATime();
   const listening = standing === "asked" || standing === "flagged";
   useEffect(() => {
@@ -277,7 +295,7 @@ function Signing({
         else void ask();
       }}
     >
-      <StandingLine job={job} standing={standing} />
+      <StandingLine job={job} standing={standing} held={held} />
       {!closes && standing !== "unasked" && <Ways job={job} onSigned={retry} />}
     </StepFrame>
   );

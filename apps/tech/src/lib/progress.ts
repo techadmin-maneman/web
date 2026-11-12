@@ -37,8 +37,9 @@ export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   for (const back of job.sent_back) sent.delete(back.kind);
   if (job.progress.checked_in_at !== null) sent.add("check_in");
   if (job.progress.started_at !== null) sent.add("start");
+  // A sign-off held on the phone may be a flag, which closes nothing: whether it lets the fit close is signedOff's.
   for (const event of queued) {
-    if (event.job_id === job.id && event.state === "waiting") sent.add(event.kind);
+    if (event.job_id === job.id && event.state === "waiting" && event.kind !== "sign_off") sent.add(event.kind);
   }
   // A client who decided against the fit, or booked it for later, is fitted nothing, so nothing is photographed after,
   // and there is no fit to sign off.

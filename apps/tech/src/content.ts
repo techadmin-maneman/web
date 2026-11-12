@@ -1269,7 +1269,7 @@ export const signOff = localised({
   ask: "Ask for sign-off",
   askAgain: "Fixed. Ask again",
   waiting: "Waiting for the client’s sign-off",
-  waitingLine: "They answer in the Mane Man app. This updates when they do.",
+  waitingLine: "They answer in the Mane Man app.",
   flagged: "The client says something isn’t right",
   /** "Signed off · 1:42 pm". */
   signed: "Signed off",
@@ -1279,7 +1279,6 @@ export const signOff = localised({
   onPhone: "Sign on this phone",
   declineOpen: "Client declined to sign",
   unfinished: "Waiting for sign-off",
-  needsSignal: "Needs signal",
   phone: {
     title: "Sign off the fit",
     checks: {
@@ -1292,7 +1291,6 @@ export const signOff = localised({
     what: "What isn’t right",
     send: "Send",
     close: "Close",
-    failed: "That didn’t go through. Try again with signal.",
   },
   decline: {
     title: "Client declined to sign",

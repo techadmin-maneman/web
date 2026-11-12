@@ -80,8 +80,11 @@ export async function signOffsOf(db: D1Database, appointmentIds: readonly string
 }
 
 /** The sign-off as the client is shown it: the technician's why they did not sign is written for Care, not for them. */
-export const clientsView = (signOff: SignOff | null): SignOff | null =>
-  signOff === null ? null : { ...signOff, declined_reason: null };
+export function clientsView(signOff: SignOff): SignOff;
+export function clientsView(signOff: SignOff | null): SignOff | null;
+export function clientsView(signOff: SignOff | null): SignOff | null {
+  return signOff === null ? null : { ...signOff, declined_reason: null };
+}
 
 /** The technician's write: whose, which visit, under which of their phone's events, and when. */
 interface PhoneWrite {
@@ -119,7 +122,10 @@ export type SignOffAnswer =
 
 export type AnswerRefusal = "not_asked" | "closed" | "checks_open";
 
-/** Records the client's answer to an ask still open, under the phone's event where it came on the technician's phone. */
+/**
+ * Records the client's answer to an ask still open, under the phone's event where it came on the technician's phone. A
+ * signature keeps the last flag's words, so Care can see the client said something wasn't right first.
+ */
 async function answer(
   db: D1Database,
   appointmentId: string,
@@ -134,8 +140,8 @@ async function answer(
   const signed = given.result === "signed";
   const written = await db
     .prepare(
-      `UPDATE fit_sign_offs SET state = ?2, checks = ?3, flag_text = ?4, signed_at = ?5, signed_on = ?6,
-         answer_event_id = ?7, updated_at = ?8, guarantee_days = ?9
+      `UPDATE fit_sign_offs SET state = ?2, checks = ?3, flag_text = COALESCE(?4, flag_text), signed_at = ?5,
+         signed_on = ?6, answer_event_id = ?7, updated_at = ?8, guarantee_days = ?9
        WHERE appointment_id = ?1 AND state IN ('asked', 'flagged')`,
     )
     .bind(
@@ -181,9 +187,9 @@ export async function signOffInApp(
 
 /**
  * The client's answer on the technician's phone, for a client without their own: asked first where it was not, as the
- * phone may have queued both with no signal. Nothing here proves the client held the phone; a signature on it is told
- * to the client in their own app and marked for Care instead. The same event sent again, and an answer to a fit signed
- * or declined since, are answered with where it stands.
+ * phone may have queued both with no signal. Nothing here proves the client held the phone, so a signature on it gives
+ * Care a Tasks row once the fit closes, to confirm with the client. The same event sent again, and an answer to a fit
+ * signed or declined since, are answered with where it stands.
  */
 export async function signOffOnPhone(
   db: D1Database,
@@ -237,8 +243,9 @@ export async function declineSignOff(
 }
 
 /**
- * Written with ops' close of a fit by hand, as done, where the client never signed: recorded as declined, ops' close as
- * why, so Care are given its Tasks row as for any fit closed without one.
+ * Written in the batch of ops' close of a fit by hand, as done, where the client never signed: recorded as declined,
+ * ops' close as why, so Care are given its Tasks row as for any fit closed without one. It writes only where that
+ * batch's close landed, by whom and when, so a close refused writes nothing.
  */
 export const unsignedByHand = (
   db: D1Database,
@@ -248,15 +255,18 @@ export const unsignedByHand = (
     readonly reason: string;
     readonly guaranteeDays: number;
     readonly at: string;
+    /** Who closed it, as the close records them. */
+    readonly by: string;
   },
 ): D1PreparedStatement =>
   db
     .prepare(
       `INSERT INTO fit_sign_offs (appointment_id, state, declined_reason, asked_at, asks, technician_id, updated_at,
          guarantee_days)
-       VALUES (?1, 'declined', ?2, ?3, 0, ?4, ?3, ?5)
+       SELECT ?1, 'declined', ?2, ?3, 0, ?4, ?3, ?5
+       WHERE EXISTS (SELECT 1 FROM visit_outcomes WHERE appointment_id = ?1 AND closed_by = ?6 AND updated_at = ?3)
        ON CONFLICT (appointment_id) DO UPDATE SET state = 'declined', declined_reason = excluded.declined_reason,
          updated_at = excluded.updated_at, guarantee_days = excluded.guarantee_days
        WHERE state NOT IN ${FINAL}`,
     )
-    .bind(close.appointmentId, close.reason, close.at, close.technicianId, close.guaranteeDays);
+    .bind(close.appointmentId, close.reason, close.at, close.technicianId, close.guaranteeDays, close.by);

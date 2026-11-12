@@ -14088,7 +14088,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_signed_on_phone" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -14186,7 +14186,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "partial_visit" | "consumables_short" | "fit_unsigned" | "at_risk_client" | "city_matter" | "kit_request" | "reschedule_request";
+                    group: "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_signed_on_phone" | "at_risk_client" | "city_matter" | "kit_request" | "reschedule_request";
                     id: string;
                 };
                 cookie?: never;
@@ -26091,7 +26091,7 @@ export interface components {
             state: "asked" | "signed" | "flagged" | "declined";
             /** @description As the client last answered; null till then. */
             checks: components["schemas"]["SignOffChecks"] | null;
-            /** @description What isn't right, in the client's words. */
+            /** @description What the client last said isn't right, in their words; kept once they sign. */
             flag_text: string | null;
             /** @description Why the client did not sign. */
             declined_reason: string | null;
@@ -28975,7 +28975,7 @@ export interface components {
             lapsed: number;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_signed_on_phone" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -29192,6 +29192,16 @@ export interface components {
             /** @description Why the client did not sign, as the technician recorded it. */
             reason: string;
             technician: string;
+            /** @description What the client last said wasn't right before then; null where they never flagged. */
+            flag: string | null;
+        } | {
+            /** @enum {string} */
+            group: "fit_signed_on_phone";
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            technician: string;
+            /** @description What the client last said wasn't right before it was signed; null where they never flagged. */
+            flag: string | null;
         } | {
             /** @enum {string} */
             group: "at_risk_client";

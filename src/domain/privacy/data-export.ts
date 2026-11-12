@@ -76,7 +76,9 @@ export const EXPORT_QUERIES = {
     JOIN no_show_cases n ON n.id = d.case_id JOIN appointments a ON a.id = n.appointment_id
     WHERE d.person_id = ?1 ORDER BY d.created_at`,
   // Their fits' sign-offs: their own answer and words; the technician's why they did not sign is for Care alone.
-  fit_sign_offs: `SELECT a.window_start AS visit, s.state, s.checks, s.flag_text, s.signed_at, s.signed_on
+  fit_sign_offs: `SELECT a.window_start AS visit, s.state, json_extract(s.checks, '$.hairline') AS hairline,
+      json_extract(s.checks, '$.blend') AS blend, json_extract(s.checks, '$.secure') AS secure, s.flag_text,
+      s.signed_at, s.signed_on
     FROM appointments a JOIN fit_sign_offs s ON s.appointment_id = a.id
     WHERE a.person_id = ?1 ORDER BY a.window_start`,
   referral: "SELECT code, card_state, opens, created_at FROM referral_codes WHERE person_id = ?1",

@@ -106,6 +106,8 @@ export const tasks = {
     // A group the board does not draw (docs/decisions/0254-client-signs-off-the-fit.md).
     fit_unsigned: "Fit closed without sign-off",
     // A group the board does not draw.
+    fit_signed_on_phone: "Fit signed on the technician’s phone",
+    // A group the board does not draw.
     kit_request: "Kit request",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
@@ -254,8 +256,12 @@ export const tasks = {
     },
     /** "Ran out · Imran · Tape strips 2 of 5, Glue 0 of 10 ml", or "Nothing used" where nothing was recorded. */
     consumables_short: (reason: string, technician: string, short: string) => `${reason} · ${technician} · ${short}`,
-    /** "Client in a hurry · Imran". */
-    fit_unsigned: (reason: string, technician: string) => `${reason} · ${technician}`,
+    /** "Client in a hurry · Imran", after "Flagged first: “The left edge lifts”" where the client flagged before. */
+    fit_unsigned: (reason: string, technician: string, flag: string | null) =>
+      [...(flag === null ? [] : [`Flagged first: “${flag}”`]), reason, technician].join(" · "),
+    /** "Imran", after "Flagged first: “The left edge lifts”" where the client flagged before it was signed. */
+    fit_signed_on_phone: (technician: string, flag: string | null) =>
+      [...(flag === null ? [] : [`Flagged first: “${flag}”`]), technician].join(" · "),
     shortLine: (name: string, used: number, expected: number) => `${name} ${String(used)} of ${String(expected)}`,
     nothingUsed: "Nothing used",
     shortReasons: {
@@ -350,6 +356,7 @@ export const tasks = {
     atRisk: { open: "Close", label: "What came of the call" },
     /** Consumables short close once checked against the kit. */
     consumablesShort: { open: "Checked", label: "What the kit showed" },
+    /** A fit closed without sign-off, or signed on the technician’s phone, closes once Care have called the client. */
     fitUnsigned: { open: "Called", label: "What the client said" },
     /** A kit request closes once what it asked for is sent, or with why not. */
     kitRequest: { open: "Sent", label: "What was sent" },

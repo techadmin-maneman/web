@@ -150,6 +150,20 @@ describe("a piece to replace", () => {
     expect(await second.json()).toMatchObject({ error: { code: "already_booked" } });
   });
 
+  it("is refused by ops while a replacement is booked and still to happen", async () => {
+    await rohit("fitted");
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-due', 'piece-due', ?1, 'MM-ESS-0000002-B', '2026-03-30', '2026-09-30', ?2)`,
+    )
+      .bind(ROHIT, NOW.toISOString())
+      .run();
+    await visit(ROHIT, "replacement", "scheduled", "2026-09-25T04:30:00.000Z", IMRAN);
+    const second = await book({ client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "evening" });
+    expect(second.status).toBe(422);
+    expect(await second.json()).toMatchObject({ error: { code: "not_bookable" } });
+  });
+
   it("of a recalled lot is owed for the recall; one still worn and not recalled is owed nothing", async () => {
     await rohit("fitted");
     await piece(null);

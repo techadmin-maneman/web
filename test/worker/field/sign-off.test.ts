@@ -110,6 +110,41 @@ describe("a fit's sign-off", () => {
     expect((await close(job)).status).toBe(202);
   });
 
+  it("gives Care a Tasks row for a signature on the technician's phone, keeping what the client flagged first", async () => {
+    const job = await replacementToTheClose();
+    await ask(job);
+    const flag = { result: "flagged", checks: { ...ALL_TICKED, hairline: false }, flag_text: "The left edge lifts" };
+    expect((await (await clientApp())(flag)).status).toBe(200);
+    const answer = { result: "signed", checks: ALL_TICKED };
+    expect((await job.post(`/api/tech/jobs/${JOB}/sign-off`, { answer }, "event-phone-01")).status).toBe(200);
+    expect(await card(job)).toMatchObject({ state: "signed", flag_text: "The left edge lifts" });
+    const before = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    expect(before.tasks.filter((task) => task.id === JOB && task.group.startsWith("fit_"))).toEqual([]);
+    expect((await close(job)).status).toBe(202);
+
+    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    expect(tasks.filter((task) => task.id === JOB && task.group.startsWith("fit_"))).toEqual([
+      expect.objectContaining({
+        group: "fit_signed_on_phone",
+        facts: {
+          group: "fit_signed_on_phone",
+          kind: "replacement",
+          technician: "Imran Qureshi",
+          flag: "The left edge lifts",
+        },
+      }),
+    ]);
+  });
+
+  it("gives Care no row for a fit the client signed in their own app", async () => {
+    const job = await replacementToTheClose();
+    await ask(job);
+    expect((await (await clientApp())({ result: "signed", checks: ALL_TICKED })).status).toBe(200);
+    expect((await close(job)).status).toBe(202);
+    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    expect(tasks.filter((task) => task.id === JOB && task.group.startsWith("fit_"))).toEqual([]);
+  });
+
   it("closes with the technician's why when the client declines, and gives Care a Tasks row", async () => {
     const job = await replacementToTheClose();
     await ask(job);
@@ -119,14 +154,27 @@ describe("a fit's sign-off", () => {
       "event-decline-01",
     );
     expect(await declined.json()).toMatchObject({ state: "declined", declined_reason: "Client in a hurry" });
+    // Declined an hour before the close.
+    await env.DB.prepare("UPDATE fit_sign_offs SET updated_at = '2026-09-21T05:30:00.000Z'").run();
     expect((await close(job)).status).toBe(202);
 
+    const closed = await env.DB.prepare("SELECT ended_at FROM visit_outcomes WHERE appointment_id = ?1")
+      .bind(JOB)
+      .first<{ ended_at: string }>();
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(tasks).toContainEqual(
       expect.objectContaining({
         group: "fit_unsigned",
         id: JOB,
-        facts: { group: "fit_unsigned", kind: "replacement", reason: "Client in a hurry", technician: "Imran Qureshi" },
+        // From the close, not the decline.
+        since: closed?.ended_at,
+        facts: {
+          group: "fit_unsigned",
+          kind: "replacement",
+          reason: "Client in a hurry",
+          technician: "Imran Qureshi",
+          flag: null,
+        },
       }),
     );
   });
@@ -210,5 +258,27 @@ describe("a fit's sign-off", () => {
       "event-outcome-01",
     );
     expect(partial.status).toBe(202);
+  });
+
+  it("leaves a decline on a fit then left partly done to that visit's own row", async () => {
+    const job = await replacementToTheClose();
+    await job.post(`/api/tech/jobs/${JOB}/sign-off-declined`, { reason: "Client in a hurry" }, "event-d-1");
+    const partial = { outcome: "partial", reason: "client_stopped_it" };
+    expect((await job.post(`/api/tech/jobs/${JOB}/outcome`, partial, "event-outcome-01")).status).toBe(202);
+    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    const groups = tasks.filter((task) => task.id === JOB).map((task) => task.group);
+    expect(groups).toContain("partial_visit");
+    expect(groups).not.toContain("fit_unsigned");
+  });
+
+  it("does not take a flag the phone sends again once the technician has asked again", async () => {
+    const job = await replacementToTheClose();
+    await ask(job);
+    const flag = { result: "flagged", checks: { ...ALL_TICKED, hairline: false }, flag_text: "The left edge lifts" };
+    expect((await job.post(`/api/tech/jobs/${JOB}/sign-off`, { answer: flag }, "event-phone-01")).status).toBe(200);
+    await ask(job, "event-ask-02");
+    const again = await job.post(`/api/tech/jobs/${JOB}/sign-off`, { answer: flag }, "event-phone-01");
+    expect(await again.json()).toMatchObject({ state: "asked", asks: 2 });
+    expect(await card(job)).toMatchObject({ state: "asked", asks: 2 });
   });
 });

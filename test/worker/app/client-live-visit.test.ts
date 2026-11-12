@@ -136,3 +136,26 @@ describe("a visit today", () => {
     expect(detail.latest_update).toMatchObject({ kind: "on_the_way" });
   });
 });
+
+describe("a fit's sign-off under way", () => {
+  it("reaches the client without the technician's why they did not sign, on Home and in the list", async () => {
+    const rohit = await client();
+    const id = await today(rohit.id, "replacement");
+    await landed(id, "check_in", "2026-09-21T06:55:00.000Z");
+    await landed(id, "start", "2026-09-21T07:00:00.000Z");
+    await env.DB.prepare(
+      `INSERT INTO fit_sign_offs (appointment_id, state, declined_reason, asked_at, guarantee_days, updated_at)
+       VALUES (?1, 'declined', 'Client in a hurry', ?2, 14, ?2)`,
+    )
+      .bind(id, "2026-09-21T07:50:00.000Z")
+      .run();
+    const declined = { state: "declined", declined_reason: null };
+    expect(await nextVisit(rohit)).toMatchObject({ stage: "in_progress", sign_off: declined });
+    const list = await (
+      await request(app, "/api/visits", { headers: { Cookie: rohit.cookie } })
+    ).json<{
+      upcoming: { id: string; sign_off: unknown }[];
+    }>();
+    expect(list.upcoming.find((each) => each.id === id)?.sign_off).toMatchObject(declined);
+  });
+});

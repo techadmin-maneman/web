@@ -10,7 +10,7 @@ CREATE TABLE fit_sign_offs (
   state TEXT NOT NULL CHECK (state IN ('asked', 'signed', 'flagged', 'declined')),
   -- The client's three checks as they last answered them, a JSON object of booleans: hairline, blend, secure.
   checks TEXT,
-  -- What the client said isn't right, in their words.
+  -- What the client last said isn't right, in their words, kept once they sign.
   flag_text TEXT CHECK (flag_text IS NULL OR length(flag_text) <= 500),
   -- Why the technician closed without it.
   declined_reason TEXT CHECK (declined_reason IS NULL OR length(declined_reason) <= 300),
@@ -32,7 +32,9 @@ CREATE TABLE fit_sign_offs (
   CHECK ((state = 'declined') = (declined_reason IS NOT NULL))
 );
 
--- The Tasks queue of fits closed without a sign-off reads the declined ones (src/domain/ops/task-queues.ts).
+-- The Tasks queues of fits closed without a sign-off, and signed on the technician's phone, read these
+-- (src/domain/ops/task-queues.ts).
 CREATE INDEX fit_sign_offs_declined ON fit_sign_offs (updated_at) WHERE state = 'declined';
+CREATE INDEX fit_sign_offs_on_phone ON fit_sign_offs (updated_at) WHERE signed_on = 'technician_phone';
 
 -- backfill: none. A fit closed before this migration closed under the rules then.

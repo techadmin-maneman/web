@@ -5899,7 +5899,7 @@ export interface components {
             state: "asked" | "signed" | "flagged" | "declined";
             /** @description As the client last answered; null till then. */
             checks: components["schemas"]["SignOffChecks"] | null;
-            /** @description What isn't right, in the client's words. */
+            /** @description What the client last said isn't right, in their words; kept once they sign. */
             flag_text: string | null;
             /** @description Why the client did not sign. */
             declined_reason: string | null;

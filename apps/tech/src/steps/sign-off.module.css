@@ -62,10 +62,3 @@
   align-self: flex-start;
   min-height: var(--tech-min);
 }
-
-.failed {
-  margin: 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-145);
-  color: var(--ui-error);
-}

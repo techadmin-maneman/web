@@ -1228,7 +1228,7 @@ Made by `0210_fit_sign_offs.sql`.
 | `appointment_id` | TEXT | no |  | primary key; → `appointments.id` |  |
 | `state` | TEXT | no |  |  | asked: waiting for the client; signed: they are happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: the technician closed without it, with why. |
 | `checks` | TEXT | yes |  |  | The client's three checks as they last answered them, a JSON object of booleans: hairline, blend, secure. |
-| `flag_text` | TEXT | yes |  |  | What the client said isn't right, in their words. |
+| `flag_text` | TEXT | yes |  |  | What the client last said isn't right, in their words, kept once they sign. |
 | `declined_reason` | TEXT | yes |  |  | Why the technician closed without it. |
 | `asked_at` | TEXT | no |  |  |  |
 | `asks` | INTEGER | no | `1` |  | How many times it has been asked: again after each flag. |
@@ -1243,6 +1243,7 @@ Made by `0210_fit_sign_offs.sql`.
 Indexes:
 
 - `fit_sign_offs_declined`: on (`updated_at`), where `state = 'declined'`
+- `fit_sign_offs_on_phone`: on (`updated_at`), where `signed_on = 'technician_phone'`
 
 ## forecast_accuracy
 

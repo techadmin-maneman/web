@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { screensOf } from "../../../../../apps/tech/src/visit/engine.ts";
-import { signedOff, stepsOf } from "../../../../../apps/tech/src/lib/progress.ts";
+import { done, nextStep, signedOff, stepsOf } from "../../../../../apps/tech/src/lib/progress.ts";
 import type { Queued } from "../../../../../apps/tech/src/store/outbox.ts";
 import type { Job } from "../../../../../apps/tech/src/api.ts";
 import { cardStepsFor, stepBefore } from "../../../../../src/policy/in-job-steps.ts";
@@ -137,5 +137,20 @@ describe("a fit's sign-off on the phone", () => {
     expect(signedOff(fit, [queued("sign_off", { answer: { result: "signed" } })])).toBe(true);
     expect(signedOff(fit, [queued("sign_off", { answer: { result: "flagged" } })])).toBe(false);
     expect(signedOff(fit, [queued("sign_off_request", {})])).toBe(false);
+  });
+
+  it("keeps the technician on the step, and the step not done, while the phone holds only a flag", () => {
+    const steps = cardStepsFor("replacement", false);
+    const worked = {
+      ...fit,
+      progress: { steps_done: steps.slice(0, steps.indexOf("sign_off")), checked_in_at: "x", started_at: "x" },
+      sent_back: [],
+    } as unknown as Job;
+    const flag = queued("sign_off", { answer: { result: "flagged", flag_text: "The left edge lifts" } });
+    expect(done(worked, [flag]).has("sign_off")).toBe(false);
+    expect(nextStep(worked, [flag])).toBe("sign_off");
+    const signed = queued("sign_off", { answer: { result: "signed" } });
+    expect(done(worked, [signed]).has("sign_off")).toBe(true);
+    expect(nextStep(worked, [signed])).toBe("outcome");
   });
 });

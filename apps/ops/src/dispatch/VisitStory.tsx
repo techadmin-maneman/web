@@ -102,10 +102,14 @@ function signOffLine(signOff: SignOff): string {
       return words.signed([
         ...(signOff.signed_at === null ? [] : [indiaClock(signOff.signed_at)]),
         ...(signOff.signed_on === null ? [] : [words.where[signOff.signed_on]]),
+        ...(signOff.flag_text === null ? [] : [words.flaggedFirst(signOff.flag_text)]),
         ...(signOff.signed_on === "technician_phone" ? [words.checkIt] : []),
       ]);
     case "declined":
-      return words.declined(signOff.declined_reason ?? "");
+      return [
+        words.declined(signOff.declined_reason ?? ""),
+        ...(signOff.flag_text === null ? [] : [words.flaggedFirst(signOff.flag_text)]),
+      ].join(", ");
   }
 }
 

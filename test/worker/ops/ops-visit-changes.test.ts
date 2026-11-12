@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
+import { CLOSED_BY_HAND } from "../../../src/policy/sign-off.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
@@ -413,6 +414,21 @@ describe("POST /api/visits/:id/close", () => {
     const fitted = await env.DB.prepare("SELECT tier, one_visit FROM appointments WHERE id = ?1").bind(VISIT).first();
     expect(fitted).toEqual({ tier: "natural", one_visit: "fitted" });
     expect(payments.made.links).toMatchObject([{ amount: 4_500_000, notes: { appointment_id: VISIT } }]);
+  });
+
+  it("records a fit closed by hand as done, with no sign-off on record, as declined, and gives Care its Tasks row", async () => {
+    await visit("replacement", THIS_MORNING);
+    const reason = "Imran's phone was stolen; the client confirmed the visit by phone";
+    const body = { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason };
+    expect((await close({}, body)).status).toBe(200);
+    const signOff = await env.DB.prepare(
+      "SELECT state, declined_reason, guarantee_days FROM fit_sign_offs WHERE appointment_id = ?1",
+    )
+      .bind(VISIT)
+      .first();
+    expect(signOff).toEqual({ state: "declined", declined_reason: CLOSED_BY_HAND, guarantee_days: 14 });
+    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    expect(tasks).toContainEqual(expect.objectContaining({ group: "fit_unsigned", id: VISIT }));
   });
 
   it("closes a visit once: a second close is refused, and the first stands", async () => {

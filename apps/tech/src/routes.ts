@@ -84,7 +84,7 @@ export type EventKind =
   // A word to the client from the card (docs/decisions/0145-technician-presets.md): no step of the job.
   | "update"
   // The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md): asking, their answer on this
-  // phone with the code the ask gave, and recording that they declined. None is a step the API orders.
+  // phone, and recording that they declined. None is a step the API orders.
   | "sign_off_request"
   | "sign_off"
   | "sign_off_declined";

@@ -384,6 +384,7 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   partial_visit: "operations",
   consumables_short: "operations",
   fit_unsigned: "customer_care",
+  fit_signed_on_phone: "customer_care",
   kit_request: "operations",
   reschedule_request: "operations",
   referral_review: "growth",

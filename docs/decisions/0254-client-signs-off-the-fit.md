@@ -15,8 +15,8 @@ replacement. "Client declined to sign", with a reason, is the technician's only 
 ## Decision
 
 1. **Storage.** `fit_sign_offs` (migration 0210): one row a visit, `state` asked, signed, flagged or declined, the three
-   checks (hairline, colour and blend, secure and comfortable), the flag's text, the decline's reason, when it was asked
-   and signed, and where: `client_app` or `technician_phone`. Not a new `job_events` kind: ADR 0105 records that a new
+   checks (hairline, colour and blend, secure and comfortable), the last flag's text (kept once signed), the decline's
+   reason, when it was asked and signed, and where: `client_app` or `technician_phone`. Not a new `job_events` kind: ADR 0105 records that a new
    kind means rebuilding a table others reference.
 2. **The API.**
    - `POST /api/tech/jobs/{id}/sign-off-request` asks, and can ask again after a flag is fixed.
@@ -40,7 +40,8 @@ replacement. "Client declined to sign", with a reason, is the technician's only 
 5. **The console.** The visit's story shows the sign-off, its time and where, and any flag; a signature on the
    technician's phone is marked "Worth a call to confirm". A fit that closes done with its sign-off declined opens a
    Tasks row, "Fit closed without sign-off", from the close; a decline on a fit then left partly done is that visit's
-   own row alone.
+   own row alone. A fit that closes done signed on the technician's phone opens one too, "Fit signed on the
+   technician's phone", carrying any flag the client raised first, until Care have confirmed it with the client.
 6. **The guarantee's days.** A sign-off signed or declined records the fit guarantee's days in force then, which a first
    fit's guarantee runs for whatever ops set since (ADR 0256).
 7. **The terms.** Signing off is recorded as acceptance at the visit and does not waive the guarantee (ADR 0256).
@@ -51,6 +52,7 @@ replacement. "Client declined to sign", with a reason, is the technician's only 
 - **No one-time code for signing on the technician's phone.** The brief asks for one. A code the API gives to the
   technician's own phone proves nothing about the client, since whoever holds the phone holds the code, and it would
   stop the client signing there with no signal, which the brief also asks for. So the phone sends the client's answer
-  through its outbox like any other write, and the control is that it is seen: the console marks every such signature
-  for a call, and the client is told of it in their own app, with a way to say it was not them (ADR 0255).
+  through its outbox like any other write, and the control is that it is seen: every such signature gives Care a
+  Tasks row to confirm it with the client, and the client is told of it in their own app, with a way to say it was not
+  them (ADR 0255).
 - **The client is not shown the technician's reason for a decline.** It is written for Care.

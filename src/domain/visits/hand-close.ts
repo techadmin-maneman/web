@@ -101,6 +101,19 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
   if (!timesFit(times, windowStart, now)) return { kind: "refused", code: "bad_times" };
 
   const at = now.toISOString();
+  const unsigned =
+    close.outcome === "done" && (await needsSignOffByHand(db, visit, close.appointmentId))
+      ? [
+          unsignedByHand(db, {
+            appointmentId: close.appointmentId,
+            technicianId: visit.technician_id,
+            reason: CLOSED_BY_HAND,
+            guaranteeDays: (await readOpsInputs(db, now)).guaranteeDays,
+            at,
+            by: close.byHand.by,
+          }),
+        ]
+      : [];
   const [moved] = await db.batch([
     moveVisit(db, close.appointmentId, close.outcome, at),
     closeVisit({
@@ -113,18 +126,10 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
       byHand: close.byHand,
     }),
     auditStatementIfClosed(db, close.audit, now, close.appointmentId),
+    ...unsigned,
     ...visitUpkeep(db, { visits: [close.appointmentId] }, at),
   ]);
   if (moved === undefined || moved.meta.changes === 0) return { kind: "refused", code: "already_closed" };
-  if (close.outcome === "done" && (await needsSignOffByHand(db, visit, close.appointmentId))) {
-    await unsignedByHand(db, {
-      appointmentId: close.appointmentId,
-      technicianId: visit.technician_id,
-      reason: CLOSED_BY_HAND,
-      guaranteeDays: (await readOpsInputs(db, now)).guaranteeDays,
-      at,
-    }).run();
-  }
   if (close.outcome === "done" && visit.one_visit !== null) {
     const job = { id: close.appointmentId, personId: visit.person_id, windowStart: new Date(windowStart) };
     await closeOneVisit(db, deps, job, now);

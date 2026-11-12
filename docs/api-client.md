@@ -8026,7 +8026,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "What isn't right, in the client's words."
+      "description": "What the client last said isn't right, in their words; kept once they sign."
     },
     "declined_reason": {
       "anyOf": [
