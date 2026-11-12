@@ -157,6 +157,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `payment_links` | Payment links | hours | `{"holds_hours":24,"closes_before_hours":2,"pay_within_days":14}` |
 | `arrival_notice_min` | Arrival message | minutes | `10` |
 | `move_proposal_hours` | Move proposals | hours | `48` |
+| `guarantee_days` | Fit guarantee | days | `14` |
 | `credit_reminder_days` | Free visit reminders | days | `{"first":30,"last":7}` |
 | `check_in_days` | Follow-ups after a fit | days | `{"first":2,"second":21}` |
 | `referral_monthly_cap` | Hold referral rewards above | fits a month | `5` |

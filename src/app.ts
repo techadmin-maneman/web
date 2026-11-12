@@ -70,6 +70,7 @@ import { registerPublishedPrices } from "./routes/public/published-prices.ts";
 import { registerServedCities } from "./routes/public/served-cities.ts";
 import { registerSiteWords } from "./routes/public/site-words.ts";
 import { registerReferralReward } from "./routes/public/referral-reward.ts";
+import { registerFitGuarantee } from "./routes/public/fit-guarantee.ts";
 import { registerTechAuth } from "./routes/tech/auth.ts";
 import { registerTechJobs } from "./routes/tech/jobs.ts";
 import { registerTechPieces } from "./routes/tech/pieces.ts";
@@ -100,6 +101,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerReferralLanding,
     // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).
     registerReferralReward,
+    // How long the fit guarantee runs, for the terms (docs/decisions/0256-fit-guarantee-setting.md).
+    registerFitGuarantee,
     registerTryonUpload,
     registerTryonGenerate,
     registerTryonClaim,
