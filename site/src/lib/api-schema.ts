@@ -1789,6 +1789,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fit-guarantee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How long the fit guarantee runs, as ops set it. Cacheable for a minute. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The guarantee */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FitGuarantee"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tryon/upload-url": {
         parameters: {
             query?: never;
@@ -3456,6 +3492,10 @@ export interface components {
             friend_visits: number;
             /** @description How many days the credits last from the grant. */
             valid_days: number;
+        };
+        FitGuarantee: {
+            /** @description Days after a first fit in which the client may ask for a refit or a refund. */
+            days: number;
         };
         UploadUrlResponse: {
             /** Format: uuid */

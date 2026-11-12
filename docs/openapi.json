@@ -1367,6 +1367,19 @@
         "additionalProperties": false,
         "description": "What each side is given when a friend's first fit is done, as it stands now. A grant is given what is in force when the friend is fitted, and keeps it."
       },
+      "FitGuarantee": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "description": "Days after a first fit in which the client may ask for a refit or a refund."
+          }
+        },
+        "required": [
+          "days"
+        ],
+        "additionalProperties": false
+      },
       "UploadUrlResponse": {
         "type": "object",
         "properties": {
@@ -4646,6 +4659,23 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReferralReward"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/fit-guarantee": {
+      "get": {
+        "summary": "How long the fit guarantee runs, as ops set it. Cacheable for a minute.",
+        "responses": {
+          "200": {
+            "description": "The guarantee",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FitGuarantee"
                 }
               }
             }

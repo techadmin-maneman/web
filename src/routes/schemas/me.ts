@@ -156,6 +156,28 @@ export const MeSchema = z
           "the prompt, or the only one. Null when none is.",
       }),
     booking: BookingOfferSchema,
+    care_hours: z
+      .object({
+        opens: z.number().int().openapi({ description: "The hour Care open, in India, 0 to 23." }),
+        closes: z.number().int().openapi({ description: "The hour Care close." }),
+        first_reply: z.number().int().openapi({ description: "Minutes within which Care first reply in hours." }),
+      })
+      .strict()
+      .openapi({ description: "Care's hours and their reply promise, as ops set them (care_hours)." }),
+    guarantee_days: z.number().int().openapi({
+      description: "Days after a first fit the client may ask for a refit or a refund (guarantee_days; ADR 0256).",
+    }),
+    answers_within: z
+      .object({
+        grievance_days: z.number().int().openapi({ description: "Days within which a grievance is answered." }),
+        deletion_days: z.number().int().openapi({ description: "Days within which a deletion request is acted on." }),
+        invoices_kept_years: z.number().int().openapi({ description: "Years invoices are kept, as the law asks." }),
+      })
+      .strict()
+      .openapi({
+        description:
+          "What the account's promises say: the first two from the Tasks deadlines ops set, the third the law's.",
+      }),
     hair_system: z
       .union([
         z
@@ -200,4 +222,3 @@ export const MeSchema = z
   })
   .strict()
   .openapi("Me");
-

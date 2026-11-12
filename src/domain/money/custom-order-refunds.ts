@@ -32,12 +32,18 @@ type PaidRow = {
   failed_check: number;
 };
 
+/**
+ * India's last day a custom order promised for `promisedOn` is still on time: past it, the order is late and its client
+ * may have their money back in full (docs/decisions/0176-custom-order-refunds.md).
+ */
+export const lateAfter = (promisedOn: string, graceDays: number): string => addDays(promisedOn, graceDays);
+
 /** Whether the reason given holds for the order as it stands. */
 function isDue(order: PaidRow, reason: RefundReason, today: string, graceDays: number): boolean {
   const sent = order.po_state === "sent" || order.po_state === "part_received";
   if (reason === "not_ordered")
     return order.po_state === null || order.po_state === "drafted" || order.po_state === "approved";
-  if (reason === "late") return sent && order.promised_on !== null && today > addDays(order.promised_on, graceDays);
+  if (reason === "late") return sent && order.promised_on !== null && today > lateAfter(order.promised_on, graceDays);
   return order.failed_check === 1;
 }
 

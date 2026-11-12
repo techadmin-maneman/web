@@ -7181,6 +7181,58 @@ Request body:
       ],
       "additionalProperties": false
     },
+    "care_hours": {
+      "type": "object",
+      "properties": {
+        "opens": {
+          "type": "integer",
+          "description": "The hour Care open, in India, 0 to 23."
+        },
+        "closes": {
+          "type": "integer",
+          "description": "The hour Care close."
+        },
+        "first_reply": {
+          "type": "integer",
+          "description": "Minutes within which Care first reply in hours."
+        }
+      },
+      "required": [
+        "opens",
+        "closes",
+        "first_reply"
+      ],
+      "additionalProperties": false,
+      "description": "Care's hours and their reply promise, as ops set them (care_hours)."
+    },
+    "guarantee_days": {
+      "type": "integer",
+      "description": "Days after a first fit the client may ask for a refit or a refund (guarantee_days; ADR 0256)."
+    },
+    "answers_within": {
+      "type": "object",
+      "properties": {
+        "grievance_days": {
+          "type": "integer",
+          "description": "Days within which a grievance is answered."
+        },
+        "deletion_days": {
+          "type": "integer",
+          "description": "Days within which a deletion request is acted on."
+        },
+        "invoices_kept_years": {
+          "type": "integer",
+          "description": "Years invoices are kept, as the law asks."
+        }
+      },
+      "required": [
+        "grievance_days",
+        "deletion_days",
+        "invoices_kept_years"
+      ],
+      "additionalProperties": false,
+      "description": "What the account's promises say: the first two from the Tasks deadlines ops set, the third the law's."
+    },
     "hair_system": {
       "anyOf": [
         {
@@ -7275,6 +7327,9 @@ Request body:
     "prompt",
     "invoice",
     "booking",
+    "care_hours",
+    "guarantee_days",
+    "answers_within",
     "hair_system",
     "referral_reward",
     "pending_invite"
@@ -9035,6 +9090,18 @@ Request body:
         }
       ],
       "description": "What the client paid for the visit; null where nothing was."
+    },
+    "guarantee_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A first fit done: India's last day the client may ask for a refit or a refund under the fit guarantee, by the days ops set (guarantee_days; ADR 0256). Null for any other visit."
     }
   },
   "required": [
@@ -9066,7 +9133,8 @@ Request body:
     "invoice_expected",
     "invoice_held",
     "no_show",
-    "paid"
+    "paid",
+    "guarantee_until"
   ],
   "additionalProperties": false
 }
@@ -9239,6 +9307,18 @@ Request body:
         }
       ],
       "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
+    },
+    "dispute_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last moment the charge may be disputed, by the dispute window ops set, while `disputable`; null otherwise."
     }
   },
   "required": [
@@ -9247,7 +9327,8 @@ Request body:
     "charge",
     "dispute",
     "disputable",
-    "dispute_closed_at"
+    "dispute_closed_at",
+    "dispute_until"
   ],
   "additionalProperties": false
 }
@@ -11562,6 +11643,14 @@ Request body:
             ],
             "format": "date"
           },
+          "refundable_after": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The last day it is on time: past it, it is late and the client may have their money back in full, by the days ops set (custom_order_grace_days). Null with no promised date."
+          },
           "amount": {
             "type": "integer",
             "description": "What it costs them, in paise."
@@ -11578,6 +11667,7 @@ Request body:
           "number",
           "status",
           "promised_on",
+          "refundable_after",
           "amount",
           "pay_url"
         ],

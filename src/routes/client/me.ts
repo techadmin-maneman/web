@@ -35,13 +35,7 @@ import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
 import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/money/one-visit-money.ts";
 import { pendingInviteOf } from "../../domain/referrals/referrals.ts";
-import {
-  canRefer,
-  clientStateOf,
-  isFitted,
-  missedVisit,
-  nextVisit,
-} from "../../domain/visits/client-visits.ts";
+import { canRefer, clientStateOf, isFitted, missedVisit, nextVisit } from "../../domain/visits/client-visits.ts";
 import { consultationRecap } from "../../domain/visits/consultation-recap.ts";
 import { nextVisitFacts } from "../../domain/visits/next-visit.ts";
 import { clientOf } from "../../http/client-session.ts";
@@ -49,6 +43,8 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { MeSchema } from "../schemas/me.ts";
+import type { OpsInputs } from "../../domain/platform/ops-settings.ts";
+import { INVOICE_KEPT_YEARS } from "../../policy/retention.ts";
 import { clientRoute } from "../../http/session-routes.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
@@ -142,6 +138,21 @@ async function homeFactsOf(c: Context<AppEnv>, personId: string, now: Date) {
   return { days, referralReward: inputs.referralReward, next, prompt };
 }
 
+/** Care's hours, the fit guarantee and the account's promises, as ops set them, for the app's words. */
+function promisesOf(inputs: OpsInputs) {
+  const days = (hours: number) => Math.ceil(hours / 24);
+  const { opens, closes, first_reply } = inputs.careHours;
+  return {
+    care_hours: { opens, closes, first_reply },
+    guarantee_days: inputs.guaranteeDays,
+    answers_within: {
+      grievance_days: days(inputs.taskSlaHours.grievance),
+      deletion_days: days(inputs.taskSlaHours.erasure_request),
+      invoices_kept_years: INVOICE_KEPT_YEARS,
+    },
+  };
+}
+
 /** Their package's service visit and replacement, and each first fit priced for the hair system made to them. */
 async function offeredServices(
   db: D1Database,
@@ -177,6 +188,7 @@ export function registerClientMe(app: App): void {
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
     const missed = missedVisit(db, personId);
     const refers = canRefer(db, personId);
+    const inputsRead = opsInputs(c);
     const [person, upcoming, underWay, credits, fitted, form, types, sold, home, invite, owed, recap, onPackage, worn] =
       await Promise.all([
         liveContact(db, personId),
@@ -185,7 +197,7 @@ export function registerClientMe(app: App): void {
         spendableCredits(db, personId, now),
         isFitted(db, personId),
         formBookingOf(c, personId, today),
-        opsInputs(c).then((inputs) => bookableTypes(db, personId, now, inputs.nextVisitDays)),
+        inputsRead.then((inputs) => bookableTypes(db, personId, now, inputs.nextVisitDays)),
         cityOfPerson(db, personId).then(async (city) => ({ city, services: await servicesOnDay(db, tomorrow, city) })),
         homeFactsOf(c, personId, now),
         pendingInviteOf(db, personId, now, nameOnInvite),
@@ -237,6 +249,7 @@ export function registerClientMe(app: App): void {
           services: offered,
           next: offer,
         },
+        ...promisesOf(await inputsRead),
         hair_system: worn,
         referral_reward: home.referralReward,
         pending_invite: pendingInvite === null ? null : { referrer_first_name: pendingInvite.referrerFirstName },

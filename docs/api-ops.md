@@ -37000,6 +37000,18 @@ Request body:
         }
       ],
       "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
+    },
+    "dispute_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last moment the charge may be disputed, by the dispute window ops set, while `disputable`; null otherwise."
     }
   },
   "required": [
@@ -37008,7 +37020,8 @@ Request body:
     "charge",
     "dispute",
     "disputable",
-    "dispute_closed_at"
+    "dispute_closed_at",
+    "dispute_until"
   ],
   "additionalProperties": false
 }
@@ -51970,6 +51983,7 @@ Request body:
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
+        "guarantee_days",
         "credit_reminder_days",
         "check_in_days",
         "referral_monthly_cap",
@@ -52167,6 +52181,7 @@ Request body:
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
+        "guarantee_days",
         "credit_reminder_days",
         "check_in_days",
         "referral_monthly_cap",

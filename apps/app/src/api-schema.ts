@@ -4830,6 +4830,26 @@ export interface components {
                     window: ("morning" | "afternoon" | "evening") | null;
                 } | null;
             };
+            /** @description Care's hours and their reply promise, as ops set them (care_hours). */
+            care_hours: {
+                /** @description The hour Care open, in India, 0 to 23. */
+                opens: number;
+                /** @description The hour Care close. */
+                closes: number;
+                /** @description Minutes within which Care first reply in hours. */
+                first_reply: number;
+            };
+            /** @description Days after a first fit the client may ask for a refit or a refund (guarantee_days; ADR 0256). */
+            guarantee_days: number;
+            /** @description What the account's promises say: the first two from the Tasks deadlines ops set, the third the law's. */
+            answers_within: {
+                /** @description Days within which a grievance is answered. */
+                grievance_days: number;
+                /** @description Days within which a deletion request is acted on. */
+                deletion_days: number;
+                /** @description Years invoices are kept, as the law asks. */
+                invoices_kept_years: number;
+            };
             /** @description The hair system the client wears now; null for none on record. */
             hair_system: {
                 /** @description The package's code, which its services share as their tier. */
@@ -5271,6 +5291,8 @@ export interface components {
                 /** @description The payment, for GET /api/payments/{id}/receipt, once Books has recorded it. */
                 receipt: string | null;
             } | null;
+            /** @description A first fit done: India's last day the client may ask for a refit or a refund under the fit guarantee, by the days ops set (guarantee_days; ADR 0256). Null for any other visit. */
+            guarantee_until: string | null;
         };
         /** @description Each angle in the order front, top, left, right, hair; missing angles left out. */
         PhotoSet: {
@@ -5308,6 +5330,8 @@ export interface components {
             disputable: boolean;
             /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
             dispute_closed_at: string | null;
+            /** @description The last moment the charge may be disputed, by the dispute window ops set, while `disputable`; null otherwise. */
+            dispute_until: string | null;
         };
         ProposedMoveAccepted: {
             /** @enum {boolean} */
@@ -5912,6 +5936,11 @@ export interface components {
                 status: "awaiting_payment" | "paid" | "ordered" | "arrived";
                 /** Format: date */
                 promised_on: string | null;
+                /**
+                 * Format: date
+                 * @description The last day it is on time: past it, it is late and the client may have their money back in full, by the days ops set (custom_order_grace_days). Null with no promised date.
+                 */
+                refundable_after: string | null;
                 /** @description What it costs them, in paise. */
                 amount: number;
                 /** @description The link to pay by, while it waits for payment. */
