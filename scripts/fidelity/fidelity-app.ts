@@ -67,6 +67,10 @@ const ME = {
   booking: { ...BOOKS_NOTHING, types: ["consultation"], services: [], next: null },
   referral_reward: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
   pending_invite: null,
+  care_hours: { opens: 9, closes: 21, first_reply: 60 },
+  guarantee_days: 14,
+  answers_within: { grievance_days: 30, deletion_days: 30, invoices_kept_years: 8 },
+  hair_system: null,
 } satisfies Schemas["Me"];
 
 // ---- Fitted --------------------------------------------------------------
@@ -119,6 +123,10 @@ const visit = (n: number, date: string, type: NonNullable<VisitSummary["type"]>,
     one_visit: null,
     pay_at_visit: null,
     proposed_move: null,
+    latest_update: null,
+    step: null,
+    waits_until: null,
+    sign_off: null,
   }) satisfies VisitSummary;
 
 /** A Thursday, as B1's "Thu 19 Sep" is; paid ahead, as C1's "Prepaid" says. */
@@ -192,6 +200,7 @@ const VISIT_DETAIL = {
   invoice_held: null,
   no_show: null,
   paid: { amount: 220_000, receipt: null },
+  guarantee_until: null,
 } satisfies Schemas["VisitDetail"];
 
 const timeline = (inks: readonly [string, string, string]) => ({
