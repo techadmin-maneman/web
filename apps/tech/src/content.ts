@@ -645,6 +645,7 @@ export const visit = localised({
     hair_system: "Hair system",
     consumables: "Consumables",
     after_photos: "After photos",
+    sign_off: "Client sign-off",
     outcome: "Outcome",
   },
   /** "Rohit M. · service visit", beneath a step's name. */
@@ -1252,6 +1253,7 @@ export const guides = localised({
     hair_system: "Scan the new piece",
     consumables: "Record what you used",
     after_photos: "The same five shots",
+    sign_off: "The client checks the fit and signs",
     outcome: "Result and close",
   },
   /** "Service visit · Service", beneath a task's name. */
