@@ -4830,6 +4830,30 @@ export interface components {
                     window: ("morning" | "afternoon" | "evening") | null;
                 } | null;
             };
+            /** @description The hair system the client wears now; null for none on record. */
+            hair_system: {
+                /** @description The package's code, which its services share as their tier. */
+                package: string;
+                /** @description The package's name, as clients read it. */
+                name: string;
+                /**
+                 * Format: date
+                 * @description India's day the hair system worn now was fitted.
+                 */
+                fitted_on: string;
+                /** @description How many months its package's are worn. */
+                replace_after_months: number;
+                /**
+                 * Format: date
+                 * @description India's day it falls due.
+                 */
+                due_on: string;
+                /**
+                 * Format: date
+                 * @description The first day of the month it falls due: the first day its replacement may be booked on (ADR 0253). `booking.types` says whether it may be booked now.
+                 */
+                replacement_opens_on: string;
+            } | null;
             referral_reward: components["schemas"]["ReferralReward"];
             /** @description The invite a client not yet fitted came with, while its free service visits (referral_reward's friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it lapsed. */
             pending_invite: {

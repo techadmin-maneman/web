@@ -67,6 +67,26 @@ describe("a replacement", () => {
     expect(days.days[0]?.date).toBe("2026-09-22");
   });
 
+  it("names on Home the hair system worn, when it was fitted and when its replacement opens", async () => {
+    const rohit = await client();
+    await env.DB.prepare("UPDATE people SET package = 'standard' WHERE id = ?1").bind(rohit.id).run();
+    await wornPiece(rohit.id, "2026-12-10", "2026-06-10");
+
+    const me = await (
+      await request(app, "/api/me", { headers: { Cookie: rohit.cookie } })
+    ).json<{
+      hair_system: unknown;
+    }>();
+    expect(me.hair_system).toEqual({
+      package: "standard",
+      name: expect.any(String) as string,
+      fitted_on: "2026-06-10",
+      replace_after_months: expect.any(Number) as number,
+      due_on: "2026-12-10",
+      replacement_opens_on: "2026-12-01",
+    });
+  });
+
   it("is not offered for a client with no hair system on record", async () => {
     const rohit = await client();
     expect(await typesOf(rohit)).toEqual(["service"]);

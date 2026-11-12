@@ -971,6 +971,55 @@
             ],
             "additionalProperties": false
           },
+          "hair_system": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "package": {
+                    "type": "string",
+                    "description": "The package's code, which its services share as their tier."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "The package's name, as clients read it."
+                  },
+                  "fitted_on": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "India's day the hair system worn now was fitted."
+                  },
+                  "replace_after_months": {
+                    "type": "integer",
+                    "description": "How many months its package's are worn."
+                  },
+                  "due_on": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "India's day it falls due."
+                  },
+                  "replacement_opens_on": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "The first day of the month it falls due: the first day its replacement may be booked on (ADR 0253). `booking.types` says whether it may be booked now."
+                  }
+                },
+                "required": [
+                  "package",
+                  "name",
+                  "fitted_on",
+                  "replace_after_months",
+                  "due_on",
+                  "replacement_opens_on"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The hair system the client wears now; null for none on record."
+          },
           "referral_reward": {
             "$ref": "#/components/schemas/ReferralReward"
           },
@@ -1016,6 +1065,7 @@
           "prompt",
           "invoice",
           "booking",
+          "hair_system",
           "referral_reward",
           "pending_invite"
         ],
