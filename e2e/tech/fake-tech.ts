@@ -283,7 +283,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     clientChoice: null,
     pieces: [],
     kitHairSystems: [],
-    kit: { held: [], coming: [], returned: [], forecast: [], asked: null },
+    kit: { held: [], coming: [], returned: [], forecast: [], visits: 0, pieces: [], asked: null },
     kitAfter: null,
     profile: null,
     checklist: CHECKLIST,

@@ -14,3 +14,12 @@
   gap: var(--sp-16);
   padding: var(--sp-24) var(--screen-gutter) 0;
 }
+
+/* The result as radio rows under its heading, and the summary under a rule, as the design has them. */
+.result {
+  margin: var(--sp-16) var(--screen-gutter) 0;
+}
+
+.summaryHead {
+  margin-inline: var(--screen-gutter);
+}

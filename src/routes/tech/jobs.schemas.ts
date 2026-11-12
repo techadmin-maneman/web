@@ -242,6 +242,21 @@ export const JobDetailSchema = JobSummarySchema.extend({
   }),
   client_alerts: TechnicianAlertsSchema,
   handoff: HandoffSchema,
+  client_visits: z
+    .union([
+      z
+        .object({
+          count: z.number().int().nonnegative(),
+          first: z.union([z.iso.date(), z.null()]).openapi({ description: "The first's day in India; null for none." }),
+        })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({
+      description:
+        "How many of the client's visits closed before this one, as Client history lists them, and when the first " +
+        "was. Null until the day before the visit.",
+    }),
   reschedule_asked: z.union([RescheduleAskedSchema, z.null()]).openapi({
     description: "The technician's open ask that ops move the visit, until it is settled; null for none.",
   }),

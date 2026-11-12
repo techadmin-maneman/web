@@ -146,8 +146,9 @@
     font-weight: var(--control-weight);
   }
 
+  /* Its edge in the strong ink, unless a look sets one of its own, as the technician app's grey. */
   .outline {
-    border-color: var(--ui-strong);
+    border-color: var(--outline-edge);
     color: var(--ui-text);
   }
 

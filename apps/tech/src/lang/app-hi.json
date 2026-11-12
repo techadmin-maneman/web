@@ -398,7 +398,11 @@
     "the client": "क्लाइंट",
     "the consumables": "सामान",
     "the hair system they chose": "उनका चुना हेयर सिस्टम",
-    "the tasks": "काम"
+    "the tasks": "काम",
+    "Number not registered?": "नंबर रजिस्टर नहीं है?",
+    "Call ops.": "ऑप्स को कॉल करें।",
+    "Type it instead": "इसके बजाय टाइप करें",
+    "the rest to come": "बाकी आने वाले हैं"
   },
   "patterns": [
     {
@@ -976,6 +980,50 @@
     {
       "match": "^the ([^·]+)$",
       "hi": "$1"
+    },
+    {
+      "match": "^([^·]+) bookings?$",
+      "hi": "$1 बुकिंग"
+    },
+    {
+      "match": "^([^·]+) pieces$",
+      "hi": "$1 पीस"
+    },
+    {
+      "match": "^([^·]+) visits? since ([^·]+)$",
+      "hi": "$2 से $1 विज़िट"
+    },
+    {
+      "match": "^([^·]+) away$",
+      "hi": "$1 दूर"
+    },
+    {
+      "match": "^Last sync ([^·]+)$",
+      "hi": "आख़िरी सिंक $1"
+    },
+    {
+      "match": "^Photo: ([^·]+)$",
+      "hi": "फ़ोटो: $1"
+    },
+    {
+      "match": "^Request ([^·]+)$",
+      "hi": "$1 मँगवाएँ"
+    },
+    {
+      "match": "^Sent ([^·]+)$",
+      "hi": "$1 को भेजा"
+    },
+    {
+      "match": "^Today, ([^·]+)$",
+      "hi": "आज, $1"
+    },
+    {
+      "match": "^Tomorrow, ([^·]+)$",
+      "hi": "कल, $1"
+    },
+    {
+      "match": "^Updated ([^·]+)$",
+      "hi": "$1 पर अपडेट"
     }
   ],
   "dateTokens": {

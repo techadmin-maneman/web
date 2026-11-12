@@ -4,11 +4,13 @@
 
 import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
-import { DateInput, Field, TextArea } from "@maneman/ui/Field";
+import { DayInput, Field, TextInput } from "@maneman/ui/Field";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { dayMonth, todayInIndia } from "@maneman/web-kit/dates";
+import { sayNow } from "../lang/index.ts";
+import { dayDate, spanEnds } from "../lib/when.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import { useState } from "react";
 import { api, type LeaveRequests } from "../api.ts";
@@ -35,10 +37,11 @@ function Days(props: {
 }) {
   return (
     <div className={styles.days}>
-      <Field label={copy.from}>
+      <Field label={copy.from} look={{ label: styles.label }}>
         {(control) => (
-          <DateInput
+          <DayInput
             {...control}
+            shown={sayNow(dayDate(props.from))}
             min={props.today}
             value={props.from}
             onChange={(event) => {
@@ -47,10 +50,11 @@ function Days(props: {
           />
         )}
       </Field>
-      <Field label={copy.to}>
+      <Field label={copy.to} look={{ label: styles.label }}>
         {(control) => (
-          <DateInput
+          <DayInput
             {...control}
+            shown={sayNow(dayDate(props.to))}
             min={props.from}
             value={props.to}
             onChange={(event) => {
@@ -94,9 +98,9 @@ function Ask({ offline, onAsked }: { readonly offline: boolean; readonly onAsked
         }}
         onTo={setTo}
       />
-      <Field label={copy.note}>
+      <Field label={copy.note} look={{ label: styles.label }}>
         {(control) => (
-          <TextArea
+          <TextInput
             {...control}
             maxLength={300}
             value={note}
@@ -125,6 +129,11 @@ function Ask({ offline, onAsked }: { readonly offline: boolean; readonly onAsked
   );
 }
 
+/** An ask's days: "6 Nov" for one, "20 to 22 Nov" for more, both months where they differ. */
+function daysOf(from: string, to: string): string {
+  return from === to ? dayMonth(from) : copy.days(...spanEnds(from, to));
+}
+
 const TONES: Readonly<Record<LeaveRequests["requests"][number]["state"], string | undefined>> = {
   asked: styles.asked,
   approved: styles.approved,
@@ -137,12 +146,12 @@ export function LeaveScreen() {
   const [after, setAfter] = useState<LeaveRequests | null>(null);
   const asks = after ?? (loaded.state === "loaded" ? loaded.value : null);
   return (
-    <CardFrame title={copy.title} sub={copy.sub} back="/me" foot={null}>
+    <CardFrame title={copy.title} back="/me" foot={null}>
       {offline && <NoSignal />}
       <div className={styles.page}>
         <SectionHead title={copy.askTitle} ruled={false} />
         <Ask offline={offline} onAsked={setAfter} />
-        <SectionHead title={copy.askedTitle} className={styles.section} />
+        <SectionHead title={copy.askedTitle} size="list" className={styles.section} />
         {asks === null && loaded.state === "loading" && <Loading onPaper />}
         {asks === null && loaded.state === "failed" && (
           <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={loaded.requestId} onPaper />
@@ -154,7 +163,7 @@ export function LeaveScreen() {
             <ul className={styles.list}>
               {asks.requests.map((each) => (
                 <li key={each.id} className={styles.row}>
-                  <span>{copy.days(dayMonth(each.from), dayMonth(each.to))}</span>
+                  <span>{daysOf(each.from, each.to)}</span>
                   <span className={TONES[each.state]}>{copy.states[each.state]}</span>
                 </li>
               ))}

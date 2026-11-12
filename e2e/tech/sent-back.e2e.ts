@@ -5,7 +5,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { startedThrough, stepAction, writesTo } from "./steps-fixtures.ts";
+import { startedThrough, stepAction, writesTo, throughTheTasks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 const { today, job, visit, capture } = techCopy;
@@ -76,7 +76,7 @@ test("a step sent back on a visit that has locked again is put right from its ca
   await expect(page.getByText(job.locked.past)).toBeVisible();
   await page.getByRole("button", { name: job.putRight }).click();
   await expect(page.getByText(visit.sentBack("Tick the scalp check."))).toBeVisible();
-  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await throughTheTasks(page);
   await stepAction(page).click();
   await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);
 });

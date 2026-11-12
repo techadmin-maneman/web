@@ -46,6 +46,8 @@ function withAKit(fake: Fake): void {
     ],
     returned: [{ piece_code: "MM-STD-4417-B", returned_at: "2030-07-01T05:00:00.000Z", reason: "Base lifting" }],
     forecast: [],
+    visits: 0,
+    pieces: [],
     asked: null,
   };
 }
@@ -65,6 +67,9 @@ test("opens from its tab, shows each lot’s expiry, and receives a top-up by th
   await expect(held).toContainText("SV-3 · 40 ml · Use first · expires 20 Jul");
 
   const coming = page.getByRole("region", { name: copy.coming.title });
+  // Scan opens the camera; a label it can't read is typed in beside it.
+  await coming.getByRole("button", { name: copy.scan.camera }).click();
+  await coming.getByRole("button", { name: copy.scan.type }).click();
   const scan = coming.getByLabel(copy.scan.label);
   await scan.fill("mm-ess-0000007-h");
   await scan.press("Enter");
@@ -74,7 +79,8 @@ test("opens from its tab, shows each lot’s expiry, and receives a top-up by th
   await expect(coming.getByRole("alert")).toHaveText(copy.coming.notOnIt);
   expect(await axeViolations(page)).toEqual([]);
 
-  await coming.getByRole("button", { name: copy.coming.receiveScanned(1) }).click();
+  await expect(coming.getByRole("button", { name: copy.coming.reportMissing })).toBeEnabled();
+  await coming.getByRole("button", { name: copy.coming.restToCome(1) }).click();
   await expect.poll(() => writesTo(fake, "transfers/tr-1/receive").length).toBe(1);
   expect(writesTo(fake, "transfers/tr-1/receive")[0]?.body).toEqual({
     units: ["MM-ESS-0000007-H"],
@@ -203,10 +209,10 @@ test("says nothing's short now where the API finds the kit short of nothing, and
   });
   await page.goto("/kit");
   const days = page.getByRole("region", { name: copy.forecast.title });
-  await days.getByRole("button", { name: copy.forecast.request }).click();
+  await days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets") }).click();
   await expect(days.getByRole("alert")).toHaveText(copy.forecast.nothingShort);
   await expect(days.getByRole("row", { name: /Shampoo sachet/ })).toContainText(copy.forecast.enough);
-  await expect(days.getByRole("button", { name: copy.forecast.request })).toHaveCount(0);
+  await expect(days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets") })).toHaveCount(0);
 });
 
 test("weighs the next seven days' need against the kit, a shortfall in red", async ({ page }) => {
@@ -226,8 +232,8 @@ test("weighs the next seven days' need against the kit, a shortfall in red", asy
   expect(await axeViolations(page)).toEqual([]);
 
   // One tap asks ops for what is short; the kit then says when, until ops settle it.
-  await days.getByRole("button", { name: copy.forecast.request }).click();
+  await days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets") }).click();
   await expect(days.getByRole("status")).toHaveText(/^Requested \d{1,2}(:\d{2})? [ap]m · ops will add it/);
   expect(writesTo(fake, "kit/requests")).toHaveLength(1);
-  await expect(days.getByRole("button", { name: copy.forecast.request })).toHaveCount(0);
+  await expect(days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets") })).toHaveCount(0);
 });

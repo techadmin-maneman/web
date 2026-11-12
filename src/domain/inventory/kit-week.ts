@@ -129,3 +129,67 @@ async function weekNeedOf(db: D1Database, kit: string, today: string): Promise<W
     .all<WeekNeed>();
   return results;
 }
+
+/** A product's pieces the week's first fits and replacements need, against the kit's pieces of it fit to use. */
+export interface PiecesAhead {
+  readonly product: string;
+  /** The product as its first fit is sold: "Mane Man Essential". */
+  readonly name: string;
+  readonly need: number;
+  readonly have: number;
+}
+
+/**
+ * The technician's week ahead beyond consumables, for their Kit screen: how many visits are booked from today to six
+ * days on, and for each product their first fits and replacements need a piece of, how many, against the pieces of it
+ * the kit holds fit to use. Shown only: an ask of ops stays with consumables, as the evening's check, above, fits
+ * pieces to each client.
+ */
+export async function weekVisitsOf(
+  db: D1Database,
+  kit: string,
+  today: string,
+  view: { readonly held: readonly { readonly code: string; readonly usable: number; readonly hairSystem: boolean }[] },
+): Promise<{ visits: number; pieces: PiecesAhead[] }> {
+  const window = [
+    indiaInstant(today, "00:00").toISOString(),
+    indiaInstant(addDays(today, FORECAST_DAYS), "00:00").toISOString(),
+    kit,
+  ];
+  const [visits, needs, products] = await Promise.all([
+    db
+      .prepare(
+        `SELECT COUNT(*) AS visits FROM appointments a INDEXED BY appointments_by_technician
+          WHERE a.technician_id = ?3 AND ${bookedAhead("a")}`,
+      )
+      .bind(...window)
+      .first<{ visits: number }>(),
+    db
+      .prepare(
+        `SELECT ${tierOf("a.tier")} AS product, s.name, COUNT(*) AS need
+           FROM appointments a INDEXED BY appointments_by_technician
+           JOIN services s ON s.kind = 'first_fit' AND s.tier = ${tierOf("a.tier")}
+          WHERE a.technician_id = ?3 AND ${bookedAhead("a")} AND a.type IN ('first_fit', 'replacement')
+          GROUP BY 1, 2
+          ORDER BY s.name COLLATE NOCASE`,
+      )
+      .bind(...window)
+      .all<{ product: string; name: string; need: number }>(),
+    db.prepare(`SELECT code, product FROM hair_systems`).all<{ code: string; product: string }>(),
+  ]);
+  const productOf = new Map(products.results.map((row) => [row.code, row.product]));
+  const have = new Map<string, number>();
+  for (const item of view.held) {
+    const product = item.hairSystem ? productOf.get(item.code) : undefined;
+    if (product !== undefined) have.set(product, (have.get(product) ?? 0) + Math.max(0, item.usable));
+  }
+  return {
+    visits: visits?.visits ?? 0,
+    pieces: needs.results.map((row) => ({
+      product: row.product,
+      name: row.name,
+      need: row.need,
+      have: have.get(row.product) ?? 0,
+    })),
+  };
+}

@@ -9,7 +9,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useCallback } from "react";
 import type { Job, JobSummary } from "../api.ts";
-import { closeOut as copy, titles } from "../content.ts";
+import { badges, closeOut as copy, titles } from "../content.ts";
 import { kindNameLower } from "../lib/kind.ts";
 import { declinedTheFit, fitBookedLater, outcomeOf, type Outcome } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
@@ -120,6 +120,24 @@ function Decided({ job }: { job: Job }) {
   return <Row name={copy.fit} value={fit} />;
 }
 
+/** How long the visit took, from its start to its close: as this phone kept the close, else when it was queued. */
+function tookOf(started: number | null, closedAt: number | null, queued: readonly Queued[], id: string) {
+  const closed = closedAt ?? queued.find((event) => event.job_id === id && event.kind === "outcome")?.queued_at ?? null;
+  return started === null || closed === null ? null : lengthOf(started, closed);
+}
+
+/** What the visit came to: the decision, how long it took, its photographs and how it is paid. */
+function Rows(props: { job: Job; took: { hours: number; minutes: number } | null; photos: string }) {
+  return (
+    <dl className={classes(shared.rows, styles.rows)}>
+      <Decided job={props.job} />
+      {props.took !== null && <Row name={copy.duration} value={copy.length(props.took.hours, props.took.minutes)} />}
+      <Row name={copy.photos} value={props.photos} />
+      <Row name={copy.paymentRow} value={badges[props.job.badge]} />
+    </dl>
+  );
+}
+
 /** When the job started: as the card says, as the API's answer did, or, started with no signal, when the phone took it. */
 function startedAt(job: Job, heard: Heard | undefined, queued: readonly Queued[]): number | null {
   const said = job.progress.started_at ?? heard?.started_at ?? null;
@@ -174,11 +192,11 @@ export function CloseOut({ id }: { id: string }) {
   }
 
   const who = names.get(id) ?? job.client?.name ?? "";
-  const started = startedAt(job, states?.get(id), waiting.events);
-  const took = started === null || closedAt === null ? null : lengthOf(started, closedAt);
+  const took = tookOf(startedAt(job, states?.get(id), waiting.events), closedAt, waiting.events, id);
 
   const sets = job.progress.steps_done.filter((step) => step === "before_photos" || step === "after_photos").length;
   const queuedFrames = waiting.frames.filter((frame) => frame.job_id === id).length;
+  const photos = queuedFrames > 0 ? copy.queued(queuedFrames) : copy.sent(sets * IN_A_SET);
   const later = day.state === "loaded" ? nextAfter(day.value, job, states ?? NOTHING_HEARD) : null;
   const notFitted = outcome === "partial" && said?.outcome === "partial" && said.reason === NO_PIECE;
   const closing = waiting.events.some((event) => event.job_id === id && event.kind === "outcome");
@@ -195,19 +213,13 @@ export function CloseOut({ id }: { id: string }) {
         <p className={styles.sub}>
           {copy.sub(who, kindNameLower(job), closedAs(job, outcome, waiting.events, notFitted))}
         </p>
-        {outcome === "no_show" ? (
-          <Evidence job={job} />
-        ) : (
-          <dl className={classes(shared.rows, styles.rows)}>
-            <Decided job={job} />
-            {took !== null && <Row name={copy.duration} value={copy.length(took.hours, took.minutes)} />}
-            <Row name={copy.photos} value={queuedFrames > 0 ? copy.queued(queuedFrames) : copy.sent(sets * IN_A_SET)} />
-          </dl>
-        )}
+        {outcome === "no_show" ? <Evidence job={job} /> : <Rows job={job} took={took} photos={photos} />}
         {/* A card the phone kept from before one visits names no link. */}
         {job.one_visit && job.payment_link !== null && <PaymentLink job={job} link={job.payment_link} />}
         {outcome === "partial" && <FinishTheWork job={job} closing={closing} />}
-        {later !== null && <NextUp next={later} name={names.get(later.id) ?? where(later.sector)} />}
+        {later !== null && (
+          <NextUp next={later} name={names.get(later.id) ?? later.client_name ?? where(later.sector)} />
+        )}
       </section>
 
       <div className={classes(frame.foot, light.paperFoot, styles.foot)}>

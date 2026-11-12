@@ -1,9 +1,17 @@
-/* Alerts (./AlertList.tsx) in the new look: the inbox's rows and Send me's switches, each list's rows edge to edge. */
+/* Alerts (./AlertList.tsx) in the new look: the inbox's rows and Send me's switches, inside the gutter. */
 
 .rows {
-  margin: var(--sp-8) 0 0;
-  border-top: var(--hairline) solid var(--ui-line);
+  margin: var(--sp-8) var(--screen-gutter) 0;
   border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+/* When an alert came, above its title, as the design has it. */
+.when {
+  display: block;
+  font-size: var(--fs-14);
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
 }
 
 .none {

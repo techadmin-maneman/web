@@ -47,6 +47,11 @@ const inThePeak = (hour: number, estimate: DriveEstimate): boolean =>
   (hour >= estimate.morning_from && hour < estimate.morning_to) ||
   (hour >= estimate.evening_from && hour < estimate.evening_to);
 
+/** How far a drive from one pin to another goes by road, in km to one decimal: the straight line, by the road factor. */
+export function driveKm(from: Pin, to: Pin, estimate: DriveEstimate = DRIVE_ESTIMATE): number {
+  return Math.round((kmBetween(from, to) * estimate.road_factor) / 10) / 10;
+}
+
 /** The minutes a drive from one pin to another takes, setting off in `hour` (0 to 23, India's clock). */
 export function driveMinutes(from: Pin, to: Pin, hour: number, estimate: DriveEstimate = DRIVE_ESTIMATE): number {
   const km = (kmBetween(from, to) * estimate.road_factor) / 100;

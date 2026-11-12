@@ -5067,6 +5067,8 @@ export interface components {
             } | null;
             /** @description The drive to it by our estimate: from the job before, or from the technician's home for the day's first. Null for a job closed, and for the day's first where the technician's home has no pin. */
             drive_minutes: number | null;
+            /** @description How far that drive goes by road, in km to one decimal, by our estimate from the two pins. Null where either end has no pin, as for drive_minutes. */
+            drive_km: number | null;
             /** @description When to leave for it, to start on time. Null for a job closed, and for the day's first where the technician's home has no pin. */
             leave_by: string | null;
         };
@@ -5268,6 +5270,12 @@ export interface components {
             /** @description The client's alerts still on, newest first. */
             client_alerts: components["schemas"]["TechnicianClientAlert"][];
             handoff: components["schemas"]["Handoff"];
+            /** @description How many of the client's visits closed before this one, as Client history lists them, and when the first was. Null until the day before the visit. */
+            client_visits: {
+                count: number;
+                /** @description The first's day in India; null for none. */
+                first: string | null;
+            } | null;
             /** @description The technician's open ask that ops move the visit, until it is settled; null for none. */
             reschedule_asked: components["schemas"]["TechnicianRescheduleAsked"] | null;
             /** @description The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and leaves this list once it has (ADR 0246). */
@@ -5890,7 +5898,7 @@ export interface components {
                 returned_at: string;
                 reason: string | null;
             }[];
-            /** @description The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out. */
+            /** @description The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out: they are in pieces. */
             forecast: {
                 code: string;
                 name: string;
@@ -5898,6 +5906,18 @@ export interface components {
                 /** @description What the visits booked are expected to use. */
                 need: number;
                 /** @description What the kit holds of it fit to use now. */
+                have: number;
+            }[];
+            /** @description The visits booked from today to six days on, which the forecast is taken from. */
+            visits: number;
+            /** @description For each product the first fits and replacements from today to six days on need a piece of, against the kit's pieces of it. Shown only: an ask of ops is for consumables. */
+            pieces: {
+                product: string;
+                /** @description The product as its first fit is sold. */
+                name: string;
+                /** @description The first fits and replacements booked that need one. */
+                need: number;
+                /** @description The kit's pieces of it fit to use now. */
                 have: number;
             }[];
             /** @description The kit's ask of ops for what it is short of, open until ops settle it; null for none. */

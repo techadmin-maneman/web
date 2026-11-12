@@ -45,6 +45,29 @@ interface VisitRow {
   technician: string | null;
 }
 
+/** How many of the client's visits closed before the job, and the day in India of the first, as the job's row says. */
+export interface HistoryCount {
+  readonly count: number;
+  readonly first: string | null;
+}
+
+/** The client's visits closed before the job, counted, as the history lists them; for "5 visits since Jul". */
+export async function historyCountOf(
+  db: D1Database,
+  job: { readonly id: string; readonly personId: string; readonly startsAt: string },
+): Promise<HistoryCount> {
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) AS count, MIN(a.window_start) AS first FROM appointments a
+       WHERE a.person_id = ?1 AND a.id <> ?2 AND a.deleted_at IS NULL AND a.window_start < ?3
+         AND ${statusIn("a.status", VISIT_ENDED)}`,
+    )
+    .bind(job.personId, job.id, job.startsAt)
+    .first<{ count: number; first: string | null }>();
+  const first = row?.first ?? null;
+  return { count: row?.count ?? 0, first: first === null ? null : indiaDate(new Date(first)) };
+}
+
 /** The client's visits closed before the job, newest first, each as the history shows it. */
 export async function clientHistory(
   db: D1Database,

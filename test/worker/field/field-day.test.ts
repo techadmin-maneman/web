@@ -80,6 +80,10 @@ describe("the day's jobs", () => {
     const drive = job?.drive_minutes as number;
 
     expect(drive).toBeGreaterThan(0);
+    // The road's km to one decimal: about 2.4 km in a straight line, longer by the road.
+    const km = job?.drive_km as number;
+    expect(km).toBeGreaterThan(2.4);
+    expect(Math.round(km * 10) / 10).toBe(km);
     // 1 pm in India, less the drive.
     expect(job?.leave_by).toBe(new Date(Date.parse("2026-09-21T07:30:00.000Z") - drive * 60_000).toISOString());
   });

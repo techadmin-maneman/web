@@ -10,7 +10,7 @@ import { JOB_ID, ROHITS_PIECE, ROHITS_PROFILE, TOMORROW_JOB_ID } from "./fixture
 import { fakeTech } from "./fake-tech.ts";
 import { atTheDoor, pageScrolls } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
-import { stepAction } from "./steps-fixtures.ts";
+import { stepAction, throughTheTasks, shots } from "./steps-fixtures.ts";
 
 const door = techCopy.notHome.door;
 
@@ -225,8 +225,8 @@ test("checks in at the door, and records the time and the distance", async ({ pa
   await atTheDoor(page);
   await page.goto(`/jobs/${JOB_ID}`);
 
-  // The radius ops set, said above the one action at the foot.
-  await expect(page.getByText("Check in within 150 m of the door.")).toBeVisible();
+  // The radius ops set is said only when a check-in is refused for it, not above the action.
+  await expect(page.getByText("Check in within 150 m of the door.")).toHaveCount(0);
   await expect(foot(page)).toHaveText(techCopy.notHome.arrived.action);
   await foot(page).click();
 
@@ -253,7 +253,11 @@ test("refuses a check-in from away, and says how far, with Try again and no way 
 
   await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
   await expect(page.getByText(techCopy.notHome.failed.title)).toBeVisible();
-  await expect(page.getByText(/You are 1\.4 km from the address\. Go to the door and tap again\./)).toBeVisible();
+  await expect(
+    page.getByText(
+      /You are 1\.4 km from the address\. Check in within 150 m of the door\. Go to the door and tap again\./,
+    ),
+  ).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
   await expect(page.getByRole("button", { name: door.close })).toHaveCount(0);
   await expect(foot(page)).toHaveText(techCopy.job.retry);
@@ -493,7 +497,7 @@ test("tomorrow’s job shows its day, and cannot be checked in to today", async 
   await atTheDoor(page);
   await page.goto(`/jobs/${TOMORROW_JOB_ID}`);
 
-  await expect(page.getByText(/^Tomorrow · 10–10:30 am · service visit · no charge$/)).toBeVisible();
+  await expect(page.getByText(/^Tomorrow · 10 to 10:30 am · service visit · no charge$/)).toBeVisible();
   await expect(page.getByText(techCopy.job.notToday.tomorrow)).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
@@ -510,14 +514,14 @@ test("walks the steps of a service visit and closes it out", async ({ page }) =>
   await expect(capture).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
-  await page.getByRole("button", { name: techCopy.steps.outcome.done }).click();
+  await page.getByRole("button", { name: techCopy.capture.finish, exact: true }).click();
 
   // Step 2: the guided tasks, one a screen; Tick all for a routine visit.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
   await expect(stepAction(page)).toHaveText(techCopy.visit.nextTask);
-  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await throughTheTasks(page);
   expect(await axeViolations(page)).toEqual([]);
   await stepAction(page).click();
 
@@ -533,15 +537,15 @@ test("walks the steps of a service visit and closes it out", async ({ page }) =>
   await expect(capture).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
-  await page.getByRole("button", { name: techCopy.steps.outcome.done }).click();
+  await page.getByRole("button", { name: techCopy.capture.finish, exact: true }).click();
 
   // Step 5: the outcome, with nothing chosen for them.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
   await expect(page.getByText(techCopy.steps.outcome.choose, { exact: true })).toBeVisible();
   await expect(stepAction(page)).toBeDisabled();
-  await page.getByRole("button", { name: techCopy.steps.outcome.partial, exact: true }).click();
+  await page.getByRole("radio", { name: techCopy.steps.outcome.partial, exact: true }).click();
   await expect(page.getByText(techCopy.steps.outcome.pickReason, { exact: true })).toBeVisible();
   await expect(stepAction(page)).toBeDisabled();
   await page.getByRole("button", { name: "Client stopped it partway" }).click();

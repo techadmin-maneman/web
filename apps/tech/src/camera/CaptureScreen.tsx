@@ -8,6 +8,7 @@ import { Button } from "@maneman/ui/Button";
 import { IconButton } from "@maneman/ui/IconButton";
 import { Shutter } from "@maneman/ui/Shutter";
 import { Tile } from "@maneman/ui/Tile";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { useCamera } from "@maneman/ui/useCamera";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -19,6 +20,7 @@ import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
 import { buzz } from "../lib/haptics.ts";
+import { dayMonth } from "../lib/when.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { go } from "../route.ts";
 import { useOnline } from "../session.ts";
@@ -38,6 +40,15 @@ function refusalNotice(refused: readonly Angle[], taken: readonly TakenAngle[]):
   const stillToTake = refused.filter((angle) => !taken.some((one) => one.angle === angle));
   if (stillToTake.length === 0) return null;
   return copy.refusedPhotos(stillToTake.map((angle) => copy.angles[angle].toLowerCase()));
+}
+
+/** What Compare names: the visit before photographs are set beside, by its day and who did it; the before set after. */
+function compareLabel(
+  phase: Phase,
+  last: { readonly date: string; readonly technician: string | null } | null,
+): string {
+  if (phase === "after" || last === null) return copy.compareWith[phase];
+  return copy.compareWithVisit(dayMonth(last.date), last.technician === null ? null : theirs(last.technician));
 }
 
 /** Why a set ops sent back is open again, as they said it; null for a set not sent back. */
@@ -107,7 +118,8 @@ function Tiles(props: {
         const one = props.taken.find((each) => each.angle === name);
         const frameId = one?.frameId ?? null;
         const picture = frameId === null ? undefined : props.pictures.get(frameId);
-        const label = <span className={styles.tileLabel}>{copy.angles[name]}</span>;
+        // Bare, as the design draws them: the angle is for a screen reader alone.
+        const label = <VisuallyHidden>{copy.angles[name]}</VisuallyHidden>;
         return (
           <li className={styles.tile} key={name} data-state={tileState(name, props.taken, props.now)}>
             {picture !== undefined && <img className={styles.tilePicture} src={picture} alt="" />}
@@ -179,6 +191,8 @@ function promptOf(missed: "missed" | "blank" | null, angle: Angle | undefined): 
 function CameraHead(props: {
   id: string;
   title: string;
+  /** The shot being taken; none once all five are. */
+  angle: Angle | undefined;
   taken: number;
   stream: MediaStream | null;
   heading: (element: HTMLHeadingElement | null) => void;
@@ -189,9 +203,9 @@ function CameraHead(props: {
       <header className={styles.top}>
         <IconButton
           className={styles.back}
-          d={ICONS.back}
+          d={ICONS.cross}
           size="lg"
-          label={copy.back}
+          label={copy.close}
           onClick={() => {
             go(`/jobs/${props.id}/plan`);
           }}
@@ -200,7 +214,9 @@ function CameraHead(props: {
           <h1 className={styles.title} ref={props.heading} tabIndex={-1}>
             {props.title}
           </h1>
-          <p className={styles.count}>{copy.of(props.taken)}</p>
+          <p className={styles.count}>
+            {props.angle === undefined ? copy.of(props.taken) : copy.taking(props.taken + 1, copy.angles[props.angle])}
+          </p>
         </div>
         <Torch stream={props.stream} />
       </header>
@@ -313,7 +329,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   return (
     <div className={styles.look} data-look="light">
       <main className={styles.screen} data-chrome="camera">
-        <CameraHead id={id} title={title} taken={taken.length} stream={stream} heading={heading} />
+        <CameraHead id={id} title={title} angle={angle} taken={taken.length} stream={stream} heading={heading} />
         {canCompare && (
           <div className={styles.compareBar}>
             <ToggleButton
@@ -323,7 +339,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
                 setComparing(!comparing);
               }}
             >
-              {copy.compareWith[phase]}
+              {compareLabel(phase, loaded.value.last_visit)}
             </ToggleButton>
           </div>
         )}

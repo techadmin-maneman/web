@@ -84,13 +84,14 @@ function Rows({ lines }: { lines: readonly Line[] }) {
   );
 }
 
-/** The drive to the job, from the day's list the phone keeps; null where it does not know it. */
-function useDrive(job: Job): number | null {
-  const read = useCallback(
-    async () => (await keptDay(job.date))?.find((each) => each.id === job.id)?.drive_minutes ?? null,
-    [job.date, job.id],
-  );
-  return valueOr(useAsync(read)[0], null);
+/** The drive to the job, its minutes and km, from the day's list the phone keeps; null where it does not know it. */
+function useDrive(job: Job): { readonly minutes: number | null; readonly km: number | null } {
+  const read = useCallback(async () => {
+    const listed = (await keptDay(job.date))?.find((each) => each.id === job.id);
+    // A day kept by an earlier build has no km.
+    return { minutes: listed?.drive_minutes ?? null, km: listed?.drive_km ?? null };
+  }, [job.date, job.id]);
+  return valueOr(useAsync(read)[0], { minutes: null, km: null });
 }
 
 /** Where a map will be: the drive there, or that the address has no pin to show. */
@@ -100,7 +101,7 @@ function MapSlot({ job }: { job: Job }) {
   return (
     <div className={styles.map} role="img" aria-label={pinned ? copy.map.label : copy.map.noPin}>
       <Icon className={styles.mapIcon} d={GLYPHS.navigate} size="md" />
-      <span className={styles.mapLine}>{pinned ? copy.map.line(drive) : copy.map.noPin}</span>
+      <span className={styles.mapLine}>{pinned ? copy.map.line(drive.minutes, drive.km) : copy.map.noPin}</span>
     </div>
   );
 }

@@ -74,6 +74,7 @@ const summary = (id: string, date: string) =>
     address: null,
     next: null,
     drive_minutes: null,
+    drive_km: null,
     leave_by: null,
   }) as JobSummary;
 
@@ -126,6 +127,7 @@ const card = (id: string, date: string) =>
     handoff: null,
     sent_back: [],
     reschedule_asked: null,
+    client_visits: { count: 0, first: null },
   }) as Job;
 
 const arrival = {

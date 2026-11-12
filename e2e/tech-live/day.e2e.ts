@@ -8,6 +8,7 @@ import { LOCAL_LOGIN_CODE, PORTS } from "../../scripts/lib/local-stack.ts";
 import { addDays, indiaDate } from "../../src/lib/india-time.ts";
 import { expect, test } from "../support.ts";
 import { AT_THE_DOOR, liveDay } from "./day.ts";
+import { throughTheTasks } from "../tech/steps-fixtures.ts";
 import {
   signIn as signInWords,
   capture as captureWords,
@@ -86,7 +87,7 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
   await photograph(page);
 
   await expect(page.getByRole("heading", { level: 1, name: steps.titles.checklist })).toBeVisible();
-  await page.getByRole("button", { name: steps.checklist.all }).click();
+  await throughTheTasks(page);
   await page.getByRole("button", { name: steps.next }).click();
   await expect(page.getByRole("heading", { level: 1, name: steps.titles.consumables })).toBeVisible();
   // A count short of what ops expect, or nothing at all, is said why, and the API holds the step to it (ADR 0222). A

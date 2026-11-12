@@ -106,7 +106,7 @@
 
   /* One width down the list, so the words after it line up; what runs past it is cut short. */
   .lead {
-    flex: 0 0 calc(var(--sp-64) + var(--sp-16));
+    flex: 0 0 var(--row-lead-width);
     align-self: var(--row-lead-align);
     overflow: hidden;
     text-overflow: ellipsis;

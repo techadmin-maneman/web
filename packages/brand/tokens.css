@@ -244,6 +244,7 @@
   --ui-line: var(--paper-line); /* rules and borders */
   --ui-line-control: var(--paper-control); /* a control's edge */
   --ui-strong: var(--ink); /* a filled button, an outline's edge, a ticked box, a chosen tab's rule */
+  --outline-edge: var(--ui-strong); /* an outlined button's edge, which a look may set apart from the strong ink */
   --ui-on-strong: var(--paper); /* words on --ui-strong, and on a filled destructive button */
   --ui-strong-pressed: var(--ink-deep);
   --ui-error: var(--error-on-paper);

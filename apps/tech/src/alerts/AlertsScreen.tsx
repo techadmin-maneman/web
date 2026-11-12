@@ -18,7 +18,7 @@ import styles from "./alerts.module.css";
 export function AlertsScreen({ back }: { readonly back: string }) {
   const [loaded, retry] = useLoad(api.alerts);
   return (
-    <CardFrame title={copy.title} sub={copy.sub} back={back} foot={null}>
+    <CardFrame title={copy.title} back={back} foot={null}>
       {loaded.state === "loaded" && <Inbox alerts={loaded.value} />}
       {loaded.state === "loading" && <Loading onPaper />}
       {loaded.state === "failed" && (

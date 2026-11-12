@@ -4,7 +4,14 @@
 
 import { distance } from "@maneman/web-kit/figures";
 import { apiNow } from "@maneman/web-kit/clock";
-import { addDays, dayMonth, indiaClock, indiaTimeOf, todayInIndia as indiaToday } from "@maneman/web-kit/dates";
+import {
+  addDays,
+  dayMonth,
+  indiaClock,
+  indiaTimeOf,
+  shortDate,
+  todayInIndia as indiaToday,
+} from "@maneman/web-kit/dates";
 import { timeRange } from "@rules/lib/time-range.ts";
 import { runsOver as runsInto } from "@rules/policy/tech-alerts.ts";
 // The schema rather than ../api.ts, so these can be read and tested in Node without the fetch client.
@@ -24,6 +31,15 @@ export const dayBefore = (isoDate: string): string => addDays(isoDate, -1);
 /** "22 Aug", as the job card dates the last visit. */
 export { dayMonth } from "@maneman/web-kit/dates";
 
+/** "Thu, 12 Nov": a day as Today's head and Leave's fields write it. */
+export const dayDate = (isoDate: string): string => shortDate(isoDate).replace(" ", ", ");
+
+/** Two days as a span's ends, the month written once where both share it: "12", "18 Nov"; or "28 Nov", "4 Dec". */
+export function spanEnds(from: string, to: string): readonly [string, string] {
+  const sameMonth = from.slice(0, 7) === to.slice(0, 7);
+  return [sameMonth ? String(Number(from.slice(8, 10))) : dayMonth(from), dayMonth(to)];
+}
+
 /** "9:30 am", "4 pm": every time the app writes, the head of Today, a job's row and its card alike. */
 export const clock = indiaClock;
 
@@ -35,7 +51,7 @@ export function stamp(instant: string, now: Date = apiDate()): string {
 
 /** "11:30 am–12 pm": when the technician is to arrive, from the start to the end of the client's arrival window. */
 export const arrival = (job: { readonly starts_at: string; readonly arrives_by: string }): string =>
-  timeRange(indiaTimeOf(job.starts_at), indiaTimeOf(job.arrives_by));
+  timeRange(indiaTimeOf(job.starts_at), indiaTimeOf(job.arrives_by)).replace("–", " to ");
 
 /** Whether a job under way runs into the next one, by the rule the API's running-over alert follows. */
 export const runsOver = (job: JobSummary, now: Date): boolean =>

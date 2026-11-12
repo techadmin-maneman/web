@@ -53,6 +53,14 @@
 }
 
 .asked {
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text-soft);
+}
+
+/* The form's labels small and quiet, as the design draws Leave's. */
+.label {
+  font-size: var(--fs-13);
+  font-weight: var(--weight-regular);
   color: var(--ui-text-soft);
 }
 

@@ -56,8 +56,8 @@ export interface CheckIn {
   readonly busy: boolean;
   /** Before the job's opening time, when the API would refuse one. */
   readonly notYet: boolean;
-  /** The line above Check in: when it opens, a position the phone would not give, or how near it must be made. */
-  readonly helper: string;
+  /** What Check in waits on, above it: when it opens, or a position the phone would not give; null while nothing does. */
+  readonly helper: string | null;
   readonly arrive: () => void;
 }
 
@@ -122,20 +122,24 @@ export function useCheckIn(job: Job, queued: readonly Queued[]): CheckIn {
   return { here, known, failed, busy, notYet, helper: helperOf(job, { noPosition, opens }), arrive };
 }
 
-/** The line above Check in: a position the phone would not give, when it opens, or how near it must be made. */
-function helperOf(job: Job, state: { readonly noPosition: boolean; readonly opens: boolean }): string {
+/**
+ * The line above Check in: a position the phone would not give, when it opens, or that the address has no pin; none
+ * otherwise. How near it must be made is said once a check-in is refused for it (CheckInFailed).
+ */
+function helperOf(job: Job, state: { readonly noPosition: boolean; readonly opens: boolean }): string | null {
   if (state.noPosition) return copy.arrived.noPosition;
   if (state.opens) return copy.arrived.opensAt(clock(job.checkin_from));
   if (job.address?.lat === null) return copy.arrived.noPin;
-  return copy.arrived.body(job.checkin_radius_m);
+  return null;
 }
 
 /** A check-in the API measured too far from the door, or could not measure, and what to do. */
-export function CheckInFailed({ distance }: { distance: number | null }) {
+export function CheckInFailed({ distance, radius }: { distance: number | null; radius: number | null }) {
   return (
     <div className={styles.failed}>
       <ProblemCard title={copy.failed.title} live>
-        {distance === null ? copy.failed.unmeasured : copy.failed.away(metres(distance))} {copy.failed.body}
+        {distance === null ? copy.failed.unmeasured : copy.failed.away(metres(distance))} {copy.arrived.body(radius)}{" "}
+        {copy.failed.body}
       </ProblemCard>
       <ReachOps className={styles.reach} onPaper />
     </div>

@@ -64,7 +64,7 @@ const CLIENTS: Readonly<Record<string, string>> = {
 const jobId = (id: number) => `a0000000-0000-4000-8000-00000000000${String(id)}`;
 
 // The board draws no Navigate or drive beneath a row.
-const NO_WAY_THERE = { address: null, next: null, drive_minutes: null, leave_by: null } as const;
+const NO_WAY_THERE = { address: null, next: null, drive_minutes: null, drive_km: null, leave_by: null } as const;
 
 const job = ({
   id,
@@ -225,6 +225,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     handoff: null,
     sent_back: [],
     reschedule_asked: null,
+    client_visits: { count: 0, first: null },
   };
 };
 

@@ -70,7 +70,7 @@ test("a pick of a product the card no longer offers is never sent", async ({ pag
   await page.reload();
 
   await stepAction(page).click();
-  await page.getByRole("button", { name: steps.outcome.done, exact: true }).click();
+  await page.getByRole("radio", { name: steps.outcome.done, exact: true }).click();
   await page.getByRole("button", { name: steps.outcome.yes }).click();
   await stepAction(page).click();
   await expect.poll(() => writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: true });

@@ -147,6 +147,29 @@ describe("the week ahead", () => {
     expect(forecast).toEqual([{ code: "solvent", name: "Solvent", unit: "ml", need: 20, have: 4 }]);
   });
 
+  it("counts the visits it is taken from, and each product's pieces its fits and replacements need", async () => {
+    await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 2, from: "central", to: IMRAN });
+    // A first fit two days on and a replacement five days on, both Essential; and a first fit a week on, past it.
+    const visits = [
+      [2, "first_fit"],
+      [5, "replacement"],
+      [7, "first_fit"],
+    ] as const;
+    for (const [days, type] of visits) {
+      await aVisit({
+        person_id: PERSON,
+        technician_id: IMRAN,
+        type,
+        tier: "essential",
+        window_start: new Date(NOW.getTime() + days * 24 * 60 * 60_000).toISOString(),
+      });
+    }
+    const week = await (await job.get("/api/tech/kit")).json<{ visits: number; pieces: unknown[] }>();
+    // The fixture's service today, and the two inside the seven days.
+    expect(week.visits).toBe(3);
+    expect(week.pieces).toEqual([{ product: "essential", name: "Mane Man Essential", need: 2, have: 2 }]);
+  });
+
   it("counts nothing expired as held, which goes back to ops instead", async () => {
     await job.opsPost("/api/consumables", { name: "Solvent", unit: "ml", unit_cost: 50 });
     await job.opsPost("/api/service-usage", {

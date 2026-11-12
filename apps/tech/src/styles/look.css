@@ -27,7 +27,11 @@
   --ui-toggle-text: var(--ink-900);
   --ui-hint: var(--ink-500);
   --ui-line: var(--line-200);
+  /* The paper rule a few shared parts draw directly, as a ruled list of choices: grey here, not the paper's warm one. */
+  --paper-line: var(--line-200);
   --ui-line-control: var(--stone);
+  /* An outlined button's edge, grey as the design draws it, at the 3:1 of a control's (WCAG 1.4.11). */
+  --outline-edge: var(--stone);
   --ui-strong: var(--navy-900);
   --ui-on-strong: var(--white-000);
   --ui-strong-pressed: var(--navy-700);
@@ -78,6 +82,8 @@
   --label-text: var(--ink-900);
   --label-weight: var(--weight-semibold);
   --check-row-height: var(--tap-row);
+  /* A ruled list's choice at the app's gloved 48 px, as the outcome's Result and the language sheet draw them. */
+  --choice-row-height: var(--tech-min);
   --check-box-size: var(--sp-24);
 
   /* The tab bar on white: its current tab in navy, under a 2 px navy mark; and a sheet's panel on white. */
@@ -130,6 +136,7 @@
   --ui-line: var(--navy-700);
   --ui-line-control: var(--navy-700);
   --ui-strong: var(--white-000);
+  --outline-edge: var(--ui-strong);
   --ui-on-strong: var(--navy-900);
   --ui-strong-pressed: var(--mist-300);
   --focus-colour: var(--white-000);

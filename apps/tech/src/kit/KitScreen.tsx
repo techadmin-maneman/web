@@ -9,7 +9,7 @@ import { Button } from "@maneman/ui/Button";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, type Kit } from "../api.ts";
 import { NoSignal } from "../frame/Banners.tsx";
 import { ReachOps } from "../frame/ReachOps.tsx";
@@ -17,7 +17,7 @@ import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
 import { kit as copy } from "../content.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { dayMonth } from "../lib/when.ts";
+import { apiDate, clock, dayMonth } from "../lib/when.ts";
 import { useSession } from "../session.ts";
 import { Arriving } from "./Arriving.tsx";
 import { Forecast } from "./Forecast.tsx";
@@ -69,7 +69,7 @@ function InKit({ kit }: { readonly kit: Kit }) {
   const coming = new Set(kit.coming.map((topUp) => topUp.code));
   return (
     <section className={styles.section} aria-labelledby="kit-held">
-      <SectionHead id="kit-held" title={copy.held.title} />
+      <SectionHead id="kit-held" size="list" title={copy.held.title} />
       {kit.held.length === 0 ? (
         <p className={styles.note}>{copy.held.none}</p>
       ) : (
@@ -124,7 +124,7 @@ function ReturnToOps(props: { readonly kit: Kit; readonly offline: boolean; read
     });
   return (
     <section className={styles.section} aria-labelledby="kit-returned">
-      <SectionHead id="kit-returned" title={copy.returned.title} />
+      <SectionHead id="kit-returned" size="list" title={copy.returned.title} />
       <ul className={styles.rows}>
         {kit.returned.map((piece) => (
           <li key={piece.piece_code} className={styles.row}>
@@ -181,12 +181,20 @@ export function KitScreen() {
   const [loaded, retry] = useLoad(api.kit);
   const [after, setAfter] = useState<Kit | null>(null);
   const kit = after ?? (loaded.state === "loaded" ? loaded.value : null);
+  // When the kit was last read, so a phone without signal shows how old its figures are.
+  const [readAt, setReadAt] = useState<string | null>(null);
+  useEffect(() => {
+    if (kit !== null) setReadAt(apiDate().toISOString());
+  }, [kit]);
   return (
     <main className={styles.screen} data-look="light">
       <header className={styles.head}>
-        <h1 className={styles.title} ref={heading} tabIndex={-1}>
-          {copy.title}
-        </h1>
+        <div>
+          <h1 className={styles.title} ref={heading} tabIndex={-1}>
+            {copy.title}
+          </h1>
+          {readAt !== null && <p className={styles.updated}>{copy.updated(clock(readAt))}</p>}
+        </div>
         <SyncLabel />
       </header>
       {offline && <NoSignal />}

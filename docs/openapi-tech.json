@@ -929,6 +929,18 @@
             ],
             "description": "The drive to it by our estimate: from the job before, or from the technician's home for the day's first. Null for a job closed, and for the day's first where the technician's home has no pin."
           },
+          "drive_km": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How far that drive goes by road, in km to one decimal, by our estimate from the two pins. Null where either end has no pin, as for drive_minutes."
+          },
           "leave_by": {
             "anyOf": [
               {
@@ -965,6 +977,7 @@
           "address",
           "next",
           "drive_minutes",
+          "drive_km",
           "leave_by"
         ],
         "additionalProperties": false
@@ -1830,6 +1843,40 @@
           "handoff": {
             "$ref": "#/components/schemas/Handoff"
           },
+          "client_visits": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "first": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The first's day in India; null for none."
+                  }
+                },
+                "required": [
+                  "count",
+                  "first"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How many of the client's visits closed before this one, as Client history lists them, and when the first was. Null until the day before the visit."
+          },
           "reschedule_asked": {
             "anyOf": [
               {
@@ -1917,6 +1964,7 @@
           "profile",
           "client_alerts",
           "handoff",
+          "client_visits",
           "reschedule_asked",
           "sent_back"
         ],
@@ -4508,7 +4556,43 @@
               ],
               "additionalProperties": false
             },
-            "description": "The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out."
+            "description": "The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out: they are in pieces."
+          },
+          "visits": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The visits booked from today to six days on, which the forecast is taken from."
+          },
+          "pieces": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The product as its first fit is sold."
+                },
+                "need": {
+                  "type": "integer",
+                  "description": "The first fits and replacements booked that need one."
+                },
+                "have": {
+                  "type": "integer",
+                  "description": "The kit's pieces of it fit to use now."
+                }
+              },
+              "required": [
+                "product",
+                "name",
+                "need",
+                "have"
+              ],
+              "additionalProperties": false
+            },
+            "description": "For each product the first fits and replacements from today to six days on need a piece of, against the kit's pieces of it. Shown only: an ask of ops is for consumables."
           },
           "asked": {
             "anyOf": [
@@ -4566,6 +4650,8 @@
           "coming",
           "returned",
           "forecast",
+          "visits",
+          "pieces",
           "asked",
           "today"
         ],

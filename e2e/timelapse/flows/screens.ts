@@ -15,6 +15,7 @@ import {
 } from "../../../apps/tech/src/content.ts";
 import { referral } from "../../../site/src/content/referral.ts";
 import * as siteCopy from "../../../site/src/content/site.ts";
+import { throughTheTasks } from "../../tech/steps-fixtures.ts";
 import { Phone, razorpayPaid } from "../actors.ts";
 import { appOf, idOf } from "./clients.ts";
 import type { Job } from "./field.ts";
@@ -208,7 +209,7 @@ export async function techJobOnScreen(
       if (offline) await phone.context.setOffline(true);
       await photograph(page);
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.checklist })).toBeVisible();
-      await page.getByRole("button", { name: stepWords.checklist.all }).click();
+      await throughTheTasks(page);
       await page.getByRole("button", { name: stepWords.next }).click();
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.consumables })).toBeVisible();
       await page.getByRole("button", { name: stepWords.next }).click();

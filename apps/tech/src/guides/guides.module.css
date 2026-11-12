@@ -2,9 +2,9 @@
    a step of tasks listing them, and a task read alone. */
 
 /* A row's words on the gutter's line: the row's own padding taken back from the margin, as Me's rows. */
+/* The rows and their rules inside the gutter, as the design draws them. */
 .rows {
-  margin: var(--sp-8) 0 0;
-  border-top: var(--hairline) solid var(--ui-line);
+  margin: var(--sp-8) var(--screen-gutter) 0;
 }
 
 .page {
@@ -23,7 +23,8 @@
   display: grid;
   grid-template-columns: var(--sp-24) minmax(0, 1fr);
   column-gap: var(--sp-8);
-  padding: var(--sp-12) var(--screen-gutter);
+  margin: 0 var(--screen-gutter);
+  padding: var(--sp-12) 0;
   border-bottom: var(--hairline) solid var(--ui-line);
   counter-increment: step;
 }

@@ -4,6 +4,7 @@
 .ask {
   margin-top: var(--sp-8);
   min-height: var(--tech-min);
+  font-weight: var(--weight-semibold);
 }
 
 .asked {
