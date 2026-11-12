@@ -21,15 +21,12 @@ import { stepPath } from "../route.ts";
 import type { Queued } from "../store/outbox.ts";
 import { screensOf } from "./engine.ts";
 import styles from "./plan.module.css";
+import { theirs } from "../lang/index.ts";
 
 type State = MarkState;
 
-const STATE_WORDS: Record<State, string> = {
-  done: copy.plan.states.done,
-  now: copy.plan.states.now,
-  todo: copy.plan.states.todo,
-  fix: copy.plan.needsFix,
-};
+/** A step's state in words, read as the plan is drawn so it is in the language now. */
+const stateWords = (state: State): string => (state === "fix" ? copy.plan.needsFix : copy.plan.states[state]);
 
 /** When the visit began: the card's start, or the tap on Start visit still on the phone. */
 function startedAt(job: Job, queued: readonly Queued[]): number | null {
@@ -89,7 +86,7 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
           {toFix
             .map((screen) => {
               const reason = sentBackFor(job, queued, screen.event);
-              return reason === null ? screen.title : copy.plan.sentBack(screen.title, reason);
+              return reason === null ? screen.title : copy.plan.sentBack(screen.title, theirs(reason));
             })
             .join(". ")}
         </ProblemCard>
@@ -102,7 +99,7 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
               key={screen.id}
               mark={<StepMark state={state} />}
               title={screen.title}
-              end={STATE_WORDS[state]}
+              end={stateWords(state)}
               endTone={state === "fix" ? "error" : "muted"}
               to={state === "todo" ? undefined : stepPath(job.id, screen.event)}
             />

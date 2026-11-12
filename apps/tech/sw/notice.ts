@@ -1,8 +1,8 @@
-// What a push shows on the lock screen (./sw.ts): each alert not yet read, sent within the life of a push and not shown
-// before, a notification each, in words that name no client, since a locked phone is seen by others; a job on another
-// day says which. An alert older than a push lives, whose push this phone missed, waits in the inbox unshown. Navigate and
-// Open job where the alert is about a job; a tap opens the job, the day ahead's day, or the inbox. Its own words, not
-// the app's (../src/content.ts): the worker is built as one file and shares no module with the app.
+// What a push shows on the lock screen (./sw.ts): each alert not yet read, written within the hour a push could still
+// bring it and not shown before, a notification each, in words that name no client, since a locked phone is seen by
+// others; a job on another day says which. An alert older, whose push this phone missed, waits in the inbox unshown.
+// Navigate and Open job where the alert is about a job; a tap opens the job, the day ahead's day, or the inbox. Its
+// own words, not the app's (../src/content.ts): the worker is built as one file and shares no module with the app.
 
 /** The alert as GET /api/tech/alerts gives it, the parts a notification reads. */
 export interface PushedAlert {
@@ -136,8 +136,8 @@ const noticeFor = (alert: PushedAlert, now: number): Notice => ({
 });
 
 /**
- * The notifications a push shows, newest first: each alert not yet read, sent within the life of a push and not shown
- * before. A push must show one, so with none new the newest such alert is shown again in its place, or, where none
+ * The notifications a push shows, newest first: each alert not yet read, written within the hour a push could still
+ * bring it, and not shown before. A push must show one, so with none new the newest such alert is shown again in its place, or, where none
  * could be read, the one that says to open the app. `noted` is every alert to remember as shown: those shown, and those
  * too old to show, whose push this phone missed.
  */

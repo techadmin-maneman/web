@@ -26,9 +26,9 @@ function gilded(files: readonly string[]): string[] {
 }
 
 describe("gold", () => {
-  it("marks only the technician app's one primary action, beside the mark", () => {
+  // The sign-in's mark is navy in the light look it now takes (docs/decisions/0251-hindi-and-the-sign-in.md).
+  it("marks only the technician app's one primary action", () => {
     expect(gilded([...stylesheets("apps/tech/src"), "packages/ui/button.module.css"])).toEqual([
-      "apps/tech/src/login/login.module.css .mark",
       "packages/ui/button.module.css .gold",
     ]);
   });

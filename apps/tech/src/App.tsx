@@ -19,6 +19,7 @@ import { LeaveScreen } from "./me/LeaveScreen.tsx";
 import { MeScreen } from "./me/MeScreen.tsx";
 import { GuideScreen, GuidesScreen, GuideTaskScreen } from "./guides/GuidesScreen.tsx";
 import { AlertsScreen } from "./alerts/AlertsScreen.tsx";
+import { useLanguage } from "./lang/index.ts";
 import { alertsBack, guideBack } from "./lib/opened-from.ts";
 import { PreviewScreen } from "./schedule/PreviewScreen.tsx";
 import { ScheduleScreen } from "./schedule/ScheduleScreen.tsx";
@@ -134,6 +135,8 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
 }
 
 export function App() {
+  // Every screen draws again in a language chosen, keeping its place (./lang/words.ts).
+  useLanguage();
   const { state, keeping, check, signOut } = useSessionLifecycle();
   const path = usePath();
   const online = useOnline();
@@ -149,8 +152,8 @@ export function App() {
     case "out":
       // The sign-in's one main landmark, so its heading and the code's status are inside one.
       return (
-        <main>
-          <SignIn why={state.why} onSignedIn={() => void check()} />
+        <main className={styles.out}>
+          <SignIn why={state.why} onSignedIn={check} />
         </main>
       );
     case "in": {

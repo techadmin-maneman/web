@@ -358,6 +358,8 @@ export interface CardOptions {
   /** The client's hair profile as it stands; none recorded unless a test gives one. */
   readonly profile?: HairProfile | null;
   readonly checklist?: Card["checklist"];
+  /** Why a client may not go ahead, as ops set it; the committed list unless a test gives its own. */
+  readonly lostReasons?: Card["lost_reasons"];
   /** A one visit's discount code already on it; none unless a test gives one. */
   readonly discountCode?: Card["discount_code"];
   /** The service the visit was sold as; none unless a test gives one. */
@@ -418,7 +420,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     checklist: options.checklist ?? CHECKLIST,
     checklist_if_declined: oneVisit ? CONSULTATION_CHECKLIST : [],
     partial_reasons: PARTIAL_REASONS,
-    lost_reasons: oneVisit || type === "consultation" ? LOST_REASONS : [],
+    lost_reasons: options.lostReasons ?? (oneVisit || type === "consultation" ? LOST_REASONS : []),
     consumables: CONSUMABLES,
     kit_hair_systems: [...(options.kitHairSystems ?? [])],
     products: oneVisit || type === "consultation" ? PRODUCTS : [],

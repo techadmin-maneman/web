@@ -30,6 +30,7 @@ import { FramingGuide } from "./FramingGuide.tsx";
 import { Torch } from "./Torch.tsx";
 import { useThumbnails } from "./useThumbnails.ts";
 import styles from "./capture.module.css";
+import { theirs } from "../lang/index.ts";
 
 /** Why a refused set is open again: the angles still to take again, or the set as a whole. Null once nothing is. */
 function refusalNotice(refused: readonly Angle[], taken: readonly TakenAngle[]): string | null {
@@ -41,7 +42,7 @@ function refusalNotice(refused: readonly Angle[], taken: readonly TakenAngle[]):
 
 /** Why a set ops sent back is open again, as they said it; null for a set not sent back. */
 const sentBackNotice = (sentBack: string | null): string | null =>
-  sentBack === null ? null : visitCopy.sentBack(sentBack);
+  sentBack === null ? null : visitCopy.sentBack(theirs(sentBack));
 
 /**
  * While the phone has no room for another photograph, a red bar says so. The shutter stays: the phone learns it has

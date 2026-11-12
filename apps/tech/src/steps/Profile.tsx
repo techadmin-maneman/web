@@ -81,8 +81,9 @@ function optionsOf<K extends string>(labels: Readonly<Record<K, string>>): Optio
   return (Object.keys(labels) as K[]).map((id) => ({ id, label: labels[id] }));
 }
 
-const COLOUR_OPTIONS = COLOURS.map((id) => ({ id, label: copy.colours[id] }));
-const DENSITY_OPTIONS = DENSITIES.map((id) => ({ id, label: copy.densities[id] }));
+// Read as the step is drawn, so each label is in the language now.
+const colourOptions = () => COLOURS.map((id) => ({ id, label: copy.colours[id] }));
+const densityOptions = () => DENSITIES.map((id) => ({ id, label: copy.densities[id] }));
 
 /** The products the card offers, and the one the profile names if it is no longer offered, so it can be seen. */
 function productOptions(job: Job, latest: HairProfile | null): Option<string>[] {
@@ -180,7 +181,7 @@ function MatchFields({
     <>
       <Chips
         title={copy.sections.colour}
-        options={COLOUR_OPTIONS}
+        options={colourOptions()}
         isChosen={chosen("colour")}
         onChoose={choose("colour")}
       />
@@ -197,7 +198,7 @@ function MatchFields({
       </div>
       <Chips
         title={copy.sections.density}
-        options={DENSITY_OPTIONS}
+        options={densityOptions()}
         isChosen={chosen("density_percent")}
         onChoose={choose("density_percent")}
       />

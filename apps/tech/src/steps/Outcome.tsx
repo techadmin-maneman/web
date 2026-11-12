@@ -2,6 +2,7 @@
 // for the technician, so a gloved tap cannot close a job they have not finished (ADR 0025, "The technician boards").
 // After a consultation, Done asks whether the client goes ahead (docs/decisions/0149-lost-reasons.md).
 
+import { sayKnown, theirs } from "../lang/index.ts";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "@rules/policy/client-record.ts";
@@ -40,7 +41,7 @@ function codeSaid(code: NonNullable<Job["discount_code"]>): string {
 function linkNote(job: Job, chosen: Extract<ClientChoice, { product: string }> | null): string {
   if (chosen === null) return oneVisit.closeNote;
   const product = job.products.find((one) => one.tier === chosen.product);
-  return oneVisit.linkFor(product?.name ?? oneVisit.chosenProduct);
+  return oneVisit.linkFor(theirs(product?.name ?? oneVisit.chosenProduct));
 }
 
 /** Whether a one visit's client booked the fit for another day, which closes it with nothing to pay now. */
@@ -65,7 +66,9 @@ function OneVisitClose({
   }
   if (bookedLater(clientChoice)) {
     return (
-      <p className={shared.note}>{oneVisit.endsGoingAhead(chosenName(job, clientChoice) ?? oneVisit.chosenProduct)}</p>
+      <p className={shared.note}>
+        {oneVisit.endsGoingAhead(theirs(chosenName(job, clientChoice) ?? oneVisit.chosenProduct))}
+      </p>
     );
   }
   const standingCode = job.discount_code;
@@ -98,7 +101,7 @@ function Pair<T extends string | boolean>(props: {
             props.onChoose(option.value);
           }}
         >
-          {option.label}
+          {sayKnown(option.label)}
         </ToggleButton>
       ))}
     </div>
@@ -118,7 +121,7 @@ function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | n
               props.onPick(one.id);
             }}
           >
-            {one.label}
+            {sayKnown(one.label)}
           </ToggleButton>
         </li>
       ))}
@@ -213,7 +216,7 @@ function GoingAhead(props: { answer: boolean | null; pickedName: string | null; 
         onChoose={props.onAnswer}
       />
       {props.answer === true && props.pickedName !== null && (
-        <p className={shared.note}>{copy.outcome.picked(props.pickedName)}</p>
+        <p className={shared.note}>{copy.outcome.picked(theirs(props.pickedName))}</p>
       )}
     </>
   );

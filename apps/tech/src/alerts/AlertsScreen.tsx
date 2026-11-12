@@ -4,7 +4,7 @@
 
 import { TextButton } from "@maneman/ui/TextLink";
 import { dataChanged, useLoad } from "@maneman/ui/useLoad";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { api, type AlertSettings, type Alerts } from "../api.ts";
 import { alerts as copy } from "../content.ts";
 import { CardFrame } from "../frame/CardFrame.tsx";
@@ -29,7 +29,7 @@ export function AlertsScreen({ back }: { readonly back: string }) {
 }
 
 function Inbox({ alerts }: { readonly alerts: Alerts }) {
-  const lines = useMemo(() => linesOf(alerts.alerts, apiDate()), [alerts.alerts]);
+  const lines = linesOf(alerts.alerts, apiDate());
   const [settings, setSettings] = useState<AlertSettings>(alerts.settings);
   const [failed, setFailed] = useState(false);
   const unread = alerts.alerts.some((alert) => !alert.read);

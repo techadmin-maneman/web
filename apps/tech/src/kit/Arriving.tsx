@@ -15,6 +15,7 @@ import { kit as copy, steps } from "../content.ts";
 import { dayMonth } from "../lib/when.ts";
 import { NotDone, type Problem } from "./NotDone.tsx";
 import styles from "./kit.module.css";
+import { sayKnown, theirs } from "../lang/index.ts";
 
 type Coming = Kit["coming"][number];
 
@@ -69,7 +70,9 @@ function TopUp(props: { readonly topUp: Coming; readonly offline: boolean; reado
   const label = pieces ? copy.coming.receiveScanned(scanned.length) : copy.coming.receive;
   return (
     <li className={styles.item}>
-      <p className={styles.name}>{copy.coming.line(topUp.name, amountOf(topUp.quantity, topUp.unit))}</p>
+      <p className={styles.name}>
+        {copy.coming.line(theirs(sayKnown(topUp.name)), amountOf(topUp.quantity, topUp.unit))}
+      </p>
       <p className={styles.note}>{copy.coming.from(topUp.from, dayMonth(indiaDate(topUp.sent_at)))}</p>
       {pieces && (
         <>

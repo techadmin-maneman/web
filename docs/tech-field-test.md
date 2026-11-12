@@ -48,9 +48,9 @@ Ops do these once. Tick each before the phone leaves the office.
 ## Part 0 — signing in
 
 1. Open `https://tech-staging.maneman.in` — in Chrome on an Android phone, in **Safari** on an iPhone. It has to be Safari: only Safari can put a web app on an iPhone's home screen, and Part 0a needs that.
-2. You should see **Technician sign in**, with +91 and an empty number.
-3. Type the ten digits of the technician's own mobile number. Tap **Send the code**.
-4. You should see **A six-digit code is on its way.**
+2. You should see **Sign in**, with +91 and an empty number.
+3. Type the ten digits of the technician's own mobile number. Tap **Get code**.
+4. You should see **Code sent to** and the number, under **Sign in**.
 5. The code arrives on WhatsApp. **How long did it take?** \_\_\_\_\_\_\_\_ seconds
 6. Type the six digits. Tap **Sign in**.
 7. You should land on the day's jobs, with the technician's initials at the top right.
@@ -79,8 +79,8 @@ The price is one extra sign-in: the home-screen app is a separate app with its o
 3. Close Safari completely.
 4. Open the new **Mane Man** icon from the home screen.
 5. It should open with **no Safari address bar and no browser buttons at all** — just the app.
-6. It should show **Technician sign in**, and underneath it a line beginning **"This is the app on your home screen."**
-7. Sign in again: the ten digits, **Send the code**, the six digits, **Sign in**.
+6. It should show **Sign in**, and underneath it a line beginning **"This is the app on your home screen."**
+7. Sign in again: the ten digits, **Get code**, the six digits, **Sign in**.
 8. From now on, **use this icon and not Safari** for the whole day.
 
 | Question                                                                                        | Write it here |
@@ -361,14 +361,14 @@ Use the phone normally in between — Safari included — and do not open the Ma
 
 1. On the eighth day, open the home-screen icon.
 
-| Question                                                     | Write it here |
-| ------------------------------------------------------------ | ------------- |
-| Date and time you opened it again                            |               |
-| Were you still signed in, or back at **Technician sign in**? |               |
-| Was the waiting line still there, saying the same thing?     |               |
-| Were the three photographs still on the phone?               |               |
-| Did the job finish and go up when you reconnected?           |               |
-| Anything the app said that you did not expect                |               |
+| Question                                                 | Write it here |
+| -------------------------------------------------------- | ------------- |
+| Date and time you opened it again                        |               |
+| Were you still signed in, or back at **Sign in**?        |               |
+| Was the waiting line still there, saying the same thing? |               |
+| Were the three photographs still on the phone?           |               |
+| Did the job finish and go up when you reconnected?       |               |
+| Anything the app said that you did not expect            |               |
 
 ### And the same thing in Safari, if you can spare a second phone
 
@@ -386,7 +386,7 @@ If a second iPhone is available, sign in on it **in Safari only**, leave the sam
 > **On an iPhone running Part 6, do not sign out yet.** Part 6 needs the half-finished job left exactly where it is. Do the three steps below on the eighth day instead, once Part 6 is answered.
 
 1. Tap **Sign out** on the day's jobs screen. If anything has not gone up yet, the app says how much and offers **Send first** before it lets you: tap it, stay in signal until the waiting line has gone, then tap **Sign out** again. **Sign out anyway** deletes what has not gone up, for good. With no signal the app will not sign out at all, and says so.
-2. You should be back at **Technician sign in**.
+2. You should be back at **Sign in**.
 3. Turn on aeroplane mode, close the app, and open it again. You should see the sign-in screen and **no jobs at all** — nothing of any client should still be on the phone.
 
 | Question                                                     | Write it here |

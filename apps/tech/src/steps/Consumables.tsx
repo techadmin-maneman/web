@@ -19,6 +19,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
 import { steps as copy } from "../content.ts";
+import { sayKnown, theirs } from "../lang/index.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import type { Queued } from "../store/outbox.ts";
@@ -58,7 +59,7 @@ function Figure({ name, count, onChange }: { name: string; count: number; onChan
         variant="outline"
         size="control"
         className={shared.number}
-        aria-label={copy.consumables.type(name)}
+        aria-label={copy.consumables.type(theirs(name))}
         onClick={() => {
           setTyping(String(count));
         }}
@@ -68,7 +69,7 @@ function Figure({ name, count, onChange }: { name: string; count: number; onChan
     );
   }
   return (
-    <Field label={copy.consumables.type(name)} labelHidden>
+    <Field label={copy.consumables.type(theirs(name))} labelHidden>
       {(control) => (
         <NumberInput
           {...control}
@@ -113,7 +114,9 @@ function Stepper({
   onChange: (count: number) => void;
 }) {
   const said = useId();
-  const { name, unit } = consumable;
+  // The console's name, in the language now where the catalog holds it ("Tape strips").
+  const name = sayKnown(consumable.name);
+  const { unit } = consumable;
   const step = STEP_BY_UNIT[unit] ?? 1;
   const change = (by: 1 | -1) => {
     onChange(stepped(count, step, by));
@@ -134,7 +137,7 @@ function Stepper({
           d={ICONS.minus}
           size="md"
           weight="heavy"
-          label={copy.consumables.less(name, step, unit)}
+          label={copy.consumables.less(theirs(name), step, unit)}
           aria-describedby={said}
           onClick={() => {
             change(-1);
@@ -147,14 +150,14 @@ function Stepper({
           d={ICONS.plus}
           size="md"
           weight="heavy"
-          label={copy.consumables.more(name, step, unit)}
+          label={copy.consumables.more(theirs(name), step, unit)}
           aria-describedby={said}
           onClick={() => {
             change(1);
           }}
         />
         <VisuallyHidden id={said} role="status">
-          {copy.consumables.count(name, count)}
+          {copy.consumables.count(theirs(name), count)}
         </VisuallyHidden>
       </span>
     </li>
@@ -177,12 +180,12 @@ function Picks({
             variant="outline"
             size="control"
             className={shared.pick}
-            aria-label={copy.consumables.addOne(each.name)}
+            aria-label={copy.consumables.addOne(theirs(sayKnown(each.name)))}
             onClick={() => {
               onPick(each.code);
             }}
           >
-            {each.name}
+            {sayKnown(each.name)}
           </Button>
         </li>
       ))}

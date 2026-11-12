@@ -18,6 +18,7 @@ import { firstNameOf } from "@rules/lib/names.ts";
 import { useCallback, useState } from "react";
 import type { HairProfile, Job } from "../api.ts";
 import { job as copy, options as optionsCopy, profile as profileCopy } from "../content.ts";
+import { sayNow, theirs } from "../lang/index.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { keptDay } from "../store/jobs.ts";
@@ -64,8 +65,8 @@ function pieceLines(piece: Piece): Line[] {
     { key: rows.piece, value: piece.piece_code },
     piece.base === null ? null : { key: rows.base, value: piece.base },
     piece.supplier_lot === null ? null : { key: rows.lot, value: piece.supplier_lot },
-    piece.fitted_at === null ? null : { key: rows.fitted, value: dayMonth(piece.fitted_at) },
-    piece.replacement_due_at === null ? null : { key: rows.due, value: dayMonth(piece.replacement_due_at) },
+    piece.fitted_at === null ? null : { key: rows.fitted, value: sayNow(dayMonth(piece.fitted_at)) },
+    piece.replacement_due_at === null ? null : { key: rows.due, value: sayNow(dayMonth(piece.replacement_due_at)) },
   ];
   return lines.filter((line) => line !== null);
 }
@@ -187,7 +188,7 @@ export function JobCard({ job }: { job: Job }) {
         {job.access_notes !== null && <WayIn notes={job.access_notes} />}
         {client !== null && note !== null && (
           <p className={styles.note}>
-            <span className={styles.noteFrom}>{copy.noteFrom(firstNameOf(client.name))}</span>
+            <span className={styles.noteFrom}>{copy.noteFrom(theirs(firstNameOf(client.name)))}</span>
             {note}
           </p>
         )}

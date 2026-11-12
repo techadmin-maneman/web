@@ -41,15 +41,15 @@ In the console: Technicians → Add, with their name, mobile number and zone (AD
 
 1. Open **`https://tech-staging.maneman.in`** in Chrome on your phone.
 2. Cloudflare Access asks who you are. Sign in with your founders' login. You only do this once on this phone.
-3. You should now see **Technician sign in**, with **+91** and an empty number box.
+3. You should now see **Sign in**, with **+91** and an empty number box.
 4. Type the **ten digits of your own mobile number**. Do not type +91; it is already there.
-5. Tap **Send the code**.
-6. You should see **A six-digit code is on its way.**
+5. Tap **Get code**.
+6. You should see **Code sent to** and the number, under **Sign in**.
 7. Within a few seconds a WhatsApp message arrives: "**NNNNNN is your Mane Man code. It works for ten minutes. We will never ask you for it.**" It comes from the number staging's WhatsApp instance sends on, so it will show as an unknown number rather than as Mane Man. **Note how long it took** — the field test asks for that number.
 8. Type the six digits, and tap **Sign in**.
 9. You should land on the day's jobs: **1 job today**, a line reading **First at 10:00 am · Sector 45**, and a round chip at the top right with the initials **TT**.
 
-If you get **That code did not match**, you have four more tries before the code is thrown away. When it is, the screen says **That code no longer works. Send the code again.** and goes back to your number: start again from step 5. Typed the number wrong? Tap **Change number** under the code boxes. If nothing arrives at all, go to "If the code does not arrive", below.
+If you get **That code didn’t match**, you have four more tries before the code is thrown away. When it is, the screen says **That code no longer works. Get a new one.** and goes back to your number: start again from step 5. Typed the number wrong? Tap **Change number** under the code boxes. If nothing arrives at all, go to "If the code does not arrive", below.
 
 ---
 
@@ -119,7 +119,7 @@ Each step you take lands in our own database, as a real job's does (ADR 0110), a
 
 ## When you are finished
 
-Tap the **TT** chip at the top right and then **Sign out**. You should be back at **Technician sign in**, and nothing of any client should still be on the phone.
+Tap the **TT** chip at the top right and then **Sign out**. You should be back at **Sign in**, and nothing of any client should still be on the phone.
 
 If anything is still waiting to go up, Sign out says how much first and offers **Send first**: tap it, wait for the waiting line to go, then sign out. With no signal it will not sign you out at all — it says so, and keeps everything until there is signal.
 
