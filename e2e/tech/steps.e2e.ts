@@ -74,7 +74,6 @@ test("the outcome has nothing chosen for the technician, and Next waits for thei
   expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
 });
 
-// After a consultation, the outcome asks whether the client is going ahead, and why not (docs/decisions/0149-lost-reasons.md).
 test("times the visit from the check-in to the close", async ({ page }) => {
   const fake = await fakeTech(page);
   // Checked in thirty minutes ago, and started five minutes after.
@@ -86,6 +85,7 @@ test("times the visit from the check-in to the close", async ({ page }) => {
   await expect(page.getByText(techCopy.closeOut.length(0, 30), { exact: true })).toBeVisible();
 });
 
+// After a consultation, the outcome asks whether the client is going ahead, and why not (docs/decisions/0149-lost-reasons.md).
 test("a consultation’s outcome asks whether the client is going ahead, and why not", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "consultation";

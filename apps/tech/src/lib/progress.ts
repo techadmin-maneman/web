@@ -56,6 +56,17 @@ const started = (job: Tracked, queued: readonly Queued[]): boolean =>
   queued.some((event) => event.job_id === job.id && event.kind === "start" && event.state === "waiting");
 export const checkedIn = (job: Job, queued: readonly Queued[]): boolean => done(job, queued).has("check_in");
 
+/**
+ * When the technician checked in, which a visit's length runs from: as the card says; as the API's answer to the
+ * check-in did, where it passed and the card was not read again; or, checked in with no signal, when the phone took
+ * it. A refused check-in's answer is no check-in, as everywhere else the phone reads one.
+ */
+export function arrivedAt(job: Job, kept: CheckIn | null, queued: readonly Queued[]): number | null {
+  if (job.progress.checked_in_at !== null) return Date.parse(job.progress.checked_in_at);
+  if (kept?.passed === true) return Date.parse(kept.checked_in_at);
+  return queued.find((event) => event.job_id === job.id && event.kind === "check_in")?.queued_at ?? null;
+}
+
 export type Outcome = "done" | "partial" | "no_show";
 
 const OUTCOMES: ReadonlySet<string> = new Set<Outcome>(["done", "partial", "no_show"]);

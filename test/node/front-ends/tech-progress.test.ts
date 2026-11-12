@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 import type { CheckIn, Job } from "../../../apps/tech/src/api.ts";
 import {
+  arrivedAt,
   choiceOf,
   closed,
   declinedTheFit,
@@ -247,6 +248,36 @@ describe("where a row of the day’s list stands", () => {
     expect(rowState(job({ status: "terminated" }), [], undefined)).toBe("closed");
     expect(rowState(job({ status: "in_progress" }), [], undefined)).toBe("in_progress");
     expect(rowState(job(), [], undefined)).toBeNull();
+  });
+});
+
+describe("when the technician checked in, which a visit's length runs from", () => {
+  const answer = (passed: boolean, at: string): CheckIn => ({
+    passed,
+    distance_m: passed ? 40 : 1400,
+    radius_m: 200,
+    checked_in_at: at,
+    wait_ends_at: null,
+    accepted: null,
+  });
+
+  it("is the card's, where the card says", () => {
+    const card = job({}, { checked_in_at: "2030-09-19T04:00:00.000Z" });
+    expect(arrivedAt(card, answer(true, "2030-09-19T03:00:00.000Z"), [])).toBe(Date.parse("2030-09-19T04:00:00.000Z"));
+  });
+
+  it("is the API's answer where it passed and the card was not read again", () => {
+    expect(arrivedAt(job(), answer(true, "2030-09-19T04:01:00.000Z"), [queued("check_in")])).toBe(
+      Date.parse("2030-09-19T04:01:00.000Z"),
+    );
+  });
+
+  it("is never a refused check-in's: the one queued after it with no signal stands", () => {
+    // Refused at 3:30 as too far, then checked in again with no signal at 4:05.
+    expect(arrivedAt(job(), answer(false, "2030-09-19T03:30:00.000Z"), [queued("check_in")])).toBe(
+      Date.parse("2030-09-19T04:05:00.000Z"),
+    );
+    expect(arrivedAt(job(), answer(false, "2030-09-19T03:30:00.000Z"), [])).toBeNull();
   });
 });
 

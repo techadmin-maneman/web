@@ -11,7 +11,7 @@ import { useCallback } from "react";
 import type { Job, JobSummary } from "../api.ts";
 import { badges, closeOut as copy, titles } from "../content.ts";
 import { kindNameLower } from "../lib/kind.ts";
-import { declinedTheFit, fitBookedLater, outcomeOf, type Outcome } from "../lib/progress.ts";
+import { arrivedAt, declinedTheFit, fitBookedLater, outcomeOf, type Outcome } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
@@ -138,16 +138,6 @@ function Rows(props: { job: Job; took: { hours: number; minutes: number } | null
   );
 }
 
-/**
- * When the technician checked in: as the card says, as the API's answer to it did where the card was not read again,
- * or, checked in with no signal, when the phone took it.
- */
-function checkedInAt(job: Job, answered: string | null, queued: readonly Queued[]): number | null {
-  const said = job.progress.checked_in_at ?? answered;
-  if (said !== null) return Date.parse(said);
-  return queued.find((event) => event.job_id === job.id && event.kind === "check_in")?.queued_at ?? null;
-}
-
 /** How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed. */
 function useOutcome(
   job: Job | null,
@@ -196,12 +186,7 @@ export function CloseOut({ id }: { id: string }) {
   }
 
   const who = names.get(id) ?? job.client?.name ?? "";
-  const took = tookOf(
-    checkedInAt(job, kept?.arrival?.checked_in_at ?? null, waiting.events),
-    closedAt,
-    waiting.events,
-    id,
-  );
+  const took = tookOf(arrivedAt(job, kept?.arrival ?? null, waiting.events), closedAt, waiting.events, id);
 
   const sets = job.progress.steps_done.filter((step) => step === "before_photos" || step === "after_photos").length;
   const queuedFrames = waiting.frames.filter((frame) => frame.job_id === id).length;
