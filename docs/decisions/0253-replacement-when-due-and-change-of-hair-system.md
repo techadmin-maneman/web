@@ -21,8 +21,9 @@ old package goes back to stock for other clients, and nobody pays for it.
 ## Decision
 
 1. **When.** `replacement` is bookable from the first day of the month the hair system falls due, within
-   `booking_days.horizon`, or while a remake or a recall owes one. Never otherwise. The booking routes refuse it with
-   `not_bookable`, and the app offers it only then: "Or book a replacement" goes from Home and Visits.
+   `booking_days.horizon`, and not while one is booked or paid for. Never otherwise. The app's booking routes and ops'
+   (`saleFor`) refuse it with `not_bookable`. One owed free, by a remake or a recall (ADR 0192), is bookable at once,
+   by ops, who book it free; the app sells the client none meanwhile. "Or book a replacement" goes from Home and Visits.
 2. **The client's hair system on `/api/me`.** `hair_system {package, since, replace_after_months, bookable_from}`, from
    the same window, so Home can say month n of N and the day its replacement opens.
 3. **The package is chosen at booking.** The replacement's tier step marks each package Keep it, Upgrade, Downgrade or

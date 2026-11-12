@@ -54,6 +54,21 @@ export async function client(
   return { id, cookie: `mm_app=${session}` };
 }
 
+/**
+ * The hair system a fitted client wears, fitted on `fittedOn` and falling due on `dueOn`: a replacement may be booked
+ * from the first day of that month (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md). Its ID.
+ */
+export async function wornPiece(personId: string, dueOn: string, fittedOn = "2026-03-30"): Promise<string> {
+  const id = crypto.randomUUID();
+  await env.DB.prepare(
+    `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
+     VALUES (?1, ?1, ?2, 'MM-STD-4417-B', ?3, ?4, ?5)`,
+  )
+    .bind(id, personId, fittedOn, dueOn, NOW.toISOString())
+    .run();
+  return id;
+}
+
 /** A visit with a technician, the client's own or, given none, another client's. Its ID. */
 export async function visit(
   personId: string | null,

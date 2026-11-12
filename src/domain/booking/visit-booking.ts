@@ -35,7 +35,7 @@ import { lateFeeOn, type Price } from "../money/price-book.ts";
 import { currentAddress } from "../clients/profile.ts";
 import { graceEnds } from "./hold-stages.ts";
 import { holdSlot, type Hold } from "./hold-slot.ts";
-import { liveVisitOf, ONE_AT_A_TIME } from "./availability.ts";
+import { liveVisitOf, ONE_AT_A_TIME, replacementOpenOn } from "./availability.ts";
 import { bookableService, offeredProducts, type PricedService } from "./services.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
@@ -235,6 +235,7 @@ export async function saleFor(
   const { opens, last } = bookableRange(now, inputs);
   if (asked.date < opens || asked.date > last) return refused({ code: "not_bookable" });
   if (await alreadyToCome(db, asked, now)) return refused({ code: "already_booked" });
+  if (!(await replacementOpenOn(db, asked))) return refused({ code: "not_bookable" });
 
   const [onPackage, city] = await Promise.all([packageWanted(db, asked), cityOfPerson(db, asked.personId)]);
   const offered = await bookableService(db, { kind: asked.kind, tier: asked.tier, on: asked.date, onPackage, city });

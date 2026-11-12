@@ -124,6 +124,17 @@ describe("a piece to replace", () => {
     expect(await owed("replacement")).toEqual([]);
   });
 
+  // A replacement is booked only once its hair system's month comes (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md),
+  // by ops as in the app; one owed free is booked whenever it suits.
+  it("still worn, and not owed, is booked by ops only from the month it falls due", async () => {
+    await rohit("fitted");
+    await piece(null);
+
+    const early = await book({ client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "morning" });
+    expect(early.status).toBe(422);
+    expect(await early.json()).toMatchObject({ error: { code: "not_bookable" } });
+  });
+
   it("of a recalled lot is owed for the recall; one still worn and not recalled is owed nothing", async () => {
     await rohit("fitted");
     await piece(null);

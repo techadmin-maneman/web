@@ -1,5 +1,8 @@
 // What a client may book, and the days and windows still open to them, with who could take each.
 
+import { addDays, indiaDate } from "../../lib/india-time.ts";
+import { replacementOpens, replacementOpensOn, type NextVisitDays } from "../../policy/next-visit.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 import { paidNotBooked } from "./hold-stages.ts";
 import { remakesOwed } from "./remakes.ts";
 import { windowsFitting, type BookingWindow } from "../../config/scheduling.ts";
@@ -23,6 +26,11 @@ const STILL_TO_HAPPEN = `a.person_id = ?1 AND a.deleted_at IS NULL
 
 const PAID_HOLD = paidNotBooked("slot_holds");
 
+/** India's day the hair system the client ?1 wears falls due; null while none is in wear with a day set. */
+export const WORN_DUE_ON = `SELECT MIN(replacement_due_at) FROM pieces
+  WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replaced_at IS NULL
+    AND replacement_due_at IS NOT NULL`;
+
 /** What decides the types a client ?1 may book today, which began at ?2, in one statement. */
 const STAGE = `SELECT
   ${FITTED} AS fitted,
@@ -34,29 +42,68 @@ const STAGE = `SELECT
       AND (type = 'consultation' OR one_visit = 1)) AS consultation_live,
   EXISTS (SELECT 1 FROM appointments a WHERE ${STILL_TO_HAPPEN} AND a.type = 'first_fit')
     OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD} AND type = 'first_fit')
-    AS first_fit_live`;
+    AS first_fit_live,
+  EXISTS (SELECT 1 FROM appointments a WHERE ${STILL_TO_HAPPEN} AND a.type = 'replacement')
+    OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD} AND type = 'replacement')
+    AS replacement_live,
+  (${WORN_DUE_ON}) AS worn_due_on`;
 
 interface StageRow {
   fitted: number;
   consulted: number;
   consultation_live: number;
   first_fit_live: number;
+  /** A replacement booked and still to happen, or paid for and still to be booked. */
+  replacement_live: number;
+  worn_due_on: string | null;
 }
 
 /**
  * The types a client may book: a consultation first, then a first fit, then service visits and replacements.
- * A consultation or a first fit is booked once at a time: not while one is still to happen (liveVisitOf).
+ * A consultation or a first fit is booked once at a time: not while one is still to happen (liveVisitOf). A
+ * replacement only from the first day of the month the hair system in wear falls due, within how far ahead a visit may
+ * be booked, and not while one is booked (ADR 0253). One owed free, by a remake or a recall, is ops' to book.
  */
-export async function bookableTypes(db: D1Database, personId: string, now: Date): Promise<VisitType[]> {
+export async function bookableTypes(
+  db: D1Database,
+  personId: string,
+  now: Date,
+  days?: NextVisitDays,
+): Promise<VisitType[]> {
   // A fit or a replacement owed free is booked by ops, its payment kept with it: the client is sold no other meanwhile.
-  const [row, owed] = await Promise.all([
+  const [row, owed, inputs] = await Promise.all([
     db.prepare(STAGE).bind(personId, todayStartsOf(now)).first<StageRow>(),
     remakesOwed(db, personId),
+    days === undefined ? readOpsInputs(db, now).then((read) => read.nextVisitDays) : Promise.resolve(days),
   ]);
   const owes = (kind: "first_fit" | "replacement") => owed.some((remake) => remake.kind === kind);
-  if (row?.fitted === 1) return owes("replacement") ? ["service"] : ["service", "replacement"];
+  if (row?.fitted === 1)
+    return replacementBookable(row, owes("replacement"), now, inputs) ? ["service", "replacement"] : ["service"];
   if (row?.consulted === 1) return row.first_fit_live === 1 || owes("first_fit") ? [] : ["first_fit"];
   return row?.consultation_live === 1 ? [] : ["consultation"];
+}
+
+function replacementBookable(row: StageRow, owed: boolean, now: Date, days: NextVisitDays): boolean {
+  if (owed || row.replacement_live === 1) return false;
+  return replacementOpens(row.worn_due_on, addDays(indiaDate(now), 1), days) !== null;
+}
+
+/**
+ * Whether the visit asked for may be booked on its day, as far as a replacement goes: one on or after the first day of
+ * the month the client's hair system falls due (ADR 0253). Ops book one owed free, a remake or a recall's (`covers`),
+ * whenever it suits; any other kind is not this rule's.
+ */
+export async function replacementOpenOn(
+  db: D1Database,
+  asked: { readonly kind: VisitType; readonly personId: string; readonly date: string; readonly covers?: unknown },
+): Promise<boolean> {
+  if (asked.kind !== "replacement" || asked.covers !== undefined) return true;
+  const row = await db
+    .prepare(`SELECT (${WORN_DUE_ON}) AS due_on`)
+    .bind(asked.personId)
+    .first<{ due_on: string | null }>();
+  const dueOn = row?.due_on ?? null;
+  return dueOn !== null && asked.date >= replacementOpensOn(dueOn);
 }
 
 /** The kinds of visit a client has one of at a time. */

@@ -14,7 +14,7 @@ import type { BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { addDays, indiaDate, monthOf } from "../../lib/india-time.ts";
 import { homePromptOf } from "../../policy/home-prompt.ts";
-import { lastBookableDay, type NextVisitDays } from "../../policy/next-visit.ts";
+import { replacementOpens, type NextVisitDays } from "../../policy/next-visit.ts";
 import type { NextOffer } from "../visits/next-visit.ts";
 import { serviceToOffer } from "../booking/services.ts";
 import { DAY_MS } from "../../lib/durations.ts";
@@ -119,8 +119,7 @@ const nextServiceOf = (offer: NextOffer | null): NextService | null =>
  */
 function replacementMonthInReach(row: PromptFacts, tomorrow: string, days: NextVisitDays): string | null {
   if (row.due_on === null || row.replacement_booked === 1 || remakeOf(row, false) !== null) return null;
-  const month = monthOf(row.due_on);
-  return `${month}-01` <= lastBookableDay(tomorrow, days) ? month : null;
+  return replacementOpens(row.due_on, tomorrow, days) === null ? null : monthOf(row.due_on);
 }
 
 /** A first fit or replacement owed again, free, which ops call to book (src/domain/booking/remakes.ts). */

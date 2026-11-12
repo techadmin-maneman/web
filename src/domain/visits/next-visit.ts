@@ -27,11 +27,13 @@ import {
   offeredWindow,
   remindedIfDoneBetween,
   remindedIfDueBetween,
+  replacementOpens,
   serviceDue,
   type NextVisitDays,
   type NextVisitType,
 } from "../../policy/next-visit.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../../policy/job-visibility.ts";
+import { WORN_DUE_ON } from "../booking/availability.ts";
 import { loadSlotSchedule } from "../booking/slot-times.ts";
 import { consentGiven } from "../privacy/consents.ts";
 import { serviceToOffer } from "../booking/services.ts";
@@ -183,8 +185,30 @@ async function firstFitOpensFor(
 }
 
 /**
- * The days a visit of this type may be booked on in the app, for this client: from tomorrow, or for a first fit from
- * the lead time ops set after the consultation, to the horizon ops set.
+ * The first day the client may book their replacement on: the first day of the month their hair system falls due
+ * (replacementOpens). Tomorrow where none falls due in reach, which bookableTypes then refuses anyway.
+ */
+async function replacementOpensFor(
+  db: D1Database,
+  personId: string,
+  tomorrow: string,
+  days: NextVisitDays,
+): Promise<string> {
+  const row = await db.prepare(`SELECT (${WORN_DUE_ON}) AS due_on`).bind(personId).first<{ due_on: string | null }>();
+  return replacementOpens(row?.due_on ?? null, tomorrow, days) ?? tomorrow;
+}
+
+/** The first day a visit of this type may be booked on, by its kind's rule. */
+function opensFor(db: D1Database, personId: string, type: VisitType, at: { tomorrow: string; days: NextVisitDays }) {
+  if (type === "first_fit") return firstFitOpensFor(db, personId, at.tomorrow, at.days);
+  if (type === "replacement") return replacementOpensFor(db, personId, at.tomorrow, at.days);
+  return Promise.resolve(at.tomorrow);
+}
+
+/**
+ * The days a visit of this type may be booked on in the app, for this client: from tomorrow, for a first fit from
+ * the lead time ops set after the consultation, or for a replacement from the month its hair system falls due, to the
+ * horizon ops set.
  */
 export async function bookableDays({
   db,
@@ -200,7 +224,7 @@ export async function bookableDays({
   days: NextVisitDays;
 }): Promise<{ readonly opens: string; readonly last: string }> {
   const tomorrow = addDays(indiaDate(now), 1);
-  const opens = type === "first_fit" ? await firstFitOpensFor(db, personId, tomorrow, days) : tomorrow;
+  const opens = await opensFor(db, personId, type, { tomorrow, days });
   return { opens, last: lastBookableDay(tomorrow, days) };
 }
 
