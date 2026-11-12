@@ -8,8 +8,8 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "@rules/policy/client-record.ts";
 import { useEffect, useState } from "react";
 import type { EventBody, Job, OutcomeRequest, PartialReason } from "../api.ts";
-import { oneVisit, options, steps as copy, visit } from "../content.ts";
-import { choiceOf, type ClientChoice } from "../lib/progress.ts";
+import { oneVisit, options, signOff, steps as copy, visit } from "../content.ts";
+import { choiceOf, done, type ClientChoice } from "../lib/progress.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { put } from "../store/db.ts";
@@ -25,9 +25,13 @@ import styles from "./outcome.module.css";
 
 type Choice = "done" | "partial" | null;
 
-/** What the dim Next says: what is still to choose. */
-function stillToChoose(choice: Choice, unanswered: boolean): string {
+/**
+ * What the dim Next says: what is still to choose. A fit the client has not signed off, nor declined to,
+ * waits for that before it closes done (docs/decisions/0254-client-signs-off-the-fit.md).
+ */
+function stillToChoose(choice: Choice, unanswered: boolean, signOffWaits: boolean): string {
   if (choice === null) return copy.outcome.choose;
+  if (choice === "done" && signOffWaits) return signOff.unfinished;
   if (choice === "partial") return copy.outcome.pickReason;
   return unanswered ? copy.outcome.answerFirst : copy.outcome.pickWhy;
 }
@@ -222,6 +226,33 @@ function GoingAhead(props: { answer: boolean | null; pickedName: string | null; 
   );
 }
 
+/** What the close is: one closing a one visit, a fit the client declined, and whether Done asks why not. */
+function closeShape(job: Job, choice: Choice, clientChoice: ClientChoice | null) {
+  const closesOneVisit = job.one_visit && choice === "done";
+  const declined = clientChoice !== null && "declined" in clientChoice;
+  const asksWhy = job.lost_reasons.length > 0 && choice === "done" && (!job.one_visit || declined);
+  return { closesOneVisit, declined, asksWhy };
+}
+
+/**
+ * Whether the close may be sent: a code being checked would change the link closing the visit sends, and a fit not yet
+ * signed off waits for that, so Next waits for both.
+ */
+function readyToClose(state: {
+  readonly choice: Choice;
+  readonly reason: string | null;
+  readonly codeChecking: boolean;
+  readonly signOffWaits: boolean;
+  readonly unanswered: boolean;
+  readonly mustSayWhy: boolean;
+  readonly lost: string | null;
+}): boolean {
+  if (state.codeChecking) return false;
+  if (state.choice === "partial") return state.reason !== null;
+  if (state.choice !== "done") return false;
+  return !state.signOffWaits && !state.unanswered && (!state.mustSayWhy || state.lost !== null);
+}
+
 /**
  * The choice once the job is in hand: a refused outcome starts as it was chosen. What the client chose is a one visit's
  * decision at the hair system, or the product a consultation's client picked on Options, which goes with a yes.
@@ -229,12 +260,14 @@ function GoingAhead(props: { answer: boolean | null; pickedName: string | null; 
 function Choosing({
   job,
   clientChoice,
+  signOffWaits = false,
   refused,
   onFinish,
   onBack,
 }: {
   job: Job;
   clientChoice: ClientChoice | null;
+  signOffWaits?: boolean;
   refused: Queued | null;
   onFinish: (body: EventBody<"outcome">) => void;
   onBack: () => void;
@@ -250,26 +283,21 @@ function Choosing({
   const [lost, setLost] = useState<string | null>(null);
   const notes = useCloseNotes(sent);
 
-  const closesOneVisit = job.one_visit && choice === "done";
-  const declined = clientChoice !== null && "declined" in clientChoice;
-  const asksWhy = job.lost_reasons.length > 0 && choice === "done" && (!job.one_visit || declined);
+  const { closesOneVisit, declined, asksWhy } = closeShape(job, choice, clientChoice);
   const notGoingAhead = asksWhy && (declined || goingAhead === false);
   // Not now asks why; a fit the client declined offers the reasons, to pick or leave.
   const mustSayWhy = notGoingAhead && !declined;
   // After a consultation the question must be answered: an unanswered one is never recorded as a yes.
   const unanswered = asksWhy && !job.one_visit && goingAhead === null;
-  // A code being checked would change the link closing the visit sends: Next waits for it.
-  const doneReady = !unanswered && (!mustSayWhy || lost !== null);
-  const ready = !codeChecking && (choice === "done" ? doneReady : choice === "partial" && reason !== null);
+  const ready = readyToClose({ choice, reason, codeChecking, signOffWaits, unanswered, mustSayWhy, lost });
   // The words follow the choice: a one visit closed as done sends the client its payment link.
   const sendsLink = closesOneVisit && !declined && !bookedLater(clientChoice);
-
   return (
     <StepFrame
       title={copy.titles.outcome}
       action={sendsLink ? copy.outcome.sendLinkAndClose : undefined}
       ready={ready}
-      unfinished={stillToChoose(choice, unanswered)}
+      unfinished={stillToChoose(choice, unanswered, signOffWaits)}
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
       onAction={() => {
@@ -406,6 +434,7 @@ export function Outcome({ id }: { id: string }) {
     <Choosing
       job={job}
       clientChoice={choiceOf(job, queued)}
+      signOffWaits={job.steps.includes("sign_off") && !done(job, queued).has("sign_off")}
       refused={refused}
       onFinish={(body) => void finish(body)}
       onBack={back}

@@ -40,9 +40,33 @@ export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   for (const event of queued) {
     if (event.job_id === job.id && event.state === "waiting") sent.add(event.kind);
   }
-  // A client who decided against the fit, or booked it for later, is fitted nothing, so nothing is photographed after.
-  if (fitsNothingToday(job, queued)) sent.add("after_photos");
+  // A client who decided against the fit, or booked it for later, is fitted nothing, so nothing is photographed after,
+  // and there is no fit to sign off.
+  if (fitsNothingToday(job, queued)) {
+    sent.add("after_photos");
+    sent.add("sign_off");
+  }
+  if (signedOff(job, queued)) sent.add("sign_off");
   return sent;
+}
+
+/** A client's answer queued on this phone that signs the fit, not one that flags what isn't right. */
+const signedHere = (event: Queued): boolean =>
+  (event.body as { readonly answer?: { readonly result?: string } } | null)?.answer?.result === "signed";
+
+/**
+ * Whether the fit's sign-off lets it close (docs/decisions/0254-client-signs-off-the-fit.md): the client signed, or the
+ * technician recorded that they declined, as the card says or as the phone still holds it to send.
+ */
+export function signedOff(job: Job, queued: readonly Queued[]): boolean {
+  const state = job.sign_off?.state;
+  if (state === "signed" || state === "declined") return true;
+  return queued.some(
+    (event) =>
+      event.job_id === job.id &&
+      event.state === "waiting" &&
+      (event.kind === "sign_off_declined" || (event.kind === "sign_off" && signedHere(event))),
+  );
 }
 
 /** The step the technician is on, or null when every one of them is in. */

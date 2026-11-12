@@ -1263,6 +1263,45 @@ export const guides = localised({
   howDone: "How this visit is done",
 } as const);
 
+/** The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md), its step and its two sheets. */
+export const signOff = localised({
+  intro: "The client checks the hairline, the colour and blend, and that it feels secure, then signs in their app.",
+  ask: "Ask for sign-off",
+  askAgain: "Fixed. Ask again",
+  waiting: "Waiting for the client’s sign-off",
+  waitingLine: "They answer in the Mane Man app. This updates when they do.",
+  flagged: "The client says something isn’t right",
+  /** "Signed off · 1:42 pm". */
+  signed: "Signed off",
+  onThisPhone: "On this phone",
+  /** "Closed without sign-off: Client in a hurry". */
+  declined: (reason: string) => `Closed without sign-off: ${reason}`,
+  onPhone: "Sign on this phone",
+  declineOpen: "Client declined to sign",
+  unfinished: "Waiting for sign-off",
+  needsSignal: "Needs signal",
+  phone: {
+    title: "Sign off the fit",
+    checks: {
+      hairline: "The hairline sits where we agreed",
+      blend: "The colour and the blend look right",
+      secure: "It feels secure and comfortable",
+    },
+    happy: "I’m happy with the fit",
+    notRight: "Something isn’t right",
+    what: "What isn’t right",
+    send: "Send",
+    close: "Close",
+    failed: "That didn’t go through. Try again with signal.",
+  },
+  decline: {
+    title: "Client declined to sign",
+    why: "Why didn’t they sign?",
+    record: "Record and go on",
+    close: "Close",
+  },
+} as const);
+
 /** Ask ops to reschedule, from the job (./job/Reschedule.tsx). */
 export const reschedule = localised({
   open: "Ask ops to reschedule",
