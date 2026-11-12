@@ -77,13 +77,18 @@
   color: var(--ui-text-soft);
 }
 
-/* What Close as no-show waits on, above it, so the button keeps its words on one line. */
+/* What Close as no-show waits on, with the button beside it, as the design has it. */
 .close {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
-  align-items: stretch;
+  gap: var(--sp-12);
+  align-items: center;
+  justify-content: space-between;
   margin-top: var(--sp-16);
+}
+
+.close > :last-child {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .closeHelper {

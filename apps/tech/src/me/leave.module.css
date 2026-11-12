@@ -53,6 +53,7 @@
 }
 
 .asked {
+  font-weight: var(--weight-semibold);
   color: var(--ui-text-soft);
 }
 

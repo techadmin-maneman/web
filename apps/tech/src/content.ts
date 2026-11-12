@@ -47,7 +47,8 @@ export const signIn = localised({
   // installed iPhone app has its own cookie jar, so the first sign-in inside it
   // is a second one and looks like the account has gone (ADR 0053's update).
   installed: "Sign in here once, then use the home-screen app. Anything waiting in the browser still sends.",
-  notRegistered: "Number not registered? Call ops.",
+  notRegistered: "Number not registered?",
+  callOps: "Call ops.",
 } as const);
 
 export const today = localised({
@@ -262,7 +263,6 @@ export const atRisk = localised({
 
 export const queue = localised({
   waiting: (count: number) => `${String(count)} photo ${count === 1 ? "set" : "sets"} waiting`,
-  never: "Kept out of the gallery.",
   retry: "Retry",
   states: {
     uploading: "Uploading…",
@@ -279,6 +279,8 @@ export const queue = localised({
   // The board draws the photo sets; these name the writes beside them.
   title: "Pending uploads",
   nothing: "Everything is uploaded.",
+  /** "Last sync 9:01 am", or "12 Nov, 9:01 am" on an earlier day. */
+  lastSync: (when: string) => `Last sync ${when}`,
   events: (count: number) => `${String(count)} ${count === 1 ? "action" : "actions"} waiting`,
   // The board draws no step the API refused, and no way to put one right.
   correct: "Correct it",
@@ -441,10 +443,15 @@ function lengthOf(minutes: number): string {
 /** A client's record, which belongs to them and not the job (docs/decisions/0242-client-record.md). */
 export const clientRecord = localised({
   alerts: "Before you start",
+  /** A task's run-in label for the client's alerts. */
+  alertLabel: "Client alert:",
   handoff: "Handoff",
   /** "Imran · 1 Sep" */
   handoffBy: (who: string | null, date: string) => (who === null ? date : `${who} · ${date}`),
   history: "Client history",
+  /** "5 visits since Jul", beneath the history's row. */
+  since: (count: number, month: string) => `${counted(count, "visit", "visits")} since ${month}`,
+  newClient: "New client",
   /** The history screen. */
   title: "Client history",
   back: "Back to the job",
@@ -472,7 +479,11 @@ export const job = localised({
   map: {
     label: "Map with a pin at the client’s address",
     noPin: "No map pin for this address",
-    line: (drive: number | null) => (drive === null ? "Map" : `Map · ${String(drive)} min drive`),
+    /** "Map · 6.2 km, 18 min"; the minutes alone where the km are not known. */
+    line: (drive: number | null, km: number | null) => {
+      if (drive === null) return "Map";
+      return km === null ? `Map · ${String(drive)} min drive` : `Map · ${km.toFixed(1)} km, ${String(drive)} min`;
+    },
   },
   navigate: "Navigate",
   /** The way in, from the access notes: copied whole, for a gate's keypad. */
@@ -581,7 +592,6 @@ export const notHome = localised({
     waitingFor: (who: string) => `Waiting for ${who}`,
     of: (minutes: number) => `of ${String(minutes)} min`,
     booked: (time: string) => `Booked for ${time}`,
-    fromStart: (time: string) => `The wait starts at ${time}, the booked start.`,
     over: "The wait is over.",
     // The API counts the wait from when the check-in reaches it as well as from the tap (ADR 0065), so a no-show
     // cannot close before it has.
@@ -658,7 +668,8 @@ export const visit = localised({
   /** A guided task (./visit/tasks.ts): one a screen. */
   task: (at: number, total: number) => `Task ${String(at)} of ${String(total)}`,
   nextTask: "Next task",
-  reference: (what: string) => `Reference photo: ${what}`,
+  /** "Photo: solvent along the front edge": what the reference photograph shows, until there is one. */
+  reference: (what: string) => `Photo: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
   watchFor: "Watch for",
   taskDone: (title: string) => `Done: ${title}`,
   plan: {
@@ -683,11 +694,17 @@ export const capture = localised({
   /** Not drawn: what a screen reader calls a tile, a tap on which takes that angle again. */
   retakeAngle: (angle: string) => `Take ${angle} again`,
   take: "Take photo",
-  /** "3 of 5", beneath the step's name. */
+  /** "5 of 5", beneath the step's name once every angle is taken. */
   of: (taken: number) => `${String(taken)} of 5`,
+  /** "1 of 5 · Front": the shot being taken. */
+  taking: (shot: number, angle: string) => `${String(shot)} of 5 · ${angle}`,
+  close: "Close",
   saved: "Saved on phone",
   /** Compare: the last visit's after photograph before the visit, this visit's before one after it. */
   compareWith: { before: "Compare with last visit", after: "Compare with before" },
+  /** "Compare with 12 Oct, Imran": the visit before photographs are set beside. */
+  compareWithVisit: (date: string, who: string | null) =>
+    who === null ? `Compare with ${date}` : `Compare with ${date}, ${who}`,
   compareImage: { before: (angle: string) => `Last visit, ${angle}`, after: (angle: string) => `Before, ${angle}` },
   torch: "Torch",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
@@ -748,11 +765,6 @@ export const steps = localised({
     piece: "We couldn’t record the label you gave. Correct it and tap Next.",
     other: "We couldn’t record this step as it was. Correct it and tap Next.",
   },
-  checklist: {
-    // The board's dim bar while the list is unfinished.
-    unfinished: "Finish the tasks to continue",
-    all: "Tick all: everything was done",
-  },
   consumables: {
     less: (name: string, step: number, unit: string) =>
       step === 1 ? `One fewer ${name.toLowerCase()}` : `${amountOf(step, unit)} less ${name.toLowerCase()}`,
@@ -768,7 +780,7 @@ export const steps = localised({
       return over ? `${kit}. Ops will send more.` : kit;
     },
     // The board draws four steppers and no way to record a fifth consumable.
-    add: "Add a consumable",
+    add: "Add item",
     addOne: (name: string) => `Add ${name}`,
     none: "None used",
     // The console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).
@@ -843,7 +855,16 @@ export const steps = localised({
     /** What the close leaves on the client's record, for whoever takes their next visit. */
     nextNote: "Note for the next technician",
     alert: "Alert for every visit",
-    alertHint: "Read before every visit, until ops take it off.",
+    notePlaceholder: "What should the next technician know?",
+    result: "Result",
+    summary: "Summary",
+    client: "Client",
+    payment: "Payment",
+    photos: "Photos",
+    /** "10 · uploading": the visit's photographs, some still on the phone. */
+    uploading: (count: number) => `${String(count)} · uploading`,
+    /** "10 sent" */
+    photosSent: (count: number) => `${String(count)} sent`,
     /** A one visit closed as done texts the client the payment link. */
     sendLinkAndClose: "Send link and close",
     // The board draws Done chosen already; nothing is chosen for the technician here.
@@ -876,6 +897,7 @@ export const closeOut = localised({
   /** A one visit whose fit the client booked for another day. */
   fitToBook: "fit to book",
   duration: "Duration",
+  paymentRow: "Payment",
   why: "Why",
   fit: "Fit",
   goingAhead: "Going ahead",
@@ -921,6 +943,8 @@ export const closeOut = localised({
   next: {
     title: "Next",
     leaveBy: (time: string) => `Leave by ${time}`,
+    /** "25 min drive", after the next job's kind and place. */
+    drive: (minutes: number) => `${String(minutes)} min drive`,
     today: "Today",
   },
   // The board draws the next job; the day ends without one.
@@ -1139,7 +1163,7 @@ export const session = localised({
 /** Schedule: today and the six days after it, a day at a time down the hours; and a later job's preview. */
 export const schedule = localised({
   title: "Schedule",
-  /** "12 Nov to 18 Nov · 12 jobs" */
+  /** "12 to 18 Nov · 12 jobs" */
   range: (from: string, to: string, jobs: number) => `${from} to ${to} · ${counted(jobs, "job", "jobs")}`,
   /** What a screen reader hears for a day in the strip: "Thursday 12 Nov, 4 jobs"; null for a day that did not load. */
   dayLabel: (weekday: string, date: string, jobs: number | null) => {
@@ -1151,6 +1175,10 @@ export const schedule = localised({
   noJobs: "–",
   /** "Thu, 12 Nov" */
   day: (weekday: string, date: string) => `${weekday}, ${date}`,
+  /** "Today, Thu 12 Nov" */
+  today: (weekday: string, date: string) => `Today, ${weekday} ${date}`,
+  /** "Tomorrow, Fri 13 Nov" */
+  tomorrow: (weekday: string, date: string) => `Tomorrow, ${weekday} ${date}`,
   jobs: (count: number) => counted(count, "job", "jobs"),
   nothing: "Nothing booked",
   dayView: "The day, by the hour",
@@ -1180,7 +1208,6 @@ export const schedule = localised({
  */
 export const alerts = localised({
   title: "Alerts",
-  sub: "The last 7 days",
   /** The bell's name, with how many are new. */
   bell: (unread: number) => (unread === 0 ? "Alerts" : `Alerts, ${String(unread)} new`),
   none: "No alerts in the last 7 days.",
@@ -1240,7 +1267,6 @@ export const alerts = localised({
 /** Guides, from Me: each kind of visit's steps, and each task read alone (./guides/GuidesScreen.tsx). */
 export const guides = localised({
   title: "Guides",
-  sub: "How each visit is done",
   kinds: "4 visit types",
   /** "6 steps" */
   steps: (count: number) => counted(count, "step", "steps"),
@@ -1251,7 +1277,7 @@ export const guides = localised({
     hair_profile: "Norwood stage, head and base",
     hair_system: "Scan the new piece",
     consumables: "Record what you used",
-    after_photos: "The same five shots",
+    after_photos: "Same 5 shots",
     outcome: "Result and close",
   },
   /** "Service visit · Service", beneath a task's name. */
@@ -1315,7 +1341,6 @@ export const options = localised({
 /** The technician's asks for leave: a new one, and where each stands once ops decide it. */
 export const leave = localised({
   title: "Leave",
-  sub: "Days off, asked of ops",
   failed: "Your leave didn’t load.",
   retry: "Try again",
   askTitle: "Ask for leave",
@@ -1329,19 +1354,27 @@ export const leave = localised({
   askedTitle: "Your requests",
   none: "Nothing asked for.",
   states: { asked: "With ops", approved: "Approved", declined: "Declined" },
-  /** "26 Sep – 28 Sep", or "5 Oct" for one day. */
-  days: (from: string, to: string) => (from === to ? from : `${from} – ${to}`),
+  /** "20 to 22 Nov", or "28 Nov to 4 Dec" across a month. */
+  days: (from: string, to: string) => `${from} to ${to}`,
 });
 
 export const kit = localised({
   title: "Kit",
+  /** "Updated 8:40 am": when the kit was last read. */
+  updated: (time: string) => `Updated ${time}`,
   failed: "Your kit didn’t load.",
   retry: "Try again",
   needsSignal: "Needs signal",
   notDone: "That didn’t go through. Try again.",
   forecast: {
     title: "Next 7 days",
+    /** "11 bookings": the visits the forecast is taken from. */
+    bookings: (count: number) => counted(count, "booking", "bookings"),
+    /** A product's pieces, as the forecast lists them: "Mane Man Essential pieces". */
+    pieces: (product: string) => `${product} pieces`,
     request: "Request what’s short",
+    /** "Request 6 shampoo sachets": the one thing short, named. */
+    requestOne: (what: string) => `Request ${what}`,
     /** "Requested 9:05 am · ops will add it to your next transfer" */
     requested: (time: string) => `Requested ${time} · ops will add it to your next transfer`,
     requestFailed: "That didn’t reach ops. Try again.",
@@ -1358,19 +1391,23 @@ export const kit = localised({
     title: "Arriving",
     /** "Mane Man Essential · 2 pieces" */
     line: (name: string, amount: string) => `${name} · ${amount}`,
-    /** "From Gurgaon stockroom · sent Mon 21 Sep" */
-    from: (place: string, sent: string) => `From ${place} · sent ${sent}`,
-    receive: "Receive all",
-    receiveScanned: (count: number) => `Receive ${String(count)} scanned`,
+    receive: "Receive",
+    /** "Sent 9 Nov" */
+    sent: (date: string) => `Sent ${date}`,
+    reportMissing: "Report missing",
+    /** Part of a hair system's pieces in hand, the rest still on the way. */
+    restToCome: (count: number) => `Receive ${String(count)} scanned · the rest to come`,
     scanned: (count: number, of: number) => `${String(count)} of ${String(of)} scanned`,
-    /** Asked before part of a top-up is received. */
-    rest: (count: number) => (count === 1 ? "The one not scanned is" : `The ${String(count)} not scanned are`),
-    stillToCome: "Still to come",
-    missing: "Missing",
     notOnIt: "That label isn’t on this transfer.",
     settled: "Already received or sent back.",
   },
-  scan: { label: "Scan or type each label", add: "Add", camera: "Scan", stop: "Stop scanning" },
+  scan: {
+    label: "Scan or type each label",
+    add: "Add",
+    camera: "Scan",
+    stop: "Stop scanning",
+    type: "Type it instead",
+  },
   held: {
     title: "In kit",
     none: "Your kit is empty.",

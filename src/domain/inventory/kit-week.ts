@@ -5,6 +5,7 @@
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { tierOf } from "../../config/visit-types.ts";
 import { bookedAhead } from "../../config/statuses.ts";
+import { latestFits } from "../clients/hair-profiles.ts";
 
 /** How many days from tomorrow the week's top-up covers. */
 const TOP_UP_DAYS = 7;
@@ -128,4 +129,95 @@ async function weekNeedOf(db: D1Database, kit: string, today: string): Promise<W
     )
     .all<WeekNeed>();
   return results;
+}
+
+/** A product's pieces the week's first fits and replacements need, against the kit's pieces of it fit to use. */
+export interface PiecesAhead {
+  readonly product: string;
+  /** The product as its first fit is sold: "Mane Man Essential". */
+  readonly name: string;
+  readonly need: number;
+  readonly have: number;
+}
+
+/** A first fit or a replacement in the week, as booked. */
+interface FitBooked {
+  readonly person_id: string;
+  readonly type: string;
+  readonly tier: string | null;
+  readonly one_visit: string | null;
+}
+
+/**
+ * The product each fit of the week needs a piece of, by product alone: a first fit's the product it was booked as, a
+ * replacement's the client's own, from their hair profile. A consultation and fit in one visit is left out, as its
+ * client chooses at the visit or not at all, and so is a replacement with no profile. The evening's check
+ * (./kit-check.ts) goes further, to the piece itself: it fits a one visit to the client's profile or the city's range,
+ * and leaves out a first fit with no profile.
+ */
+async function piecesNeeded(db: D1Database, fits: readonly FitBooked[]): Promise<Map<string, number>> {
+  const profiles = await latestFits(
+    db,
+    fits.filter((fit) => fit.type === "replacement").map((fit) => fit.person_id),
+  );
+  const need = new Map<string, number>();
+  for (const fit of fits) {
+    if (fit.one_visit !== null) continue;
+    const product = fit.type === "first_fit" ? fit.tier : (profiles.get(fit.person_id)?.product ?? null);
+    if (product !== null) need.set(product, (need.get(product) ?? 0) + 1);
+  }
+  return need;
+}
+
+/**
+ * The technician's week ahead beyond consumables, for their Kit screen: how many visits are booked from today to six
+ * days on, and for each product the pieces their first fits and replacements need, against the pieces of it the kit
+ * holds fit to use. Shown only: an ask of ops stays with consumables, as the evening's
+ * check, above, fits pieces to each client.
+ */
+export async function weekVisitsOf(
+  db: D1Database,
+  kit: string,
+  today: string,
+  view: { readonly held: readonly { readonly code: string; readonly usable: number; readonly hairSystem: boolean }[] },
+): Promise<{ visits: number; pieces: PiecesAhead[] }> {
+  const window = [
+    indiaInstant(today, "00:00").toISOString(),
+    indiaInstant(addDays(today, FORECAST_DAYS), "00:00").toISOString(),
+    kit,
+  ];
+  const [visits, fits, products, names] = await Promise.all([
+    db
+      .prepare(
+        `SELECT COUNT(*) AS visits FROM appointments a INDEXED BY appointments_by_technician
+          WHERE a.technician_id = ?3 AND ${bookedAhead("a")}`,
+      )
+      .bind(...window)
+      .first<{ visits: number }>(),
+    db
+      .prepare(
+        `SELECT a.person_id, a.type, a.tier, a.one_visit FROM appointments a INDEXED BY appointments_by_technician
+          WHERE a.technician_id = ?3 AND ${bookedAhead("a")} AND a.type IN ('first_fit', 'replacement')`,
+      )
+      .bind(...window)
+      .all<FitBooked>(),
+    db.prepare(`SELECT code, product FROM hair_systems`).all<{ code: string; product: string }>(),
+    db.prepare(`SELECT tier, name FROM services WHERE kind = 'first_fit'`).all<{ tier: string; name: string }>(),
+  ]);
+  const productOf = new Map(products.results.map((row) => [row.code, row.product]));
+  const have = new Map<string, number>();
+  for (const item of view.held) {
+    const product = item.hairSystem ? productOf.get(item.code) : undefined;
+    if (product !== undefined) have.set(product, (have.get(product) ?? 0) + Math.max(0, item.usable));
+  }
+  const nameOf = new Map(names.results.map((row) => [row.tier, row.name]));
+  const pieces = [...(await piecesNeeded(db, fits.results))].flatMap(([product, need]) => {
+    // A product sold as no first fit names no piece.
+    const name = nameOf.get(product);
+    return name === undefined ? [] : [{ product, name, need, have: have.get(product) ?? 0 }];
+  });
+  return {
+    visits: visits?.visits ?? 0,
+    pieces: pieces.sort((a, b) => a.name.localeCompare(b.name)),
+  };
 }

@@ -7,7 +7,6 @@
     "A new version is ready.": "नया वर्ज़न तैयार है।",
     "A visit’s client details close the day after it.": "क्लाइंट की जानकारी विज़िट के अगले दिन बंद हो जाती है।",
     "Add": "जोड़ें",
-    "Add a consumable": "सामान जोड़ें",
     "Adhesive": "गोंद",
     "Adhesive applied": "गोंद लगाया",
     "Adhesive renewed": "गोंद नया लगाया",
@@ -67,7 +66,6 @@
     "Couldn’t open this screen.": "यह स्क्रीन नहीं खुली।",
     "Couldn’t send. Try again.": "भेजा नहीं जा सका। फिर से कोशिश करें।",
     "Cut and styled": "कट और स्टाइल किया",
-    "Days off, asked of ops": "छुट्टी, ऑप्स से माँगी",
     "December": "दिसंबर",
     "Decided against it": "मना कर दिया",
     "Delete them": "मिटा दें",
@@ -82,7 +80,6 @@
     "February": "फ़रवरी",
     "Finasteride": "फ़िनास्टेराइड",
     "Finish it and send it.": "पूरा करें और भेजें।",
-    "Finish the tasks to continue": "आगे बढ़ने के लिए काम पूरे करें",
     "First fit checklist": "फ़र्स्ट फ़िट की चेकलिस्ट",
     "First fits": "फ़र्स्ट फ़िट",
     "First:": "पहला:",
@@ -105,7 +102,6 @@
     "Handed back. Ops receive it from you.": "लौटा दिया। ऑप्स आपसे ले लेंगे।",
     "Head (in)": "सिर (इंच)",
     "History": "इतिहास",
-    "How each visit is done": "हर विज़िट कैसे होती है",
     "I": "I",
     "II": "II",
     "III": "III",
@@ -118,7 +114,6 @@
     "Keep fitting": "फ़िटिंग जारी रखें",
     "Keep holding…": "दबाए रखें…",
     "Keep them": "रहने दें",
-    "Kept out of the gallery.": "फ़ोन की गैलरी में सेव नहीं होतीं।",
     "Last visit’s after photo": "पिछली विज़िट की बाद वाली फ़ोटो",
     "Less than expected. Why?": "उम्मीद से कम। क्यों?",
     "Link texted to the client": "क्लाइंट को लिंक SMS किया",
@@ -136,7 +131,6 @@
     "Measurements taken": "नाप लिया",
     "Minoxidil": "मिनोक्सिडिल",
     "Minutes": "मिनट",
-    "Missing": "नहीं मिला",
     "Monday": "सोमवार",
     "More time needed": "और समय चाहिए",
     "Needs signal": "नेटवर्क चाहिए",
@@ -207,9 +201,7 @@
     "Prices didn’t load.": "दाम लोड नहीं हुए।",
     "Put it right": "ठीक करें",
     "Razorpay refused it. Ops are told.": "Razorpay ने मना कर दिया। ऑप्स को बताया गया।",
-    "Read before every visit, until ops take it off.": "हर विज़िट से पहले पढ़ें, जब तक ऑप्स इसे हटा न दें।",
     "Recalled": "रिकॉल हुआ",
-    "Receive all": "सब लें",
     "Ref": "रेफ़",
     "Reload": "फिर से लोड करें",
     "Remedies tried": "आज़माए गए इलाज",
@@ -258,7 +250,6 @@
     "Stay signed in": "साइन इन रहें",
     "Steps arrived out of order. Open the job again.": "स्टेप गलत क्रम में पहुँचे। जॉब फिर से खोलें।",
     "Still open from yesterday": "कल से खुला है",
-    "Still to come": "अभी बाकी",
     "Stop scanning": "स्कैन बंद करें",
     "Sunday": "रविवार",
     "Supplier lot": "सप्लायर लॉट",
@@ -295,7 +286,6 @@
     "The job closes as partly done, and ops book the refit with the right hair system.": "जॉब आधा हुआ के तौर पर बंद होगा, और ऑप्स सही हेयर सिस्टम के साथ दोबारा फ़िट बुक करेंगे।",
     "The label of the hair system that came off": "उतारे गए हेयर सिस्टम का लेबल",
     "The label of the hair system that came off wasn’t accepted.": "उतारे गए हेयर सिस्टम का लेबल नहीं लिया गया।",
-    "The last 7 days": "पिछले 7 दिन",
     "The new hair system’s label": "नए हेयर सिस्टम का लेबल",
     "The one not scanned is": "जो एक स्कैन नहीं हुआ",
     "The payment link has gone, so the code can no longer change.": "पेमेंट लिंक जा चुका है, इसलिए कोड अब नहीं बदल सकता।",
@@ -337,7 +327,6 @@
     "This visit isn’t yours any more.": "यह विज़िट अब आपकी नहीं है।",
     "This visit was closed. What you recorded is kept on this phone, in Pending uploads.": "यह विज़िट बंद हो गई। आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।",
     "Thursday": "गुरुवार",
-    "Tick all: everything was done": "सब पर टिक करें: सब हो गया",
     "To do": "करना है",
     "Today’s jobs and cards are on the phone.": "आज के जॉब और कार्ड फ़ोन में हैं।",
     "Too early for this job. Tap again from the time on its card.": "इस जॉब के लिए अभी जल्दी है। कार्ड पर लिखे समय से फिर टैप करें।",
@@ -398,7 +387,11 @@
     "the client": "क्लाइंट",
     "the consumables": "सामान",
     "the hair system they chose": "उनका चुना हेयर सिस्टम",
-    "the tasks": "काम"
+    "the tasks": "काम",
+    "Number not registered?": "नंबर रजिस्टर नहीं है?",
+    "Call ops.": "ऑप्स को कॉल करें।",
+    "Type it instead": "इसके बजाय टाइप करें",
+    "the rest to come": "बाकी आने वाले हैं"
   },
   "patterns": [
     {
@@ -976,6 +969,50 @@
     {
       "match": "^the ([^·]+)$",
       "hi": "$1"
+    },
+    {
+      "match": "^([^·]+) bookings?$",
+      "hi": "$1 बुकिंग"
+    },
+    {
+      "match": "^([^·]+) pieces$",
+      "hi": "$1 पीस"
+    },
+    {
+      "match": "^([^·]+) visits? since ([^·]+)$",
+      "hi": "$2 से $1 विज़िट"
+    },
+    {
+      "match": "^([^·]+) away$",
+      "hi": "$1 दूर"
+    },
+    {
+      "match": "^Last sync ([^·]+)$",
+      "hi": "आख़िरी सिंक $1"
+    },
+    {
+      "match": "^Photo: ([^·]+)$",
+      "hi": "फ़ोटो: $1"
+    },
+    {
+      "match": "^Request ([^·]+)$",
+      "hi": "$1 मँगवाएँ"
+    },
+    {
+      "match": "^Sent ([^·]+)$",
+      "hi": "$1 को भेजा"
+    },
+    {
+      "match": "^Today, ([^·]+)$",
+      "hi": "आज, $1"
+    },
+    {
+      "match": "^Tomorrow, ([^·]+)$",
+      "hi": "कल, $1"
+    },
+    {
+      "match": "^Updated ([^·]+)$",
+      "hi": "$1 पर अपडेट"
     }
   ],
   "dateTokens": {

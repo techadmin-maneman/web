@@ -79,6 +79,18 @@
     border-top: var(--rule-strong) solid var(--ui-accent);
   }
 
+  /* The now-line starts in a dot at the hours, as the design draws it. */
+  .now::before {
+    content: "";
+    position: absolute;
+    top: calc(-1 * var(--sp-4) - var(--rule-strong) / 2);
+    left: calc(-1 * var(--sp-4));
+    width: var(--sp-8);
+    height: var(--sp-8);
+    border-radius: 50%;
+    background: var(--ui-accent);
+  }
+
   /* The block's words fill it from the top, cut where it ends rather than making the rows taller; a block wholly
      inside it is listed beneath. */
   .words {

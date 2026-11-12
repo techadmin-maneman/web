@@ -14,6 +14,7 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { INSIDE, OUTSIDE, query, stagingFixture } from "./seed.ts";
+import { shots } from "../tech/steps-fixtures.ts";
 import {
   signIn as signInWords,
   notHome,
@@ -319,7 +320,7 @@ test("the before set: a link for each angle, the PUT, then the set", async ({ pa
   await expect(capture).toBeEnabled({ timeout: 60_000 });
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
 
   const setLanding = page.waitForResponse((response) =>

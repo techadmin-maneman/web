@@ -53,7 +53,7 @@
 
 /* The next job: its line, its time large, the client, the visit and the place; then its actions. */
 .next {
-  padding: var(--sp-8) var(--screen-gutter) var(--sp-24);
+  padding: var(--sp-8) var(--screen-gutter) 0;
 }
 
 .nextLink {
@@ -150,6 +150,9 @@
 
 /* The rows inside the gutter, as the prototype draws them: a done row's rule on the gutter's line. */
 .rows {
+  --rule: var(--ui-line);
+  --row-lead-width: calc(var(--sp-64) + var(--sp-12));
+
   border-bottom: var(--hairline) solid var(--ui-line);
 }
 

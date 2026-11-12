@@ -143,7 +143,8 @@ test("once a code is sent, the number can be changed, and a new code asked for a
   await number.fill("9811000000");
   await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
   await expect(page.getByText(techCopy.signIn.codeSent("+91 98110 00000"))).toBeVisible();
-  await expect(number).toBeDisabled();
+  // The line says where the code went, in place of the number's field.
+  await expect(number).toHaveCount(0);
 
   // Not at once: WhatsApp has half a minute to deliver the first.
   await expect(page.getByText(/^Resend in 0:\d\d$/)).toBeVisible();
@@ -155,6 +156,7 @@ test("once a code is sent, the number can be changed, and a new code asked for a
   // A number typed wrong is not a dead end: back to it, and the code goes to the right one.
   await page.getByRole("button", { name: techCopy.signIn.changeNumber }).click();
   await expect(number).toBeEnabled();
+  await expect(number).toHaveValue("9811000000");
   await expect(number).toBeFocused();
   await number.fill("9811000001");
   await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();

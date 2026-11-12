@@ -270,16 +270,10 @@
   color: inherit;
 }
 
-/* The checklist's one tap for a visit where everything was done. */
-.tickAll {
-  margin: var(--sp-16) var(--sp-20) 0;
-}
-
-/* A guided task (./Checklist.tsx): the client's alerts above, then how far through, its title, where its reference
-   photograph goes, the numbered instructions, and what to watch for in a ruled block. */
+/* A guided task (./Checklist.tsx): how far through, its title, the client's alerts, where its reference photograph
+   goes, the instructions each numbered on a ruled row, and what to watch for in a ruled block. */
 .alerts {
-  margin: var(--sp-16) var(--screen-gutter) 0;
-  width: auto;
+  margin-top: var(--sp-16);
 }
 
 .task {
@@ -302,7 +296,7 @@
 .reference {
   display: flex;
   align-items: flex-end;
-  min-height: calc(var(--sp-64) * 2);
+  min-height: calc(var(--sp-64) * 2 + var(--sp-40));
   margin-top: var(--sp-16);
   padding: var(--sp-12);
   background: var(--placeholder);
@@ -312,9 +306,30 @@
 
 .how {
   margin: var(--sp-16) 0 0;
-  padding-left: var(--sp-24);
+  padding: 0;
+  list-style: none;
+  counter-reset: how;
   font-size: var(--fs-16);
-  line-height: var(--lh-160);
+  line-height: var(--lh-145);
+}
+
+/* Each instruction on its own row, its number in a column of its own, a rule beneath. */
+.how > li {
+  display: grid;
+  grid-template-columns: var(--sp-24) minmax(0, 1fr);
+  column-gap: var(--sp-8);
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
+  counter-increment: how;
+}
+
+.how > li::before {
+  content: counter(how);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: calc(var(--fs-16) * 1.45);
+  color: var(--ui-text);
 }
 
 .watch {
@@ -333,11 +348,4 @@
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-15);
   line-height: var(--lh-145);
-}
-
-/* The task's Done, a full-width row like every list's: it takes back the gutter the task sits in. */
-.taskDone {
-  margin: var(--sp-16) calc(-1 * var(--screen-gutter)) 0;
-  padding: 0;
-  list-style: none;
 }

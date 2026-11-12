@@ -32,6 +32,7 @@ import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
 import {
   eighthRelease,
   eleventhRelease,
+  twelfthRelease,
   firstRelease,
   ninthRelease,
   seventhRelease,
@@ -74,6 +75,7 @@ const summary = (id: string, date: string) =>
     address: null,
     next: null,
     drive_minutes: null,
+    drive_km: null,
     leave_by: null,
   }) as JobSummary;
 
@@ -126,6 +128,7 @@ const card = (id: string, date: string) =>
     handoff: null,
     sent_back: [],
     reschedule_asked: null,
+    client_visits: { count: 0, first: null },
   }) as Job;
 
 const arrival = {
@@ -572,5 +575,16 @@ describe("the promise to keep the store", () => {
   it("is unknown on a browser with nothing to ask", async () => {
     vi.stubGlobal("navigator", {});
     expect(await askToKeep()).toBe("unknown");
+  });
+});
+
+describe("what the build before the design pass kept", () => {
+  it("reads a card with no count of the client's visits, and a day's row with no km, until read again", async () => {
+    const { client_visits: _visits, ...earlierCard } = card("a", TODAY);
+    const { drive_km: _km, ...earlierRow } = summary("a", TODAY);
+    await twelfthRelease([{ ...earlierCard, v: 2 }], [{ date: TODAY, jobs: [earlierRow], v: 2 }]);
+    expect(await keptJob("a")).toMatchObject({ client_visits: null });
+    const [kept] = (await keptDay(TODAY)) ?? [];
+    expect(kept).toMatchObject({ drive_km: null });
   });
 });

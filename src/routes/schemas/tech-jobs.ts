@@ -119,6 +119,11 @@ const DayJobSchema = JobSummarySchema.extend({
       "The drive to it by our estimate: from the job before, or from the technician's home for the day's first. " +
       "Null for a job closed, and for the day's first where the technician's home has no pin.",
   }),
+  drive_km: z.union([z.number().nonnegative(), z.null()]).openapi({
+    description:
+      "How far that drive goes by road, in km to one decimal, by our estimate from the two pins. Null where either " +
+      "end has no pin, as for drive_minutes, and while the job is locked.",
+  }),
   leave_by: z.union([z.iso.datetime(), z.null()]).openapi({
     description:
       "When to leave for it, to start on time. Null for a job closed, and for the day's first where the technician's " +

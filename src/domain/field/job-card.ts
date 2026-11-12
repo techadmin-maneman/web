@@ -16,7 +16,7 @@ import { latestProfile, profileTakenAt, type HairProfile } from "../clients/hair
 import { alertsForTechnician, type TechnicianAlert } from "../clients/client-alerts.ts";
 import { handoffFor, type Handoff } from "../clients/handoff-notes.ts";
 import { sentBackOf, type SentBack } from "./step-send-backs.ts";
-import { afterPhotosOf, type HistoryPhoto } from "./client-history.ts";
+import { afterPhotosOf, historyCountOf, type HistoryCount, type HistoryPhoto } from "./client-history.ts";
 import { codeOnVisit, type VisitCode } from "../money/discount-code-uses.ts";
 import { decisionAtVisit } from "../visits/one-visit.ts";
 import { evidenceMessage, messageStateOf } from "../no-shows/no-shows.ts";
@@ -114,6 +114,8 @@ interface JobDetail extends JobSummary {
   readonly client_alerts: TechnicianAlert[];
   /** The note the last technician left for this visit's; null while the job is locked, or where none was left. */
   readonly handoff: (Handoff & { readonly photos: HistoryPhoto[] }) | null;
+  /** How many of the client's visits closed before this one, and when the first was; null while the job is locked. */
+  readonly client_visits: HistoryCount | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
   readonly steps: CardStep[];
   /** The steps ops sent back to the technician, with why, not yet landed again. */
@@ -201,6 +203,7 @@ export async function jobDetail(
     profile: null,
     client_alerts: [],
     handoff: null,
+    client_visits: null,
     steps: cardStepsFor(type, oneVisit),
     sent_back: sentBack,
     reschedule_asked: await rescheduleAskedOf(db, row.id),
@@ -230,14 +233,18 @@ export async function jobDetail(
 async function unlockedPartsOf(
   db: D1Database,
   row: JobRow,
-): Promise<Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile" | "client_alerts" | "handoff">> {
-  const [pieces, lastVisit, reminder, profile, alerts, handoff] = await Promise.all([
+): Promise<
+  Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile" | "client_alerts" | "handoff" | "client_visits">
+> {
+  const job = { personId: row.person_id, id: row.id, startsAt: row.window_start };
+  const [pieces, lastVisit, reminder, profile, alerts, handoff, visits] = await Promise.all([
     piecesOf(db, row.person_id),
     lastVisitOf(db, row),
     reminderOf(db, row.id),
     latestProfile(db, row.person_id),
     alertsForTechnician(db, row.person_id),
-    handoffFor(db, { personId: row.person_id, id: row.id, startsAt: row.window_start }),
+    handoffFor(db, job),
+    historyCountOf(db, job),
   ]);
   return {
     pieces: pieces.map(cardPiece),
@@ -246,6 +253,7 @@ async function unlockedPartsOf(
     profile,
     client_alerts: alerts,
     handoff: handoff === null ? null : { ...handoff, photos: await afterPhotosOf(db, row.id, handoff.visit_id) },
+    client_visits: visits,
   };
 }
 

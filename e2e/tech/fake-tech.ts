@@ -156,6 +156,8 @@ export interface Fake {
   relocked: boolean;
   /** Whether there is a photograph to compare each angle with, before the visit and after it. */
   compare: boolean;
+  /** The client's earlier visits counted, as the card carries them; none to begin. */
+  clientVisits: Card["client_visits"];
   /** The client's history, as GET /api/tech/jobs/{id}/client-history answers. */
   history: TechReply<"/api/tech/jobs/{id}/client-history">;
   /** The technician's asks for leave, as GET /api/tech/leave answers; an ask adds one, with ops. */
@@ -283,7 +285,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     clientChoice: null,
     pieces: [],
     kitHairSystems: [],
-    kit: { held: [], coming: [], returned: [], forecast: [], asked: null },
+    kit: { held: [], coming: [], returned: [], forecast: [], visits: 0, pieces: [], asked: null },
     kitAfter: null,
     profile: null,
     checklist: CHECKLIST,
@@ -341,6 +343,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     sosRefused: false,
     relocked: false,
     history: { alerts: [], visits: [] },
+    clientVisits: { count: 0, first: null },
     compare: false,
     photos: [],
     doorPhotos: [],
@@ -385,6 +388,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       sentBack: fake.sentBack,
       paymentLink: fake.paymentLink,
       rescheduleAsked: fake.rescheduleAsked,
+      clientVisits: fake.clientVisits,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {

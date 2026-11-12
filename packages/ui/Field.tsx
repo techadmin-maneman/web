@@ -219,6 +219,40 @@ export function DateInput({
   );
 }
 
+/**
+ * A day picked with the phone's own calendar and shown written out, as "Thu, 26 Nov": the date input lies unseen over
+ * the words, so a tap opens the calendar, and the day reads as the rest of the app writes days.
+ */
+export function DayInput({
+  shown,
+  className,
+  width,
+  onClick,
+  ...rest
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "width"> & Sized & { readonly shown: string }) {
+  return (
+    <span className={classes(styles.box, lineOf({ width: width ?? "date" }), styles.day, className)}>
+      <span className={styles.dayShown} aria-hidden="true">
+        {shown}
+      </span>
+      <input
+        {...rest}
+        type="date"
+        className={styles.dayInput}
+        onClick={(event) => {
+          // Where the browser opens the calendar only from its own icon, a tap anywhere opens it.
+          try {
+            event.currentTarget.showPicker();
+          } catch {
+            // Not offered here; the phone opens its own on the tap.
+          }
+          onClick?.(event);
+        }}
+      />
+    </span>
+  );
+}
+
 /** One of a few, with the one arrow every select in the apps draws. */
 export function Select({ className, compact, onInk, width, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & Sized) {
   return (

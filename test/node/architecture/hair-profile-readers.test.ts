@@ -35,7 +35,8 @@ describe("the hair profile's table", () => {
     // fit offer, its recap of the consultation and the console's booking of a first fit read the hair system
     // recommended alone (recommendedProduct), as do the package a client is on before they book one and a package
     // kept from deletion; and the stock demand, a client's match to stock, a custom order raised to it, the forecast,
-    // the evening's kit check and a first fit's price each client's latest fit spec (latestFits).
+    // the evening's kit check, the technician's week ahead on Kit and a first fit's price each client's latest fit spec
+    // (latestFits).
     const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?(?:[a-z-]+\/)?hair-profiles\.ts"/).sort();
     expect(users).toEqual(
       [
@@ -48,6 +49,7 @@ describe("the hair profile's table", () => {
         "src/domain/purchasing/custom-orders.ts",
         "src/domain/purchasing/forecast-layers.ts",
         "src/domain/inventory/kit-check.ts",
+        "src/domain/inventory/kit-week.ts",
         "src/domain/purchasing/stock-demand.ts",
         "src/domain/inventory/stock-gap.ts",
         "src/domain/inventory/stock-match.ts",

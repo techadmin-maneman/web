@@ -9,6 +9,7 @@ import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "@rules/policy/client-record.
 import { useEffect, useState } from "react";
 import type { EventBody, Job, OutcomeRequest, PartialReason } from "../api.ts";
 import { oneVisit, options, steps as copy, visit } from "../content.ts";
+import { Result, Summary } from "./OutcomeParts.tsx";
 import { choiceOf, type ClientChoice } from "../lib/progress.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
@@ -176,6 +177,7 @@ function useCloseNotes(sent: { readonly note: string; readonly alert: string } |
         {(control) => (
           <TextArea
             {...control}
+            placeholder={copy.outcome.notePlaceholder}
             maxLength={HANDOFF_MAX_CHARS}
             value={note}
             onChange={(event) => {
@@ -184,7 +186,7 @@ function useCloseNotes(sent: { readonly note: string; readonly alert: string } |
           />
         )}
       </Field>
-      <Field label={copy.outcome.alert} hint={copy.outcome.alertHint}>
+      <Field label={copy.outcome.alert}>
         {(control) => (
           <TextArea
             {...control}
@@ -277,11 +279,7 @@ function Choosing({
         else onFinish(notes.add(doneOf(asksWhy, notGoingAhead, lost, clientChoice)));
       }}
     >
-      <Pair<"done" | "partial">
-        options={[
-          { value: "done", label: copy.outcome.done },
-          { value: "partial", label: copy.outcome.partial },
-        ]}
+      <Result
         chosen={choice}
         onChoose={(value) => {
           setChoice(value);
@@ -308,7 +306,8 @@ function Choosing({
         </>
       )}
       {choice === "partial" && <ReasonList reasons={job.partial_reasons} picked={reason} onPick={setReason} />}
-      {choice !== null && notes.fields}
+      <Summary job={job} />
+      {notes.fields}
     </StepFrame>
   );
 }

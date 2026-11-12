@@ -6,7 +6,7 @@
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { handBack, kitView } from "../../domain/inventory/kit.ts";
-import { weekAheadOf } from "../../domain/inventory/kit-week.ts";
+import { weekAheadOf, weekVisitsOf } from "../../domain/inventory/kit-week.ts";
 import { askForKit, kitAskedOf } from "../../domain/inventory/kit-requests.ts";
 import { tellOfLowStock } from "../../domain/inventory/stock.ts";
 import { receiveTransfer } from "../../domain/inventory/stock-transit.ts";
@@ -116,7 +116,28 @@ const KitSchema = z
       .openapi({
         description:
           "The consumables the technician's visits from today to six days on are expected to use, by the job sheet, " +
-          "against what the kit holds. Hair systems are left out.",
+          "against what the kit holds. Hair systems are left out: they are in pieces.",
+      }),
+    visits: z
+      .number()
+      .int()
+      .nonnegative()
+      .openapi({ description: "The visits booked from today to six days on, which the forecast is taken from." }),
+    pieces: z
+      .array(
+        z
+          .object({
+            product: z.string(),
+            name: z.string().openapi({ description: "The product as its first fit is sold." }),
+            need: z.number().int().openapi({ description: "The first fits and replacements booked that need one." }),
+            have: z.number().int().openapi({ description: "The kit's pieces of it fit to use now." }),
+          })
+          .strict(),
+      )
+      .openapi({
+        description:
+          "For each product the first fits and replacements from today to six days on need a piece of, against the " +
+          "kit's pieces of it. Shown only: an ask of ops is for consumables.",
       }),
     asked: z
       .union([
@@ -224,7 +245,10 @@ async function kitAnswer(c: Context<AppEnv>, kit: string) {
     opsInputs(c),
     kitAskedOf(c.env.DB, kit),
   ]);
-  const forecast = await weekAheadOf(c.env.DB, kit, today, view);
+  const [forecast, week] = await Promise.all([
+    weekAheadOf(c.env.DB, kit, today, view),
+    weekVisitsOf(c.env.DB, kit, today, view),
+  ]);
   const warnedBy = addDays(today, stockWatch.expiry_warning_days);
   const useFirst = (expiresOn: string | null) => expiresOn !== null && expiresOn >= today && expiresOn <= warnedBy;
   return {
@@ -262,6 +286,8 @@ async function kitAnswer(c: Context<AppEnv>, kit: string) {
       reason: piece.reason,
     })),
     forecast: forecast.map((item) => ({ ...item })),
+    visits: week.visits,
+    pieces: week.pieces.map((item) => ({ ...item })),
     asked: asked === null ? null : { asked_at: asked.asked_at, items: asked.items.map((item) => ({ ...item })) },
     today,
   };

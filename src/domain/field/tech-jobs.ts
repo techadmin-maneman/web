@@ -99,6 +99,8 @@ export interface DayJob extends JobSummary {
    * first where the technician's home has no pin.
    */
   readonly drive_minutes: number | null;
+  /** How far that drive goes by road, in km; null where it is not known from two pins. */
+  readonly drive_km: number | null;
   /** When to leave for it, to start on time; null where there is no drive to it. */
   readonly leave_by: string | null;
 }
@@ -261,6 +263,8 @@ export async function jobsOn({
       address: job.unlocked && row !== undefined ? addressOf(row) : null,
       next: nexts[index] ?? null,
       drive_minutes: drive?.drive_minutes ?? null,
+      // Said only once the address is the technician's to see: before, it would sharpen where home is from.
+      drive_km: job.unlocked ? (drive?.drive_km ?? null) : null,
       leave_by: drive?.leave_by ?? null,
     };
   });

@@ -25,9 +25,16 @@
   line-height: var(--lh-130);
 }
 
+/* Each section's own rule sets it apart, the first just under the head as the design has it. */
 .section {
-  margin-top: var(--sp-20);
   padding: 0 var(--screen-gutter);
+}
+
+.updated {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
 }
 
 .note {
@@ -75,18 +82,24 @@
   text-align: end;
 }
 
+/* Room between the figures, so they stay apart at a large text size. */
+.forecast thead th + th,
+.forecast td {
+  padding-left: var(--sp-12);
+}
+
 /* The item's name, and its head, at the start. */
 .forecast thead th:first-child,
 .forecast tbody th {
   text-align: start;
 }
 
-.short {
+.forecast .short {
   font-weight: var(--weight-semibold);
   color: var(--ui-error);
 }
 
-.enough {
+.forecast .enough {
   font-weight: var(--weight-semibold);
   color: var(--ui-text-soft);
 }
@@ -160,9 +173,44 @@
   margin-top: var(--sp-12);
 }
 
-.fieldLabel {
-  display: block;
-  margin: var(--sp-12) 0 var(--sp-8);
+/* The two actions on a hair system on its way, side by side, Scan the wider. */
+.grow {
+  flex: 1 1 0;
+  gap: var(--sp-8);
+}
+
+.grow:first-child {
+  flex-grow: 1.3;
+}
+
+.rest {
+  margin-top: var(--sp-8);
+}
+
+/* The camera reading labels, and the box to type one it can't read. */
+.scanner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  margin-top: var(--sp-12);
+}
+
+.typed {
+  display: flex;
+  gap: var(--sp-8);
+  align-items: flex-end;
+}
+
+.typed > :first-child {
+  flex: 1;
+}
+
+/* A consumable on its way: its name, and Receive at the row's end. */
+.stock {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  justify-content: space-between;
 }
 
 .reach {
