@@ -135,6 +135,21 @@ describe("a piece to replace", () => {
     expect(await early.json()).toMatchObject({ error: { code: "not_bookable" } });
   });
 
+  it("is booked by ops once while one is booked: a second is refused", async () => {
+    await rohit("fitted");
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-due', 'piece-due', ?1, 'MM-ESS-0000002-B', '2026-03-30', '2026-09-30', ?2)`,
+    )
+      .bind(ROHIT, NOW.toISOString())
+      .run();
+    const first = await book({ client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "morning" });
+    expect(first.status).toBe(201);
+    // Its link is open, so a second would double it.
+    const second = await book({ client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "evening" });
+    expect(await second.json()).toMatchObject({ error: { code: "already_booked" } });
+  });
+
   it("of a recalled lot is owed for the recall; one still worn and not recalled is owed nothing", async () => {
     await rohit("fitted");
     await piece(null);

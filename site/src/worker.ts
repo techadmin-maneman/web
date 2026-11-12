@@ -329,9 +329,14 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
       if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
       if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
       if (url.pathname === TERMS_PAGE && request.method === "GET") {
-        // The terms as built say the days the guarantee began with; while mm-api cannot say, they stand.
-        const [page, guarantee] = await Promise.all([env.ASSETS.fetch(request), fitGuarantee(env, url.origin)]);
-        if (!page.ok || guarantee === null) return withNonce(page);
+        // The terms as built say the days the guarantee began with; while mm-api cannot say, they stand. Either way the
+        // page goes without its validators, so a browser never keeps a figure ops have changed since.
+        const [page, guarantee] = await Promise.all([
+          env.ASSETS.fetch(builtFile(request, `${url.origin}${TERMS_PAGE}`)),
+          fitGuarantee(env, url.origin),
+        ]);
+        if (!page.ok) return withNonce(page);
+        if (guarantee === null) return withNonce(withoutValidators(page));
         const filled = new HTMLRewriter().on("[data-guarantee-days]", new Filled(legalDays(guarantee.days)));
         return withNonce(filled.transform(withoutValidators(page)));
       }

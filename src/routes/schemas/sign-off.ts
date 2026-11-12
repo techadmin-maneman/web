@@ -33,6 +33,9 @@ export const SignOffSchema = z
     asks: z.number().int().openapi({ description: "How many times it was asked: again after each flag." }),
     signed_at: z.union([z.iso.datetime(), z.null()]),
     signed_on: z.union([z.enum(SIGNED_ON), z.null()]),
+    guarantee_days: z.union([z.number().int(), z.null()]).openapi({
+      description: "The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then.",
+    }),
   })
   .strict()
   .openapi("SignOff");

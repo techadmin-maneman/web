@@ -517,8 +517,9 @@ export interface Rows {
     readonly asks: number;
     readonly signed_at: string | null;
     readonly signed_on: string | null;
-    readonly phone_code_hash: string | null;
-    readonly phone_code_expires_at: string | null;
+    readonly ask_event_id: string | null;
+    readonly answer_event_id: string | null;
+    readonly guarantee_days: number | null;
     readonly technician_id: string | null;
     readonly updated_at: string;
   };

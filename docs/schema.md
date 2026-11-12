@@ -1234,8 +1234,9 @@ Made by `0210_fit_sign_offs.sql`.
 | `asks` | INTEGER | no | `1` |  | How many times it has been asked: again after each flag. |
 | `signed_at` | TEXT | yes |  |  |  |
 | `signed_on` | TEXT | yes |  |  |  |
-| `phone_code_hash` | TEXT | yes |  |  | The one-time code a signature on the technician's phone carries, as its SHA-256; cleared once used. |
-| `phone_code_expires_at` | TEXT | yes |  |  |  |
+| `ask_event_id` | TEXT | yes |  |  | The phone's events the latest ask and the answer on the technician's phone came with, so each sent again is answered as it was. |
+| `answer_event_id` | TEXT | yes |  |  |  |
+| `guarantee_days` | INTEGER | yes |  |  | The fit guarantee's days in force when it was signed or declined, which a first fit's guarantee runs for, whatever ops set since (docs/decisions/0256-fit-guarantee-setting.md). |
 | `technician_id` | TEXT | yes |  | → `technicians.id` |  |
 | `updated_at` | TEXT | no |  |  |  |
 

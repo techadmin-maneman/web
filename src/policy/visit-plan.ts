@@ -1,5 +1,5 @@
 // A visit's plan: the screens the technician works through, in order, for each kind of visit, and the steps the client
-// is told of as the visit goes (docs/decisions/0244-the-visit-engine.md; docs/decisions/0255-client-alerts-and-push.md).
+// is told of as the visit goes (docs/decisions/0255-client-alerts-and-push.md).
 // The technician app's visit engine (apps/tech/src/visit/engine.ts) and the client's live visit both read it, so a
 // step the technician is on is the step the client is told of.
 //

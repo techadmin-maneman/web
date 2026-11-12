@@ -3823,137 +3823,7 @@ Request body:
 }
 ```
 
-**200**: Asked; the code a signature on this phone carries, null where it is signed or declined already
-
-```json
-{
-  "$ref": "#/components/schemas/SignOffAsked"
-}
-```
-
-**400**: invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "invalid_request"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
-**401**: session_required; device_revoked: ops revoked this phone; technician_inactive: ops switched the technician off
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "session_required",
-                "device_revoked",
-                "technician_inactive"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
-**404**: not_found: no such job, or never this technician's
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "not_found"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
-### POST /api/tech/jobs/{id}/sign-off
-
-The client signs off, or flags, on the technician's phone, with the code the ask gave it
-
-Request body:
-
-```json
-{
-  "$ref": "#/components/schemas/SignOffOnPhone"
-}
-```
-
-**200**: Recorded
+**200**: The sign-off as it now stands
 
 ```json
 {
@@ -4035,7 +3905,7 @@ Request body:
 }
 ```
 
-**403**: sign_off_code: the code is wrong, used, or past its 30 minutes: ask again
+**404**: not_found: no such job, or never this technician's
 
 ```json
 {
@@ -4052,7 +3922,138 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
-                "sign_off_code"
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: superseded: the job was given to another technician or called off under the phone; already_closed: the visit has closed
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/jobs/{id}/sign-off
+
+The client signs off, or says what isn't right, on the technician's phone
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SignOffOnPhone"
+}
+```
+
+**200**: The sign-off as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/SignOff"
+}
+```
+
+**400**: invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked: ops revoked this phone; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
               ]
             }
           },
@@ -4107,7 +4108,7 @@ Request body:
 }
 ```
 
-**409**: sign_off_not_asked: ask first; sign_off_closed: signed or declined already
+**409**: superseded: the job was given to another technician or called off under the phone; already_closed: the visit has closed
 
 ```json
 {
@@ -4124,8 +4125,8 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
-                "sign_off_not_asked",
-                "sign_off_closed"
+                "superseded",
+                "already_closed"
               ]
             }
           },
@@ -4182,7 +4183,7 @@ Request body:
 
 ### POST /api/tech/jobs/{id}/sign-off-declined
 
-Record that the client declined to sign, with why: the fit then closes, and ops are given a Tasks row
+Record that the client declined to sign, with why: the fit may then close, and Care are given a Tasks row
 
 Request body:
 
@@ -4192,7 +4193,7 @@ Request body:
 }
 ```
 
-**200**: Recorded
+**200**: The sign-off as it now stands
 
 ```json
 {
@@ -4310,7 +4311,7 @@ Request body:
 }
 ```
 
-**409**: sign_off_closed: the client signed already
+**409**: superseded: the job was given to another technician or called off under the phone; already_closed: the visit has closed
 
 ```json
 {
@@ -4327,7 +4328,8 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
-                "sign_off_closed"
+                "superseded",
+                "already_closed"
               ]
             }
           },
@@ -7117,7 +7119,6 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "sign_off_not_asked",
             "sign_off_closed",
             "sign_off_checks_open",
-            "sign_off_code",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -10237,6 +10238,17 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "null"
         }
       ]
+    },
+    "guarantee_days": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then."
     }
   },
   "required": [
@@ -10247,7 +10259,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "asked_at",
     "asks",
     "signed_at",
-    "signed_on"
+    "signed_on",
+    "guarantee_days"
   ],
   "additionalProperties": false
 }
@@ -11463,42 +11476,6 @@ One of the client's try-on looks, under the card's own unlock, never cached
 }
 ```
 
-### SignOffAsked
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "state": {
-      "type": "string",
-      "enum": [
-        "asked",
-        "signed",
-        "flagged",
-        "declined"
-      ]
-    },
-    "code": {
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\d{6}$"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "Six digits, for 30 minutes, for the client to sign on this phone. Shown to nobody."
-    }
-  },
-  "required": [
-    "state",
-    "code"
-  ],
-  "additionalProperties": false
-}
-```
-
 ### SignOffRequest
 
 ```json
@@ -11515,16 +11492,11 @@ One of the client's try-on looks, under the card's own unlock, never cached
 {
   "type": "object",
   "properties": {
-    "code": {
-      "type": "string",
-      "pattern": "^\\d{6}$"
-    },
     "answer": {
       "$ref": "#/components/schemas/SignOffAnswer"
     }
   },
   "required": [
-    "code",
     "answer"
   ],
   "additionalProperties": false

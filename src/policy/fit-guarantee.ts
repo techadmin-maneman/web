@@ -1,6 +1,6 @@
 // The fit guarantee (docs/decisions/0256-fit-guarantee-setting.md): after a client's first fit, a refit at no charge or a
 // full refund, in the client's own judgment, for as many days as ops set (Settings · Rules, `guarantee_days`). The terms
-// state it in those days; signing off the fit does not end it (docs/decisions/0254-client-signs-off-the-fit.md).
+// state it in those days; signing off the fit does not end it.
 
 import { addDays } from "../lib/india-time.ts";
 

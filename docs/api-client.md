@@ -6483,7 +6483,6 @@ Request body:
             "sign_off_not_asked",
             "sign_off_closed",
             "sign_off_checks_open",
-            "sign_off_code",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -7436,7 +7435,7 @@ Request body:
         "invoices_kept_years"
       ],
       "additionalProperties": false,
-      "description": "What the account's promises say: the first two from the Tasks deadlines ops set, the third the law's."
+      "description": "What the account's promises say, each the law's: a grievance answered, a deletion acted on, invoices kept."
     },
     "hair_system": {
       "anyOf": [
@@ -8072,6 +8071,17 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "guarantee_days": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then."
     }
   },
   "required": [
@@ -8082,7 +8092,8 @@ Request body:
     "asked_at",
     "asks",
     "signed_at",
-    "signed_on"
+    "signed_on",
+    "guarantee_days"
   ],
   "additionalProperties": false
 }

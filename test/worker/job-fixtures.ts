@@ -40,10 +40,11 @@ export interface Working {
 
 /** The client signs off the fit the technician asked them to, every check ticked. */
 export async function clientSignsOff(appointmentId: string): Promise<void> {
-  await askSignOff(env.DB, { appointmentId, technicianId: IMRAN, now: NOW });
+  await askSignOff(env.DB, { appointmentId, technicianId: IMRAN, eventId: `ask-${appointmentId}`, now: NOW });
   await signOffInApp(env.DB, {
     appointmentId,
     personId: PERSON,
+    guaranteeDays: 14,
     result: "signed",
     checks: { hairline: true, blend: true, secure: true },
     now: NOW,

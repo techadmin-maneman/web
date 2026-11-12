@@ -7,7 +7,7 @@ import type { VisitType } from "../../config/visit-types.ts";
 import { cardStepsFor } from "../../policy/in-job-steps.ts";
 import { waitEndsAt, waitStartsAt, type Waits } from "../../policy/no-show.ts";
 import { clientStepsOf, currentStep, planOf, type ClientStep } from "../../policy/visit-plan.ts";
-import type { Preset } from "../messages/technician-updates.ts";
+import { stillHelps, type Preset } from "../messages/technician-updates.ts";
 import { signOffsOf, type SignOff } from "../field/sign-offs.ts";
 import { closesFit } from "../../policy/sign-off.ts";
 import { profiledVisitsStatement } from "../clients/hair-profiles.ts";
@@ -42,13 +42,15 @@ export interface LiveVisitRow {
   /** A consultation and fit in one visit. */
   readonly oneVisit: boolean;
   readonly startsAt: string;
+  /** The technician on the visit now: a word from one it was taken from is not theirs to say. */
+  readonly technicianId: string | null;
   readonly stage: "booked" | "arrived" | "in_progress" | "done" | "closing" | "missed" | null;
 }
 
 const NONE: LiveFacts = { latest_update: null, step: null, waits_until: null, sign_off: null };
 
 interface Landed {
-  readonly updates: Map<string, { preset: Preset; minutes: number | null; written_at: string }>;
+  readonly updates: Map<string, { preset: Preset; minutes: number | null; written_at: string; technician_id: string }>;
   readonly steps: Map<string, Set<string>>;
   readonly checkIns: Map<string, string>;
   readonly signOffs: Map<string, SignOff>;
@@ -62,7 +64,7 @@ async function landedFor(db: D1Database, ids: readonly string[]): Promise<Landed
     db.batch<Record<string, unknown>>([
       db
         .prepare(
-          `SELECT appointment_id, preset, minutes, written_at FROM technician_updates
+          `SELECT appointment_id, technician_id, preset, minutes, written_at FROM technician_updates
            WHERE appointment_id IN (${marks}) ORDER BY written_at DESC`,
         )
         .bind(...ids),
@@ -79,6 +81,7 @@ async function landedFor(db: D1Database, ids: readonly string[]): Promise<Landed
   const landed: Landed = { updates: new Map(), steps: new Map(), checkIns: new Map(), signOffs };
   for (const row of (updates?.results ?? []) as {
     appointment_id: string;
+    technician_id: string;
     preset: Preset;
     minutes: number | null;
     written_at: string;
@@ -106,22 +109,21 @@ async function landedFor(db: D1Database, ids: readonly string[]): Promise<Landed
   return landed;
 }
 
-function factsOf(visit: LiveVisitRow, landed: Landed, waits: Waits): LiveFacts {
+/** The technician's latest word, while it is the visit's technician's and still tells the client something. */
+function wordOf(visit: LiveVisitRow, landed: Landed, now: Date): LiveFacts["latest_update"] {
+  const update = landed.updates.get(visit.id);
+  if (update?.technician_id !== visit.technicianId) return null;
+  if (!stillHelps(update.preset, new Date(update.written_at), now)) return null;
+  return { kind: UPDATE_KINDS[update.preset], minutes: update.minutes, at: update.written_at };
+}
+
+function factsOf(visit: LiveVisitRow, landed: Landed, at: { readonly waits: Waits; readonly now: Date }): LiveFacts {
   const type = visit.type ?? "service";
-  if (visit.stage === "booked") {
-    const update = landed.updates.get(visit.id);
-    return {
-      ...NONE,
-      latest_update:
-        update === undefined
-          ? null
-          : { kind: UPDATE_KINDS[update.preset], minutes: update.minutes, at: update.written_at },
-    };
-  }
+  if (visit.stage === "booked") return { ...NONE, latest_update: wordOf(visit, landed, at.now) };
   if (visit.stage === "arrived") {
     const checkedIn = landed.checkIns.get(visit.id);
     if (checkedIn === undefined) return NONE;
-    const ends = waitEndsAt(waitStartsAt(new Date(checkedIn), new Date(visit.startsAt)), type, waits);
+    const ends = waitEndsAt(waitStartsAt(new Date(checkedIn), new Date(visit.startsAt)), type, at.waits);
     return { ...NONE, waits_until: ends.toISOString() };
   }
   if (visit.stage === "in_progress") {
@@ -140,7 +142,7 @@ function factsOf(visit: LiveVisitRow, landed: Landed, waits: Waits): LiveFacts {
 export async function liveFactsOf(
   db: D1Database,
   visits: readonly LiveVisitRow[],
-  waits: Waits,
+  at: { readonly waits: Waits; readonly now: Date },
 ): Promise<Map<string, LiveFacts>> {
   const live = visits.filter(
     (visit) => visit.stage === "booked" || visit.stage === "arrived" || visit.stage === "in_progress",
@@ -151,6 +153,6 @@ export async function liveFactsOf(
     db,
     live.map((visit) => visit.id),
   );
-  for (const visit of live) facts.set(visit.id, factsOf(visit, landed, waits));
+  for (const visit of live) facts.set(visit.id, factsOf(visit, landed, at));
   return facts;
 }

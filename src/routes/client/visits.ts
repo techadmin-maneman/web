@@ -135,7 +135,9 @@ export function registerClientVisits(app: App): void {
     ]);
     if (visit === null) return refuse(c, "not_found");
     const fitted = visit.type === "first_fit" && visit.outcome === "done";
-    const guarantee = fitted ? guaranteeUntil(visit.date, inputs.guaranteeDays) : null;
+    // The days in force when the fit was signed off or declined: a change ops make since moves no promise made.
+    const days = visit.sign_off?.guarantee_days ?? inputs.guaranteeDays;
+    const guarantee = fitted ? guaranteeUntil(visit.date, days) : null;
     return c.json({ ...visit, guarantee_until: guarantee }, 200);
   });
 }

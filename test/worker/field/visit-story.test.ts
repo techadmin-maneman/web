@@ -1,6 +1,7 @@
 // What happened on a visit, for its drawer on the board (src/routes/ops/visit-story.ts): each step the phone landed, in
 // order, by whom, and how it ended. The drawer said only "Consultation · 1 slot".
 
+import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, request } from "../helpers.ts";
 import { JOB, working } from "../job-fixtures.ts";
@@ -21,6 +22,14 @@ describe("a visit's story", () => {
     expect(steps.map((step) => step.kind)).toEqual(["check_in", "start", "before_photos", "checklist", "outcome"]);
     expect(steps.at(-1)).toMatchObject({ outcome: "done" });
     expect(steps.every((step) => step.technician === "Imran Qureshi")).toBe(true);
+  });
+
+  it("says where a fit's sign-off stands, the client's words with it", async () => {
+    const job = await working("replacement");
+    await job.post(`/api/tech/jobs/${JOB}/sign-off-request`, {}, "event-ask-01");
+    await env.DB.prepare("UPDATE fit_sign_offs SET state = 'flagged', flag_text = 'The left edge lifts'").run();
+    const story = await (await request(job.ops, `/api/visits/${JOB}/story`)).json<{ sign_off: unknown }>();
+    expect(story.sign_off).toMatchObject({ state: "flagged", flag_text: "The left edge lifts", asks: 1 });
   });
 
   it("is nothing before the technician arrives, and no visit outside the caller's reach", async () => {

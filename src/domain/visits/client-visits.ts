@@ -5,7 +5,7 @@
 
 import { liveFactsOf, type LiveFacts } from "./live-visit.ts";
 import { photoSets, type PhotoSet } from "./visit-photo-links.ts";
-import { signOffOf } from "../field/sign-offs.ts";
+import { clientsView, signOffOf } from "../field/sign-offs.ts";
 
 export { PHOTO_LINK_MS, photoSets } from "./visit-photo-links.ts";
 import type { Waits } from "../../policy/no-show.ts";
@@ -103,6 +103,7 @@ interface AppointmentRow {
   window_end: string;
   service_city: string | null;
   service_pincode: string | null;
+  technician_id: string | null;
   technician_name: string | null;
   technician_initials: string | null;
   prepaid: number;
@@ -126,7 +127,7 @@ const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id
     AND ${statusIn("p.status", PAYMENT_HELD)})
   OR ${creditSpentOn("a.id")})`;
 
-const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.service_city,
+const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
   a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
   t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
   ${visitBegun("a")} AS begun, ${begunPastArrival("a")} AS started, ${landedOutcome("a")} AS landed_outcome, a.client_note,
@@ -221,7 +222,7 @@ async function visitSummaryOf(
     latest_update: live?.latest_update ?? null,
     step: live?.step ?? null,
     waits_until: live?.waits_until ?? null,
-    sign_off: live?.sign_off ?? null,
+    sign_off: clientsView(live?.sign_off ?? null),
   };
 }
 
@@ -237,9 +238,10 @@ async function summariesOf(
     type: row.type,
     oneVisit: row.one_visit !== null,
     startsAt: row.window_start,
+    technicianId: row.technician_id,
     stage: stageOf(row, now),
   }));
-  const live = await liveFactsOf(db, rowsLive, context.waits);
+  const live = await liveFactsOf(db, rowsLive, { waits: context.waits, now });
   return Promise.all(rows.map((row) => visitSummaryOf(db, row, context, { now, live: live.get(row.id) })));
 }
 
@@ -481,7 +483,7 @@ export async function visitDetail({
   if (summary === undefined) return null;
   return {
     ...summary,
-    sign_off: signOff,
+    sign_off: clientsView(signOff),
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
     what_was_done: await whatWasDone(db, row.id, row.type),

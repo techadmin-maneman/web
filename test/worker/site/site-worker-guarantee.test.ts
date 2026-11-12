@@ -55,6 +55,15 @@ describe("the site Worker on the terms", () => {
     expect(days(await visit(() => Response.json({ days: 21 })))).toBe("21 (twenty-one)");
   });
 
+  it("never answers from the browser's copy, nor lets it keep one, so a changed figure always reaches it", async () => {
+    const { env: siteBindings } = siteEnv(() => Response.json({ days: 21 }), TERMS);
+    const visit = new Request("https://maneman.in/terms", { headers: { "If-None-Match": '"built"' } });
+    const response = await createSiteWorker().fetch(visit, siteBindings);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("ETag")).toBeNull();
+    expect(days(await response.text())).toBe("21 (twenty-one)");
+  });
+
   it("serves the terms as built while mm-api cannot say", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     expect(days(await visit(() => new Response(null, { status: 503 })))).toBe("14 (fourteen)");

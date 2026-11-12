@@ -307,16 +307,18 @@ export const QUEUES: readonly Queue[] = [
      AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)`,
   },
-  // A fit closed without the client's sign-off, with why the technician gave (docs/decisions/0254-client-signs-off-the-fit.md):
-  // open until Care have called the client and closed it with what came of it.
+  // A fit closed done without the client's sign-off, with why the technician gave, or ops' close by hand
+  // (docs/decisions/0254-client-signs-off-the-fit.md): from the close, until Care have called the client and closed it
+  // with what came of it. A decline on a fit then left partly done is the partly done visit's row alone.
   {
     group: "fit_unsigned",
     sql: `SELECT 'fit_unsigned' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
          s.declined_reason AS detail,
          json_object('kind', a.type, 'reason', s.declined_reason, 'technician', COALESCE(t.name, '')) AS facts,
-         s.updated_at AS since, NULL AS due_by, '' AS episode
+         COALESCE(v.ended_at, v.updated_at) AS since, NULL AS due_by, '' AS episode
     FROM fit_sign_offs s INDEXED BY fit_sign_offs_declined
     JOIN appointments a ON a.id = s.appointment_id JOIN people pe ON pe.id = a.person_id
+    JOIN visit_outcomes v ON v.appointment_id = a.id AND v.outcome = 'done'
     LEFT JOIN technicians t ON t.id = s.technician_id
    WHERE s.state = 'declined' AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'fit_unsigned' AND c.subject_id = a.id)`,

@@ -151,12 +151,10 @@ export const ERROR_CODES = [
   "not_disputable",
   "dispute_window_closed",
   // The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md): not asked for yet, signed or
-  // declined already, signed with a check left open, or signed on the technician's phone with a code that is wrong
-  // or past its time.
+  // declined already, or signed with a check left open.
   "sign_off_not_asked",
   "sign_off_closed",
   "sign_off_checks_open",
-  "sign_off_code",
   // A move to another day the client tried to accept, whose time was taken since or whose visit cannot move now
   // (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
   "move_gone",
@@ -333,7 +331,6 @@ export const ERROR_STATUS = {
   sign_off_not_asked: 409,
   sign_off_closed: 409,
   sign_off_checks_open: 422,
-  sign_off_code: 403,
   move_gone: 409,
   ask_the_client: 409,
   code_not_applicable: 422,

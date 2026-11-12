@@ -34,4 +34,11 @@ export const CODE_WORDS = {
   terminated: "Closed without a visit",
   // A booking started and let go before it was booked: a slot the app held while they chose.
   released: "Not booked",
+  // A fit's sign-off, and where it was signed (docs/decisions/0254-client-signs-off-the-fit.md).
+  asked: "Asked",
+  signed: "Signed off",
+  flagged: "Said something wasn't right",
+  declined: "Not signed",
+  client_app: "In your app",
+  technician_phone: "On the technician's phone",
 } satisfies Readonly<Record<string, string>>;

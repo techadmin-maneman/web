@@ -71,6 +71,7 @@
 
 import { DAY_MS, HOUR_MS } from "../lib/durations.ts";
 import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
+import { GRIEVANCE_ANSWERED_WITHIN_DAYS } from "./grievances.ts";
 
 /** The queues a task is read from, in the order the console lists them. */
 export const TASK_GROUPS = [
@@ -173,7 +174,7 @@ export const TASK_SLA_HOURS: Slas = {
   // What the client was promised: the 30 days run from the request to ops' decision (ADR 0049).
   erasure_request: DELETION_DECIDED_WITHIN_DAYS * 24,
   // The app promises an answer within 30 days at the latest (docs/open-points.md, item 51).
-  grievance: 30 * 24,
+  grievance: GRIEVANCE_ANSWERED_WITHIN_DAYS * 24,
   draft_invoice: 48,
   payment_owed: 48,
   // A UPI payment taken at the visit, recorded the same day it reaches the account.

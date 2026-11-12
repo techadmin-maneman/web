@@ -1,8 +1,7 @@
 -- Migration number: 0210
--- The client signs off a fit (docs/decisions/0254-client-signs-off-the-fit.md): a first fit, a consultation and fit in
--- one visit that fitted, and a replacement are closed done only once the client has signed off, in their app or on the
--- technician's phone, or the technician has recorded that the client declined to sign, with why. One row a visit, as it
--- stands now. A new table: the Worker already deployed reads and writes none of it.
+-- The client signs off a fit (docs/decisions/0254-client-signs-off-the-fit.md): a first fit, a one visit that fitted
+-- and a replacement close done only once the client has signed off, or their decline is recorded with why. One row a
+-- visit, as it stands now. A new table: the Worker already deployed reads and writes none of it.
 
 CREATE TABLE fit_sign_offs (
   appointment_id TEXT PRIMARY KEY REFERENCES appointments (id),
@@ -20,9 +19,13 @@ CREATE TABLE fit_sign_offs (
   asks INTEGER NOT NULL DEFAULT 1,
   signed_at TEXT,
   signed_on TEXT CHECK (signed_on IS NULL OR signed_on IN ('client_app', 'technician_phone')),
-  -- The one-time code a signature on the technician's phone carries, as its SHA-256; cleared once used.
-  phone_code_hash TEXT,
-  phone_code_expires_at TEXT,
+  -- The phone's events the latest ask and the answer on the technician's phone came with, so each sent again is
+  -- answered as it was.
+  ask_event_id TEXT,
+  answer_event_id TEXT,
+  -- The fit guarantee's days in force when it was signed or declined, which a first fit's guarantee runs for, whatever
+  -- ops set since (docs/decisions/0256-fit-guarantee-setting.md).
+  guarantee_days INTEGER,
   technician_id TEXT REFERENCES technicians (id),
   updated_at TEXT NOT NULL,
   CHECK ((state = 'signed') = (signed_at IS NOT NULL)),

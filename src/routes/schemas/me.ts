@@ -176,7 +176,7 @@ export const MeSchema = z
       .strict()
       .openapi({
         description:
-          "What the account's promises say: the first two from the Tasks deadlines ops set, the third the law's.",
+          "What the account's promises say, each the law's: a grievance answered, a deletion acted on, invoices kept.",
       }),
     hair_system: z
       .union([

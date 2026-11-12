@@ -4346,7 +4346,6 @@ Razorpay's webhook: payments and refunds
             "sign_off_not_asked",
             "sign_off_closed",
             "sign_off_checks_open",
-            "sign_off_code",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",

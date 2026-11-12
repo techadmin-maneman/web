@@ -8,6 +8,7 @@ import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientRoute } from "../../http/session-routes.ts";
 import { SignOffAnswerSchema, SignOffSchema } from "../schemas/sign-off.ts";
 
@@ -29,9 +30,7 @@ const signOffRoute = clientRoute({
   },
 });
 
-const REFUSALS: Readonly<
-  Record<Exclude<AnswerRefusal, "code_wrong">, "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open">
-> = {
+const REFUSALS: Readonly<Record<AnswerRefusal, "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open">> = {
   not_asked: "sign_off_not_asked",
   closed: "sign_off_closed",
   checks_open: "sign_off_checks_open",
@@ -48,10 +47,10 @@ export function registerClientSignOff(app: App): void {
       ...given,
       appointmentId: c.req.valid("param").id,
       personId: clientOf(c).subjectId,
+      guaranteeDays: (await opsInputs(c)).guaranteeDays,
       now: c.var.deps.now(),
     });
     if (signed === "not_found") return refuse(c, "not_found");
-    if (signed === "code_wrong") return refuse(c, "sign_off_closed");
     return typeof signed === "string" ? refuse(c, REFUSALS[signed]) : c.json(signed, 200);
   });
 }

@@ -52,7 +52,7 @@ current state and where it goes, the work in build order, the gaps, and the PRs.
    webhooks and the brief's staging acceptance need it. Ops' paid bookings on staging then go out as test payment
    links, as ADR 0209 says they will once a provider is on.
 4. **One look, switched at once.** With one PR, the whole app takes the new look together.
-   - `apps/app/src/styles/look.css` sets the shared `--ui-*` roles from the brief's tokens, as
+   - `the client app's `styles/look.css`` sets the shared `--ui-*` roles from the brief's tokens, as
      `apps/tech/src/styles/look.css` does.
    - New colours go into `packages/brand/tokens.css` under their brief names where they are not brand colours already.
      `navy` is `--ink` (#16233A) and `brass` is `--brass` (#B98B45), as in the technician plan.

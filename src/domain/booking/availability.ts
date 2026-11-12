@@ -89,19 +89,32 @@ function replacementBookable(row: StageRow, owed: boolean, now: Date, days: Next
 }
 
 /**
- * Whether the visit asked for may be booked on its day, as far as a replacement goes: one on or after the first day of
- * the month the client's hair system falls due. Ops book one owed free, a remake or a recall's (`covers`),
- * whenever it suits; any other kind is not this rule's.
+ * Whether the visit asked for may be booked, as far as a replacement goes: not while one is booked or paid for, and
+ * only on or after the first day of the month the client's hair system falls due. Ops book one owed free, a remake or
+ * a recall's (`covers`), whenever it suits; any other kind is not this rule's.
  */
 export async function replacementOpenOn(
   db: D1Database,
-  asked: { readonly kind: VisitType; readonly personId: string; readonly date: string; readonly covers?: unknown },
+  asked: {
+    readonly kind: VisitType;
+    readonly personId: string;
+    readonly date: string;
+    readonly covers?: unknown;
+    readonly now: Date;
+  },
 ): Promise<boolean> {
-  if (asked.kind !== "replacement" || asked.covers !== undefined) return true;
+  if (asked.kind !== "replacement") return true;
   const row = await db
-    .prepare(`SELECT (${WORN_DUE_ON}) AS due_on`)
-    .bind(asked.personId)
-    .first<{ due_on: string | null }>();
+    .prepare(
+      `SELECT (${WORN_DUE_ON}) AS due_on,
+         EXISTS (SELECT 1 FROM appointments a WHERE ${STILL_TO_HAPPEN} AND a.type = 'replacement')
+           OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD} AND type = 'replacement')
+           AS booked`,
+    )
+    .bind(asked.personId, todayStartsOf(asked.now))
+    .first<{ due_on: string | null; booked: number }>();
+  if (row?.booked === 1) return false;
+  if (asked.covers !== undefined) return true;
   const dueOn = row?.due_on ?? null;
   return dueOn !== null && asked.date >= replacementOpensOn(dueOn);
 }

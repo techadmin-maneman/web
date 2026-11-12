@@ -86,6 +86,10 @@ function StepLine(props: {
 
 type SignOff = NonNullable<components["schemas"]["VisitStory"]["sign_off"]>;
 
+/** A sign-off for ops to look at: declined, flagged, or signed on the technician's phone, which nothing proves. */
+const needsALook = (signOff: SignOff): boolean =>
+  signOff.state === "declined" || signOff.state === "flagged" || signOff.signed_on === "technician_phone";
+
 /** The client's sign-off of the fit, as the story's last line. */
 function signOffLine(signOff: SignOff): string {
   const words = copy.signOff;
@@ -95,10 +99,11 @@ function signOffLine(signOff: SignOff): string {
     case "flagged":
       return words.flagged(signOff.flag_text ?? "");
     case "signed":
-      return words.signed(
-        signOff.signed_at === null ? "" : indiaClock(signOff.signed_at),
-        signOff.signed_on === null ? "" : words.where[signOff.signed_on],
-      );
+      return words.signed([
+        ...(signOff.signed_at === null ? [] : [indiaClock(signOff.signed_at)]),
+        ...(signOff.signed_on === null ? [] : [words.where[signOff.signed_on]]),
+        ...(signOff.signed_on === "technician_phone" ? [words.checkIt] : []),
+      ]);
     case "declined":
       return words.declined(signOff.declined_reason ?? "");
   }
@@ -137,9 +142,7 @@ export function VisitStory({ visitId, clientId }: { visitId: string; clientId: s
         </ol>
       )}
       {signOff !== null && (
-        <InlineMessage tone={signOff.state === "declined" || signOff.state === "flagged" ? "error" : "note"}>
-          {signOffLine(signOff)}
-        </InlineMessage>
+        <InlineMessage tone={needsALook(signOff) ? "error" : "note"}>{signOffLine(signOff)}</InlineMessage>
       )}
       {clientId !== null && steps.some((step) => step.kind.endsWith("photos")) && (
         <OpsLink to={clientPath(clientId, "photos")}>{copy.photos}</OpsLink>

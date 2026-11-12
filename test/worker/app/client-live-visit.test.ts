@@ -71,6 +71,18 @@ describe("a visit today", () => {
     expect((await nextVisit(rohit)).latest_update).toMatchObject({ kind: "at_the_gate", minutes: null });
   });
 
+  it("forgets a word past its time, and one from a technician the visit was taken from", async () => {
+    const rohit = await client();
+    const id = await today(rohit.id, "service");
+    // Forty minutes ago: on WhatsApp too, an "on the way" helps for thirty.
+    await said(id, "on_the_way", 20, "2026-09-21T05:50:00.000Z");
+    expect((await nextVisit(rohit)).latest_update).toBeNull();
+
+    await said(id, "running_late", 15, "2026-09-21T06:25:00.000Z");
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(id, SANA).run();
+    expect((await nextVisit(rohit)).latest_update).toBeNull();
+  });
+
   it("says how long the technician waits at the door once checked in: from the booked start, as ops set it", async () => {
     const rohit = await client();
     const id = await today(rohit.id, "service");

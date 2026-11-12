@@ -45,6 +45,8 @@ import { opsInputs } from "../../http/ops-inputs.ts";
 import { MeSchema } from "../schemas/me.ts";
 import type { OpsInputs } from "../../domain/platform/ops-settings.ts";
 import { INVOICE_KEPT_YEARS } from "../../policy/retention.ts";
+import { DELETION_DECIDED_WITHIN_DAYS } from "../../policy/account-deletion.ts";
+import { GRIEVANCE_ANSWERED_WITHIN_DAYS } from "../../policy/grievances.ts";
 import { clientRoute } from "../../http/session-routes.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
@@ -138,16 +140,18 @@ async function homeFactsOf(c: Context<AppEnv>, personId: string, now: Date) {
   return { days, referralReward: inputs.referralReward, next, prompt };
 }
 
-/** Care's hours, the fit guarantee and the account's promises, as ops set them, for the app's words. */
+/**
+ * Care's hours and the fit guarantee, as ops set them, and the account's promises, which are the law's, for the app's
+ * words.
+ */
 function promisesOf(inputs: OpsInputs) {
-  const days = (hours: number) => Math.ceil(hours / 24);
   const { opens, closes, first_reply } = inputs.careHours;
   return {
     care_hours: { opens, closes, first_reply },
     guarantee_days: inputs.guaranteeDays,
     answers_within: {
-      grievance_days: days(inputs.taskSlaHours.grievance),
-      deletion_days: days(inputs.taskSlaHours.erasure_request),
+      grievance_days: GRIEVANCE_ANSWERED_WITHIN_DAYS,
+      deletion_days: DELETION_DECIDED_WITHIN_DAYS,
       invoices_kept_years: INVOICE_KEPT_YEARS,
     },
   };

@@ -140,8 +140,8 @@ export const replacementOpensOn = (dueOn: string): string => `${monthOf(dueOn)}-
 /**
  * The first day a replacement may be booked on: the first day of the month the hair system in wear falls due, and
  * never before tomorrow (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md).
- * Null while none falls due, or while that day lies past the last day a visit may be booked on. ADR 0086's rule for
- * Home's prompt, now the booking's own.
+ * Null while none falls due, or while that day lies past the last day a visit may be booked on. The rule Home's prompt
+ * always kept, now the booking's own.
  */
 export function replacementOpens(dueOn: string | null, tomorrow: string, days: NextVisitDays): string | null {
   if (dueOn === null) return null;

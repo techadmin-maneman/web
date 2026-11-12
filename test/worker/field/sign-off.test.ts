@@ -1,5 +1,5 @@
 // The client signs off a fit before it closes done (docs/decisions/0254-client-signs-off-the-fit.md): the technician
-// asks; the client signs or flags in their app, or on the technician's phone with the code the ask gave it; or the
+// asks; the client signs or flags in their app, or on the technician's phone; or the
 // technician records that the client declined to sign, which opens a Tasks row. NOW is Monday 21 September 2026,
 // 12 noon in India. Every name and number here is made up.
 
@@ -9,7 +9,7 @@ import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
-import { JOB, PERSON, working, type Working } from "../job-fixtures.ts";
+import { JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 
 const ALL_TICKED = { hairline: true, blend: true, secure: true };
 
@@ -69,7 +69,7 @@ describe("a fit's sign-off", () => {
     expect((await sign({ result: "signed", checks: ALL_TICKED })).status).toBe(409);
 
     const asked = await ask(job);
-    expect(await asked.json()).toEqual({ state: "asked", code: expect.stringMatching(/^\d{6}$/) as string });
+    expect(await asked.json()).toMatchObject({ state: "asked", asks: 1 });
     expect(await card(job)).toMatchObject({ state: "asked", asks: 1 });
 
     const open = await sign({ result: "signed", checks: { ...ALL_TICKED, blend: false } });
@@ -101,18 +101,13 @@ describe("a fit's sign-off", () => {
     expect((await close(job)).status).toBe(202);
   });
 
-  it("is signed on the technician's phone with the ask's code, once and in time", async () => {
+  it("is signed on the technician's phone, asked there first where the phone queued both with no signal", async () => {
     const job = await replacementToTheClose();
-    const { code } = await (await ask(job)).json<{ code: string }>();
-    const onPhone = (body: object, event: string) => job.post(`/api/tech/jobs/${JOB}/sign-off`, body, event);
     const answer = { result: "signed", checks: ALL_TICKED };
-
-    const wrong = await onPhone({ code: code === "123456" ? "654321" : "123456", answer }, "event-phone-01");
-    expect(wrong.status).toBe(403);
-    expect(await wrong.json()).toMatchObject({ error: { code: "sign_off_code" } });
-    expect((await onPhone({ code, answer }, "event-phone-02")).status).toBe(200);
+    const signed = await job.post(`/api/tech/jobs/${JOB}/sign-off`, { answer }, "event-phone-01");
+    expect(signed.status).toBe(200);
     expect(await card(job)).toMatchObject({ state: "signed", signed_on: "technician_phone" });
-    expect((await onPhone({ code, answer }, "event-phone-03")).status).toBe(409);
+    expect((await close(job)).status).toBe(202);
   });
 
   it("closes with the technician's why when the client declines, and gives Care a Tasks row", async () => {
@@ -151,6 +146,51 @@ describe("a fit's sign-off", () => {
     expect(await card(job)).toMatchObject({ state: "declined" });
   });
 
+  it("answers each write sent again, and one a fit has moved past, with where it stands", async () => {
+    const job = await replacementToTheClose();
+    await ask(job, "event-ask-01");
+    const sign = await clientApp();
+    await sign({ result: "flagged", checks: ALL_TICKED, flag_text: "The left edge lifts" });
+    // The first ask's answer was lost, and the phone sends it again: the flag stands.
+    expect((await ask(job, "event-ask-01")).status).toBe(200);
+    expect(await card(job)).toMatchObject({ state: "flagged", asks: 1 });
+
+    await ask(job, "event-ask-02");
+    await sign({ result: "signed", checks: ALL_TICKED });
+    // A decline and a signature the phone queued before it heard, answered with the client's sign-off.
+    const declined = await job.post(`/api/tech/jobs/${JOB}/sign-off-declined`, { reason: "No phone" }, "event-d-1");
+    expect(await declined.json()).toMatchObject({ state: "signed", signed_on: "client_app" });
+    const onPhone = await job.post(
+      `/api/tech/jobs/${JOB}/sign-off`,
+      { answer: { result: "signed", checks: ALL_TICKED } },
+      "event-phone-01",
+    );
+    expect(await onPhone.json()).toMatchObject({ state: "signed", signed_on: "client_app" });
+    expect((await close(job)).status).toBe(202);
+  });
+
+  it("refuses the technician the visit was taken from, as any write of theirs", async () => {
+    const job = await replacementToTheClose();
+    await ask(job);
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
+
+    const asked = await ask(job, "event-ask-02");
+    expect(asked.status).toBe(409);
+    expect(await asked.json()).toMatchObject({ error: { code: "superseded", fields: ["technician"] } });
+    const declined = await job.post(`/api/tech/jobs/${JOB}/sign-off-declined`, { reason: "Gone" }, "event-d-3");
+    expect(declined.status).toBe(409);
+    expect(await env.DB.prepare("SELECT state FROM fit_sign_offs").first()).toEqual({ state: "asked" });
+  });
+
+  it("is asked no more once the visit has closed", async () => {
+    const job = await replacementToTheClose();
+    await job.post(`/api/tech/jobs/${JOB}/sign-off-declined`, { reason: "No phone" }, "event-d-1");
+    await close(job);
+    const asked = await ask(job);
+    expect(asked.status).toBe(409);
+    expect(await asked.json()).toMatchObject({ error: { code: "already_closed" } });
+  });
+
   it("stays signed once signed: a decline after it changes nothing", async () => {
     const job = await replacementToTheClose();
     await ask(job);
@@ -158,8 +198,8 @@ describe("a fit's sign-off", () => {
       await clientApp()
     )({ result: "signed", checks: ALL_TICKED });
     const late = await job.post(`/api/tech/jobs/${JOB}/sign-off-declined`, { reason: "Changed mind" }, "event-d-2");
-    expect(late.status).toBe(409);
-    expect(await card(job)).toMatchObject({ state: "signed" });
+    expect(late.status).toBe(200);
+    expect(await card(job)).toMatchObject({ state: "signed", declined_reason: null });
   });
 
   it("is not asked of a partly done fit, which closes without one", async () => {
