@@ -41,10 +41,11 @@ for every one, and ruled the guided task's tick and Tick all off.
 5. **What the API adds for it**: the day's list gives each drive's km beside its minutes, from the same estimate
    (`src/policy/drive-estimate.ts`), and none for a job still locked, which would sharpen where home is; the job's
    card counts the client's earlier visits and dates the first; and Kit's week ahead counts its bookings and lists, for
-   each product, the pieces its fits need against the kit's, read as the evening's check reads them: a first fit by the
-   product it was booked as, a replacement by the client's own, and a consultation and fit in one visit not at all, as
-   its client chooses at the visit. The pieces are shown only: an ask of ops stays with consumables, as the evening's
-   check fits pieces to each client ([0181](0181-tomorrows-kits.md)). The phone's store reads a card and a day kept
+   each product, the pieces its fits need against the kit's, counted by product alone: a first fit by the product it
+   was booked as, a replacement by the client's own, and a consultation and fit in one visit not at all, as its client
+   chooses at the visit. The evening's check, which fits each piece to its client, reads a one visit and a first fit
+   with no profile its own way ([0184](0184-the-one-visit-range.md)). The pieces are shown only: an ask of ops stays with
+   consumables, as the evening's check fits pieces to each client ([0181](0181-tomorrows-kits.md)). The phone's store reads a card and a day kept
    before these as saying neither, until they are read again (version 13).
 
 ## Departures from the prototype

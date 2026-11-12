@@ -88,6 +88,17 @@ describe("the day's jobs", () => {
     expect(job?.leave_by).toBe(new Date(Date.parse("2026-09-21T07:30:00.000Z") - drive * 60_000).toISOString());
   });
 
+  it("gives a job still locked its drive in minutes but no km, which would sharpen where home is", async () => {
+    await env.DB.prepare("UPDATE technicians SET home_lat = ?2, home_lng = ?3 WHERE id = ?1")
+      .bind(IMRAN, ADDRESS.lat, ADDRESS.lng - 0.025)
+      .run();
+    const listed = await (await get("/api/tech/jobs?date=2026-09-25")).json<{ jobs: Record<string, unknown>[] }>();
+    const [later] = listed.jobs;
+
+    expect(later).toMatchObject({ id: LATER_JOB, unlocked: false, drive_km: null });
+    expect(later?.drive_minutes).toBeGreaterThan(0);
+  });
+
   it("gives the whole address the client saved: building, tower, floor, flat and landmark", async () => {
     await env.DB.prepare(
       `UPDATE addresses SET building = 'Emerald Heights', tower = 'C', floor = '14', flat = '1402',

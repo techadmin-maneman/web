@@ -149,9 +149,11 @@ interface FitBooked {
 }
 
 /**
- * The product each fit of the week needs a piece of, as the evening's check reads it (./kit-check.ts): a first fit's
- * the product it was booked as, a replacement's the client's own, from their hair profile. A consultation and fit in
- * one visit is left out, as its client chooses at the visit or not at all, and so is a replacement with no profile.
+ * The product each fit of the week needs a piece of, by product alone: a first fit's the product it was booked as, a
+ * replacement's the client's own, from their hair profile. A consultation and fit in one visit is left out, as its
+ * client chooses at the visit or not at all, and so is a replacement with no profile. The evening's check
+ * (./kit-check.ts) goes further, to the piece itself: it fits a one visit to the client's profile or the city's range,
+ * and leaves out a first fit with no profile.
  */
 async function piecesNeeded(db: D1Database, fits: readonly FitBooked[]): Promise<Map<string, number>> {
   const profiles = await latestFits(
@@ -169,8 +171,8 @@ async function piecesNeeded(db: D1Database, fits: readonly FitBooked[]): Promise
 
 /**
  * The technician's week ahead beyond consumables, for their Kit screen: how many visits are booked from today to six
- * days on, and for each product the pieces their first fits and replacements need, as the evening's check reads them,
- * against the pieces of it the kit holds fit to use. Shown only: an ask of ops stays with consumables, as the evening's
+ * days on, and for each product the pieces their first fits and replacements need, against the pieces of it the kit
+ * holds fit to use. Shown only: an ask of ops stays with consumables, as the evening's
  * check, above, fits pieces to each client.
  */
 export async function weekVisitsOf(

@@ -138,9 +138,13 @@ function Rows(props: { job: Job; took: { hours: number; minutes: number } | null
   );
 }
 
-/** When the technician checked in: as the card says, or, checked in with no signal, when the phone took it. */
-function checkedInAt(job: Job, queued: readonly Queued[]): number | null {
-  if (job.progress.checked_in_at !== null) return Date.parse(job.progress.checked_in_at);
+/**
+ * When the technician checked in: as the card says, as the API's answer to it did where the card was not read again,
+ * or, checked in with no signal, when the phone took it.
+ */
+function checkedInAt(job: Job, answered: string | null, queued: readonly Queued[]): number | null {
+  const said = job.progress.checked_in_at ?? answered;
+  if (said !== null) return Date.parse(said);
   return queued.find((event) => event.job_id === job.id && event.kind === "check_in")?.queued_at ?? null;
 }
 
@@ -164,8 +168,9 @@ export function CloseOut({ id }: { id: string }) {
   const names = useNames();
   const heading = useScreen(titles.closeOut);
 
-  const readClosed = useCallback(() => keptClosed(id), [id]);
-  const closedAt = valueOr(useAsync(readClosed)[0], null);
+  const readClosed = useCallback(async () => ({ closed: await keptClosed(id), arrival: await keptArrival(id) }), [id]);
+  const kept = valueOr(useAsync(readClosed)[0], null);
+  const closedAt = kept?.closed ?? null;
   // A fit closed at its piece, "Can't fit today", as the phone kept its close.
   const readSaid = useCallback(() => keptOutcome(id), [id]);
   const said = valueOr(useAsync(readSaid)[0], null);
@@ -191,7 +196,12 @@ export function CloseOut({ id }: { id: string }) {
   }
 
   const who = names.get(id) ?? job.client?.name ?? "";
-  const took = tookOf(checkedInAt(job, waiting.events), closedAt, waiting.events, id);
+  const took = tookOf(
+    checkedInAt(job, kept?.arrival?.checked_in_at ?? null, waiting.events),
+    closedAt,
+    waiting.events,
+    id,
+  );
 
   const sets = job.progress.steps_done.filter((step) => step === "before_photos" || step === "after_photos").length;
   const queuedFrames = waiting.frames.filter((frame) => frame.job_id === id).length;

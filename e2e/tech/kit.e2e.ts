@@ -138,6 +138,58 @@ test("reports the pieces not scanned missing, with the ones that came", async ({
   expect(writesTo(fake, "transfers/tr-1/receive")[0]?.body).toEqual({ units: ["MM-ESS-0000008-J"], rest: "missing" });
 });
 
+test("after part of a hair system is received, takes the piece still to come", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  const [topUp] = fake.kit.coming;
+  // The API keeps the piece not yet in hand on its way.
+  if (topUp !== undefined) {
+    fake.kitAfter = { ...fake.kit, coming: [{ ...topUp, quantity: 1, units: ["MM-ESS-0000008-J"] }] };
+  }
+  await page.goto("/kit");
+  const coming = page.getByRole("region", { name: copy.coming.title });
+  await coming.getByRole("button", { name: copy.scan.camera }).click();
+  await coming.getByRole("button", { name: copy.scan.type }).click();
+  const scan = coming.getByLabel(copy.scan.label);
+  await scan.fill("MM-ESS-0000007-H");
+  await scan.press("Enter");
+  await coming.getByRole("button", { name: copy.coming.restToCome(1) }).click();
+
+  // The piece received is no longer on the top-up: the one to come is still to scan.
+  await expect(coming).toContainText(copy.coming.scanned(0, 1));
+  await scan.fill("MM-ESS-0000008-J");
+  await scan.press("Enter");
+  await expect.poll(() => writesTo(fake, "transfers/tr-1/receive").length).toBe(2);
+  expect(writesTo(fake, "transfers/tr-1/receive").map((write) => write.body)).toEqual([
+    { units: ["MM-ESS-0000007-H"], rest: "on_its_way" },
+    { units: ["MM-ESS-0000008-J"], rest: "on_its_way" },
+  ]);
+});
+
+test("says a top-up was received or sent back elsewhere, and lists it no more", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  // Settled meanwhile: the receive is refused, and the kit read again holds it no more.
+  await page.route("**/api/tech/kit/transfers/tr-1/receive", async (route) => {
+    fake.kit = { ...fake.kit, coming: [] };
+    await route.fulfill({
+      status: 409,
+      json: { error: { code: "transfer_settled", request_id: "kit-ref-4", fields: [] } },
+    });
+  });
+  await page.goto("/kit");
+  const coming = page.getByRole("region", { name: copy.coming.title });
+  await coming.getByRole("button", { name: copy.scan.camera }).click();
+  await coming.getByRole("button", { name: copy.scan.type }).click();
+  const scan = coming.getByLabel(copy.scan.label);
+  for (const label of ["MM-ESS-0000007-H", "MM-ESS-0000008-J"]) {
+    await scan.fill(label);
+    await scan.press("Enter");
+  }
+  await expect(page.getByRole("status").filter({ hasText: copy.coming.settled })).toBeVisible();
+  await expect(page.getByRole("region", { name: copy.coming.title })).toHaveCount(0);
+});
+
 test("lists a recalled lot to hand back, not as held, and says low until it goes back", async ({ page }) => {
   const fake = await fakeTech(page);
   withAKit(fake);

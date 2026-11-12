@@ -37,18 +37,21 @@ function scanLabel(offline: boolean, scanning: boolean): string {
 }
 
 /**
- * A receive that did not go through: what to say, and, where the top-up was settled already (received or sent back
- * elsewhere), the kit read again so it leaves the list.
+ * A receive that did not go through: what to say; or, where the top-up was settled already (received or sent back
+ * elsewhere), the kit read again so it leaves the list, and Kit says why it went.
  */
 async function refused(
   answer: { readonly status: number; readonly requestId: string | null },
   say: (problem: Problem) => void,
-  onKit: (kit: Kit) => void,
+  onSettled: (kit: Kit) => void,
 ): Promise<void> {
-  say({ words: answer.status === 409 ? copy.coming.settled : copy.notDone, requestId: answer.requestId });
-  if (answer.status !== 409) return;
+  if (answer.status !== 409) {
+    say({ words: copy.notDone, requestId: answer.requestId });
+    return;
+  }
   const fresh = await api.kit();
-  if (fresh.ok) onKit(fresh.body);
+  if (fresh.ok) onSettled(fresh.body);
+  else say({ words: copy.coming.settled, requestId: answer.requestId });
 }
 
 /** The day a top-up was sent, as the kit says it. */
@@ -171,9 +174,13 @@ function Pieces(props: {
   readonly dated: boolean;
   readonly offline: boolean;
   readonly onKit: (kit: Kit) => void;
+  /** A top-up settled elsewhere: the kit read again, which Kit says. */
+  readonly onSettled: (kit: Kit) => void;
 }) {
   const { topUp, offline } = props;
-  const [scanned, setScanned] = useState<readonly string[]>([]);
+  const [taken, setScanned] = useState<readonly string[]>([]);
+  // Only the pieces still on this top-up: one received with the rest to come is no longer on it.
+  const scanned = taken.filter((label) => topUp.units.includes(label));
   const [scanning, setScanning] = useState(false);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [busy, once] = useOneAtATime();
@@ -183,7 +190,7 @@ function Pieces(props: {
     once(async () => {
       const answer = await api.receiveTopUp(topUp.id, labels, rest);
       if (answer.ok) props.onKit(answer.body);
-      else await refused(answer, setProblem, props.onKit);
+      else await refused(answer, setProblem, props.onSettled);
     });
   // Every piece scanned: Receive, which the last scan tried and which a failure leaves to try again.
   const allIn = topUp.units.length > 0 && unscanned === 0;
@@ -240,6 +247,8 @@ function Stock(props: {
   readonly dated: boolean;
   readonly offline: boolean;
   readonly onKit: (kit: Kit) => void;
+  /** A top-up settled elsewhere: the kit read again, which Kit says. */
+  readonly onSettled: (kit: Kit) => void;
 }) {
   const { topUp, offline } = props;
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -248,7 +257,7 @@ function Stock(props: {
     once(async () => {
       const answer = await api.receiveTopUp(topUp.id, null, "on_its_way");
       if (answer.ok) props.onKit(answer.body);
-      else await refused(answer, setProblem, props.onKit);
+      else await refused(answer, setProblem, props.onSettled);
     });
   return (
     <li className={styles.item}>
@@ -268,7 +277,12 @@ function Stock(props: {
   );
 }
 
-export function Arriving(props: { readonly kit: Kit; readonly offline: boolean; readonly onKit: (kit: Kit) => void }) {
+export function Arriving(props: {
+  readonly kit: Kit;
+  readonly offline: boolean;
+  readonly onKit: (kit: Kit) => void;
+  readonly onSettled: (kit: Kit) => void;
+}) {
   const { coming } = props.kit;
   const [first] = coming;
   if (first === undefined) return null;
@@ -285,9 +299,23 @@ export function Arriving(props: { readonly kit: Kit; readonly offline: boolean; 
       <ul className={styles.list}>
         {coming.map((topUp) =>
           topUp.units.length > 0 ? (
-            <Pieces key={topUp.id} topUp={topUp} dated={!oneDay} offline={props.offline} onKit={props.onKit} />
+            <Pieces
+              key={topUp.id}
+              topUp={topUp}
+              dated={!oneDay}
+              offline={props.offline}
+              onKit={props.onKit}
+              onSettled={props.onSettled}
+            />
           ) : (
-            <Stock key={topUp.id} topUp={topUp} dated={!oneDay} offline={props.offline} onKit={props.onKit} />
+            <Stock
+              key={topUp.id}
+              topUp={topUp}
+              dated={!oneDay}
+              offline={props.offline}
+              onKit={props.onKit}
+              onSettled={props.onSettled}
+            />
           ),
         )}
       </ul>

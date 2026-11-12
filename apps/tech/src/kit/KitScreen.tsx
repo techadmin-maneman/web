@@ -180,6 +180,8 @@ export function KitScreen() {
   const heading = useScreen(copy.title);
   const [loaded, retry] = useLoad(api.kit);
   const [after, setAfter] = useState<Kit | null>(null);
+  // A top-up received or sent back elsewhere, which left the list as the kit was read again.
+  const [settled, setSettled] = useState(false);
   const kit = after ?? (loaded.state === "loaded" ? loaded.value : null);
   // When the kit was last read, so a phone without signal shows how old its figures are.
   const [readAt, setReadAt] = useState<string | null>(null);
@@ -205,7 +207,20 @@ export function KitScreen() {
       {kit !== null && (
         <>
           <Forecast kit={kit} offline={offline} onKit={setAfter} />
-          <Arriving kit={kit} offline={offline} onKit={setAfter} />
+          <Arriving
+            kit={kit}
+            offline={offline}
+            onKit={setAfter}
+            onSettled={(fresh) => {
+              setAfter(fresh);
+              setSettled(true);
+            }}
+          />
+          {settled && (
+            <p className={styles.status} role="status">
+              {copy.coming.settled}
+            </p>
+          )}
           <ReturnToOps kit={kit} offline={offline} onKit={setAfter} />
           <InKit kit={kit} />
         </>
