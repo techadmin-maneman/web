@@ -1,5 +1,5 @@
-// A replacement is booked only when the hair system ends (owner, 12 November 2026;
-// docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md): from the first day of the month it falls due,
+// A replacement is booked only when the hair system ends (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md):
+// from the first day of the month it falls due,
 // within how far ahead a visit may be booked, and not while one is booked. One owed free, by a remake or a recall, is
 // ops' to book. NOW is Monday 21 September 2026, 12 noon in India; a visit may be booked up to 5 November. Every name
 // and number here is made up.

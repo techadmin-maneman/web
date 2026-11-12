@@ -1,4 +1,4 @@
-// A visit as it happens reaches the client's app (owner, 12 November 2026; docs/decisions/0255-client-alerts-and-push.md):
+// A visit as it happens reaches the client's app (docs/decisions/0255-client-alerts-and-push.md):
 // the technician's latest word before they arrive, the wait at the door once checked in, and the step under way, by the
 // plan the technician's app works (src/policy/visit-plan.ts). Nothing of where the technician is, nor their phone. NOW
 // is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
