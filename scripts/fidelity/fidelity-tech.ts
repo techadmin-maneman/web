@@ -36,6 +36,11 @@ const STATUS_BAR = 44;
 
 // ---- The design's example, as the API would answer it -------------------------
 
+/** The alerts every screen reads as it opens: none, every kind on. */
+type Inbox = Schemas["TechnicianAlerts"];
+const ALL_ON = { time_to_leave: true, day_ahead: true, job_changes: true, running_over: true };
+const INBOX: Inbox = { alerts: [], settings: ALL_ON, leave_notice_min: 10, day_ahead_hour: 20, push_key: null };
+
 const ME: Schemas["TechnicianMe"] = {
   id: "t0000000-0000-4000-8000-000000000001",
   name: "Imran Qureshi",
@@ -268,7 +273,8 @@ async function openApp(browser: Browser, path: string, api: Api, height = FRAME_
   await page.clock.install({ time: AT_912 });
   await page.route("**/api/**", (route) => {
     const url = new URL(route.request().url());
-    const answer = api[url.pathname] ?? signedOut;
+    // The alerts are read by every screen; any other call a page was not given reads as signed out.
+    const answer = api[url.pathname] ?? (url.pathname === "/api/tech/alerts" ? json(INBOX) : signedOut);
     return answer(route);
   });
   await page.goto(`${APP}${path}`);
@@ -424,10 +430,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
 
   const checklist = await openApp(browser, `/jobs/${first.id}/checklist`, jobApi(first.id, started));
   await checklist.getByText("Service checklist").waitFor();
-  // The board draws three of six ticked.
-  for (const label of ["Remove", "Clean the base", "Clean the scalp"]) {
-    await checklist.getByRole("button", { name: label }).click();
-  }
+  // A guided task has no ticks (ADR 0258): the checklist is paired as it opens, on its first task.
   await settle(checklist);
   await pair({
     dir: OUT,
@@ -492,7 +495,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     FRAME_HEIGHT,
   );
   await outcome.getByText("Outcome").first().waitFor();
-  await outcome.getByRole("button", { name: "Partly done", exact: true }).click();
+  await outcome.getByRole("radio", { name: "Partly done", exact: true }).click();
   await settle(outcome);
   await pair({ dir: OUT, width: WIDTH, name: "b4-outcome", design: outcomeBoard, built: await shot(outcome) });
   await outcome.close();
@@ -523,10 +526,10 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     FRAME_HEIGHT,
   );
   await done.getByText("Outcome").first().waitFor();
-  // Nothing is chosen for the technician: Done first, then Next, once the step has slid in and takes a tap.
-  await done.getByRole("button", { name: "Done", exact: true }).click();
+  // Nothing is chosen for the technician: Done first, then Close visit, once the step has slid in and takes a tap.
+  await done.getByRole("radio", { name: "Done", exact: true }).click();
   await done.clock.runFor(400);
-  await done.getByRole("button", { name: "Next" }).click();
+  await done.getByRole("button", { name: "Close visit" }).click();
   await done.getByText("Visit closed").waitFor();
   await settle(done);
   await pair({ dir: OUT, width: WIDTH, name: "b4-closed-out", design: outcomeBoard, built: await shot(done) });
