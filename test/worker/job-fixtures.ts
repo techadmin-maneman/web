@@ -8,6 +8,7 @@ import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import type { App } from "../../src/http/context.ts";
 import { openTechnicianSession } from "../../src/domain/dispatch/technicians.ts";
+import { askSignOff, signOffInApp } from "../../src/domain/field/sign-offs.ts";
 import { appFor, fakeDependencies, fakeQueue, NOW, request, type TestDependencies } from "./helpers.ts";
 
 export const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -35,6 +36,18 @@ export interface Working {
   readonly opsGet: (path: string) => Promise<Response>;
   /** Checks in, starts, and sends the steps before the one named; a one visit's piece follows the before photos. */
   readonly workTo: (step: "piece" | "checklist" | "consumables" | "outcome") => Promise<void>;
+}
+
+/** The client signs off the fit the technician asked them to, every check ticked. */
+export async function clientSignsOff(appointmentId: string): Promise<void> {
+  await askSignOff(env.DB, { appointmentId, technicianId: IMRAN, now: NOW });
+  await signOffInApp(env.DB, {
+    appointmentId,
+    personId: PERSON,
+    result: "signed",
+    checks: { hairline: true, blend: true, secure: true },
+    now: NOW,
+  });
 }
 
 /**
@@ -133,6 +146,8 @@ export async function working(
     if (type === "consultation") return;
     await post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
     await post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    // A fit closes done once the client has signed it off (docs/decisions/0254-client-signs-off-the-fit.md).
+    if (type === "first_fit" || type === "replacement") await clientSignsOff(JOB);
   };
 
   return { tech, ops, deps, get, post, patch, opsPost, opsGet, workTo };

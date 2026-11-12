@@ -507,6 +507,21 @@ export interface Rows {
     readonly created_at: string;
     readonly fitted_since: number;
   };
+  readonly fit_sign_offs: {
+    readonly appointment_id: string;
+    readonly state: string;
+    readonly checks: string | null;
+    readonly flag_text: string | null;
+    readonly declined_reason: string | null;
+    readonly asked_at: string;
+    readonly asks: number;
+    readonly signed_at: string | null;
+    readonly signed_on: string | null;
+    readonly phone_code_hash: string | null;
+    readonly phone_code_expires_at: string | null;
+    readonly technician_id: string | null;
+    readonly updated_at: string;
+  };
   readonly forecast_accuracy: {
     readonly run_id: string;
     readonly consumable_code: string;

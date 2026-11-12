@@ -29,6 +29,7 @@ describe("a visit's story", () => {
       steps: [],
       sent_back: [],
       may_send_back: [],
+      sign_off: null,
     });
     expect((await request(job.ops, "/api/visits/00000000-0000-4000-8000-000000000000/story")).status).toBe(404);
   });

@@ -20,6 +20,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Revoked sessions and phones | `sessions`, `technician_devices` | A lost phone, or a session that was ended, works again | Revoking again: a phone in the console, a client's session with `sessions.revoked_at` |
 | Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes`, `step_send_backs` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | A technician's position and their SOS | `visit_positions`, `sos_alerts` | A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was | The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since |
+| A fit's sign-off | `fit_sign_offs` | A sign-off asked, flagged or signed since is lost, and a fit closed since reads as closed without one; one declined since is gone from the Tasks board | Nothing to redo for a fit already closed: its job's outcome stands. Ask ops to note on the visit any sign-off since `<T>` the client remembers |
 | A technician's asks of ops: kit, and a visit to move | `kit_requests`, `reschedule_requests` | An ask made since is lost, and one ops settled since is open again on the Tasks board | Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost |
 | A technician's alerts, the kinds they turned off, and the phones that take their pushes | `tech_alerts`, `tech_alert_kinds_off`, `push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a kind turned off since is on, and a phone that allowed pushes since takes none | Nothing: the cron writes the day's alerts again as they fall due, a kind is turned off again in Alerts, and the phone subscribes again when the app next opens |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
@@ -95,6 +96,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form no longer asks for one (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
+- [fit_sign_offs](#fit_sign_offs): The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app or on the technician's phone, or declined with the technician's why, which opens a Tasks row (ADR 0254).
 - [forecast_accuracy](#forecast_accuracy): How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).
 - [forecast_lines](#forecast_lines): Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).
 - [forecast_runs](#forecast_runs): Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
@@ -1214,6 +1216,32 @@ Indexes:
 - `first_fit_requests_unfitted`: on (`person_id`), where `fitted_since = 0`
 
 Triggers: `first_fit_requests_fitted_asked`.
+
+## fit_sign_offs
+
+The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app or on the technician's phone, or declined with the technician's why, which opens a Tasks row (ADR 0254).
+
+Made by `0210_fit_sign_offs.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `appointment_id` | TEXT | no |  | primary key; → `appointments.id` |  |
+| `state` | TEXT | no |  |  | asked: waiting for the client; signed: they are happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: the technician closed without it, with why. |
+| `checks` | TEXT | yes |  |  | The client's three checks as they last answered them, a JSON object of booleans: hairline, blend, secure. |
+| `flag_text` | TEXT | yes |  |  | What the client said isn't right, in their words. |
+| `declined_reason` | TEXT | yes |  |  | Why the technician closed without it. |
+| `asked_at` | TEXT | no |  |  |  |
+| `asks` | INTEGER | no | `1` |  | How many times it has been asked: again after each flag. |
+| `signed_at` | TEXT | yes |  |  |  |
+| `signed_on` | TEXT | yes |  |  |  |
+| `phone_code_hash` | TEXT | yes |  |  | The one-time code a signature on the technician's phone carries, as its SHA-256; cleared once used. |
+| `phone_code_expires_at` | TEXT | yes |  |  |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` |  |
+| `updated_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `fit_sign_offs_declined`: on (`updated_at`), where `state = 'declined'`
 
 ## forecast_accuracy
 

@@ -8,9 +8,6 @@ import { dirname, join, normalize } from "node:path/posix";
 import { describe, expect, it } from "vitest";
 
 const BASELINE = [
-  "src/routes/client/me.ts -> src/routes/client/payments.ts",
-  "src/routes/client/me.ts -> src/routes/client/refer.ts",
-  "src/routes/client/me.ts -> src/routes/public/referral-reward.ts",
   "src/routes/ops/client-record.ts -> src/routes/client/payments.ts",
   "src/routes/ops/client-record.ts -> src/routes/ops/client-referral.ts",
   "src/routes/ops/client-pieces.ts -> src/routes/tech/pieces.ts",
@@ -25,7 +22,7 @@ const BASELINE = [
 /** The module a file belongs to: tech/jobs.steps.ts is part of tech/jobs.ts. */
 const moduleOf = (file: string) =>
   file.replace(
-    /\.(claims|close-notes|outcome|photos|piece|places|read|receipts|record|routes|schemas|scorecard|steps|transit|units|updates)\.ts$/,
+    /\.(claims|close-notes|outcome|photos|piece|places|read|receipts|record|routes|schemas|scorecard|sign-off|steps|transit|units|updates)\.ts$/,
     ".ts",
   );
 

@@ -110,10 +110,10 @@ describe("a visit today", () => {
     await landed(id, "check_in", "2026-09-21T06:55:00.000Z");
     await landed(id, "start", "2026-09-21T07:00:00.000Z");
     await landed(id, "before_photos", "2026-09-21T07:05:00.000Z");
-    expect((await nextVisit(lead)).step).toEqual({ index: 2, of: 5, name: "hair_profile" });
+    expect((await nextVisit(lead)).step).toEqual({ index: 2, of: 6, name: "hair_profile" });
 
     await landed(id, "piece", "2026-09-21T07:20:00.000Z");
-    expect((await nextVisit(lead)).step).toEqual({ index: 4, of: 5, name: "fitting" });
+    expect((await nextVisit(lead)).step).toEqual({ index: 4, of: 6, name: "fitting" });
   });
 
   it("is told of on the visit's own page too", async () => {

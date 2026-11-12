@@ -61,6 +61,14 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since",
   },
   {
+    what: "A fit's sign-off",
+    tables: ["fit_sign_offs"],
+    leftAtT:
+      "A sign-off asked, flagged or signed since is lost, and a fit closed since reads as closed without one; one declined since is gone from the Tasks board",
+    putBackBy:
+      "Nothing to redo for a fit already closed: its job's outcome stands. Ask ops to note on the visit any sign-off since `<T>` the client remembers",
+  },
+  {
     what: "A technician's asks of ops: kit, and a visit to move",
     tables: ["kit_requests", "reschedule_requests"],
     leftAtT: "An ask made since is lost, and one ops settled since is open again on the Tasks board",

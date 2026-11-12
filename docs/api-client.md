@@ -2950,6 +2950,207 @@ Request body:
 }
 ```
 
+### POST /api/visits/{id}/sign-off
+
+Sign off the fit the technician asked about, or say what isn't right
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SignOffAnswer"
+}
+```
+
+**200**: Recorded; a flag reaches the technician's phone
+
+```json
+{
+  "$ref": "#/components/schemas/SignOff"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such visit of this client's
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: sign_off_not_asked: the technician has not asked yet; sign_off_closed: signed or declined
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "sign_off_not_asked",
+                "sign_off_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**422**: sign_off_checks_open: a sign-off needs every check ticked; flag what isn't right instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "sign_off_checks_open"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/me/problems
 
 Tell Care something is wrong with the hair system or a visit
@@ -6279,6 +6480,10 @@ Request body:
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "sign_off_not_asked",
+            "sign_off_closed",
+            "sign_off_checks_open",
+            "sign_off_code",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -7637,7 +7842,8 @@ Request body:
                 "hair_profile",
                 "hair_system",
                 "fitting",
-                "after_photos"
+                "after_photos",
+                "sign_off"
               ],
               "description": "The step, as the app names it."
             }
@@ -7666,6 +7872,17 @@ Request body:
         }
       ],
       "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
     }
   },
   "required": [
@@ -7691,7 +7908,8 @@ Request body:
     "proposed_move",
     "latest_update",
     "step",
-    "waits_until"
+    "waits_until",
+    "sign_off"
   ],
   "additionalProperties": false
 }
@@ -7770,6 +7988,129 @@ Request body:
     "expires_at"
   ],
   "additionalProperties": false
+}
+```
+
+### SignOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "asked",
+        "signed",
+        "flagged",
+        "declined"
+      ],
+      "description": "asked: waiting for the client; signed: happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: closed without it, with why."
+    },
+    "checks": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOffChecks"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "As the client last answered; null till then."
+    },
+    "flag_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What isn't right, in the client's words."
+    },
+    "declined_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Why the client did not sign."
+    },
+    "asked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "asks": {
+      "type": "integer",
+      "description": "How many times it was asked: again after each flag."
+    },
+    "signed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "signed_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "client_app",
+            "technician_phone"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "state",
+    "checks",
+    "flag_text",
+    "declined_reason",
+    "asked_at",
+    "asks",
+    "signed_at",
+    "signed_on"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SignOffChecks
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hairline": {
+      "type": "boolean"
+    },
+    "blend": {
+      "type": "boolean"
+    },
+    "secure": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "hairline",
+    "blend",
+    "secure"
+  ],
+  "additionalProperties": false,
+  "description": "The hairline, the colour and blend, and that it is secure and comfortable: each ticked or not."
 }
 ```
 
@@ -9134,7 +9475,8 @@ Request body:
                 "hair_profile",
                 "hair_system",
                 "fitting",
-                "after_photos"
+                "after_photos",
+                "sign_off"
               ],
               "description": "The step, as the app names it."
             }
@@ -9163,6 +9505,17 @@ Request body:
         }
       ],
       "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
     },
     "duration_minutes": {
       "anyOf": [
@@ -9321,6 +9674,7 @@ Request body:
     "latest_update",
     "step",
     "waits_until",
+    "sign_off",
     "duration_minutes",
     "outcome",
     "what_was_done",
@@ -9828,6 +10182,60 @@ Request body:
     "reason"
   ],
   "additionalProperties": false
+}
+```
+
+### SignOffAnswer
+
+```json
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string",
+          "enum": [
+            "signed"
+          ]
+        },
+        "checks": {
+          "$ref": "#/components/schemas/SignOffChecks"
+        }
+      },
+      "required": [
+        "result",
+        "checks"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string",
+          "enum": [
+            "flagged"
+          ]
+        },
+        "checks": {
+          "$ref": "#/components/schemas/SignOffChecks"
+        },
+        "flag_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "result",
+        "checks",
+        "flag_text"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "description": "Happy with the fit, every check ticked; or something isn't right, in the client's words."
 }
 ```
 

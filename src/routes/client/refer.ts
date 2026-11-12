@@ -13,7 +13,8 @@ import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { PUBLIC_ORIGIN } from "../../config/environments.ts";
 import { canRefer } from "../../domain/visits/client-visits.ts";
-import { spendableCredits, type Balance } from "../../domain/money/credits.ts";
+import { spendableCredits } from "../../domain/money/credits.ts";
+import { creditsBody, CreditsSchema } from "../schemas/credits.ts";
 import { liveCard, makeCard, revokeCard } from "../../domain/referrals/referral-cards.ts";
 import { inviteOf } from "../../domain/referrals/referrals.ts";
 import { cardOf, codeOf, fittedFriends, invitedAs, type FittedFriend } from "../../domain/referrals/refer-page.ts";
@@ -22,21 +23,6 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { failureReason } from "../../log.ts";
-
-export const CreditsSchema = z
-  .object({
-    visits: z.number().int().openapi({ description: "Service-visit credits left." }),
-    earliest_expiry: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When the soonest expire." }),
-    expiring_visits: z.number().int().openapi({ description: "How many of them expire then." }),
-  })
-  .strict()
-  .openapi("Credits");
-
-export const creditsBody = (balance: Balance): z.infer<typeof CreditsSchema> => ({
-  visits: balance.visits,
-  earliest_expiry: balance.earliestExpiry,
-  expiring_visits: balance.expiringFirst,
-});
 
 const ReferSchema = z
   .object({

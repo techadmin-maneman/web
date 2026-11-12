@@ -84,6 +84,26 @@ function StepLine(props: {
   );
 }
 
+type SignOff = NonNullable<components["schemas"]["VisitStory"]["sign_off"]>;
+
+/** The client's sign-off of the fit, as the story's last line. */
+function signOffLine(signOff: SignOff): string {
+  const words = copy.signOff;
+  switch (signOff.state) {
+    case "asked":
+      return words.asked;
+    case "flagged":
+      return words.flagged(signOff.flag_text ?? "");
+    case "signed":
+      return words.signed(
+        signOff.signed_at === null ? "" : indiaClock(signOff.signed_at),
+        signOff.signed_on === null ? "" : words.where[signOff.signed_on],
+      );
+    case "declined":
+      return words.declined(signOff.declined_reason ?? "");
+  }
+}
+
 export function VisitStory({ visitId, clientId }: { visitId: string; clientId: string | null }) {
   const read = useCallback(() => dispatchApi.story(visitId), [visitId]);
   const [loaded, retry] = useLoad(read);
@@ -92,7 +112,7 @@ export function VisitStory({ visitId, clientId }: { visitId: string; clientId: s
   const maySendBack = access.mayCall("POST /api/visits/{id}/send-back");
   if (!mayRead || loaded.state === "loading") return null;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const { steps, sent_back: sentBack, may_send_back: mayBack } = loaded.value;
+  const { steps, sent_back: sentBack, may_send_back: mayBack, sign_off: signOff } = loaded.value;
   const lastOf = (kind: string) => steps.findLastIndex((one) => one.kind === kind);
   return (
     <section className={styles.story} aria-labelledby={`story-${visitId}`}>
@@ -115,6 +135,11 @@ export function VisitStory({ visitId, clientId }: { visitId: string; clientId: s
             />
           ))}
         </ol>
+      )}
+      {signOff !== null && (
+        <InlineMessage tone={signOff.state === "declined" || signOff.state === "flagged" ? "error" : "note"}>
+          {signOffLine(signOff)}
+        </InlineMessage>
       )}
       {clientId !== null && steps.some((step) => step.kind.endsWith("photos")) && (
         <OpsLink to={clientPath(clientId, "photos")}>{copy.photos}</OpsLink>

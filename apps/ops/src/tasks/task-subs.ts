@@ -86,6 +86,8 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
       facts.ask === null ? null : copy.finishAsks[facts.ask],
     );
   },
+  // Why the client did not sign, and whose job.
+  fit_unsigned: (facts) => copy.fit_unsigned(facts.reason, facts.technician),
   // Why, whose job, and each consumable short of what was expected.
   consumables_short: (facts) =>
     copy.consumables_short(

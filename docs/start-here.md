@@ -59,7 +59,7 @@ this map, or when the map names something that no longer exists.
   `visit-begun`, `client-visits`, `client-photo-keys`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
   `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `finish-asks` (how a technician suggests finishing a visit), `open-proposals`, `visit-upkeep` (what a write to a
   visit keeps up beside it),
-  `no-show-notes`, `visit-story` (a visit's steps, for its drawer)
+  `no-show-notes`, `visit-story` (a visit's steps, for its drawer), `live-visit` (the technician's word and step, for the client), `visit-photo-links` (a visit's photographs with their links)
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `follow-ups`, `one-visit`
 - **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`, `ops/visit-lost-reason`, `ops/visit-story`
 - **Screens:** `apps/app/src/visits/`, `apps/ops/src/clients/`
@@ -89,7 +89,7 @@ this map, or when the map names something that no longer exists.
 
 ### The technician's work in the field
 
-- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `client-history` (a client's past visits for the technician), `step-send-backs` (steps ops sent back to the technician), `safety` (where the technician is on a visit, and their SOS), `tech-alerts`, `alert-settings` and `alert-sends` (their alerts: the inbox, the kinds on, and what the cron writes and pushes), `workable-job`, `job-events`, `job-event-bodies`,
+- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `client-history` (a client's past visits for the technician), `step-send-backs` (steps ops sent back to the technician), `sign-offs` (the client's sign-off of a fit), `safety` (where the technician is on a visit, and their SOS), `tech-alerts`, `alert-settings` and `alert-sends` (their alerts: the inbox, the kinds on, and what the cron writes and pushes), `workable-job`, `job-events`, `job-event-bodies`,
   `job-record`, `job-use`, `consumable-shortfalls` (a job short of what its service expects, and why), `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `job-options` (a
   consultation's packages, prices and the client's try-on looks)
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `consumable-shortfall`, `tech-alerts`
@@ -172,7 +172,7 @@ this map, or when the map names something that no longer exists.
 
 ### Clients
 
-- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `client-notes`, `staff-notes` (staff's notes on a client), `client-alerts` (what every technician reads before they start), `handoff-notes` (the note left for the next technician),
+- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `worn-hair-system` (the hair system a client wears, and when its replacement opens), `client-notes`, `staff-notes` (staff's notes on a client), `client-alerts` (what every technician reads before they start), `handoff-notes` (the note left for the next technician),
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`,
   `pincode-directory` (India Post's pincodes, which ops open a city from), `pincode-launches` (launches scheduled for
   a later day), `launch-runs` (those due, served by the cron on the day), `pincode-reach` (a city's

@@ -35054,6 +35054,10 @@ Request body:
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "sign_off_not_asked",
+            "sign_off_closed",
+            "sign_off_checks_open",
+            "sign_off_code",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -36184,7 +36188,8 @@ Request body:
                 "hair_profile",
                 "hair_system",
                 "fitting",
-                "after_photos"
+                "after_photos",
+                "sign_off"
               ],
               "description": "The step, as the app names it."
             }
@@ -36213,6 +36218,17 @@ Request body:
         }
       ],
       "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
     },
     "lost_reason": {
       "anyOf": [
@@ -36384,6 +36400,7 @@ Request body:
     "latest_update",
     "step",
     "waits_until",
+    "sign_off",
     "lost_reason",
     "going_ahead",
     "outcome",
@@ -36537,6 +36554,129 @@ Request body:
     "expires_at"
   ],
   "additionalProperties": false
+}
+```
+
+### SignOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "asked",
+        "signed",
+        "flagged",
+        "declined"
+      ],
+      "description": "asked: waiting for the client; signed: happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: closed without it, with why."
+    },
+    "checks": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOffChecks"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "As the client last answered; null till then."
+    },
+    "flag_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What isn't right, in the client's words."
+    },
+    "declined_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Why the client did not sign."
+    },
+    "asked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "asks": {
+      "type": "integer",
+      "description": "How many times it was asked: again after each flag."
+    },
+    "signed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "signed_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "client_app",
+            "technician_phone"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "state",
+    "checks",
+    "flag_text",
+    "declined_reason",
+    "asked_at",
+    "asks",
+    "signed_at",
+    "signed_on"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SignOffChecks
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hairline": {
+      "type": "boolean"
+    },
+    "blend": {
+      "type": "boolean"
+    },
+    "secure": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "hairline",
+    "blend",
+    "secure"
+  ],
+  "additionalProperties": false,
+  "description": "The hairline, the colour and blend, and that it is secure and comfortable: each ticked or not."
 }
 ```
 
@@ -36771,7 +36911,8 @@ Request body:
                 "hair_profile",
                 "hair_system",
                 "fitting",
-                "after_photos"
+                "after_photos",
+                "sign_off"
               ],
               "description": "The step, as the app names it."
             }
@@ -36800,6 +36941,17 @@ Request body:
         }
       ],
       "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
     }
   },
   "required": [
@@ -36825,7 +36977,8 @@ Request body:
     "proposed_move",
     "latest_update",
     "step",
-    "waits_until"
+    "waits_until",
+    "sign_off"
   ],
   "additionalProperties": false
 }
@@ -39203,6 +39356,10 @@ Request body:
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "sign_off_not_asked",
+            "sign_off_closed",
+            "sign_off_checks_open",
+            "sign_off_code",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -45540,12 +45697,24 @@ Request body:
         ]
       },
       "description": "The landed steps ops may send back now: POST /api/visits/{id}/send-back."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed and when and where, or declined with why. Null before it is asked, and for a visit that takes none."
     }
   },
   "required": [
     "steps",
     "sent_back",
-    "may_send_back"
+    "may_send_back",
+    "sign_off"
   ],
   "additionalProperties": false
 }
@@ -49567,6 +49736,7 @@ Request body:
               "at_risk_client",
               "partial_visit",
               "consumables_short",
+              "fit_unsigned",
               "kit_request",
               "referral_review",
               "no_show_decision",
@@ -50450,6 +50620,40 @@ Request body:
         "reason",
         "technician",
         "short"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "fit_unsigned"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why the client did not sign, as the technician recorded it."
+        },
+        "technician": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "reason",
+        "technician"
       ],
       "additionalProperties": false
     },

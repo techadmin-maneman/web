@@ -34,7 +34,7 @@ type PaidRow = {
 
 /**
  * India's last day a custom order promised for `promisedOn` is still on time: past it, the order is late and its client
- * may have their money back in full (docs/decisions/0176-custom-order-refunds.md).
+ * may have their money back in full.
  */
 export const lateAfter = (promisedOn: string, graceDays: number): string => addDays(promisedOn, graceDays);
 

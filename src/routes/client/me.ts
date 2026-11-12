@@ -50,7 +50,7 @@ import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../../domain/booking/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
-import { creditsBody } from "./refer.ts";
+import { creditsBody } from "../schemas/credits.ts";
 import { clientPackage } from "../../domain/clients/client-package.ts";
 import { wornHairSystem } from "../../domain/clients/worn-hair-system.ts";
 import { pricedFor } from "../../domain/booking/client-prices.ts";

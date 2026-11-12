@@ -82,6 +82,13 @@ export type TaskFacts =
       /** Each consumable recorded below what was expected; empty where nothing was used. */
       readonly short: { name: string; expected: number; used: number }[];
     }
+  | {
+      readonly group: "fit_unsigned";
+      readonly kind: VisitType;
+      /** Why the client did not sign, as the technician recorded it. */
+      readonly reason: string;
+      readonly technician: string;
+    }
   | { readonly group: "at_risk_client"; readonly last_visit_at: Instant; readonly due_on: Day }
   | {
       readonly group: "first_fit_to_book";

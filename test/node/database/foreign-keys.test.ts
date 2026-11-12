@@ -23,6 +23,8 @@ const HANDLED: Readonly<Record<string, string>> = {
   // An SOS is kept as a record of the technician's: one who sent any has work, and is never deleted.
   "sos_alerts.technician_id -> technicians": "a technician with an SOS has work, and the delete asks for none",
   "kit_requests.technician_id -> technicians": "a technician who asked for kit has work, and the delete asks for none",
+  "fit_sign_offs.technician_id -> technicians":
+    "a technician who asked for a sign-off has work, and the delete asks for none",
   "reschedule_requests.technician_id -> technicians":
     "a technician who asked to move a visit has work, and the delete asks for none",
   // An erasure deletes a client's notes in one statement (src/domain/privacy/erasure-statements.ts).

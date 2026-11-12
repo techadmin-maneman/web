@@ -6,9 +6,9 @@ import { WINDOW_LABELS } from "../../config/booking.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { CLIENT_STATES } from "../../domain/visits/client-visits.ts";
-import { OwedPaymentSchema } from "../client/payments.ts";
-import { CreditsSchema } from "../client/refer.ts";
-import { ReferralRewardSchema } from "../public/referral-reward.ts";
+import { CreditsSchema } from "./credits.ts";
+import { OwedPaymentSchema } from "./payments.ts";
+import { ReferralRewardSchema } from "./referral-reward.ts";
 import { BookingOfferSchema, WindowHoursSchema } from "./booking.ts";
 import { BeingBookedSchema, ConsultedSchema, OneVisitPriceSchema, RemakeSchema, VisitSummarySchema } from "./visits.ts";
 

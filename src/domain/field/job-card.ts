@@ -5,7 +5,8 @@ import { type RescheduleAsked, rescheduleAskedOf } from "../dispatch/reschedule-
 import { takesProfile } from "../../policy/hair-profile.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { cardStepsFor, type CardStep, type JobEventKind } from "../../policy/in-job-steps.ts";
+import { cardStepsFor, SIGN_OFF_STEP, type CardStep, type JobEventKind } from "../../policy/in-job-steps.ts";
+import { signOffOf, type SignOff } from "./sign-offs.ts";
 import { noShowWaitEnds, type Waits } from "../../policy/no-show.ts";
 import { unlocked } from "../../policy/job-visibility.ts";
 import type { Decision } from "../../policy/one-visit.ts";
@@ -120,6 +121,8 @@ interface JobDetail extends JobSummary {
   readonly sent_back: SentBack[];
   /** The technician's open ask that ops move the visit; null for none. */
   readonly reschedule_asked: RescheduleAsked | null;
+  /** A fit's sign-off as it stands (docs/decisions/0254-client-signs-off-the-fit.md); null before it is asked. */
+  readonly sign_off: SignOff | null;
 }
 
 /** A one visit's discount code, and who gave it: the client as they booked, ops, or the technician. */
@@ -204,6 +207,7 @@ export async function jobDetail(
     steps: cardStepsFor(type, oneVisit),
     sent_back: sentBack,
     reschedule_asked: await rescheduleAskedOf(db, row.id),
+    sign_off: cardStepsFor(type, oneVisit).includes(SIGN_OFF_STEP) ? await signOffOf(db, row.id) : null,
   };
   if (unlockedParts === null) return locked;
   return {

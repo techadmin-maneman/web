@@ -5,6 +5,7 @@
 
 import { liveFactsOf, type LiveFacts } from "./live-visit.ts";
 import { photoSets, type PhotoSet } from "./visit-photo-links.ts";
+import { signOffOf } from "../field/sign-offs.ts";
 
 export { PHOTO_LINK_MS, photoSets } from "./visit-photo-links.ts";
 import type { Waits } from "../../policy/no-show.ts";
@@ -85,6 +86,8 @@ interface VisitSummary {
   readonly latest_update: LiveFacts["latest_update"];
   readonly step: LiveFacts["step"];
   readonly waits_until: LiveFacts["waits_until"];
+  /** The fit's sign-off: while the visit is under way, and on a visit's own page once it is done (ADR 0254). */
+  readonly sign_off: LiveFacts["sign_off"];
 }
 
 interface AppointmentRow {
@@ -218,6 +221,7 @@ async function visitSummaryOf(
     latest_update: live?.latest_update ?? null,
     step: live?.step ?? null,
     waits_until: live?.waits_until ?? null,
+    sign_off: live?.sign_off ?? null,
   };
 }
 
@@ -467,15 +471,17 @@ export async function visitDetail({
       }
     >();
   if (row === null) return null;
-  const [photos, noShows, summaries] = await Promise.all([
+  const [photos, noShows, summaries, signOff] = await Promise.all([
     photoSets(db, [row.id], signingKey, now),
     noShowNotes(db, [row.id], now),
     contextOf(db, personId, now).then((context) => summariesOf(db, [row], context, now)),
+    signOffOf(db, row.id),
   ]);
   const summary = summaries[0];
   if (summary === undefined) return null;
   return {
     ...summary,
+    sign_off: signOff,
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
     what_was_done: await whatWasDone(db, row.id, row.type),

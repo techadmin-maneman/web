@@ -14,7 +14,7 @@ import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { captureLogs, markDatabase, NOW } from "../helpers.ts";
-import { JOB, working } from "../job-fixtures.ts";
+import { clientSignsOff, JOB, working } from "../job-fixtures.ts";
 import { PERSON, make, cookies, uses } from "./discount-code-entries-fixtures.ts";
 
 beforeEach(async () => {
@@ -42,6 +42,7 @@ describe("the technician, before a one visit's payment link", () => {
     await job.post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-01");
     await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
     await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await clientSignsOff(JOB);
   };
   const fitted = (job: Awaited<ReturnType<typeof oneVisit>>) => workedWith(job, { ...A_PIECE, product: NATURAL.tier });
 

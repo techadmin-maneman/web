@@ -83,6 +83,11 @@ export const TaskFactsSchema = z
         .array(z.object({ name: z.string(), expected: z.number(), used: z.number() }).strict())
         .openapi({ description: "Each consumable recorded below what was expected; empty where nothing was used." }),
     }),
+    facts("fit_unsigned", {
+      kind,
+      reason: z.string().openapi({ description: "Why the client did not sign, as the technician recorded it." }),
+      technician: z.string(),
+    }),
     facts("at_risk_client", { last_visit_at: instant, due_on: day }),
     facts("first_fit_to_book", {
       consulted_at: instant,

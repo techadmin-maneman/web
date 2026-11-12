@@ -109,6 +109,10 @@
                   "already_disputed",
                   "not_disputable",
                   "dispute_window_closed",
+                  "sign_off_not_asked",
+                  "sign_off_closed",
+                  "sign_off_checks_open",
+                  "sign_off_code",
                   "move_gone",
                   "ask_the_client",
                   "code_not_applicable",
@@ -1412,7 +1416,8 @@
                       "hair_profile",
                       "hair_system",
                       "fitting",
-                      "after_photos"
+                      "after_photos",
+                      "sign_off"
                     ],
                     "description": "The step, as the app names it."
                   }
@@ -1441,6 +1446,17 @@
               }
             ],
             "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+          },
+          "sign_off": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignOff"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
           }
         },
         "required": [
@@ -1466,7 +1482,8 @@
           "proposed_move",
           "latest_update",
           "step",
-          "waits_until"
+          "waits_until",
+          "sign_off"
         ],
         "additionalProperties": false
       },
@@ -1535,6 +1552,119 @@
           "expires_at"
         ],
         "additionalProperties": false
+      },
+      "SignOff": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "asked",
+              "signed",
+              "flagged",
+              "declined"
+            ],
+            "description": "asked: waiting for the client; signed: happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: closed without it, with why."
+          },
+          "checks": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignOffChecks"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "As the client last answered; null till then."
+          },
+          "flag_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What isn't right, in the client's words."
+          },
+          "declined_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the client did not sign."
+          },
+          "asked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "asks": {
+            "type": "integer",
+            "description": "How many times it was asked: again after each flag."
+          },
+          "signed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signed_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "client_app",
+                  "technician_phone"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "checks",
+          "flag_text",
+          "declined_reason",
+          "asked_at",
+          "asks",
+          "signed_at",
+          "signed_on"
+        ],
+        "additionalProperties": false
+      },
+      "SignOffChecks": {
+        "type": "object",
+        "properties": {
+          "hairline": {
+            "type": "boolean"
+          },
+          "blend": {
+            "type": "boolean"
+          },
+          "secure": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hairline",
+          "blend",
+          "secure"
+        ],
+        "additionalProperties": false,
+        "description": "The hairline, the colour and blend, and that it is secure and comfortable: each ticked or not."
       },
       "Consulted": {
         "type": "object",
@@ -2794,7 +2924,8 @@
                       "hair_profile",
                       "hair_system",
                       "fitting",
-                      "after_photos"
+                      "after_photos",
+                      "sign_off"
                     ],
                     "description": "The step, as the app names it."
                   }
@@ -2823,6 +2954,17 @@
               }
             ],
             "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+          },
+          "sign_off": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignOff"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
           },
           "duration_minutes": {
             "anyOf": [
@@ -2981,6 +3123,7 @@
           "latest_update",
           "step",
           "waits_until",
+          "sign_off",
           "duration_minutes",
           "outcome",
           "what_was_done",
@@ -3438,6 +3581,55 @@
           "reason"
         ],
         "additionalProperties": false
+      },
+      "SignOffAnswer": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "result": {
+                "type": "string",
+                "enum": [
+                  "signed"
+                ]
+              },
+              "checks": {
+                "$ref": "#/components/schemas/SignOffChecks"
+              }
+            },
+            "required": [
+              "result",
+              "checks"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "result": {
+                "type": "string",
+                "enum": [
+                  "flagged"
+                ]
+              },
+              "checks": {
+                "$ref": "#/components/schemas/SignOffChecks"
+              },
+              "flag_text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "result",
+              "checks",
+              "flag_text"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Happy with the fit, every check ticked; or something isn't right, in the client's words."
       },
       "ProblemReported": {
         "type": "object",
@@ -8909,6 +9101,237 @@
                                 "already_disputed",
                                 "not_disputable",
                                 "dispute_window_closed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/visits/{id}/sign-off": {
+      "post": {
+        "summary": "Sign off the fit the technician asked about, or say what isn't right",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The visit's ID."
+            },
+            "required": true,
+            "description": "The visit's ID.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignOffAnswer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded; a flag reaches the technician's phone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignOff"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: see error.fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such visit of this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "sign_off_not_asked: the technician has not asked yet; sign_off_closed: signed or declined",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "sign_off_not_asked",
+                                "sign_off_closed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "sign_off_checks_open: a sign-off needs every check ticked; flag what isn't right instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "sign_off_checks_open"
                               ]
                             }
                           },

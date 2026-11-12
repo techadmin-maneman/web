@@ -1,5 +1,6 @@
 // The technician API's schemas (./jobs.ts): what each call takes and answers.
 
+import { SignOffSchema } from "../schemas/sign-off.ts";
 import { RescheduleAskedSchema } from "../schemas/reschedule.ts";
 import { z } from "@hono/zod-openapi";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
@@ -244,6 +245,11 @@ export const JobDetailSchema = JobSummarySchema.extend({
   handoff: HandoffSchema,
   reschedule_asked: z.union([RescheduleAskedSchema, z.null()]).openapi({
     description: "The technician's open ask that ops move the visit, until it is settled; null for none.",
+  }),
+  sign_off: z.union([SignOffSchema, z.null()]).openapi({
+    description:
+      "A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed or declined. Null before it is " +
+      "asked, and for a visit that takes none. Outcome's done waits for signed or declined.",
   }),
   sent_back: z
     .array(

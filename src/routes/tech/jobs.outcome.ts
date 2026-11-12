@@ -10,6 +10,9 @@ import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { decisionAtVisit } from "../../domain/visits/one-visit.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { NO_PIECE, takesStep } from "../../policy/in-job-steps.ts";
+import { fitsToday } from "../../policy/one-visit.ts";
+import { closesFit, needsSignOff } from "../../policy/sign-off.ts";
+import { signOffOf } from "../../domain/field/sign-offs.ts";
 import { type Ctx, type StepBody } from "./jobs.record.ts";
 
 type OutcomeBody = z.infer<typeof OutcomeRequestSchema>;
@@ -73,9 +76,22 @@ async function doneBody(c: Ctx, job: WorkableJob, body: Extract<OutcomeBody, { o
     : { invalid: ["lost_reason"] };
 }
 
-/** The close as it is kept, or the fields refused. */
+/**
+ * Whether the fit may close done: one that needs the client's sign-off (src/policy/sign-off.ts) only once they have
+ * signed, or the technician has recorded that they declined (docs/decisions/0254-client-signs-off-the-fit.md).
+ */
+async function signOffLetsClose(c: Ctx, job: WorkableJob): Promise<boolean> {
+  const decision = job.oneVisit === null ? null : await decisionAtVisit(c.env.DB, job.id);
+  const oneVisit = job.oneVisit === null ? null : { fitsToday: decision !== null && fitsToday(decision) };
+  if (!needsSignOff(job.type, oneVisit)) return true;
+  return closesFit((await signOffOf(c.env.DB, job.id))?.state ?? null);
+}
+
+/** The close as it is kept, or the fields refused: `sign_off` for a fit closed done before its sign-off. */
 export async function outcomeBody(c: Ctx, job: WorkableJob, body: OutcomeBody): Promise<StepBody> {
-  if (body.outcome === "done") return doneBody(c, job, body);
+  if (body.outcome === "done") {
+    return (await signOffLetsClose(c, job)) ? doneBody(c, job, body) : { invalid: ["sign_off"] };
+  }
   if (body.cannot_fit === true) {
     return body.reason === NO_PIECE && takesStep("piece", job.type, job.oneVisit !== null)
       ? { outcome: "partial", reason: NO_PIECE, cannot_fit: true }

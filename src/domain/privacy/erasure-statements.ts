@@ -203,6 +203,13 @@ function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] 
          WHERE appointment_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
       )
       .bind(personId),
+    // The client's words on a fit's sign-off, and the technician's why it was declined: that it was signed stays.
+    db
+      .prepare(
+        `UPDATE fit_sign_offs SET flag_text = NULL, declined_reason = CASE WHEN state = 'declined' THEN '' END
+         WHERE appointment_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
+      )
+      .bind(personId),
     db
       .prepare(
         `UPDATE visit_changes SET cancel_reason = NULL
@@ -218,7 +225,7 @@ function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] 
     db
       .prepare(
         `UPDATE task_closures SET reason = NULL
-         WHERE (task_group IN ('partial_visit', 'consumables_short', 'at_risk_client')
+         WHERE (task_group IN ('partial_visit', 'consumables_short', 'fit_unsigned', 'at_risk_client')
                 AND subject_id IN (SELECT id FROM appointments WHERE person_id = ?1))
             OR (task_group = 'city_matter' AND subject_id IN (SELECT id FROM city_matters WHERE person_id = ?1))`,
       )

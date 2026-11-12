@@ -43,6 +43,7 @@ import { registerTechReschedule } from "./routes/tech/reschedule.ts";
 import { registerTechLeave } from "./routes/tech/leave.ts";
 import { registerTechOptions } from "./routes/tech/options.ts";
 import { registerClientDisputes } from "./routes/client/disputes.ts";
+import { registerClientSignOff } from "./routes/client/sign-offs.ts";
 import { registerClientProblems } from "./routes/client/problems.ts";
 import { registerClientMoveProposals } from "./routes/client/move-proposals.ts";
 import { registerClientErrors } from "./routes/client-errors.ts";
@@ -134,6 +135,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientMoveProposals,
     registerClientPhotos,
     registerClientDisputes,
+    // The client signs off a fit (docs/decisions/0254-client-signs-off-the-fit.md).
+    registerClientSignOff,
     registerClientProblems,
     registerClientPayments,
     registerClientAvailability,

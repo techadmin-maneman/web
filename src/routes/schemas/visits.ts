@@ -2,6 +2,7 @@
 // (src/routes/client/visits.ts), which their home, payments and the console's client record answer in too.
 
 import { CLIENT_STEPS } from "../../policy/visit-plan.ts";
+import { SignOffSchema } from "./sign-off.ts";
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { WindowHoursSchema } from "./booking.ts";
@@ -151,6 +152,11 @@ export const VisitSummarySchema = z
       description:
         "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the " +
         "check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise.",
+    }),
+    sign_off: z.union([SignOffSchema, z.null()]).openapi({
+      description:
+        "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's " +
+        "own page once it is done. Null before the technician asks, and for a visit that takes none.",
     }),
   })
   .strict()

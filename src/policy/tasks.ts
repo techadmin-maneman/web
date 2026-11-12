@@ -93,6 +93,7 @@ export const TASK_GROUPS = [
   "at_risk_client",
   "partial_visit",
   "consumables_short",
+  "fit_unsigned",
   "kit_request",
   "referral_review",
   "no_show_decision",
@@ -160,6 +161,9 @@ export const TASK_SLA_HOURS: Slas = {
   // A job that used less than its service expects, with the technician's reason: checked against the kit within the
   // two days (docs/decisions/0222-consumables-short-of-expected.md).
   consumables_short: 48,
+  // A fit closed without the client's sign-off, with the technician's why: Care call the client within the two days
+  // (docs/decisions/0254-client-signs-off-the-fit.md).
+  fit_unsigned: 48,
   // A kit short of what its week's visits need: in its next transfer, within the day.
   kit_request: 24,
   referral_review: 48,
@@ -195,6 +199,7 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
 export const CLOSABLE_TASK_GROUPS = [
   "partial_visit",
   "consumables_short",
+  "fit_unsigned",
   "at_risk_client",
   "city_matter",
   "kit_request",

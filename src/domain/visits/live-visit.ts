@@ -8,6 +8,9 @@ import { cardStepsFor } from "../../policy/in-job-steps.ts";
 import { waitEndsAt, waitStartsAt, type Waits } from "../../policy/no-show.ts";
 import { clientStepsOf, currentStep, planOf, type ClientStep } from "../../policy/visit-plan.ts";
 import type { Preset } from "../messages/technician-updates.ts";
+import { signOffsOf, type SignOff } from "../field/sign-offs.ts";
+import { closesFit } from "../../policy/sign-off.ts";
+import { profiledVisitsStatement } from "../clients/hair-profiles.ts";
 
 /** The technician's word, as the client's app names it. */
 const UPDATE_KINDS: Readonly<Record<Preset, LiveUpdateKind>> = {
@@ -28,6 +31,8 @@ export interface LiveFacts {
   readonly step: { readonly index: number; readonly of: number; readonly name: ClientStep } | null;
   /** The last moment the technician waits at the door, once checked in and before the visit starts. */
   readonly waits_until: string | null;
+  /** The fit's sign-off while the visit is under way: asked, flagged, signed or declined; null before it is asked. */
+  readonly sign_off: SignOff | null;
 }
 
 /** What a visit's live facts are read from. */
@@ -40,33 +45,38 @@ export interface LiveVisitRow {
   readonly stage: "booked" | "arrived" | "in_progress" | "done" | "closing" | "missed" | null;
 }
 
-const NONE: LiveFacts = { latest_update: null, step: null, waits_until: null };
+const NONE: LiveFacts = { latest_update: null, step: null, waits_until: null, sign_off: null };
 
 interface Landed {
   readonly updates: Map<string, { preset: Preset; minutes: number | null; written_at: string }>;
   readonly steps: Map<string, Set<string>>;
   readonly checkIns: Map<string, string>;
+  readonly signOffs: Map<string, SignOff>;
 }
 
-/** The words, the steps landed and the check-ins of these visits, in one trip. */
+/** The words, the steps landed, the check-ins and the sign-offs of these visits. */
 async function landedFor(db: D1Database, ids: readonly string[]): Promise<Landed> {
   const marks = ids.map((_, at) => `?${String(at + 1)}`).join(", ");
-  const [updates, events, profiles] = await db.batch<Record<string, unknown>>([
-    db
-      .prepare(
-        `SELECT appointment_id, preset, minutes, written_at FROM technician_updates
-         WHERE appointment_id IN (${marks}) ORDER BY written_at DESC`,
-      )
-      .bind(...ids),
-    db
-      .prepare(
-        `SELECT appointment_id, kind, MIN(occurred_at) AS at FROM job_events
-         WHERE appointment_id IN (${marks}) AND superseded = 0 GROUP BY appointment_id, kind`,
-      )
-      .bind(...ids),
-    db.prepare(`SELECT DISTINCT appointment_id FROM hair_profiles WHERE appointment_id IN (${marks})`).bind(...ids),
+  // One trip: the words, the steps and the profiles in a batch, beside the sign-offs.
+  const [[updates, events, profiles], signOffs] = await Promise.all([
+    db.batch<Record<string, unknown>>([
+      db
+        .prepare(
+          `SELECT appointment_id, preset, minutes, written_at FROM technician_updates
+           WHERE appointment_id IN (${marks}) ORDER BY written_at DESC`,
+        )
+        .bind(...ids),
+      db
+        .prepare(
+          `SELECT appointment_id, kind, MIN(occurred_at) AS at FROM job_events
+           WHERE appointment_id IN (${marks}) AND superseded = 0 GROUP BY appointment_id, kind`,
+        )
+        .bind(...ids),
+      profiledVisitsStatement(db, ids),
+    ]),
+    signOffsOf(db, ids),
   ]);
-  const landed: Landed = { updates: new Map(), steps: new Map(), checkIns: new Map() };
+  const landed: Landed = { updates: new Map(), steps: new Map(), checkIns: new Map(), signOffs };
   for (const row of (updates?.results ?? []) as {
     appointment_id: string;
     preset: Preset;
@@ -81,11 +91,18 @@ async function landedFor(db: D1Database, ids: readonly string[]): Promise<Landed
     landed.steps.set(row.appointment_id, kinds);
     if (row.kind === "check_in") landed.checkIns.set(row.appointment_id, row.at);
   }
-  for (const row of (profiles?.results ?? []) as { appointment_id: string }[]) {
-    const kinds = landed.steps.get(row.appointment_id) ?? new Set<string>();
-    kinds.add("profile");
-    landed.steps.set(row.appointment_id, kinds);
-  }
+  const mark = (rows: unknown[] | undefined, step: string) => {
+    for (const row of (rows ?? []) as { appointment_id: string }[]) {
+      const kinds = landed.steps.get(row.appointment_id) ?? new Set<string>();
+      kinds.add(step);
+      landed.steps.set(row.appointment_id, kinds);
+    }
+  };
+  mark(profiles?.results, "profile");
+  const closed = [...signOffs]
+    .filter(([, signOff]) => closesFit(signOff.state))
+    .map(([id]) => ({ appointment_id: id }));
+  mark(closed, "sign_off");
   return landed;
 }
 
@@ -110,7 +127,11 @@ function factsOf(visit: LiveVisitRow, landed: Landed, waits: Waits): LiveFacts {
   if (visit.stage === "in_progress") {
     const plan = planOf({ type: visit.type, one_visit: visit.oneVisit });
     const steps = clientStepsOf(plan, new Set<string>(cardStepsFor(type, visit.oneVisit)));
-    return { ...NONE, step: currentStep(steps, landed.steps.get(visit.id) ?? new Set()) };
+    return {
+      ...NONE,
+      step: currentStep(steps, landed.steps.get(visit.id) ?? new Set()),
+      sign_off: landed.signOffs.get(visit.id) ?? null,
+    };
   }
   return NONE;
 }

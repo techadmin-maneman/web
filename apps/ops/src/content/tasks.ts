@@ -103,6 +103,8 @@ export const tasks = {
     partial_visit: "Partly done visit",
     // A group the board does not draw (docs/decisions/0222-consumables-short-of-expected.md).
     consumables_short: "Consumables short",
+    // A group the board does not draw (docs/decisions/0254-client-signs-off-the-fit.md).
+    fit_unsigned: "Fit closed without sign-off",
     // A group the board does not draw.
     kit_request: "Kit request",
     referral_review: "Referral review",
@@ -252,6 +254,8 @@ export const tasks = {
     },
     /** "Ran out · Imran · Tape strips 2 of 5, Glue 0 of 10 ml", or "Nothing used" where nothing was recorded. */
     consumables_short: (reason: string, technician: string, short: string) => `${reason} · ${technician} · ${short}`,
+    /** "Client in a hurry · Imran". */
+    fit_unsigned: (reason: string, technician: string) => `${reason} · ${technician}`,
     shortLine: (name: string, used: number, expected: number) => `${name} ${String(used)} of ${String(expected)}`,
     nothingUsed: "Nothing used",
     shortReasons: {
@@ -346,6 +350,7 @@ export const tasks = {
     atRisk: { open: "Close", label: "What came of the call" },
     /** Consumables short close once checked against the kit. */
     consumablesShort: { open: "Checked", label: "What the kit showed" },
+    fitUnsigned: { open: "Called", label: "What the client said" },
     /** A kit request closes once what it asked for is sent, or with why not. */
     kitRequest: { open: "Sent", label: "What was sent" },
     /** A technician's ask to move a visit closes with what was agreed with the client. */

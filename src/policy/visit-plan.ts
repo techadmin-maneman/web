@@ -16,6 +16,7 @@ export const PLAN_SCREENS = [
   "hair_system",
   "consumables",
   "after_photos",
+  "sign_off",
   "outcome",
 ] as const;
 export type PlanScreen = (typeof PLAN_SCREENS)[number];
@@ -25,10 +26,28 @@ export type VisitPlan = "service" | "replacement" | "first_fit" | "consultation"
 
 export const PLANS: Readonly<Record<VisitPlan, readonly PlanScreen[]>> = {
   service: ["before_photos", "tasks", "consumables", "after_photos", "outcome"],
-  replacement: ["before_photos", "hair_system", "tasks", "consumables", "after_photos", "outcome"],
-  first_fit: ["before_photos", "hair_profile", "hair_system", "tasks", "consumables", "after_photos", "outcome"],
+  replacement: ["before_photos", "hair_system", "tasks", "consumables", "after_photos", "sign_off", "outcome"],
+  first_fit: [
+    "before_photos",
+    "hair_profile",
+    "hair_system",
+    "tasks",
+    "consumables",
+    "after_photos",
+    "sign_off",
+    "outcome",
+  ],
   consultation: ["before_photos", "tasks", "hair_profile", "outcome"],
-  one_visit: ["before_photos", "hair_profile", "hair_system", "tasks", "consumables", "after_photos", "outcome"],
+  one_visit: [
+    "before_photos",
+    "hair_profile",
+    "hair_system",
+    "tasks",
+    "consumables",
+    "after_photos",
+    "sign_off",
+    "outcome",
+  ],
 };
 
 /** The card's step each screen feeds. */
@@ -39,6 +58,7 @@ export const SCREEN_STEPS: Readonly<Record<PlanScreen, CardStep>> = {
   hair_system: "piece",
   consumables: "consumables",
   after_photos: "after_photos",
+  sign_off: "sign_off",
   outcome: "outcome",
 };
 
@@ -60,6 +80,7 @@ export const CLIENT_STEPS = [
   "hair_system",
   "fitting",
   "after_photos",
+  "sign_off",
 ] as const;
 export type ClientStep = (typeof CLIENT_STEPS)[number];
 

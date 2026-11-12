@@ -90,7 +90,7 @@ function replacementBookable(row: StageRow, owed: boolean, now: Date, days: Next
 
 /**
  * Whether the visit asked for may be booked on its day, as far as a replacement goes: one on or after the first day of
- * the month the client's hair system falls due (ADR 0253). Ops book one owed free, a remake or a recall's (`covers`),
+ * the month the client's hair system falls due. Ops book one owed free, a remake or a recall's (`covers`),
  * whenever it suits; any other kind is not this rule's.
  */
 export async function replacementOpenOn(

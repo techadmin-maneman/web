@@ -120,6 +120,7 @@ describe("the technician's profile step", () => {
       "consumables",
       "profile",
       "after_photos",
+      "sign_off",
       "outcome",
     ]);
     await job.workTo("piece");
@@ -323,6 +324,7 @@ describe("the technician's profile step", () => {
       "consumables",
       "profile",
       "after_photos",
+      "sign_off",
       "outcome",
     ]);
   });
