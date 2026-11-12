@@ -120,7 +120,7 @@ function Decided({ job }: { job: Job }) {
   return <Row name={copy.fit} value={fit} />;
 }
 
-/** How long the visit took, from its start to its close: as this phone kept the close, else when it was queued. */
+/** How long the visit took, from the check-in to its close: as this phone kept the close, else when it was queued. */
 function tookOf(started: number | null, closedAt: number | null, queued: readonly Queued[], id: string) {
   const closed = closedAt ?? queued.find((event) => event.job_id === id && event.kind === "outcome")?.queued_at ?? null;
   return started === null || closed === null ? null : lengthOf(started, closed);
@@ -138,11 +138,10 @@ function Rows(props: { job: Job; took: { hours: number; minutes: number } | null
   );
 }
 
-/** When the job started: as the card says, as the API's answer did, or, started with no signal, when the phone took it. */
-function startedAt(job: Job, heard: Heard | undefined, queued: readonly Queued[]): number | null {
-  const said = job.progress.started_at ?? heard?.started_at ?? null;
-  if (said !== null) return Date.parse(said);
-  return queued.find((event) => event.job_id === job.id && event.kind === "start")?.queued_at ?? null;
+/** When the technician checked in: as the card says, or, checked in with no signal, when the phone took it. */
+function checkedInAt(job: Job, queued: readonly Queued[]): number | null {
+  if (job.progress.checked_in_at !== null) return Date.parse(job.progress.checked_in_at);
+  return queued.find((event) => event.job_id === job.id && event.kind === "check_in")?.queued_at ?? null;
 }
 
 /** How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed. */
@@ -192,7 +191,7 @@ export function CloseOut({ id }: { id: string }) {
   }
 
   const who = names.get(id) ?? job.client?.name ?? "";
-  const took = tookOf(startedAt(job, states?.get(id), waiting.events), closedAt, waiting.events, id);
+  const took = tookOf(checkedInAt(job, waiting.events), closedAt, waiting.events, id);
 
   const sets = job.progress.steps_done.filter((step) => step === "before_photos" || step === "after_photos").length;
   const queuedFrames = waiting.frames.filter((frame) => frame.job_id === id).length;

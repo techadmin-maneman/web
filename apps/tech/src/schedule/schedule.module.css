@@ -91,6 +91,13 @@
   text-decoration: none;
 }
 
+/* The way there takes the whole hatched block, edge to edge, so a tap anywhere on the drive opens it. */
+.drive[href]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
 .driveIcon {
   flex-shrink: 0;
 }

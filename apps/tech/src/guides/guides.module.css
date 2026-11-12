@@ -1,7 +1,6 @@
 /* Guides (./GuidesScreen.tsx) in the new look: the list of kinds of visit, a guide's steps numbered down the page with
    a step of tasks listing them, and a task read alone. */
 
-/* A row's words on the gutter's line: the row's own padding taken back from the margin, as Me's rows. */
 /* The rows and their rules inside the gutter, as the design draws them. */
 .rows {
   margin: var(--sp-8) var(--screen-gutter) 0;

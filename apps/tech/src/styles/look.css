@@ -79,8 +79,9 @@
   --message-size: var(--fs-14);
   --radio-size: var(--sp-24);
   --check-text: var(--fs-16);
-  --label-text: var(--ink-900);
-  --label-weight: var(--weight-semibold);
+  /* A field's label small and quiet, as the design's forms draw them; the sign-in keeps its own bold one. */
+  --label-text: var(--ink-500);
+  --label-weight: var(--weight-regular);
   --check-row-height: var(--tap-row);
   /* A ruled list's choice at the app's gloved 48 px, as the outcome's Result and the language sheet draw them. */
   --choice-row-height: var(--tech-min);

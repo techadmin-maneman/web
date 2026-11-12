@@ -88,7 +88,6 @@ function Rows({ lines }: { lines: readonly Line[] }) {
 function useDrive(job: Job): { readonly minutes: number | null; readonly km: number | null } {
   const read = useCallback(async () => {
     const listed = (await keptDay(job.date))?.find((each) => each.id === job.id);
-    // A day kept by an earlier build has no km.
     return { minutes: listed?.drive_minutes ?? null, km: listed?.drive_km ?? null };
   }, [job.date, job.id]);
   return valueOr(useAsync(read)[0], { minutes: null, km: null });

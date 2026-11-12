@@ -32,7 +32,7 @@ export const dayBefore = (isoDate: string): string => addDays(isoDate, -1);
 export { dayMonth } from "@maneman/web-kit/dates";
 
 /** "Thu, 12 Nov": a day as Today's head and Leave's fields write it. */
-export const dayDate = (isoDate: string): string => shortDate(isoDate).replace(" ", ", ");
+export const dayDate = (isoDate: string): string => (isoDate === "" ? "" : shortDate(isoDate).replace(" ", ", "));
 
 /** Two days as a span's ends, the month written once where both share it: "12", "18 Nov"; or "28 Nov", "4 Dec". */
 export function spanEnds(from: string, to: string): readonly [string, string] {

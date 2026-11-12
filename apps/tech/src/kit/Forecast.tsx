@@ -26,18 +26,19 @@ const named = (item: Need): string =>
   isMeasure(item.unit) ? `${sayKnown(item.name)}, ${item.unit}` : sayKnown(item.name);
 
 /**
- * The one thing short, as the ask names it: "6 shampoo sachets", "4 tape strips", "90 ml of solvent". Ops' name for it
- * is kept, in lower case inside the sentence.
+ * The one thing short, as the ask names it: "6 Shampoo sachets", "4 Tape strips", "90 ml of Solvent". Ops' name for
+ * it is kept as they wrote it, made plural where a count is.
  */
 function shortPhrase(item: Need): string {
   const count = shortOf(item);
-  const words = item.name.toLowerCase();
-  if (isMeasure(item.unit)) return `${amountOf(count, item.unit)} of ${words}`;
+  const name = item.name;
+  const words = name.toLowerCase();
+  if (isMeasure(item.unit)) return `${amountOf(count, item.unit)} of ${name}`;
   // A unit ops wrote in the plural counts as its one.
   const unit = item.unit.replace(/s$/, "");
-  if (!words.endsWith(unit) && !words.endsWith(`${unit}s`)) return `${amountOf(count, unit)} of ${words}`;
-  if (count === 1) return `1 ${words.replace(/s$/, "")}`;
-  return `${String(count)} ${words.endsWith("s") ? words : `${words}s`}`;
+  if (!words.endsWith(unit) && !words.endsWith(`${unit}s`)) return `${amountOf(count, unit)} of ${name}`;
+  if (count === 1) return `1 ${name.replace(/s$/, "")}`;
+  return `${String(count)} ${words.endsWith("s") ? name : `${name}s`}`;
 }
 
 /** What the ask says: the one thing short, named; or what's short, where it is more than one. */

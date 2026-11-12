@@ -122,7 +122,7 @@ const DayJobSchema = JobSummarySchema.extend({
   drive_km: z.union([z.number().nonnegative(), z.null()]).openapi({
     description:
       "How far that drive goes by road, in km to one decimal, by our estimate from the two pins. Null where either " +
-      "end has no pin, as for drive_minutes.",
+      "end has no pin, as for drive_minutes, and while the job is locked.",
   }),
   leave_by: z.union([z.iso.datetime(), z.null()]).openapi({
     description:

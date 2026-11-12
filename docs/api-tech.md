@@ -7454,7 +7454,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "null"
         }
       ],
-      "description": "How far that drive goes by road, in km to one decimal, by our estimate from the two pins. Null where either end has no pin, as for drive_minutes."
+      "description": "How far that drive goes by road, in km to one decimal, by our estimate from the two pins. Null where either end has no pin, as for drive_minutes, and while the job is locked."
     },
     "leave_by": {
       "anyOf": [

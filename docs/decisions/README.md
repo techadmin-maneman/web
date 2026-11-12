@@ -536,7 +536,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0246](0246-closed-and-sent-back.md) | Closed, and a step sent back | 2026-11-11 | accepted |  |
 | [0247](0247-the-steps-left.md) | The steps left from PR 7 | 2026-11-11 | accepted |  |
 | [0248](0248-safety.md) | A technician's safety on a visit | 2026-11-11 | accepted |  |
-| [0249](0249-schedule-kit-and-me.md) | Schedule, Kit and Me | 2026-11-11 | accepted |  |
+| [0249](0249-schedule-kit-and-me.md) | Schedule, Kit and Me | 2026-11-11 | accepted | [0258](0258-the-technician-design-pass.md) |
 | [0250](0250-guides-and-alerts.md) | Guides and alerts | 2026-11-11 | accepted |  |
 | [0251](0251-hindi-and-the-sign-in.md) | Hindi on every screen, and the sign-in redrawn | 2026-11-11 | accepted |  |
 | [0258](0258-the-technician-design-pass.md) | The technician app's design pass | 2026-11-12 | accepted |  |

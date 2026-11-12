@@ -47,6 +47,7 @@
   margin-top: var(--sp-28);
   font-size: var(--fs-14);
   font-weight: var(--weight-semibold);
+  color: var(--ui-text);
 }
 
 .codeBlock {

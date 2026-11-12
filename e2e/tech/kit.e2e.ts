@@ -88,6 +88,56 @@ test("opens from its tab, shows each lot’s expiry, and receives a top-up by th
   });
 });
 
+test("receives a hair system once its last piece is scanned, and offers Receive again where that fails", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  // The first receive is refused, with signal.
+  let refused = true;
+  await page.route("**/api/tech/kit/transfers/tr-1/receive", async (route) => {
+    if (!refused) return route.fallback();
+    refused = false;
+    return route.fulfill({
+      status: 400,
+      json: { error: { code: "invalid_request", request_id: "kit-ref-3", fields: ["units"] } },
+    });
+  });
+  await page.goto("/kit");
+  const coming = page.getByRole("region", { name: copy.coming.title });
+  await coming.getByRole("button", { name: copy.scan.camera }).click();
+  await coming.getByRole("button", { name: copy.scan.type }).click();
+  const scan = coming.getByLabel(copy.scan.label);
+  for (const label of ["MM-ESS-0000007-H", "MM-ESS-0000008-J"]) {
+    await scan.fill(label);
+    await scan.press("Enter");
+  }
+  // The last piece in tries the receive; it did not go through, and Receive tries it again.
+  await expect(coming.getByRole("alert")).toContainText(copy.notDone);
+  await expect(coming.getByRole("button", { name: copy.coming.reportMissing })).toBeDisabled();
+  await coming.getByRole("button", { name: copy.coming.receive, exact: true }).click();
+  await expect.poll(() => writesTo(fake, "transfers/tr-1/receive").length).toBe(1);
+  expect(writesTo(fake, "transfers/tr-1/receive")[0]?.body).toEqual({
+    units: ["MM-ESS-0000007-H", "MM-ESS-0000008-J"],
+    rest: "on_its_way",
+  });
+});
+
+test("reports the pieces not scanned missing, with the ones that came", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  await page.goto("/kit");
+  const coming = page.getByRole("region", { name: copy.coming.title });
+  await expect(coming.getByRole("button", { name: copy.coming.reportMissing })).toBeDisabled();
+  await coming.getByRole("button", { name: copy.scan.camera }).click();
+  await coming.getByRole("button", { name: copy.scan.type }).click();
+  await coming.getByLabel(copy.scan.label).fill("MM-ESS-0000008-J");
+  await coming.getByLabel(copy.scan.label).press("Enter");
+  await coming.getByRole("button", { name: copy.coming.reportMissing }).click();
+  await expect.poll(() => writesTo(fake, "transfers/tr-1/receive").length).toBe(1);
+  expect(writesTo(fake, "transfers/tr-1/receive")[0]?.body).toEqual({ units: ["MM-ESS-0000008-J"], rest: "missing" });
+});
+
 test("lists a recalled lot to hand back, not as held, and says low until it goes back", async ({ page }) => {
   const fake = await fakeTech(page);
   withAKit(fake);
@@ -209,10 +259,10 @@ test("says nothing's short now where the API finds the kit short of nothing, and
   });
   await page.goto("/kit");
   const days = page.getByRole("region", { name: copy.forecast.title });
-  await days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets") }).click();
+  await days.getByRole("button", { name: copy.forecast.requestOne("6 Shampoo sachets") }).click();
   await expect(days.getByRole("alert")).toHaveText(copy.forecast.nothingShort);
   await expect(days.getByRole("row", { name: /Shampoo sachet/ })).toContainText(copy.forecast.enough);
-  await expect(days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets") })).toHaveCount(0);
+  await expect(days.getByRole("button", { name: copy.forecast.requestOne("6 Shampoo sachets") })).toHaveCount(0);
 });
 
 test("weighs the next seven days' need against the kit, a shortfall in red", async ({ page }) => {
@@ -232,8 +282,8 @@ test("weighs the next seven days' need against the kit, a shortfall in red", asy
   expect(await axeViolations(page)).toEqual([]);
 
   // One tap asks ops for what is short; the kit then says when, until ops settle it.
-  await days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets") }).click();
+  await days.getByRole("button", { name: copy.forecast.requestOne("6 Shampoo sachets") }).click();
   await expect(days.getByRole("status")).toHaveText(/^Requested \d{1,2}(:\d{2})? [ap]m · ops will add it/);
   expect(writesTo(fake, "kit/requests")).toHaveLength(1);
-  await expect(days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets") })).toHaveCount(0);
+  await expect(days.getByRole("button", { name: copy.forecast.requestOne("6 Shampoo sachets") })).toHaveCount(0);
 });

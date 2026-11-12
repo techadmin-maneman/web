@@ -77,7 +77,6 @@
   color: var(--ui-text-soft);
 }
 
-/* What Close as no-show waits on, above it, so the button keeps its words on one line. */
 /* What Close as no-show waits on, with the button beside it, as the design has it. */
 .close {
   display: flex;

@@ -36,6 +36,21 @@ function scanLabel(offline: boolean, scanning: boolean): string {
   return scanning ? copy.scan.stop : copy.scan.camera;
 }
 
+/**
+ * A receive that did not go through: what to say, and, where the top-up was settled already (received or sent back
+ * elsewhere), the kit read again so it leaves the list.
+ */
+async function refused(
+  answer: { readonly status: number; readonly requestId: string | null },
+  say: (problem: Problem) => void,
+  onKit: (kit: Kit) => void,
+): Promise<void> {
+  say({ words: answer.status === 409 ? copy.coming.settled : copy.notDone, requestId: answer.requestId });
+  if (answer.status !== 409) return;
+  const fresh = await api.kit();
+  if (fresh.ok) onKit(fresh.body);
+}
+
 /** The day a top-up was sent, as the kit says it. */
 const sentOn = (topUp: Coming): string => dayMonth(indiaDate(topUp.sent_at));
 
@@ -98,6 +113,58 @@ function Scanner({ onScan }: { readonly onScan: (label: string) => void }) {
   );
 }
 
+/** A hair system's two actions: Scan, or Receive once every piece is in; and Report missing for the rest. */
+function PieceActions(props: {
+  readonly allIn: boolean;
+  readonly offline: boolean;
+  readonly busy: boolean;
+  readonly scanning: boolean;
+  readonly canReportMissing: boolean;
+  readonly onScan: () => void;
+  readonly onReceive: () => void;
+  readonly onMissing: () => void;
+}) {
+  const { offline, busy } = props;
+  return (
+    <div className={styles.buttons}>
+      {props.allIn ? (
+        <Button
+          variant="primary"
+          size="action"
+          className={styles.grow}
+          busy={busy}
+          disabled={offline}
+          onClick={props.onReceive}
+        >
+          {offline ? copy.needsSignal : copy.coming.receive}
+        </Button>
+      ) : (
+        <Button
+          variant="primary"
+          size="action"
+          className={styles.grow}
+          aria-pressed={props.scanning}
+          disabled={offline || busy}
+          onClick={props.onScan}
+        >
+          {!offline && !props.scanning && <Icon d={TAB_ICONS.photos} size="md" />}
+          <span>{scanLabel(offline, props.scanning)}</span>
+        </Button>
+      )}
+      <Button
+        variant="outline"
+        size="action"
+        className={styles.grow}
+        busy={busy}
+        disabled={offline || !props.canReportMissing}
+        onClick={props.onMissing}
+      >
+        {copy.coming.reportMissing}
+      </Button>
+    </div>
+  );
+}
+
 /** A hair system on its way, its pieces scanned in: received once the last is, or with the rest missing or to come. */
 function Pieces(props: {
   readonly topUp: Coming;
@@ -116,9 +183,10 @@ function Pieces(props: {
     once(async () => {
       const answer = await api.receiveTopUp(topUp.id, labels, rest);
       if (answer.ok) props.onKit(answer.body);
-      else
-        setProblem({ words: answer.status === 409 ? copy.coming.settled : copy.notDone, requestId: answer.requestId });
+      else await refused(answer, setProblem, props.onKit);
     });
+  // Every piece scanned: Receive, which the last scan tried and which a failure leaves to try again.
+  const allIn = topUp.units.length > 0 && unscanned === 0;
   const add = (label: string) => {
     if (!topUp.units.includes(label)) {
       setProblem({ words: copy.coming.notOnIt, requestId: null });
@@ -145,31 +213,18 @@ function Pieces(props: {
       </div>
       {scanning && !offline && <Scanner onScan={add} />}
       <NotDone problem={problem} />
-      <div className={styles.buttons}>
-        <Button
-          variant="primary"
-          size="action"
-          className={styles.grow}
-          aria-pressed={scanning}
-          disabled={offline || busy}
-          onClick={() => {
-            setScanning(!scanning);
-          }}
-        >
-          {!offline && !scanning && <Icon d={TAB_ICONS.photos} size="md" />}
-          <span>{scanLabel(offline, scanning)}</span>
-        </Button>
-        <Button
-          variant="outline"
-          size="action"
-          className={styles.grow}
-          busy={busy}
-          disabled={offline || scanned.length === 0 || unscanned === 0}
-          onClick={() => void receive(scanned, "missing")}
-        >
-          {copy.coming.reportMissing}
-        </Button>
-      </div>
+      <PieceActions
+        allIn={allIn}
+        offline={offline}
+        busy={busy}
+        scanning={scanning}
+        canReportMissing={scanned.length > 0 && unscanned > 0}
+        onScan={() => {
+          setScanning(!scanning);
+        }}
+        onReceive={() => void receive(scanned, "on_its_way")}
+        onMissing={() => void receive(scanned, "missing")}
+      />
       {scanned.length > 0 && unscanned > 0 && !offline && (
         <TextButton className={styles.rest} disabled={busy} onClick={() => void receive(scanned, "on_its_way")}>
           {copy.coming.restToCome(scanned.length)}
@@ -193,8 +248,7 @@ function Stock(props: {
     once(async () => {
       const answer = await api.receiveTopUp(topUp.id, null, "on_its_way");
       if (answer.ok) props.onKit(answer.body);
-      else
-        setProblem({ words: answer.status === 409 ? copy.coming.settled : copy.notDone, requestId: answer.requestId });
+      else await refused(answer, setProblem, props.onKit);
     });
   return (
     <li className={styles.item}>

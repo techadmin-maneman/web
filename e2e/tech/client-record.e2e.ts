@@ -31,9 +31,12 @@ test("puts the client's alerts and the last technician's note on the card, and o
     date: "2026-09-01",
     photos: [{ angle: "front", url: `/api/tech/jobs/${JOB_ID}/history-photos/${PHOTO}` }],
   };
+  fake.clientVisits = { count: 5, first: "2026-07-05" };
   await page.goto(`/jobs/${JOB_ID}`);
 
   await expect(page.getByRole("heading", { level: 2, name: copy.alerts })).toBeVisible();
+  // The history's row says how many visits came before, and since when.
+  await expect(page.getByText(copy.since(5, "Jul"), { exact: true })).toBeVisible();
   await expect(page.getByRole("listitem").filter({ hasText: "Allergic to latex." })).toBeVisible();
   await expect(page.getByText("Edge lifting at the left temple.")).toBeVisible();
   await expect(page.getByText(copy.handoffBy("Imran", "1 Sep"))).toBeVisible();

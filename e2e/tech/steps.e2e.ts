@@ -152,7 +152,7 @@ test("a consultation’s outcome opens on Options, and the client’s pick goes 
     .toEqual({ outcome: "done", going_ahead: true, product: "natural" });
 });
 
-test("ticks the whole checklist with one tap when everything was done, and shows how far through the job", async ({
+test("sends the whole checklist done once the last task is through, and shows how far through the job", async ({
   page,
 }) => {
   const fake = await fakeTech(page);
@@ -487,7 +487,7 @@ test("leaves a note for the next technician and an alert with the close, only wh
   expect(kept).not.toContain("client_alert");
 });
 
-test("guides each task with its words, what to watch for, and the client's alerts above it", async ({ page }) => {
+test("guides each task with its words, what to watch for, and the client's alerts under its name", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.alerts = [
     {
@@ -508,7 +508,7 @@ test("guides each task with its words, what to watch for, and the client's alert
   await expect(stepAction(page)).toHaveText(techCopy.visit.nextTask);
   expect(await axeViolations(page)).toEqual([]);
 
-  // On the last task, once every one is done, the action goes on to the step after.
+  // On the last task, the action goes on to the step after.
   await throughTheTasks(page);
   await expect(page.getByText(techCopy.visit.task(3, 3))).toBeVisible();
   await expect(stepAction(page)).toHaveText(techCopy.visit.next("Consumables"));

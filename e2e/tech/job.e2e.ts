@@ -518,7 +518,7 @@ test("walks the steps of a service visit and closes it out", async ({ page }) =>
   }
   await page.getByRole("button", { name: techCopy.capture.finish, exact: true }).click();
 
-  // Step 2: the guided tasks, one a screen; Tick all for a routine visit.
+  // Step 2: the guided tasks, one a screen, each passed by Next task.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
   await expect(stepAction(page)).toHaveText(techCopy.visit.nextTask);
   await throughTheTasks(page);
@@ -554,8 +554,12 @@ test("walks the steps of a service visit and closes it out", async ({ page }) =>
   // The close-out.
   await expect(page.getByText(techCopy.closeOut.sub("Rohit M.", "service visit", "partly done"))).toBeVisible();
   await expect(page.getByText(techCopy.closeOut.duration)).toBeVisible();
-  // The next job, with the way to Today and to its door.
-  await expect(page.getByRole("region", { name: techCopy.closeOut.next.title })).toContainText("11:30 am");
+  await expect(page.getByText(techCopy.closeOut.paymentRow)).toBeVisible();
+  await expect(page.getByText(techCopy.badges.prepaid, { exact: true })).toBeVisible();
+  // The next job, its client and the drive there, with the way to Today and to its door.
+  const next = page.getByRole("region", { name: techCopy.closeOut.next.title });
+  await expect(next).toContainText("11:30 am · Vikram S.");
+  await expect(next).toContainText(techCopy.closeOut.next.drive(20));
   await expect(page.getByRole("button", { name: techCopy.closeOut.next.today })).toBeVisible();
   // A visit left partly done asks how to finish it.
   await expect(page.getByRole("region", { name: techCopy.closeOut.finish.title })).toBeVisible();

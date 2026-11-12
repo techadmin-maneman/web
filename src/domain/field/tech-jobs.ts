@@ -263,7 +263,8 @@ export async function jobsOn({
       address: job.unlocked && row !== undefined ? addressOf(row) : null,
       next: nexts[index] ?? null,
       drive_minutes: drive?.drive_minutes ?? null,
-      drive_km: drive?.drive_km ?? null,
+      // Said only once the address is the technician's to see: before, it would sharpen where home is from.
+      drive_km: job.unlocked ? (drive?.drive_km ?? null) : null,
       leave_by: drive?.leave_by ?? null,
     };
   });

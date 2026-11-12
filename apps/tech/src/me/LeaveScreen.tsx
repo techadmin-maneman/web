@@ -37,7 +37,7 @@ function Days(props: {
 }) {
   return (
     <div className={styles.days}>
-      <Field label={copy.from} look={{ label: styles.label }}>
+      <Field label={copy.from}>
         {(control) => (
           <DayInput
             {...control}
@@ -50,7 +50,7 @@ function Days(props: {
           />
         )}
       </Field>
-      <Field label={copy.to} look={{ label: styles.label }}>
+      <Field label={copy.to}>
         {(control) => (
           <DayInput
             {...control}
@@ -98,7 +98,7 @@ function Ask({ offline, onAsked }: { readonly offline: boolean; readonly onAsked
         }}
         onTo={setTo}
       />
-      <Field label={copy.note} look={{ label: styles.label }}>
+      <Field label={copy.note}>
         {(control) => (
           <TextInput
             {...control}

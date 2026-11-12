@@ -147,26 +147,46 @@ describe("the week ahead", () => {
     expect(forecast).toEqual([{ code: "solvent", name: "Solvent", unit: "ml", need: 20, have: 4 }]);
   });
 
-  it("counts the visits it is taken from, and each product's pieces its fits and replacements need", async () => {
+  it("counts the visits it is taken from, and each product's pieces as the evening's check reads them", async () => {
     await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 2, from: "central", to: IMRAN });
-    // A first fit two days on and a replacement five days on, both Essential; and a first fit a week on, past it.
-    const visits = [
-      [2, "first_fit"],
-      [5, "replacement"],
-      [7, "first_fit"],
-    ] as const;
-    for (const [days, type] of visits) {
-      await aVisit({
-        person_id: PERSON,
-        technician_id: IMRAN,
-        type,
-        tier: "essential",
-        window_start: new Date(NOW.getTime() + days * 24 * 60 * 60_000).toISOString(),
-      });
-    }
+    // The client's own product, which a replacement is fitted with, whatever its booking's tier.
+    await env.DB.prepare(
+      `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+         grey_percent, density_percent)
+       VALUES ('hp-week', ?1, 'ops@localhost', ?2, 'essential', 8, 10, '1B', 20, 100)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    const at = (days: number) => new Date(NOW.getTime() + days * 24 * 60 * 60_000).toISOString();
+    // An Essential first fit two days on; a replacement on the standard service five days on; a consultation and fit
+    // in one visit, whose client chooses at the visit; and a first fit a week on, past the forecast.
+    await aVisit({
+      person_id: PERSON,
+      technician_id: IMRAN,
+      type: "first_fit",
+      tier: "essential",
+      window_start: at(2),
+    });
+    await aVisit({ person_id: PERSON, technician_id: IMRAN, type: "replacement", tier: null, window_start: at(5) });
+    await aVisit({
+      person_id: PERSON,
+      technician_id: IMRAN,
+      type: "first_fit",
+      tier: "essential",
+      one_visit: "booked",
+      window_start: at(3),
+    });
+    await aVisit({
+      person_id: PERSON,
+      technician_id: IMRAN,
+      type: "first_fit",
+      tier: "essential",
+      window_start: at(7),
+    });
+
     const week = await (await job.get("/api/tech/kit")).json<{ visits: number; pieces: unknown[] }>();
-    // The fixture's service today, and the two inside the seven days.
-    expect(week.visits).toBe(3);
+    // The fixture's service today, and the three inside the seven days.
+    expect(week.visits).toBe(4);
     expect(week.pieces).toEqual([{ product: "essential", name: "Mane Man Essential", need: 2, have: 2 }]);
   });
 

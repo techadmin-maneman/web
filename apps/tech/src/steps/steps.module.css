@@ -270,7 +270,6 @@
   color: inherit;
 }
 
-/* The checklist's one tap for a visit where everything was done. */
 /* A guided task (./Checklist.tsx): how far through, its title, the client's alerts, where its reference photograph
    goes, the instructions each numbered on a ruled row, and what to watch for in a ruled block. */
 .alerts {
