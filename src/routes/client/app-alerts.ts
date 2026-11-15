@@ -12,6 +12,7 @@ import { json } from "../../http/openapi.ts";
 import { clientRoute } from "../../http/session-routes.ts";
 import { WHATSAPP_ONLY } from "../../policy/client-alerts.ts";
 import { isPushEndpoint } from "../../providers/web-push.ts";
+import { LIVE_UPDATE_KINDS } from "../../domain/visits/live-visit.ts";
 
 const KINDS = [
   ...MESSAGE_KINDS.filter((kind) => !(WHATSAPP_ONLY as readonly string[]).includes(kind)),
@@ -26,7 +27,10 @@ const AlertSchema = z
     }),
     visit_id: z.union([z.string(), z.null()]).openapi({ description: "The visit it is about, where it is about one." }),
     update: z
-      .union([z.object({ kind: z.string(), minutes: z.union([z.number().int(), z.null()]) }).strict(), z.null()])
+      .union([
+        z.object({ kind: z.enum(LIVE_UPDATE_KINDS), minutes: z.union([z.number().int(), z.null()]) }).strict(),
+        z.null(),
+      ])
       .openapi({ description: "A technician's word: on the way, running late or at the gate, with their minutes." }),
     at: z.iso.datetime(),
     read: z.boolean(),

@@ -5825,7 +5825,8 @@ export interface components {
             visit_id: string | null;
             /** @description A technician's word: on the way, running late or at the gate, with their minutes. */
             update: {
-                kind: string;
+                /** @enum {string} */
+                kind: "on_the_way" | "running_late" | "at_the_gate";
                 minutes: number | null;
             } | null;
             /** Format: date-time */

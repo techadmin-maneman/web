@@ -1914,7 +1914,7 @@ Indexes:
 - `outbound_messages_by_subject`: on (`subject_id`)
 - `outbound_messages_one_arrival`: unique on (`subject_id`), where `kind = 'arrival_notice'`
 
-Triggers: `client_app_alerts_beside_messages`.
+Triggers: `client_app_alerts_beside_messages`, `client_app_alerts_beside_messages_ready`.
 
 ## packages
 

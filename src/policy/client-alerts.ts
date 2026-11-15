@@ -21,3 +21,6 @@ export type ClientAlertKind = Exclude<MessageKind, (typeof WHATSAPP_ONLY)[number
 
 /** How many days the inbox keeps. */
 export const CLIENT_INBOX_DAYS = 30;
+
+/** How many of a client's sessions take their pushes, the newest to subscribe; so an alert costs a few calls at most. */
+export const PUSH_SESSIONS_MAX = 5;

@@ -168,6 +168,9 @@ describe("a move to another day ops ask the client to confirm", () => {
     const answer = await propose(toSameerWednesdayMorning(A));
     expect(await answer.json()).toMatchObject({ client_notice: "call" });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first("n")).toBe(0);
+    // Told in their app alone, as they agreed to no WhatsApp (docs/decisions/0255-client-alerts-and-push.md).
+    const alerts = await env.DB.prepare("SELECT kind, subject_kind, subject_id FROM client_app_alerts").all();
+    expect(alerts.results).toEqual([expect.objectContaining({ kind: "move_proposed", subject_kind: "move_proposal" })]);
   });
 });
 

@@ -39,6 +39,7 @@ import { allowedTechnicians, breaksRotation } from "../../policy/technician-rota
 import { releaseDeadHolds } from "../booking/hold-slot.ts";
 import { begunPastArrival, visitBegun } from "../visits/visit-begun.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
+import { alertStatement } from "../clients/app-alerts.ts";
 import { loadSlotSchedule } from "../booking/slot-times.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import { LATEST_VISITS_CONSENT, weekFrom, UNTOLD_MOVE } from "./dispatch-board.ts";
@@ -251,6 +252,7 @@ async function writeMove(db: D1Database, deps: MoveDeps, move: PlannedMove, now:
       ...releaseDeadHolds(db, now),
       // The message row is written before the move points at it.
       ...(told.message === null ? [] : [told.message.statement]),
+      ...(told.alert === undefined ? [] : [told.alert]),
       writtenMove(db, move, told.message?.id ?? null, at),
       ...move.claims.map((claim) => claimOf(db, move, claim)),
       movedVisit(db, move, at),
@@ -347,17 +349,34 @@ function movedVisit(db: D1Database, move: PlannedMove, at: string): D1PreparedSt
     );
 }
 
-/** How the client hears of the move: the notice, and the message row where they are messaged. */
+/**
+ * How the client hears of the move: the notice, and the message row where they are messaged; or, where ops are to call,
+ * their app's alert alone (docs/decisions/0255-client-alerts-and-push.md).
+ */
 async function clientToldOf(
   db: D1Database,
   move: PlannedMove,
   now: Date,
-): Promise<{ notice: ClientNotice; message: { id: string; statement: D1PreparedStatement } | null }> {
+): Promise<{
+  notice: ClientNotice;
+  message: { id: string; statement: D1PreparedStatement } | null;
+  alert?: D1PreparedStatement;
+}> {
   const { job } = move;
   const notice = clientNotice({
     timeChanged: !move.keepsTime,
     client: { agreedToWhatsApp: await agreedToVisitMessages(db, job.id) },
   });
+  if (notice === "call") {
+    const alert = alertStatement(db, {
+      personId: job.person_id,
+      kind: "visit_moved",
+      subject: { kind: "appointment", id: job.id },
+      onceKey: `visit_moved:${move.id}`,
+      at: now.toISOString(),
+    });
+    return { notice, message: null, alert };
+  }
   if (notice !== "messaged") return { notice, message: null };
   return {
     notice,

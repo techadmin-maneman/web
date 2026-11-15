@@ -49,6 +49,10 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM appointments WHERE technician_id IN (${ids})
        AND id NOT IN (SELECT appointment_id FROM hair_profiles WHERE appointment_id IS NOT NULL);`,
     `DELETE FROM addresses WHERE person_id IN (${persons});`,
+    // Their clients' alerts in the app, written beside the jobs' messages (docs/decisions/0255-client-alerts-and-push.md).
+    `DELETE FROM client_app_alerts WHERE person_id IN (${persons})
+       AND person_id NOT IN (SELECT person_id FROM hair_profiles)
+       AND person_id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL);`,
     `DELETE FROM people WHERE id IN (${persons})
        AND id NOT IN (SELECT person_id FROM hair_profiles)
        AND id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL);`,

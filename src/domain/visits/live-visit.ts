@@ -18,7 +18,11 @@ const UPDATE_KINDS: Readonly<Record<Preset, LiveUpdateKind>> = {
   running_late: "running_late",
   at_gate: "at_the_gate",
 };
-export type LiveUpdateKind = "on_the_way" | "running_late" | "at_the_gate";
+export const LIVE_UPDATE_KINDS = ["on_the_way", "running_late", "at_the_gate"] as const;
+export type LiveUpdateKind = (typeof LIVE_UPDATE_KINDS)[number];
+
+/** A technician's word as the phone recorded it, named as the client's app names it. */
+export const liveUpdateKindOf = (preset: Preset): LiveUpdateKind => UPDATE_KINDS[preset];
 
 export interface LiveFacts {
   /** The technician's latest word, while they are still to arrive; null for none. */

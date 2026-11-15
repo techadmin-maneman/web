@@ -7,11 +7,12 @@ import { MESSAGE_KINDS } from "../../../src/config/message-kinds.ts";
 import { WHATSAPP_ONLY } from "../../../src/policy/client-alerts.ts";
 
 describe("the client's alerts beside messages", () => {
-  it("leave out, in migration 0211's trigger, exactly the kinds the rule calls WhatsApp's own", () => {
+  it("leave out, in each of migration 0211's triggers on messages, exactly the kinds the rule calls WhatsApp's own", () => {
     const sql = readFileSync("migrations/0211_client_app_alerts.sql", "utf8");
-    const trigger = /client_app_alerts_beside_messages[\s\S]*?NOT IN \(([\s\S]*?)\)/.exec(sql)?.[1] ?? "";
-    const leftOut = [...trigger.matchAll(/'(\w+)'/g)].map((match) => match[1]);
-    expect(leftOut.sort()).toEqual([...WHATSAPP_ONLY].sort());
+    const lists = [...sql.matchAll(/NEW\.kind NOT IN \(([\s\S]*?)\)/g)].map((match) =>
+      [...(match[1] ?? "").matchAll(/'(\w+)'/g)].map((kind) => kind[1]).sort(),
+    );
+    expect(lists).toEqual([[...WHATSAPP_ONLY].sort(), [...WHATSAPP_ONLY].sort()]);
   });
 
   it("leave out only kinds there are", () => {

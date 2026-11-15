@@ -2,7 +2,7 @@
 -- The client's alerts in their app (docs/decisions/0255-client-alerts-and-push.md): one beside each message written to
 -- them about their account or their visits, whether or not WhatsApp sends it, and one each time a technician asks them
 -- to sign off a fit; and the session that takes the pushes telling the app of them. New tables, and triggers that write
--- only them: the Worker already deployed reads and writes none of it.
+-- only them; the deployed Worker's arrival notice waits for the sweeper until this release lands (ADR 0255).
 
 CREATE TABLE client_app_alerts (
   id TEXT PRIMARY KEY,
@@ -35,9 +35,10 @@ CREATE TABLE client_push_subscriptions (
 -- backfill: none. Each trigger writes one alert for the one row it is fired by.
 
 -- Beside each message to a client, but the site's answers to a number we know, the waitlist's confirmation and the
--- answer to a STOP, which are WhatsApp's alone, and a technician's word or arrival heard too late to tell them.
+-- answer to a STOP, which are WhatsApp's alone, and a technician's word or arrival heard too late to tell them. One
+-- waiting for what it carries, a try-on's look, is told once it is queued.
 CREATE TRIGGER client_app_alerts_beside_messages AFTER INSERT ON outbound_messages
-WHEN NEW.state <> 'skipped' AND NEW.kind NOT IN (
+WHEN NEW.state NOT IN ('skipped', 'waiting') AND NEW.kind NOT IN (
   'waitlist_confirmation', 'consultation_exists', 'book_in_app', 'address_on_account', 'address_not_served',
   'messages_stopped'
 )
@@ -45,6 +46,17 @@ BEGIN
   INSERT OR IGNORE INTO client_app_alerts (id, person_id, kind, subject_kind, subject_id, once_key, written_at)
   VALUES (lower(hex(randomblob(16))), NEW.person_id, NEW.kind, NEW.subject_kind, NEW.subject_id, 'message:' || NEW.id,
           NEW.created_at);
+END;
+
+CREATE TRIGGER client_app_alerts_beside_messages_ready AFTER UPDATE OF state ON outbound_messages
+WHEN OLD.state = 'waiting' AND NEW.state = 'queued' AND NEW.kind NOT IN (
+  'waitlist_confirmation', 'consultation_exists', 'book_in_app', 'address_on_account', 'address_not_served',
+  'messages_stopped'
+)
+BEGIN
+  INSERT OR IGNORE INTO client_app_alerts (id, person_id, kind, subject_kind, subject_id, once_key, written_at)
+  VALUES (lower(hex(randomblob(16))), NEW.person_id, NEW.kind, NEW.subject_kind, NEW.subject_id, 'message:' || NEW.id,
+          NEW.queued_at);
 END;
 
 -- A technician asks the client to sign off a fit.

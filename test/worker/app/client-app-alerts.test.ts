@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { askSignOff } from "../../../src/domain/field/sign-offs.ts";
 import { pushNewClientAlerts } from "../../../src/domain/clients/app-alerts.ts";
 import { visitMessage } from "../../../src/domain/messages/visit-messages.ts";
-import { revokeSession } from "../../../src/domain/sign-in/sessions.ts";
+import { openSession, revokeSession } from "../../../src/domain/sign-in/sessions.ts";
 import type { App } from "../../../src/http/context.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
@@ -71,7 +71,7 @@ describe("an alert in the client's app", () => {
     ]);
   });
 
-  it("is not written beside a message that is WhatsApp's alone, nor a technician's word heard too late", async () => {
+  it("is not written beside a message that is WhatsApp's alone, nor one written already skipped", async () => {
     const rohit = await client();
     const booked = await visit(rohit.id, "service", "scheduled", TOMORROW, IMRAN);
     await message(rohit.id, "book_in_app", booked);
@@ -137,6 +137,21 @@ describe("the push that tells the client's app", () => {
     await message(rohit.id, "visit_reminder", booked);
     expect(await pushes()).toEqual([ENDPOINT]);
     expect(await pushes()).toEqual([]);
+  });
+
+  it("goes to a client's five newest browsers at most, however many they sign in on", async () => {
+    const rohit = await client();
+    for (let browser = 1; browser <= 6; browser += 1) {
+      const session = await openSession(env.DB, { kind: "client", subjectId: rohit.id, deviceLabel: null, now: NOW });
+      const subscribed = await post({ cookie: `mm_app=${session}` }, "/api/me/push-subscriptions", {
+        endpoint: `${ENDPOINT}-${String(browser)}`,
+      });
+      expect(subscribed.status).toBe(201);
+    }
+    const { results } = await env.DB.prepare("SELECT endpoint FROM client_push_subscriptions ORDER BY endpoint").all();
+    expect(results.map((row) => row.endpoint)).toEqual(
+      [2, 3, 4, 5, 6].map((browser) => `${ENDPOINT}-${String(browser)}`),
+    );
   });
 
   it("takes only a browser's push service as where to push", async () => {

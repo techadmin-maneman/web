@@ -25,9 +25,12 @@ running_late | at_the_gate, minutes, at}` from `technician_updates`, `step {inde
    by triggers, whatever wrote the row they fire on, whether or not WhatsApp is on:
    - beside each outbound message, but those that are WhatsApp's alone (`WHATSAPP_ONLY` in
      `src/policy/client-alerts.ts`: the site's answers to a number we know, the waitlist's confirmation, the answer to a
-     STOP), and a technician's word or arrival written already skipped, as heard too late to tell. The live events of
-     item 1 are such messages: the technician's word and their arrival;
-   - each time a technician asks for the client's sign-off (ADR 0254), the first time and again after a flag.
+     STOP), and a technician's word or arrival written already skipped, as heard too late to tell. One waiting for
+     what it carries, a try-on's look, is written once it is queued. The live events of item 1 are such messages: the
+     technician's word, named as the visit names it, and their arrival;
+   - each time a technician asks for the client's sign-off (ADR 0254), the first time and again after a flag;
+   - and, by the change itself, a move or a move proposed for a client who agreed to no WhatsApp about visits, whom ops
+     are to call: the app's alert is all they hear of it otherwise.
 
    Each is written once, by its own key. `GET /api/me/alerts` lists the last 30 days', newest first, each with the
    visit it is about and a technician's word with its minutes; `POST /api/me/alerts/read` marks them read; the cron

@@ -6,6 +6,7 @@ import type { BookingWindow } from "../../config/scheduling.ts";
 import { HOUR_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
+import { alertStatement } from "../clients/app-alerts.ts";
 import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
 import { agreedToVisitMessages, moveJob, planMove, type MoveInput } from "./dispatch.ts";
@@ -80,17 +81,22 @@ export async function proposeMove(
         messageId,
         move.start.toISOString(),
       ),
-    ...(messageId === null
-      ? []
-      : [
-          queueMessage(db, {
-            id: messageId,
-            personId,
-            kind: "move_proposed",
-            subject: { kind: "move_proposal", id },
-            at,
-          }),
-        ]),
+    // A client who agreed to no WhatsApp about visits is asked in their app alone (ADR 0255).
+    messageId === null
+      ? alertStatement(db, {
+          personId,
+          kind: "move_proposed",
+          subject: { kind: "move_proposal", id },
+          onceKey: `move_proposed:${id}`,
+          at,
+        })
+      : queueMessage(db, {
+          id: messageId,
+          personId,
+          kind: "move_proposed",
+          subject: { kind: "move_proposal", id },
+          at,
+        }),
     ...(deps.audit === undefined ? [] : [auditStatement(db, deps.audit(id), now)]),
   ]);
   if (messageId !== null) await deps.notify?.(messageId);

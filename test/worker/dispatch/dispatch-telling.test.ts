@@ -111,6 +111,9 @@ describe("telling the client of a move", () => {
     expect(messageQueue.sent).toEqual([]);
     const messages = await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first<{ n: number }>();
     expect(messages?.n).toBe(0);
+    // Told in their app alone, as they agreed to no WhatsApp (docs/decisions/0255-client-alerts-and-push.md).
+    const alerts = await env.DB.prepare("SELECT kind, subject_kind, subject_id FROM client_app_alerts").all();
+    expect(alerts.results).toEqual([{ kind: "visit_moved", subject_kind: "appointment", subject_id: A }]);
     // The task carries the number to call and the visit, so it is settled from the task itself.
     expect(await untoldTasks()).toEqual([
       expect.objectContaining({

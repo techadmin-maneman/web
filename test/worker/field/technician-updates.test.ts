@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
+import { clientInboxOf } from "../../../src/domain/clients/app-alerts.ts";
 import { composeTechnicianUpdate } from "../../../src/domain/messages/technician-updates.ts";
 import { NOW } from "../helpers.ts";
 import { messageQueue, PERSON, post, TODAY_JOB, useFieldDay } from "./field-fixtures.ts";
@@ -34,6 +35,21 @@ describe("a word from the job card", () => {
       { kind: "technician_update", subject_kind: "technician_update", state: "queued" },
     ]);
     expect(messageQueue.sent).toHaveLength(1);
+    // And once in the client's app, named as their visit names it (docs/decisions/0255-client-alerts-and-push.md).
+    expect(await clientInboxOf(env.DB, PERSON, NOW)).toEqual([
+      expect.objectContaining({
+        kind: "technician_update",
+        visit_id: TODAY_JOB,
+        update: { kind: "on_the_way", minutes: 20 },
+      }),
+    ]);
+  });
+
+  it("reaches the client's app at the gate as the visit says it, at_the_gate", async () => {
+    expect(await (await say({ preset: "at_gate", minutes: null }, eventAt(1, "9"))).json()).toEqual({ sent: true });
+    expect((await clientInboxOf(env.DB, PERSON, NOW)).map((alert) => alert.update)).toEqual([
+      { kind: "at_the_gate", minutes: null },
+    ]);
   });
 
   it("is kept unsent when the same word went to the client a moment before, from another tap", async () => {
@@ -52,6 +68,8 @@ describe("a word from the job card", () => {
     expect(await messages()).toEqual([
       { kind: "technician_update", subject_kind: "technician_update", state: "skipped" },
     ]);
+    // Nor written in the client's app, where it would be as stale.
+    expect(await clientInboxOf(env.DB, PERSON, NOW)).toEqual([]);
   });
 
   it("takes minutes for on the way and running late, and none at the gate", async () => {

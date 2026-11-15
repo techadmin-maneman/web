@@ -4,9 +4,10 @@
 
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { DAY_MS } from "../../lib/durations.ts";
-import { CLIENT_INBOX_DAYS, type ClientAlertKind } from "../../policy/client-alerts.ts";
+import { CLIENT_INBOX_DAYS, PUSH_SESSIONS_MAX, type ClientAlertKind } from "../../policy/client-alerts.ts";
 import { PUSH_TTL_SECONDS } from "../../policy/tech-alerts.ts";
 import type { Push } from "../../providers/web-push.ts";
+import { liveUpdateKindOf, type LiveUpdateKind } from "../visits/live-visit.ts";
 
 export interface ClientAlert {
   readonly id: string;
@@ -14,7 +15,7 @@ export interface ClientAlert {
   /** The visit it is about, where it is about one. */
   readonly visit_id: string | null;
   /** A technician's word: on the way, running late or at the gate, with the minutes they gave. */
-  readonly update: { readonly kind: string; readonly minutes: number | null } | null;
+  readonly update: { readonly kind: LiveUpdateKind; readonly minutes: number | null } | null;
   readonly at: string;
   readonly read: boolean;
 }
@@ -23,7 +24,7 @@ interface AlertRow {
   id: string;
   kind: ClientAlertKind;
   visit_id: string | null;
-  preset: string | null;
+  preset: Parameters<typeof liveUpdateKindOf>[0] | null;
   minutes: number | null;
   written_at: string;
   read_at: string | null;
@@ -48,11 +49,40 @@ export async function clientInboxOf(db: D1Database, personId: string, now: Date)
     id: row.id,
     kind: row.kind,
     visit_id: row.visit_id,
-    update: row.preset === null ? null : { kind: row.preset, minutes: row.minutes },
+    update: row.preset === null ? null : { kind: liveUpdateKindOf(row.preset), minutes: row.minutes },
     at: row.written_at,
     read: row.read_at !== null,
   }));
 }
+
+/**
+ * An alert where no message stands beside it: a change the client must hear of, told in their app alone as they agreed
+ * to no WhatsApp about visits. Once by its key, in the batch of the change.
+ */
+export const alertStatement = (
+  db: D1Database,
+  alert: {
+    readonly personId: string;
+    readonly kind: ClientAlertKind;
+    readonly subject: { readonly kind: string; readonly id: string };
+    readonly onceKey: string;
+    readonly at: string;
+  },
+): D1PreparedStatement =>
+  db
+    .prepare(
+      `INSERT OR IGNORE INTO client_app_alerts (id, person_id, kind, subject_kind, subject_id, once_key, written_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      alert.personId,
+      alert.kind,
+      alert.subject.kind,
+      alert.subject.id,
+      alert.onceKey,
+      alert.at,
+    );
 
 /** Every alert the client has, read: they opened the inbox. */
 export async function markClientAlertsRead(db: D1Database, personId: string, now: Date): Promise<void> {
@@ -64,7 +94,8 @@ export async function markClientAlertsRead(db: D1Database, personId: string, now
 
 /**
  * The session's push subscription, one a session. A browser keeps one subscription whoever signs in on it, so the
- * address moves to the session of whoever signed in last.
+ * address moves to the session of whoever signed in last. A client's sessions past the newest few to subscribe lose
+ * theirs, so no client's alert takes more than a few of a run's calls.
  */
 export async function subscribeClientPushes(
   db: D1Database,
@@ -80,6 +111,17 @@ export async function subscribeClientPushes(
          ON CONFLICT (session_id) DO UPDATE SET endpoint = excluded.endpoint, subscribed_at = excluded.subscribed_at`,
       )
       .bind(sessionId, endpoint, now.toISOString()),
+    db
+      .prepare(
+        `DELETE FROM client_push_subscriptions WHERE session_id IN (
+           SELECT s.session_id FROM sessions se
+             JOIN client_push_subscriptions s ON s.session_id = se.id
+            WHERE se.subject_kind = 'client' AND se.subject_id = (SELECT subject_id FROM sessions WHERE id = ?1)
+            ORDER BY s.subscribed_at DESC, s.rowid DESC
+            LIMIT -1 OFFSET ?2
+         )`,
+      )
+      .bind(sessionId, PUSH_SESSIONS_MAX),
   ]);
 }
 

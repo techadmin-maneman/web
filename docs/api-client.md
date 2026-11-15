@@ -10515,7 +10515,12 @@ Request body:
           "type": "object",
           "properties": {
             "kind": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "on_the_way",
+                "running_late",
+                "at_the_gate"
+              ]
             },
             "minutes": {
               "anyOf": [
