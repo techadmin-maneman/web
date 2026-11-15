@@ -5,6 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { clearTester } from "../../../scripts/lib/technician-tester.ts";
+import { reportProblem } from "../../../src/domain/care/app-reports.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 
 const TECHNICIAN = "44444444-4444-4444-8444-444444444444";
@@ -42,6 +43,28 @@ describe("clearing the technician tester", () => {
   it("clears the technician, their jobs and the invented client", async () => {
     await clear();
     expect([await left("technicians"), await left("appointments"), await left("people")]).toEqual([0, 0, 0]);
+  });
+
+  it("clears a report the invented client filed about their job, and the Care chat it opened", async () => {
+    const report = {
+      personId: CLIENT,
+      mobileE164: "+919810000009",
+      category: "visit" as const,
+      visitId: JOB,
+      text: "The technician came late.",
+      at: NOW,
+      guaranteeDays: 14,
+    };
+    expect(await reportProblem(env.DB, report)).not.toBeNull();
+    expect([await left("client_reports"), await left("conversations")]).toEqual([1, 1]);
+    await clear();
+    expect([
+      await left("client_reports"),
+      await left("conversations"),
+      await left("chat_messages"),
+      await left("care_owners"),
+      await left("people"),
+    ]).toEqual([0, 0, 0, 0, 0]);
   });
 
   it("clears the invented client's alerts in their app, written beside their job's messages", async () => {

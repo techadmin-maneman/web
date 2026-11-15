@@ -32,7 +32,7 @@ type Issue = {
   reference: string | null;
   category: string | null;
   state: string;
-  events: { kind: string; name: string | null; text: string | null }[];
+  events: { at: string; kind: string; name: string | null; text: string | null }[];
 };
 
 /** `minutes` after NOW. */
@@ -139,6 +139,18 @@ describe("the issue log", () => {
     expect(await thread()).toBe("billing");
     await careCloses(5);
     expect(await thread()).toBeNull();
+    // The client writes again: the report reads open, and the close opens on its reason once more.
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+         VALUES ('m-again', ?1, 'in', 'client', 'Still nothing.', ?2, ?2)`,
+      ).bind(await chat(), after(10).toISOString()),
+      env.DB.prepare("UPDATE conversations SET last_inbound_at = ?2, state = 'open' WHERE id = ?1").bind(
+        await chat(),
+        after(10).toISOString(),
+      ),
+    ]);
+    expect(await thread()).toBe("billing");
   });
 
   it("shows nothing of the old number's chat once the client has changed number, whoever holds it now", async () => {
@@ -162,6 +174,9 @@ describe("the issue log", () => {
       .run();
     await careReplies("Hello, how can we help?", 25);
     expect((await log())[0]?.events.map((event) => event.text)).toEqual(["The front lifts.", "We will re-bond it."]);
+    // Care closing the old chat, for whoever holds the number now, settles nothing of the client's.
+    await careCloses(30);
+    expect((await log())[0]).toMatchObject({ state: "in_progress" });
   });
 
   it("counts the after-hours answer as no reply from Care", async () => {
@@ -175,6 +190,15 @@ describe("the issue log", () => {
     const [shedding] = await log();
     expect(shedding).toMatchObject({ state: "open" });
     expect(shedding?.events.map((event) => event.kind)).toEqual(["you"]);
+  });
+
+  it("keeps a settled report's close where it was when Care close the chat for a later one", async () => {
+    await report({ about: "payment", text: "When does the refund land?" });
+    await careCloses(10);
+    await report({ about: "itching", text: "It itches since Monday." }, cookie, 60);
+    await careCloses(120);
+    const [, refund] = await log();
+    expect(refund?.events.find((event) => event.kind === "closed")?.at).toBe(after(10).toISOString());
   });
 
   it("files an update under the report it names, in the client's own words, however many reports came since", async () => {
@@ -289,6 +313,13 @@ describe("a report's photographs", () => {
     }
     const fourth = await send(syntheticJpeg(640, 480));
     expect(fourth.status).toBe(409);
+    // Its file was kept a moment and deleted again: three objects, three rows, nothing more counted.
+    expect((await env.CLIENT_PHOTOS.list({ prefix: `reports/${ROHIT}/` })).objects).toHaveLength(3);
+    expect(
+      await env.DB.prepare("SELECT COUNT(*) AS n FROM stored_objects WHERE key LIKE ?1")
+        .bind(`reports/${ROHIT}/%`)
+        .first("n"),
+    ).toBe(3);
     expect(await fourth.json()).toMatchObject({ error: { code: "photos_full" } });
     expect((await log())[0]).toMatchObject({ photos: 3 });
     const notes = await env.DB.prepare(

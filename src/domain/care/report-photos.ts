@@ -50,8 +50,9 @@ export async function addReportPhoto(
   await db
     .prepare(
       `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
-       SELECT ?1, conversation_id, 'note', 'system', ?3, ?4, ?4 FROM client_reports
-        WHERE id = ?2 AND conversation_id IS NOT NULL`,
+       SELECT ?1, c.id, 'note', 'system', ?3, ?4, ?4 FROM client_reports r
+         JOIN people pe ON pe.id = r.person_id JOIN conversations c ON c.mobile_e164 = pe.mobile_e164
+        WHERE r.id = ?2`,
     )
     .bind(crypto.randomUUID(), photo.report.id, note, at)
     .run();
@@ -65,13 +66,14 @@ export interface ReportPhoto {
   readonly at: string;
 }
 
-/** The photographs of every report a Care chat holds, oldest report first. */
+/** The photographs of the reports of the client a Care chat is with, on the number they hold now; oldest first. */
 export async function photosOfChat(db: D1Database, conversationId: string): Promise<ReportPhoto[]> {
   const { results } = await db
     .prepare(
       `SELECT p.report_id, r.number, p.n, p.created_at FROM client_reports r
          JOIN client_report_photos p ON p.report_id = r.id
-        WHERE r.conversation_id = ?1
+        WHERE r.person_id IN (SELECT pe.id FROM people pe JOIN conversations c ON c.mobile_e164 = pe.mobile_e164
+                                 WHERE c.id = ?1)
         ORDER BY r.number, p.n`,
     )
     .bind(conversationId)
@@ -84,7 +86,7 @@ export async function photosOfChat(db: D1Database, conversationId: string): Prom
   }));
 }
 
-/** One photograph of a report the chat holds; null for any other. */
+/** One photograph of a report of the client the chat is with; null for any other. */
 export async function reportPhotoFile(
   db: D1Database,
   bucket: R2Bucket,
@@ -93,7 +95,8 @@ export async function reportPhotoFile(
   const key = await db
     .prepare(
       `SELECT p.object_key FROM client_report_photos p JOIN client_reports r ON r.id = p.report_id
-        WHERE p.report_id = ?1 AND p.n = ?2 AND r.conversation_id = ?3`,
+        WHERE p.report_id = ?1 AND p.n = ?2 AND r.person_id IN (SELECT pe.id FROM people pe JOIN conversations c ON c.mobile_e164 = pe.mobile_e164
+                                 WHERE c.id = ?3)`,
     )
     .bind(asked.reportId, asked.n, asked.conversationId)
     .first<string>("object_key");

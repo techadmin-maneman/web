@@ -11,6 +11,9 @@ import { asClient, client, fittedInAugust, signedIn } from "../clients.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 const ROHIT = "p-rohit";
+const JPEG = new Uint8Array([
+  0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xd9,
+]);
 const FIT = "fit-1";
 
 let cookie: string;
@@ -73,6 +76,32 @@ describe("a fit guarantee claim", () => {
       since: NOW.toISOString(),
       facts: { group: "fit_guarantee_claim", reference: "MM-ISS-0001", sign_off: "signed", photos: 0 },
     });
+  });
+
+  it("counts the claim's photographs and names the chat they are read in", async () => {
+    await fittedDaysAgo(3);
+    await report({ about: "fit_guarantee", text: "It does not sit right." });
+    await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/problems/MM-ISS-0001/photos", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "image/jpeg" },
+      body: JPEG,
+    });
+    const chat = await env.DB.prepare("SELECT id FROM conversations WHERE person_id = ?1")
+      .bind(ROHIT)
+      .first<string>("id");
+    expect((await claims())[0]?.facts).toMatchObject({ photos: 1, conversation_id: chat });
+  });
+
+  it("blanks the words Care closed a claim with when the client is erased", async () => {
+    await fittedDaysAgo(3);
+    await report({ about: "fit_guarantee", text: "It does not sit right." });
+    const [claim] = await claims();
+    expect((await close(claim?.id ?? "")).status).toBe(204);
+    const { personalDataStatements } = await import("../../../src/domain/privacy/erasure-statements.ts");
+    await env.DB.batch(await personalDataStatements(env.DB, ROHIT, NOW.toISOString()));
+    expect(
+      await env.DB.prepare("SELECT reason FROM task_closures WHERE task_group = 'fit_guarantee_claim'").first("reason"),
+    ).toBeNull();
   });
 
   it("opens another row for a claim after Care closed the first", async () => {

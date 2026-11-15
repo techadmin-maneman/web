@@ -45,21 +45,28 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
        OR appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM tech_alert_kinds_off WHERE technician_id IN (${ids});`,
     `DELETE FROM push_subscriptions WHERE device_id IN (SELECT id FROM technician_devices WHERE technician_id IN (${ids}));`,
+    // The invented clients' reports from the app and their photographs, which name the jobs: all of them, before the
+    // jobs (docs/decisions/0258-the-issue-log.md).
+    `DELETE FROM client_report_photos WHERE report_id IN (SELECT id FROM client_reports WHERE person_id IN (${persons}));`,
+    `DELETE FROM client_reports WHERE person_id IN (${persons});`,
     // A hair profile is never deleted (migration 0064), so a job one was taken at, the invented client it is of and
     // the technician who took it stay, the technician made inactive so nothing books or dispatches them; the rest of
     // what they left goes.
     `DELETE FROM appointments WHERE technician_id IN (${ids})
        AND id NOT IN (SELECT appointment_id FROM hair_profiles WHERE appointment_id IS NOT NULL);`,
     `DELETE FROM addresses WHERE person_id IN (${persons});`,
-    // Their clients' reports from the app, and the photographs with them (docs/decisions/0258-the-issue-log.md).
-    `DELETE FROM client_report_photos WHERE report_id IN (SELECT id FROM client_reports WHERE person_id IN (${persons})
-       AND person_id NOT IN (SELECT person_id FROM hair_profiles)
-       AND person_id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL));`,
-    `DELETE FROM client_reports WHERE person_id IN (${persons})
-       AND person_id NOT IN (SELECT person_id FROM hair_profiles)
-       AND person_id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL);`,
     // Their clients' alerts in the app, written beside the jobs' messages (docs/decisions/0255-client-alerts-and-push.md).
     `DELETE FROM client_app_alerts WHERE person_id IN (${persons})
+       AND person_id NOT IN (SELECT person_id FROM hair_profiles)
+       AND person_id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL);`,
+    // The Care chat a report or a message from the app opened, on the same terms as the client.
+    `DELETE FROM chat_messages WHERE conversation_id IN (SELECT id FROM conversations WHERE person_id IN (${persons})
+       AND person_id NOT IN (SELECT person_id FROM hair_profiles)
+       AND person_id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL));`,
+    `DELETE FROM conversations WHERE person_id IN (${persons})
+       AND person_id NOT IN (SELECT person_id FROM hair_profiles)
+       AND person_id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL);`,
+    `DELETE FROM care_owners WHERE person_id IN (${persons})
        AND person_id NOT IN (SELECT person_id FROM hair_profiles)
        AND person_id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL);`,
     `DELETE FROM people WHERE id IN (${persons})

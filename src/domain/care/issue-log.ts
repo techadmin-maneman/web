@@ -185,6 +185,9 @@ async function reportsOf(db: D1Database, personId: string): Promise<Issue[]> {
             AND m.sent_at > ?2
             -- The after-hours answer is no reply from Care (docs/decisions/0133-the-after-hours-reply.md).
             AND m.author <> ?4
+            -- Nor anything in a chat before the client's first report in it: a number they moved to was another's.
+            AND m.sent_at > (SELECT MIN(f.created_at) FROM client_reports f WHERE f.conversation_id = c.id
+                              AND f.person_id = ?3)
             -- Only while the client held the chat's number: one they changed away from may be someone else's since.
             AND m.sent_at < COALESCE((SELECT MIN(n.decided_at) FROM number_change_requests n
                   WHERE n.person_id = ?3 AND n.state = 'confirmed' AND n.replaced_mobile_e164 = c.mobile_e164

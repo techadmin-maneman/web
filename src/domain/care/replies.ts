@@ -183,8 +183,19 @@ export async function closeConversation(
          WHERE id = ?1`,
       )
       .bind(change.conversationId, at, change.actor.id, change.reason),
-    // Closing the chat settles every report in it the client's issue log holds (docs/decisions/0258-the-issue-log.md).
-    db.prepare("UPDATE client_reports SET closed_at = ?2 WHERE conversation_id = ?1").bind(change.conversationId, at),
+    // Closing the chat settles what the client's issue log holds open in it (docs/decisions/0258-the-issue-log.md).
+    db
+      .prepare(
+        `UPDATE client_reports SET closed_at = ?2
+         WHERE conversation_id = ?1
+           -- What is open: one never settled, one reopened since, and the chat's latest, which the client's words reach.
+           AND (closed_at IS NULL OR closed_at < reopened_at
+                OR number = (SELECT MAX(l.number) FROM client_reports l WHERE l.conversation_id = ?1))
+           -- Never the reports of a client who has since moved off the chat's number.
+           AND person_id IN (SELECT pe.id FROM people pe JOIN conversations c ON c.mobile_e164 = pe.mobile_e164
+                             WHERE c.id = ?1)`,
+      )
+      .bind(change.conversationId, at),
     auditStatement(
       db,
       {

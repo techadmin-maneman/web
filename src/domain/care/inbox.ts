@@ -253,7 +253,9 @@ export async function conversationThread(
          t.name AS technician_name, c.last_message_at, c.archive_key,
          c.last_inbound_at, NULL AS last_line,
          (SELECT r.category FROM client_reports r WHERE r.conversation_id = c.id
-            AND (r.closed_at IS NULL OR r.closed_at < r.reopened_at) ORDER BY r.number DESC LIMIT 1) AS open_report,
+            AND r.person_id IN (SELECT holder.id FROM people holder WHERE holder.mobile_e164 = c.mobile_e164)
+            AND (r.closed_at IS NULL OR r.closed_at < r.reopened_at OR r.closed_at < c.last_inbound_at)
+            ORDER BY r.number DESC LIMIT 1) AS open_report,
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
             AND m.author <> ?2) AS last_reply_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id

@@ -33,13 +33,15 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
    theirs they may add an update (their words into its chat), mark it sorted, or reopen it, which says so in the chat
    and opens it again. New reports keep five a day; updates and reopenings have a daily limit of their own.
 6. **Photos.** Up to three a report, sent after it with `POST /api/me/problems/{reference}/photos`, a JPEG of at most
-   the size a visit photograph is kept at. A note in the report's chat says each came; Care's console lists and opens
-   them (`GET /api/conversations/{id}/report-photos`), and draws them beside the chat with the console's screens.
+   the size a visit photograph is kept at. A note in the client's chat says each came, and the console's routes list
+   and open them (`GET /api/conversations/{id}/report-photos`), for the chat of whoever made them, on the number they
+   hold now. The console draws them beside the chat with its screens, in this same change.
 7. **The same log** lists the client's grievances (answered or not) and missed-visit disputes (open, refunded or upheld),
    each with its own state, beside the reports.
 8. **The fit guarantee claim** (ADR 0256): a report on the fit (guarantee) about a first fit inside its guarantee opens
-   the Tasks row "Fit guarantee claim", due by `task_sla_hours` from its first report, with the fit's sign-off and the
-   photographs sent, until Care close it with what was done. Reports on the fit meanwhile are the same claim; one after
+   the Tasks row "Fit guarantee claim", due by `task_sla_hours` from its first report, its facts carrying the fit's
+   sign-off, how many photographs were sent and the chat they are read in, which the console's Tasks row draws with its
+   screens, until Care close it with what was done. Reports on the fit meanwhile are the same claim; one after
    the close opens another.
 
 ## Consequences
