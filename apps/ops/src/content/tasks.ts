@@ -105,6 +105,8 @@ export const tasks = {
     consumables_short: "Consumables short",
     // A group the board does not draw (docs/decisions/0254-client-signs-off-the-fit.md).
     fit_unsigned: "Fit closed without sign-off",
+    // A group the board does not draw (docs/decisions/0256-fit-guarantee-setting.md).
+    fit_guarantee_claim: "Fit guarantee claim",
     // A group the board does not draw.
     kit_request: "Kit request",
     referral_review: "Referral review",
@@ -257,6 +259,8 @@ export const tasks = {
     /** "Client in a hurry · Imran", after "Flagged first: “The left edge lifts”" where the client flagged before. */
     fit_unsigned: (reason: string, technician: string, flag: string | null) =>
       [...(flag === null ? [] : [`Flagged first: “${flag}”`]), reason, technician].join(" · "),
+    /** "MM-ISS-0032 · fitted Mon 14 Sep". */
+    fit_guarantee_claim: (reference: string, fittedOn: string) => `${reference} · fitted ${fittedOn}`,
     shortLine: (name: string, used: number, expected: number) => `${name} ${String(used)} of ${String(expected)}`,
     nothingUsed: "Nothing used",
     shortReasons: {
@@ -353,6 +357,8 @@ export const tasks = {
     consumablesShort: { open: "Checked", label: "What the kit showed" },
     /** A fit closed without sign-off closes once Care have called the client. */
     fitUnsigned: { open: "Called", label: "What the client said" },
+    /** A fit guarantee claim closes with what was done: a refit, or a refund. */
+    guaranteeClaim: { open: "Done", label: "What was done" },
     /** A kit request closes once what it asked for is sent, or with why not. */
     kitRequest: { open: "Sent", label: "What was sent" },
     /** A technician's ask to move a visit closes with what was agreed with the client. */

@@ -253,6 +253,7 @@ export interface Rows {
     readonly person_id: string;
     readonly category: string;
     readonly visit_id: string | null;
+    readonly claim_visit_id: string | null;
     readonly text: string | null;
     readonly conversation_id: string | null;
     readonly created_at: string;

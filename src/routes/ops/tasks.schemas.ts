@@ -91,6 +91,10 @@ export const TaskFactsSchema = z
         description: "What the client last said wasn't right before then; null where they never flagged.",
       }),
     }),
+    facts("fit_guarantee_claim", {
+      reference: z.string().openapi({ description: "The latest report claiming it, as MM-ISS-0032." }),
+      fitted_on: day,
+    }),
     facts("at_risk_client", { last_visit_at: instant, due_on: day }),
     facts("first_fit_to_book", {
       consulted_at: instant,

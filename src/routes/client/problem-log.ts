@@ -129,14 +129,12 @@ export function registerClientProblemLog(app: App): void {
       const { subjectId } = clientOf(c);
       const now = c.var.deps.now();
       const report = await theirReport(c, c.req.valid("param").reference);
-      const mobile = await c.env.DB.prepare("SELECT mobile_e164 FROM people WHERE id = ?1 AND erased_at IS NULL")
-        .bind(subjectId)
-        .first<string>("mobile_e164");
-      if (report === null || mobile === null) return refuse(c, "not_found");
+      if (report === null) return refuse(c, "not_found");
       if (!(await takeOne(c.env.DB, "problem_add:person", subjectId, { now, settings: c.var.config.settings }))) {
         return refuse(c, "rate_limited");
       }
-      await addToReport(c.env.DB, { report, mobileE164: mobile, text: c.req.valid("json").text, reopening, at: now });
+      const text = c.req.valid("json").text;
+      await addToReport(c.env.DB, { report, mobileE164: report.mobile_e164, text, reopening, at: now });
       return c.body(null, 204);
     });
   }

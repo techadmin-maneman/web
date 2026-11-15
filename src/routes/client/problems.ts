@@ -9,6 +9,7 @@ import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientRoute } from "../../http/session-routes.ts";
 import {
   categoryOf,
@@ -75,7 +76,8 @@ export function registerClientProblems(app: App): void {
       text: body.text,
       at: now,
     };
-    const reported = await reportProblem(db, { ...report, visitId: body.visit_id });
+    const { guaranteeDays } = await opsInputs(c);
+    const reported = await reportProblem(db, { ...report, visitId: body.visit_id, guaranteeDays });
     if (reported === null) return refuse(c, "not_found");
     return c.json({ state: "sent" as const, reference: reportReference(reported.number) }, 201);
   });

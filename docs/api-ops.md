@@ -49733,6 +49733,7 @@ Request body:
               "partial_visit",
               "consumables_short",
               "fit_unsigned",
+              "fit_guarantee_claim",
               "kit_request",
               "referral_review",
               "no_show_decision",
@@ -50658,6 +50659,31 @@ Request body:
         "reason",
         "technician",
         "flag"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "fit_guarantee_claim"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "description": "The latest report claiming it, as MM-ISS-0032."
+        },
+        "fitted_on": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "group",
+        "reference",
+        "fitted_on"
       ],
       "additionalProperties": false
     },

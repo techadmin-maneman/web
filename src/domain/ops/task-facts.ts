@@ -91,6 +91,13 @@ export type TaskFacts =
       /** What the client last said wasn't right before then, in their words; null where they never flagged. */
       readonly flag: string | null;
     }
+  | {
+      readonly group: "fit_guarantee_claim";
+      /** The latest report claiming it, as MM-ISS-0032. */
+      readonly reference: string;
+      /** India's day the claimed first fit was done. */
+      readonly fitted_on: Day;
+    }
   | { readonly group: "at_risk_client"; readonly last_visit_at: Instant; readonly due_on: Day }
   | {
       readonly group: "first_fit_to_book";

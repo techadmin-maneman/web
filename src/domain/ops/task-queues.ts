@@ -325,6 +325,22 @@ export const QUEUES: readonly Queue[] = [
    WHERE s.state = 'declined' AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'fit_unsigned' AND c.subject_id = a.id)`,
   },
+  // A first fit claimed under its guarantee (docs/decisions/0256-fit-guarantee-setting.md), from the client's report
+  // on the fit, the latest where they wrote more than once, until Care have called them and closed it with what was
+  // done: a refit, or a refund.
+  {
+    group: "fit_guarantee_claim",
+    sql: `SELECT 'fit_guarantee_claim' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
+         r.text AS detail,
+         json_object('reference', 'MM-ISS-' || printf('%04d', r.number), 'fitted_on', date(a.window_start, '+330 minutes'))
+           AS facts,
+         r.created_at AS since, NULL AS due_by, '' AS episode
+    FROM client_reports r INDEXED BY client_reports_claims
+    JOIN appointments a ON a.id = r.claim_visit_id JOIN people pe ON pe.id = a.person_id
+   WHERE r.claim_visit_id IS NOT NULL AND a.deleted_at IS NULL AND pe.erased_at IS NULL
+     AND r.number = (SELECT MAX(o.number) FROM client_reports o WHERE o.claim_visit_id = r.claim_visit_id)
+     AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'fit_guarantee_claim' AND c.subject_id = a.id)`,
+  },
   // A job that used less than its service expects, or nothing where a visit always uses something, with the
   // technician's reason (docs/decisions/0222-consumables-short-of-expected.md): open until ops check it against the
   // kit and close it, which settles the row, so the queue walks the open rows alone.

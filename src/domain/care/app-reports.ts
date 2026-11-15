@@ -5,6 +5,7 @@
 
 import { fullDate, shortDate } from "@maneman/web-kit/dates";
 import { indiaDate } from "../../lib/india-time.ts";
+import { guaranteeUntil } from "../../policy/fit-guarantee.ts";
 import { reportReference, type ProblemCategory } from "../../policy/problems.ts";
 import { warrantyEndsOn } from "../../policy/purchasing.ts";
 import { fileInbound } from "./inbox.ts";
@@ -97,6 +98,29 @@ export interface ProblemReport {
   readonly visitId: string | null;
   readonly text: string;
   readonly at: Date;
+  /** The fit guarantee's days in force now, for a fit whose sign-off recorded none. */
+  readonly guaranteeDays: number;
+}
+
+/**
+ * The first fit a report on the fit (guarantee) claims: the visit named, else the client's latest first fit done, where
+ * the report comes inside its guarantee, by the days recorded at its sign-off or in force now; null otherwise.
+ */
+async function claimedFit(db: D1Database, report: ProblemReport): Promise<string | null> {
+  if (report.category !== "fit_guarantee") return null;
+  const fit = await db
+    .prepare(
+      `SELECT a.id, a.window_start, s.guarantee_days FROM appointments a
+         JOIN visit_outcomes v ON v.appointment_id = a.id AND v.outcome = 'done'
+         LEFT JOIN fit_sign_offs s ON s.appointment_id = a.id
+        WHERE a.person_id = ?1 AND a.type = 'first_fit' AND a.deleted_at IS NULL AND (?2 IS NULL OR a.id = ?2)
+        ORDER BY a.window_start DESC LIMIT 1`,
+    )
+    .bind(report.personId, report.visitId)
+    .first<{ id: string; window_start: string; guarantee_days: number | null }>();
+  if (fit === null) return null;
+  const until = guaranteeUntil(indiaDate(new Date(fit.window_start)), fit.guarantee_days ?? report.guaranteeDays);
+  return indiaDate(report.at) <= until ? fit.id : null;
 }
 
 /** A report recorded: its ID and the number its reference is made of. */
@@ -114,13 +138,14 @@ export async function reportProblem(db: D1Database, report: ProblemReport): Prom
   if (report.visitId !== null && about === null) return null;
   const piece = await db.prepare(PIECE_SQL).bind(report.personId).first<PieceRow>();
   const id = crypto.randomUUID();
+  const claim = await claimedFit(db, report);
   const recorded = await db
     .prepare(
-      `INSERT INTO client_reports (id, number, person_id, category, visit_id, text, created_at)
-       SELECT ?1, COALESCE(MAX(number), 0) + 1, ?2, ?3, ?4, ?5, ?6 FROM client_reports
+      `INSERT INTO client_reports (id, number, person_id, category, visit_id, claim_visit_id, text, created_at)
+       SELECT ?1, COALESCE(MAX(number), 0) + 1, ?2, ?3, ?4, ?5, ?6, ?7 FROM client_reports
        RETURNING number`,
     )
-    .bind(id, report.personId, report.category, report.visitId, report.text, report.at.toISOString())
+    .bind(id, report.personId, report.category, report.visitId, claim, report.text, report.at.toISOString())
     .first<{ number: number }>();
   const number = recorded?.number ?? 0;
   await fileInbound(db, {
@@ -149,16 +174,19 @@ export async function reportProblem(db: D1Database, report: ProblemReport): Prom
   return { id, number };
 }
 
-/** A report of the client's, by its number; null for any other. */
+/** A report of the client's, by its number, with the number their Care chat is with; null for any other. */
 export async function reportOf(
   db: D1Database,
   personId: string,
   number: number,
-): Promise<{ readonly id: string; readonly number: number } | null> {
+): Promise<{ readonly id: string; readonly number: number; readonly mobile_e164: string } | null> {
   return db
-    .prepare("SELECT id, number FROM client_reports WHERE person_id = ?1 AND number = ?2")
+    .prepare(
+      `SELECT r.id, r.number, pe.mobile_e164 FROM client_reports r JOIN people pe ON pe.id = r.person_id
+       WHERE r.person_id = ?1 AND r.number = ?2 AND pe.erased_at IS NULL`,
+    )
     .bind(personId, number)
-    .first<{ id: string; number: number }>();
+    .first<{ id: string; number: number; mobile_e164: string }>();
 }
 
 /**

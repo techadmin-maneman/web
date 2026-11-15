@@ -14,6 +14,9 @@ CREATE TABLE client_reports (
     )
   ),
   visit_id TEXT REFERENCES appointments (id),
+  -- The first fit a report on the fit (guarantee) claims, where it came inside that fit's guarantee
+  -- (docs/decisions/0256-fit-guarantee-setting.md); NULL for any other report.
+  claim_visit_id TEXT REFERENCES appointments (id),
   -- The client's words; NULL once they are erased.
   text TEXT CHECK (text IS NULL OR length(text) <= 1000),
   conversation_id TEXT REFERENCES conversations (id),
@@ -28,7 +31,7 @@ CREATE INDEX client_reports_by_person ON client_reports (person_id, created_at);
 -- Care's close settles the reports its chat holds open (src/domain/care/replies.ts).
 CREATE INDEX client_reports_by_conversation ON client_reports (conversation_id);
 -- The Tasks queue of fit guarantee claims reads these (src/domain/ops/task-queues.ts).
-CREATE INDEX client_reports_guarantee ON client_reports (created_at) WHERE category = 'fit_guarantee';
+CREATE INDEX client_reports_claims ON client_reports (claim_visit_id) WHERE claim_visit_id IS NOT NULL;
 
 -- Up to three photographs a report, each an object in the client photos bucket.
 CREATE TABLE client_report_photos (

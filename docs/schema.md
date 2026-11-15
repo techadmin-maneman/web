@@ -714,6 +714,7 @@ Made by `0212_client_reports.sql`.
 | `person_id` | TEXT | no |  | → `people.id` |  |
 | `category` | TEXT | no |  |  |  |
 | `visit_id` | TEXT | yes |  | → `appointments.id` |  |
+| `claim_visit_id` | TEXT | yes |  | → `appointments.id` | The first fit a report on the fit (guarantee) claims, where it came inside that fit's guarantee (docs/decisions/0256-fit-guarantee-setting.md); NULL for any other report. |
 | `text` | TEXT | yes |  |  | The client's words; NULL once they are erased. |
 | `conversation_id` | TEXT | yes |  | → `conversations.id` |  |
 | `created_at` | TEXT | no |  |  |  |
@@ -725,7 +726,7 @@ Indexes:
 
 - `client_reports_by_conversation`: on (`conversation_id`)
 - `client_reports_by_person`: on (`person_id`, `created_at`)
-- `client_reports_guarantee`: on (`created_at`), where `category = 'fit_guarantee'`
+- `client_reports_claims`: on (`claim_visit_id`), where `claim_visit_id IS NOT NULL`
 - A `UNIQUE` constraint: unique on (`number`)
 
 ## consents
