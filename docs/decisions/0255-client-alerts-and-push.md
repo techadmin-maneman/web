@@ -52,4 +52,4 @@ running_late | at_the_gate, minutes, at}` from `technician_updates`, `step {inde
 - **D1 counts a trigger's rows in a statement's changes.** Migration 0211's triggers on `outbound_messages` make an
   insert there report two changes, not one. Code that reads a message insert's changes reads its returned row instead,
   as the arrival notice now does. Until this release's code lands after the migration, the deployed arrival notice reads
-  its insert as not written and leaves the message to the sweeper, which sends it within five minutes.
+  its insert as not written and leaves the message to the sweeper, which sends it once it is five minutes overdue, on its next five-minute run: 5 to 10 minutes after the check-in.
