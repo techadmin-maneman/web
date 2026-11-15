@@ -208,8 +208,8 @@ Migrations, from 0210:
 
 - `0210_fit_sign_offs`
 - `0211_client_app_alerts` (`client_app_alerts`, `client_push_subscriptions`; `client_alerts` is ops' alerts about a client)
-- `0212_visit_ratings`
-- any rebuild W6 needs to widen the problem categories
+- `0212_client_reports` (`client_reports`, `client_report_photos`: the issue log, ADR 0258)
+- `0213_visit_ratings`
 
 ADRs, from 0252:
 
@@ -219,6 +219,7 @@ ADRs, from 0252:
 - 0255 client alerts and push
 - 0256 the fit guarantee as a setting
 - 0257 Razorpay is the only way to pay, superseding 0209's booking path (written in A, in force with B)
+- 0258 the issue log (W6, G3)
 
 ## 5. Gaps the brief does not cover
 
