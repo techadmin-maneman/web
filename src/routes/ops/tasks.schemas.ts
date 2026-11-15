@@ -92,8 +92,11 @@ export const TaskFactsSchema = z
       }),
     }),
     facts("fit_guarantee_claim", {
-      reference: z.string().openapi({ description: "The latest report claiming it, as MM-ISS-0032." }),
+      reference: z.string().openapi({ description: "The report that opened the claim, as MM-ISS-0032." }),
       fitted_on: day,
+      sign_off: z.enum(["asked", "signed", "flagged", "declined"]).nullable(),
+      conversation_id: z.string().nullable().openapi({ description: "The Care chat the photographs are read beside." }),
+      photos: z.number().int(),
     }),
     facts("at_risk_client", { last_visit_at: instant, due_on: day }),
     facts("first_fit_to_book", {

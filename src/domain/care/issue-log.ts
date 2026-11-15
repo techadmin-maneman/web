@@ -5,7 +5,8 @@
 // replies, under the first name the client knows them by, the client's own later words, a City matter passed on, free
 // visits given, and Care closing the chat or the client marking it sorted.
 
-import { reportReference, type ProblemCategory } from "../../policy/problems.ts";
+import { reportNumberOf, reportReference, type ProblemCategory } from "../../policy/problems.ts";
+import { AUTO_REPLY } from "./after-hours.ts";
 
 export type IssueState = "open" | "in_progress" | "resolved";
 
@@ -82,13 +83,33 @@ function spanOf(report: ReportRow, reports: readonly ReportRow[]): { from: strin
 const within = (at: string, span: { from: string; to: string | null }) =>
   at > span.from && (span.to === null || at < span.to);
 
-/** Resolved once closed or marked sorted since it was last reopened; in progress once Care did anything. */
+/** Words the client sent to a report from the app carry its reference: "MM-ISS-0032 · Update:\n…". */
+const NAMED = /^(MM-ISS-\d{4,}) · [^:\n]+:\n([\s\S]*)$/;
+
+/** The report a message of the client's names, and its words without the heading; null for words naming none. */
+function namedIn(text: string | null): { readonly number: number; readonly words: string } | null {
+  const match = NAMED.exec(text ?? "");
+  const number = reportNumberOf(match?.[1] ?? "");
+  return match === null || number === null ? null : { number, words: match[2] ?? "" };
+}
+
+/**
+ * Resolved once closed or marked sorted with nothing from the client since, in the app or the chat; in progress once
+ * Care did anything; open until then.
+ */
 function stateOf(report: ReportRow, events: readonly IssueEvent[]): IssueState {
   const settled = [report.closed_at, report.sorted_at]
     .filter((at): at is string => at !== null)
     .sort()
     .at(-1);
-  if (settled !== undefined && (report.reopened_at === null || settled > report.reopened_at)) return "resolved";
+  const lastWords = [
+    report.reopened_at,
+    ...events.filter((e) => e.kind === "you" && e.at > report.created_at).map((e) => e.at),
+  ]
+    .filter((at): at is string => at !== null)
+    .sort()
+    .at(-1);
+  if (settled !== undefined && (lastWords === undefined || settled > lastWords)) return "resolved";
   return events.some((event) => event.kind === "care" || event.kind === "city" || event.kind === "visits")
     ? "in_progress"
     : "open";
@@ -102,14 +123,19 @@ function reportIssue(
   const span = spanOf(report, reports);
   const ours = (conversation: string | null) => conversation === report.conversation_id;
   const words: IssueEvent = { at: report.created_at, kind: "you", name: null, text: report.text };
+  // The client's words go to the report they name, wherever they fall; the rest of the chat by its stretch.
+  const mine = (row: ThreadRow): boolean => {
+    const named = row.direction === "in" ? namedIn(row.text) : null;
+    if (named === null) return ours(row.conversation_id) && within(row.sent_at, span);
+    return named.number === report.number && row.sent_at > report.created_at;
+  };
   const events: IssueEvent[] = [
     words,
-    ...rows.thread
-      .filter((row) => ours(row.conversation_id) && within(row.sent_at, span))
-      .map((row): IssueEvent => {
-        const fromCare = row.direction === "out";
-        return { at: row.sent_at, kind: fromCare ? "care" : "you", name: fromCare ? row.name : null, text: row.text };
-      }),
+    ...rows.thread.filter(mine).map((row): IssueEvent => {
+      const fromCare = row.direction === "out";
+      const text = fromCare ? row.text : (namedIn(row.text)?.words ?? row.text);
+      return { at: row.sent_at, kind: fromCare ? "care" : "you", name: fromCare ? row.name : null, text };
+    }),
     ...rows.passed
       .filter((row) => ours(row.conversation_id) && within(row.raised_at, span))
       .map((row): IssueEvent => ({ at: row.raised_at, kind: "city", name: null, text: null })),
@@ -153,12 +179,19 @@ async function reportsOf(db: D1Database, personId: string): Promise<Issue[]> {
       .prepare(
         `SELECT m.conversation_id, m.direction, m.text, m.sent_at, cn.name
            FROM chat_messages m
+           JOIN conversations c ON c.id = m.conversation_id
            LEFT JOIN care_names cn ON cn.email = m.author
           WHERE m.conversation_id IN (SELECT value FROM json_each(?1)) AND m.direction IN ('in', 'out')
             AND m.sent_at > ?2
+            -- The after-hours answer is no reply from Care (docs/decisions/0133-the-after-hours-reply.md).
+            AND m.author <> ?4
+            -- Only while the client held the chat's number: one they changed away from may be someone else's since.
+            AND m.sent_at < COALESCE((SELECT MIN(n.decided_at) FROM number_change_requests n
+                  WHERE n.person_id = ?3 AND n.state = 'confirmed' AND n.replaced_mobile_e164 = c.mobile_e164
+                    AND n.decided_at > ?2), '9999')
           ORDER BY m.sent_at`,
       )
-      .bind(chats, oldest),
+      .bind(chats, oldest, personId, AUTO_REPLY),
     db
       .prepare("SELECT conversation_id, raised_at FROM city_matters WHERE person_id = ?1 AND raised_at > ?2")
       .bind(personId, oldest),

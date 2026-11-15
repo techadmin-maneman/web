@@ -123,7 +123,7 @@ beforeEach(() => {
           delivery: "sent",
         };
         return Promise.resolve(
-          Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied], close_reason: null }),
+          Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied], close_reason: "billing" }),
         );
       }
       if (address.pathname === "/api/care-team") {
@@ -197,7 +197,8 @@ beforeEach(() => {
         return Promise.resolve(
           Response.json({
             conversation: ARJUN,
-            close_reason: null,
+            // The chat's open report is about a payment (docs/decisions/0258-the-issue-log.md).
+            close_reason: "billing",
             items: [
               {
                 kind: "auto",
@@ -687,7 +688,8 @@ describe("the Messages page", () => {
     await press(copy.compose.send);
     expect(posted).toEqual([{ path: `/api/conversations/${ARJUN.id}/replies`, body: { text: "Yes, 6 pm works." } }]);
     expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.compose.sent);
-    // Close chat, in the chat's head, opens a drawer asking what it was about, with its own Close chat.
+    // Close chat, in the chat's head, opens a drawer asking what it was about, on its open report's, with its own
+    // Close chat.
     await press(copy.compose.closeChat);
     await act(async () => {
       [...document.body.querySelectorAll("dialog button")]
@@ -695,7 +697,7 @@ describe("the Messages page", () => {
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       await answered();
     });
-    expect(posted.at(-1)).toEqual({ path: `/api/conversations/${ARJUN.id}/close`, body: { reason: "other" } });
+    expect(posted.at(-1)).toEqual({ path: `/api/conversations/${ARJUN.id}/close`, body: { reason: "billing" } });
     expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.compose.closed);
   });
 });

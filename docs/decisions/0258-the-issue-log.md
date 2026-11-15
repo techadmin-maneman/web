@@ -23,20 +23,24 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
    a visit or technician, payment or refund, something else. Each maps to one of Care's closure reasons, which the
    console's close opens on.
 3. **A report's thread** is its own words, then what its Care chat holds from it until the client's next report: Care's
-   replies, under the first name the client knows them by; the client's own later words; a City matter passed on; free
-   visits given; and Care closing the chat.
+   replies, under the first name the client knows them by, never the after-hours answer; the client's own later words,
+   and every update or reopening sent to it from the app, wherever it falls; a City matter passed on; free visits given;
+   and Care closing the chat. A chat on a number the client has since changed away from is read only up to the change.
 4. **Its state**, read from those rows: `resolved` once Care closed the chat after it, or the client marked it sorted,
-   with nothing from the client since; `in_progress` once Care replied, passed it to the city or gave visits; `open`
-   until then.
+   with nothing from the client since, in the app or the chat, and Care's close settles every report the chat holds;
+   `in_progress` once Care replied, passed it to the city or gave visits; `open` until then.
 5. **What the client does.** `POST /api/me/problems` files one, as today, and answers its reference. On a report of
    theirs they may add an update (their words into its chat), mark it sorted, or reopen it, which says so in the chat
    and opens it again. New reports keep five a day; updates and reopenings have a daily limit of their own.
 6. **Photos.** Up to three a report, sent after it with `POST /api/me/problems/{reference}/photos`, a JPEG of at most
-   the size a visit photograph is kept at. Care see them in the report's chat, by a note with their links.
+   the size a visit photograph is kept at. A note in the report's chat says each came; Care's console lists and opens
+   them (`GET /api/conversations/{id}/report-photos`), and draws them beside the chat with the console's screens.
 7. **The same log** lists the client's grievances (answered or not) and missed-visit disputes (open, refunded or upheld),
    each with its own state, beside the reports.
 8. **The fit guarantee claim** (ADR 0256): a report on the fit (guarantee) about a first fit inside its guarantee opens
-   the Tasks row "Fit guarantee claim", due by `task_sla_hours`, until Care close it with what was done.
+   the Tasks row "Fit guarantee claim", due by `task_sla_hours` from its first report, with the fit's sign-off and the
+   photographs sent, until Care close it with what was done. Reports on the fit meanwhile are the same claim; one after
+   the close opens another.
 
 ## Consequences
 

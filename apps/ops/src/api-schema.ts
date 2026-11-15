@@ -29367,10 +29367,15 @@ export interface components {
         } | {
             /** @enum {string} */
             group: "fit_guarantee_claim";
-            /** @description The latest report claiming it, as MM-ISS-0032. */
+            /** @description The report that opened the claim, as MM-ISS-0032. */
             reference: string;
             /** Format: date */
             fitted_on: string;
+            /** @enum {string|null} */
+            sign_off: "asked" | "signed" | "flagged" | "declined" | null;
+            /** @description The Care chat the photographs are read beside. */
+            conversation_id: string | null;
+            photos: number;
         } | {
             /** @enum {string} */
             group: "at_risk_client";

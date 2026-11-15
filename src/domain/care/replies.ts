@@ -23,7 +23,7 @@ export const CLOSE_REASONS = [
 ] as const;
 export type CloseReason = (typeof CLOSE_REASONS)[number];
 
-/** The closure reason Care's close opens on, for a chat whose latest report still open is of each category (ADR 0258). */
+/** The closure reason Care's close opens on, for a chat whose latest report still open is of each category. */
 export const CLOSE_REASON_OF: Readonly<Record<ProblemCategory, CloseReason>> = {
   fit_guarantee: "fit_problem",
   edges_lifting: "fit_problem",
@@ -183,13 +183,8 @@ export async function closeConversation(
          WHERE id = ?1`,
       )
       .bind(change.conversationId, at, change.actor.id, change.reason),
-    // Closing the chat settles each report in it the client's issue log holds open (docs/decisions/0258-the-issue-log.md).
-    db
-      .prepare(
-        `UPDATE client_reports SET closed_at = ?2
-         WHERE conversation_id = ?1 AND (closed_at IS NULL OR closed_at < reopened_at)`,
-      )
-      .bind(change.conversationId, at),
+    // Closing the chat settles every report in it the client's issue log holds (docs/decisions/0258-the-issue-log.md).
+    db.prepare("UPDATE client_reports SET closed_at = ?2 WHERE conversation_id = ?1").bind(change.conversationId, at),
     auditStatement(
       db,
       {

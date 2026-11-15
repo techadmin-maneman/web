@@ -93,10 +93,16 @@ export type TaskFacts =
     }
   | {
       readonly group: "fit_guarantee_claim";
-      /** The latest report claiming it, as MM-ISS-0032. */
+      /** The report that opened the claim, as MM-ISS-0032. */
       readonly reference: string;
       /** India's day the claimed first fit was done. */
       readonly fitted_on: Day;
+      /** The fit's sign-off, as it stands; null where none was asked. */
+      readonly sign_off: "asked" | "signed" | "flagged" | "declined" | null;
+      /** The client's Care chat, which the claim's photographs are read beside. */
+      readonly conversation_id: string | null;
+      /** How many photographs the claim's reports carry. */
+      readonly photos: number;
     }
   | { readonly group: "at_risk_client"; readonly last_visit_at: Instant; readonly due_on: Day }
   | {

@@ -33,6 +33,8 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM dispatch_moves WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM visit_changes WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM visit_outcomes WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
+    // The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md).
+    `DELETE FROM fit_sign_offs WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     // Where they were on a visit, and any SOS they tried (docs/decisions/0248-safety.md).
     `DELETE FROM visit_positions WHERE technician_id IN (${ids});`,
     `DELETE FROM sos_alerts WHERE technician_id IN (${ids});`,
@@ -49,6 +51,13 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM appointments WHERE technician_id IN (${ids})
        AND id NOT IN (SELECT appointment_id FROM hair_profiles WHERE appointment_id IS NOT NULL);`,
     `DELETE FROM addresses WHERE person_id IN (${persons});`,
+    // Their clients' reports from the app, and the photographs with them (docs/decisions/0258-the-issue-log.md).
+    `DELETE FROM client_report_photos WHERE report_id IN (SELECT id FROM client_reports WHERE person_id IN (${persons})
+       AND person_id NOT IN (SELECT person_id FROM hair_profiles)
+       AND person_id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL));`,
+    `DELETE FROM client_reports WHERE person_id IN (${persons})
+       AND person_id NOT IN (SELECT person_id FROM hair_profiles)
+       AND person_id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL);`,
     // Their clients' alerts in the app, written beside the jobs' messages (docs/decisions/0255-client-alerts-and-push.md).
     `DELETE FROM client_app_alerts WHERE person_id IN (${persons})
        AND person_id NOT IN (SELECT person_id FROM hair_profiles)

@@ -6,7 +6,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { closeConversation } from "../../../src/domain/care/replies.ts";
-import { asClient, client, signedIn } from "../clients.ts";
+import { deleteErasedFiles } from "../../../src/domain/privacy/erasure-files.ts";
+import { asClient, client, fittedInAugust, signedIn } from "../clients.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { syntheticJpeg } from "../tryon-fixtures.ts";
 
@@ -140,6 +141,108 @@ describe("the issue log", () => {
     expect(await thread()).toBeNull();
   });
 
+  it("shows nothing of the old number's chat once the client has changed number, whoever holds it now", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await careReplies("We will re-bond it.", 5);
+    const old = await chat();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state, decided_at, decided_by,
+           replaced_mobile_e164)
+         VALUES ('nc-1', ?1, ?2, '+919810000099', 'confirmed', ?3, 'ops@localhost', '+919810000001')`,
+      ).bind(ROHIT, NOW.toISOString(), after(10).toISOString()),
+      env.DB.prepare("UPDATE people SET mobile_e164 = '+919810000099' WHERE id = ?1").bind(ROHIT),
+    ]);
+    // The old number is someone else's now: they write, and Care answer them, in the old chat.
+    await env.DB.prepare(
+      `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+       VALUES ('m-stranger', ?1, 'in', 'client', 'Who is this?', ?2, ?2)`,
+    )
+      .bind(old, after(20).toISOString())
+      .run();
+    await careReplies("Hello, how can we help?", 25);
+    expect((await log())[0]?.events.map((event) => event.text)).toEqual(["The front lifts.", "We will re-bond it."]);
+  });
+
+  it("counts the after-hours answer as no reply from Care", async () => {
+    await report({ about: "shedding", text: "Hair on the pillow." });
+    await env.DB.prepare(
+      `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at, delivery)
+       VALUES ('m-auto', ?1, 'out', 'auto', 'Care are back at 9 am.', ?2, ?2, 'sent')`,
+    )
+      .bind(await chat(), after(1).toISOString())
+      .run();
+    const [shedding] = await log();
+    expect(shedding).toMatchObject({ state: "open" });
+    expect(shedding?.events.map((event) => event.kind)).toEqual(["you"]);
+  });
+
+  it("files an update under the report it names, in the client's own words, however many reports came since", async () => {
+    await report({ about: "payment", text: "When does the refund land?" });
+    await report({ about: "itching", text: "It itches since Monday." }, cookie, 60);
+    expect((await add("MM-ISS-0001", "updates", 120, "Still nothing in my account.")).status).toBe(204);
+    const [itching, refund] = await log();
+    expect(refund?.events.map((event) => event.text)).toEqual([
+      "When does the refund land?",
+      "Still nothing in my account.",
+    ]);
+    expect(itching?.events.map((event) => event.text)).toEqual(["It itches since Monday."]);
+  });
+
+  it("reads open again once the client writes in the chat after Care closed it", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await careCloses(10);
+    expect((await log())[0]).toMatchObject({ state: "resolved" });
+    await env.DB.prepare(
+      `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+       VALUES ('m-again', ?1, 'in', 'client', 'Still lifting.', ?2, ?2)`,
+    )
+      .bind(await chat(), after(20).toISOString())
+      .run();
+    expect((await log())[0]).toMatchObject({ state: "open" });
+    // And Care's next close settles it once more.
+    await careCloses(30);
+    expect((await log())[0]).toMatchObject({ state: "resolved" });
+  });
+
+  it("takes twenty additions a day to the client's reports", async () => {
+    await report({ about: "other", text: "Something else." });
+    for (let n = 1; n <= 20; n += 1) {
+      expect((await add("MM-ISS-0001", "updates", n, `Note ${String(n)}`)).status).toBe(204);
+    }
+    expect((await add("MM-ISS-0001", "updates", 21, "Once more")).status).toBe(429);
+  });
+
+  it("lists a missed-visit dispute with its ruling", async () => {
+    await fittedInAugust(ROHIT);
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, radius_m, passed, created_at)
+         VALUES ('checkin-1', 'fit-1', 't-fit', ?1, 28.4, 77.0, 200, 1, ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at, decision,
+           created_at)
+         VALUES ('case-1', 'checkin-1', 'fit-1', ?1, ?1, ?1, 'charged', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO no_show_disputes (id, case_id, person_id, reason, created_at, ruling, ruled_by, ruled_at)
+         VALUES ('d-1', 'case-1', ?1, 'I was home all morning.', ?2, 'refunded', 'ops@localhost', ?3)`,
+      ).bind(ROHIT, after(1).toISOString(), after(2).toISOString()),
+    ]);
+    expect(await log()).toEqual([
+      expect.objectContaining({
+        kind: "dispute",
+        state: "resolved",
+        visit_id: "fit-1",
+        events: [
+          expect.objectContaining({ kind: "you", text: "I was home all morning." }),
+          expect.objectContaining({ kind: "ruled", text: "refunded" }),
+        ],
+      }),
+    ]);
+  });
+
   it("never shows, or takes words on, another client's report", async () => {
     const priya = await signedIn(PRIYA);
     await report({ about: "colour", text: "It looks brassy." }, priya);
@@ -206,6 +309,31 @@ describe("a report's photographs", () => {
     );
     expect(file.status).toBe(200);
     expect(file.headers.get("Content-Type")).toBe("image/jpeg");
+  });
+
+  it("serves Care no photograph through another client's chat", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await send(syntheticJpeg(640, 480));
+    const priya = await signedIn(PRIYA);
+    await report({ about: "colour", text: "It looks brassy." }, priya);
+    const theirs = await env.DB.prepare("SELECT id FROM conversations WHERE person_id = ?1")
+      .bind(PRIYA)
+      .first<string>("id");
+    const ours = await env.DB.prepare("SELECT id FROM client_reports WHERE person_id = ?1")
+      .bind(ROHIT)
+      .first<string>("id");
+    const file = await request(ops(), `/api/conversations/${theirs ?? ""}/report-photos/${ours ?? ""}/1`);
+    expect(file.status).toBe(404);
+  });
+
+  it("goes with the client's erasure, the files before their rows", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await send(syntheticJpeg(640, 480));
+    const kept = await env.DB.prepare("SELECT object_key FROM client_report_photos").first<string>("object_key");
+    expect(await env.CLIENT_PHOTOS.head(kept ?? "")).not.toBeNull();
+    await deleteErasedFiles(env, ROHIT, NOW);
+    expect(await env.CLIENT_PHOTOS.head(kept ?? "")).toBeNull();
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM client_report_photos").first("n")).toBe(0);
   });
 
   it("refuses anything but a JPEG, and a report that is not the client's", async () => {

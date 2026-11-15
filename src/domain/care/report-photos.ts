@@ -4,17 +4,21 @@
 
 import { inspectImage } from "../../lib/image-bytes.ts";
 import { PROBLEM_PHOTOS_MAX, reportReference } from "../../policy/problems.ts";
-import { putCounted } from "../platform/storage-meter.ts";
+import { deleteCounted, putCounted } from "../platform/storage-meter.ts";
 
 /** Where a client's report photographs are kept, which erasure deletes with them. */
 export const reportPhotosOf = (personId: string): string => `reports/${personId}/`;
 
-const keyOf = (personId: string, reportId: string, n: number) =>
-  `${reportPhotosOf(personId)}${reportId}/${String(n)}.jpg`;
+const keyOf = (personId: string, reportId: string) =>
+  `${reportPhotosOf(personId)}${reportId}/${crypto.randomUUID()}.jpg`;
 
 export type PhotoAdded = { readonly n: number } | "full" | "not_a_jpeg";
 
-/** Keeps the photograph as the report's next, and tells Care in its chat; full at three, refused if no JPEG. */
+/**
+ * Keeps the photograph as the report's next and tells Care in its chat; full at three, refused if no JPEG. The file is
+ * kept under a key of its own first, then takes its number in one statement, so two sent at once are numbered apart,
+ * and one past the three is deleted again.
+ */
 export async function addReportPhoto(
   db: D1Database,
   bucket: R2Bucket,
@@ -26,32 +30,32 @@ export async function addReportPhoto(
   },
 ): Promise<PhotoAdded> {
   if (inspectImage(photo.bytes)?.type !== "image/jpeg") return "not_a_jpeg";
-  const held = await db
-    .prepare("SELECT COUNT(*) AS n FROM client_report_photos WHERE report_id = ?1")
-    .bind(photo.report.id)
-    .first<number>("n");
-  const n = (held ?? 0) + 1;
-  if (n > PROBLEM_PHOTOS_MAX) return "full";
-  const key = keyOf(photo.personId, photo.report.id, n);
+  const key = keyOf(photo.personId, photo.report.id);
   await putCounted({ db, bucket, key, bytes: photo.bytes, contentType: "image/jpeg" });
   const at = photo.at.toISOString();
-  const note = `${reportReference(photo.report.number)}: photo ${String(n)} of ${String(PROBLEM_PHOTOS_MAX)} came.`;
-  await db.batch([
-    db
-      .prepare(
-        `INSERT INTO client_report_photos (report_id, n, object_key, bytes, created_at) VALUES (?1, ?2, ?3, ?4, ?5)
-         ON CONFLICT DO NOTHING`,
-      )
-      .bind(photo.report.id, n, key, photo.bytes.byteLength, at),
-    db
-      .prepare(
-        `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
-         SELECT ?1, conversation_id, 'note', 'system', ?3, ?4, ?4 FROM client_reports
-          WHERE id = ?2 AND conversation_id IS NOT NULL`,
-      )
-      .bind(crypto.randomUUID(), photo.report.id, note, at),
-  ]);
-  return { n };
+  const taken = await db
+    .prepare(
+      `INSERT INTO client_report_photos (report_id, n, object_key, bytes, created_at)
+       SELECT ?1, COALESCE(MAX(n), 0) + 1, ?2, ?3, ?4 FROM client_report_photos WHERE report_id = ?1
+       HAVING COALESCE(MAX(n), 0) < ?5
+       RETURNING n`,
+    )
+    .bind(photo.report.id, key, photo.bytes.byteLength, at, PROBLEM_PHOTOS_MAX)
+    .first<number>("n");
+  if (taken === null) {
+    await deleteCounted(db, bucket, [key]);
+    return "full";
+  }
+  const note = `${reportReference(photo.report.number)}: photo ${String(taken)} of ${String(PROBLEM_PHOTOS_MAX)} came.`;
+  await db
+    .prepare(
+      `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+       SELECT ?1, conversation_id, 'note', 'system', ?3, ?4, ?4 FROM client_reports
+        WHERE id = ?2 AND conversation_id IS NOT NULL`,
+    )
+    .bind(crypto.randomUUID(), photo.report.id, note, at)
+    .run();
+  return { n: taken };
 }
 
 export interface ReportPhoto {

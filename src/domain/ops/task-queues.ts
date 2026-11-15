@@ -325,21 +325,29 @@ export const QUEUES: readonly Queue[] = [
    WHERE s.state = 'declined' AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'fit_unsigned' AND c.subject_id = a.id)`,
   },
-  // A first fit claimed under its guarantee (docs/decisions/0256-fit-guarantee-setting.md), from the client's report
-  // on the fit, the latest where they wrote more than once, until Care have called them and closed it with what was
-  // done: a refit, or a refund.
+  // A first fit claimed under its guarantee (docs/decisions/0256-fit-guarantee-setting.md): opened by the client's first
+  // report on it since Care last closed a claim on the fit, which its deadline runs from; with their latest words, the
+  // fit's sign-off and the photographs sent; until Care have called them and closed it with what was done. A claim
+  // filed after a close opens a row of its own.
   {
     group: "fit_guarantee_claim",
-    sql: `SELECT 'fit_guarantee_claim' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         r.text AS detail,
-         json_object('reference', 'MM-ISS-' || printf('%04d', r.number), 'fitted_on', date(a.window_start, '+330 minutes'))
-           AS facts,
+    sql: `SELECT 'fit_guarantee_claim' AS "group", r.id AS id, a.person_id AS person_id, pe.name AS person_name,
+         (SELECT l.text FROM client_reports l WHERE l.claim_visit_id = r.claim_visit_id ORDER BY l.number DESC LIMIT 1)
+           AS detail,
+         json_object('reference', 'MM-ISS-' || printf('%04d', r.number), 'fitted_on', date(a.window_start, '+330 minutes'),
+           'sign_off', s.state, 'conversation_id', r.conversation_id,
+           'photos', (SELECT COUNT(*) FROM client_report_photos p JOIN client_reports l ON l.id = p.report_id
+                       WHERE l.claim_visit_id = r.claim_visit_id AND l.number >= r.number)) AS facts,
          r.created_at AS since, NULL AS due_by, '' AS episode
     FROM client_reports r INDEXED BY client_reports_claims
     JOIN appointments a ON a.id = r.claim_visit_id JOIN people pe ON pe.id = a.person_id
+    LEFT JOIN fit_sign_offs s ON s.appointment_id = a.id
    WHERE r.claim_visit_id IS NOT NULL AND a.deleted_at IS NULL AND pe.erased_at IS NULL
-     AND r.number = (SELECT MAX(o.number) FROM client_reports o WHERE o.claim_visit_id = r.claim_visit_id)
-     AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'fit_guarantee_claim' AND c.subject_id = a.id)`,
+     AND NOT EXISTS (SELECT 1 FROM task_closures c JOIN client_reports o ON o.id = c.subject_id
+         WHERE c.task_group = 'fit_guarantee_claim' AND o.claim_visit_id = r.claim_visit_id AND c.closed_at >= r.created_at)
+     AND NOT EXISTS (SELECT 1 FROM client_reports e WHERE e.claim_visit_id = r.claim_visit_id AND e.number < r.number
+       AND NOT EXISTS (SELECT 1 FROM task_closures c JOIN client_reports o ON o.id = c.subject_id
+         WHERE c.task_group = 'fit_guarantee_claim' AND o.claim_visit_id = e.claim_visit_id AND c.closed_at >= e.created_at))`,
   },
   // A job that used less than its service expects, or nothing where a visit always uses something, with the
   // technician's reason (docs/decisions/0222-consumables-short-of-expected.md): open until ops check it against the

@@ -50898,17 +50898,43 @@ Request body:
         },
         "reference": {
           "type": "string",
-          "description": "The latest report claiming it, as MM-ISS-0032."
+          "description": "The report that opened the claim, as MM-ISS-0032."
         },
         "fitted_on": {
           "type": "string",
           "format": "date"
+        },
+        "sign_off": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "asked",
+            "signed",
+            "flagged",
+            "declined",
+            null
+          ]
+        },
+        "conversation_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The Care chat the photographs are read beside."
+        },
+        "photos": {
+          "type": "integer"
         }
       },
       "required": [
         "group",
         "reference",
-        "fitted_on"
+        "fitted_on",
+        "sign_off",
+        "conversation_id",
+        "photos"
       ],
       "additionalProperties": false
     },
