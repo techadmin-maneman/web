@@ -1,0 +1,247 @@
+// The client's issue log (docs/decisions/0258-the-issue-log.md): each report with its state and its thread, read from
+// the rows that exist; and their grievances and missed-visit disputes beside them, each with its own state.
+//
+// A report's thread is its own words, then what its Care chat holds from it until the client's next report: Care's
+// replies, under the first name the client knows them by, the client's own later words, a City matter passed on, free
+// visits given, and Care closing the chat or the client marking it sorted.
+
+import { reportReference, type ProblemCategory } from "../../policy/problems.ts";
+
+export type IssueState = "open" | "in_progress" | "resolved";
+
+export interface IssueEvent {
+  readonly at: string;
+  /**
+   * you: the client's words; care: a reply; city: passed to the client's city team; visits: free visits given; closed:
+   * Care closed the chat; sorted: the client marked it sorted; ruled: a dispute's or a grievance's answer.
+   */
+  readonly kind: "you" | "care" | "city" | "visits" | "closed" | "sorted" | "ruled";
+  /** The first name Care's reply came from; null for anything else, or a reply from one with none set. */
+  readonly name: string | null;
+  /** Words, where the event has them: what was written, the visits given, or the ruling. */
+  readonly text: string | null;
+}
+
+export interface Issue {
+  readonly kind: "report" | "grievance" | "dispute";
+  readonly id: string;
+  /** A report's reference, as MM-ISS-0032; null for a grievance or a dispute. */
+  readonly reference: string | null;
+  readonly category: ProblemCategory | null;
+  readonly state: IssueState;
+  readonly raised_at: string;
+  readonly visit_id: string | null;
+  readonly text: string | null;
+  readonly photos: number;
+  readonly events: IssueEvent[];
+}
+
+/** How many of each kind the log reads, newest first. */
+const LOG_LIMIT = 50;
+
+interface ReportRow {
+  id: string;
+  number: number;
+  category: ProblemCategory;
+  visit_id: string | null;
+  text: string | null;
+  conversation_id: string | null;
+  created_at: string;
+  closed_at: string | null;
+  sorted_at: string | null;
+  reopened_at: string | null;
+  photos: number;
+}
+
+interface ThreadRow {
+  conversation_id: string;
+  direction: "in" | "out";
+  text: string | null;
+  sent_at: string;
+  name: string | null;
+}
+
+interface Passed {
+  conversation_id: string | null;
+  raised_at: string;
+}
+
+interface Given {
+  visits: number;
+  given_at: string;
+}
+
+/** The stretch of the chat a report holds: from it until the client's next report in the same chat, by number. */
+function spanOf(report: ReportRow, reports: readonly ReportRow[]): { from: string; to: string | null } {
+  const next = reports
+    .filter((other) => other.conversation_id === report.conversation_id && other.number > report.number)
+    .sort((a, b) => a.number - b.number)[0];
+  return { from: report.created_at, to: next?.created_at ?? null };
+}
+
+const within = (at: string, span: { from: string; to: string | null }) =>
+  at > span.from && (span.to === null || at < span.to);
+
+/** Resolved once closed or marked sorted since it was last reopened; in progress once Care did anything. */
+function stateOf(report: ReportRow, events: readonly IssueEvent[]): IssueState {
+  const settled = [report.closed_at, report.sorted_at]
+    .filter((at): at is string => at !== null)
+    .sort()
+    .at(-1);
+  if (settled !== undefined && (report.reopened_at === null || settled > report.reopened_at)) return "resolved";
+  return events.some((event) => event.kind === "care" || event.kind === "city" || event.kind === "visits")
+    ? "in_progress"
+    : "open";
+}
+
+function reportIssue(
+  report: ReportRow,
+  reports: readonly ReportRow[],
+  rows: { thread: readonly ThreadRow[]; passed: readonly Passed[]; given: readonly Given[] },
+): Issue {
+  const span = spanOf(report, reports);
+  const ours = (conversation: string | null) => conversation === report.conversation_id;
+  const words: IssueEvent = { at: report.created_at, kind: "you", name: null, text: report.text };
+  const events: IssueEvent[] = [
+    words,
+    ...rows.thread
+      .filter((row) => ours(row.conversation_id) && within(row.sent_at, span))
+      .map((row): IssueEvent => {
+        const fromCare = row.direction === "out";
+        return { at: row.sent_at, kind: fromCare ? "care" : "you", name: fromCare ? row.name : null, text: row.text };
+      }),
+    ...rows.passed
+      .filter((row) => ours(row.conversation_id) && within(row.raised_at, span))
+      .map((row): IssueEvent => ({ at: row.raised_at, kind: "city", name: null, text: null })),
+    ...rows.given
+      .filter((row) => within(row.given_at, span))
+      .map((row): IssueEvent => ({ at: row.given_at, kind: "visits", name: null, text: String(row.visits) })),
+    ...(report.closed_at === null ? [] : [{ at: report.closed_at, kind: "closed", name: null, text: null } as const]),
+    ...(report.sorted_at === null ? [] : [{ at: report.sorted_at, kind: "sorted", name: null, text: null } as const]),
+  ].sort((a, b) => a.at.localeCompare(b.at));
+  return {
+    kind: "report",
+    id: report.id,
+    reference: reportReference(report.number),
+    category: report.category,
+    state: stateOf(report, events),
+    raised_at: report.created_at,
+    visit_id: report.visit_id,
+    text: report.text,
+    photos: report.photos,
+    events,
+  };
+}
+
+async function reportsOf(db: D1Database, personId: string): Promise<Issue[]> {
+  const { results: reports } = await db
+    .prepare(
+      `SELECT r.id, r.number, r.category, r.visit_id, r.text, r.conversation_id, r.created_at, r.closed_at, r.sorted_at,
+              r.reopened_at, (SELECT COUNT(*) FROM client_report_photos p WHERE p.report_id = r.id) AS photos
+         FROM client_reports r
+        WHERE r.person_id = ?1
+        ORDER BY r.created_at DESC
+        LIMIT ${String(LOG_LIMIT)}`,
+    )
+    .bind(personId)
+    .all<ReportRow>();
+  const oldest = reports.at(-1)?.created_at;
+  if (oldest === undefined) return [];
+  const chats = JSON.stringify([...new Set(reports.flatMap((report) => report.conversation_id ?? []))]);
+  const [thread, passed, given] = await db.batch([
+    db
+      .prepare(
+        `SELECT m.conversation_id, m.direction, m.text, m.sent_at, cn.name
+           FROM chat_messages m
+           LEFT JOIN care_names cn ON cn.email = m.author
+          WHERE m.conversation_id IN (SELECT value FROM json_each(?1)) AND m.direction IN ('in', 'out')
+            AND m.sent_at > ?2
+          ORDER BY m.sent_at`,
+      )
+      .bind(chats, oldest),
+    db
+      .prepare("SELECT conversation_id, raised_at FROM city_matters WHERE person_id = ?1 AND raised_at > ?2")
+      .bind(personId, oldest),
+    db
+      .prepare("SELECT visits, given_at FROM remedies WHERE person_id = ?1 AND state = 'given' AND given_at > ?2")
+      .bind(personId, oldest),
+  ]);
+  const rows = {
+    thread: (thread?.results ?? []) as ThreadRow[],
+    passed: (passed?.results ?? []) as Passed[],
+    given: (given?.results ?? []) as Given[],
+  };
+  return reports.map((report) => reportIssue(report, reports, rows));
+}
+
+interface GrievanceRow {
+  id: string;
+  text: string | null;
+  state: string;
+  response: string | null;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+interface DisputeRow {
+  id: string;
+  reason: string | null;
+  created_at: string;
+  ruling: string | null;
+  ruled_at: string | null;
+  appointment_id: string | null;
+}
+
+/** The client's grievances and missed-visit disputes, each answered or still open. */
+async function othersOf(db: D1Database, personId: string): Promise<Issue[]> {
+  const [grievances, disputes] = await db.batch([
+    db
+      .prepare(
+        `SELECT id, text, state, response, resolved_at, created_at FROM grievances WHERE person_id = ?1
+          ORDER BY created_at DESC LIMIT ${String(LOG_LIMIT)}`,
+      )
+      .bind(personId),
+    db
+      .prepare(
+        `SELECT d.id, d.reason, d.created_at, d.ruling, d.ruled_at, n.appointment_id
+           FROM no_show_disputes d JOIN no_show_cases n ON n.id = d.case_id
+          WHERE d.person_id = ?1 ORDER BY d.created_at DESC LIMIT ${String(LOG_LIMIT)}`,
+      )
+      .bind(personId),
+  ]);
+  const ruled = (at: string | null, text: string | null): IssueEvent[] =>
+    at === null ? [] : [{ at, kind: "ruled", name: null, text }];
+  const asked = (at: string, text: string | null): IssueEvent => ({ at, kind: "you", name: null, text });
+  return [
+    ...((grievances?.results ?? []) as GrievanceRow[]).map((row): Issue => ({
+      kind: "grievance",
+      id: row.id,
+      reference: null,
+      category: null,
+      state: row.state === "resolved" ? "resolved" : "open",
+      raised_at: row.created_at,
+      visit_id: null,
+      text: row.text,
+      photos: 0,
+      events: [asked(row.created_at, row.text), ...ruled(row.resolved_at, row.response)],
+    })),
+    ...((disputes?.results ?? []) as DisputeRow[]).map((row): Issue => ({
+      kind: "dispute",
+      id: row.id,
+      reference: null,
+      category: null,
+      state: row.ruling === null ? "open" : "resolved",
+      raised_at: row.created_at,
+      visit_id: row.appointment_id,
+      text: row.reason,
+      photos: 0,
+      events: [asked(row.created_at, row.reason), ...ruled(row.ruled_at, row.ruling)],
+    })),
+  ];
+}
+
+/** Everything in the client's issue log, newest first. */
+export async function issueLogOf(db: D1Database, personId: string): Promise<Issue[]> {
+  const [reports, others] = await Promise.all([reportsOf(db, personId), othersOf(db, personId)]);
+  return [...reports, ...others].sort((a, b) => b.raised_at.localeCompare(a.raised_at));
+}

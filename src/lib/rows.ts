@@ -240,6 +240,26 @@ export interface Rows {
     readonly endpoint: string;
     readonly subscribed_at: string;
   };
+  readonly client_report_photos: {
+    readonly report_id: string;
+    readonly n: number;
+    readonly object_key: string;
+    readonly bytes: number;
+    readonly created_at: string;
+  };
+  readonly client_reports: {
+    readonly id: string;
+    readonly number: number;
+    readonly person_id: string;
+    readonly category: string;
+    readonly visit_id: string | null;
+    readonly text: string | null;
+    readonly conversation_id: string | null;
+    readonly created_at: string;
+    readonly closed_at: string | null;
+    readonly sorted_at: string | null;
+    readonly reopened_at: string | null;
+  };
   readonly consents: {
     readonly id: string;
     readonly person_id: string;

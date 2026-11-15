@@ -240,6 +240,10 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO tech_alert_kinds_off (technician_id, kind, set_at) VALUES ('t1', 'day_ahead', '${AT}')`,
   `INSERT INTO push_subscriptions (device_id, endpoint, subscribed_at)
      VALUES ('d1', 'https://fcm.googleapis.com/fcm/send/phone-1', '${AT}')`,
+  `INSERT INTO client_reports (id, number, person_id, category, text, conversation_id, created_at)
+     VALUES ('cr1', 1, 'p1', 'edges_lifting', 'The front lifts.', 'cv1', '${AT}')`,
+  `INSERT INTO client_report_photos (report_id, n, object_key, bytes, created_at)
+     VALUES ('cr1', 1, 'reports/p1/cr1/1.jpg', 1024, '${AT}')`,
   `INSERT INTO client_push_subscriptions (session_id, endpoint, subscribed_at)
      VALUES ('s2', 'https://fcm.googleapis.com/fcm/send/client-1', '${AT}')`,
   `INSERT INTO step_send_backs (id, appointment_id, kind, reason, sent_by, sent_at)

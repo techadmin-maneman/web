@@ -29,7 +29,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
-| The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
+| The Care inbox | `conversations`, `chat_messages`, `client_reports`, `client_report_photos`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visit_outcomes`, `consumables_used`, `consumable_shortfalls`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
@@ -75,6 +75,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [client_alerts](#client_alerts): What every technician reads in red before they start on a client, raised by staff or by a technician at a close; one taken off is marked so, never deleted, until an erasure (ADR 0242).
 - [client_app_alerts](#client_app_alerts): A client's alerts in their app, over the last 30 days: one beside each message written to them but WhatsApp's own, and one each time a technician asks for their sign-off; when each was pushed and read (ADR 0255).
 - [client_push_subscriptions](#client_push_subscriptions): The session that takes a client's pushes, one subscription a session, by the push service's address; a session signed out, revoked or ended takes none (ADR 0255).
+- [client_report_photos](#client_report_photos): Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0258).
+- [client_reports](#client_reports): Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0258).
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 - [consumable_shortfalls](#consumable_shortfalls): A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).
@@ -684,6 +686,47 @@ Made by `0211_client_app_alerts.sql`.
 Indexes:
 
 - A `UNIQUE` constraint: unique on (`endpoint`)
+
+## client_report_photos
+
+Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0258).
+
+Made by `0212_client_reports.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `report_id` | TEXT | no |  | primary key; → `client_reports.id` |  |
+| `n` | INTEGER | no |  | primary key |  |
+| `object_key` | TEXT | no |  |  |  |
+| `bytes` | INTEGER | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+
+## client_reports
+
+Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0258).
+
+Made by `0212_client_reports.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `number` | INTEGER | no |  |  | Shown as MM-ISS-0032: one more than the last report's. |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `category` | TEXT | no |  |  |  |
+| `visit_id` | TEXT | yes |  | → `appointments.id` |  |
+| `text` | TEXT | yes |  |  | The client's words; NULL once they are erased. |
+| `conversation_id` | TEXT | yes |  | → `conversations.id` |  |
+| `created_at` | TEXT | no |  |  |  |
+| `closed_at` | TEXT | yes |  |  | When Care closed its chat after it, when the client marked it sorted, and when they last reopened it. |
+| `sorted_at` | TEXT | yes |  |  |  |
+| `reopened_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `client_reports_by_conversation`: on (`conversation_id`)
+- `client_reports_by_person`: on (`person_id`, `created_at`)
+- `client_reports_guarantee`: on (`created_at`), where `category = 'fit_guarantee'`
+- A `UNIQUE` constraint: unique on (`number`)
 
 ## consents
 

@@ -136,6 +136,8 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     tables: [
       "conversations",
       "chat_messages",
+      "client_reports",
+      "client_report_photos",
       "care_owners",
       "care_weekly_off",
       "care_leave",

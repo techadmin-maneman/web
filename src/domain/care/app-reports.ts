@@ -1,13 +1,40 @@
-// A client's word from the app that something is wrong with their hair system or with a visit
-// (docs/decisions/0129-the-care-inbox.md): filed in their Care thread as though written on WhatsApp, with a note for
-// Care alone beside it of their piece, when it was fitted and falls due, and its supplier's warranty. Their photographs
-// follow on WhatsApp, into the same thread. Filing it sends nothing.
+// A client's report from the app that something is wrong (docs/decisions/0129-the-care-inbox.md,
+// docs/decisions/0258-the-issue-log.md): recorded with its number for their issue log, and filed in their Care thread
+// as though written on WhatsApp, under its reference and category, with a note for Care alone beside it of their piece,
+// when it was fitted and falls due, and its supplier's warranty. Filing it sends nothing.
 
 import { fullDate, shortDate } from "@maneman/web-kit/dates";
 import { indiaDate } from "../../lib/india-time.ts";
-import type { ProblemAbout } from "../../policy/problems.ts";
+import { reportReference, type ProblemCategory } from "../../policy/problems.ts";
 import { warrantyEndsOn } from "../../policy/purchasing.ts";
 import { fileInbound } from "./inbox.ts";
+import type { CloseReason } from "./replies.ts";
+
+/** Each category as Care read it in the thread. */
+const CATEGORY_WORDS: Readonly<Record<ProblemCategory, string>> = {
+  fit_guarantee: "The fit (guarantee)",
+  edges_lifting: "Edges lifting",
+  itching: "Itching or irritation",
+  colour: "Colour or shine",
+  shedding: "Shedding",
+  fit_comfort: "Fit or comfort",
+  visit: "A visit or technician",
+  payment: "Payment or refund",
+  other: "Something else",
+};
+
+/** The closure reason Care's close opens on, for each category. */
+export const CLOSE_REASON_OF: Readonly<Record<ProblemCategory, CloseReason>> = {
+  fit_guarantee: "fit_problem",
+  edges_lifting: "fit_problem",
+  itching: "aftercare",
+  colour: "aftercare",
+  shedding: "aftercare",
+  fit_comfort: "fit_problem",
+  visit: "booking",
+  payment: "billing",
+  other: "other",
+};
 
 interface PieceRow {
   readonly piece_code: string;
@@ -65,23 +92,40 @@ async function visitLine(db: D1Database, personId: string, visitId: string): Pro
 export interface ProblemReport {
   readonly personId: string;
   readonly mobileE164: string;
-  readonly about: ProblemAbout;
-  /** The visit it is about; null for one about the hair system alone. */
+  readonly category: ProblemCategory;
+  /** The visit it is about; null for one about none. */
   readonly visitId: string | null;
   readonly text: string;
   readonly at: Date;
 }
 
-/** Files the report and Care's note beside it; false where the visit named is not the client's. */
-export async function reportProblem(db: D1Database, report: ProblemReport): Promise<boolean> {
+/** A report recorded: its ID and the number its reference is made of. */
+export interface Reported {
+  readonly id: string;
+  readonly number: number;
+}
+
+/**
+ * Records the report with the next number, then files it and Care's note beside it in the client's thread; null where
+ * the visit named is not the client's.
+ */
+export async function reportProblem(db: D1Database, report: ProblemReport): Promise<Reported | null> {
   const about = report.visitId === null ? null : await visitLine(db, report.personId, report.visitId);
-  if (report.visitId !== null && about === null) return false;
+  if (report.visitId !== null && about === null) return null;
   const piece = await db.prepare(PIECE_SQL).bind(report.personId).first<PieceRow>();
-  const heading =
-    report.about === "hair_system" ? "Something's wrong with my hair system" : "Something's wrong with a visit";
+  const id = crypto.randomUUID();
+  const recorded = await db
+    .prepare(
+      `INSERT INTO client_reports (id, number, person_id, category, visit_id, text, created_at)
+       SELECT ?1, COALESCE(MAX(number), 0) + 1, ?2, ?3, ?4, ?5, ?6 FROM client_reports
+       RETURNING number`,
+    )
+    .bind(id, report.personId, report.category, report.visitId, report.text, report.at.toISOString())
+    .first<{ number: number }>();
+  const number = recorded?.number ?? 0;
   await fileInbound(db, {
     mobileE164: report.mobileE164,
-    text: `${heading}:\n${report.text}`,
+    text: `${reportReference(number)} · ${CATEGORY_WORDS[report.category]}:\n${report.text}`,
     providerMessageId: null,
     at: report.at,
   });
@@ -95,5 +139,56 @@ export async function reportProblem(db: D1Database, report: ProblemReport): Prom
     )
     .bind(crypto.randomUUID(), report.mobileE164, note, at)
     .run();
-  return true;
+  // The thread it went into, which its log reads.
+  await db
+    .prepare(
+      "UPDATE client_reports SET conversation_id = (SELECT id FROM conversations WHERE mobile_e164 = ?2) WHERE id = ?1",
+    )
+    .bind(id, report.mobileE164)
+    .run();
+  return { id, number };
+}
+
+/** A report of the client's, by its number; null for any other. */
+export async function reportOf(
+  db: D1Database,
+  personId: string,
+  number: number,
+): Promise<{ readonly id: string; readonly number: number } | null> {
+  return db
+    .prepare("SELECT id, number FROM client_reports WHERE person_id = ?1 AND number = ?2")
+    .bind(personId, number)
+    .first<{ id: string; number: number }>();
+}
+
+/**
+ * The client's later words on a report, an update or a reopening, filed in its Care chat under its reference; either
+ * opens it again, so one settled reads open until Care settle it once more.
+ */
+export async function addToReport(
+  db: D1Database,
+  added: {
+    readonly report: { readonly id: string; readonly number: number };
+    readonly mobileE164: string;
+    readonly text: string;
+    readonly reopening: boolean;
+    readonly at: Date;
+  },
+): Promise<void> {
+  const heading = `${reportReference(added.report.number)} · ${added.reopening ? "Reopened" : "Update"}`;
+  await fileInbound(db, {
+    mobileE164: added.mobileE164,
+    text: `${heading}:\n${added.text}`,
+    providerMessageId: null,
+    at: added.at,
+  });
+  await db
+    .prepare("UPDATE client_reports SET reopened_at = ?2 WHERE id = ?1")
+    .bind(added.report.id, added.at.toISOString())
+    .run();
+}
+
+/** The client says the report is sorted. */
+export async function markReportSorted(db: D1Database, reportId: string, at: Date): Promise<void> {
+  await db.prepare("UPDATE client_reports SET sorted_at = ?2 WHERE id = ?1").bind(reportId, at.toISOString()).run();
 }

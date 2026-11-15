@@ -169,6 +169,13 @@ export async function closeConversation(
          WHERE id = ?1`,
       )
       .bind(change.conversationId, at, change.actor.id, change.reason),
+    // Closing the chat settles each report in it the client's issue log holds open (docs/decisions/0258-the-issue-log.md).
+    db
+      .prepare(
+        `UPDATE client_reports SET closed_at = ?2
+         WHERE conversation_id = ?1 AND (closed_at IS NULL OR closed_at < reopened_at)`,
+      )
+      .bind(change.conversationId, at),
     auditStatement(
       db,
       {

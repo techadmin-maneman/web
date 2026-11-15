@@ -2637,9 +2637,47 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** The client's issue log: their reports, grievances and missed-visit disputes, newest first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The log */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IssueLog"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         put?: never;
-        /** Tell Care something is wrong with the hair system or a visit */
+        /** Tell Care something is wrong: answered with the report's reference for the issue log */
         post: {
             parameters: {
                 query?: never;
@@ -2653,7 +2691,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Filed for Care, who answer on WhatsApp */
+                /** @description Filed for Care, who answer in the app and on WhatsApp */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -2726,6 +2764,323 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/problems/{reference}/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add the client's words to a report of theirs, which opens it again where it was settled */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The report's reference, as MM-ISS-0032. */
+                    reference: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["IssueWords"];
+                };
+            };
+            responses: {
+                /** @description Filed in its Care chat */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no report of this client's by that reference */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description rate_limited: 20 a day */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/problems/{reference}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen a settled report of the client's: it is happening again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The report's reference, as MM-ISS-0032. */
+                    reference: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["IssueWords"];
+                };
+            };
+            responses: {
+                /** @description Reopened, and filed in its Care chat */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no report of this client's by that reference */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description rate_limited: 20 a day */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/problems/{reference}/sorted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The client says a report of theirs is sorted */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The report's reference, as MM-ISS-0032. */
+                    reference: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Marked sorted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no report of this client's by that reference */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -5845,16 +6200,56 @@ export interface components {
         ProblemReported: {
             /** @enum {string} */
             state: "sent";
+            /** @description The report's reference, as MM-ISS-0032. */
+            reference: string;
         };
         ProblemReport: {
-            /** @enum {string} */
-            about: "hair_system" | "visit";
+            /**
+             * @description What it is about: fit_guarantee, edges_lifting, itching, colour, shedding, fit_comfort, visit, payment, other; hair_system, an older app's, reads fit_comfort.
+             * @enum {string}
+             */
+            about: "fit_guarantee" | "edges_lifting" | "itching" | "colour" | "shedding" | "fit_comfort" | "visit" | "payment" | "other" | "hair_system";
             /**
              * @description The visit it is about, if one.
              * @default null
              */
             visit_id: string | null;
             /** @description What is wrong, in their words. */
+            text: string;
+        };
+        IssueLog: {
+            issues: components["schemas"]["Issue"][];
+        };
+        Issue: {
+            /** @enum {string} */
+            kind: "report" | "grievance" | "dispute";
+            id: string;
+            /** @description A report's, as MM-ISS-0032. */
+            reference: string | null;
+            category: ("fit_guarantee" | "edges_lifting" | "itching" | "colour" | "shedding" | "fit_comfort" | "visit" | "payment" | "other") | null;
+            /** @enum {string} */
+            state: "open" | "in_progress" | "resolved";
+            /** Format: date-time */
+            raised_at: string;
+            visit_id: string | null;
+            text: string | null;
+            photos: number;
+            /** @description The issue's thread, oldest first. */
+            events: components["schemas"]["IssueEvent"][];
+        };
+        IssueEvent: {
+            /** Format: date-time */
+            at: string;
+            /**
+             * @description you: the client's words; care: a reply; city: passed to their city team; visits: free visits given (text: how many); closed: Care closed it; sorted: the client marked it sorted; ruled: the answer to a grievance or a dispute (text: its words, or refunded or upheld).
+             * @enum {string}
+             */
+            kind: "you" | "care" | "city" | "visits" | "closed" | "sorted" | "ruled";
+            /** @description The first name a reply came from. */
+            name: string | null;
+            text: string | null;
+        };
+        IssueWords: {
             text: string;
         };
         PaymentEntry: {

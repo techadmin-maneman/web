@@ -76,6 +76,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).",
   care_weekly_off: "Each Care team member's weekly days off, as a Customer Care manager sets them (ADR 0134).",
   care_leave: "Leave for a Care team member, from one date to another; their chats are covered meanwhile (ADR 0134).",
+  client_reports:
+    "Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0258).",
+  client_report_photos:
+    "Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0258).",
   client_app_alerts:
     "A client's alerts in their app, over the last 30 days: one beside each message written to them but WhatsApp's own, and one each time a technician asks for their sign-off; when each was pushed and read (ADR 0255).",
   client_push_subscriptions:

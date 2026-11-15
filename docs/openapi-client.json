@@ -3804,10 +3804,15 @@
             "enum": [
               "sent"
             ]
+          },
+          "reference": {
+            "type": "string",
+            "description": "The report's reference, as MM-ISS-0032."
           }
         },
         "required": [
-          "state"
+          "state",
+          "reference"
         ],
         "additionalProperties": false
       },
@@ -3817,9 +3822,18 @@
           "about": {
             "type": "string",
             "enum": [
-              "hair_system",
-              "visit"
-            ]
+              "fit_guarantee",
+              "edges_lifting",
+              "itching",
+              "colour",
+              "shedding",
+              "fit_comfort",
+              "visit",
+              "payment",
+              "other",
+              "hair_system"
+            ],
+            "description": "What it is about: fit_guarantee, edges_lifting, itching, colour, shedding, fit_comfort, visit, payment, other; hair_system, an older app's, reads fit_comfort."
           },
           "visit_id": {
             "anyOf": [
@@ -3843,6 +3857,188 @@
         },
         "required": [
           "about",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "IssueLog": {
+        "type": "object",
+        "properties": {
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Issue"
+            }
+          }
+        },
+        "required": [
+          "issues"
+        ],
+        "additionalProperties": false
+      },
+      "Issue": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "report",
+              "grievance",
+              "dispute"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A report's, as MM-ISS-0032."
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "fit_guarantee",
+                  "edges_lifting",
+                  "itching",
+                  "colour",
+                  "shedding",
+                  "fit_comfort",
+                  "visit",
+                  "payment",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "resolved"
+            ]
+          },
+          "raised_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photos": {
+            "type": "integer"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueEvent"
+            },
+            "description": "The issue's thread, oldest first."
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "reference",
+          "category",
+          "state",
+          "raised_at",
+          "visit_id",
+          "text",
+          "photos",
+          "events"
+        ],
+        "additionalProperties": false
+      },
+      "IssueEvent": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "you",
+              "care",
+              "city",
+              "visits",
+              "closed",
+              "sorted",
+              "ruled"
+            ],
+            "description": "you: the client's words; care: a reply; city: passed to their city team; visits: free visits given (text: how many); closed: Care closed it; sorted: the client marked it sorted; ruled: the answer to a grievance or a dispute (text: its words, or refunded or upheld)."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first name a reply came from."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "kind",
+          "name",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "IssueWords": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
           "text"
         ],
         "additionalProperties": false
@@ -9727,7 +9923,7 @@
     },
     "/api/me/problems": {
       "post": {
-        "summary": "Tell Care something is wrong with the hair system or a visit",
+        "summary": "Tell Care something is wrong: answered with the report's reference for the issue log",
         "requestBody": {
           "required": true,
           "content": {
@@ -9740,7 +9936,7 @@
         },
         "responses": {
           "201": {
-            "description": "Filed for Care, who answer on WhatsApp",
+            "description": "Filed for Care, who answer in the app and on WhatsApp",
             "content": {
               "application/json": {
                 "schema": {
@@ -9882,6 +10078,563 @@
                               "type": "string",
                               "enum": [
                                 "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "The client's issue log: their reports, grievances and missed-visit disputes, newest first",
+        "responses": {
+          "200": {
+            "description": "The log",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueLog"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/problems/{reference}/updates": {
+      "post": {
+        "summary": "Add the client's words to a report of theirs, which opens it again where it was settled",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The report's reference, as MM-ISS-0032."
+            },
+            "required": true,
+            "description": "The report's reference, as MM-ISS-0032.",
+            "name": "reference",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueWords"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Filed in its Care chat"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no report of this client's by that reference",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 20 a day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/problems/{reference}/reopen": {
+      "post": {
+        "summary": "Reopen a settled report of the client's: it is happening again",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The report's reference, as MM-ISS-0032."
+            },
+            "required": true,
+            "description": "The report's reference, as MM-ISS-0032.",
+            "name": "reference",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueWords"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Reopened, and filed in its Care chat"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no report of this client's by that reference",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 20 a day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/problems/{reference}/sorted": {
+      "post": {
+        "summary": "The client says a report of theirs is sorted",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The report's reference, as MM-ISS-0032."
+            },
+            "required": true,
+            "description": "The report's reference, as MM-ISS-0032.",
+            "name": "reference",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Marked sorted"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no report of this client's by that reference",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
                               ]
                             }
                           },

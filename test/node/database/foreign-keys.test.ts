@@ -35,6 +35,7 @@ const HANDLED: Readonly<Record<string, string>> = {
   "dispatch_moves.message_id -> outbound_messages": "kept: not deleted while one names it",
   "chat_messages.conversation_id -> conversations": "deleted first, in the same batch",
   "city_matters.conversation_id -> conversations": "kept: not deleted while one names it",
+  "client_reports.conversation_id -> conversations": "kept: not deleted while a report names it",
   // A city renamed (docs/decisions/0198-cities-as-data.md).
   "leads.city -> cities": RENAMED,
   "technicians.city -> cities": RENAMED,
