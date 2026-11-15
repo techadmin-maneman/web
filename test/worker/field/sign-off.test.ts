@@ -181,7 +181,7 @@ describe("a fit's sign-off", () => {
 
     await ask(job, "event-ask-02");
     await sign({ result: "signed", checks: ALL_TICKED });
-    // A decline and a signature the phone queued before it heard, answered with the client's sign-off.
+    // A decline the phone queued before it heard, answered with the client's sign-off.
     const declined = await job.post(`/api/tech/jobs/${JOB}/sign-off-declined`, { reason: "No phone" }, "event-d-1");
     expect(await declined.json()).toMatchObject({ state: "signed", declined_reason: null });
     expect((await close(job)).status).toBe(202);
