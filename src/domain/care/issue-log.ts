@@ -177,21 +177,33 @@ async function reportsOf(db: D1Database, personId: string): Promise<Issue[]> {
   const [thread, passed, given] = await db.batch([
     db
       .prepare(
-        `SELECT m.conversation_id, m.direction, m.text, m.sent_at, cn.name
-           FROM chat_messages m
-           JOIN conversations c ON c.id = m.conversation_id
+        `WITH chats AS (
+           -- The chats the reports went into, and the one on the client's number now, where their updates go.
+           SELECT c.id,
+             -- When the client came to the chat: their first report in it, or the change that gave them its number,
+             -- whichever is earlier. Before that, the number was another's.
+             (SELECT MIN(f.created_at) FROM client_reports f WHERE f.conversation_id = c.id AND f.person_id = ?3)
+               AS first_report,
+             (SELECT MAX(n.decided_at) FROM number_change_requests n
+               WHERE n.person_id = ?3 AND n.state = 'confirmed' AND n.new_mobile_e164 = c.mobile_e164) AS came,
+             -- Only while the client held the chat's number: one they changed away from may be someone else's since.
+             (SELECT MIN(n.decided_at) FROM number_change_requests n
+               WHERE n.person_id = ?3 AND n.state = 'confirmed' AND n.replaced_mobile_e164 = c.mobile_e164
+                 AND n.decided_at > ?2) AS left_at
+             FROM conversations c
+            WHERE c.id IN (SELECT value FROM json_each(?1)
+                           UNION SELECT cur.id FROM conversations cur
+                            WHERE cur.mobile_e164 = (SELECT pe.mobile_e164 FROM people pe WHERE pe.id = ?3))
+         )
+         SELECT m.conversation_id, m.direction, m.text, m.sent_at, cn.name
+           FROM chats
+           JOIN chat_messages m ON m.conversation_id = chats.id
            LEFT JOIN care_names cn ON cn.email = m.author
-          WHERE m.conversation_id IN (SELECT value FROM json_each(?1)) AND m.direction IN ('in', 'out')
-            AND m.sent_at > ?2
+          WHERE m.direction IN ('in', 'out') AND m.sent_at > ?2
             -- The after-hours answer is no reply from Care (docs/decisions/0133-the-after-hours-reply.md).
             AND m.author <> ?4
-            -- Nor anything in a chat before the client's first report in it: a number they moved to was another's.
-            AND m.sent_at > (SELECT MIN(f.created_at) FROM client_reports f WHERE f.conversation_id = c.id
-                              AND f.person_id = ?3)
-            -- Only while the client held the chat's number: one they changed away from may be someone else's since.
-            AND m.sent_at < COALESCE((SELECT MIN(n.decided_at) FROM number_change_requests n
-                  WHERE n.person_id = ?3 AND n.state = 'confirmed' AND n.replaced_mobile_e164 = c.mobile_e164
-                    AND n.decided_at > ?2), '9999')
+            AND m.sent_at > COALESCE(MIN(chats.first_report, chats.came), chats.first_report, chats.came)
+            AND m.sent_at < COALESCE(chats.left_at, '9999')
           ORDER BY m.sent_at`,
       )
       .bind(chats, oldest, personId, AUTO_REPLY),

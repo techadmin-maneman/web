@@ -243,6 +243,21 @@ describe("the issue log", () => {
     expect(itching?.events.map((event) => event.text)).toEqual(["It itches."]);
   });
 
+  it("files an update sent after a change of number under its report, before and after a report on the new one", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await changesNumber(10);
+    expect((await add("MM-ISS-0001", "updates", 20, "Still lifting at the front.")).status).toBe(204);
+    await report({ about: "itching", text: "It itches." }, cookie, 30);
+    expect((await add("MM-ISS-0001", "updates", 40, "And now at the back.")).status).toBe(204);
+    const [itching, lifting] = await log();
+    expect(lifting?.events.map((event) => event.text)).toEqual([
+      "The front lifts.",
+      "Still lifting at the front.",
+      "And now at the back.",
+    ]);
+    expect(itching?.events.map((event) => event.text)).toEqual(["It itches."]);
+  });
+
   it("counts the after-hours answer as no reply from Care", async () => {
     await report({ about: "shedding", text: "Hair on the pillow." });
     await env.DB.prepare(
@@ -419,7 +434,7 @@ describe("a report's photographs", () => {
     expect(fresh).not.toBe("");
     expect(
       await env.DB.prepare("SELECT state, last_inbound_at FROM conversations WHERE id = ?1").bind(fresh).first(),
-    ).toEqual({ state: "open", last_inbound_at: null });
+    ).toEqual({ state: "open", last_inbound_at: after(20).toISOString() });
     expect(
       await env.DB.prepare(
         "SELECT conversation_id FROM chat_messages WHERE text = 'MM-ISS-0001: photo 1 of 3 came.'",
@@ -432,6 +447,20 @@ describe("a report's photographs", () => {
     await careCloses(30, fresh);
     expect((await log())[0]).toMatchObject({ state: "resolved" });
     expect(old).not.toBe(fresh);
+  });
+
+  it("runs Care's reply clock from a photograph sent days after a close, not from words left before it", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await careReplies("We will re-bond it on the 22nd.", 5);
+    // The client's thanks goes unanswered, and Care close the chat.
+    await fileInbound(env.DB, { mobileE164: "+919810000001", text: "Thanks.", providerMessageId: null, at: after(10) });
+    await careCloses(15);
+    const twoDays = 2 * 24 * 60;
+    await send(syntheticJpeg(640, 480), "MM-ISS-0001", twoDays);
+    const opened = await request(ops(), `/api/conversations/${await chat()}`);
+    expect(
+      (await opened.json<{ conversation: { state: string; waiting_since: string | null } }>()).conversation,
+    ).toMatchObject({ state: "open", waiting_since: after(twoDays).toISOString() });
   });
 
   it("reopens a closed chat with a photograph's note", async () => {

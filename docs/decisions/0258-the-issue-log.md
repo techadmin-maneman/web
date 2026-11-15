@@ -25,7 +25,9 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
 3. **A report's thread** is its own words, then what its Care chat holds from it until the client's next report: Care's
    replies, under the first name the client knows them by, never the after-hours answer; the client's own later words,
    and every update or reopening sent to it from the app, wherever it falls; a City matter passed on; free visits given;
-   and Care closing the chat. A chat on a number the client has since changed away from is read only up to the change.
+   and Care closing the chat. Each chat is read from when the client came to it, their first report in it or the
+   change that gave them its number, and one on a number they have since changed away from only up to the change.
+   An update or reopening sent after a change of number goes to the chat on the new one, and is read there.
 4. **Its state**, read from those rows: `resolved` once Care closed the chat after it, or the client marked it sorted,
    with nothing from the client since, in the app or the chat; `in_progress` once Care replied, passed it to the city
    or gave visits; `open` until then. Care read a client in the chat on the number they hold now: its close settles
@@ -35,8 +37,9 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
    theirs they may add an update (their words into its chat), mark it sorted, or reopen it, which says so in the chat
    and opens it again. New reports keep five a day; updates and reopenings have a daily limit of their own.
 6. **Photos.** Up to three a report, sent after it with `POST /api/me/problems/{reference}/photos`, a JPEG of at most
-   the size a visit photograph is kept at. A note in the chat on the client's number says each came, opening that chat
-   as the client's words do (one there is not yet is made), though no WhatsApp window opens with it. The console's
+   the size a visit photograph is kept at. A note in the chat on the client's number says each came; it counts as the
+   client writing from the app, as an update does, so it opens the chat (or makes one) and Care's reply clock runs
+   from it. The console's
    routes list and open them (`GET /api/conversations/{id}/report-photos`), for the chat of whoever made them, on the
    number they hold now. The console draws them beside the chat with its screens, in this same change.
 7. **The same log** lists the client's grievances (answered or not) and missed-visit disputes (open, refunded or upheld),
@@ -53,3 +56,6 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
 - The Care chat stays one thread a client. A report's part of it is the stretch up to the next report, so a reply Care
   meant for an earlier report that comes after a later one reads under the later one.
 - The log, and so Care's close, read a client's newest fifty reports; an older one is left as it stood.
+- A report, an update or a photograph from the app counts as the client's last words in the chat, as a report from
+  the app did before: Care's reply clock runs from it, and so does the reply window the console reads, though only the
+  client's own WhatsApp message opens WhatsApp's.

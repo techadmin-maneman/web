@@ -7,6 +7,7 @@ import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
 import { archivedMessages } from "./chat-archive.ts";
 import { giveCarePerson } from "./care-people.ts";
+import { chatOpened } from "./chat-opened.ts";
 import { openReportsOf } from "./issue-log.ts";
 import { read, readAll } from "../../lib/read-all.ts";
 import { CLOSE_REASON_OF, type CloseReason } from "./replies.ts";
@@ -28,22 +29,7 @@ export interface Inbound {
 export async function fileInbound(db: D1Database, inbound: Inbound): Promise<boolean> {
   const at = inbound.at.toISOString();
   const [, message] = await db.batch([
-    db
-      .prepare(
-        `INSERT INTO conversations (id, person_id, mobile_e164, state, opened_at, last_message_at, last_inbound_at,
-           created_at, updated_at)
-         VALUES (?1, (SELECT id FROM people WHERE mobile_e164 = ?2 AND erased_at IS NULL), ?2, 'open', ?3, ?3, ?3, ?3, ?3)
-         ON CONFLICT (mobile_e164) DO UPDATE SET
-           person_id = COALESCE(conversations.person_id, excluded.person_id),
-           state = 'open',
-           opened_at = CASE WHEN conversations.state = 'closed' THEN excluded.opened_at ELSE conversations.opened_at END,
-           closed_at = NULL,
-           closed_by = NULL,
-           last_message_at = MAX(conversations.last_message_at, excluded.last_message_at),
-           last_inbound_at = excluded.last_inbound_at,
-           updated_at = excluded.updated_at`,
-      )
-      .bind(crypto.randomUUID(), inbound.mobileE164, at),
+    chatOpened(db, inbound.mobileE164, at),
     db
       .prepare(
         `INSERT INTO chat_messages (id, conversation_id, direction, author, text, provider_message_id, sent_at,
