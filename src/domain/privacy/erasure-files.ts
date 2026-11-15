@@ -7,6 +7,7 @@ import { deleteArchivedChats } from "../care/chat-archive.ts";
 import { deleteCounted, deleteUnder } from "../platform/storage-meter.ts";
 import { copyKey, keptLookKey } from "../try-on/kept-try-ons.ts";
 import { documentsOf } from "../clients/client-documents.ts";
+import { reportPhotosOf } from "../care/report-photos.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;
@@ -28,6 +29,13 @@ export async function deleteErasedFiles(env: ErasureEnv, personId: string, now: 
   await deleteVisitPhotos(env, personId);
   // Books keeps its own for the tax record.
   await deleteUnder(env.DB, env.CLIENT_PHOTOS, [documentsOf(personId)]);
+  // The photographs sent with their reports (docs/decisions/0258-the-issue-log.md), then the rows that named them.
+  await deleteUnder(env.DB, env.CLIENT_PHOTOS, [reportPhotosOf(personId)]);
+  await env.DB.prepare(
+    "DELETE FROM client_report_photos WHERE report_id IN (SELECT id FROM client_reports WHERE person_id = ?1)",
+  )
+    .bind(personId)
+    .run();
   await deleteArchivedChats(env.DB, env.BACKUPS, personId);
   await deleteReferralCard(env, personId);
   await env.DB.prepare("UPDATE people SET files_erased_at = ?2 WHERE id = ?1").bind(personId, now.toISOString()).run();

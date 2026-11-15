@@ -4271,6 +4271,7 @@ Razorpay's webhook: payments and refunds
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",

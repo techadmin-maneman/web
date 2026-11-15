@@ -33286,6 +33286,206 @@ A photograph of stock, never cached
 }
 ```
 
+### GET /api/conversations/{id}/report-photos
+
+The photographs of the reports a client's chat holds, oldest report first
+
+**200**: The photographs
+
+```json
+{
+  "$ref": "#/components/schemas/ReportPhotos"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/conversations/{id}/report-photos/{report_id}/{n}
+
+One photograph of a report the chat holds, never cached
+
+**200**: The image
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such photograph in this chat
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/supplier-scorecard
 
 Each supplier's last year: on time in full, lead time, quality and claims
@@ -34982,6 +35182,7 @@ Request body:
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",
@@ -39281,6 +39482,7 @@ Request body:
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",
@@ -58265,6 +58467,57 @@ Request body:
   "required": [
     "photo_id"
   ]
+}
+```
+
+### ReportPhotos
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "photos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ReportPhoto"
+      }
+    }
+  },
+  "required": [
+    "photos"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReportPhoto
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "report_id": {
+      "type": "string"
+    },
+    "reference": {
+      "type": "string",
+      "description": "The report's reference, as MM-ISS-0032."
+    },
+    "n": {
+      "type": "integer"
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "report_id",
+    "reference",
+    "n",
+    "at"
+  ],
+  "additionalProperties": false
 }
 ```
 

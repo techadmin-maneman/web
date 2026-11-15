@@ -7,7 +7,8 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { closeConversation } from "../../../src/domain/care/replies.ts";
 import { asClient, client, signedIn } from "../clients.ts";
-import { markDatabase, NOW } from "../helpers.ts";
+import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
+import { syntheticJpeg } from "../tryon-fixtures.ts";
 
 const ROHIT = "p-rohit";
 const PRIYA = "p-priya";
@@ -150,5 +151,52 @@ describe("the issue log", () => {
         ],
       }),
     ]);
+  });
+});
+
+describe("a report's photographs", () => {
+  const send = (bytes: Uint8Array, reference = "MM-ISS-0001") =>
+    request(appFor("local", fakeDependencies(), {}, "client"), `/api/me/problems/${reference}/photos`, {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "image/jpeg" },
+      body: bytes,
+    });
+  const ops = () => appFor("local", fakeDependencies(), {}, "ops");
+
+  it("takes three JPEGs a report, tells Care in its chat, and lets Care see them", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    for (let n = 1; n <= 3; n += 1) {
+      const sent = await send(syntheticJpeg(640, 480, `photo ${String(n)}`));
+      expect(await sent.json()).toEqual({ n });
+    }
+    const fourth = await send(syntheticJpeg(640, 480));
+    expect(fourth.status).toBe(409);
+    expect(await fourth.json()).toMatchObject({ error: { code: "photos_full" } });
+    expect((await log())[0]).toMatchObject({ photos: 3 });
+    const notes = await env.DB.prepare(
+      "SELECT text FROM chat_messages WHERE direction = 'note' AND text LIKE 'MM-ISS-0001:%'",
+    ).all();
+    expect(notes.results).toHaveLength(3);
+
+    const listed = await request(ops(), `/api/conversations/${await chat()}/report-photos`);
+    const { photos } = await listed.json<{ photos: { report_id: string; reference: string; n: number }[] }>();
+    expect(photos.map((photo) => [photo.reference, photo.n])).toEqual([
+      ["MM-ISS-0001", 1],
+      ["MM-ISS-0001", 2],
+      ["MM-ISS-0001", 3],
+    ]);
+    const file = await request(
+      ops(),
+      `/api/conversations/${await chat()}/report-photos/${photos[0]?.report_id ?? ""}/1`,
+    );
+    expect(file.status).toBe(200);
+    expect(file.headers.get("Content-Type")).toBe("image/jpeg");
+  });
+
+  it("refuses anything but a JPEG, and a report that is not the client's", async () => {
+    await report({ about: "colour", text: "It looks brassy." });
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+    expect((await send(png)).status).toBe(422);
+    expect((await send(syntheticJpeg(64, 64), "MM-ISS-0099")).status).toBe(404);
   });
 });

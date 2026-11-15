@@ -163,6 +163,8 @@ const HISTORY = [
   // An issue each client reported from the app (docs/decisions/0258-the-issue-log.md).
   `INSERT INTO client_reports (id, number, person_id, category, text, created_at)
    SELECT 'cr-' || i, i, 'p-' || i, 'other', 'Something is wrong.', '${AGO}' FROM n`,
+  `INSERT INTO client_report_photos (report_id, n, object_key, bytes, created_at)
+   SELECT 'cr-' || i, 1, 'reports/p-' || i || '/cr-' || i || '/1.jpg', 250000, '${AGO}' FROM n`,
   // Each client's alerts in their app, pushed and read; and a browser of theirs that takes the pushes.
   `INSERT INTO client_app_alerts (id, person_id, kind, subject_kind, subject_id, once_key, written_at, pushed_at, read_at)
    SELECT 'cal-' || i, 'p-' || i, 'visit_reminder', 'appointment', 'a-' || i, 'message:history-' || i, '${HOURS_AGO}',

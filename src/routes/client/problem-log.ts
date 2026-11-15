@@ -5,13 +5,22 @@
 import { z } from "@hono/zod-openapi";
 import { addToReport, markReportSorted, reportOf } from "../../domain/care/app-reports.ts";
 import { issueLogOf } from "../../domain/care/issue-log.ts";
+import { addReportPhoto } from "../../domain/care/report-photos.ts";
+import { MAX_PHOTO_BYTES } from "../../domain/field/tech-photos.ts";
+import { cappedBody } from "../../http/capped-body.ts";
 import { takeOne } from "../../domain/sign-in/rate-limit.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { clientRoute } from "../../http/session-routes.ts";
-import { PROBLEM_ADDS_PER_DAY, PROBLEM_CATEGORIES, PROBLEM_MAX_CHARS, reportNumberOf } from "../../policy/problems.ts";
+import {
+  PROBLEM_ADDS_PER_DAY,
+  PROBLEM_CATEGORIES,
+  PROBLEM_MAX_CHARS,
+  PROBLEM_PHOTOS_MAX,
+  reportNumberOf,
+} from "../../policy/problems.ts";
 
 const EventSchema = z
   .object({
@@ -110,6 +119,24 @@ const sortedRoute = clientRoute({
   responses: { 204: { description: "Marked sorted" }, 401: SIGNED_IN, 404: NO_REPORT },
 });
 
+const photoRoute = clientRoute({
+  method: "post",
+  path: "/api/me/problems/{reference}/photos",
+  summary: `A photograph for a report of the client's: a JPEG of at most 2 MB, up to ${String(PROBLEM_PHOTOS_MAX)} a report`,
+  request: { params: reference },
+  responses: {
+    201: {
+      description: "Kept, and Care told in the report's chat",
+      ...json(z.object({ n: z.number().int() }).strict().openapi("ReportPhotoAdded")),
+    },
+    401: SIGNED_IN,
+    404: NO_REPORT,
+    409: errorResponse(`photos_full: the report has its ${String(PROBLEM_PHOTOS_MAX)} already`),
+    422: errorResponse("photo_invalid_file: not a JPEG, or over 2 MB"),
+    429: LIMITED,
+  },
+});
+
 type Ctx = Parameters<Parameters<App["openapi"]>[1]>[0];
 
 /** The report the path names, where it is the signed-in client's. */
@@ -138,6 +165,22 @@ export function registerClientProblemLog(app: App): void {
       return c.body(null, 204);
     });
   }
+
+  app.openapi(photoRoute, async (c) => {
+    const { subjectId } = clientOf(c);
+    const now = c.var.deps.now();
+    const report = await theirReport(c, c.req.valid("param").reference);
+    if (report === null) return refuse(c, "not_found");
+    const bytes = await cappedBody(c.req.raw, MAX_PHOTO_BYTES);
+    if (bytes === null || bytes.byteLength === 0) return refuse(c, "photo_invalid_file");
+    if (!(await takeOne(c.env.DB, "problem_add:person", subjectId, { now, settings: c.var.config.settings }))) {
+      return refuse(c, "rate_limited");
+    }
+    const added = await addReportPhoto(c.env.DB, c.env.CLIENT_PHOTOS, { personId: subjectId, report, bytes, at: now });
+    if (added === "not_a_jpeg") return refuse(c, "photo_invalid_file");
+    if (added === "full") return refuse(c, "photos_full");
+    return c.json({ n: added.n }, 201);
+  });
 
   app.openapi(sortedRoute, async (c) => {
     const report = await theirReport(c, c.req.valid("param").reference);

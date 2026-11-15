@@ -19,6 +19,8 @@ export const ERROR_CODES = [
   // Try-on (docs/decisions/0014-try-on-api.md).
   "busy",
   "photo_invalid_file",
+  // A report holds its three photographs already (docs/decisions/0258-the-issue-log.md).
+  "photos_full",
   "upload_already_received",
   "upload_missing",
   "session_required",
@@ -257,6 +259,7 @@ export const ERROR_STATUS = {
   internal_error: 500,
   busy: 503,
   photo_invalid_file: 422,
+  photos_full: 409,
   upload_already_received: 409,
   upload_missing: 409,
   session_required: 401,

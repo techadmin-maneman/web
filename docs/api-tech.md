@@ -6841,6 +6841,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",

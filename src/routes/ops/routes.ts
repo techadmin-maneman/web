@@ -52,6 +52,7 @@ import { registerOpsPrices } from "./prices.ts";
 import { registerOpsProfile } from "./profile.ts";
 import { registerOpsClaims } from "./purchasing.claims.ts";
 import { registerOpsStockPhotos } from "./purchasing.photos.ts";
+import { registerOpsReportPhotos } from "./report-photos.ts";
 import { registerOpsReceipts } from "./purchasing.receipts.ts";
 import { registerOpsScorecard } from "./purchasing.scorecard.ts";
 import { registerOpsPurchasing } from "./purchasing.ts";
@@ -231,6 +232,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsClaims,
   // Photographs of stock: a write-off's, and a claim's (docs/decisions/0170-stock-photos.md).
   registerOpsStockPhotos,
+  registerOpsReportPhotos,
   // Each supplier's scorecard (docs/decisions/0172-supplier-scorecard.md).
   registerOpsScorecard,
   // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
