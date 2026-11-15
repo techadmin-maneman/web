@@ -96,7 +96,6 @@ describe("the readable copy of a client's data", () => {
               secure: 0,
               flag_text: "The left edge lifts",
               signed_at: "2026-10-02T06:00:00.000Z",
-              signed_on: "technician_phone",
             },
           ],
           remedies: [{ visits: 1, reason: "fit_issue", state: "declined", given_at: "2026-10-03T06:00:00.000Z" }],
@@ -107,7 +106,6 @@ describe("the readable copy of a client's data", () => {
     expect(page).toContain("Sign-off\n Signed off");
     expect(page).toContain("The hairline sits where we agreed\n Yes");
     expect(page).toContain("It feels secure and comfortable\n No");
-    expect(page).toContain("Where\n On the technician’s phone");
     expect(page).toContain("Where it stands\n Declined");
     expect(page).not.toContain("Not signed");
     expect(page).not.toContain('{"hairline"');

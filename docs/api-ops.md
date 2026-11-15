@@ -36622,21 +36622,8 @@ Request body:
         {
           "type": "null"
         }
-      ]
-    },
-    "signed_on": {
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "client_app",
-            "technician_phone"
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ]
+      ],
+      "description": "When the client signed in their app."
     },
     "guarantee_days": {
       "anyOf": [
@@ -36658,7 +36645,6 @@ Request body:
     "asked_at",
     "asks",
     "signed_at",
-    "signed_on",
     "guarantee_days"
   ],
   "additionalProperties": false
@@ -49747,7 +49733,6 @@ Request body:
               "partial_visit",
               "consumables_short",
               "fit_unsigned",
-              "fit_signed_on_phone",
               "kit_request",
               "referral_review",
               "no_show_decision",
@@ -50671,43 +50656,6 @@ Request body:
         "group",
         "kind",
         "reason",
-        "technician",
-        "flag"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "properties": {
-        "group": {
-          "type": "string",
-          "enum": [
-            "fit_signed_on_phone"
-          ]
-        },
-        "kind": {
-          "type": "string",
-          "enum": [
-            "consultation",
-            "first_fit",
-            "service",
-            "replacement"
-          ]
-        },
-        "technician": {
-          "type": "string"
-        },
-        "flag": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "description": "What the client last said wasn't right before it was signed; null where they never flagged."
-        }
-      },
-      "required": [
-        "group",
-        "kind",
         "technician",
         "flag"
       ],

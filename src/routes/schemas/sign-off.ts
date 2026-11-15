@@ -2,13 +2,7 @@
 // gives (docs/decisions/0254-client-signs-off-the-fit.md).
 
 import { z } from "@hono/zod-openapi";
-import {
-  FLAG_MAX_CHARS,
-  SIGN_OFF_CHECKS,
-  SIGN_OFF_STATES,
-  SIGNED_ON,
-  type SignOffCheck,
-} from "../../policy/sign-off.ts";
+import { FLAG_MAX_CHARS, SIGN_OFF_CHECKS, SIGN_OFF_STATES, type SignOffCheck } from "../../policy/sign-off.ts";
 
 const ChecksSchema = z
   .object(
@@ -33,8 +27,7 @@ export const SignOffSchema = z
     declined_reason: z.union([z.string(), z.null()]).openapi({ description: "Why the client did not sign." }),
     asked_at: z.iso.datetime(),
     asks: z.number().int().openapi({ description: "How many times it was asked: again after each flag." }),
-    signed_at: z.union([z.iso.datetime(), z.null()]),
-    signed_on: z.union([z.enum(SIGNED_ON), z.null()]),
+    signed_at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When the client signed in their app." }),
     guarantee_days: z.union([z.number().int(), z.null()]).openapi({
       description: "The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then.",
     }),

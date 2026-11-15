@@ -31,9 +31,8 @@ const signOff = (
   left: { state: "signed" | "declined"; signed_at?: string; reason?: string; guarantee_days: number },
 ) =>
   env.DB.prepare(
-    `INSERT INTO fit_sign_offs (appointment_id, state, declined_reason, asked_at, signed_at, signed_on, guarantee_days,
-       updated_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?4)`,
+    `INSERT INTO fit_sign_offs (appointment_id, state, declined_reason, asked_at, signed_at, guarantee_days, updated_at)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?4)`,
   )
     .bind(
       appointmentId,
@@ -41,7 +40,6 @@ const signOff = (
       left.reason ?? null,
       "2026-09-10T06:40:00.000Z",
       left.signed_at ?? null,
-      left.state === "signed" ? "client_app" : null,
       left.guarantee_days,
     )
     .run();

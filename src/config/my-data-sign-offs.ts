@@ -18,6 +18,5 @@ export const SIGN_OFFS_PART: Part = {
     secure: yesNo("It feels secure and comfortable"),
     flag_text: text("What you last said wasn’t right"),
     signed_at: time("Signed"),
-    signed_on: named("Where", { client_app: "In your app", technician_phone: "On the technician’s phone" }),
   },
 };

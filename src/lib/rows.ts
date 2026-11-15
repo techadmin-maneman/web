@@ -516,9 +516,7 @@ export interface Rows {
     readonly asked_at: string;
     readonly asks: number;
     readonly signed_at: string | null;
-    readonly signed_on: string | null;
     readonly ask_event_id: string | null;
-    readonly answer_event_id: string | null;
     readonly guarantee_days: number | null;
     readonly technician_id: string | null;
     readonly updated_at: string;

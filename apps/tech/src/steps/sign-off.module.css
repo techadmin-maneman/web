@@ -1,5 +1,5 @@
-/* The client's sign-off (./SignOff.tsx): the line saying where it stands, the two ways to close without the client's
-   app, and the two sheets, each a column. */
+/* The client's sign-off (./SignOff.tsx): the line saying where it stands, the way to record a decline, and its sheet,
+   a column. */
 
 .line {
   margin: 0;
@@ -50,15 +50,4 @@
   font-size: var(--fs-20);
   font-weight: var(--weight-semibold);
   line-height: var(--lh-130);
-}
-
-.checks {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.notRight {
-  align-self: flex-start;
-  min-height: var(--tech-min);
 }

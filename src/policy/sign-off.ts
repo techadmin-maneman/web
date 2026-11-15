@@ -10,10 +10,6 @@ export type SignOffState = (typeof SIGN_OFF_STATES)[number];
 export const SIGN_OFF_CHECKS = ["hairline", "blend", "secure"] as const;
 export type SignOffCheck = (typeof SIGN_OFF_CHECKS)[number];
 
-/** Where the client signed: in their own app, or on the technician’s phone. */
-export const SIGNED_ON = ["client_app", "technician_phone"] as const;
-export type SignedOn = (typeof SIGNED_ON)[number];
-
 /** The longest a flag's words, and a decline's reason, may be. */
 export const FLAG_MAX_CHARS = 500;
 export const DECLINE_MAX_CHARS = 300;

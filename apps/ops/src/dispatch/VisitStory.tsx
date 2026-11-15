@@ -86,9 +86,8 @@ function StepLine(props: {
 
 type SignOff = NonNullable<components["schemas"]["VisitStory"]["sign_off"]>;
 
-/** A sign-off for ops to look at: declined, flagged, or signed on the technician's phone, which nothing proves. */
-const needsALook = (signOff: SignOff): boolean =>
-  signOff.state === "declined" || signOff.state === "flagged" || signOff.signed_on === "technician_phone";
+/** A sign-off for ops to look at: declined, or flagged. */
+const needsALook = (signOff: SignOff): boolean => signOff.state === "declined" || signOff.state === "flagged";
 
 /** The client's sign-off of the fit, as the story's last line. */
 function signOffLine(signOff: SignOff): string {
@@ -101,9 +100,7 @@ function signOffLine(signOff: SignOff): string {
     case "signed":
       return words.signed([
         ...(signOff.signed_at === null ? [] : [indiaClock(signOff.signed_at)]),
-        ...(signOff.signed_on === null ? [] : [words.where[signOff.signed_on]]),
         ...(signOff.flag_text === null ? [] : [words.flaggedFirst(signOff.flag_text)]),
-        ...(signOff.signed_on === "technician_phone" ? [words.checkIt] : []),
       ]);
     case "declined":
       return [

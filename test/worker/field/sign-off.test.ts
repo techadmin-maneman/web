@@ -1,7 +1,7 @@
 // The client signs off a fit before it closes done (docs/decisions/0254-client-signs-off-the-fit.md): the technician
-// asks; the client signs or flags in their app, or on the technician's phone; or the
-// technician records that the client declined to sign, which opens a Tasks row. NOW is Monday 21 September 2026,
-// 12 noon in India. Every name and number here is made up.
+// asks; the client signs or flags in their own app, and only there; or the technician records that the client declined
+// to sign, which opens a Tasks row. NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is
+// made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -77,7 +77,7 @@ describe("a fit's sign-off", () => {
     expect(await open.json()).toMatchObject({ error: { code: "sign_off_checks_open" } });
 
     expect((await sign({ result: "signed", checks: ALL_TICKED })).status).toBe(200);
-    expect(await card(job)).toMatchObject({ state: "signed", signed_on: "client_app", signed_at: NOW.toISOString() });
+    expect(await card(job)).toMatchObject({ state: "signed", signed_at: NOW.toISOString() });
     expect((await close(job)).status).toBe(202);
     expect((await sign({ result: "flagged", checks: ALL_TICKED, flag_text: "Late." })).status).toBe(409);
   });
@@ -98,42 +98,18 @@ describe("a fit's sign-off", () => {
     expect(await (await ask(job, "event-ask-02")).json()).toMatchObject({ state: "asked" });
     expect(await card(job)).toMatchObject({ state: "asked", asks: 2 });
     expect((await sign({ result: "signed", checks: ALL_TICKED })).status).toBe(200);
+    // The words of the flag stay once the client signs, for Care to see.
+    expect(await card(job)).toMatchObject({ state: "signed", flag_text: "The left edge lifts" });
     expect((await close(job)).status).toBe(202);
   });
 
-  it("is signed on the technician's phone, asked there first where the phone queued both with no signal", async () => {
-    const job = await replacementToTheClose();
-    const answer = { result: "signed", checks: ALL_TICKED };
-    const signed = await job.post(`/api/tech/jobs/${JOB}/sign-off`, { answer }, "event-phone-01");
-    expect(signed.status).toBe(200);
-    expect(await card(job)).toMatchObject({ state: "signed", signed_on: "technician_phone" });
-    expect((await close(job)).status).toBe(202);
-  });
-
-  it("gives Care a Tasks row for a signature on the technician's phone, keeping what the client flagged first", async () => {
+  it("takes no signature from the technician's phone: the client signs in their own app", async () => {
     const job = await replacementToTheClose();
     await ask(job);
-    const flag = { result: "flagged", checks: { ...ALL_TICKED, hairline: false }, flag_text: "The left edge lifts" };
-    expect((await (await clientApp())(flag)).status).toBe(200);
     const answer = { result: "signed", checks: ALL_TICKED };
-    expect((await job.post(`/api/tech/jobs/${JOB}/sign-off`, { answer }, "event-phone-01")).status).toBe(200);
-    expect(await card(job)).toMatchObject({ state: "signed", flag_text: "The left edge lifts" });
-    const before = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
-    expect(before.tasks.filter((task) => task.id === JOB && task.group.startsWith("fit_"))).toEqual([]);
-    expect((await close(job)).status).toBe(202);
-
-    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
-    expect(tasks.filter((task) => task.id === JOB && task.group.startsWith("fit_"))).toEqual([
-      expect.objectContaining({
-        group: "fit_signed_on_phone",
-        facts: {
-          group: "fit_signed_on_phone",
-          kind: "replacement",
-          technician: "Imran Qureshi",
-          flag: "The left edge lifts",
-        },
-      }),
-    ]);
+    expect((await job.post(`/api/tech/jobs/${JOB}/sign-off`, { answer }, "event-phone-01")).status).toBe(404);
+    expect(await card(job)).toMatchObject({ state: "asked" });
+    expect((await close(job)).status).toBe(400);
   });
 
   it("gives Care no row for a fit the client signed in their own app", async () => {
@@ -207,13 +183,7 @@ describe("a fit's sign-off", () => {
     await sign({ result: "signed", checks: ALL_TICKED });
     // A decline and a signature the phone queued before it heard, answered with the client's sign-off.
     const declined = await job.post(`/api/tech/jobs/${JOB}/sign-off-declined`, { reason: "No phone" }, "event-d-1");
-    expect(await declined.json()).toMatchObject({ state: "signed", signed_on: "client_app" });
-    const onPhone = await job.post(
-      `/api/tech/jobs/${JOB}/sign-off`,
-      { answer: { result: "signed", checks: ALL_TICKED } },
-      "event-phone-01",
-    );
-    expect(await onPhone.json()).toMatchObject({ state: "signed", signed_on: "client_app" });
+    expect(await declined.json()).toMatchObject({ state: "signed", declined_reason: null });
     expect((await close(job)).status).toBe(202);
   });
 
@@ -269,16 +239,5 @@ describe("a fit's sign-off", () => {
     const groups = tasks.filter((task) => task.id === JOB).map((task) => task.group);
     expect(groups).toContain("partial_visit");
     expect(groups).not.toContain("fit_unsigned");
-  });
-
-  it("does not take a flag the phone sends again once the technician has asked again", async () => {
-    const job = await replacementToTheClose();
-    await ask(job);
-    const flag = { result: "flagged", checks: { ...ALL_TICKED, hairline: false }, flag_text: "The left edge lifts" };
-    expect((await job.post(`/api/tech/jobs/${JOB}/sign-off`, { answer: flag }, "event-phone-01")).status).toBe(200);
-    await ask(job, "event-ask-02");
-    const again = await job.post(`/api/tech/jobs/${JOB}/sign-off`, { answer: flag }, "event-phone-01");
-    expect(await again.json()).toMatchObject({ state: "asked", asks: 2 });
-    expect(await card(job)).toMatchObject({ state: "asked", asks: 2 });
   });
 });

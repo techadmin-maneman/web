@@ -5143,8 +5143,8 @@ export interface components {
             asked_at: string;
             /** @description How many times it was asked: again after each flag. */
             asks: number;
+            /** @description When the client signed in their app. */
             signed_at: string | null;
-            signed_on: ("client_app" | "technician_phone") | null;
             /** @description The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then. */
             guarantee_days: number | null;
         };

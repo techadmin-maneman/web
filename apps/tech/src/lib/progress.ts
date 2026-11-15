@@ -37,9 +37,8 @@ export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   for (const back of job.sent_back) sent.delete(back.kind);
   if (job.progress.checked_in_at !== null) sent.add("check_in");
   if (job.progress.started_at !== null) sent.add("start");
-  // A sign-off held on the phone may be a flag, which closes nothing: whether it lets the fit close is signedOff's.
   for (const event of queued) {
-    if (event.job_id === job.id && event.state === "waiting" && event.kind !== "sign_off") sent.add(event.kind);
+    if (event.job_id === job.id && event.state === "waiting") sent.add(event.kind);
   }
   // A client who decided against the fit, or booked it for later, is fitted nothing, so nothing is photographed after,
   // and there is no fit to sign off.
@@ -51,22 +50,15 @@ export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   return sent;
 }
 
-/** A client's answer queued on this phone that signs the fit, not one that flags what isn't right. */
-const signedHere = (event: Queued): boolean =>
-  (event.body as { readonly answer?: { readonly result?: string } } | null)?.answer?.result === "signed";
-
 /**
- * Whether the fit's sign-off lets it close (docs/decisions/0254-client-signs-off-the-fit.md): the client signed, or the
- * technician recorded that they declined, as the card says or as the phone still holds it to send.
+ * Whether the fit's sign-off lets it close (docs/decisions/0254-client-signs-off-the-fit.md): the client signed in their
+ * app, as the card says, or the technician recorded that they declined, as the card says or the phone holds it to send.
  */
 export function signedOff(job: Job, queued: readonly Queued[]): boolean {
   const state = job.sign_off?.state;
   if (state === "signed" || state === "declined") return true;
   return queued.some(
-    (event) =>
-      event.job_id === job.id &&
-      event.state === "waiting" &&
-      (event.kind === "sign_off_declined" || (event.kind === "sign_off" && signedHere(event))),
+    (event) => event.job_id === job.id && event.state === "waiting" && event.kind === "sign_off_declined",
   );
 }
 

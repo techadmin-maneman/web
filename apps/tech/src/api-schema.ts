@@ -2915,143 +2915,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/tech/jobs/{id}/sign-off": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** The client signs off, or says what isn't right, on the technician's phone */
-        post: {
-            parameters: {
-                query?: never;
-                header: {
-                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
-                    "x-client-event-id": string;
-                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
-                    "x-job-starts-at"?: string;
-                };
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["SignOffOnPhone"];
-                };
-            };
-            responses: {
-                /** @description The sign-off as it now stands */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SignOff"];
-                    };
-                };
-                /** @description invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "invalid_request";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description session_required; device_revoked: ops revoked this phone; technician_inactive: ops switched the technician off */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "session_required" | "device_revoked" | "technician_inactive";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description not_found: no such job, or never this technician's */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "not_found";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description superseded: the job was given to another technician or called off under the phone; already_closed: the visit has closed */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "superseded" | "already_closed";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description sign_off_checks_open: a sign-off needs every check ticked; flag what isn't right instead */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "sign_off_checks_open";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/tech/jobs/{id}/sign-off-declined": {
         parameters: {
             query?: never;
@@ -5907,8 +5770,8 @@ export interface components {
             asked_at: string;
             /** @description How many times it was asked: again after each flag. */
             asks: number;
+            /** @description When the client signed in their app. */
             signed_at: string | null;
-            signed_on: ("client_app" | "technician_phone") | null;
             /** @description The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then. */
             guarantee_days: number | null;
         };
@@ -6188,20 +6051,6 @@ export interface components {
             minutes: number | null;
         };
         SignOffRequest: Record<string, never>;
-        SignOffOnPhone: {
-            answer: components["schemas"]["SignOffAnswer"];
-        };
-        /** @description Happy with the fit, every check ticked; or something isn't right, in the client's words. */
-        SignOffAnswer: {
-            /** @enum {string} */
-            result: "signed";
-            checks: components["schemas"]["SignOffChecks"];
-        } | {
-            /** @enum {string} */
-            result: "flagged";
-            checks: components["schemas"]["SignOffChecks"];
-            flag_text: string;
-        };
         SignOffDeclined: {
             reason: string;
         };

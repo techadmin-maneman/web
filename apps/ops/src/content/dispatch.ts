@@ -186,13 +186,10 @@ export const dispatch = {
         asked: "Sign-off asked, waiting for the client",
         /** "Flagged by the client: “The left edge lifts”". */
         flagged: (text: string) => (text === "" ? "Flagged by the client" : `Flagged by the client: “${text}”`),
-        /** "Signed off by the client, 1:42 pm, in their app", each part it has. */
+        /** "Signed off by the client, 1:42 pm", each part it has. */
         signed: (parts: readonly string[]) => ["Signed off by the client", ...parts].join(", "),
-        where: { client_app: "in their app", technician_phone: "on the technician’s phone" },
         /** "after flagging “The left edge lifts”", where the client flagged before they signed. */
         flaggedFirst: (text: string) => `after flagging “${text}”`,
-        /** Beside a signature on the technician's phone, which nothing proves the client gave. */
-        checkIt: "Worth a call to confirm",
         /** "Closed without sign-off: “Client in a hurry”". */
         declined: (reason: string) => `Closed without sign-off: “${reason}”`,
       },

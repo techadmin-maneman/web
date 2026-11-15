@@ -91,13 +91,6 @@ export type TaskFacts =
       /** What the client last said wasn't right before then, in their words; null where they never flagged. */
       readonly flag: string | null;
     }
-  | {
-      readonly group: "fit_signed_on_phone";
-      readonly kind: VisitType;
-      readonly technician: string;
-      /** What the client last said wasn't right before it was signed, in their words; null where they never flagged. */
-      readonly flag: string | null;
-    }
   | { readonly group: "at_risk_client"; readonly last_visit_at: Instant; readonly due_on: Day }
   | {
       readonly group: "first_fit_to_book";

@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { screensOf } from "../../../../../apps/tech/src/visit/engine.ts";
 import { done, nextStep, signedOff, stepsOf } from "../../../../../apps/tech/src/lib/progress.ts";
+import { declinedWhy, heldOf, standingOf } from "../../../../../apps/tech/src/steps/sign-off-standing.ts";
 import type { Queued } from "../../../../../apps/tech/src/store/outbox.ts";
 import type { Job } from "../../../../../apps/tech/src/api.ts";
 import { cardStepsFor, stepBefore } from "../../../../../src/policy/in-job-steps.ts";
@@ -132,25 +133,42 @@ describe("a fit's sign-off on the phone", () => {
     }
   });
 
-  it("lets it close on what the phone holds to send: a decline, or the client's sign-off on it, not a flag", () => {
+  it("lets it close on a decline the phone holds to send, never on an ask", () => {
     expect(signedOff(fit, [queued("sign_off_declined", { reason: "No phone" })])).toBe(true);
-    expect(signedOff(fit, [queued("sign_off", { answer: { result: "signed" } })])).toBe(true);
-    expect(signedOff(fit, [queued("sign_off", { answer: { result: "flagged" } })])).toBe(false);
     expect(signedOff(fit, [queued("sign_off_request", {})])).toBe(false);
   });
 
-  it("keeps the technician on the step, and the step not done, while the phone holds only a flag", () => {
+  it("keeps the technician on the step while the phone holds only the ask, and moves on with a decline", () => {
     const steps = cardStepsFor("replacement", false);
     const worked = {
       ...fit,
       progress: { steps_done: steps.slice(0, steps.indexOf("sign_off")), checked_in_at: "x", started_at: "x" },
       sent_back: [],
     } as unknown as Job;
-    const flag = queued("sign_off", { answer: { result: "flagged", flag_text: "The left edge lifts" } });
-    expect(done(worked, [flag]).has("sign_off")).toBe(false);
-    expect(nextStep(worked, [flag])).toBe("sign_off");
-    const signed = queued("sign_off", { answer: { result: "signed" } });
-    expect(done(worked, [signed]).has("sign_off")).toBe(true);
-    expect(nextStep(worked, [signed])).toBe("outcome");
+    const asked = queued("sign_off_request", {});
+    expect(done(worked, [asked]).has("sign_off")).toBe(false);
+    expect(nextStep(worked, [asked])).toBe("sign_off");
+    const declined = queued("sign_off_declined", { reason: "No phone" });
+    expect(done(worked, [asked, declined]).has("sign_off")).toBe(true);
+    expect(nextStep(worked, [asked, declined])).toBe("outcome");
+  });
+
+  it("reads where it stands from the card, else from the latest write the phone holds", () => {
+    const asked = queued("sign_off_request", {});
+    const declined = queued("sign_off_declined", { reason: "No phone with them" });
+    const card = (signOff: object) => ({ ...fit, sign_off: signOff }) as unknown as Job;
+    expect(standingOf(fit, heldOf(fit, []))).toBe("unasked");
+    expect(standingOf(fit, heldOf(fit, [asked]))).toBe("asked");
+    // A flag on the card, then "Fixed. Ask again" held on the phone: asked.
+    expect(standingOf(card({ state: "flagged" }), heldOf(fit, [asked]))).toBe("asked");
+    expect(standingOf(card({ state: "flagged" }), undefined)).toBe("flagged");
+    // A decline held on the phone, with its why, before the card has heard.
+    expect(standingOf(fit, heldOf(fit, [asked, declined]))).toBe("declined");
+    expect(declinedWhy(fit, heldOf(fit, [asked, declined]))).toBe("No phone with them");
+    // The card's signed or declined is final, whatever the phone still holds.
+    expect(standingOf(card({ state: "signed" }), heldOf(fit, [declined]))).toBe("signed");
+    expect(
+      declinedWhy(card({ state: "declined", declined_reason: "Client in a hurry" }), heldOf(fit, [declined])),
+    ).toBe("Client in a hurry");
   });
 });

@@ -8056,21 +8056,8 @@ Request body:
         {
           "type": "null"
         }
-      ]
-    },
-    "signed_on": {
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "client_app",
-            "technician_phone"
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ]
+      ],
+      "description": "When the client signed in their app."
     },
     "guarantee_days": {
       "anyOf": [
@@ -8092,7 +8079,6 @@ Request body:
     "asked_at",
     "asks",
     "signed_at",
-    "signed_on",
     "guarantee_days"
   ],
   "additionalProperties": false

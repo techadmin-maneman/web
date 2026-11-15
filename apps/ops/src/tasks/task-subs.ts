@@ -88,8 +88,6 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   },
   // Anything the client flagged first, why they did not sign, and whose job.
   fit_unsigned: (facts) => copy.fit_unsigned(facts.reason, facts.technician, facts.flag),
-  // Whose job, and anything the client flagged before it was signed.
-  fit_signed_on_phone: (facts) => copy.fit_signed_on_phone(facts.technician, facts.flag),
   // Why, whose job, and each consumable short of what was expected.
   consumables_short: (facts) =>
     copy.consumables_short(

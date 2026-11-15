@@ -96,7 +96,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form no longer asks for one (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
-- [fit_sign_offs](#fit_sign_offs): The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app or on the technician's phone, or declined with the technician's why, which opens a Tasks row (ADR 0254).
+- [fit_sign_offs](#fit_sign_offs): The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app, or declined with the technician's why, which opens a Tasks row (ADR 0254).
 - [forecast_accuracy](#forecast_accuracy): How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).
 - [forecast_lines](#forecast_lines): Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).
 - [forecast_runs](#forecast_runs): Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
@@ -1219,7 +1219,7 @@ Triggers: `first_fit_requests_fitted_asked`.
 
 ## fit_sign_offs
 
-The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app or on the technician's phone, or declined with the technician's why, which opens a Tasks row (ADR 0254).
+The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app, or declined with the technician's why, which opens a Tasks row (ADR 0254).
 
 Made by `0210_fit_sign_offs.sql`.
 
@@ -1233,9 +1233,7 @@ Made by `0210_fit_sign_offs.sql`.
 | `asked_at` | TEXT | no |  |  |  |
 | `asks` | INTEGER | no | `1` |  | How many times it has been asked: again after each flag. |
 | `signed_at` | TEXT | yes |  |  |  |
-| `signed_on` | TEXT | yes |  |  |  |
-| `ask_event_id` | TEXT | yes |  |  | The phone's events the latest ask and the answer on the technician's phone came with, so each sent again is answered as it was. |
-| `answer_event_id` | TEXT | yes |  |  |  |
+| `ask_event_id` | TEXT | yes |  |  | The technician's phone's event the latest ask came with, so one sent again is answered as it was. |
 | `guarantee_days` | INTEGER | yes |  |  | The fit guarantee's days in force when it was signed or declined, which a first fit's guarantee runs for, whatever ops set since (docs/decisions/0256-fit-guarantee-setting.md). |
 | `technician_id` | TEXT | yes |  | → `technicians.id` |  |
 | `updated_at` | TEXT | no |  |  |  |
@@ -1243,7 +1241,6 @@ Made by `0210_fit_sign_offs.sql`.
 Indexes:
 
 - `fit_sign_offs_declined`: on (`updated_at`), where `state = 'declined'`
-- `fit_sign_offs_on_phone`: on (`updated_at`), where `signed_on = 'technician_phone'`
 
 ## forecast_accuracy
 

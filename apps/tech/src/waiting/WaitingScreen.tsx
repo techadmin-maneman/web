@@ -31,7 +31,7 @@ import styles from "./waiting.module.css";
 
 const PHOTO_STEPS: ReadonlySet<InJobStep> = new Set(["before_photos", "after_photos"]);
 
-const isInJobStep = (kind: EventKind): kind is InJobStep => kind in STEP_PATHS;
+const isInJobStep = (kind: EventKind): kind is EventKind & InJobStep => kind in STEP_PATHS;
 
 /** A refused step the technician can open again and put right on its own screen; null for any other stop. */
 function correctable(stopped: JobAccount["stopped"]): InJobStep | null {

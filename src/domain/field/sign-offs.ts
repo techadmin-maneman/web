@@ -1,13 +1,13 @@
 // The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md), one row a visit: the technician
-// asks, and asks again once a flag is put right; the client signs or flags, in their own app or on the technician's
-// phone; or the technician records that the client declined to sign, with why. A fit that needs one
-// (src/policy/sign-off.ts) closes done only once it is signed or declined.
+// asks, and asks again once a flag is put right; the client signs or flags in their own app, and only there; or the
+// technician records that the client declined to sign, with why. A fit that needs one (src/policy/sign-off.ts) closes
+// done only once it is signed or declined.
 //
 // The technician's writes come through their phone's outbox, each with its event ID, so each lands once however often
 // it is sent: an event sent again is answered as it was, and a write on a fit signed or declined since is answered with
 // where it stands, so the phone's queue goes on to the close behind it.
 
-import { SIGN_OFF_CHECKS, type SignedOn, type SignOffCheck, type SignOffState } from "../../policy/sign-off.ts";
+import { SIGN_OFF_CHECKS, type SignOffCheck, type SignOffState } from "../../policy/sign-off.ts";
 
 export type SignOffChecks = Readonly<Record<SignOffCheck, boolean>>;
 
@@ -19,7 +19,6 @@ export interface SignOff {
   readonly asked_at: string;
   readonly asks: number;
   readonly signed_at: string | null;
-  readonly signed_on: SignedOn | null;
   /** The fit guarantee's days in force when it was signed or declined; null before then. */
   readonly guarantee_days: number | null;
 }
@@ -28,11 +27,10 @@ interface SignOffRow extends Omit<SignOff, "checks"> {
   readonly appointment_id: string;
   readonly checks: string | null;
   readonly ask_event_id: string | null;
-  readonly answer_event_id: string | null;
 }
 
-const COLUMNS = `appointment_id, state, checks, flag_text, declined_reason, asked_at, asks, signed_at, signed_on,
-  guarantee_days, ask_event_id, answer_event_id`;
+const COLUMNS = `appointment_id, state, checks, flag_text, declined_reason, asked_at, asks, signed_at, guarantee_days,
+  ask_event_id`;
 
 /** Signed or declined: nothing reopens it. */
 const FINAL = "('signed', 'declined')";
@@ -51,7 +49,6 @@ const signOffOfRow = (row: SignOffRow): SignOff => ({
   asked_at: row.asked_at,
   asks: row.asks,
   signed_at: row.signed_at,
-  signed_on: row.signed_on,
   guarantee_days: row.guarantee_days,
 });
 
@@ -123,25 +120,20 @@ export type SignOffAnswer =
 export type AnswerRefusal = "not_asked" | "closed" | "checks_open";
 
 /**
- * Records the client's answer to an ask still open, under the phone's event where it came on the technician's phone. A
- * signature keeps the last flag's words, so Care can see the client said something wasn't right first.
+ * Records the client's answer to an ask still open. A signature keeps the last flag's words, so Care can see the client
+ * said something wasn't right first.
  */
 async function answer(
   db: D1Database,
   appointmentId: string,
-  given: SignOffAnswer & {
-    readonly on: SignedOn;
-    readonly eventId: string | null;
-    readonly guaranteeDays: number;
-    readonly now: Date;
-  },
+  given: SignOffAnswer & { readonly guaranteeDays: number; readonly now: Date },
 ): Promise<boolean> {
   const at = given.now.toISOString();
   const signed = given.result === "signed";
   const written = await db
     .prepare(
       `UPDATE fit_sign_offs SET state = ?2, checks = ?3, flag_text = COALESCE(?4, flag_text), signed_at = ?5,
-         signed_on = ?6, answer_event_id = ?7, updated_at = ?8, guarantee_days = ?9
+         updated_at = ?6, guarantee_days = ?7
        WHERE appointment_id = ?1 AND state IN ('asked', 'flagged')`,
     )
     .bind(
@@ -150,8 +142,6 @@ async function answer(
       JSON.stringify(given.checks),
       signed ? null : given.flagText,
       signed ? at : null,
-      signed ? given.on : null,
-      given.eventId,
       at,
       signed ? given.guaranteeDays : null,
     )
@@ -181,29 +171,8 @@ export async function signOffInApp(
   const row = await rowOf(db, given.appointmentId);
   if (row === null) return "not_asked";
   if (row.state !== "asked" && row.state !== "flagged") return "closed";
-  if (!(await answer(db, given.appointmentId, { ...given, on: "client_app", eventId: null }))) return "closed";
+  if (!(await answer(db, given.appointmentId, given))) return "closed";
   return (await signOffOf(db, given.appointmentId)) ?? "not_asked";
-}
-
-/**
- * The client's answer on the technician's phone, for a client without their own: asked first where it was not, as the
- * phone may have queued both with no signal. Nothing here proves the client held the phone, so a signature on it gives
- * Care a Tasks row once the fit closes, to confirm with the client. The same event sent again, and an answer to a fit
- * signed or declined since, are answered with where it stands.
- */
-export async function signOffOnPhone(
-  db: D1Database,
-  given: SignOffAnswer & PhoneWrite & { readonly jobClosed: boolean; readonly guaranteeDays: number },
-): Promise<SignOff | "checks_open" | "job_closed"> {
-  const found = await rowOf(db, given.appointmentId);
-  if (found !== null && found.answer_event_id === given.eventId) return signOffOfRow(found);
-  if (found !== null && (found.state === "signed" || found.state === "declined")) return signOffOfRow(found);
-  if (given.jobClosed) return "job_closed";
-  if (!allTicked(given)) return "checks_open";
-  if (found === null) await askStatement(db, { ...given, eventId: `${given.eventId}:ask` }).run();
-  await answer(db, given.appointmentId, { ...given, on: "technician_phone" });
-  const now = await rowOf(db, given.appointmentId);
-  return now === null ? "job_closed" : signOffOfRow(now);
 }
 
 /** Writes that the client declined to sign, with why; nothing on a fit signed already. */

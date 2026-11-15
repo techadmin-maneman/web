@@ -91,13 +91,6 @@ export const TaskFactsSchema = z
         description: "What the client last said wasn't right before then; null where they never flagged.",
       }),
     }),
-    facts("fit_signed_on_phone", {
-      kind,
-      technician: z.string(),
-      flag: z.string().nullable().openapi({
-        description: "What the client last said wasn't right before it was signed; null where they never flagged.",
-      }),
-    }),
     facts("at_risk_client", { last_visit_at: instant, due_on: day }),
     facts("first_fit_to_book", {
       consulted_at: instant,
