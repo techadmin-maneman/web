@@ -3865,7 +3865,7 @@ Request body:
 
 A photograph for a report of the client's: a JPEG of at most 2 MB, up to 3 a report
 
-**201**: Kept, and Care told in the report's chat
+**201**: Kept, and Care told in the chat on the client's number
 
 ```json
 {

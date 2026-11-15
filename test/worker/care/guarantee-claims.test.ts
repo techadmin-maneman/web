@@ -92,6 +92,34 @@ describe("a fit guarantee claim", () => {
     expect((await claims())[0]?.facts).toMatchObject({ photos: 1, conversation_id: chat });
   });
 
+  it("names the chat on the client's number now once they have changed it", async () => {
+    await fittedDaysAgo(3);
+    await report({ about: "fit_guarantee", text: "It does not sit right." });
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state, decided_at, decided_by,
+           replaced_mobile_e164)
+         VALUES ('nc-1', ?1, ?2, '+919810000099', 'confirmed', ?3, 'ops@localhost', '+919810000001')`,
+      ).bind(ROHIT, NOW.toISOString(), after(10).toISOString()),
+      env.DB.prepare("UPDATE people SET mobile_e164 = '+919810000099' WHERE id = ?1").bind(ROHIT),
+    ]);
+    expect((await claims(15))[0]?.facts).toMatchObject({ conversation_id: null });
+    // A photograph sent from the app now opens a chat on the new number, which the claim names.
+    await request(
+      appFor("local", fakeDependencies({ now: () => after(20) }), {}, "client"),
+      "/api/me/problems/MM-ISS-0001/photos",
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "image/jpeg" },
+        body: JPEG,
+      },
+    );
+    const fresh = await env.DB.prepare(
+      "SELECT id FROM conversations WHERE mobile_e164 = '+919810000099'",
+    ).first<string>("id");
+    expect((await claims(30))[0]?.facts).toMatchObject({ photos: 1, conversation_id: fresh });
+  });
+
   it("blanks the words Care closed a claim with when the client is erased", async () => {
     await fittedDaysAgo(3);
     await report({ about: "fit_guarantee", text: "It does not sit right." });

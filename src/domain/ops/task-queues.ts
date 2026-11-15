@@ -327,15 +327,16 @@ export const QUEUES: readonly Queue[] = [
   },
   // A first fit claimed under its guarantee (docs/decisions/0256-fit-guarantee-setting.md): opened by the client's first
   // report on it since Care last closed a claim on the fit, which its deadline runs from; with their latest words, the
-  // fit's sign-off and the photographs sent; until Care have called them and closed it with what was done. A claim
-  // filed after a close opens a row of its own.
+  // fit's sign-off, the photographs sent and the chat on the client's number now, where Care read them; until Care
+  // have called them and closed it with what was done. A claim filed after a close opens a row of its own.
   {
     group: "fit_guarantee_claim",
     sql: `SELECT 'fit_guarantee_claim' AS "group", r.id AS id, a.person_id AS person_id, pe.name AS person_name,
          (SELECT l.text FROM client_reports l WHERE l.claim_visit_id = r.claim_visit_id ORDER BY l.number DESC LIMIT 1)
            AS detail,
          json_object('reference', 'MM-ISS-' || printf('%04d', r.number), 'fitted_on', date(a.window_start, '+330 minutes'),
-           'sign_off', s.state, 'conversation_id', r.conversation_id,
+           'sign_off', s.state,
+           'conversation_id', (SELECT c.id FROM conversations c WHERE c.mobile_e164 = pe.mobile_e164),
            'photos', (SELECT COUNT(*) FROM client_report_photos p JOIN client_reports l ON l.id = p.report_id
                        WHERE l.claim_visit_id = r.claim_visit_id AND l.number >= r.number)) AS facts,
          r.created_at AS since, NULL AS due_by, '' AS episode

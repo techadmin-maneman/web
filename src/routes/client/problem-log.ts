@@ -126,7 +126,7 @@ const photoRoute = clientRoute({
   request: { params: reference },
   responses: {
     201: {
-      description: "Kept, and Care told in the report's chat",
+      description: "Kept, and Care told in the chat on the client's number",
       ...json(z.object({ n: z.number().int() }).strict().openapi("ReportPhotoAdded")),
     },
     401: SIGNED_IN,

@@ -8,6 +8,7 @@ import type { MessagingProvider, SendResult } from "../../providers/messaging/in
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { hasNumber } from "../../lib/mobile.ts";
 import type { ProblemCategory } from "../../policy/problems.ts";
+import { openReportsOf } from "./issue-log.ts";
 
 /** What a chat was about, as Care close it. */
 export const CLOSE_REASONS = [
@@ -176,6 +177,13 @@ export async function closeConversation(
 ): Promise<"closed" | "not_found"> {
   if ((await numberOf(db, change.conversationId)) === "not_found") return "not_found";
   const at = change.now.toISOString();
+  // Closing the chat settles what the issue log of the client on its number reads open, in this chat or one on a number
+  // they held before, and leaves what it reads settled as it was (docs/decisions/0258-the-issue-log.md).
+  const holder = await db
+    .prepare("SELECT pe.id FROM people pe JOIN conversations c ON c.mobile_e164 = pe.mobile_e164 WHERE c.id = ?1")
+    .bind(change.conversationId)
+    .first<string>("id");
+  const open = holder === null ? [] : (await openReportsOf(db, holder)).map((report) => report.id);
   await db.batch([
     db
       .prepare(
@@ -183,19 +191,9 @@ export async function closeConversation(
          WHERE id = ?1`,
       )
       .bind(change.conversationId, at, change.actor.id, change.reason),
-    // Closing the chat settles what the client's issue log holds open in it (docs/decisions/0258-the-issue-log.md).
     db
-      .prepare(
-        `UPDATE client_reports SET closed_at = ?2
-         WHERE conversation_id = ?1
-           -- What is open: one never settled, one reopened since, and the chat's latest, which the client's words reach.
-           AND (closed_at IS NULL OR closed_at < reopened_at
-                OR number = (SELECT MAX(l.number) FROM client_reports l WHERE l.conversation_id = ?1))
-           -- Never the reports of a client who has since moved off the chat's number.
-           AND person_id IN (SELECT pe.id FROM people pe JOIN conversations c ON c.mobile_e164 = pe.mobile_e164
-                             WHERE c.id = ?1)`,
-      )
-      .bind(change.conversationId, at),
+      .prepare("UPDATE client_reports SET closed_at = ?2 WHERE id IN (SELECT value FROM json_each(?1))")
+      .bind(JSON.stringify(open), at),
     auditStatement(
       db,
       {

@@ -276,6 +276,17 @@ async function othersOf(db: D1Database, personId: string): Promise<Issue[]> {
   ];
 }
 
+/**
+ * The client's reports their log reads open or in progress, latest first: what Care's close of the chat on their number
+ * settles, and the one its reason opens on. The newest fifty, as the log reads them.
+ */
+export async function openReportsOf(db: D1Database, personId: string): Promise<Issue[]> {
+  const number = (issue: Issue) => reportNumberOf(issue.reference ?? "") ?? 0;
+  return (await reportsOf(db, personId))
+    .filter((issue) => issue.state !== "resolved")
+    .sort((a, b) => number(b) - number(a));
+}
+
 /** Everything in the client's issue log, newest first. */
 export async function issueLogOf(db: D1Database, personId: string): Promise<Issue[]> {
   const [reports, others] = await Promise.all([reportsOf(db, personId), othersOf(db, personId)]);

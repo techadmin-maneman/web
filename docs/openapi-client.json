@@ -10551,7 +10551,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Kept, and Care told in the report's chat",
+            "description": "Kept, and Care told in the chat on the client's number",
             "content": {
               "application/json": {
                 "schema": {

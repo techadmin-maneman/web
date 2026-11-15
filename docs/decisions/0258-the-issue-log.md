@@ -27,20 +27,24 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
    and every update or reopening sent to it from the app, wherever it falls; a City matter passed on; free visits given;
    and Care closing the chat. A chat on a number the client has since changed away from is read only up to the change.
 4. **Its state**, read from those rows: `resolved` once Care closed the chat after it, or the client marked it sorted,
-   with nothing from the client since, in the app or the chat, and Care's close settles every report the chat holds;
-   `in_progress` once Care replied, passed it to the city or gave visits; `open` until then.
+   with nothing from the client since, in the app or the chat; `in_progress` once Care replied, passed it to the city
+   or gave visits; `open` until then. Care read a client in the chat on the number they hold now: its close settles
+   each report of theirs the log reads open, wherever it was filed, leaves one it reads settled as it was, and opens on
+   the reason of the latest open one. Both read the log's own rule, so the three never disagree.
 5. **What the client does.** `POST /api/me/problems` files one, as today, and answers its reference. On a report of
    theirs they may add an update (their words into its chat), mark it sorted, or reopen it, which says so in the chat
    and opens it again. New reports keep five a day; updates and reopenings have a daily limit of their own.
 6. **Photos.** Up to three a report, sent after it with `POST /api/me/problems/{reference}/photos`, a JPEG of at most
-   the size a visit photograph is kept at. A note in the client's chat says each came, and the console's routes list
-   and open them (`GET /api/conversations/{id}/report-photos`), for the chat of whoever made them, on the number they
-   hold now. The console draws them beside the chat with its screens, in this same change.
+   the size a visit photograph is kept at. A note in the chat on the client's number says each came, opening that chat
+   as the client's words do (one there is not yet is made), though no WhatsApp window opens with it. The console's
+   routes list and open them (`GET /api/conversations/{id}/report-photos`), for the chat of whoever made them, on the
+   number they hold now. The console draws them beside the chat with its screens, in this same change.
 7. **The same log** lists the client's grievances (answered or not) and missed-visit disputes (open, refunded or upheld),
    each with its own state, beside the reports.
 8. **The fit guarantee claim** (ADR 0256): a report on the fit (guarantee) about a first fit inside its guarantee opens
    the Tasks row "Fit guarantee claim", due by `task_sla_hours` from its first report, its facts carrying the fit's
-   sign-off, how many photographs were sent and the chat they are read in, which the console's Tasks row draws with its
+   sign-off, how many photographs were sent and the chat on the client's number now, where they are read, which the
+   console's Tasks row draws with its
    screens, until Care close it with what was done. Reports on the fit meanwhile are the same claim; one after
    the close opens another.
 
@@ -48,3 +52,4 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
 
 - The Care chat stays one thread a client. A report's part of it is the stretch up to the next report, so a reply Care
   meant for an earlier report that comes after a later one reads under the later one.
+- The log, and so Care's close, read a client's newest fifty reports; an older one is left as it stood.

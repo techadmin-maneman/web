@@ -1,6 +1,6 @@
 // The photographs a client sends with a report (docs/decisions/0258-the-issue-log.md): up to three a report, each a JPEG
-// kept in the client photos bucket under the client, with a note for Care in the report's chat that it came; and what
-// Care's console reads of them.
+// kept in the client photos bucket under the client, with a note for Care in the chat on the client's number that it
+// came; and what Care's console reads of them.
 
 import { inspectImage } from "../../lib/image-bytes.ts";
 import { PROBLEM_PHOTOS_MAX, reportReference } from "../../policy/problems.ts";
@@ -15,7 +15,8 @@ const keyOf = (personId: string, reportId: string) =>
 export type PhotoAdded = { readonly n: number } | "full" | "not_a_jpeg";
 
 /**
- * Keeps the photograph as the report's next and tells Care in its chat; full at three, refused if no JPEG. The file is
+ * Keeps the photograph as the report's next and tells Care in the chat on the client's number, which it opens as the
+ * client's words do, though no WhatsApp window opens with it; full at three, refused if no JPEG. The file is
  * kept under a key of its own first, then takes its number in one statement, so two sent at once are numbered apart,
  * and one past the three is deleted again.
  */
@@ -47,15 +48,30 @@ export async function addReportPhoto(
     return "full";
   }
   const note = `${reportReference(photo.report.number)}: photo ${String(taken)} of ${String(PROBLEM_PHOTOS_MAX)} came.`;
-  await db
-    .prepare(
-      `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
-       SELECT ?1, c.id, 'note', 'system', ?3, ?4, ?4 FROM client_reports r
-         JOIN people pe ON pe.id = r.person_id JOIN conversations c ON c.mobile_e164 = pe.mobile_e164
-        WHERE r.id = ?2`,
-    )
-    .bind(crypto.randomUUID(), photo.report.id, note, at)
-    .run();
+  await db.batch([
+    // A chat on a number the client has just changed to may not be there yet: the note opens it.
+    db
+      .prepare(
+        `INSERT INTO conversations (id, person_id, mobile_e164, state, opened_at, last_message_at, created_at, updated_at)
+         SELECT ?1, pe.id, pe.mobile_e164, 'open', ?3, ?3, ?3, ?3 FROM people pe WHERE pe.id = ?2
+         ON CONFLICT (mobile_e164) DO UPDATE SET
+           person_id = COALESCE(conversations.person_id, excluded.person_id),
+           state = 'open',
+           opened_at = CASE WHEN conversations.state = 'closed' THEN excluded.opened_at ELSE conversations.opened_at END,
+           closed_at = NULL,
+           closed_by = NULL,
+           last_message_at = MAX(conversations.last_message_at, excluded.last_message_at),
+           updated_at = excluded.updated_at`,
+      )
+      .bind(crypto.randomUUID(), photo.personId, at),
+    db
+      .prepare(
+        `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+         SELECT ?1, c.id, 'note', 'system', ?3, ?4, ?4 FROM people pe JOIN conversations c ON c.mobile_e164 = pe.mobile_e164
+          WHERE pe.id = ?2`,
+      )
+      .bind(crypto.randomUUID(), photo.personId, note, at),
+  ]);
   return { n: taken };
 }
 

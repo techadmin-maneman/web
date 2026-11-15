@@ -5,6 +5,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { fileInbound } from "../../../src/domain/care/inbox.ts";
 import { closeConversation } from "../../../src/domain/care/replies.ts";
 import { deleteErasedFiles } from "../../../src/domain/privacy/erasure-files.ts";
 import { asClient, client, fittedInAugust, signedIn } from "../clients.ts";
@@ -63,14 +64,41 @@ async function careReplies(text: string, minutes: number) {
     .run();
 }
 
-const careCloses = async (minutes: number) =>
+const careCloses = async (minutes: number, conversationId?: string) =>
   closeConversation(env.DB, {
-    conversationId: await chat(),
+    conversationId: conversationId ?? (await chat()),
     actor: { kind: "staff", id: NEHA },
     requestId: crypto.randomUUID(),
     now: new Date(NOW.getTime() + minutes * 60_000),
     reason: "fit_problem",
   });
+
+/** The reason Care's close of the client's chat opens on. */
+const closeReason = async (conversationId?: string) =>
+  (
+    await (
+      await request(
+        appFor("local", fakeDependencies(), {}, "ops"),
+        `/api/conversations/${conversationId ?? (await chat())}`,
+      )
+    ).json<{ close_reason: string | null }>()
+  ).close_reason;
+
+const NEW_NUMBER = "+919810000099";
+
+/** The client's number changed to NEW_NUMBER, `minutes` after NOW. */
+const changesNumber = (minutes: number) =>
+  env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state, decided_at, decided_by,
+         replaced_mobile_e164)
+       VALUES ('nc-1', ?1, ?2, ?3, 'confirmed', ?4, 'ops@localhost', '+919810000001')`,
+    ).bind(ROHIT, NOW.toISOString(), NEW_NUMBER, after(minutes).toISOString()),
+    env.DB.prepare("UPDATE people SET mobile_e164 = ?2 WHERE id = ?1").bind(ROHIT, NEW_NUMBER),
+  ]);
+
+const chatOn = async (mobile: string) =>
+  (await env.DB.prepare("SELECT id FROM conversations WHERE mobile_e164 = ?1").bind(mobile).first<string>("id")) ?? "";
 
 describe("the issue log", () => {
   it("lists a report by its reference and category, open until Care answer, in progress, then resolved", async () => {
@@ -128,14 +156,7 @@ describe("the issue log", () => {
 
   it("opens Care's close on the reason its latest open report maps to, and on none once it is closed", async () => {
     await report({ about: "payment", text: "When does the refund land?" });
-    const thread = async () =>
-      (
-        await (
-          await request(appFor("local", fakeDependencies(), {}, "ops"), `/api/conversations/${await chat()}`)
-        ).json<{
-          close_reason: string | null;
-        }>()
-      ).close_reason;
+    const thread = () => closeReason();
     expect(await thread()).toBe("billing");
     await careCloses(5);
     expect(await thread()).toBeNull();
@@ -177,6 +198,49 @@ describe("the issue log", () => {
     // Care closing the old chat, for whoever holds the number now, settles nothing of the client's.
     await careCloses(30);
     expect((await log())[0]).toMatchObject({ state: "in_progress" });
+  });
+
+  it("settles at Care's next close a settled report the client wrote on again in the chat before their next", async () => {
+    await report({ about: "payment", text: "When does the refund land?" });
+    await careCloses(10);
+    await fileInbound(env.DB, {
+      mobileE164: "+919810000001",
+      text: "Thanks, but nothing yet.",
+      providerMessageId: null,
+      at: after(20),
+    });
+    await report({ about: "itching", text: "It itches since Monday." }, cookie, 60);
+    expect((await log())[1]).toMatchObject({ reference: "MM-ISS-0001", state: "open" });
+    await careCloses(120);
+    const [itching, refund] = await log();
+    expect([itching?.state, refund?.state]).toEqual(["resolved", "resolved"]);
+    expect(refund?.events.find((event) => event.kind === "closed")?.at).toBe(after(120).toISOString());
+  });
+
+  it("opens Care's close on none once every report is settled, and on an earlier one the client reopens", async () => {
+    await report({ about: "payment", text: "When does the refund land?" });
+    await careCloses(10);
+    await report({ about: "itching", text: "It itches since Monday." }, cookie, 60);
+    await careCloses(120);
+    expect(await closeReason()).toBeNull();
+    expect((await add("MM-ISS-0001", "reopen", 150, "The refund never came.")).status).toBe(204);
+    expect(await closeReason()).toBe("billing");
+  });
+
+  it("shows none of the earlier holder's words in the chat on a number the client moved to", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    // The number was another's, who wrote in its chat as if to the client's report.
+    await fileInbound(env.DB, {
+      mobileE164: NEW_NUMBER,
+      text: "MM-ISS-0001 · Update:\nNot mine at all.",
+      providerMessageId: null,
+      at: after(5),
+    });
+    await changesNumber(10);
+    await report({ about: "itching", text: "It itches." }, cookie, 20);
+    const [itching, lifting] = await log();
+    expect(lifting?.events.map((event) => event.text)).toEqual(["The front lifts."]);
+    expect(itching?.events.map((event) => event.text)).toEqual(["It itches."]);
   });
 
   it("counts the after-hours answer as no reply from Care", async () => {
@@ -297,12 +361,16 @@ describe("the issue log", () => {
 });
 
 describe("a report's photographs", () => {
-  const send = (bytes: Uint8Array, reference = "MM-ISS-0001") =>
-    request(appFor("local", fakeDependencies(), {}, "client"), `/api/me/problems/${reference}/photos`, {
-      method: "POST",
-      headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "image/jpeg" },
-      body: bytes,
-    });
+  const send = (bytes: Uint8Array, reference = "MM-ISS-0001", minutes = 0) =>
+    request(
+      appFor("local", fakeDependencies({ now: () => after(minutes) }), {}, "client"),
+      `/api/me/problems/${reference}/photos`,
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "image/jpeg" },
+        body: bytes,
+      },
+    );
   const ops = () => appFor("local", fakeDependencies(), {}, "ops");
 
   it("takes three JPEGs a report, tells Care in its chat, and lets Care see them", async () => {
@@ -340,6 +408,41 @@ describe("a report's photographs", () => {
     );
     expect(file.status).toBe(200);
     expect(file.headers.get("Content-Type")).toBe("image/jpeg");
+  });
+
+  it("tells Care of a photograph sent after a change of number in a chat on the new one, whose close settles it", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    const old = await chat();
+    await changesNumber(10);
+    expect(await send(syntheticJpeg(640, 480), "MM-ISS-0001", 20)).toHaveProperty("status", 201);
+    const fresh = await chatOn(NEW_NUMBER);
+    expect(fresh).not.toBe("");
+    expect(
+      await env.DB.prepare("SELECT state, last_inbound_at FROM conversations WHERE id = ?1").bind(fresh).first(),
+    ).toEqual({ state: "open", last_inbound_at: null });
+    expect(
+      await env.DB.prepare(
+        "SELECT conversation_id FROM chat_messages WHERE text = 'MM-ISS-0001: photo 1 of 3 came.'",
+      ).all(),
+    ).toMatchObject({ results: [{ conversation_id: fresh }] });
+    const listed = await request(ops(), `/api/conversations/${fresh}/report-photos`);
+    expect((await listed.json<{ photos: unknown[] }>()).photos).toHaveLength(1);
+    expect(await closeReason(fresh)).toBe("fit_problem");
+
+    await careCloses(30, fresh);
+    expect((await log())[0]).toMatchObject({ state: "resolved" });
+    expect(old).not.toBe(fresh);
+  });
+
+  it("reopens a closed chat with a photograph's note", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await careCloses(10);
+    await send(syntheticJpeg(640, 480), "MM-ISS-0001", 20);
+    expect(
+      await env.DB.prepare("SELECT state FROM conversations WHERE id = ?1")
+        .bind(await chat())
+        .first("state"),
+    ).toBe("open");
   });
 
   it("serves Care no photograph through another client's chat", async () => {

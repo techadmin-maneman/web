@@ -7,8 +7,8 @@ import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
 import { archivedMessages } from "./chat-archive.ts";
 import { giveCarePerson } from "./care-people.ts";
+import { openReportsOf } from "./issue-log.ts";
 import { read, readAll } from "../../lib/read-all.ts";
-import type { ProblemCategory } from "../../policy/problems.ts";
 import { CLOSE_REASON_OF, type CloseReason } from "./replies.ts";
 
 /** A message a client wrote to our number, as the bridge or MSG91 reports it. */
@@ -229,7 +229,10 @@ type ThreadItem =
 export interface Thread {
   readonly conversation: ConversationRow;
   readonly items: ThreadItem[];
-  /** The reason Care's close opens on: the latest report still open in the chat's, by its category; null for none. */
+  /**
+   * The reason Care's close opens on: the latest report the issue log of the client on the chat's number reads open, by
+   * its category; null for none.
+   */
   readonly close_reason: CloseReason | null;
 }
 
@@ -252,10 +255,7 @@ export async function conversationThread(
          (SELECT n.name FROM care_names n WHERE n.email = o.email) AS care_name, t.id AS technician_id,
          t.name AS technician_name, c.last_message_at, c.archive_key,
          c.last_inbound_at, NULL AS last_line,
-         (SELECT r.category FROM client_reports r WHERE r.conversation_id = c.id
-            AND r.person_id IN (SELECT holder.id FROM people holder WHERE holder.mobile_e164 = c.mobile_e164)
-            AND (r.closed_at IS NULL OR r.closed_at < r.reopened_at OR r.closed_at < c.last_inbound_at)
-            ORDER BY r.number DESC LIMIT 1) AS open_report,
+         (SELECT holder.id FROM people holder WHERE holder.mobile_e164 = c.mobile_e164) AS holder_id,
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
             AND m.author <> ?2) AS last_reply_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
@@ -263,7 +263,7 @@ export async function conversationThread(
        WHERE c.id = ?1`,
     )
     .bind(id, AUTO_REPLY)
-    .first<ListRow & { archive_key: string | null; open_report: ProblemCategory | null }>();
+    .first<ListRow & { archive_key: string | null; holder_id: string | null }>();
   if (row === null) return null;
   const { chat, auto } = await readAll(db, {
     chat: read<ThreadItem & { id: string }>(
@@ -298,7 +298,9 @@ export async function conversationThread(
   const items = [...archived, ...said, ...auto]
     .sort((one, other) => one.at.localeCompare(other.at))
     .slice(-THREAD_ITEMS);
-  const { archive_key: _key, open_report: report, ...listed } = row;
-  const closeReason = report === null ? null : CLOSE_REASON_OF[report];
+  const { archive_key: _key, holder_id: holder, ...listed } = row;
+  const [latest] = holder === null ? [] : await openReportsOf(db, holder);
+  const closeReason =
+    latest?.category === undefined || latest.category === null ? null : CLOSE_REASON_OF[latest.category];
   return { conversation: rowOf({ ...listed, last_line: null }, context), items, close_reason: closeReason };
 }

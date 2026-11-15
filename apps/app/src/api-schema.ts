@@ -3028,7 +3028,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Kept, and Care told in the report's chat */
+                /** @description Kept, and Care told in the chat on the client's number */
                 201: {
                     headers: {
                         [name: string]: unknown;
