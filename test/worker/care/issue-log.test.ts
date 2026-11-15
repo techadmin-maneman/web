@@ -125,6 +125,21 @@ describe("the issue log", () => {
     expect((await log())[0]).toMatchObject({ state: "resolved" });
   });
 
+  it("opens Care's close on the reason its latest open report maps to, and on none once it is closed", async () => {
+    await report({ about: "payment", text: "When does the refund land?" });
+    const thread = async () =>
+      (
+        await (
+          await request(appFor("local", fakeDependencies(), {}, "ops"), `/api/conversations/${await chat()}`)
+        ).json<{
+          close_reason: string | null;
+        }>()
+      ).close_reason;
+    expect(await thread()).toBe("billing");
+    await careCloses(5);
+    expect(await thread()).toBeNull();
+  });
+
   it("never shows, or takes words on, another client's report", async () => {
     const priya = await signedIn(PRIYA);
     await report({ about: "colour", text: "It looks brassy." }, priya);

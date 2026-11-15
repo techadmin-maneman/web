@@ -7,6 +7,7 @@ import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
 import type { MessagingProvider, SendResult } from "../../providers/messaging/index.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { hasNumber } from "../../lib/mobile.ts";
+import type { ProblemCategory } from "../../policy/problems.ts";
 
 /** What a chat was about, as Care close it. */
 export const CLOSE_REASONS = [
@@ -21,6 +22,19 @@ export const CLOSE_REASONS = [
   "other",
 ] as const;
 export type CloseReason = (typeof CLOSE_REASONS)[number];
+
+/** The closure reason Care's close opens on, for a chat whose latest report still open is of each category (ADR 0258). */
+export const CLOSE_REASON_OF: Readonly<Record<ProblemCategory, CloseReason>> = {
+  fit_guarantee: "fit_problem",
+  edges_lifting: "fit_problem",
+  itching: "aftercare",
+  colour: "aftercare",
+  shedding: "aftercare",
+  fit_comfort: "fit_problem",
+  visit: "booking",
+  payment: "billing",
+  other: "other",
+};
 
 interface Change {
   readonly conversationId: string;

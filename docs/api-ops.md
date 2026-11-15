@@ -44343,11 +44343,34 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/ThreadItem"
       }
+    },
+    "close_reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "booking",
+            "move_or_cancel",
+            "fit_problem",
+            "aftercare",
+            "billing",
+            "sign_in",
+            "try_on",
+            "data_request",
+            "other"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The reason the close opens on: the latest report still open in the chat's (ADR 0258); null for none."
     }
   },
   "required": [
     "conversation",
-    "items"
+    "items",
+    "close_reason"
   ],
   "additionalProperties": false
 }

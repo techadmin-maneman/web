@@ -9,7 +9,6 @@ import { guaranteeUntil } from "../../policy/fit-guarantee.ts";
 import { reportReference, type ProblemCategory } from "../../policy/problems.ts";
 import { warrantyEndsOn } from "../../policy/purchasing.ts";
 import { fileInbound } from "./inbox.ts";
-import type { CloseReason } from "./replies.ts";
 
 /** Each category as Care read it in the thread. */
 const CATEGORY_WORDS: Readonly<Record<ProblemCategory, string>> = {
@@ -22,19 +21,6 @@ const CATEGORY_WORDS: Readonly<Record<ProblemCategory, string>> = {
   visit: "A visit or technician",
   payment: "Payment or refund",
   other: "Something else",
-};
-
-/** The closure reason Care's close opens on, for each category. */
-export const CLOSE_REASON_OF: Readonly<Record<ProblemCategory, CloseReason>> = {
-  fit_guarantee: "fit_problem",
-  edges_lifting: "fit_problem",
-  itching: "aftercare",
-  colour: "aftercare",
-  shedding: "aftercare",
-  fit_comfort: "fit_problem",
-  visit: "booking",
-  payment: "billing",
-  other: "other",
 };
 
 interface PieceRow {

@@ -80,7 +80,14 @@ const ItemSchema = z
   .openapi("ThreadItem");
 
 const ThreadSchema = z
-  .object({ conversation: ConversationSchema, items: z.array(ItemSchema) })
+  .object({
+    conversation: ConversationSchema,
+    items: z.array(ItemSchema),
+    close_reason: z.union([z.enum(CLOSE_REASONS), z.null()]).openapi({
+      description:
+        "The reason the close opens on: the latest report still open in the chat's (ADR 0258); null for none.",
+    }),
+  })
   .strict()
   .openapi("ConversationThread");
 

@@ -122,7 +122,9 @@ beforeEach(() => {
           text: "Yes, 6 pm works.",
           delivery: "sent",
         };
-        return Promise.resolve(Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied] }));
+        return Promise.resolve(
+          Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied], close_reason: null }),
+        );
       }
       if (address.pathname === "/api/care-team") {
         return Promise.resolve(
@@ -186,15 +188,16 @@ beforeEach(() => {
       }
       if (address.pathname === `/api/conversations/${IMRAN.id}`) {
         const said = { kind: "in", at: IMRAN.last_message_at, author: "client", text: IMRAN.last_line, delivery: null };
-        return Promise.resolve(Response.json({ conversation: IMRAN, items: [said] }));
+        return Promise.resolve(Response.json({ conversation: IMRAN, items: [said], close_reason: null }));
       }
       if (address.pathname === `/api/conversations/${STRANGER.id}`) {
-        return Promise.resolve(Response.json({ conversation: STRANGER, items: [] }));
+        return Promise.resolve(Response.json({ conversation: STRANGER, items: [], close_reason: null }));
       }
       if (address.pathname === `/api/conversations/${ARJUN.id}`) {
         return Promise.resolve(
           Response.json({
             conversation: ARJUN,
+            close_reason: null,
             items: [
               {
                 kind: "auto",

@@ -145,9 +145,11 @@ export function Composer(props: {
   );
 }
 
-/** Close chat, in the chat's head: what it was about, then Close, in a drawer. */
+/** Close chat, in the chat's head: what it was about, opening on the latest open report's, then Close, in a drawer. */
 export function CloseChat(props: {
   readonly conversationId: string;
+  /** What the chat's latest report still open was about (docs/decisions/0258-the-issue-log.md); null for none. */
+  readonly suggested: CloseReason | null;
   readonly onThread: (thread: ChatThread, said: string) => void;
 }) {
   return <DrawerButton label={compose.closeChat}>{(close) => <CloseForm {...props} onClosed={close} />}</DrawerButton>;
@@ -155,10 +157,11 @@ export function CloseChat(props: {
 
 function CloseForm(props: {
   readonly conversationId: string;
+  readonly suggested: CloseReason | null;
   readonly onThread: (thread: ChatThread, said: string) => void;
   readonly onClosed: () => void;
 }) {
-  const [reason, setReason] = useState<CloseReason>("other");
+  const [reason, setReason] = useState<CloseReason>(props.suggested ?? "other");
   const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
   const shut = () =>
