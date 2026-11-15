@@ -2448,6 +2448,188 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's alerts of the last 30 days, newest first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The inbox */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientAlerts"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/alerts/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Every alert the client has, read: they opened the inbox */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Read */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/push-subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** This browser takes the client's pushes, until it is signed out, revoked or ends */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ClientPushSubscription"];
+                };
+            };
+            responses: {
+                /** @description Kept */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientPushSubscribed"];
+                    };
+                };
+                /** @description invalid_request: not a browser's push service */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/problems": {
         parameters: {
             query?: never;
@@ -5625,6 +5807,39 @@ export interface components {
             result: "flagged";
             checks: components["schemas"]["SignOffChecks"];
             flag_text: string;
+        };
+        ClientAlerts: {
+            /** @description The last 30 days', newest first. */
+            alerts: components["schemas"]["ClientAlert"][];
+            /** @description The key a browser subscribes to our pushes with; null where pushes are not set up. */
+            push_key: string | null;
+        };
+        ClientAlert: {
+            id: string;
+            /**
+             * @description The message it stands beside, by its kind, or sign_off_asked: the technician asks for a sign-off.
+             * @enum {string}
+             */
+            kind: "tryon_result" | "consultation_confirmation" | "visit_reminder" | "payment_receipt" | "nothing_to_pay" | "link_paid" | "upi_received" | "reschedule_confirmation" | "cancel_confirmation" | "visit_cancelled" | "visit_moved" | "move_proposed" | "arrival_notice" | "technician_update" | "no_show_decided" | "no_show_dispute_ruled" | "booking_refunded" | "next_service_reminder" | "friend_fitted" | "friend_credited" | "referral_rejected" | "credits_expiring" | "launch_alert" | "deletion_rejected" | "concern_received" | "concern_answered" | "recall_notice" | "consultation_follow_up" | "fit_aftercare" | "first_check_in" | "second_check_in" | "sign_off_asked";
+            /** @description The visit it is about, where it is about one. */
+            visit_id: string | null;
+            /** @description A technician's word: on the way, running late or at the gate, with their minutes. */
+            update: {
+                kind: string;
+                minutes: number | null;
+            } | null;
+            /** Format: date-time */
+            at: string;
+            read: boolean;
+        };
+        ClientPushSubscribed: {
+            endpoint: string;
+            /** Format: date-time */
+            subscribed_at: string;
+        };
+        ClientPushSubscription: {
+            /** @description The push service's address for this browser, as it gave it. */
+            endpoint: string;
         };
         ProblemReported: {
             /** @enum {string} */

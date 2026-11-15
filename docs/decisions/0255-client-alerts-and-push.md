@@ -22,14 +22,23 @@ running_late | at_the_gate, minutes, at}` from `technician_updates`, `step {inde
    `no_show_wait_min`). The plans' step names move to a module both apps read. Nothing about the technician's place or
    phone is carried.
 2. **Alerts.** `client_app_alerts` (migration 0211; `client_alerts` already names ops' alerts about a client) is written
-   beside each outbound message of a kind in `MESSAGE_KINDS` that concerns a client, and beside each live event of item
-   1 and of the sign-off (ADR 0254), whether or not WhatsApp is on. Each is written once, by its own key.
-   `GET /api/me/alerts` lists them newest first; `POST /api/me/alerts/read` marks them read. A technician swap writes
-   none.
+   by triggers, whatever wrote the row they fire on, whether or not WhatsApp is on:
+   - beside each outbound message, but those that are WhatsApp's alone (`WHATSAPP_ONLY` in
+     `src/policy/client-alerts.ts`: the site's answers to a number we know, the waitlist's confirmation, the answer to a
+     STOP), and a technician's word or arrival written already skipped, as heard too late to tell. The live events of
+     item 1 are such messages: the technician's word and their arrival;
+   - each time a technician asks for the client's sign-off (ADR 0254), the first time and again after a flag.
+
+   Each is written once, by its own key. `GET /api/me/alerts` lists the last 30 days', newest first, each with the
+   visit it is about and a technician's word with its minutes; `POST /api/me/alerts/read` marks them read; the cron
+   deletes older ones. A technician swap writes none: it writes no message.
+
 3. **Push.** `client_push_subscriptions` (migration 0211) keyed to the client's session, with the same payloadless VAPID
    push as ADR 0250 (`src/providers/web-push.ts`): the service worker reads the inbox with the client's own session and
-   shows what is new, so nothing about a visit passes through a push service. A subscription goes with its session: a
-   session signed out or revoked drops it. The app asks for notifications only after the first visit is booked, from a
+   shows what is new, so nothing about a visit passes through a push service. The cron pushes each alert not yet pushed
+   or read, within the 30 minutes a push lives, to each live session of the client's that subscribed. A session revoked
+   or ended takes no pushes; signing out drops its subscription at once, and the sweeper drops any other's before it
+   deletes the session. The app asks for notifications only after the first visit is booked, from a
    row on Home, never on load.
 4. **In the app.** News arrives as the phone-style banner and a row under the bell; the next-visit card follows the
    visit live (on the way, running late by N minutes, at the gate, at your door until, step n of N, sign-off, done).

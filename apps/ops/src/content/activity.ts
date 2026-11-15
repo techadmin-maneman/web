@@ -252,6 +252,8 @@ const CALLS: Readonly<Partial<Record<string, string>>> = {
   "DELETE /api/number-change": "Withdrew a number change",
   "POST /api/deletion-request": "Asked for their record to be deleted",
   "POST /api/me/problems": "Told Care something is wrong",
+  "POST /api/me/alerts/read": "Read their alerts",
+  "POST /api/me/push-subscriptions": "Turned on notifications on a phone",
   "POST /api/grievances": "Raised a concern",
   "POST /api/refer/card": "Made their referral card",
   "DELETE /api/refer/card": "Took their referral card down",

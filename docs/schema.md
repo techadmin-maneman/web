@@ -22,6 +22,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | A technician's position and their SOS | `visit_positions`, `sos_alerts` | A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was | The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since |
 | A fit's sign-off | `fit_sign_offs` | A sign-off asked, flagged or signed since is lost, and a fit closed since reads as closed without one; one declined since is gone from the Tasks board | Nothing to redo for a fit already closed: its job's outcome stands. Ask ops to note on the visit any sign-off since `<T>` the client remembers |
 | A technician's asks of ops: kit, and a visit to move | `kit_requests`, `reschedule_requests` | An ask made since is lost, and one ops settled since is open again on the Tasks board | Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost |
+| A client's alerts in their app, and the sessions that take their pushes | `client_app_alerts`, `client_push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a browser that allowed pushes since takes none | Nothing: the messages since stay in WhatsApp, and the app subscribes again when it next opens |
 | A technician's alerts, the kinds they turned off, and the phones that take their pushes | `tech_alerts`, `tech_alert_kinds_off`, `push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a kind turned off since is on, and a phone that allowed pushes since takes none | Nothing: the cron writes the day's alerts again as they fall due, a kind is turned off again in Alerts, and the phone subscribes again when the app next opens |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
@@ -72,6 +73,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [city_prices](#city_prices): A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).
 - [city_settings](#city_settings): A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).
 - [client_alerts](#client_alerts): What every technician reads in red before they start on a client, raised by staff or by a technician at a close; one taken off is marked so, never deleted, until an erasure (ADR 0242).
+- [client_app_alerts](#client_app_alerts): A client's alerts in their app, over the last 30 days: one beside each message written to them but WhatsApp's own, and one each time a technician asks for their sign-off; when each was pushed and read (ADR 0255).
+- [client_push_subscriptions](#client_push_subscriptions): The session that takes a client's pushes, one subscription a session, by the push service's address; a session signed out, revoked or ended takes none (ADR 0255).
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 - [consumable_shortfalls](#consumable_shortfalls): A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).
@@ -641,6 +644,46 @@ Indexes:
 
 - `client_alerts_by_visit`: unique on (`appointment_id`), where `appointment_id IS NOT NULL`
 - `client_alerts_person`: on (`person_id`, `written_at`)
+
+## client_app_alerts
+
+A client's alerts in their app, over the last 30 days: one beside each message written to them but WhatsApp's own, and one each time a technician asks for their sign-off; when each was pushed and read (ADR 0255).
+
+Made by `0211_client_app_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `kind` | TEXT | no |  |  | The kind of message it stands beside (src/config/message-kinds.ts), or sign_off_asked. |
+| `subject_kind` | TEXT | no |  |  | What it is about, as the message names it: a visit, a payment, a proposed move, a technician's update. |
+| `subject_id` | TEXT | no |  |  |  |
+| `once_key` | TEXT | no |  |  | One alert a message, and one each time a sign-off is asked. |
+| `written_at` | TEXT | no |  |  |  |
+| `pushed_at` | TEXT | yes |  |  | When the push went; NULL while it is to go. |
+| `read_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `client_app_alerts_by_time`: on (`written_at`)
+- `client_app_alerts_inbox`: on (`person_id`, `written_at`)
+- A `UNIQUE` constraint: unique on (`person_id`, `once_key`)
+
+## client_push_subscriptions
+
+The session that takes a client's pushes, one subscription a session, by the push service's address; a session signed out, revoked or ended takes none (ADR 0255).
+
+Made by `0211_client_app_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `session_id` | TEXT | no |  | primary key; → `sessions.id` |  |
+| `endpoint` | TEXT | no |  |  |  |
+| `subscribed_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`endpoint`)
 
 ## consents
 
@@ -1221,7 +1264,7 @@ Triggers: `first_fit_requests_fitted_asked`.
 
 The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app, or declined with the technician's why, which opens a Tasks row (ADR 0254).
 
-Made by `0210_fit_sign_offs.sql`.
+Made by `0210_fit_sign_offs.sql`; changed by `0211_client_app_alerts.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -1241,6 +1284,8 @@ Made by `0210_fit_sign_offs.sql`.
 Indexes:
 
 - `fit_sign_offs_declined`: on (`updated_at`), where `state = 'declined'`
+
+Triggers: `client_app_alerts_sign_off_asked`, `client_app_alerts_sign_off_asked_again`.
 
 ## forecast_accuracy
 
@@ -1840,7 +1885,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -1868,6 +1913,8 @@ Indexes:
 - `outbound_messages_by_state`: on (`state`, `queued_at`)
 - `outbound_messages_by_subject`: on (`subject_id`)
 - `outbound_messages_one_arrival`: unique on (`subject_id`), where `kind = 'arrival_notice'`
+
+Triggers: `client_app_alerts_beside_messages`.
 
 ## packages
 

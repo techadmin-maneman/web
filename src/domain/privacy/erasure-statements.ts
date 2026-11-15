@@ -44,6 +44,8 @@ export async function personalDataStatements(
       )
       .bind(personId),
     db.prepare("DELETE FROM tryon_sessions WHERE person_id = ?1").bind(personId),
+    // Their alerts in the app; the sessions that took their pushes end below, and the sweeper lets the pushes go.
+    db.prepare("DELETE FROM client_app_alerts WHERE person_id = ?1").bind(personId),
     // The client app: every session ends, and every open login code stops working (docs/decisions/0029, 0030).
     db
       .prepare(

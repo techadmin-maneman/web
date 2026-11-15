@@ -160,6 +160,12 @@ const HISTORY = [
   `INSERT INTO razorpay_events (event_id, event, received_at) SELECT 'evt-' || i, 'payment.captured', '${AGO}' FROM n`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
+  // Each client's alerts in their app, pushed and read; and a browser of theirs that takes the pushes.
+  `INSERT INTO client_app_alerts (id, person_id, kind, subject_kind, subject_id, once_key, written_at, pushed_at, read_at)
+   SELECT 'cal-' || i, 'p-' || i, 'visit_reminder', 'appointment', 'a-' || i, 'message:history-' || i, '${HOURS_AGO}',
+     '${HOURS_AGO}', '${HOURS_AGO}' FROM n`,
+  `INSERT INTO client_push_subscriptions (session_id, endpoint, subscribed_at)
+   SELECT 's-' || i, 'https://fcm.googleapis.com/fcm/send/client-' || i, '${AGO}' FROM n`,
   `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)
    SELECT 't-history', 'resource-history', 'A Technician', 'AT', 1, '${AGO}' FROM n LIMIT 1`,
   // Their alerts of the inbox's week, pushed and read, as the day ahead's deletion of old alerts leaves them; a phone signed in long ago
@@ -413,6 +419,7 @@ describe("one cron run", () => {
       .bind(DUE_SOON, DUE_SOON_PLUS_HOUR)
       .run();
     await rowsReadByOneRun(EVENING); // the day's once-only work, and the three reminders written
+    await rowsReadByOneRun(EVENING); // the reminders' alerts in the clients' app pushed
     const before = await rowsReadByOneRun(EVENING);
 
     await history(401, 800);

@@ -3628,6 +3628,169 @@
         ],
         "description": "Happy with the fit, every check ticked; or something isn't right, in the client's words."
       },
+      "ClientAlerts": {
+        "type": "object",
+        "properties": {
+          "alerts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientAlert"
+            },
+            "description": "The last 30 days', newest first."
+          },
+          "push_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The key a browser subscribes to our pushes with; null where pushes are not set up."
+          }
+        },
+        "required": [
+          "alerts",
+          "push_key"
+        ],
+        "additionalProperties": false
+      },
+      "ClientAlert": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tryon_result",
+              "consultation_confirmation",
+              "visit_reminder",
+              "payment_receipt",
+              "nothing_to_pay",
+              "link_paid",
+              "upi_received",
+              "reschedule_confirmation",
+              "cancel_confirmation",
+              "visit_cancelled",
+              "visit_moved",
+              "move_proposed",
+              "arrival_notice",
+              "technician_update",
+              "no_show_decided",
+              "no_show_dispute_ruled",
+              "booking_refunded",
+              "next_service_reminder",
+              "friend_fitted",
+              "friend_credited",
+              "referral_rejected",
+              "credits_expiring",
+              "launch_alert",
+              "deletion_rejected",
+              "concern_received",
+              "concern_answered",
+              "recall_notice",
+              "consultation_follow_up",
+              "fit_aftercare",
+              "first_check_in",
+              "second_check_in",
+              "sign_off_asked"
+            ],
+            "description": "The message it stands beside, by its kind, or sign_off_asked: the technician asks for a sign-off."
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The visit it is about, where it is about one."
+          },
+          "update": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string"
+                  },
+                  "minutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "minutes"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A technician's word: on the way, running late or at the gate, with their minutes."
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "read": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "visit_id",
+          "update",
+          "at",
+          "read"
+        ],
+        "additionalProperties": false
+      },
+      "ClientPushSubscribed": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "subscribed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "endpoint",
+          "subscribed_at"
+        ],
+        "additionalProperties": false
+      },
+      "ClientPushSubscription": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "The push service's address for this browser, as it gave it."
+          }
+        },
+        "required": [
+          "endpoint"
+        ],
+        "additionalProperties": false
+      },
       "ProblemReported": {
         "type": "object",
         "properties": {
@@ -9329,6 +9492,212 @@
                               "type": "string",
                               "enum": [
                                 "sign_off_checks_open"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/alerts": {
+      "get": {
+        "summary": "The client's alerts of the last 30 days, newest first",
+        "responses": {
+          "200": {
+            "description": "The inbox",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAlerts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/alerts/read": {
+      "post": {
+        "summary": "Every alert the client has, read: they opened the inbox",
+        "responses": {
+          "204": {
+            "description": "Read"
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/push-subscriptions": {
+      "post": {
+        "summary": "This browser takes the client's pushes, until it is signed out, revoked or ends",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientPushSubscription"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Kept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPushSubscribed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: not a browser's push service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
                               ]
                             }
                           },

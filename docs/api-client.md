@@ -3151,6 +3151,188 @@ Request body:
 }
 ```
 
+### GET /api/me/alerts
+
+The client's alerts of the last 30 days, newest first
+
+**200**: The inbox
+
+```json
+{
+  "$ref": "#/components/schemas/ClientAlerts"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/me/alerts/read
+
+Every alert the client has, read: they opened the inbox
+
+**204**: Read
+
+**401**: session_required
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/me/push-subscriptions
+
+This browser takes the client's pushes, until it is signed out, revoked or ends
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientPushSubscription"
+}
+```
+
+**201**: Kept
+
+```json
+{
+  "$ref": "#/components/schemas/ClientPushSubscribed"
+}
+```
+
+**400**: invalid_request: not a browser's push service
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/me/problems
 
 Tell Care something is wrong with the hair system or a visit
@@ -10233,6 +10415,189 @@ Request body:
     }
   ],
   "description": "Happy with the fit, every check ticked; or something isn't right, in the client's words."
+}
+```
+
+### ClientAlerts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "alerts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientAlert"
+      },
+      "description": "The last 30 days', newest first."
+    },
+    "push_key": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The key a browser subscribes to our pushes with; null where pushes are not set up."
+    }
+  },
+  "required": [
+    "alerts",
+    "push_key"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientAlert
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "tryon_result",
+        "consultation_confirmation",
+        "visit_reminder",
+        "payment_receipt",
+        "nothing_to_pay",
+        "link_paid",
+        "upi_received",
+        "reschedule_confirmation",
+        "cancel_confirmation",
+        "visit_cancelled",
+        "visit_moved",
+        "move_proposed",
+        "arrival_notice",
+        "technician_update",
+        "no_show_decided",
+        "no_show_dispute_ruled",
+        "booking_refunded",
+        "next_service_reminder",
+        "friend_fitted",
+        "friend_credited",
+        "referral_rejected",
+        "credits_expiring",
+        "launch_alert",
+        "deletion_rejected",
+        "concern_received",
+        "concern_answered",
+        "recall_notice",
+        "consultation_follow_up",
+        "fit_aftercare",
+        "first_check_in",
+        "second_check_in",
+        "sign_off_asked"
+      ],
+      "description": "The message it stands beside, by its kind, or sign_off_asked: the technician asks for a sign-off."
+    },
+    "visit_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it is about, where it is about one."
+    },
+    "update": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "minutes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "minutes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A technician's word: on the way, running late or at the gate, with their minutes."
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "read": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "visit_id",
+    "update",
+    "at",
+    "read"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientPushSubscribed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "type": "string"
+    },
+    "subscribed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "endpoint",
+    "subscribed_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientPushSubscription
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "type": "string",
+      "maxLength": 2048,
+      "description": "The push service's address for this browser, as it gave it."
+    }
+  },
+  "required": [
+    "endpoint"
+  ],
+  "additionalProperties": false
 }
 ```
 

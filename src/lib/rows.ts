@@ -224,6 +224,22 @@ export interface Rows {
     readonly taken_off_at: string | null;
     readonly taken_off_by: string | null;
   };
+  readonly client_app_alerts: {
+    readonly id: string;
+    readonly person_id: string;
+    readonly kind: string;
+    readonly subject_kind: string;
+    readonly subject_id: string;
+    readonly once_key: string;
+    readonly written_at: string;
+    readonly pushed_at: string | null;
+    readonly read_at: string | null;
+  };
+  readonly client_push_subscriptions: {
+    readonly session_id: string;
+    readonly endpoint: string;
+    readonly subscribed_at: string;
+  };
   readonly consents: {
     readonly id: string;
     readonly person_id: string;

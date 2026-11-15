@@ -53,6 +53,8 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/field/technician-pay.ts deletes a grade only while no rate names it",
   "technician_devices.session_id -> sessions":
     "src/scheduled/sweeper.ts clears it in the batch that deletes the session",
+  "client_push_subscriptions.session_id -> sessions":
+    "src/scheduled/sweeper.ts deletes it in the batch that deletes the session, before the session",
   "photos.photo_set_id -> photo_sets": "src/domain/privacy/erasure.ts deletes a set's photographs first",
   "checkins.address_id -> addresses":
     "src/domain/privacy/erasure.ts blanks an address a check-in points at, and keeps it",

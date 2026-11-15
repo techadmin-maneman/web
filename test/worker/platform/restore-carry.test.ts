@@ -149,6 +149,7 @@ describe("restoring the whole database", () => {
       "visit_positions",
       "reschedule_requests",
       "tech_alerts",
+      "client_app_alerts",
     ]);
   });
 });

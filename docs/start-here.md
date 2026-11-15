@@ -172,7 +172,7 @@ this map, or when the map names something that no longer exists.
 
 ### Clients
 
-- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `worn-hair-system` (the hair system a client wears, and when its replacement opens), `client-notes`, `staff-notes` (staff's notes on a client), `client-alerts` (what every technician reads before they start), `handoff-notes` (the note left for the next technician),
+- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `worn-hair-system` (the hair system a client wears, and when its replacement opens), `client-notes`, `staff-notes` (staff's notes on a client), `client-alerts` (what every technician reads before they start), `app-alerts` (the client's own alerts in their app, and the pushes telling it), `handoff-notes` (the note left for the next technician),
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`,
   `pincode-directory` (India Post's pincodes, which ops open a city from), `pincode-launches` (launches scheduled for
   a later day), `launch-runs` (those due, served by the cron on the day), `pincode-reach` (a city's
