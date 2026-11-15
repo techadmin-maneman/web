@@ -39,9 +39,17 @@ running_late | at_the_gate, minutes, at}` from `technician_updates`, `step {inde
 3. **Push.** `client_push_subscriptions` (migration 0211) keyed to the client's session, with the same payloadless VAPID
    push as ADR 0250 (`src/providers/web-push.ts`): the service worker reads the inbox with the client's own session and
    shows what is new, so nothing about a visit passes through a push service. The cron pushes each alert not yet pushed
-   or read, within the 30 minutes a push lives, to each live session of the client's that subscribed. A session revoked
+   or read, within the 30 minutes a push lives, to the client's live sessions that subscribed: the newest five
+   (`PUSH_SESSIONS_MAX`), so no client's alert costs more than five of a run's calls. A session revoked
    or ended takes no pushes; signing out drops its subscription at once, and the sweeper drops any other's before it
    deletes the session. The app asks for notifications only after the first visit is booked, from a
    row on Home, never on load.
 4. **In the app.** News arrives as the phone-style banner and a row under the bell; the next-visit card follows the
    visit live (on the way, running late by N minutes, at the gate, at your door until, step n of N, sign-off, done).
+
+## Consequences
+
+- **D1 counts a trigger's rows in a statement's changes.** Migration 0211's triggers on `outbound_messages` make an
+  insert there report two changes, not one. Code that reads a message insert's changes reads its returned row instead,
+  as the arrival notice now does. Until this release's code lands after the migration, the deployed arrival notice reads
+  its insert as not written and leaves the message to the sweeper, which sends it within five minutes.

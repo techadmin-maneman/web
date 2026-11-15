@@ -46,6 +46,18 @@ describe("clearing the technician tester", () => {
 
   // A job the tester closed as a no-show, which ops charged and the invented client disputed
   // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+  it("clears the invented client's alerts in their app, written beside their job's messages", async () => {
+    await env.DB.prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+       VALUES ('m-arrival', ?2, ?3, 'arrival_notice', 'appointment', ?1, 'queued', ?2)`,
+    )
+      .bind(JOB, NOW.toISOString(), CLIENT)
+      .run();
+    expect(await left("client_app_alerts")).toBe(1);
+    await clear();
+    expect([await left("client_app_alerts"), await left("people")]).toEqual([0, 0]);
+  });
+
   it("clears a no-show the client disputed", async () => {
     await env.DB.batch([
       env.DB.prepare(

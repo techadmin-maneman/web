@@ -154,6 +154,28 @@ describe("the push that tells the client's app", () => {
     );
   });
 
+  it("lets a session revoked elsewhere lose its place first, never a live one", async () => {
+    const rohit = await client();
+    for (let browser = 1; browser <= 6; browser += 1) {
+      const token = await openSession(env.DB, { kind: "client", subjectId: rohit.id, deviceLabel: null, now: NOW });
+      if (browser === 6) {
+        // The second browser was revoked from the devices list; the sweeper has not run.
+        await env.DB.prepare(
+          "UPDATE sessions SET revoked_at = ?1 WHERE id = (SELECT session_id FROM client_push_subscriptions WHERE endpoint = ?2)",
+        )
+          .bind(NOW.toISOString(), `${ENDPOINT}-2`)
+          .run();
+      }
+      await post({ cookie: `mm_app=${token}` }, "/api/me/push-subscriptions", {
+        endpoint: `${ENDPOINT}-${String(browser)}`,
+      });
+    }
+    const { results } = await env.DB.prepare("SELECT endpoint FROM client_push_subscriptions ORDER BY endpoint").all();
+    expect(results.map((row) => row.endpoint)).toEqual(
+      [1, 3, 4, 5, 6].map((browser) => `${ENDPOINT}-${String(browser)}`),
+    );
+  });
+
   it("takes only a browser's push service as where to push", async () => {
     const rohit = await client();
     const answer = await post(rohit, "/api/me/push-subscriptions", { endpoint: "https://example.com/push" });

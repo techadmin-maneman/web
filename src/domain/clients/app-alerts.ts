@@ -36,9 +36,12 @@ export async function clientInboxOf(db: D1Database, personId: string, now: Date)
   const { results } = await db
     .prepare(
       `SELECT al.id, al.kind, al.written_at, al.read_at, tu.preset, tu.minutes,
-              CASE al.subject_kind WHEN 'appointment' THEN al.subject_id ELSE tu.appointment_id END AS visit_id
+              CASE al.subject_kind WHEN 'appointment' THEN al.subject_id
+                ELSE COALESCE(tu.appointment_id, mp.appointment_id, pa.appointment_id) END AS visit_id
          FROM client_app_alerts al
          LEFT JOIN technician_updates tu ON al.subject_kind = 'technician_update' AND tu.id = al.subject_id
+         LEFT JOIN move_proposals mp ON al.subject_kind = 'move_proposal' AND mp.id = al.subject_id
+         LEFT JOIN payments pa ON al.subject_kind = 'payment' AND pa.id = al.subject_id
         WHERE al.person_id = ?1 AND al.written_at >= ?2
         ORDER BY al.written_at DESC, al.rowid DESC
         LIMIT 100`,
@@ -94,8 +97,8 @@ export async function markClientAlertsRead(db: D1Database, personId: string, now
 
 /**
  * The session's push subscription, one a session. A browser keeps one subscription whoever signs in on it, so the
- * address moves to the session of whoever signed in last. A client's sessions past the newest few to subscribe lose
- * theirs, so no client's alert takes more than a few of a run's calls.
+ * address moves to the session of whoever signed in last. A client's sessions past the newest few still live to
+ * subscribe lose theirs, never this one, so no client's alert takes more than a few of a run's calls.
  */
 export async function subscribeClientPushes(
   db: D1Database,
@@ -117,11 +120,13 @@ export async function subscribeClientPushes(
            SELECT s.session_id FROM sessions se
              JOIN client_push_subscriptions s ON s.session_id = se.id
             WHERE se.subject_kind = 'client' AND se.subject_id = (SELECT subject_id FROM sessions WHERE id = ?1)
-            ORDER BY s.subscribed_at DESC, s.rowid DESC
+            -- This session first, then those still live, newest to subscribe first.
+            ORDER BY se.id = ?1 DESC, (se.revoked_at IS NULL AND se.expires_at > ?3) DESC, s.subscribed_at DESC,
+              s.rowid DESC
             LIMIT -1 OFFSET ?2
          )`,
       )
-      .bind(sessionId, PUSH_SESSIONS_MAX),
+      .bind(sessionId, PUSH_SESSIONS_MAX, now.toISOString()),
   ]);
 }
 
