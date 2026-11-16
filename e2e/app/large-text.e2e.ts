@@ -54,7 +54,7 @@ function spills(page: Page) {
     );
     const spilled = shown.flatMap((box) => {
       const own = [...box.childNodes].filter(
-        (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "",
+        (node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim() !== "",
       );
       if (own.length === 0) return [];
       const words = document.createRange();
