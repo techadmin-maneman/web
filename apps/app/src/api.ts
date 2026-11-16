@@ -47,6 +47,7 @@ export type Refer = Schemas["Refer"];
 export type BookableType = Me["booking"]["types"][number];
 export type OfferedService = Me["booking"]["services"][number];
 export type Issue = Schemas["Issue"];
+export type ClientAlert = Schemas["ClientAlert"];
 export type ProblemAbout = Schemas["ProblemReport"]["about"];
 export type BookingWindow = Hold["window"];
 
@@ -198,6 +199,9 @@ export const api = {
   /** Something wrong, told to Care: answered with the report's reference (docs/decisions/0259-the-issue-log.md). */
   reportProblem: (body: { about: ProblemAbout; visit_id: string | null; text: string }) =>
     client.post("/api/me/problems", { body }),
+  /** The alerts under the bell, the last 30 days', newest first; opening them marks them read. */
+  alerts: () => client.get("/api/me/alerts"),
+  readAlerts: () => client.post("/api/me/alerts/read"),
   /** The client's issue log: their reports, grievances and missed-visit disputes, newest first. */
   problems: () => client.get("/api/me/problems"),
   updateProblem: (reference: string, text: string) =>

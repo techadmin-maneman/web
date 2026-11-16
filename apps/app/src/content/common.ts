@@ -31,7 +31,7 @@ export const titles = {
   address: "Address",
   privacy: "Privacy",
   account: "Account",
-  alerts: "Alerts",
+  alerts: "Notifications",
   hairSystem: "Your hair system",
   hairSystems: "Compare hair systems",
 } as const;

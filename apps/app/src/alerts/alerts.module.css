@@ -1,0 +1,18 @@
+/* The alerts under the bell (./AlertsScreen.tsx): Today and Earlier, each over its rows, and the line on WhatsApp. */
+
+.page {
+  padding: 0 var(--screen-gutter) var(--sp-28);
+}
+
+.group {
+  margin: var(--sp-16) 0 var(--sp-4);
+  color: var(--ink-500);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+}
+
+.note {
+  margin: var(--sp-20) 0 0;
+  color: var(--ink-500);
+  font-size: var(--fs-13);
+}
