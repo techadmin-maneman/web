@@ -58,14 +58,16 @@ export function visitUpkeep(db: D1Database, whose: Whose, at: string): D1Prepare
            visit_id = excluded.visit_id, visit_start = excluded.visit_start, consulted_start = excluded.consulted_start`,
       )
       .bind(list),
-    // A replacement counts as booked from the first day of the month its piece falls due, when one may first be booked
-    // (migration 0213); the generated every-visit upkeep runs this SQL on one line, so it holds no comment of its own.
+    // A replacement counts as booked from the first day of the month its piece falls due, when one may first be booked,
+    // if after the day the piece was fitted, as a recall moves its due day back (migration 0213). The generated
+    // every-visit upkeep runs this SQL on one line, so it holds no comment of its own.
     db
       .prepare(
         `UPDATE pieces SET replacement_booked = EXISTS (
            SELECT 1 FROM appointments a
             WHERE a.person_id = pieces.person_id AND a.type = 'replacement' AND ${STANDS("a")}
-              AND a.window_start >= date(pieces.replacement_due_at, 'start of month'))
+              AND a.window_start >= date(pieces.replacement_due_at, 'start of month')
+              AND date(a.window_start) > date(pieces.fitted_at))
          WHERE person_id IN (${people}) AND replacement_due_at IS NOT NULL`,
       )
       .bind(list),

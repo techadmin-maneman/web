@@ -155,6 +155,54 @@ describe("a replacement", () => {
     expect(await booked()).toBe(1);
   });
 
+  it("never counts the replacement that fitted a piece as booked for it, when a recall brings its due day back", async () => {
+    const rohit = await client();
+    // A replacement on 3 October fitted the piece; a recall on 20 October makes it due that day.
+    await visit(rohit.id, "replacement", "completed", "2026-10-03T04:30:00.000Z", IMRAN);
+    const piece = await wornPiece(rohit.id, "2026-10-20", "2026-10-03");
+    const booked = () =>
+      env.DB.prepare("SELECT replacement_booked FROM pieces WHERE id = ?1").bind(piece).first("replacement_booked");
+    expect(await booked()).toBe(0);
+    await env.DB.batch(visitUpkeep(env.DB, { people: [rohit.id] }, NOW.toISOString()));
+    expect(await booked()).toBe(0);
+  });
+
+  it("opens as usual where the hair system sold is on its way between places", async () => {
+    const rohit = await client();
+    await wornPiece(rohit.id, "2026-09-28");
+    await profiled(rohit.id);
+    const code = await sold("essential", { held: false });
+    await env.DB.prepare("UPDATE people SET package = 'essential' WHERE id = ?1").bind(rohit.id).run();
+    await env.DB.prepare(
+      `INSERT INTO stock_transfers (id, consumable_code, quantity, from_place, to_place, state, sent_by, sent_at)
+       VALUES ('tr-1', ?1, 1, 'central', 'central', 'in_transit', 'ops@localhost', ?2)`,
+    )
+      .bind(code, NOW.toISOString())
+      .run();
+    expect((await opensOn(rohit)).opens).toBe("2026-09-22");
+  });
+
+  it("refuses a hold before the hair system sold can be fitted, of the package named or a move's own", async () => {
+    const rohit = await client();
+    await wornPiece(rohit.id, "2026-09-28");
+    await profiled(rohit.id);
+    await sold("essential", { held: true });
+    await sold("natural", { held: false });
+    await env.DB.prepare("UPDATE people SET package = 'essential' WHERE id = ?1").bind(rohit.id).run();
+    const holdAs = (date: string, extra: object) =>
+      request(app, "/api/holds", {
+        method: "POST",
+        headers: { Cookie: rohit.cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify({ type: "replacement", date, window: "morning", ...extra }),
+      });
+
+    expect((await holdAs("2026-10-01", { tier: "natural" })).status).toBe(422);
+    expect((await holdAs("2026-10-02", { tier: "natural" })).status).toBe(201);
+    const booked = await visit(rohit.id, "replacement", "scheduled", "2026-10-05T04:30:00.000Z", IMRAN);
+    await env.DB.prepare("UPDATE appointments SET tier = 'natural' WHERE id = ?1").bind(booked).run();
+    expect((await holdAs("2026-10-01", { moving: booked })).status).toBe(422);
+  });
+
   it("is offered from tomorrow once its month has begun", async () => {
     const rohit = await client();
     await wornPiece(rohit.id, "2026-09-28");
