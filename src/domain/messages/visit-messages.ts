@@ -111,11 +111,12 @@ export async function arrivalNotice(
   const late = input.now.getTime() - input.arrivedAt.getTime() > input.withinMin * MINUTE_MS;
   const id = crypto.randomUUID();
   const at = input.now.toISOString();
+  // Read by the row it returns, not its changes, which D1 counts with any row a trigger writes beside it.
   const written = await db
     .prepare(
       `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at,
          last_error) VALUES (?1, ?2, ?3, 'arrival_notice', 'appointment', ?4, ?5, ?6, ?7)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT DO NOTHING RETURNING id`,
     )
     .bind(
       id,
@@ -126,8 +127,8 @@ export async function arrivalNotice(
       late ? null : at,
       late ? ARRIVAL_TOO_LATE : null,
     )
-    .run();
-  return written.meta.changes === 1 && !late ? id : null;
+    .all();
+  return written.results.length === 1 && !late ? id : null;
 }
 
 /** The kinds that tell a visit's new window: the client's own move, and one ops made on the dispatch board. */
