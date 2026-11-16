@@ -124,6 +124,15 @@ describe("the issue log", () => {
     expect((await log())[0]).toMatchObject({ state: "resolved" });
   });
 
+  it("counts on Visits, in Home's answer, the reports not yet resolved", async () => {
+    const open = async () => (await (await asClient(cookie, "/api/me")).json<{ issues_open: number }>()).issues_open;
+    expect(await open()).toBe(0);
+    await report({ about: "edges_lifting", text: "The front lifts after the gym." });
+    expect(await open()).toBe(1);
+    await careCloses(30);
+    expect(await open()).toBe(0);
+  });
+
   it("gives each report the stretch of the chat until the next, and numbers them in turn", async () => {
     await report({ about: "payment", text: "When does the refund land?" });
     await careReplies("Refund started.", 5);

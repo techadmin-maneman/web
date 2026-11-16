@@ -59,6 +59,8 @@ import { pricedFor } from "../../domain/booking/client-prices.ts";
 import { forPackage } from "../../policy/services.ts";
 import { cityOfPerson } from "../../domain/cities/cities.ts";
 import { selfServeKinds } from "../../policy/self-serve.ts";
+import { unreadClientAlerts } from "../../domain/clients/app-alerts.ts";
+import { openIssueCount } from "../../domain/care/issue-log.ts";
 
 /** The words the first booked page had for a window. It had none for the afternoon. */
 const FIRST_FORM_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "before noon", evening: "after four" };
@@ -192,6 +194,8 @@ export function registerClientMe(app: App): void {
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
     const missed = missedVisit(db, personId);
     const refers = canRefer(db, personId);
+    const unread = unreadClientAlerts(db, personId, now);
+    const issuesOpen = openIssueCount(db, personId);
     const inputsRead = opsInputs(c);
     const [person, upcoming, underWay, credits, fitted, form, types, sold, home, invite, owed, recap, onPackage, worn] =
       await Promise.all([
@@ -242,6 +246,8 @@ export function registerClientMe(app: App): void {
         being_booked: await beingBookedBody(db, underWay),
         missed_visit: await missed,
         payment_owed: owed[0] ?? null,
+        alerts_unread: await unread,
+        issues_open: await issuesOpen,
         remake,
         credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,

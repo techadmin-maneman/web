@@ -83,6 +83,8 @@ describe("the session", () => {
       being_booked: null,
       missed_visit: null,
       payment_owed: null,
+      alerts_unread: 0,
+      issues_open: 0,
       remake: null,
       credits: null,
       // A consultation is booked and no address given: the design's prompt asks for one.

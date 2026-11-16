@@ -112,6 +112,19 @@ describe("an alert in the client's app", () => {
     expect((await post(rohit, "/api/me/alerts/read")).status).toBe(204);
     expect(await inbox(rohit)).toEqual([expect.objectContaining({ kind: "visit_reminder", read: true })]);
   });
+
+  it("is counted on the bell, in Home's answer, until the client opens the inbox", async () => {
+    const rohit = await client();
+    const booked = await visit(rohit.id, "service", "scheduled", TOMORROW, IMRAN);
+    await message(rohit.id, "visit_reminder", booked);
+    await message(rohit.id, "visit_moved", booked);
+    const unread = async () =>
+      (await (await request(app, "/api/me", { headers: { Cookie: rohit.cookie } })).json<{ alerts_unread: number }>())
+        .alerts_unread;
+    expect(await unread()).toBe(2);
+    await post(rohit, "/api/me/alerts/read");
+    expect(await unread()).toBe(0);
+  });
 });
 
 describe("the push that tells the client's app", () => {
