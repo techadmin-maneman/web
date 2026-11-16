@@ -294,7 +294,7 @@ export const settings = {
       credit_reminder_days: { first: "First reminder", last: "Last reminder" },
       ratings: {
         low_below: "Care call under",
-        average_days: "Technician's average over",
+        average_days: "Technician’s average over",
         shown_from: "Shown from",
         rate_within_days: "Rated within",
       },
