@@ -3,14 +3,15 @@
 // wa.me's, which open the app on a phone and WhatsApp Web at a desk.
 
 /** The business's WhatsApp number, the one MSG91 sends from and takes replies on: digits with the country code, no "+". */
-export const WHATSAPP_NUMBER = "17116660760";
+export const WHATSAPP_NUMBER = "919034572990";
 
-/** The business's number as it is written for people: "+1 711 666 0760". */
-export const WHATSAPP_DISPLAY = `+${WHATSAPP_NUMBER.slice(0, 1)} ${WHATSAPP_NUMBER.slice(1, 4)} ${WHATSAPP_NUMBER.slice(4, 7)} ${WHATSAPP_NUMBER.slice(7)}`;
+/** The business's number as it is written for people: "+91 90345 72990". */
+export const WHATSAPP_DISPLAY = `+${WHATSAPP_NUMBER.slice(0, 2)} ${WHATSAPP_NUMBER.slice(2, 7)} ${WHATSAPP_NUMBER.slice(7)}`;
 
 /**
- * Ops' own phone, which technicians call or WhatsApp: the business's WhatsApp number answers through MSG91 and takes no
- * calls.
+ * Ops' phone, which technicians call, from the Safety screen too, or WhatsApp. Today the business's own number, so its
+ * WhatsApp arrives in the console's Care inbox; written apart, so a change of the business's WhatsApp number, as the
+ * banned-number runbook makes, never moves the technicians' line to a number that may take no calls.
  */
 export const OPS_NUMBER = "919034572990";
 

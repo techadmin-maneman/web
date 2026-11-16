@@ -1,4 +1,5 @@
-// The way to ops from anywhere the app tells the technician to ask them: a call, or a WhatsApp, to ops' own phone.
+// The way to ops from anywhere the app tells the technician to ask them: a call to ops' phone, or a WhatsApp to it, which
+// arrives in the console's Care inbox.
 
 import { ButtonLink } from "@maneman/ui/Button";
 import { OPS_NUMBER, whatsappChat } from "@maneman/web-kit/whatsapp";
