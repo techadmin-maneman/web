@@ -9,10 +9,11 @@ export const WHATSAPP_NUMBER = "919034572990";
 export const WHATSAPP_DISPLAY = `+${WHATSAPP_NUMBER.slice(0, 2)} ${WHATSAPP_NUMBER.slice(2, 7)} ${WHATSAPP_NUMBER.slice(7)}`;
 
 /**
- * Ops' phone, which technicians call or WhatsApp: the business's own number, whose WhatsApp answers through MSG91 in the
- * console's Care inbox.
+ * Ops' phone, which technicians call, from the Safety screen too, or WhatsApp. Today the business's own number, so its
+ * WhatsApp arrives in the console's Care inbox; written apart, so a change of the business's WhatsApp number, as the
+ * banned-number runbook makes, never moves the technicians' line to a number that may take no calls.
  */
-export const OPS_NUMBER = WHATSAPP_NUMBER;
+export const OPS_NUMBER = "919034572990";
 
 /** A chat with `number`, written any way ("+91 98100 04417"), with `text` ready to send if there is any. */
 export function whatsappChat(number: string, text?: string): string {
