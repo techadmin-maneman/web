@@ -1,19 +1,22 @@
-// The signed-in app's frame (design/phase2/Client App, boards B to G): a
-// header, the page, anything the page keeps above the tabs, and the five tabs.
-// The header is Home's mark and profile button, a tab's title, or a way back
-// with the page's title. Each page pads itself, as its board does.
+// The signed-in app's frame (design/client-redesign, docs/decisions/0252-client-app-redesign.md): a head, the
+// offline bar, the page, the page's action bar, and the four tabs on a tab's own page. Home's head is the drawn mark,
+// a tab's its title; each has the bell and the client's initials at the right. A page under a tab has a way back and
+// its title. Each page pads itself.
 
-import { iconButtonLook } from "@maneman/ui/IconButton";
-import { APP_ICONS, ICONS, TAB_ICONS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
+import { APP_ICONS, CLIENT_ICONS, GLYPHS, ICONS, TAB_ICONS } from "@maneman/brand/icons";
+import { focusIfLost } from "@maneman/ui/arrival";
 import { classes } from "@maneman/ui/classes";
+import { Icon } from "@maneman/ui/Icon";
+import { iconButtonLook } from "@maneman/ui/IconButton";
+import { IconLink } from "@maneman/ui/IconLink";
 import { Mark } from "@maneman/ui/Mark";
 import { ARRIVE } from "@maneman/ui/motion";
 import { Link } from "@maneman/ui/router";
-import { focusIfLost } from "@maneman/ui/arrival";
+import { TabBar, TabBarItem } from "@maneman/ui/TabBar";
 import { useEffect, type ReactNode } from "react";
-import { home, states, tabs, tabsLabel } from "../content.ts";
+import { home, shell, states, tabs } from "../content.ts";
 import type { Tab } from "../route.ts";
+import { openIssues, unreadAlerts } from "../lib/counts.ts";
 import { useSession } from "../session.ts";
 import styles from "./shell.module.css";
 
@@ -22,49 +25,102 @@ export { Link as AppLink } from "@maneman/ui/router";
 
 type Header =
   | { readonly kind: "home" }
-  | { readonly kind: "tab"; readonly title: string; readonly action?: ReactNode }
-  | { readonly kind: "back"; readonly title: string; readonly to: string; readonly label: string };
+  | { readonly kind: "tab"; readonly title: string }
+  | {
+      readonly kind: "back";
+      /** None where the page's own first heading names it, as the profile's name does. */
+      readonly title?: string;
+      readonly to: string;
+      readonly label: string;
+      /** A small action at the head's right, as Visits' "Edit". */
+      readonly action?: ReactNode;
+    };
 
 interface Props {
   readonly header: Header;
-  /** The tab the page sits under, marked in the bar; the profile sits under none. */
+  /** The tab whose own page this is, marked in the bar; a page under a tab has no bar. */
   readonly tab: Tab | null;
-  /** Kept between the page and the tabs, as Visits' "Book your next visit". */
+  /** The page's action bar, kept above the foot (packages/ui/ActionBar.tsx). */
   readonly footer?: ReactNode;
   /** The page draws the Home the phone kept, so offline it says it shows the last update. */
   readonly kept?: boolean;
   readonly children: ReactNode;
 }
 
-function PageHeader({ header }: { header: Header }) {
+const TAB_ICON: Readonly<Record<Tab, string>> = {
+  "/": TAB_ICONS.home,
+  "/visits": TAB_ICONS.visits,
+  "/photos": TAB_ICONS.photos,
+  "/rewards": CLIENT_ICONS.gift,
+};
+
+/** The bell and the client's initials, at the right of a tab's head. */
+function HeadActions() {
   const { me } = useSession();
+  const unread = unreadAlerts(me);
+  return (
+    <span className={styles.actions}>
+      <IconLink to="/alerts" d={GLYPHS.bell} size="md" count={unread} label={shell.alerts(unread)} />
+      <Link className={styles.initials} to="/profile" label={home.profile(me.initials)}>
+        {me.initials}
+      </Link>
+    </span>
+  );
+}
+
+function PageHeader({ header }: { header: Header }) {
   switch (header.kind) {
     case "home":
       return (
         <header className={styles.header}>
           <Mark className={styles.mark} />
-          <Link className={styles.avatar} to="/profile" label={home.profile(me.initials)}>
-            {me.initials}
-          </Link>
+          <HeadActions />
         </header>
       );
     case "tab":
       return (
         <header className={styles.header}>
           <h1 className={styles.tabTitle}>{header.title}</h1>
-          {header.action}
+          <HeadActions />
         </header>
       );
     case "back":
       return (
-        <header className={classes(styles.header, styles.titled)}>
+        <header className={classes(styles.header, styles.sub)}>
           <Link className={iconButtonLook(styles.back)} to={header.to} label={header.label}>
             <Icon d={ICONS.back} size="md" />
           </Link>
-          <h1 className={styles.name}>{header.title}</h1>
+          {header.title !== undefined && <h1 className={styles.name}>{header.title}</h1>}
+          {header.action}
         </header>
       );
   }
+}
+
+function Tabs({ tab }: { tab: Tab }) {
+  const { me } = useSession();
+  const counts: Readonly<Partial<Record<Tab, number>>> = {
+    "/visits": openIssues(me),
+    "/rewards": me.credits?.visits ?? 0,
+  };
+  return (
+    <TabBar label={shell.tabsLabel} className={styles.tabs}>
+      {tabs.map((each) => {
+        const count = counts[each.page] ?? 0;
+        return (
+          <TabBarItem
+            key={each.page}
+            to={each.page}
+            icon={TAB_ICON[each.page]}
+            name={each.label}
+            current={each.page === tab}
+            count={count}
+            label={count > 0 ? each.counted(count) : undefined}
+          />
+        );
+      })}
+    </TabBar>
+  );
 }
 
 export function Shell({ header, tab, footer, kept = false, children }: Props) {
@@ -74,9 +130,9 @@ export function Shell({ header, tab, footer, kept = false, children }: Props) {
   }, []);
   const { offline } = useSession();
   return (
-    <div className={styles.shell}>
+    <div className={classes(styles.shell, tab === null ? styles.noTabs : styles.withTabs)}>
       <PageHeader header={header} />
-      {/* Always in the page, so a screen reader hears the banner come and go. */}
+      {/* Always in the page, so a screen reader hears the bar come and go. */}
       <div className={styles.status} role="status">
         {offline && (
           <p className={styles.offline}>
@@ -86,15 +142,8 @@ export function Shell({ header, tab, footer, kept = false, children }: Props) {
         )}
       </div>
       <main className={classes(styles.page, ARRIVE)}>{children}</main>
-      {footer !== undefined && <div className={styles.footer}>{footer}</div>}
-      <nav className={styles.tabs} aria-label={tabsLabel}>
-        {tabs.map((each) => (
-          <Link key={each.page} className={styles.tab} to={each.page} current={each.page === tab}>
-            <Icon d={TAB_ICONS[each.icon]} size="md" />
-            <span>{each.label}</span>
-          </Link>
-        ))}
-      </nav>
+      {footer}
+      {tab !== null && <Tabs tab={tab} />}
     </div>
   );
 }

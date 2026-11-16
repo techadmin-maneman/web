@@ -7,6 +7,37 @@ import { timeOfDay, UNBROKEN } from "@rules/lib/time-range.ts";
 export const VISIT_PHOTOS =
   "Photos at every visit: five angles, for your record. Only you and your technician see them.";
 
+/** The profile's list, under the client's initials (design/client-redesign, the profile screen). */
+export const profileMenu = {
+  hairSystem: "Your hair system",
+  hairSystemMeta: (name: string) => `${name} · every one you’ve worn`,
+  payments: "Payments and invoices",
+  paymentsMeta: "Paid through Razorpay",
+  issues: "Issues",
+  issuesMeta: (raised: number, open: number) =>
+    `${String(raised)} raised · ${String(open)} open`,
+  issuesNone: "Anything off with a visit, your hair system or a payment",
+  address: "Address and access notes",
+  addressNone: "Add your address",
+  privacy: "Privacy and messages",
+  privacyMeta: "Photos, WhatsApp updates",
+  help: "Help on WhatsApp",
+  account: "Account",
+  accountMeta: "Mobile number, your data, delete account",
+  terms: "Terms",
+  privacyPolicy: "Privacy",
+} as const;
+
+/** The profile's own pages' titles. */
+export const profilePages = {
+  address: "Address",
+  addressLede: "Your technician sees this before every visit.",
+  privacy: "Privacy and messages",
+  account: "Account",
+  number: "Mobile number",
+  data: "Your data",
+} as const;
+
 export const profile = {
   back: "Back",
   where: "Your address",

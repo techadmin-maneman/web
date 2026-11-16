@@ -1,29 +1,14 @@
 /*
- * The client app's base: the brand tokens, the apps' layer and the fonts
- * (packages/brand), the page every app starts from (packages/ui), and the one
- * column the design is drawn at. Components style themselves in their own
- * .module.css, with tokens only.
+ * The client app's base: the brand tokens, the apps' layer and IBM Plex Sans (packages/brand), the page every app
+ * starts from (packages/ui), the client's look (./look.css), and the one column the design is drawn at. Components
+ * style themselves in their own .module.css, with tokens only.
  */
 
 @import "@maneman/brand/tokens.css";
 @import "@maneman/brand/tokens-apps.css";
-@import "@maneman/brand/fonts.css";
+@import "@maneman/brand/fonts-plex.css";
 @import "@maneman/ui/base.css";
-
-body {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-/* Signed in, the screens are on paper, and so is the page around the column. */
-body[data-ground="paper"] {
-  background: var(--paper);
-}
-
-/* Keyboard focus follows the ground (packages/ui/base.css): paper on ink. */
-body[data-ground="ink"] {
-  --focus-colour: var(--paper);
-}
+@import "./look.css";
 
 /* The design's column fills a phone a little wider than it; on a wider screen it is centred, not stretched. */
 :root {

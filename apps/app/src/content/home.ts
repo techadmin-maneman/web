@@ -3,15 +3,11 @@
 import { visitLength } from "./common.ts";
 
 export const tabs = [
-  { page: "/", label: "Home", icon: "home" },
-  { page: "/visits", label: "Visits", icon: "visits" },
-  { page: "/photos", label: "Photos", icon: "photos" },
-  { page: "/payments", label: "Payments", icon: "payments" },
-  { page: "/refer", label: "Refer", icon: "refer" },
+  { page: "/", label: "Home", counted: (count: number) => `Home, ${String(count)}` },
+  { page: "/visits", label: "Visits", counted: (count: number) => `Visits, ${String(count)} open issues` },
+  { page: "/photos", label: "Photos", counted: (count: number) => `Photos, ${String(count)}` },
+  { page: "/rewards", label: "Rewards", counted: (count: number) => `Rewards, ${freeServiceVisits(count)}` },
 ] as const;
-
-/** The tab bar, as a screen reader names it. */
-export const tabsLabel = "Main";
 
 /**
  * The referral reward has this one name wherever the client reads it: "1 free service visit", "3 free

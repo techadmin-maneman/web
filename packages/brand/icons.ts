@@ -120,6 +120,48 @@ export const TAB_ICONS = {
   refer: APP_ICONS.share,
 } as const;
 
+/**
+ * The client app's redesign (design/client-redesign/Client App.prototype.html, its icons), each written as one path:
+ * the prototype's rectangles and circles drawn as the lines they are.
+ */
+export const CLIENT_ICONS = {
+  /** Rewards' tab, and Home's invite row. */
+  gift: "M3 8 H21 V12.5 H3 Z M5 12.5 V21 H19 V12.5 M12 8 V21 M12 8 S10.5 3.5 7.8 4.2 C5.6 4.8 7 8 12 8 Z M12 8 S13.5 3.5 16.2 4.2 C18.4 4.8 17 8 12 8 Z",
+  /** The four hair systems compared. */
+  layers: "M12 3 L21 8 L12 13 L3 8 Z M3 13 L12 18 L21 13",
+  /** A question for Care. */
+  help: "M12 3 A9 9 0 0 1 12 21 A9 9 0 0 1 12 3 M9.5 9.5 A2.5 2.5 0 1 1 13 11.8 C12.4 12.1 12 12.6 12 13.3 V14 M12 17 V17.3",
+  /** Something that failed, or a missed visit. */
+  alert: "M12 3 A9 9 0 0 1 12 21 A9 9 0 0 1 12 3 M12 7.5 V13 M12 16.2 V16.5",
+  /** Reporting an issue. */
+  wrench: "M14.5 6.5 A4 4 0 0 0 19.5 11.5 L12 19 A2.1 2.1 0 0 1 9 16 L16.5 8.5 Z M14.5 6.5 L17 4",
+  /** An issue raised. */
+  flag: "M5 21 V4 H16 L14.5 8 L16 12 H5",
+  /** A rating's star. */
+  star: "M12 3 L14.7 8.6 L20.8 9.4 L16.3 13.6 L17.4 19.7 L12 16.8 L6.6 19.7 L7.7 13.6 L3.2 9.4 L9.3 8.6 Z",
+  /** Only the client and their technician see a photograph. */
+  lock: "M6.5 10.5 H17.5 A1.5 1.5 0 0 1 19 12 V19 A1.5 1.5 0 0 1 17.5 20.5 H6.5 A1.5 1.5 0 0 1 5 19 V12 A1.5 1.5 0 0 1 6.5 10.5 Z M8 10.5 V7.5 A4 4 0 0 1 16 7.5 V10.5",
+  /** The before and after slider's knob. */
+  swap: "M9 6 L4 12 L9 18 M15 6 L20 12 L15 18",
+  /** An invoice or a receipt. */
+  receipt: "M6 3 H18 V21 L15 19 L12 21 L9 19 L6 21 Z M9 8 H15 M9 12 H15",
+  /** A card payment. */
+  card: "M4.5 5 H19.5 A1.5 1.5 0 0 1 21 6.5 V17.5 A1.5 1.5 0 0 1 19.5 19 H4.5 A1.5 1.5 0 0 1 3 17.5 V6.5 A1.5 1.5 0 0 1 4.5 5 Z M3 10 H21",
+  /** A bank transfer. */
+  bank: "M3 9 H21 L12 3 Z M5 9 V18 M10 9 V18 M14 9 V18 M19 9 V18 M3 21 H21",
+  /** Signing out. */
+  logout: "M14 4 H19 V20 H14 M10 8 L6 12 L10 16 M6 12 H16",
+  /** Trying again. */
+  refresh: "M20 11 A8 8 0 1 0 17.7 16.7 M20 4 V11 H13",
+  /** A hair system on its way. */
+  truck:
+    "M3 6 H14 V16 H3 Z M14 10 H18 L21 13 V16 H14 M7 17 A2 2 0 1 0 7 21 A2 2 0 1 0 7 17 M17 17 A2 2 0 1 0 17 21 A2 2 0 1 0 17 17",
+  /** The client's account. */
+  user: "M12 4 A4 4 0 0 1 12 12 A4 4 0 0 1 12 4 M4 21 C5.2 17 8.3 15 12 15 S18.8 17 20 21",
+  /** A conversation with Care. */
+  chat: "M4 20 L5.3 16.1 A8 8 0 1 1 8 19 Z",
+} as const;
+
 /** The stage drawings' two lines: the head's outline, and the hair and the thinning zone within it. */
 export const DRAWING_STROKES = { outline: 1.4, detail: 1.1 } as const;
 

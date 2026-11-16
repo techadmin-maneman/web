@@ -168,6 +168,14 @@ export const empty = {
   },
 } as const;
 
+/** The frame's head and tabs (apps/app/src/frame/Shell.tsx). */
+export const shell = {
+  /** The tab bar, as a screen reader names it. */
+  tabsLabel: "Main",
+  /** The bell, read out with how many alerts are new. */
+  alerts: (unread: number) => (unread > 0 ? `Notifications, ${String(unread)} unread` : "Notifications"),
+} as const;
+
 /** The states screen: loading, offline and error. */
 export const states = {
   loading: "Loading…",

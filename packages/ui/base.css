@@ -62,6 +62,8 @@
        app larger. */
     --message-size: var(--fs-15);
     /* Inside a table row, which keeps the row at the console's row height. */
+    /* How far above the window's foot a full-width toast sits (./Toast.tsx): an app with a bar there sets it higher. */
+    --toast-lift: var(--sp-24);
     --compact-height: var(--sp-28);
     --compact-text: var(--fs-13);
     /* A filled button's edge: none, unless the app draws its filled buttons edged as its outlined ones are. */
@@ -126,6 +128,8 @@
     --tab-mark: transparent;
     /* A list of rows on a phone (./ListRow.tsx): its edge, and its rows' lead column, title and second line. */
     --list-edge: var(--hairline) solid var(--ui-line);
+    /* How far a row's words sit from the list's sides: none where the list runs the column's width, as the client's. */
+    --row-pad-x: var(--sp-16);
     --row-lead-text: var(--fs-13);
     --row-lead-colour: var(--ui-text-muted);
     --row-lead-wrap: nowrap;

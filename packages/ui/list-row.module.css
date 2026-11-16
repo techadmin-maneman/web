@@ -31,7 +31,7 @@
     gap: var(--sp-12);
     width: 100%;
     min-height: var(--sp-64);
-    padding: var(--sp-12) var(--sp-16);
+    padding: var(--sp-12) var(--row-pad-x);
     border: 0;
     background: none;
     color: var(--ui-text);
@@ -54,7 +54,7 @@
 
   .action {
     flex-shrink: 0;
-    padding-right: var(--sp-16);
+    padding-right: var(--row-pad-x);
   }
 
   /* On a phone the action takes a line of its own beneath the row, so the row's words keep the width. */
@@ -68,7 +68,7 @@
     }
 
     .action {
-      padding: 0 var(--sp-16) var(--sp-12);
+      padding: 0 var(--row-pad-x) var(--sp-12);
     }
   }
 
@@ -114,6 +114,17 @@
     font-size: var(--row-lead-text);
     font-variant-numeric: tabular-nums;
     color: var(--row-lead-colour);
+  }
+
+  /* What the row is, at the start, in the strong colour; and the chevron at the end, in the controls' edge. */
+  .icon {
+    flex-shrink: 0;
+    color: var(--ui-strong);
+  }
+
+  .chevron {
+    flex-shrink: 0;
+    color: var(--ui-line-control);
   }
 
   .words {
