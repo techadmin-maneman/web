@@ -65,7 +65,7 @@ export const home = {
     invite: "Invite a friend",
     /** Issues the client raised that are still open. */
     openIssues: (count: number) => (count === 1 ? "1 open issue" : `${String(count)} open issues`),
-    openIssuesMeta: "See where each stands",
+    openIssuesMeta: (count: number) => (count === 1 ? "See where it stands" : "See where each stands"),
     /** Before the first fit: the four compared, and questions on WhatsApp. */
     compareMeta: "Side by side, before you choose",
     questions: "Questions before the visit?",

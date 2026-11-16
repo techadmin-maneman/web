@@ -47,7 +47,7 @@ function FittedRows({ me }: { me: Me }) {
         <ListRow
           icon={CLIENT_ICONS.flag}
           title={copy.openIssues(open)}
-          meta={copy.openIssuesMeta}
+          meta={copy.openIssuesMeta(open)}
           to="/visits/issues"
           chevron
         />
