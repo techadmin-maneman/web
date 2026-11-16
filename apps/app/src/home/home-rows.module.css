@@ -1,0 +1,13 @@
+/* The free service visits' count in a wash square, where a row's icon stands (./HomeRows.tsx). */
+.count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sp-40);
+  height: var(--sp-40);
+  background: var(--wash-100);
+  color: var(--gold-700);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}

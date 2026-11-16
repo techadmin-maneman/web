@@ -30,7 +30,40 @@ export const PAID_IN = "Your payment is in. We’re booking your visit.";
 
 export const TOLD_WHEN_BOOKED = "We’ll message you on WhatsApp when it’s booked.";
 
+/** The part of the day an hour falls in, as Home greets the client. */
+function partOfDay(hour: number): string {
+  if (hour < 12) return "Good morning";
+  return hour < 17 ? "Good afternoon" : "Good evening";
+}
+
 export const home = {
+  /** Home's heading, by the hour in India: "Good morning, Rohit". */
+  greeting: (hour: number, firstName: string) => `${partOfDay(hour)}, ${firstName}`,
+  /** How far off the next visit's day is, beneath it. */
+  away: (days: number) => {
+    if (days <= 0) return "Today";
+    return days === 1 ? "Tomorrow" : `In ${String(days)} days`;
+  },
+  technicianFor: "Your technician for this visit",
+  /** Home's hair system: how far through its months it is, and when its replacement may be booked (ADR 0253). */
+  hairSystem: {
+    title: "Your hair system",
+    history: "History",
+    month: (month: number, of: number) => `Month ${String(month)} of ${String(of)}`,
+    age: "Hair system age",
+    booked: (date: string) => `Replacement booked for ${date}.`,
+    bookNow: (ends: string) => `Ends ${ends}. You can book its replacement now.`,
+    bookFrom: (fitted: string, opens: string) =>
+      `Fitted ${fitted}. You can book its replacement from ${opens}, and pick a different hair system then if you want one.`,
+  },
+  /** Home's rows beneath the hair system. */
+  rows: {
+    creditsMeta: (useBy: string | null) =>
+      useBy === null ? "Applied when you book." : `${useBy}. Applied when you book.`,
+    report: "Report an issue",
+    reportMeta: "Lifting edges, itching, colour, billing",
+    invite: "Invite a friend",
+  },
   /** The avatar's name begins with the initials it shows, so "tap RM" reaches it by voice. */
   profile: (initials: string) => `${initials}, your profile`,
   reschedule: "Change",
@@ -50,7 +83,7 @@ export const home = {
   },
   note: "Add a note",
   consultation: {
-    label: "Your consultation",
+    label: "Your home consultation",
     labelOneVisit: "Your consultation and fit",
     free: "Free",
     /** Asked for on the site, not yet booked. */
@@ -100,7 +133,9 @@ export const home = {
     missed: "We’ll be in touch about this visit",
   },
   next: {
-    label: "Your next visit",
+    label: "Next visit",
+    /** The card's line above the day, by the visit's kind. */
+    labels: { first_fit: "Your first fit", replacement: "Your replacement" },
     /** "Service visit · 1 hour 30 minutes". */
     length: (what: string, minutes: number) => `${what} · ${visitLength(minutes)}`,
     none: "Nothing booked yet.",

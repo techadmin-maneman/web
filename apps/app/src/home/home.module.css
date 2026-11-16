@@ -1,62 +1,111 @@
-/* The next visit's card on ink; what to expect, the credit tile and the prompt on paper. */
+/* Home (design/client-redesign, Home): the greeting, the next visit's card on navy, what to expect, the prompt and the
+   notes beneath it on white. */
 
 .home {
   display: flex;
   flex-direction: column;
   gap: var(--sp-24);
-  padding: var(--sp-28) var(--sp-20);
+  padding: var(--sp-4) var(--screen-gutter) var(--sp-28);
 }
 
-/* Something wrong with the hair system: quiet, at the foot of Home. */
-.problem {
-  align-self: flex-start;
+.greeting {
+  margin: 0;
+  color: var(--navy-900);
+  font-size: var(--fs-28);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-115);
 }
 
+/* A section's title on white, as "What to expect" and "We missed you". */
 .label {
   margin: 0;
   font-size: var(--fs-15);
-  color: var(--text-muted);
+  font-weight: var(--weight-semibold);
 }
 
+/* The card on navy, its words white, what is beneath them in mist. */
 .card {
-  margin-top: var(--sp-16);
-  padding: var(--sp-24);
-  background: var(--ink);
-  --focus-colour: var(--paper);
+  --focus-colour: var(--white-000);
+
+  padding: var(--sp-20);
+  background: var(--navy-900);
+  color: var(--white-000);
 }
 
 .card p {
   margin: 0;
 }
 
+.eyebrow {
+  margin: 0;
+  color: var(--mist-300);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-medium);
+}
+
+/* Away from the card, the eyebrow is a section's title: "Next visit", over "Nothing booked yet". */
+.nothing .eyebrow {
+  color: var(--ink-500);
+}
+
 .date {
-  font-family: var(--font-serif);
-  font-size: var(--fs-app-title);
+  margin-top: var(--sp-4);
+  font-size: var(--fs-28);
+  font-weight: var(--weight-semibold);
   line-height: var(--lh-115);
-  color: var(--paper);
+}
+
+.card .away {
+  margin-top: var(--sp-2);
+  color: var(--gilt);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
 }
 
 .card .window {
   margin-top: var(--sp-8);
-  font-size: var(--fs-17);
-  color: var(--ink-soft);
+  color: var(--grid-100);
+  font-size: var(--fs-15);
+}
+
+/* When, what and how long, where, and what it costs: a line each, beside its icon. */
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin: var(--sp-16) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--grid-100);
+  font-size: var(--fs-14);
+}
+
+.fact {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: flex-start;
+}
+
+.factIcon {
+  flex-shrink: 0;
+  margin-top: var(--sp-2);
+  color: var(--mist-300);
 }
 
 .card .place {
   margin-top: var(--sp-16);
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
+  color: var(--grid-100);
+  font-size: var(--fs-14);
 }
 
-/* The technician's initials and name, and the visit's kind and length. */
+/* Who is coming, under a rule. */
 .technician {
   display: flex;
   align-items: center;
-  gap: var(--sp-16);
-  margin-top: var(--sp-20);
-  padding-top: var(--sp-20);
-  border-top: var(--hairline) solid var(--ink-rule);
+  gap: var(--sp-12);
+  margin-top: var(--sp-16);
+  padding-top: var(--sp-16);
+  border-top: var(--hairline) solid var(--navy-700);
 }
 
 .initials {
@@ -64,64 +113,56 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: var(--btn-md);
-  height: var(--btn-md);
-  background: var(--ink-night);
-  font-family: var(--font-serif);
-  font-size: var(--fs-17);
-  color: var(--ink-muted);
+  width: var(--sp-40);
+  height: var(--sp-40);
+  background: var(--navy-700);
+  color: var(--white-000);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
 }
 
 .card .who {
-  font-size: var(--fs-16);
-  color: var(--paper);
+  font-weight: var(--weight-semibold);
 }
 
 .card .length {
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
-}
-
-.card .who + .length {
-  margin-top: var(--sp-4);
+  color: var(--mist-300);
+  font-size: var(--fs-13);
 }
 
 .card .free {
   margin-top: var(--sp-16);
   padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--ink-rule);
-  font-size: var(--fs-16);
-  color: var(--paper);
+  border-top: var(--hairline) solid var(--navy-700);
+  font-size: var(--fs-15);
 }
 
 /* A consultation and fit in one visit: its price once fitted, as the consultation's Free line stands, then how. */
 .terms {
   margin-top: var(--sp-16);
   padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--ink-rule);
-  font-size: var(--fs-16);
-  color: var(--paper);
+  border-top: var(--hairline) solid var(--navy-700);
+  font-size: var(--fs-15);
 }
 
 .card .termsMore {
   margin-top: var(--sp-4);
+  color: var(--mist-300);
   font-size: var(--fs-14);
-  color: var(--ink-soft);
 }
 
-/* A move to another day ops asked of the client, above Reschedule, which offers another time beside it. */
+/* A move to another day ops asked of the client, above Change, which offers another time beside it. */
 .proposal {
   margin-top: var(--sp-16);
   padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--ink-rule);
-  font-size: var(--fs-16);
-  color: var(--paper);
+  border-top: var(--hairline) solid var(--navy-700);
+  font-size: var(--fs-15);
 }
 
 .proposalNote {
   margin-top: var(--sp-8);
+  color: var(--mist-300);
   font-size: var(--fs-14);
-  color: var(--ink-soft);
 }
 
 .accept {
@@ -133,13 +174,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-8);
-  margin-top: var(--sp-20);
+  margin-top: var(--sp-16);
 }
 
-/*
- * Reschedule and Add a note (packages/ui/Button.tsx, outlined on ink, 48 px), side by side, each its words on one
- * line: one above the other where they don't fit, as "Pick another time" beside a proposed move.
- */
+/* Change and Add a note (packages/ui/Button.tsx, outlined on navy), side by side, each its words on one line: one
+   above the other where they don't fit, as "Pick another time" beside a proposed move. */
 .action {
   flex: 1;
   min-width: max-content;
@@ -148,35 +187,34 @@
 
 .expect {
   padding-top: var(--sp-20);
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--line-200);
 }
 
 .nothing {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-16);
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
+  gap: var(--sp-12);
+  font-size: var(--fs-15);
 }
 
 .nothing p {
   margin: 0;
-  color: var(--text-soft);
+  color: var(--ink-500);
 }
 
 .nothingTitle {
   margin: 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-app-title);
-  font-weight: var(--weight-regular);
+  color: var(--navy-900);
+  font-size: var(--fs-22);
+  font-weight: var(--weight-semibold);
   line-height: var(--lh-115);
 }
 
 .nothing .consultedWhen {
-  font-family: var(--font-serif);
-  font-size: var(--fs-app-title);
+  color: var(--navy-900);
+  font-size: var(--fs-22);
+  font-weight: var(--weight-semibold);
   line-height: var(--lh-115);
-  color: var(--text);
 }
 
 /* Home's way to book (packages/ui/Button.tsx), the width of the page. */
@@ -184,55 +222,36 @@
   width: 100%;
 }
 
-/* Home's credit tile, ruled above and below. */
-.credits {
-  padding: var(--sp-16) 0;
-  border-top: var(--hairline) solid var(--paper-line);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
 /* Weightless, so a class's own margin always wins over it. */
-:where(.credits, .prompt) p {
+:where(.prompt) p {
   margin: 0;
-}
-
-.creditsLabel {
-  font-size: var(--fs-16);
-}
-
-.creditsExpiry {
-  margin-top: var(--sp-4);
-  font-size: var(--fs-14);
-  color: var(--text-muted);
 }
 
 /* A one visit's payment owed, drawn as the prompt is: what for and how much, then the link or word of it. */
 .owedLine {
   margin-top: var(--sp-8);
-  font-size: var(--fs-17);
-  line-height: var(--lh-145);
+  font-size: var(--fs-16);
 }
 
 .owedWait {
-  margin-top: var(--sp-12);
+  margin-top: var(--sp-8);
+  color: var(--ink-500);
   font-size: var(--fs-14);
-  color: var(--text-muted);
 }
 
 /* Each line beneath the card, ruled from what is above it, so together they read as a list of things to do. */
 .prompt {
   padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--line-200);
 }
 
-/* Home's one prompt: a line, and a quiet way on, underlined in brass. */
+/* Home's one prompt: a line, and a quiet way on. */
 .promptLine {
-  font-size: var(--fs-17);
-  line-height: var(--lh-145);
+  font-size: var(--fs-16);
 }
 
 .promptLink {
-  margin-top: var(--sp-12);
+  margin-top: var(--sp-8);
 }
 
 /* The prompt's ways on, side by side where they fit: a booking, and what a replacement involves (ADR 0086). */
@@ -241,8 +260,6 @@
   flex-wrap: wrap;
   column-gap: var(--sp-24);
 }
-
-/* A way on that opens the booking sheet is a button, drawn as the prompt's link. */
 
 /* The page on what a replacement involves: its one action, across the foot. */
 .footerBook {
