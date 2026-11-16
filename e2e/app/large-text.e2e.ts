@@ -7,7 +7,7 @@
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { openSheet } from "./booking-fixtures.ts";
+import { openSheet, passedThrough } from "./booking-fixtures.ts";
 import { fittedClient } from "./fitted.ts";
 import { continueToPayment, WHEN_STEP } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
@@ -39,35 +39,42 @@ const SIZES = [
 ] as const;
 
 /**
- * What spills out of its own box, or scrolls sideways, on the page and in any sheet open on it. A box excused is
- * excused alone, never what it holds: one that clips, as a sheet's panel or the photographs' slider, and a row made to
- * scroll sideways, which hides its bar, as the photographs' angles and the booking's days.
+ * What spills, or scrolls sideways, on the page and in any sheet open on it. Words spill when they run out of the box
+ * they are in, as a name into the next; a count set over an icon's corner on purpose is no spill, being within its
+ * own box. A box scrolls sideways when it is a scroller whose bar shows, as the page's main or a sheet's body; a row
+ * made to scroll sideways hides its bar, as the photographs' angles and the booking's days. Words kept for a screen
+ * reader alone (packages/ui/VisuallyHidden.tsx) are out of sight.
  */
 function spills(page: Page) {
   return page.evaluate(() => {
-    const excused = (box: Element) => {
-      const style = getComputedStyle(box);
-      if (style.overflowX === "hidden" || style.overflowX === "clip") return true;
-      return (style.overflowX === "auto" || style.overflowX === "scroll") && style.scrollbarWidth === "none";
+    const unseen = (node: Element | null): boolean =>
+      node !== null && (getComputedStyle(node).clipPath === "inset(50%)" || unseen(node.parentElement));
+    const shown = [...document.querySelectorAll<HTMLElement>("header, header *, main, main *, nav *, dialog *")].filter(
+      (box) => box.closest("svg") === null && !unseen(box),
+    );
+    const spilled = shown.flatMap((box) => {
+      const own = [...box.childNodes].filter(
+        (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "",
+      );
+      if (own.length === 0) return [];
+      const words = document.createRange();
+      words.setStartBefore(own[0] as Node);
+      words.setEndAfter(own.at(-1) as Node);
+      const [text, edge] = [words.getBoundingClientRect(), box.getBoundingClientRect()];
+      const out = text.right > edge.right + 1 || text.left < edge.left - 1;
+      return out ? [`${box.tagName.toLowerCase()} "${box.textContent.trim().slice(0, 40)}"`] : [];
+    });
+    const scrolling = shown
+      .filter((box) => {
+        const style = getComputedStyle(box);
+        const scroller = style.overflowX === "auto" || style.overflowX === "scroll";
+        return scroller && style.scrollbarWidth !== "none" && box.scrollWidth > box.clientWidth + 1;
+      })
+      .map((box) => `${box.tagName.toLowerCase()} scrolls sideways`);
+    return {
+      spilled: [...spilled, ...scrolling],
+      sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     };
-    // Words kept for a screen reader alone (packages/ui/VisuallyHidden.tsx) are out of sight, so a box within them, or
-    // holding only them, shows nothing that could spill.
-    const hides = (node: Element) => getComputedStyle(node).clipPath === "inset(50%)";
-    const unseen = (node: Element | null): boolean => node !== null && (hides(node) || unseen(node.parentElement));
-    const shows = (box: HTMLElement) => {
-      if (unseen(box)) return false;
-      const words = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
-      for (let word = words.nextNode(); word !== null; word = words.nextNode()) {
-        if ((word.textContent ?? "").trim() !== "" && !unseen(word.parentElement)) return true;
-      }
-      return box.querySelector("img, input, svg, video") !== null;
-    };
-    // A page's scroller, as its main or a sheet's body, is a box like any other: what it scrolls sideways spills.
-    const spilled = [...document.querySelectorAll<HTMLElement>("header, header *, main, main *, nav *, dialog *")]
-      .filter((box) => box.closest("svg") === null && !excused(box) && shows(box))
-      .filter((box) => box.clientWidth > 0 && box.scrollWidth > box.clientWidth + 1)
-      .map((box) => `${box.tagName.toLowerCase()} "${box.textContent.trim().slice(0, 40)}"`);
-    return { spilled, sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth };
   });
 }
 
@@ -98,6 +105,11 @@ for (const size of SIZES) {
   test(`every page holds at ${named(size)}`, async ({ page }) => {
     test.setTimeout(120_000);
     const fitted = fittedClient();
+    // Counts drawn over the bell and the tabs, as a client with news has them, whatever other tests have left.
+    // The fake leaves an answer that is not the client's alone, as sign-in's refusal, as it was.
+    await passedThrough(page, "**/api/me", (me: Record<string, unknown>) =>
+      "alerts_unread" in me ? { ...me, alerts_unread: 2, issues_open: 1 } : me,
+    );
     await logIn(page, fitted.mobile);
     // Signed in before any page is asked for: a page asked for sooner is the sign-in screen, which measures nothing.
     await expect(page.getByRole("navigation").first()).toBeVisible();
