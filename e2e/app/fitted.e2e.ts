@@ -68,7 +68,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   // The visit coming opens too, as Home's card, with the ways to change it.
   await visits.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.service })).toBeVisible();
-  await expect(page.getByText("12–12:30 pm", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Arrives 12–12:30\spm · about 90 minutes$/)).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();
 
   // With self-serve booking on, the note is kept on the visit for the technician, not sent to WhatsApp.

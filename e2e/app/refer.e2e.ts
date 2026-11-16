@@ -136,10 +136,12 @@ test("says when the link could not be shared, and tries again", async ({ page })
       return Promise.reject(new DOMException("The page may not write to the clipboard.", "NotAllowedError"));
     };
   });
-  await page.getByRole("button", { name: appCopy.refer.preview.copy }).click();
-  await expect(page.getByRole("alert")).toContainText(appCopy.refer.preview.failed.line);
-  await page.getByRole("button", { name: appCopy.refer.preview.failed.retry }).click();
-  await expect(page.getByRole("button", { name: appCopy.refer.preview.copied })).toBeVisible();
+  // The sheet's own Copy link, over the page's.
+  const sheet = page.getByRole("dialog");
+  await sheet.getByRole("button", { name: appCopy.refer.preview.copy }).click();
+  await expect(sheet.getByRole("alert")).toContainText(appCopy.refer.preview.failed.line);
+  await sheet.getByRole("button", { name: appCopy.refer.preview.failed.retry }).click();
+  await expect(sheet.getByRole("button", { name: appCopy.refer.preview.copied })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 

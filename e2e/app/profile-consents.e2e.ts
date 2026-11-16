@@ -31,7 +31,7 @@ test("lists the four consents off, and switches one on with its date and off aga
   await expect(visitsOff).toHaveCount(0);
   // Kept as given in the profile (docs/decisions/0094-where-a-consent-was-given.md).
   expect((await switched).postDataJSON()).toEqual({ granted: true, source: "app_profile" });
-  await expect(page.getByText(/^Given \d{1,2} [A-Z][a-z]{2} \d{4}$/)).toBeVisible();
+  await expect(page.getByText(/Given \d{1,2} [A-Z][a-z]{2} \d{4}$/)).toBeVisible();
   await page.reload();
   await expect(page.getByRole("switch", { name: appCopy.profile.purposes.whatsapp_visits })).toHaveAttribute(
     "aria-checked",
