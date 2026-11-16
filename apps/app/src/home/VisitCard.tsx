@@ -222,7 +222,7 @@ function daysAway(date: string): number {
 }
 
 /** One line of the card's facts, with its icon. */
-function Fact({ icon, children }: { icon: string; children: ReactNode }) {
+export function Fact({ icon, children }: { icon: string; children: ReactNode }) {
   return (
     <li className={styles.fact}>
       <Icon className={styles.factIcon} d={icon} size="sm" />
@@ -232,7 +232,7 @@ function Fact({ icon, children }: { icon: string; children: ReactNode }) {
 }
 
 /** Who is coming, under a rule. */
-function Technician({ technician }: { technician: NonNullable<VisitSummary["technician"]> }) {
+export function Technician({ technician }: { technician: NonNullable<VisitSummary["technician"]> }) {
   return (
     <div className={styles.technician}>
       <span className={styles.initials} aria-hidden="true">

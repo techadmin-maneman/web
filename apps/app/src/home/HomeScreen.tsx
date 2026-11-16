@@ -16,7 +16,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { NumberedSteps } from "@maneman/ui/NumberedSteps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { hourInIndia, monthInIndia, shortDate } from "@maneman/web-kit/dates";
+import { hourInIndia, monthInIndia, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { documentUrl, type Me, type OneVisitPrice, type VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -40,6 +40,7 @@ import { RemakeCard } from "./RemakeCard.tsx";
 import { Missed, PaymentOwed } from "./HomeNotes.tsx";
 import { HairSystemBlock } from "./HairSystemBlock.tsx";
 import { HomeRows } from "./HomeRows.tsx";
+import { isLive, LiveCard } from "./LiveCard.tsx";
 import styles from "./home.module.css";
 
 import { firstNameOf } from "@rules/lib/names.ts";
@@ -93,7 +94,11 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   if (visit !== null) {
     return (
       <section aria-labelledby="next">
-        <VisitCard visit={visit} label={{ id: "next", text: labelOf(visit) }} />
+        {isLive(visit, todayInIndia(apiNow())) ? (
+          <LiveCard visit={visit} label={{ id: "next" }} />
+        ) : (
+          <VisitCard visit={visit} label={{ id: "next", text: labelOf(visit) }} />
+        )}
       </section>
     );
   }

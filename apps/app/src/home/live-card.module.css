@@ -1,0 +1,101 @@
+/* The visit day on Home's card (./LiveCard.tsx, ./SignOffPanel.tsx): a gold pulse beside Today while the technician is
+   coming or at the door, the track of five marks and their names, and the sign-off on white within the navy. */
+
+.pulse {
+  display: inline-block;
+  width: var(--sp-8);
+  height: var(--sp-8);
+  margin-right: var(--sp-8);
+  border-radius: 50%;
+  background: var(--gilt);
+  animation: pulse var(--duration-phrase) var(--ease-house) infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: var(--busy-opacity);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}
+
+.track {
+  margin: var(--sp-16) 0 0;
+}
+
+.trackNames {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+  color: var(--mist-300);
+  font-size: var(--fs-13);
+}
+
+.trackNow {
+  color: var(--white-000);
+  font-weight: var(--weight-semibold);
+}
+
+.line {
+  margin: var(--sp-12) 0 0;
+  color: var(--grid-100);
+  font-size: var(--fs-14);
+}
+
+.quiet {
+  margin: var(--sp-12) 0 0;
+  color: var(--mist-300);
+  font-size: var(--fs-13);
+}
+
+.see {
+  width: 100%;
+  margin-top: var(--sp-16);
+}
+
+/* The sign-off: white within the navy, its words the page's. */
+.panel {
+  --focus-colour: var(--navy-900);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin-top: var(--sp-16);
+  padding: var(--sp-16);
+  background: var(--white-000);
+  color: var(--ink-900);
+}
+
+.panelTitle {
+  margin: 0;
+  color: var(--navy-900);
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+}
+
+.panelLine,
+.panelNote {
+  margin: 0;
+  color: var(--ink-500);
+  font-size: var(--fs-14);
+}
+
+.panelNote {
+  font-size: var(--fs-13);
+}
+
+.photos {
+  align-self: flex-start;
+  font-size: var(--fs-14);
+}
+
+.problem {
+  margin: 0;
+  color: var(--red-700);
+  font-size: var(--fs-14);
+}
