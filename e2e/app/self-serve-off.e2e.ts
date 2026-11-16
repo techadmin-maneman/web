@@ -97,3 +97,13 @@ test("a client with nothing booked is sent to the public site to book a consulta
   await expect(book).toHaveAttribute("href", /\/book$/);
   await expect(page.getByRole("button", { name: appCopy.home.nothing.book })).toHaveCount(0);
 });
+
+// Paid by UPI at the visit while booking in the app is off, so Payments never says every payment goes through Razorpay.
+test("Payments says nothing of paying through Razorpay alone while booking in the app is off", async ({ page }) => {
+  await selfServeOff(page);
+  await logIn(page, fittedClient().mobile);
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
+  await page.goto("/profile/payments");
+  await expect(page.getByRole("main").getByRole("link").first()).toBeVisible();
+  await expect(page.getByText(appCopy.payments.note)).toHaveCount(0);
+});
