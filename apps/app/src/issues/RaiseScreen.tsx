@@ -14,6 +14,7 @@ import { describedBy, Missing } from "@maneman/ui/Missing";
 import { ISSUE_CATEGORIES, issues, missing, profile, titles } from "../content.ts";
 import { Shell } from "../frame/Shell.tsx";
 import { go } from "../route.ts";
+import { careHoursOf } from "../lib/counts.ts";
 import { useSession } from "../session.ts";
 import { RaisePhotos } from "./RaisePhotos.tsx";
 import { RaiseVisit } from "./RaiseVisit.tsx";
@@ -61,7 +62,7 @@ export function RaiseScreen() {
     });
   const ready = about !== null && text.trim() !== "" && !busy;
   const waiting = about === null || text.trim() === "" ? missing.raise(about !== null, text.trim() !== "") : null;
-  const hours = me.care_hours;
+  const hours = careHoursOf(me);
   const support = profile.support;
   return (
     <Shell
@@ -79,7 +80,7 @@ export function RaiseScreen() {
           >
             {busy ? copy.sending : copy.send}
           </Button>
-          <Missing id="raise-missing" what={waiting} />
+          <Missing id="raise-missing" what={waiting} className={styles.footerLine} />
         </>
       }
     >
@@ -106,12 +107,14 @@ export function RaiseScreen() {
         <WordsField label={copy.what} text={text} max={PROBLEM_MAX_CHARS} onText={setText} />
         <RaisePhotos photos={photos} onChange={setPhotos} />
         <RaiseVisit chosen={visit} onChoose={setVisit} />
-        <p className={styles.note}>
-          {copy.note(
-            support.within(hours.first_reply),
-            support.hours(support.hour(hours.opens), support.hour(hours.closes)),
-          )}
-        </p>
+        {hours !== null && (
+          <p className={styles.note}>
+            {copy.note(
+              support.within(hours.first_reply),
+              support.hours(support.hour(hours.opens), support.hour(hours.closes)),
+            )}
+          </p>
+        )}
         {problem !== null && (
           <p className={styles.problem} role="alert">
             {problem}

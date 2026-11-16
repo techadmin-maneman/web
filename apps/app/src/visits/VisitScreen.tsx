@@ -28,8 +28,6 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { firstNameOf } from "@rules/lib/names.ts";
-import { guaranteeUntil } from "@rules/policy/fit-guarantee.ts";
-import { useSession } from "../session.ts";
 import { Loading } from "@maneman/ui/States";
 import { NotFound } from "../frame/NotFound.tsx";
 import { go } from "../route.ts";
@@ -143,13 +141,9 @@ function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNo
 
 /** A fit the client signed off, and when; a first fit done, its guarantee, and the way to claim it while it runs. */
 function FitFacts({ visit }: { visit: VisitDetail }) {
-  const { me } = useSession();
   const copy = visits.detail;
   const signedAt = visit.sign_off?.state === "signed" ? visit.sign_off.signed_at : null;
-  const until =
-    visit.type === "first_fit" && visit.outcome === "done"
-      ? guaranteeUntil(visit.date, visit.sign_off?.guarantee_days ?? me.guarantee_days)
-      : null;
+  const until = visit.guarantee_until;
   return (
     <>
       {signedAt !== null && (

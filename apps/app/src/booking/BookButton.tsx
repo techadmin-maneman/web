@@ -34,8 +34,9 @@ function recommendationOf(me: Me): Recommended | undefined {
 }
 
 /**
- * A visit booked with ops: Ask for a time, whose pick goes to them on WhatsApp with the service named, and a toast once
- * sent. The main button says what the visit costs, paid by UPI at the visit.
+ * A visit booked with ops: Ask for a time, from the first day it may be booked, whose pick opens WhatsApp to them with
+ * the service named, and a toast that it is opening. The main button says what the visit costs, paid by UPI at the
+ * visit.
  */
 function WithOps(props: {
   label: string;
@@ -45,6 +46,7 @@ function WithOps(props: {
   services: Me["booking"]["services"];
   tier: string | null | undefined;
   offer: Offered | undefined;
+  from: string | undefined;
   quiet: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -72,6 +74,7 @@ function WithOps(props: {
           message={props.message}
           what={named ? (service?.name ?? null) : null}
           offer={props.offer}
+          from={props.from}
           onSent={() => {
             setSent((count) => count + 1);
           }}
@@ -82,7 +85,7 @@ function WithOps(props: {
       )}
       {sent > 0 && (
         <Toast key={sent} fullWidth>
-          {booking.request.sent}
+          {booking.request.opening}
         </Toast>
       )}
     </>
@@ -135,7 +138,7 @@ export function BookButton({
   }
   // A kind the client may not book themselves goes to ops on WhatsApp: every paid visit, while online payment is off.
   if (kind === undefined || !me.booking.self_serve_kinds.includes(kind)) {
-    return <WithOps {...{ label, className, message, kind, services, tier, offer, quiet }} />;
+    return <WithOps {...{ label, className, message, kind, services, tier, offer, from, quiet }} />;
   }
   const onClick = () => {
     setOpen(true);

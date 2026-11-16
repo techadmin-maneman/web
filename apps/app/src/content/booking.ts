@@ -35,7 +35,8 @@ export const booking = {
     part: "Time of day",
     note: "Nothing is held or paid until we confirm.",
     send: "Send request",
-    sent: "Request sent",
+    /** WhatsApp opens with the request written in; it reaches ops once the client sends it there. */
+    opening: "Opening WhatsApp",
   },
   /**
    * What the WhatsApp message asks for: the visit, the day and window the app offered, who, and the hair system:

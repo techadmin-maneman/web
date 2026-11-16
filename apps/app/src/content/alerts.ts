@@ -49,7 +49,7 @@ export const ALERTS: Readonly<Record<string, AlertWords | undefined>> = {
   },
   visit_moved: { title: "We moved your visit", line: "The new time is on the visit.", page: "/visits" },
   move_proposed: { title: "Can we move your visit?", line: "Accept the new time, or pick another.", page: "/visits" },
-  arrival_notice: { title: "Your technician is at your door", line: "They’ll wait a few minutes.", page: "/visits" },
+  arrival_notice: { title: "Your technician is at your door", line: "They’ll wait a few minutes.", page: "/" },
   no_show_decided: { title: "About the visit we missed", line: "See what happens next.", page: "/visits" },
   no_show_dispute_ruled: { title: "Your dispute has an answer", line: "See it on the visit.", page: "/visits" },
   booking_refunded: { title: "Refund started", line: `Banks take ${REFUND_TAKES}.`, page: PAYMENTS },
@@ -114,7 +114,7 @@ const UPDATES = {
 } as const;
 
 /** About the visit under way: Home's card follows it and holds the sign-off, so these open Home, never its page. */
-const ON_HOME: ReadonlySet<string> = new Set(["technician_update", "sign_off_asked"]);
+const ON_HOME: ReadonlySet<string> = new Set(["technician_update", "arrival_notice", "sign_off_asked"]);
 
 /** An alert's title and line, and the page it opens. */
 export function alertWords(alert: Alert): { title: string; line: string; to: string } {

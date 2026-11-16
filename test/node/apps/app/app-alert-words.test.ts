@@ -30,7 +30,8 @@ describe("the alerts' words", () => {
   });
 
   it("open Home for the visit under way, where its card and the sign-off are, never the visit's page", () => {
-    const asked = { id: "a", kind: "sign_off_asked", visit_id: "v1", update: null, at: "", read: false };
-    expect(alertWords(asked).to).toBe("/");
+    for (const kind of ["sign_off_asked", "arrival_notice"]) {
+      expect(alertWords({ id: "a", kind, visit_id: "v1", update: null, at: "", read: false }).to).toBe("/");
+    }
   });
 });

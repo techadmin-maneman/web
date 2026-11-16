@@ -74,7 +74,7 @@ test("a fitted client reschedules through WhatsApp, and asks ops for a time to b
   await expect
     .poll(() => page.evaluate(() => (window as { opened?: string }).opened))
     .toMatch(new RegExp(`${WHATSAPP}${encodeURIComponent(asked)}`));
-  await expect(page.getByRole("status").filter({ hasText: request.sent })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: request.opening })).toBeVisible();
   await expect(sheet).toHaveCount(0);
 });
 
