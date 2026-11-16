@@ -35,7 +35,7 @@ interface RedactedError {
 const isRedactedError = (value: unknown): value is RedactedError =>
   typeof value === "object" && value !== null && "message" in value;
 
-/** "src/x.ts:12:5" as its file, line and column; null where it does not end in two numbers. */
+/** "worker.js:12:5" as its file, line and column; null where it does not end in two numbers. */
 function placeOf(location: string): { file: string; row: number; column: number } | null {
   const parts = location.split(":");
   const column = parts.pop() ?? "";
@@ -46,7 +46,7 @@ function placeOf(location: string): { file: string; row: number; column: number 
 
 /**
  * One stack line, read by splitting rather than by a pattern, so a long line costs no more than its length: as the
- * Worker and Chrome write it, "at handle (src/x.ts:12:5)" or "at src/x.ts:12:5"; as Firefox and Safari write it,
+ * Worker and Chrome write it, "at handle (worker.js:12:5)" or "at worker.js:12:5"; as Firefox and Safari write it,
  * "handle@https://app.maneman.in/assets/x.js:12:5". Null for any other line, as the error's own first line.
  */
 function frameOf(line: string): { name: string; file: string; row: number; column: number } | null {
