@@ -60,6 +60,16 @@ interface Fit {
 }
 
 /**
+ * The product a fit's hair system is made as: the package booked, at a first fit or a replacement, which the client
+ * may change at a replacement (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md). A first fit
+ * booked with none is the standard one; a replacement booked with none keeps the product the client wears.
+ */
+export const bookedProduct = (
+  fit: { readonly type: string; readonly tier: string | null },
+  wearing: string | null,
+): string | null => fit.tier ?? (fit.type === "first_fit" ? "standard" : wearing);
+
+/**
  * The stock code made exactly to this fit: its product, base size, colour, grey and density all the same, never a near
  * one or one cut down (docs/decisions/0173-matching-a-client-to-stock.md). Null where none is.
  */

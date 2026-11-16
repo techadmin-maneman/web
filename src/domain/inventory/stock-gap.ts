@@ -37,7 +37,7 @@ export async function tellOfStockGap(
   },
   deps: { readonly alertOnce: AlertOnce; readonly now: Date },
 ): Promise<void> {
-  const code = await fitCode(db, fit.personId, fit.type === "first_fit" ? fit.tier : null);
+  const code = await fitCode(db, fit.personId, fit.tier);
   if (code === null) return;
   const reach = await db
     .prepare(
