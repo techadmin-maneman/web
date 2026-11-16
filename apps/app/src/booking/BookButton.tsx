@@ -22,6 +22,8 @@ import { useSession } from "../session.ts";
 import type { Offered } from "./BookingSheet.tsx";
 import { BookingSheet } from "./lazy-sheet.tsx";
 import { RequestSheet } from "./RequestSheet.tsx";
+import { requestFrom } from "./request-days.ts";
+import { wornOf } from "../lib/counts.ts";
 import type { Recommended } from "./steps/ServiceStep.tsx";
 import { firstNameOf } from "@rules/lib/names.ts";
 
@@ -138,7 +140,8 @@ export function BookButton({
   }
   // A kind the client may not book themselves goes to ops on WhatsApp: every paid visit, while online payment is off.
   if (kind === undefined || !me.booking.self_serve_kinds.includes(kind)) {
-    return <WithOps {...{ label, className, message, kind, services, tier, offer, from, quiet }} />;
+    const first = requestFrom(kind, from, wornOf(me));
+    return <WithOps {...{ label, className, message, kind, services, tier, offer, quiet }} from={first} />;
   }
   const onClick = () => {
     setOpen(true);
