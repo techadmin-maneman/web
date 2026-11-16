@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateStaticConfig } from "../../../src/guard.ts";
 import { parseDsn } from "../../../src/lib/sentry-dsn.ts";
 import { createLogger } from "../../../src/log.ts";
-import { createErrorTracker, eventOf } from "../../../src/providers/error-tracking.ts";
+import { createErrorTracker, eventOf, framesOf } from "../../../src/providers/error-tracking.ts";
 import { captureLogs, fakeFetch, NOW } from "../helpers.ts";
 import { production, problemsOf } from "./guard-fixtures.ts";
 
@@ -74,6 +74,87 @@ describe("error tracking", () => {
       tags: { event: "client_error", app: "client", kind: "render", path: "/payments" },
     });
     expect(event).not.toHaveProperty("release");
+  });
+
+  it("sends an error's stack as Sentry's frames, the outermost call first, so the issue says where it was thrown", () => {
+    const error = new Error("D1 refused");
+    error.stack = [
+      "Error: D1 refused",
+      "    at visitOf (src/domain/visits/read.ts:41:11)",
+      "    at async handle (src/routes/client/visits.ts:88:5)",
+      "    at node:internal/process/task_queues:95:5",
+      "    at <anonymous>",
+    ].join("\n");
+    const event = eventOf(
+      { event: "unhandled_error", fields: { error } },
+      { environment: "staging", release: "abc1234" },
+      NOW,
+    );
+    expect(event).toMatchObject({
+      exception: {
+        values: [
+          {
+            type: "Error",
+            value: "D1 refused",
+            stacktrace: {
+              frames: [
+                { filename: "node:internal/process/task_queues", lineno: 95, colno: 5, in_app: false },
+                { function: "async handle", filename: "src/routes/client/visits.ts", lineno: 88, in_app: true },
+                { function: "visitOf", filename: "src/domain/visits/read.ts", lineno: 41, colno: 11, in_app: true },
+              ],
+            },
+          },
+        ],
+      },
+    });
+  });
+
+  it("reads a page's reported stack as Firefox and Safari write it, into an exception of the report's event", () => {
+    const event = eventOf(
+      {
+        event: "client_error",
+        fields: {
+          app: "client",
+          kind: "error",
+          message: "x is undefined",
+          stack:
+            "render@https://app.maneman.in/assets/Home-1a2b.js:3:1406\n@https://app.maneman.in/assets/index-9f8e.js:1:22",
+        },
+      },
+      { environment: "production", release: null },
+      NOW,
+    );
+    expect(event).toMatchObject({
+      exception: {
+        values: [
+          {
+            type: "client_error",
+            value: "x is undefined",
+            stacktrace: {
+              frames: [
+                { function: "?", filename: "https://app.maneman.in/assets/index-9f8e.js", lineno: 1, colno: 22 },
+                { function: "render", filename: "https://app.maneman.in/assets/Home-1a2b.js", lineno: 3, colno: 1406 },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    expect(event).not.toHaveProperty("message");
+  });
+
+  it("sends at most fifty frames, the innermost, and none for a line it cannot or will not read", () => {
+    const deep = Array.from(
+      { length: 80 },
+      (_, index) => `    at step${String(index)} (src/x.ts:${String(index + 1)}:1)`,
+    );
+    const frames = framesOf(["Error: deep", ...deep].join("\n"));
+    expect(frames).toHaveLength(50);
+    expect(frames.at(-1)).toMatchObject({ function: "step0", lineno: 1 });
+    expect(framesOf("no frames here")).toEqual([]);
+    // A page's report is the public's to write: a line past any frame's length is not read at all.
+    expect(framesOf(`    at ${"a:1:".repeat(400)}1:1`)).toEqual([]);
+    expect(framesOf(undefined)).toEqual([]);
   });
 
   it("sends the same error once a minute, and at most twenty a minute, inside the free plan", async () => {

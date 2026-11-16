@@ -183,17 +183,20 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
-/** A Workflow's run: on this environment's own database only, its errors reported as the cron's are. */
-async function workflowRun(workerEnv: Env, name: string) {
+/**
+ * A Workflow's run: on this environment's own database only, its errors reported as the cron's are, each send kept
+ * alive by the run's own context.
+ */
+async function workflowRun(workerEnv: Env, name: string, ctx: ExecutionContext) {
   await assertOwnDatabase(workerEnv.DB);
-  const log = runLogger({ job: name }, undefined);
+  const log = runLogger({ job: name }, ctx);
   return { env: workerEnv, config, deps: makeDependencies(workerEnv, log, "background") };
 }
 
 /** The nightly reporting copy, a step for each part of the night (src/workflows/analytics-copy.ts). */
 export class AnalyticsCopy extends WorkflowEntrypoint<Env, { readonly date: string }> {
   override async run(event: WorkflowEvent<{ readonly date: string }>, step: WorkflowStep): Promise<void> {
-    const run = await workflowRun(this.env, "analytics_copy");
+    const run = await workflowRun(this.env, "analytics_copy", this.ctx);
     const warehouse = () =>
       warehouseFor(config.providers.ANALYTICS_PROVIDER, this.env.ANALYTICS_DB?.connectionString ?? null);
     await copyNight(step, { ...run, warehouse }, event.payload.date);
@@ -203,6 +206,6 @@ export class AnalyticsCopy extends WorkflowEntrypoint<Env, { readonly date: stri
 /** The weekly backup, a step for each table (src/workflows/backup.ts). */
 export class WeeklyBackup extends WorkflowEntrypoint<Env, { readonly date: string }> {
   override async run(event: WorkflowEvent<{ readonly date: string }>, step: WorkflowStep): Promise<void> {
-    await backUp(step, await workflowRun(this.env, "backup"), event.payload.date);
+    await backUp(step, await workflowRun(this.env, "backup", this.ctx), event.payload.date);
   }
 }
