@@ -25,16 +25,17 @@
 // zone still runs (docs/decisions/0206-trusted-types-and-a-nonce-per-page.md).
 //
 // Every answer of mm-api's that cannot be used is one line in the Worker's log, and a failure is remembered for ten
-// seconds, so a down mm-api is not asked again by every view. Anything else that goes wrong with a page is one line in
-// the log too, and reported as a page's own script error is, to mm-api, which takes it on to Sentry; the visitor is
-// given the page as built, never Cloudflare's error page.
+// seconds, so a down mm-api is not asked again by every view. Anything else that goes wrong while a page is answered is
+// one line in the log too, and reported as a page's own script error is, to mm-api, which takes it on to Sentry; the
+// visitor is given the page as built where the assets can still give it. A throw while a page streams through its
+// rewriter comes after the answer, and is not caught.
 
 import { legalDays } from "./lib/legal-days.ts";
 import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, ReferralReward } from "./lib/api.ts";
 import { partOf } from "./lib/byte-range.ts";
 import { citySlug, isServedCities, namingCities, type ServedCities } from "./lib/cities.ts";
-import { cardPath, HOUSE_CARD, INVITE_PATH, isInvite } from "./lib/invite.ts";
+import { cardPath, HOUSE_CARD, INVITE_PATH, INVITE_PATH_IN_URL, isInvite } from "./lib/invite.ts";
 import { isReferralReward } from "./lib/reward.ts";
 
 export interface SiteEnv {
@@ -318,22 +319,26 @@ const isServedPage = (pathname: string, cities: readonly string[]): boolean =>
 /** The longest of each part of a report mm-api takes (src/routes/client-errors.ts). */
 const LONGEST = { message: 500, path: 300, stack: 4000 } as const;
 
+/** What a report from the Worker names as where it was thrown, apart from a page's own scripts. */
+const WORKER_SOURCE = "mm-site Worker";
+
 /**
  * Something the Worker did not expect: one line in its log, and a report to mm-api as a page's own script error is
- * (packages/web-kit/client-errors.ts), sent after the answer. A report that cannot be sent is nobody's concern.
+ * (packages/web-kit/client-errors.ts), sent after the answer. An invite's code is a person's own, so its landing is
+ * named without it. A report that cannot be sent is nobody's concern.
  */
 function reportFailure(request: Request, env: SiteEnv, ctx: ExecutionContext | undefined, thrown: unknown): void {
   const url = new URL(request.url);
+  const path = url.pathname.replace(INVITE_PATH_IN_URL, "/r/");
   const message = thrown instanceof Error ? `${thrown.name}: ${thrown.message}` : String(thrown);
   const stack = thrown instanceof Error ? thrown.stack : undefined;
   // On the Worker's one console channel, as mm_api_failed is; the line's own level says what it is.
-  console.warn(
-    JSON.stringify({ level: "error", event: "site_page_failed", worker: "mm-site", path: url.pathname, message }),
-  );
+  console.warn(JSON.stringify({ level: "error", event: "site_page_failed", worker: "mm-site", path, message }));
   const report = {
     kind: "error",
     message: message.slice(0, LONGEST.message),
-    path: url.pathname.slice(0, LONGEST.path),
+    path: path.slice(0, LONGEST.path),
+    source: WORKER_SOURCE,
     ...(stack === undefined ? {} : { stack: stack.slice(0, LONGEST.stack) }),
   };
   const sending = env.API.fetch(

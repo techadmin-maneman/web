@@ -78,6 +78,13 @@ describe("POST /api/client-errors", () => {
     expect(line?.message).toBe("No visit for [redacted] ([redacted])");
   });
 
+  it("names an invite's landing without its code, which is a person's own", async () => {
+    expect((await report("public", { ...CRASH, path: "/r/RM4417" })).status).toBe(204);
+    const [line] = reported();
+    expect(line).toMatchObject({ path: "/r/" });
+    expect(JSON.stringify(line)).not.toContain("RM4417");
+  });
+
   it("refuses a field it does not know, and logs nothing", async () => {
     const answer = await report("client", { ...CRASH, mobile: "+919876543210" });
 

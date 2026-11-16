@@ -1,6 +1,6 @@
-// What the mm-site Worker does when a page goes wrong in a way it does not expect (site/src/worker.ts): one line in its
-// log, a report to mm-api as a page's own script error is, which mm-api takes on to Sentry, and the page as built for
-// the visitor, never Cloudflare's error page.
+// What the mm-site Worker does when answering a page goes wrong in a way it does not expect (site/src/worker.ts): one
+// line in its log, a report to mm-api as a page's own script error is, which mm-api takes on to Sentry, and the page as
+// built for the visitor where the assets can still give it.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSiteWorker, type SiteEnv } from "../../../site/src/worker.ts";
@@ -67,8 +67,25 @@ describe("a page the Worker could not answer", () => {
       kind: "error",
       message: "TypeError: the assets went away",
       path: "/how-it-works",
+      source: "mm-site Worker",
       stack: expect.stringContaining("the assets went away") as unknown,
     });
+  });
+
+  it("names an invite's landing without its code, which is a person's own", async () => {
+    const logged = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const { env, reports } = failingOnce();
+    const { ctx, settled } = context();
+
+    await createSiteWorker().fetch(new Request("https://maneman.in/r/RM4417"), env, ctx);
+    await settled();
+
+    const line = String(logged.mock.calls[0]?.[0]);
+    const sent = (await reports[0]?.text()) ?? "";
+    expect(JSON.parse(line)).toMatchObject({ path: "/r/" });
+    expect(JSON.parse(sent)).toMatchObject({ path: "/r/" });
+    expect(line).not.toContain("RM4417");
+    expect(sent).not.toContain("RM4417");
   });
 
   it("gives an invite's link the landing, which serves every code", async () => {

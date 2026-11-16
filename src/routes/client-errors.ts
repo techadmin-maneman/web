@@ -6,11 +6,18 @@
 // out, and the hourly limits keep a page stuck in a loop from flooding the logs.
 
 import { createRoute, z } from "@hono/zod-openapi";
+import { INVITE_CODE } from "../config/invite-codes.ts";
 import { takeOne } from "../domain/sign-in/rate-limit.ts";
 import type { App } from "../http/context.ts";
 import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { visitorOf } from "../http/visitor.ts";
+
+/**
+ * An invite's landing, "/r/MM4417": its code is a person's own, so it is never logged, nor sent on to Sentry, whichever
+ * page or Worker reported it (site/src/lib/invite.ts keeps it out of what the site's own tags are given).
+ */
+const INVITE_LANDING = new RegExp(`^/r/${INVITE_CODE}/?$`);
 
 const ReportSchema = z
   .object({
@@ -59,6 +66,7 @@ export function registerClientErrors(app: App): void {
     c.var.log.error("client_error", {
       app: c.var.surface,
       ...report,
+      path: report.path.replace(INVITE_LANDING, "/r/"),
       refused_request_id: refusedRequestId,
       browser: c.req.header("User-Agent")?.slice(0, 200),
     });
