@@ -32,6 +32,16 @@ export const live = {
   },
   updates: (technician: string) => `Updates as ${technician} completes each step in their app.`,
   track: ["Confirmed", "On the way", "Arrived", "Visit", "Done"] as const,
+  /** Ops asked to move the visit on its day. */
+  moveAsked: "We need to move your visit",
+  /** Closed by the technician as anything but done, or past its window after they arrived. */
+  closing: "Wrapping up",
+  /** The technician marked the client not home. */
+  notHome: "Missed visit",
+  notHomeLine:
+    "Ops look at what happened and decide the missed-visit charge. If they charge it and you were home, you can dispute it here.",
+  /** Past its window with nobody arriving. */
+  missed: "We’ll be in touch about this visit",
   done: "Visit done",
   doneLine: "Your photos are in.",
   seePhotos: "See photos and the visit",
@@ -39,7 +49,7 @@ export const live = {
   signOff: {
     title: "Your sign-off",
     check: (technician: string) => `Check the fit before ${technician} leaves`,
-    photos: "See today’s after photos",
+    photos: "These are today’s after photos.",
     checks: {
       hairline: "The hairline sits where we agreed",
       blend: "The colour and the blend look right",

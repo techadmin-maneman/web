@@ -3,6 +3,7 @@
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { visitLength } from "./common.ts";
 import { PAID_IN, TOLD_WHEN_BOOKED } from "./home.ts";
+import { REFUND_TAKES } from "./payments.ts";
 import { VISIT_PHOTOS } from "./profile.ts";
 
 /** Booking in the app, while self-serve booking is on. */
@@ -26,6 +27,16 @@ export const booking = {
   firstFitNotYet: "First fits aren’t open to book yet.",
   /** A paid visit, booked with ops on WhatsApp while online payment is off: what to expect. */
   withOps: (price: string) => `We book it with you on WhatsApp. You pay ${price} by UPI at the visit.`,
+  /** Request mode (design/client-redesign, "Ask for a time"): while booking with ops, the pick goes to them on WhatsApp. */
+  request: {
+    title: "Ask for a time",
+    lede: "Pick a day and the part of the day that suits you. We confirm the time on WhatsApp.",
+    day: "Day",
+    part: "Time of day",
+    note: "Nothing is held or paid until we confirm.",
+    send: "Send request",
+    sent: "Request sent",
+  },
   /**
    * What the WhatsApp message asks for: the visit, the day and window the app offered, who, and the hair system:
    * "I’d like to book my replacement: Fri 16 Oct, morning. Arjun Mehta, Mane Man Active."
@@ -270,11 +281,11 @@ export const change = {
   },
   cancel: {
     title: (visit: string) => `Cancel ${visit}`,
-    refund: (amount: string, destination: string) => `${amount} back to your ${destination} in 5 to 7 working days.`,
+    refund: (amount: string, destination: string) => `${amount} back to your ${destination} in ${REFUND_TAKES}.`,
     confirm: "Cancel visit",
     keep: "Keep it",
     lessFee: (fee: string, amount: string, destination: string) =>
-      `The late fee of ${fee} is kept. ${amount} back to your ${destination} in 5 to 7 working days.`,
+      `The late fee of ${fee} is kept. ${amount} back to your ${destination} in ${REFUND_TAKES}.`,
     charged: (amount: string) => `This is a late cancellation: your ${amount} isn’t refunded.`,
     nothingPaid: "Nothing was paid, so nothing is charged.",
     accept: "Cancel and accept charge",

@@ -52,6 +52,7 @@ function draw(grievances: Profile["grievances"]) {
     root.render(
       createElement(DataCard, {
         grievances,
+        answerDays: 30,
         onRaised: () => {
           raised += 1;
         },

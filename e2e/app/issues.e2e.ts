@@ -2,6 +2,7 @@
 // fitted client raises an issue about a visit, from the visit's page, by category and in their words; it opens on its
 // own page with its reference, takes an update, and their word that it is sorted; Visits lists it with where it stands.
 
+import { readFileSync } from "node:fs";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
@@ -48,7 +49,40 @@ test("raises an issue about a visit, then updates it and says it is sorted, each
   expect(await axeViolations(page)).toEqual([]);
 
   // Visits lists it under Issues, resolved.
+  const issue = page.url();
   await page.goto("/visits/issues");
   const row = page.getByRole("link", { name: new RegExp(appCopy.ISSUE_CATEGORIES.edges_lifting) });
   await expect(row).toContainText(copy.states.resolved);
+
+  // Happening again, it is reopened with what is happening now, and open once more.
+  await page.goto(issue);
+  await page.getByRole("button", { name: copy.page.again }).click();
+  await page.getByRole("textbox", { name: copy.page.againLabel }).fill("It lifts again at the front.");
+  await page.getByRole("button", { name: copy.page.reopen }).click();
+  await expect(page.getByText("It lifts again at the front.")).toBeVisible();
+  await expect(page.getByRole("button", { name: copy.page.sorted })).toBeVisible();
+});
+
+const PHOTO = { name: "front.jpg", mimeType: "image/jpeg", buffer: readFileSync("design/assets/ba-after.jpg") };
+
+test("says on the issue's page that a photo didn't upload, until one is added there", async ({ page }) => {
+  await logIn(page, fittedClient().mobile);
+  await page.getByRole("navigation", { name: appCopy.shell.tabsLabel }).waitFor();
+  await page.goto("/visits/issues/new");
+  // Its own category, so the issue the test above raises is the only one of its kind in Visits.
+  await page.getByRole("radio", { name: appCopy.ISSUE_CATEGORIES.shedding }).click();
+  await page.getByRole("textbox", { name: copy.raise.what }).fill("Hairs come away when I brush.");
+  await page.getByLabel(copy.raise.addPhotos).setInputFiles(PHOTO);
+  await page.route("**/api/me/problems/*/photos", (route) =>
+    route.fulfill({ status: 500, json: { error: { code: "internal_error", request_id: "e2e" } } }),
+  );
+  await page.getByRole("button", { name: copy.raise.send }).click();
+  await expect(page).toHaveURL(/\/visits\/issues\/MM-ISS-\d{4}\?photos=failed$/);
+  await expect(page.getByText(copy.raise.photoFailed)).toBeVisible();
+
+  await page.unroute("**/api/me/problems/*/photos");
+  await page.getByLabel(copy.page.addPhoto).setInputFiles(PHOTO);
+  await expect(page.getByText(copy.page.photos(1))).toBeVisible();
+  await expect(page.getByText(copy.raise.photoFailed)).toHaveCount(0);
+  await expect(page).toHaveURL(/\/visits\/issues\/MM-ISS-\d{4}$/);
 });

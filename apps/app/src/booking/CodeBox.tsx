@@ -3,7 +3,7 @@
 // what is left. A code that does not apply is told only that. The box is shut while the sheet is busy paying; once
 // Checkout is closed unpaid, the code may change again, and the next Pay makes a new order for the new price.
 
-import { Field, TextInput, type FieldControl } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
@@ -45,37 +45,56 @@ function Applied(props: {
   );
 }
 
-/** The code as typed, and Apply beside it, waiting for a code. */
-function CodeRow(props: {
-  control: FieldControl;
+/** The box: the code as typed, and Apply beside it, waiting for a code, with what is missing beneath. */
+function CodeForm(props: {
   typed: string;
-  label: string;
+  problem: string | null;
   held: boolean;
+  sending: boolean;
   onTyped: (typed: string) => void;
+  onApply: () => void;
 }) {
   const empty = props.typed.trim() === "";
   return (
-    <div className={styles.codeRow}>
-      <TextInput
-        {...props.control}
-        className={styles.codeInput}
-        autoCapitalize="characters"
-        autoComplete="off"
-        value={props.typed}
-        onChange={(event) => {
-          props.onTyped(event.target.value);
-        }}
-      />
-      <Button
-        type="submit"
-        variant="outline"
-        size="control"
-        disabled={props.held || empty}
-        aria-describedby={describedBy("discount-code", empty)}
+    <form
+      className={styles.code}
+      onSubmit={(event) => {
+        event.preventDefault();
+        props.onApply();
+      }}
+    >
+      <Field
+        label={copy.label}
+        error={props.problem}
+        announce
+        look={{ label: capsLook(shared.label), error: shared.problem }}
       >
-        {props.label}
-      </Button>
-    </div>
+        {(control) => (
+          <div className={styles.codeRow}>
+            <TextInput
+              {...control}
+              className={styles.codeInput}
+              autoCapitalize="characters"
+              autoComplete="off"
+              value={props.typed}
+              onChange={(event) => {
+                props.onTyped(event.target.value);
+              }}
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              size="control"
+              disabled={props.held || empty}
+              aria-describedby={describedBy("discount-code", empty)}
+            >
+              {props.sending ? copy.applying : copy.apply}
+            </Button>
+          </div>
+        )}
+      </Field>
+      <Missing id="discount-code" what={empty ? missing.discountCode : null} />
+    </form>
   );
 }
 
@@ -152,33 +171,16 @@ export function CodeBox(props: {
   }
 
   return (
-    <form
-      className={styles.code}
-      onSubmit={(event) => {
-        event.preventDefault();
-        void apply();
+    <CodeForm
+      typed={typed}
+      problem={problem}
+      held={busy || sending}
+      sending={sending}
+      onTyped={(value) => {
+        setTyped(value);
+        setProblem(null);
       }}
-    >
-      <Field
-        label={copy.label}
-        error={problem}
-        announce
-        look={{ label: capsLook(shared.label), error: shared.problem }}
-      >
-        {(control) => (
-          <CodeRow
-            control={control}
-            typed={typed}
-            label={sending ? copy.applying : copy.apply}
-            held={busy || sending}
-            onTyped={(value) => {
-              setTyped(value);
-              setProblem(null);
-            }}
-          />
-        )}
-      </Field>
-      <Missing id="discount-code" what={typed.trim() === "" ? missing.discountCode : null} />
-    </form>
+      onApply={() => void apply()}
+    />
   );
 }

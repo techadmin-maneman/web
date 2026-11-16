@@ -13,6 +13,7 @@ import { api, type Issue } from "../api.ts";
 import { issues, profile, titles } from "../content.ts";
 import { PageFailed } from "../frame/PageFailed.tsx";
 import { Shell } from "../frame/Shell.tsx";
+import { careHoursOf } from "../lib/counts.ts";
 import { useSession } from "../session.ts";
 import { IssueState, issueTitle } from "../visits/index.ts";
 import { IssueActions } from "./IssueActions.tsx";
@@ -28,7 +29,7 @@ function toneOf(kind: Issue["events"][number]["kind"]): TimelineTone {
 }
 
 /** The log's lines, and the one still waited on while the issue is open. */
-function logOf(issue: Issue, waiting: string): TimelineItem[] {
+function logOf(issue: Issue, waiting: string | null): TimelineItem[] {
   const lines = issue.events.map((event, index): TimelineItem => ({
     key: String(index),
     when: stamp(event.at),
@@ -40,17 +41,20 @@ function logOf(issue: Issue, waiting: string): TimelineItem[] {
     tone: toneOf(event.kind),
   }));
   if (issue.state === "resolved") return lines;
-  return [...lines, { key: "waiting", who: issues.page.waiting, text: waiting, tone: "waiting" }];
+  return [...lines, { key: "waiting", who: issues.page.waiting, text: waiting ?? undefined, tone: "waiting" }];
 }
 
 function IssueBody({ issue, onChanged }: { issue: Issue; onChanged: () => void }) {
   const { me } = useSession();
   const support = profile.support;
-  const hours = me.care_hours;
-  const waiting = support.hint(
-    support.within(hours.first_reply),
-    support.hours(support.hour(hours.opens), support.hour(hours.closes)),
-  );
+  const hours = careHoursOf(me);
+  const waiting =
+    hours === null
+      ? null
+      : support.hint(
+          support.within(hours.first_reply),
+          support.hours(support.hour(hours.opens), support.hour(hours.closes)),
+        );
   const photosFailed = new URLSearchParams(window.location.search).get("photos") === "failed";
   return (
     <div className={styles.page}>

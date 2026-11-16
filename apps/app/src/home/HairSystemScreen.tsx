@@ -18,7 +18,8 @@ import { hairSystems, messages, profile, replacement, titles } from "../content.
 import { AppLink, Shell } from "../frame/Shell.tsx";
 import { visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
-import { monthWorn } from "./month-worn.ts";
+import { wornOf } from "../lib/counts.ts";
+import { monthsWorn } from "./month-worn.ts";
 import styles from "./hair-system.module.css";
 
 function Worn({ worn, open }: { worn: NonNullable<Me["hair_system"]>; open: boolean }) {
@@ -53,7 +54,7 @@ function fittings(past: readonly VisitSummary[], today: string): TimelineItem[] 
       when: hairSystems.span(
         fullDate(visit.date),
         next === undefined ? null : fullDate(next.date),
-        monthWorn(visit.date, next?.date ?? today),
+        monthsWorn(visit.date, next?.date ?? today),
       ),
       who: visit.service ?? visitName(visit.type),
       text: (
@@ -83,6 +84,7 @@ function WornBefore({ today }: { today: string }) {
 
 export function HairSystemScreen() {
   const { me } = useSession();
+  const worn = wornOf(me);
   const open = me.booking.types.includes("replacement");
   const offered = me.booking.next?.type === "replacement" ? me.booking.next : null;
   const book = open ? (
@@ -98,11 +100,7 @@ export function HairSystemScreen() {
   return (
     <Shell header={{ kind: "back", title: titles.hairSystem, to: "/", label: profile.back }} tab={null} footer={book}>
       <div className={styles.page}>
-        {me.hair_system === null ? (
-          <p className={styles.none}>{hairSystems.none}</p>
-        ) : (
-          <Worn worn={me.hair_system} open={open} />
-        )}
+        {worn === null ? <p className={styles.none}>{hairSystems.none}</p> : <Worn worn={worn} open={open} />}
         <section aria-labelledby="involves">
           <h2 className={styles.section} id="involves">
             {replacement.title}

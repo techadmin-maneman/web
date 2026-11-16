@@ -25,7 +25,12 @@ describe("the alerts' words", () => {
   it("say when the technician now arrives, from the minutes they gave", () => {
     const update = { kind: "running_late", minutes: 15 } as const;
     const alert = { id: "a", kind: "technician_update", visit_id: "v1", update, at: "", read: false };
-    expect(alertWords(alert)).toMatchObject({ title: "Your technician is running late", to: "/visits/v1" });
+    expect(alertWords(alert)).toMatchObject({ title: "Your technician is running late", to: "/" });
     expect(alertWords(alert).line).toContain("15 minutes");
+  });
+
+  it("open Home for the visit under way, where its card and the sign-off are, never the visit's page", () => {
+    const asked = { id: "a", kind: "sign_off_asked", visit_id: "v1", update: null, at: "", read: false };
+    expect(alertWords(asked).to).toBe("/");
   });
 });

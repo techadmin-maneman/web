@@ -30,7 +30,10 @@ current state and where it goes, the work in build order, the gaps, and the PRs.
      order. **Split on 16 November at the owner's ask into two, each pushed once:** the server PR
      (`feat/client-redesign`: every server item, with the technician app and console work built beside them, and
      `CLIENT_SIGN_OFF` off on staging and production, ADR 0254), then the screens PR (`feat/client-screens`: the client
-     app, staging's Razorpay test keys, and `CLIENT_SIGN_OFF` on).
+     app with request mode (G4), staging's Razorpay test keys, and `CLIENT_SIGN_OFF` on). The server PR merged as #879
+     without W8 and the made-to-order path; each follows the screens PR as its own PR, before B: W8 (ratings, migration
+     0214, its client stars and the technician's figure), then made to order once the owner rules on a size no stock
+     code matches.
    - **PR B, production pays only through Razorpay. The owner merges it.** It sets `env.production`'s vars (the live
      key, `PAYMENTS_PROVIDER: "razorpay"`, `SELF_SERVE_BOOKING: "true"`) and adds the startup guard with
      `OUTAGE_REQUESTS_ONLY`. It also retires pay-at-the-visit for new visits: no new `pay_at_visit` hold, no
@@ -180,7 +183,7 @@ marked "code" are states in the code that no screenshot shows (audit section 9 i
 ### Routes
 
 Every old path keeps working. `/payments` → `/profile/payments`, `/payments/:id` → `/profile/payments/:id`, `/refer` →
-`/rewards`, `/refer/fitted` → `/rewards/invited`, `/replacement` → `/` (Your hair system). New: `/alerts`,
+`/rewards`, `/refer/fitted` → `/rewards/invited`, `/replacement` → `/hair-system`, `/photos/compare` → `/photos`. New: `/alerts`,
 `/hair-system`, `/hair-systems` (compare the four), `/visits/issues/:id`, `/profile/address`, `/profile/privacy`,
 `/profile/account`.
 

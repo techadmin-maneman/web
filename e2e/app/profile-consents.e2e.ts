@@ -4,6 +4,7 @@ import { CODE } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 import { CLIENT_WORDS } from "../../packages/web-kit/client-words.ts";
+import { GRIEVANCE_ANSWERED_WITHIN_DAYS } from "../../src/policy/grievances.ts";
 
 test("lists the four consents off, and switches one on with its date and off again", async ({ page }) => {
   await loggedIn(page, "privacy");
@@ -175,7 +176,7 @@ test("raises one grievance when Send is tapped twice", async ({ page }) => {
   const liveWhileBusy = await send.isEnabled();
   await send.click({ force: true });
 
-  await expect(page.getByText(appCopy.profile.data.sent)).toBeVisible();
+  await expect(page.getByText(appCopy.profile.data.sent(GRIEVANCE_ANSWERED_WITHIN_DAYS))).toBeVisible();
   expect({ asked: held.asked(), liveWhileBusy }).toEqual({ asked: 1, liveWhileBusy: false });
 });
 

@@ -123,8 +123,8 @@ function Links(props: Props & { offerSms: boolean; closed: boolean; resendIn: nu
   );
 }
 
-/** A problem with the code, on the ink the screen stands on. */
-const ERROR_LOOK = messageLook({ tone: "error", ground: "ink", className: styles.error });
+/** A problem with the code, on the white the screen stands on. */
+const ERROR_LOOK = messageLook({ tone: "error", className: styles.error });
 
 export function CodeScreen(props: Props) {
   const copy = login.code;

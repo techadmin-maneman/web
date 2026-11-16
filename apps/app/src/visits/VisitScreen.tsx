@@ -1,9 +1,9 @@
-// One visit. Past: its photographs, technician, duration and type,
+// One visit. Past: its photographs, its sign-off and a first fit's guarantee, technician, duration and type,
 // what was done, and the visit's own tax invoice beneath them (ADR 0056; the
 // board has none). A visit the client was not home for says what ops ruled and
 // what a charge took, and offers the charge's dispute (ADR 0096); a cancelled
 // one says it was cancelled. Not yet closed: its card as Home draws its
-// next visit, with Reschedule and Add a note until it begins. A
+// next visit, with Reschedule and Add a note until it begins, and its photographs once taken. A
 // visit that is not the client's says so, rather than offering to try again.
 
 import { DisputeSheet } from "../booking/index.ts";
@@ -16,7 +16,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { dayMonth, fullDate, indiaClock, indiaDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { api, documentUrl, receiptUrl, type VisitDetail } from "../api.ts";
@@ -28,6 +28,8 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { firstNameOf } from "@rules/lib/names.ts";
+import { guaranteeUntil } from "@rules/policy/fit-guarantee.ts";
+import { useSession } from "../session.ts";
 import { Loading } from "@maneman/ui/States";
 import { NotFound } from "../frame/NotFound.tsx";
 import { go } from "../route.ts";
@@ -139,23 +141,75 @@ function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNo
   );
 }
 
-function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged: () => void; relink: Relink }) {
-  const [open, setOpen] = useState<OpenPhoto | null>(null);
+/** A fit the client signed off, and when; a first fit done, its guarantee, and the way to claim it while it runs. */
+function FitFacts({ visit }: { visit: VisitDetail }) {
+  const { me } = useSession();
   const copy = visits.detail;
-  const photographed = visit.photos.before.length > 0 || visit.photos.after.length > 0;
+  const signedAt = visit.sign_off?.state === "signed" ? visit.sign_off.signed_at : null;
+  const until =
+    visit.type === "first_fit" && visit.outcome === "done"
+      ? guaranteeUntil(visit.date, visit.sign_off?.guarantee_days ?? me.guarantee_days)
+      : null;
+  return (
+    <>
+      {signedAt !== null && (
+        <Fact
+          name={copy.signedOff}
+          value={copy.signedBy(`${dayMonth(indiaDate(signedAt))}, ${indiaClock(signedAt)}`)}
+        />
+      )}
+      {until !== null && (
+        <div className={shared.fact}>
+          <dt>{copy.guarantee}</dt>
+          <dd>
+            {copy.guaranteeUntil(dayMonth(until))}
+            {todayInIndia(apiNow()) <= until && (
+              <AppLink
+                className={textLinkLook({ className: styles.claim })}
+                to={`/visits/issues/new?about=fit_guarantee&visit=${visit.id}`}
+              >
+                {copy.notRight}
+              </AppLink>
+            )}
+          </dd>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** The visit's photographs, once there are any, and each opened full size. */
+function Photographs({ visit, relink }: { visit: VisitDetail; relink: Relink }) {
+  const [open, setOpen] = useState<OpenPhoto | null>(null);
+  if (visit.photos.before.length === 0 && visit.photos.after.length === 0) return null;
+  return (
+    <section aria-labelledby="photographs">
+      <h2 className={capsLook(shared.label)} id="photographs">
+        {visits.detail.photographs}
+      </h2>
+      <PhotoRow set={visit.photos} date={visit.date} onOpen={setOpen} relink={relink} />
+      {open !== null && (
+        <PhotoSheet
+          photo={open}
+          relink={relink}
+          onClose={() => {
+            setOpen(null);
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged: () => void; relink: Relink }) {
+  const copy = visits.detail;
   return (
     <div className={shared.detail}>
       {visit.status === "cancelled" && <p className={styles.cancelled}>{copy.cancelled}</p>}
       {visit.no_show !== null && <NoShow visitId={visit.id} note={visit.no_show} onDisputed={onChanged} />}
-      {photographed && (
-        <section aria-labelledby="photographs">
-          <h2 className={capsLook(shared.label)} id="photographs">
-            {copy.photographs}
-          </h2>
-          <PhotoRow set={visit.photos} date={visit.date} onOpen={setOpen} relink={relink} />
-        </section>
-      )}
+      <Photographs visit={visit} relink={relink} />
       <dl className={shared.facts}>
+        <FitFacts visit={visit} />
         {visit.technician !== null && <Fact name={copy.technician} value={visit.technician.name} />}
         {visit.duration_minutes !== null && visit.duration_minutes > 0 && (
           <Fact name={copy.duration} value={visitLength(visit.duration_minutes)} numeric />
@@ -178,15 +232,6 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
         >
           {issues.page.reportVisit}
         </AppLink>
-      )}
-      {open !== null && (
-        <PhotoSheet
-          photo={open}
-          relink={relink}
-          onClose={() => {
-            setOpen(null);
-          }}
-        />
       )}
     </div>
   );
@@ -226,6 +271,7 @@ function Visit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged: ()
           else onChanged();
         }}
       />
+      {visit.stage !== "booked" && <Photographs visit={visit} relink={relink} />}
       {visit.stage === "booked" && (
         <div className={styles.calendar}>
           <AddToCalendar

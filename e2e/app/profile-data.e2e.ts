@@ -3,6 +3,9 @@ import { axeViolations } from "../a11y.ts";
 import { logIn, signIn } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { DELETION_DECIDED_WITHIN_DAYS } from "../../src/policy/account-deletion.ts";
+import { GRIEVANCE_ANSWERED_WITHIN_DAYS } from "../../src/policy/grievances.ts";
+import { INVOICE_KEPT_YEARS } from "../../src/policy/retention.ts";
 
 test("offers support on WhatsApp, with the design’s line", async ({ page }) => {
   await loggedIn(page);
@@ -22,7 +25,7 @@ test("Your data: a download of everything held, and a concern sent to ops", asyn
   await page.getByRole("button", { name: appCopy.profile.data.raise }).click();
   await page.getByRole("textbox", { name: appCopy.profile.data.field }).fill("Please explain who sees my photographs.");
   await page.getByRole("button", { name: appCopy.profile.data.send }).click();
-  await expect(page.getByText(appCopy.profile.data.sent)).toBeVisible();
+  await expect(page.getByText(appCopy.profile.data.sent(GRIEVANCE_ANSWERED_WITHIN_DAYS))).toBeVisible();
   const concerns = page.getByRole("list", { name: appCopy.profile.data.concerns });
   await expect(concerns).toContainText("Please explain who sees my photographs.");
   await expect(concerns).toContainText(appCopy.profile.data.waiting);
@@ -68,7 +71,9 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
 
 test("asks before requesting deletion, then says it is requested", async ({ page }) => {
   await loggedIn(page, "account");
-  await expect(page.getByText(appCopy.profile.deletion.body)).toBeVisible();
+  await expect(
+    page.getByText(appCopy.profile.deletion.body({ days: DELETION_DECIDED_WITHIN_DAYS, years: INVOICE_KEPT_YEARS })),
+  ).toBeVisible();
   await page.getByRole("button", { name: appCopy.profile.deletion.request }).click();
   await page.getByRole("button", { name: appCopy.profile.deletion.no }).click();
   await expect(page.getByRole("button", { name: appCopy.profile.deletion.request })).toBeVisible();

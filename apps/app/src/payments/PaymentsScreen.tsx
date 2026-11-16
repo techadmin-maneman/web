@@ -42,7 +42,7 @@ function EntryRow({ entry, thisYear }: { entry: Entry; thisYear: number }) {
   const beneath = entryBeneath(entry);
   return (
     <li>
-      <AppLink className={styles.entry} to={`/payments/${entry.id}`}>
+      <AppLink className={styles.entry} to={`/profile/payments/${entry.id}`}>
         <span className={styles.entryText}>
           <span className={styles.what}>{entryTitle(entry)}</span>
           <span className={styles.meta}>{entryMeta(entry, thisYear)}</span>

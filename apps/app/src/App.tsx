@@ -30,6 +30,7 @@ import { Login } from "./login/Login.tsx";
 import type { LinkedLogin } from "./login/linked-mobile.ts";
 import { go, movedTo, redirect, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext } from "./session.ts";
+import { useKeptPush } from "./alerts/kept-push.ts";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
 import { LoadFailed } from "./frame/LoadFailed.tsx";
 import { Loading } from "@maneman/ui/States";
@@ -107,6 +108,18 @@ const pause = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
+/** Signed in, a 401 from any call ends the session: the screens go first, then the cached Home. */
+function useSessionEnd(signedIn: boolean, setSession: Dispatch<SetStateAction<Session>>) {
+  useEffect(() => {
+    if (!signedIn) return;
+    return onSessionEnded(() => {
+      setSession({ kind: "out", ended: true });
+      rememberSignedOut();
+      void forgetHome();
+    });
+  }, [signedIn, setSession]);
+}
+
 /** Offline, the session says so; back online, Home is asked for again. */
 function useConnection(setSession: Dispatch<SetStateAction<Session>>, refreshSoon: () => Promise<void>) {
   useEffect(() => {
@@ -123,14 +136,17 @@ function useConnection(setSession: Dispatch<SetStateAction<Session>>, refreshSoo
   }, [setSession, refreshSoon]);
 }
 
-/** The path shown, where a path the app had before, from a message already sent, gives way to the page's new one. */
+/**
+ * The path shown, where a path the app had before, from a message already sent, gives way to the page's new one: drawn
+ * at once, never the old path's page first.
+ */
 function useAppPath(): string {
   const path = usePath();
   const moved = movedTo(path);
   useEffect(() => {
     if (moved !== null) redirect(moved);
   }, [moved]);
-  return path;
+  return moved ?? path;
 }
 
 export function App({ linked }: { linked: LinkedLogin }) {
@@ -178,18 +194,10 @@ export function App({ linked }: { linked: LinkedLogin }) {
     void check();
   }, [check]);
 
-  // Signed in, a 401 from any call ends the session: the screens go first, then the cached Home.
   const signedIn = session.kind === "in";
-  useEffect(() => {
-    if (!signedIn) return;
-    return onSessionEnded(() => {
-      setSession({ kind: "out", ended: true });
-      rememberSignedOut();
-      void forgetHome();
-    });
-  }, [signedIn]);
-
+  useSessionEnd(signedIn, setSession);
   useConnection(setSession, refreshSoon);
+  useKeptPush(signedIn);
 
   // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind. The
   // login names its own steps.

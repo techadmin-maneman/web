@@ -4,7 +4,7 @@
 // answer is held to the API's contract (e2e/support.ts).
 
 import type { Page } from "@playwright/test";
-import { indiaDate } from "../../packages/web-kit/dates.ts";
+import { addDays, indiaClock, indiaDate } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
@@ -25,6 +25,51 @@ async function onTheDay(page: Page, change: (visit: Visit) => Visit): Promise<Vi
 }
 
 const live = appCopy.live;
+
+/** Home answered again with `visit` as the next one, as the API would read it now. */
+async function answerAgain(page: Page, visit: Visit): Promise<void> {
+  await page.unroute("**/api/me");
+  const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
+  await page.route("**/api/me", (route) => route.fulfill({ json: { ...me, next_visit: visit } }));
+}
+
+const MINUTE_MS = 60_000;
+
+test("puts a technician running late after the arrival window, never at a time already gone", async ({ page }) => {
+  const said = new Date(Date.now() - 5 * MINUTE_MS).toISOString();
+  await onTheDay(page, (visit) => ({
+    ...visit,
+    arrives_by: new Date(Date.now() - 60 * MINUTE_MS).toISOString(),
+    latest_update: { kind: "running_late", minutes: 15, at: said },
+  }));
+  await expect(page.getByText(live.runningLate("Imran"))).toBeVisible();
+  const around = indiaClock(new Date(Date.parse(said) + 15 * MINUTE_MS).toISOString());
+  await expect(page.getByText(live.arrivingAround(around))).toBeVisible();
+});
+
+test("says a visit is being closed, or was missed, and never that it is done", async ({ page }) => {
+  const visit = await onTheDay(page, (each) => ({
+    ...each,
+    status: "in_progress",
+    stage: "closing",
+    latest_update: null,
+  }));
+  await expect(page.getByText(live.closing, { exact: true })).toBeVisible();
+  await expect(page.getByText(live.done, { exact: true })).toHaveCount(0);
+
+  await answerAgain(page, { ...visit, not_home: true });
+  await page.reload();
+  await expect(page.getByText(live.notHome, { exact: true })).toBeVisible();
+  await expect(page.getByText(live.notHomeLine)).toBeVisible();
+
+  // Missed yesterday and not yet closed: its own day heads the card, never "Today".
+  const yesterday = addDays(indiaDate(new Date().toISOString()), -1);
+  await answerAgain(page, { ...visit, date: yesterday, status: "scheduled", stage: "missed" });
+  await page.reload();
+  await expect(page.getByText(live.missed)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: live.today })).toHaveCount(0);
+  expect(await axeViolations(page)).toEqual([]);
+});
 
 test("Home follows the visit through its day: on the way, under way, then done", async ({ page }) => {
   await onTheDay(page, (visit) => ({
@@ -110,4 +155,40 @@ test("sends what isn't right to the technician, in the client's words", async ({
     checks: { hairline: true, blend: false, secure: false },
     flag_text: "The left edge lifts.",
   });
+});
+
+test("asks for the sign-off of a consultation and fit in one visit on Home too", async ({ page }) => {
+  await onTheDay(page, (each) => ({
+    ...each,
+    type: "first_fit",
+    one_visit: { amount: 2_700_000, from: false, code: null },
+    status: "in_progress",
+    stage: "in_progress",
+    latest_update: null,
+    step: { index: 5, of: 5, name: "sign_off" },
+    sign_off: ASKED,
+  }));
+  await expect(page.getByRole("heading", { level: 3, name: live.signOff.check("Imran") })).toBeVisible();
+});
+
+test("asked again after what isn't right was put right, starts the sign-off from nothing ticked", async ({ page }) => {
+  // Home reads itself again every 30 seconds while the visit is live; the clock moves it on.
+  await page.clock.install();
+  await askedToSignOff(page);
+  const copy = live.signOff;
+  const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<{ next_visit: Visit }>);
+  const asked = me.next_visit;
+  await page.getByRole("button", { name: copy.checks.hairline }).click();
+  await page.getByRole("button", { name: copy.notRight }).click();
+  await page.getByRole("textbox", { name: copy.whatsWrong }).fill("The left edge lifts.");
+  await answerAgain(page, { ...asked, sign_off: { ...ASKED, state: "flagged", flag_text: "The left edge lifts." } });
+  await page.getByRole("button", { name: copy.send("Imran") }).click();
+  await expect(page.getByRole("heading", { level: 3, name: copy.sent("Imran") })).toBeVisible();
+
+  await answerAgain(page, { ...asked, sign_off: { ...ASKED, asks: 2 } });
+  await page.clock.fastForward(31_000);
+  await expect(page.getByRole("heading", { level: 3, name: copy.check("Imran") })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: copy.whatsWrong })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: copy.checks.hairline })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("button", { name: copy.happy })).toBeDisabled();
 });

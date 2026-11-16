@@ -1,6 +1,6 @@
 // The profile, under the client's initials: who they are, then a list of what is theirs (their hair system, payments
-// and invoices, issues, address, privacy, help, the account) and signing out (design/client-redesign, the profile
-// screen). Each row opens its own page; help opens WhatsApp.
+// and invoices, issues, address, privacy, help with their Care person by name, the account) and signing out
+// (design/client-redesign, the profile screen). Each row opens its own page; help opens WhatsApp.
 
 import { CLIENT_ICONS, GLYPHS } from "@maneman/brand/icons";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
@@ -9,9 +9,10 @@ import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { LogOut } from "../login/index.ts";
 import { LEGAL_URLS, profile, profileMenu, whatsapp } from "../content.ts";
 import { Shell } from "../frame/Shell.tsx";
-import { openIssues } from "../lib/counts.ts";
+import { openIssues, wornOf } from "../lib/counts.ts";
 import type { Profile } from "../api.ts";
 import { useSession } from "../session.ts";
+import { helpLine } from "./help-line.ts";
 import { useProfile } from "./useProfile.ts";
 import styles from "./profile-screen.module.css";
 
@@ -54,31 +55,29 @@ export function ProfileScreen() {
 function ProfileRows({ now }: { now: Profile | null }) {
   const { me } = useSession();
   const fitted = me.state === "fitted";
-  const copy = profile.support;
+  const worn = wornOf(me);
   return (
     <ListRows>
-      {fitted && me.hair_system !== null && (
+      {fitted && worn !== null && (
         <ListRow
           icon={CLIENT_ICONS.layers}
           title={profileMenu.hairSystem}
-          meta={profileMenu.hairSystemMeta(me.hair_system.name)}
+          meta={profileMenu.hairSystemMeta(worn.name)}
           to="/hair-system"
           chevron
         />
       )}
-      {fitted && (
-        <ListRow
-          icon={CLIENT_ICONS.receipt}
-          title={profileMenu.payments}
-          meta={profileMenu.paymentsMeta}
-          to="/profile/payments"
-          chevron
-        />
-      )}
+      <ListRow
+        icon={CLIENT_ICONS.receipt}
+        title={profileMenu.payments}
+        meta={profileMenu.paymentsMeta}
+        to="/profile/payments"
+        chevron
+      />
       <ListRow
         icon={CLIENT_ICONS.flag}
         title={profileMenu.issues}
-        meta={openIssues(me) > 0 ? profileMenu.issuesMeta(openIssues(me), openIssues(me)) : profileMenu.issuesNone}
+        meta={openIssues(me) > 0 ? profileMenu.issuesMeta(openIssues(me)) : profileMenu.issuesNone}
         to="/visits/issues"
         chevron
       />
@@ -99,14 +98,7 @@ function ProfileRows({ now }: { now: Profile | null }) {
       <ListRow
         icon={CLIENT_ICONS.chat}
         title={profileMenu.help}
-        meta={
-          now === null
-            ? undefined
-            : copy.hint(
-                copy.within(now.care_hours.first_reply),
-                copy.hours(copy.hour(now.care_hours.opens), copy.hour(now.care_hours.closes)),
-              )
-        }
+        meta={now === null ? undefined : helpLine(now)}
         href={whatsappChat(whatsapp.number)}
         chevron
       />

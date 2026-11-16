@@ -14,15 +14,42 @@ import { issues, missing } from "../content.ts";
 import { small } from "./RaisePhotos.tsx";
 import styles from "./issue.module.css";
 
+type Answer = { readonly ok: true } | { readonly ok: false; readonly code: string };
+
+/** Why an update, a reopening or a photo did not go through, as the client is told it. */
+function refusal(code: string | null): string {
+  const copy = issues.page;
+  if (code === "rate_limited") return copy.limited;
+  if (code === "photos_full") return copy.photosFull;
+  return code === "unread" ? copy.photoUnread : copy.failed;
+}
+
+/** The photo made small enough to send; null for one the browser cannot read. */
+const readable = (file: File): Promise<Blob | null> => small(file).catch(() => null);
+
+/**
+ * A photo added now: the raise's "a photo didn't upload", carried in the address (?photos=failed), goes from it, and so
+ * from the page, which is read again.
+ */
+const photoAdded = (onChanged: () => void) => () => {
+  window.history.replaceState(window.history.state, "", window.location.pathname);
+  onChanged();
+};
+
 /** A photograph sent to the report as soon as it is picked. */
-function AddPhoto({ reference, onSent, onFailed }: { reference: string; onSent: () => void; onFailed: () => void }) {
+function AddPhoto(props: { reference: string; onSent: () => void; onFailed: (code: string | null) => void }) {
   const [busy, once] = useOneAtATime();
   const send = (file: File | undefined) =>
     once(async () => {
       if (file === undefined) return;
-      const sent = await api.problemPhoto(reference, await small(file)).catch(() => null);
-      if (sent?.ok === true) onSent();
-      else onFailed();
+      const photo = await readable(file);
+      if (photo === null) {
+        props.onFailed("unread");
+        return;
+      }
+      const sent = await api.problemPhoto(props.reference, photo).catch(() => null);
+      if (sent?.ok === true) props.onSent();
+      else props.onFailed(sent?.code ?? null);
     });
   return (
     <PhotoPick look="words" label={issues.page.addPhoto} disabled={busy} onPick={(files) => void send(files[0])}>
@@ -90,10 +117,11 @@ export function IssueActions({
   const [reopening, setReopening] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
-  const act = (call: () => Promise<{ readonly ok: boolean }>) =>
+  const act = (call: () => Promise<Answer>) =>
     once(async () => {
-      if (!(await call()).ok) {
-        setProblem(copy.failed);
+      const answer = await call();
+      if (!answer.ok) {
+        setProblem(refusal(answer.code));
         return;
       }
       setText("");
@@ -102,8 +130,8 @@ export function IssueActions({
       onChanged();
     });
   const words = text.trim();
-  const failed = () => {
-    setProblem(copy.failed);
+  const failed = (code: string | null) => {
+    setProblem(refusal(code));
   };
   if (issue.state === "resolved" && !reopening)
     return (
@@ -117,7 +145,7 @@ export function IssueActions({
     <div className={styles.actions}>
       {issue.photos > 0 && <p className={styles.raised}>{copy.photos(issue.photos)}</p>}
       {!reopening && issue.photos < PROBLEM_PHOTOS_MAX && (
-        <AddPhoto reference={reference} onSent={onChanged} onFailed={failed} />
+        <AddPhoto reference={reference} onSent={photoAdded(onChanged)} onFailed={failed} />
       )}
       <WordsField
         label={reopening ? copy.againLabel : copy.update}

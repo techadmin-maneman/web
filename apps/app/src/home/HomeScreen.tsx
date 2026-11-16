@@ -76,6 +76,14 @@ export function HomeScreen() {
 
 function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   const visit = me.next_visit;
+  // On its day, or once begun, any visit is the live card: a consultation and a one visit too.
+  if (visit !== null && isLive(visit, todayInIndia(apiNow()))) {
+    return (
+      <section aria-labelledby="next">
+        <LiveCard visit={visit} label={{ id: "next" }} />
+      </section>
+    );
+  }
   if (visit?.type === "consultation") {
     return (
       <Consultation
@@ -94,11 +102,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   if (visit !== null) {
     return (
       <section aria-labelledby="next">
-        {isLive(visit, todayInIndia(apiNow())) ? (
-          <LiveCard visit={visit} label={{ id: "next" }} />
-        ) : (
-          <VisitCard visit={visit} label={{ id: "next", text: labelOf(visit) }} />
-        )}
+        <VisitCard visit={visit} label={{ id: "next", text: labelOf(visit) }} />
       </section>
     );
   }
@@ -258,7 +262,7 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
       return (
         <div className={styles.prompt}>
           <p className={styles.promptLine}>{home.prompt.address}</p>
-          <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/profile">
+          <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/profile/address">
             <span>{home.prompt.addAddress}</span>
           </AppLink>
         </div>

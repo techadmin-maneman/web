@@ -50,6 +50,12 @@ export const issues = {
     addPhoto: "Add a photo",
     photos: (n: number) => (n === 1 ? "1 photo with this report" : `${String(n)} photos with this report`),
     failed: "That didn’t go through. Try again.",
+    /** The day's updates and photos on reports are spent. */
+    limited: "That’s all we can take today. Message us on WhatsApp if it can’t wait.",
+    /** The report holds as many photos as it can. */
+    photosFull: "This report has all the photos it can take.",
+    /** A photo the phone could not read, such as one in a format the browser cannot open. */
+    photoUnread: "That photo couldn’t be read. Try another.",
     notFound: "We couldn’t find this issue.",
   },
   /** Who said each line of an issue's log. */

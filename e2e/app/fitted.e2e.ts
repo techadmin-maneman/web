@@ -21,12 +21,17 @@ test("Home shows a fitted client’s next visit, with the technician, and Resche
   await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   await expect(page.getByText(`${weekdayName(client.next.date)} ${dayMonth(client.next.date)}`)).toBeVisible();
   await expect(page.getByText("12–12:30 pm", { exact: true })).toBeVisible();
-  await expect(page.getByText("Imran", { exact: true })).toBeVisible();
+  // The next visit's card names its technician; the last visit, beneath Home's rows, names its own.
+  const next = page.getByRole("region", { name: appCopy.home.next.label });
+  await expect(next.getByText("Imran", { exact: true })).toBeVisible();
   await expect(page.getByText("Service visit · 90 minutes")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
   // Home's one prompt: this client has given no address, which comes before the replacement falling due.
   await expect(page.getByText(appCopy.home.prompt.address)).toBeVisible();
-  await expect(page.getByRole("link", { name: appCopy.home.prompt.addAddress })).toHaveAttribute("href", "/profile");
+  await expect(page.getByRole("link", { name: appCopy.home.prompt.addAddress })).toHaveAttribute(
+    "href",
+    "/profile/address",
+  );
   // Self-serve booking is on locally, so Reschedule opens the move sheet (C7; e2e/app/changes.e2e.ts moves one).
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();

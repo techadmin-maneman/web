@@ -181,10 +181,10 @@ export function EntryScreen({ id }: { id: string }) {
   const [loaded, retry] = useLoad(useCallback(() => api.entry(id), [id]));
   const title = loaded.state === "loaded" ? entryTitle(loaded.value) : payments.title;
   return (
-    <Shell header={{ kind: "back", title, to: "/payments", label: payments.back }} tab={null}>
+    <Shell header={{ kind: "back", title, to: "/profile/payments", label: payments.back }} tab={null}>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && loaded.notFound && (
-        <NotFound message={payments.notFound} back={payments.back} to="/payments" />
+        <NotFound message={payments.notFound} back={payments.back} to="/profile/payments" />
       )}
       {loaded.state === "failed" && !loaded.notFound && <PageFailed onRetry={retry} />}
       {loaded.state === "loaded" && <Detail entry={loaded.value} />}

@@ -9,6 +9,7 @@ import { dayMonth, fullDate, todayInIndia } from "@maneman/web-kit/dates";
 import type { Me } from "../api.ts";
 import { home } from "../content.ts";
 import { AppLink } from "../frame/Shell.tsx";
+import { wornOf } from "../lib/counts.ts";
 import { monthWorn } from "./month-worn.ts";
 import styles from "./hair-system-block.module.css";
 
@@ -19,12 +20,6 @@ function lineOf(me: Me, worn: NonNullable<Me["hair_system"]>): string {
   if (me.booking.types.includes("replacement")) return copy.bookNow(dayMonth(worn.due_on));
   return copy.bookFrom(fullDate(worn.fitted_on), dayMonth(worn.replacement_opens_on));
 }
-
-/**
- * The hair system worn, or null: a Home the phone kept from before the API answered it, or one a rolled-back API sends,
- * carries none though the document says it is there.
- */
-const wornOf = (me: Partial<Pick<Me, "hair_system">>): Me["hair_system"] => me.hair_system ?? null;
 
 export function HairSystemBlock({ me }: { me: Me }) {
   const worn = wornOf(me);

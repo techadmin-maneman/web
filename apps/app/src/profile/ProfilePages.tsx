@@ -9,6 +9,7 @@ import type { Profile } from "../api.ts";
 import { profile, profilePages } from "../content.ts";
 import { PageFailed } from "../frame/PageFailed.tsx";
 import { Shell } from "../frame/Shell.tsx";
+import { lawOf } from "../lib/counts.ts";
 import { useSession } from "../session.ts";
 import { AddressSection } from "./AddressSection.tsx";
 import { ConsentList, type Consent } from "./ConsentList.tsx";
@@ -84,14 +85,20 @@ function Consents({ consents }: { consents: readonly Consent[] }) {
 }
 
 export function AccountScreen() {
+  const law = lawOf(useSession().me);
   return (
     <ProfilePage title={profilePages.account}>
       {(now, refresh) => (
         <>
           <NumberChangeCard change={now.number_change} decided={now.number_change_decided} onChanged={refresh} />
           <SessionsCard />
-          <DataCard grievances={now.grievances} onRaised={refresh} />
-          <DeletionCard deletion={now.deletion} rejected={now.deletion_rejected} onRequested={refresh} />
+          <DataCard grievances={now.grievances} answerDays={law?.grievance_days ?? null} onRaised={refresh} />
+          <DeletionCard
+            deletion={now.deletion}
+            rejected={now.deletion_rejected}
+            law={law === null ? null : { days: law.deletion_days, years: law.invoices_kept_years }}
+            onRequested={refresh}
+          />
         </>
       )}
     </ProfilePage>

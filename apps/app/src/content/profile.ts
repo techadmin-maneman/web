@@ -14,7 +14,7 @@ export const profileMenu = {
   payments: "Payments and invoices",
   paymentsMeta: "Paid through Razorpay",
   issues: "Issues",
-  issuesMeta: (raised: number, open: number) => `${String(raised)} raised · ${String(open)} open`,
+  issuesMeta: (open: number) => `${String(open)} open`,
   issuesNone: "Anything off with a visit, your hair system or a payment",
   address: "Address and access notes",
   addressNone: "Add your address",
@@ -148,8 +148,6 @@ export const profile = {
     notLoaded: "Where you’re signed in didn’t load.",
   },
   support: {
-    label: "Support",
-    message: "Message us on WhatsApp",
     /** "We reply within an hour, 9 am–9 pm daily." */
     hint: (within: string, hours: string) => `We reply within ${within}, ${hours} daily.`,
     /** How soon Care answer, as the card says it: "an hour", "2 hours", "30 minutes". */
@@ -158,8 +156,8 @@ export const profile = {
       if (minutes % 60 === 0) return `${String(minutes / 60)} hours`;
       return `${String(minutes)} minutes`;
     },
-    /** Their named Care person: "Asha, your Care person". */
-    carePerson: (name: string) => `${name}, your Care person`,
+    /** Their named Care person, before when Care reply: "Asha, your Care person · We reply within …". */
+    named: (person: string, hint: string) => `${person}, your Care person · ${hint}`,
     /** "9 am–9 pm" */
     hours: (opens: string, closes: string) => `${opens}–${closes}`,
     /** An hour of the day as the card says it: "9 am", "12 noon", "9 pm". */
@@ -175,7 +173,11 @@ export const profile = {
     send: "Send",
     cancel: "Not now",
     // Beside support's "Replies the same day": the 30 days is the most a concern can take, not the usual.
-    sent: "Received. We’ll reply here and on WhatsApp, usually the same day and always within 30 days.",
+    /** The law's most days for an answer, from the API; none in a Home kept from before it said. */
+    sent: (days: number | null) =>
+      days === null
+        ? "Received. We’ll reply here and on WhatsApp, usually the same day."
+        : `Received. We’ll reply here and on WhatsApp, usually the same day and always within ${String(days)} days.`,
     failed: "That didn’t go through. Try again.",
     limited: "You’ve reached today’s limit. Send it tomorrow, or message us on WhatsApp.",
     // The client's latest concerns, each with our answer once given.
@@ -187,7 +189,11 @@ export const profile = {
   },
   deletion: {
     label: "Delete your account",
-    body: "We act on your request within 30 days. Bookings and payments are settled first, and invoices are kept for 8 years, as the law requires.",
+    /** The law's days to act and years invoices are kept, from the API; none in a Home kept from before it said. */
+    body: (law: { readonly days: number; readonly years: number } | null) =>
+      law === null
+        ? "Bookings and payments are settled first, and invoices are kept as the law requires."
+        : `We act on your request within ${String(law.days)} days. Bookings and payments are settled first, and invoices are kept for ${String(law.years)} years, as the law requires.`,
     request: "Request deletion",
     confirm: "Ask us to delete your account? We’ll confirm on WhatsApp before anything is deleted.",
     yes: "Yes, request deletion",

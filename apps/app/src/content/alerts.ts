@@ -1,7 +1,9 @@
 // The alerts under the bell (design/client-redesign, the notifications screen; docs/decisions/0255-client-alerts-and-
 // push.md): one beside each message we send the client, and each time a technician asks for their sign-off. An alert
-// carries its kind, its visit and a technician's minutes, so each kind has its own words, and opens its visit where it
-// has one, else the page its kind belongs to.
+// carries its kind, its visit and a technician's minutes, so each kind has its own words. It opens Home for the visit
+// under way, else its visit where it has one, else the page its kind belongs to.
+
+import { REFUND_TAKES } from "./payments.ts";
 
 /** An alert as GET /api/me/alerts answers it (the ClientAlert schema; a test holds the kinds to it). */
 export interface ClientAlert {
@@ -50,7 +52,7 @@ export const ALERTS: Readonly<Record<string, AlertWords | undefined>> = {
   arrival_notice: { title: "Your technician is at your door", line: "They’ll wait a few minutes.", page: "/visits" },
   no_show_decided: { title: "About the visit we missed", line: "See what happens next.", page: "/visits" },
   no_show_dispute_ruled: { title: "Your dispute has an answer", line: "See it on the visit.", page: "/visits" },
-  booking_refunded: { title: "Refund started", line: "Banks take 5 to 7 working days.", page: PAYMENTS },
+  booking_refunded: { title: "Refund started", line: `Banks take ${REFUND_TAKES}.`, page: PAYMENTS },
   next_service_reminder: { title: "Your next service is due", line: "Book it when it suits you.", page: "/" },
   friend_fitted: {
     title: "Your friend was fitted",
@@ -62,7 +64,11 @@ export const ALERTS: Readonly<Record<string, AlertWords | undefined>> = {
   credits_expiring: { title: "Free visits ending soon", line: "Use them before they end.", page: "/rewards" },
   launch_alert: { title: "We’re in your city", line: "Book a free consultation.", page: "/" },
   deletion_rejected: { title: "About your deletion request", line: "See Account for why.", page: "/profile/account" },
-  concern_received: { title: "We have your concern", line: "We answer within 30 days.", page: "/visits/issues" },
+  concern_received: {
+    title: "We have your concern",
+    line: "We’ll reply here and on WhatsApp.",
+    page: "/visits/issues",
+  },
   concern_answered: { title: "Your concern has an answer", line: "See it in your issues.", page: "/visits/issues" },
   recall_notice: {
     title: "We’re replacing your hair system",
@@ -88,7 +94,7 @@ export const ALERTS: Readonly<Record<string, AlertWords | undefined>> = {
   sign_off_asked: {
     title: "Your technician asks you to sign off the fit",
     line: "Look at the hairline and the photos, then sign off in the app.",
-    page: "/visits",
+    page: "/",
   },
 };
 
@@ -107,12 +113,15 @@ const UPDATES = {
   at_the_gate: { title: "Your technician is at the gate", line: () => "At your door in a minute or two." },
 } as const;
 
+/** About the visit under way: Home's card follows it and holds the sign-off, so these open Home, never its page. */
+const ON_HOME: ReadonlySet<string> = new Set(["technician_update", "sign_off_asked"]);
+
 /** An alert's title and line, and the page it opens. */
 export function alertWords(alert: Alert): { title: string; line: string; to: string } {
-  const visit = alert.visit_id === null ? null : `/visits/${alert.visit_id}`;
+  const visit = alert.visit_id === null || ON_HOME.has(alert.kind) ? null : `/visits/${alert.visit_id}`;
   if (alert.kind === "technician_update") {
     const update = UPDATES[alert.update?.kind ?? "on_the_way"];
-    return { title: update.title, line: update.line(alert.update?.minutes ?? null), to: visit ?? "/" };
+    return { title: update.title, line: update.line(alert.update?.minutes ?? null), to: "/" };
   }
   // A kind newer than this build reads as the push does, and opens the inbox.
   const words = ALERTS[alert.kind] ?? { title: alerts.pushed.title, line: alerts.pushed.line, page: "/alerts" };

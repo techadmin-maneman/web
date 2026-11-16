@@ -77,7 +77,14 @@ function ConcernButtons({ busy, empty, onCancel }: { busy: boolean; empty: boole
 }
 
 /** The client's rights over their data: a copy of it, and a way to raise a concern. */
-export function DataCard({ grievances, onRaised }: { grievances: Profile["grievances"]; onRaised: () => void }) {
+interface DataCardProps {
+  readonly grievances: Profile["grievances"];
+  /** The law's most days for an answer, as /api/me gives them; null where it did not. */
+  readonly answerDays: number | null;
+  readonly onRaised: () => void;
+}
+
+export function DataCard({ grievances, answerDays, onRaised }: DataCardProps) {
   const copy = profile.data;
   const [writing, setWriting] = useState(false);
   const [text, setText] = useState("");
@@ -103,7 +110,7 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
     if (state === "sent") {
       return (
         <p className={styles.cardHint} role="status">
-          {copy.sent}
+          {copy.sent(answerDays)}
         </p>
       );
     }

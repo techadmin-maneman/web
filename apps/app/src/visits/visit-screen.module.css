@@ -69,3 +69,9 @@
   align-self: flex-start;
   margin-top: var(--sp-8);
 }
+
+/* The way to claim a first fit's guarantee, beneath its date. */
+.claim {
+  display: block;
+  margin-top: var(--sp-4);
+}

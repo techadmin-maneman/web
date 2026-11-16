@@ -387,3 +387,15 @@
 .late {
   color: var(--error-on-paper);
 }
+
+/* Ask for a time: the day, the part of the day, and the note, one beneath the other. */
+.request {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}
+
+.requestNote {
+  color: var(--ink-500);
+  font-size: var(--fs-13);
+}

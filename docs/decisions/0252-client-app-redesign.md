@@ -25,7 +25,8 @@ PR, and production's move to Razorpay alone is a second (ADR 0257).
    move under the profile, opened from the client's initials at the top right. The bell beside them opens the alerts
    inbox (ADR 0255). Every old path redirects to its new place, so links in messages already sent still open:
    `/payments` → `/profile/payments`, `/payments/:id` → `/profile/payments/:id`, `/refer` → `/rewards`,
-   `/refer/fitted` → `/rewards/invited`, `/replacement` → `/`.
+   `/refer/fitted` → `/rewards/invited`, `/replacement` → `/hair-system` (Your hair system, which says when the
+   replacement opens and books it), `/photos/compare` → `/photos`.
 4. **One component library.** Every new part is in `packages/ui`; the app holds screens. Toasts gain a full-width variant
    with a leading icon (`Toast`, `fullWidth`): ink, white words, 12 px from each side, above the tab bar or the action bar,
    2.6 seconds. A toast is only for what the client just did; news arrives as the banner and an inbox row; errors stay

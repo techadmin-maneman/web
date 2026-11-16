@@ -43,8 +43,12 @@ running_late | at_the_gate, minutes, at}` from `technician_updates`, `step {inde
    (`PUSH_SESSIONS_MAX`), so no client's alert costs more than five of a run's calls. A session revoked
    or ended takes no pushes; signing out drops its subscription at once, and the sweeper drops any other's before it
    deletes the session. The app asks for notifications only after the first visit is booked, from a
-   row on Home, never on load.
-4. **In the app.** News arrives as the phone-style banner and a row under the bell; the next-visit card follows the
+   row on Home, and at the head of the inbox where the client goes to look; never on load. Where they are allowed, the
+   app gives the API this phone's subscription again once a session, so a sign-in again or an address the browser
+   renewed keeps the pushes coming.
+4. **In the app.** News arrives as the phone-style banner and a row under the bell. The banner is the phone's own
+   notification, as the prototype draws it ("Mane Man · now", Dismiss and Open): the worker shows one for every push,
+   whether or not the app is open, so the app draws no second one. The next-visit card follows the
    visit live (on the way, running late by N minutes, at the gate, at your door until, step n of N, sign-off, done).
 
 ## Consequences

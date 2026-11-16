@@ -63,6 +63,18 @@ export const home = {
     report: "Report an issue",
     reportMeta: "Lifting edges, itching, colour, billing",
     invite: "Invite a friend",
+    /** Issues the client raised that are still open. */
+    openIssues: (count: number) => (count === 1 ? "1 open issue" : `${String(count)} open issues`),
+    openIssuesMeta: "See where each stands",
+    /** Before the first fit: the four compared, and questions on WhatsApp. */
+    compareMeta: "Side by side, before you choose",
+    questions: "Questions before the visit?",
+    questionsFit: "Questions about your fitting?",
+  },
+  /** The last visit done, beneath Home's rows. */
+  lastVisit: {
+    title: "Last visit",
+    all: "All visits",
   },
   /** The avatar's name begins with the initials it shows, so "tap RM" reaches it by voice. */
   profile: (initials: string) => `${initials}, your profile`,

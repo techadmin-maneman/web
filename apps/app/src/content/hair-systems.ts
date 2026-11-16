@@ -1,6 +1,12 @@
 // Your hair system and the four compared (design/client-redesign, the piece and compare screens;
 // docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md).
 
+/** "Under a month", "1 month", "6 months". */
+const monthsLength = (months: number): string => {
+  if (months === 0) return "under a month";
+  return months === 1 ? "1 month" : `${String(months)} months`;
+};
+
 export const hairSystems = {
   wearing: "Wearing now",
   fitted: "Fitted",
@@ -11,8 +17,7 @@ export const hairSystems = {
   opens: (date: string) => `Opens ${date}`,
   worn: "Every hair system you’ve worn",
   /** "14 Mar 2026 to now · 8 months". */
-  span: (from: string, to: string | null, months: number) =>
-    `${from} to ${to ?? "now"} · ${months === 1 ? "1 month" : `${String(months)} months`}`,
+  span: (from: string, to: string | null, months: number) => `${from} to ${to ?? "now"} · ${monthsLength(months)}`,
   fittingVisit: "Fitting visit",
   compare: "Compare the four hair systems",
   compareMeta: "You can change at each replacement",

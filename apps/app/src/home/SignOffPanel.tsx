@@ -1,10 +1,10 @@
 // The client's sign-off of a fit, on Home's card while the technician asks for it (design/client-redesign, the sign-off
-// panel; docs/decisions/0254-client-signs-off-the-fit.md): the three checks, then signed, or what isn't right, which
-// reaches the technician's phone for them to put right and ask again. Only ever in the client's own app.
+// panel; docs/decisions/0254-client-signs-off-the-fit.md): today's after photos, the three checks, then signed, or what
+// isn't right, which reaches the technician's phone for them to put right and ask again. Only ever in the client's own
+// app. Each ask starts with nothing ticked: Home keys the panel by the ask.
 
 import { Button } from "@maneman/ui/Button";
 import { CheckRow } from "@maneman/ui/CheckRow";
-import { textLinkLook } from "@maneman/ui/TextLink";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { WordsField } from "@maneman/ui/WordsField";
 import { indiaClock } from "@maneman/web-kit/dates";
@@ -13,7 +13,7 @@ import { useState } from "react";
 import { api, type VisitSummary } from "../api.ts";
 import { describedBy, Missing } from "@maneman/ui/Missing";
 import { live, missing } from "../content.ts";
-import { AppLink } from "../frame/Shell.tsx";
+import { AfterPhotos } from "./AfterPhotos.tsx";
 import { useSession } from "../session.ts";
 import styles from "./live-card.module.css";
 
@@ -81,9 +81,7 @@ export function SignOffPanel({ visit, technician }: { visit: VisitSummary; techn
   return (
     <div className={styles.panel}>
       <h3 className={styles.panelTitle}>{copy.check(technician)}</h3>
-      <AppLink className={textLinkLook({ className: styles.photos })} to={`/visits/${visit.id}`}>
-        {copy.photos}
-      </AppLink>
+      <AfterPhotos visitId={visit.id} />
       {CHECKS.map((check) => (
         <CheckRow
           key={check}

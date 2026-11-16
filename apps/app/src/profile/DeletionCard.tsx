@@ -22,15 +22,15 @@ function Rejected({ rejected }: { rejected: NonNullable<Profile["deletion_reject
   );
 }
 
-export function DeletionCard({
-  deletion,
-  rejected,
-  onRequested,
-}: {
-  deletion: Profile["deletion"];
-  rejected: Profile["deletion_rejected"];
-  onRequested: () => void;
-}) {
+interface DeletionCardProps {
+  readonly deletion: Profile["deletion"];
+  readonly rejected: Profile["deletion_rejected"];
+  /** The law's days to act and years invoices are kept, as /api/me gives them; null where it did not. */
+  readonly law: { readonly days: number; readonly years: number } | null;
+  readonly onRequested: () => void;
+}
+
+export function DeletionCard({ deletion, rejected, law, onRequested }: DeletionCardProps) {
   const copy = profile.deletion;
   const [confirming, setConfirming] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -109,7 +109,7 @@ export function DeletionCard({
       <h2 className={capsLook(styles.cardLabel)} id="deletion">
         {copy.label}
       </h2>
-      <p className={styles.cardBody}>{copy.body}</p>
+      <p className={styles.cardBody}>{copy.body(law)}</p>
       {rejected !== null && <Rejected rejected={rejected} />}
       {current()}
     </section>

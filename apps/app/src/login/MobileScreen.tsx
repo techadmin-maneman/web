@@ -59,7 +59,7 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
             announce
             label={copy.label}
             error={shown}
-            look={{ error: messageLook({ tone: "error", ground: "ink", className: shared.error }) }}
+            look={{ error: messageLook({ tone: "error", className: shared.error }) }}
           >
             {(control) => (
               <MobileInput

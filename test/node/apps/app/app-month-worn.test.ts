@@ -1,8 +1,8 @@
 // Which month of its life a hair system is in, as Home's hair system counts it (apps/app/src/home/month-worn.ts):
-// from 1 on the day it is fitted, a month more on the same day of each month after.
+// from 1 on the day it is fitted, a month more on the same day of each month after; and how long one was worn.
 
 import { describe, expect, it } from "vitest";
-import { monthWorn } from "../../../../apps/app/src/home/month-worn.ts";
+import { monthsWorn, monthWorn } from "../../../../apps/app/src/home/month-worn.ts";
 
 describe("the month a hair system is in", () => {
   it("is the first from the day it is fitted until the same day a month on", () => {
@@ -18,5 +18,17 @@ describe("the month a hair system is in", () => {
 
   it("is never below the first, for a day before the fit's own", () => {
     expect(monthWorn("2026-03-14", "2026-03-01")).toBe(1);
+  });
+});
+
+describe("how long a hair system was worn", () => {
+  it("is whole months, so six months from one fit to the next on the same day", () => {
+    expect(monthsWorn("2026-03-14", "2026-09-14")).toBe(6);
+    expect(monthsWorn("2026-03-14", "2026-09-13")).toBe(5);
+  });
+
+  it("is none for one fitted under a month ago", () => {
+    expect(monthsWorn("2026-03-14", "2026-03-14")).toBe(0);
+    expect(monthsWorn("2026-03-14", "2026-04-13")).toBe(0);
   });
 });

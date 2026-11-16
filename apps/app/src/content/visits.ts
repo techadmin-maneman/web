@@ -54,6 +54,13 @@ export const visits = {
     paid: "Paid",
     receipt: "Receipt",
     type: "Type",
+    /** A fit the client signed off in their app, and when. */
+    signedOff: "Signed off",
+    signedBy: (when: string) => `By you, ${when}`,
+    /** A first fit's guarantee, and the way to claim it while it runs. */
+    guarantee: "Fit guarantee",
+    guaranteeUntil: (date: string) => `Until ${date}`,
+    notRight: "The fit isn’t right",
     done: "What was done",
     /** The checklist the technician ticked, as one sentence: "Hair system removed, scalp cleaned, cut and styled." */
     doneLine: (items: readonly string[]) =>
