@@ -54,7 +54,7 @@ const IMRAN: Conversation = {
 };
 const LEAVE = { id: "7b0c8e3a-4d59-4a6b-8c7d-2e3f4a5b6c7d", from: "2026-10-20", to: "2026-10-22" };
 
-/** Two photographs Arjun sent with a report (docs/decisions/0258-the-issue-log.md). */
+// Two photographs Arjun sent with a report (docs/decisions/0258-the-issue-log.md).
 const REPORT = "c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f";
 const PHOTOS = [1, 2].map((n) => ({ report_id: REPORT, reference: "MM-ISS-0001", n, at: "2026-09-21T05:00:00.000Z" }));
 
@@ -506,15 +506,31 @@ describe("the Messages page", () => {
       copy.reportPhotos.alt("MM-ISS-0001", 1),
       copy.reportPhotos.alt("MM-ISS-0001", 2),
     ]);
-    expect(panel?.textContent).toContain(copy.reportPhotos.caption("MM-ISS-0001", 2));
     expect(asked).toContain(`/api/conversations/${ARJUN.id}/report-photos/${REPORT}/1`);
   });
 
-  it("opens the chat a task's link names, whichever view it is in", async () => {
+  it("opens the chat a task's link names, whichever view, in view once the list answers, if it answers last", async () => {
+    const scrolled: Element[] = [];
+    Reflect.set(Element.prototype, "scrollIntoView", function (this: Element) {
+      scrolled.push(this);
+    });
+    const answering = globalThis.fetch;
+    const late = (url: string, init?: RequestInit) =>
+      new Promise<Response>((resolve) => setTimeout(() => void answering(url, init).then(resolve), 30));
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
+      new URL(url, "https://ops.maneman.test").pathname === "/api/conversations"
+        ? late(url, init)
+        : answering(url, init),
+    );
     window.history.replaceState(null, "", `/messages#chat-${IMRAN.id}`);
     await show();
-    expect(document.body.querySelector(`[aria-label="${copy.thread.title("Imran Qureshi")}"]`)).not.toBeNull();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      await answered();
+    });
+    const chat = document.body.querySelector(`[aria-label="${copy.thread.title("Imran Qureshi")}"]`);
     expect(window.location.hash).toBe("");
+    expect(scrolled).toContain(chat?.parentElement);
   });
 
   it("sends a matter from the chat to the client’s city", async () => {

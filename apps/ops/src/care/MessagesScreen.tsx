@@ -12,7 +12,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Toast } from "@maneman/ui/Toast";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { careApi, type Conversation, type ConversationView } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { today } from "../content/today.ts";
@@ -160,6 +160,33 @@ function shownOf(latest: readonly Conversation[], older: Older | null): Conversa
   return [...latest, ...(older?.conversations ?? []).filter((conversation) => !seen.has(conversation.id))];
 }
 
+/**
+ * The chat a task's link names, as "/messages#chat-…": opened beside the list once read, whichever view it is in, and
+ * brought into view, as one pressed is, once both it and the pane it opens in are drawn, whichever came first.
+ */
+function useLinkedChat(
+  open: (conversation: Conversation) => void,
+  pane: RefObject<HTMLDivElement | null>,
+  drawn: boolean,
+): void {
+  const [linked, setLinked] = useState<string | null>(null);
+  useEffect(() => {
+    const named = /^chat-(.+)$/.exec(window.location.hash.slice(1))?.[1];
+    if (named === undefined) return;
+    window.history.replaceState(window.history.state, "", window.location.pathname);
+    void careApi.conversation(named).then((answer) => {
+      if (!answer.ok) return;
+      open(answer.body.conversation);
+      setLinked(answer.body.conversation.id);
+    });
+  }, [open]);
+  useEffect(() => {
+    if (linked === null || !drawn || pane.current === null) return;
+    pane.current.scrollIntoView({ block: "nearest" });
+    setLinked(null);
+  }, [linked, drawn, pane]);
+}
+
 /** The view's chats, the latest page kept current while it is in view, and older pages added beneath on asking. */
 function Conversations({ view, search, tools }: { view: ConversationView; search: string; tools: ReactNode }) {
   const load = useCallback(() => careApi.conversations(view, search), [view, search]);
@@ -170,17 +197,7 @@ function Conversations({ view, search, tools }: { view: ConversationView; search
   const [older, setOlder] = useState<Older | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const pane = useRef<HTMLDivElement>(null);
-  // A task's link names a chat, as "/messages#chat-…": it opens beside the list once read, whichever view it is in.
-  useEffect(() => {
-    const named = /^chat-(.+)$/.exec(window.location.hash.slice(1))?.[1];
-    if (named === undefined) return;
-    window.history.replaceState(window.history.state, "", window.location.pathname);
-    void careApi.conversation(named).then((answer) => {
-      if (!answer.ok) return;
-      setOpened(answer.body.conversation);
-      requestAnimationFrame(() => pane.current?.scrollIntoView({ block: "nearest" }));
-    });
-  }, []);
+  useLinkedChat(setOpened, pane, loaded.state === "loaded");
   const arrived = useNewChats(loaded.state === "loaded" ? loaded.value.conversations : null);
   if (loaded.state !== "loaded")
     return (
