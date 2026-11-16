@@ -44,8 +44,7 @@ test("shows the loading shape while the profile comes", async ({ page }) => {
 
 test("takes an address and its access notes, and shows them", async ({ page }) => {
   await loggedIn(page, "address");
-  await expect(page.getByText("No address yet.")).toBeVisible();
-  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
+  // With none yet, the page is the form.
   await page.getByLabel(appCopy.profile.form.flat).fill("House 4417");
   await page.getByLabel(appCopy.profile.form.line1).fill("Tower C");
   await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
@@ -68,7 +67,6 @@ test("takes an address and its access notes, and shows them", async ({ page }) =
 // suggestions are synthetic Gurugram societies.
 test("finds a building, keeps the flat separately, and shows the address as written", async ({ page }) => {
   await loggedIn(page, "address");
-  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
 
   const search = page.getByRole("combobox", { name: appCopy.profile.form.building.label });
   await search.fill("Sunrise");
@@ -100,7 +98,6 @@ test("finds a building, keeps the flat separately, and shows the address as writ
 
 test("the suggestion list works by keyboard alone", async ({ page }) => {
   await loggedIn(page, "address");
-  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
 
   const search = page.getByRole("combobox", { name: appCopy.profile.form.building.label });
   await search.fill("Sec");
@@ -125,7 +122,6 @@ test("the suggestion list works by keyboard alone", async ({ page }) => {
 
 test("an address can still be typed when the search gives nothing", async ({ page }) => {
   await loggedIn(page, "address");
-  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
 
   // The stub answers this query with a 503, as a spent quota or an outage would.
   const search = page.getByRole("combobox", { name: appCopy.profile.form.building.label });
@@ -146,7 +142,6 @@ test("an address can still be typed when the search gives nothing", async ({ pag
 
 test("refuses an address without a six-digit pincode", async ({ page }) => {
   await loggedIn(page, "address");
-  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
   await page.getByLabel(appCopy.profile.form.flat).fill("House 1");
   await page.getByLabel(appCopy.profile.form.line1).fill("Palm Grove Society");
   await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
@@ -166,7 +161,6 @@ test("refuses an address without a six-digit pincode", async ({ page }) => {
 // FSM's work order must name the door (docs/open-points.md, item 45).
 test("refuses an address without the flat or house number, and says so on the flat", async ({ page }) => {
   await loggedIn(page, "address");
-  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
   await page.getByLabel(appCopy.profile.form.line1).fill("Palm Grove Society");
   await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");
   await page.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
@@ -269,7 +263,6 @@ test("asks for the building when the address is not on the map", async ({ page }
 
 test("lands on where we come once the address is saved", async ({ page }) => {
   await loggedIn(page, "address");
-  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
   await page.getByLabel(appCopy.profile.form.flat).fill("House 4417");
   await page.getByLabel(appCopy.profile.form.line1).fill("Palm Grove Society");
   await page.getByLabel(appCopy.profile.form.locality).fill("Sector 65");

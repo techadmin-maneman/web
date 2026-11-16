@@ -1,0 +1,23 @@
+/* The brand's lockup (./Mark.tsx): the mark, then the name at a third of its height, in the surrounding text colour. */
+
+@layer base, ui;
+
+@layer ui {
+  .lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-12);
+    color: inherit;
+    fill: currentcolor;
+  }
+
+  .mark {
+    width: var(--sp-36);
+    height: var(--sp-40);
+  }
+
+  .wordmark {
+    width: calc(var(--sp-48) * 2);
+    height: var(--sp-16);
+  }
+}

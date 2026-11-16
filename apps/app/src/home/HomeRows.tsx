@@ -1,6 +1,6 @@
 // Home's rows (design/client-redesign, Home), each opening its page. Once fitted: the issues still open, the free
 // service visits held, reporting an issue, the invite once Refer is open, and the last visit. Before the first fit: the
-// four hair systems compared, and questions on WhatsApp. Once a visit is booked, the row asking for this phone's
+// four hair systems compared, the site's try-on until the consultation, and questions on WhatsApp. Once a visit is booked, the row asking for this phone's
 // notifications, until they are on.
 
 import { CLIENT_ICONS } from "@maneman/brand/icons";
@@ -12,7 +12,7 @@ import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { firstNameOf } from "@rules/lib/names.ts";
 import { NotificationsRow } from "../alerts/index.ts";
 import { api, type Me } from "../api.ts";
-import { hairSystems, home, profile, promiseOf, whatsapp } from "../content.ts";
+import { hairSystems, home, profile, promiseOf, TRY_ON_URL, whatsapp } from "../content.ts";
 import { AppLink } from "../frame/Shell.tsx";
 import { careHoursOf, openIssues } from "../lib/counts.ts";
 import { visitTitle } from "../lib/visit.ts";
@@ -75,6 +75,15 @@ function LeadRows({ me }: { me: Me }) {
         to="/hair-systems"
         chevron
       />
+      {me.consulted === null && (
+        <ListRow
+          icon={CLIENT_ICONS.camera}
+          title={copy.tryOn}
+          meta={copy.tryOnMeta}
+          href={TRY_ON_URL[import.meta.env.MM_ENV]}
+          chevron
+        />
+      )}
       <ListRow
         icon={CLIENT_ICONS.help}
         title={me.consulted === null ? copy.questions : copy.questionsFit}

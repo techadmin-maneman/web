@@ -54,6 +54,53 @@
   font-size: var(--fs-15);
 }
 
+/* The ways to send it: WhatsApp the page's width, then the link and other apps side by side. */
+.ways {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.waysRow {
+  display: flex;
+  gap: var(--sp-8);
+}
+
+.way {
+  flex: 1;
+  gap: var(--sp-8);
+}
+
+/* The invite as the friend sees it: the picture over its words, edged. */
+.preview {
+  margin-top: var(--sp-8);
+  border: var(--hairline) solid var(--line-200);
+  background: var(--white-000);
+}
+
+.previewText {
+  padding: var(--sp-12) var(--sp-16);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+.previewText p {
+  margin: 0;
+}
+
+.previewTitle {
+  font-weight: var(--weight-semibold);
+}
+
+.previewLine {
+  color: var(--ink-500);
+}
+
+.change,
+.terms {
+  margin-top: var(--sp-8);
+}
+
 .shareSmall {
   align-self: flex-start;
   margin-top: var(--sp-8);

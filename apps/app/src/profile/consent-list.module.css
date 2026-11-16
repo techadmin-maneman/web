@@ -6,3 +6,30 @@
   line-height: var(--lh-160);
   color: var(--ink-900);
 }
+
+/* The photographs, then WhatsApp, each under its name, and a line on switching off beneath them. */
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-28);
+}
+
+.group {
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.intro {
+  margin: 0 0 var(--sp-8);
+  color: var(--ink-500);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+.footnote {
+  margin: 0;
+  color: var(--ink-500);
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+}

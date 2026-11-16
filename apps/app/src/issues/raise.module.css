@@ -9,10 +9,12 @@
   padding: var(--sp-16) var(--screen-gutter) var(--sp-24);
 }
 
+/* The form's first question, as a section's title: navy, at the design's 20 px. */
 .title {
   margin: 0 0 var(--sp-12);
   padding: 0;
-  font-size: var(--fs-15);
+  color: var(--navy-900);
+  font-size: var(--fs-20);
   font-weight: var(--weight-semibold);
 }
 
@@ -61,16 +63,6 @@
   margin: 0;
   padding: 0;
   border: 0;
-}
-
-.visitDate,
-.visitWhat {
-  display: block;
-}
-
-/* The card's own colour, which a chosen card turns to its light words on navy. */
-.visitWhat {
-  font-size: var(--fs-14);
 }
 
 .note {

@@ -1,14 +1,16 @@
-// The mobile number (design/phase2/Client App).
+// The mobile number (design/client-redesign, sign in): the lockup, what to enter and how the code comes, the number,
+// and, for a number with no booking yet, the way to book a free consultation.
 
 import { messageLook } from "@maneman/ui/InlineMessage";
 import { Field } from "@maneman/ui/Field";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
-import { Mark } from "@maneman/ui/Mark";
+import { Lockup } from "@maneman/ui/Mark";
+import { TextLink } from "@maneman/ui/TextLink";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { useState, type RefCallback } from "react";
-import { login } from "../content.ts";
+import { BOOKING_URL, login } from "../content.ts";
 import shared from "./login.module.css";
 import styles from "./mobile-screen.module.css";
 import { MessageUs } from "./MessageUs.tsx";
@@ -37,8 +39,9 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
   return (
     <main className={shared.screen}>
       <div className={classes(shared.body, shared.first)}>
-        <Mark className={shared.mark} />
+        <Lockup className={styles.lockup} label={copy.brand} />
         <h1 className={shared.title}>{copy.title}</h1>
+        <p className={styles.lede}>{copy.lede}</p>
         {ended && (
           <p className={shared.notice} role="alert">
             {copy.ended}
@@ -55,7 +58,6 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
           }}
         >
           <Field
-            labelHidden
             announce
             label={copy.label}
             error={shown}
@@ -87,7 +89,9 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
             >
               {copy.send}
             </Button>
-            <p className={styles.hint}>{copy.hint}</p>
+            <p className={styles.hint}>
+              {copy.newHere} <TextLink href={BOOKING_URL[import.meta.env.MM_ENV]}>{copy.book}</TextLink>
+            </p>
           </div>
         </form>
       </div>

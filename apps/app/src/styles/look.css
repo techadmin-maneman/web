@@ -125,6 +125,10 @@
   --compare-knob: var(--white-000);
   --compare-knob-edge: var(--line-200);
   --compare-knob-text: var(--navy-900);
+  /* A short list's numbers in navy's semibold, as the design numbers its steps. */
+  --steps-number: var(--navy-900);
+  --steps-number-weight: var(--weight-semibold);
+
   /* The one circle the client app draws besides its radios and spinners (owner, ruling 10). */
   --compare-knob-radius: 50%;
 }

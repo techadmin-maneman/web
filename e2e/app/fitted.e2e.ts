@@ -12,18 +12,17 @@ test("Home shows a fitted client’s next visit, with the technician, and Resche
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   await expect(page.getByText(`${weekdayName(client.next.date)} ${dayMonth(client.next.date)}`)).toBeVisible();
-  await expect(page.getByText("12–12:30 pm", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Arrives 12–12:30\spm · about 90 minutes$/)).toBeVisible();
   // The next visit's card names its technician; the last visit, beneath Home's rows, names its own.
   const next = page.getByRole("region", { name: appCopy.home.next.label });
   await expect(next.getByText("Imran", { exact: true })).toBeVisible();
-  await expect(page.getByText("Service visit · 90 minutes")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
   // Home's one prompt: this client has given no address, which comes before the replacement falling due.
-  await expect(page.getByText(appCopy.home.prompt.address)).toBeVisible();
   await expect(page.getByRole("link", { name: appCopy.home.prompt.addAddress })).toHaveAttribute(
     "href",
     "/profile/address",
   );
+  await expect(page.getByText(appCopy.home.prompt.addressMeta)).toBeVisible();
   // Self-serve booking is on locally, so Reschedule opens the move sheet (C7; e2e/app/changes.e2e.ts moves one).
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();
@@ -195,14 +194,12 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   invoice = { visit_id: client.service.id, date: client.service.date, type: "service" };
   await tab(page, "Home").click();
   await page.reload();
-  await expect(page.getByText(appCopy.home.prompt.address)).toBeVisible();
+  await expect(page.getByText(appCopy.home.prompt.addressMeta)).toBeVisible();
+  const invoiceFor = appCopy.home.prompt.invoiceFor("Service visit", shortDate(client.service.date));
+  await expect(page.getByText(invoiceFor)).toBeVisible();
   await expect(
-    page.getByText(`The invoice for your service visit on ${shortDate(client.service.date)} is ready.`),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: /^Open the invoice/ })).toHaveAttribute(
-    "href",
-    `/api/documents/${client.service.id}`,
-  );
+    page.getByRole("link", { name: new RegExp(`^${appCopy.home.prompt.invoiceReady}, ${invoiceFor}`) }),
+  ).toHaveAttribute("href", `/api/documents/${client.service.id}`);
 });
 
 // The client's own record, above their visits: a client's history belongs in

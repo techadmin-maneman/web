@@ -16,3 +16,32 @@
   color: var(--ink-500);
   font-size: var(--fs-13);
 }
+
+/* What the alert is about, in a wash square. */
+.icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  width: var(--sp-36);
+  height: var(--sp-36);
+  background: var(--wash-100);
+  color: var(--navy-900);
+}
+
+/* A new alert: a small brass square after its title. */
+.unread {
+  display: inline-block;
+  width: var(--sp-8);
+  height: var(--sp-8);
+  margin-left: var(--sp-8);
+  background: var(--brass-500);
+  vertical-align: middle;
+}
+
+.when {
+  display: block;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-13);
+}

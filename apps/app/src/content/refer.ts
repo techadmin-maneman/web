@@ -70,6 +70,15 @@ export const refer = {
     refused: "We couldn’t add your invite’s free service visits. Message us to find out why.",
   },
   share: "Share an invite",
+  /** Rewards' own ways to send it, as drawn: WhatsApp first, the link, any other app. */
+  inviteOnWhatsApp: "Invite on WhatsApp",
+  /** The invite as the friend sees it, beneath the ways to send it. */
+  sees: {
+    title: "What your friend sees",
+    note: "Your name and message travel with the picture, never on it.",
+    change: "Change the picture",
+  },
+  offerTerms: "Offer terms",
   tracker: "See who has been fitted",
   /** Beneath the promise: how one goes, from the invite to the visits. */
   how: {

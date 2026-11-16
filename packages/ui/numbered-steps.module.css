@@ -25,6 +25,7 @@
     width: var(--sp-16);
     font-family: var(--title-font);
     font-variant-numeric: lining-nums tabular-nums;
-    color: var(--ui-text-muted);
+    font-weight: var(--steps-number-weight);
+    color: var(--steps-number);
   }
 }

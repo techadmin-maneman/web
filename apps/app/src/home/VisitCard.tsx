@@ -217,8 +217,15 @@ export function OneVisitTerms({ price }: { price: OneVisitPrice }) {
 }
 
 /** Days from today in India to the visit's day: 0 on the day. */
-function daysAway(date: string): number {
+export function daysAway(date: string): number {
   return Math.round((Date.parse(date) - Date.parse(todayInIndia(apiNow()))) / 86_400_000);
+}
+
+/** What the visit costs the client now: what is left to pay at it, paid ahead, or a consultation's nothing. */
+function paidLine(visit: VisitSummary): string | null {
+  if (visit.pay_at_visit !== null) return visits.payAtVisit(rupees(visit.pay_at_visit));
+  if (visit.prepaid) return home.next.paid;
+  return visit.type === "consultation" ? home.next.free : null;
 }
 
 /** One line of the card's facts, with its icon. */
@@ -276,14 +283,14 @@ export function VisitCard({
       <p className={styles.date}>{`${weekdayName(visit.date)} ${dayMonth(visit.date)}`}</p>
       {!begun && <p className={styles.away}>{home.away(daysAway(visit.date))}</p>}
       <ul className={styles.facts}>
-        <Fact icon={GLYPHS.clock}>{whenText(visit)}</Fact>
-        <Fact icon={CLIENT_ICONS.layers}>
-          {home.next.length(oneVisit === null ? visitTitle(visit) : what, visit.length_minutes)}
+        <Fact icon={GLYPHS.clock}>
+          {begun ? whenText(visit) : home.next.arrives(arrivalHours(visit), visit.length_minutes)}
         </Fact>
-        {visit.place !== "" && <Fact icon={GLYPHS.pin}>{visit.place}</Fact>}
-        {visit.pay_at_visit !== null && (
-          <Fact icon={CLIENT_ICONS.receipt}>{visits.payAtVisit(rupees(visit.pay_at_visit))}</Fact>
+        {(oneVisit !== null || visit.type === "first_fit" || visit.type === "replacement") && (
+          <Fact icon={CLIENT_ICONS.layers}>{oneVisit === null ? visitTitle(visit) : what}</Fact>
         )}
+        {visit.place !== "" && <Fact icon={GLYPHS.pin}>{visit.place}</Fact>}
+        {paidLine(visit) !== null && <Fact icon={CLIENT_ICONS.receipt}>{paidLine(visit)}</Fact>}
       </ul>
       {oneVisit !== null && <OneVisitTerms price={oneVisit} />}
       {clientNote !== null && <p className={styles.place}>{note.shown(clientNote)}</p>}

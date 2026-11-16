@@ -68,6 +68,8 @@ export const home = {
     openIssuesMeta: (count: number) => (count === 1 ? "See where it stands" : "See where each stands"),
     /** Before the first fit: the four compared, and questions on WhatsApp. */
     compareMeta: "Side by side, before you choose",
+    tryOn: "Try on a look",
+    tryOnMeta: "See a style on your own photo before the visit",
     questions: "Questions before the visit?",
     questionsFit: "Questions about your fitting?",
   },
@@ -117,8 +119,8 @@ export const home = {
    * replacement's line the same way.
    */
   prompt: {
-    address: "Add your address, so your technician can find the door.",
     addAddress: "Add your address",
+    addressMeta: "So your technician can find the door",
     /** "Your next service visit is due on Tue 27 Oct, in the morning." */
     nextVisit: (what: string, date: string, window: string | null) =>
       window === null
@@ -133,8 +135,9 @@ export const home = {
     /** The booking sheet, at the replacement. */
     bookReplacement: "Book the replacement",
     involves: "See what that involves",
-    invoice: (what: string, date: string) => `The invoice for your ${what.toLowerCase()} on ${date} is ready.`,
-    openInvoice: "Open the invoice",
+    invoiceReady: "Your invoice is ready",
+    /** "Service visit, Tue 27 Oct". */
+    invoiceFor: (what: string, date: string) => `${what}, ${date}`,
   },
   /** A visit not yet closed, once it has begun. */
   stages: {
@@ -148,8 +151,11 @@ export const home = {
     label: "Next visit",
     /** The card's line above the day, by the visit's kind. */
     labels: { first_fit: "Your first fit", replacement: "Your replacement" },
-    /** "Service visit · 1 hour 30 minutes". */
-    length: (what: string, minutes: number) => `${what} · ${visitLength(minutes)}`,
+    /** "Arrives 12–12:30 pm · about 1 hour 30 minutes". */
+    arrives: (when: string, minutes: number) => `Arrives ${when} · about ${visitLength(minutes)}`,
+    /** What the visit costs the client now: paid ahead, or nothing. */
+    paid: "Paid",
+    free: "Free",
     none: "Nothing booked yet.",
     /** Visits' button, which Home's card and Visits both show. */
     book: "Book your next visit",
@@ -164,11 +170,13 @@ export const home = {
     useCredit: "Use a free service visit",
   },
   expect: {
-    label: "What to expect",
+    label: "What happens at the consultation",
+    /** A consultation and fit's, beneath its card. */
+    labelOneVisit: "What happens at the visit",
     steps: [
-      "Your scalp mapped and measured.",
-      "Your colour matched against 40 samples.",
-      "Nothing fitted, nothing ordered on the day.",
+      "Before photos, then your scalp and hairline are mapped.",
+      "Your colour and style are matched, and the technician shows the hair systems that suit you.",
+      "If you go ahead, we book your first fit. Nothing is fitted on the day.",
     ],
   },
   /**

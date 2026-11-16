@@ -13,10 +13,10 @@ test("lists the four consents off, and switches one on with its date and off aga
   // Every visit is photographed for the client's record: a line, not a switch.
   await expect(page.getByText(appCopy.profile.visitPhotos)).toBeVisible();
   for (const name of [
-    "Photographs on referral cards",
-    "Photographs in our marketing",
-    "WhatsApp about your visits",
-    "WhatsApp about launches",
+    "On invite cards I send",
+    "In Mane Man marketing",
+    "About my visits and issues",
+    "About new services and cities",
   ]) {
     await expect(page.getByRole("switch", { name })).toHaveAttribute("aria-checked", "false");
   }
@@ -142,7 +142,6 @@ test("starts one number change, and checks the codes once, however often each is
 
 test("saves the address once when Save is tapped twice", async ({ page }) => {
   await loggedIn(page, "address");
-  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
   const search = page.getByRole("combobox", { name: appCopy.profile.form.building.label });
   await search.fill("Sunrise");
   await page.getByRole("option").first().click();

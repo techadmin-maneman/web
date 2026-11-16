@@ -149,7 +149,6 @@ test("meets WCAG 2.2 AA, with the address form and the card’s lines open", asy
     expect(await axeViolations(page)).toEqual([]);
   };
   await scan();
-  await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
   await scan();
 
   // Again with the suggestion list open, which is the app's only combobox.

@@ -7,10 +7,15 @@ export const login = {
   messageUs: "Message us on WhatsApp",
   mobile: {
     title: "Sign in",
+    /** The brand's name, as the lockup above the title reads. */
+    brand: "Mane Man",
+    lede: "Use the mobile number you booked with. We’ll send a 6-digit code on WhatsApp.",
     prefix: "+91",
     label: "Mobile number",
     send: "Send code on WhatsApp",
-    hint: "A 6-digit code, no password.",
+    /** Beneath Send, for a number with no booking yet. */
+    newHere: "New to Mane Man?",
+    book: "Book a free consultation",
     ended: "You’ve been signed out. Sign in to continue.",
     errors: {
       invalid: "Enter the 10-digit mobile number you booked with.",

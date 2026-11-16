@@ -1,10 +1,11 @@
 // "Your address": the address and its access notes, and the form to
-// change them (AddressForm.tsx), which the booking sheet asks with too. An
+// change them (AddressForm.tsx), which the booking sheet asks with too. With none yet, the page is the form, as drawn. An
 // address the client gave ops on the phone says so, so the client can check what
 // was typed for them (docs/decisions/0092-task-owners.md).
 
 import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
+import { hiddenLook } from "@maneman/ui/VisuallyHidden";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import { addressLine, given } from "@maneman/web-kit/address";
@@ -29,7 +30,7 @@ export function AddressSection({
 }) {
   const copy = profile;
   const heading = useRef<HTMLHeadingElement>(null);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(address === null);
 
   /** The form closes on the section's own heading, so the client lands where they were, not mid-page. */
   function closeForm() {
@@ -42,7 +43,7 @@ export function AddressSection({
 
   return (
     <section aria-labelledby="where">
-      <h2 className={capsLook(styles.label)} id="where" ref={heading}>
+      <h2 className={address === null ? hiddenLook : capsLook(styles.label)} id="where" ref={heading}>
         {copy.where}
       </h2>
       {editing ? (
@@ -53,7 +54,7 @@ export function AddressSection({
             closeForm();
             onSaved();
           }}
-          onCancel={closeForm}
+          {...(address === null ? {} : { onCancel: closeForm })}
         />
       ) : (
         <div className={styles.block}>

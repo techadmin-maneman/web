@@ -88,7 +88,7 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   // "No other discount applies", which is no longer so.
   await expect(page.getByText(/discount/i)).toHaveCount(0);
 
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
   await expect(sheet.getByText(appCopy.refer.card.what)).toBeVisible();
   await scan(page);
@@ -124,7 +124,7 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
 // The empty tracker's "Share failed": a way to share that fails, not one the client backs out of, says nothing was sent.
 test("says when the link could not be shared, and tries again", async ({ page }) => {
   await toRefer(page);
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   await page.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await page.getByRole("button", { name: appCopy.refer.card.next }).click();
   await page.evaluate(() => {
@@ -146,7 +146,7 @@ test("says when the link could not be shared, and tries again", async ({ page })
 /** From Refer to the preview (F4) with the house example chosen. */
 async function toTheExample(page: Page) {
   await toRefer(page);
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   await page.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await page.getByRole("button", { name: appCopy.refer.card.next }).click();
   return page.getByRole("dialog", { name: appCopy.refer.preview.title });
@@ -218,7 +218,7 @@ test("shows a client’s stored card in the preview, and sends that card", async
   await stubShareSheet(page, true);
 
   await toRefer(page);
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   const theirOwn = page.getByRole("radio", { name: /My before and after/ });
   await expect(theirOwn).toBeChecked();
   // The two cards are native radio buttons, which the arrow keys move between.
@@ -266,7 +266,7 @@ test("says when the phone refused the card’s share, and nothing when the clien
 // of, and ended in an error. This client's first fit has an after photograph and no before (e2e/app/fitted.ts).
 test("offers their own card only once the first fit’s photographs are in", async ({ page }) => {
   await toRefer(page);
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
   await expect(sheet.getByText(appCopy.refer.card.mineNotYet)).toBeVisible();
   await expect(sheet.getByRole("radio")).toHaveCount(1);
@@ -317,7 +317,7 @@ test("asks for the consent before choosing their own card, and sends the example
     });
   });
   await toRefer(page);
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
   await expect(page.getByRole("heading", { name: appCopy.refer.consent.title })).toBeVisible();
   await expect(page.getByText(appCopy.profile.referralCards.line)).toBeVisible();
@@ -362,7 +362,7 @@ test("makes their own card, records one consent and asks for one card, when Allo
   await stubShareSheet(page, true);
 
   await toRefer(page);
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
   const allow = page.getByRole("button", { name: appCopy.refer.consent.allow });
   await allow.click();
@@ -415,7 +415,7 @@ test("says what ops set each side gets, and beside each friend what the client e
     page.getByText("When a friend you refer is fitted, you get 2 free service visits, and your friend gets 4."),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
   await sheet.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
@@ -441,7 +441,7 @@ test("draws Refer, its preview and its tracker, with no count, where the answers
   await toRefer(page);
   await expect(page.getByText("When a friend you refer is fitted, we tell you.")).toBeVisible();
 
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
   await sheet.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
@@ -474,7 +474,7 @@ test("a client with no consultation done sees Refer’s empty state, with no inv
   await expect(
     page.getByText("Then, when a friend you refer is fitted, you both get 3 free service visits."),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: appCopy.refer.share })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp })).toHaveCount(0);
   await scan(page);
 });
 
@@ -495,7 +495,7 @@ test("opens at a first consultation done, offering the example card until the fi
   const { firstFit } = nextVisitClients();
   await logIn(page, firstFit.mobile);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
   await expect(sheet.getByText(appCopy.refer.card.mineNotYet)).toBeVisible();
   await expect(sheet.getByRole("radio", { name: /My before and after/ })).toHaveCount(0);

@@ -170,6 +170,9 @@
     --compare-knob-edge: var(--gilt);
     --compare-knob-text: var(--gilt);
     --compare-knob-radius: 0;
+    /* A short list's numbers (./NumberedSteps.tsx): muted, unless the app's look marks them. */
+    --steps-number: var(--ui-text-muted);
+    --steps-number-weight: inherit;
     /* A sheet's panel (./Sheet.tsx): the paper, unless the app's look sets its own. */
     --sheet-ground: var(--paper);
     --sheet-text: var(--text);
