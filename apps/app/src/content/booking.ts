@@ -120,6 +120,8 @@ export const booking = {
     totalWithGst: "Total, incl. GST",
     payment: "Payment",
     razorpay: "Pay by UPI, card, netbanking or wallet on Razorpay’s secure checkout. Saved methods appear there.",
+    /** Checkout closed with nothing paid. */
+    notCompleted: "Payment not completed. Your time is still held.",
     /** What changing the visit later costs, and when it starts to. */
     changing: "Changing your plans",
     now: "Now",
@@ -238,8 +240,6 @@ export const booking = {
     credit: "Free service visit",
     carriedOver: "Carried over",
     free: "Free",
-    /** Said only to a client who has switched on WhatsApp about their visits, since nothing is sent to anyone else. */
-    assigned: "Technicians are assigned by us. If yours changes, we tell you on WhatsApp.",
     /** The reminder is ours, sent automatically, not the technician's. */
     tellsYou: "We remind you the day before.",
     note: (name: string) => `Add a note for ${name}`,

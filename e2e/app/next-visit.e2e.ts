@@ -100,6 +100,8 @@ test("Home offers the next service on the day it falls due, and the sheet opens 
   await page.getByRole("button", { name: appCopy.home.prompt.bookNext }).click();
   const when = page.getByRole("dialog", { name: appCopy.booking.when.title });
   await expect(when.locator(CHOSEN_DAY)).toHaveAccessibleName(dayNamed(weekdayDate(due.date)));
+  // Brought into view, though the strip starts a week before it.
+  await expect(when.locator(CHOSEN_DAY)).toBeInViewport();
   // The strip starts a week before the day offered, where it can.
   expect(asked[0]?.searchParams.get("type")).toBe("service");
   expect(asked[0]?.searchParams.get("from")).toBe(daysAfter(due.date, -7));

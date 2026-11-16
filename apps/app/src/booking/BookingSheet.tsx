@@ -20,10 +20,11 @@ import {
 } from "../api.ts";
 import { booking } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
-import { nextStep, type BookingEvent, type Step } from "./flow.ts";
+import { nextStep, type Step } from "./flow.ts";
 import { hasLaterDays } from "./days.ts";
 import type { Days } from "./useDays.ts";
 import { useSheetData } from "./useSheetData.ts";
+import { stepsBack, useHoldStart } from "./sheet-actions.ts";
 import { usePay } from "./usePay.ts";
 import { AddressStep, NotServedStep } from "./steps/AddressStep.tsx";
 import { ConfirmedStep, ExpiredStep, WaitStep } from "./steps/OutcomeSteps.tsx";
@@ -48,7 +49,7 @@ export interface Offered {
   readonly window: BookingWindow | null;
 }
 
-/** How many days before the day offered the strip starts, so a week either side of it is in view. */
+/** How many days before the day offered the strip starts, so the week before it is there to scroll back to. */
 const OFFER_WEEK = 7;
 
 interface Props {
@@ -121,11 +122,16 @@ function DayAndTime(props: {
   );
 }
 
-/** What the steps once a start is held do: pay, step back or change the address, pick again, or close. */
+/**
+ * What the steps once a start is held do: pay, step back or change the address, pick again, or close. Stepping back
+ * or changing the address are offered only while the hold may be left (`leavable`): not while Pay is starting, nor
+ * once the hold has a Razorpay order, which the API would hand back unchanged for the next time picked.
+ */
 interface HeldActions {
   readonly onRemind: (remind: boolean) => void;
   readonly onPay: (hold: Hold) => void;
   readonly onHeld: (hold: Hold) => void;
+  readonly leavable: (hold: Hold) => boolean;
   readonly onBack: (hold: Hold) => void;
   readonly onChangeAddress: (hold: Hold) => void;
   readonly onPickAgain: () => void;
@@ -143,6 +149,8 @@ function HeldSteps(
     problem: string | null;
     reminders: boolean | null;
     remind: boolean;
+    /** The hold whose Checkout was closed unpaid, said on the review. */
+    dismissedOn: string | null;
   },
 ) {
   const { step, reminders } = props;
@@ -156,6 +164,7 @@ function HeldSteps(
           moving={props.moving}
           address={props.address}
           failed={step.kind === "failed"}
+          unfinished={step.kind === "pay" && props.dismissedOn === step.hold.id}
           step={stepOf(2, props.before)}
           busy={props.busy}
           problem={props.problem}
@@ -166,13 +175,21 @@ function HeldSteps(
             props.onPay(step.hold);
           }}
           onHold={props.onHeld}
-          onBack={() => {
-            props.onBack(step.hold);
-          }}
+          onBack={
+            props.leavable(step.hold)
+              ? () => {
+                  props.onBack(step.hold);
+                }
+              : undefined
+          }
           onClose={props.onClose}
-          onChangeAddress={() => {
-            props.onChangeAddress(step.hold);
-          }}
+          onChangeAddress={
+            props.leavable(step.hold)
+              ? () => {
+                  props.onChangeAddress(step.hold);
+                }
+              : undefined
+          }
         />
       );
     case "expired":
@@ -275,34 +292,6 @@ function BeforeTheDays(props: {
   }
 }
 
-/** Holding the start chosen, and what is said when it cannot be: taken, no address, or not served. */
-function useHoldStart(sheet: {
-  once: (work: () => Promise<void>) => Promise<void>;
-  wanted: Wanted | null;
-  days: Days;
-  movingId: string | undefined;
-  setProblem: (problem: string | null) => void;
-  dispatch: (event: BookingEvent) => void;
-  askForAddress: (refused: boolean) => void;
-  showNotServed: () => void;
-}) {
-  const { wanted, days } = sheet;
-  return () =>
-    sheet.once(async () => {
-      const { date, chosenStart } = days;
-      if (wanted === null || date === null || chosenStart === null) return;
-      sheet.setProblem(null);
-      const answer = await api.hold(wanted, date, chosenStart, sheet.movingId);
-      if (answer.ok) sheet.dispatch({ kind: "held", hold: answer.body });
-      else if (answer.code === "taken") {
-        sheet.setProblem(booking.when.gone);
-        await days.askAgainFrom(wanted, date, chosenStart);
-      } else if (answer.code === "address_required") sheet.askForAddress(true);
-      else if (answer.code === "not_served") sheet.showNotServed();
-      else sheet.setProblem(booking.failedToStart);
-    });
-}
-
 export function BookingSheet({ type, services = [], tier, recommended, moving, from, offer, onClose }: Props) {
   const movingId = moving?.visit_id;
   const offeredDate = offer?.date;
@@ -339,7 +328,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
     if (answer.ok) setReminders(true);
   };
 
-  const { payFor, letGo, changed, paying } = usePay(step, {
+  const { payFor, letGo, changed, paying, hasOrder, dismissedOn } = usePay(step, {
     dialog,
     dispatch,
     movingId,
@@ -350,16 +339,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
     setProblem,
   });
 
-  /** Leaving the review, back or to change the address: the time held is let go for someone else. */
-  const leaveReview = (hold: Hold, event: BookingEvent) => {
-    letGo(hold);
-    setProblem(null);
-    dispatch(event);
-  };
-
-  const stepBack = () => {
-    dispatch({ kind: "back" });
-  };
+  const { leaveReview, stepBack } = stepsBack({ letGo, setProblem, dispatch });
 
   // The steps before the day and time, each of which puts them, and the review, one step later.
   const before = (picking ? 1 : 0) + (addressFirst ? 1 : 0);
@@ -387,6 +367,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
           address={address}
           onPick={setPicked}
           onPicked={() => {
+            setProblem(null);
             if (picked !== null) void pick(picked);
           }}
           onAddressSaved={() => void load(wanted)}
@@ -415,11 +396,13 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
           problem={problem}
           reminders={reminders}
           remind={remind}
+          dismissedOn={dismissedOn}
           onRemind={setRemind}
           onPay={(hold) => void payFor(hold)}
           onHeld={(hold) => {
             dispatch({ kind: "held", hold });
           }}
+          leavable={(hold) => !busy && !hasOrder(hold)}
           onBack={(hold) => {
             leaveReview(hold, { kind: "back" });
           }}

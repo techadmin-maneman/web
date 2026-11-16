@@ -262,6 +262,11 @@
   --ui-line-control: var(--paper-control); /* a control's edge */
   --ui-strong: var(--ink); /* a filled button, an outline's edge, a ticked box, a chosen tab's rule */
   --outline-edge: var(--ui-strong); /* an outlined button's edge, which a look may set apart from the strong ink */
+  /* A day or a time to pick (packages/ui DateStrip and TimeChoice): its edge, and the one picked; apart from the roles
+     above, which the console's dark theme turns light, so only a look that means to sets them. */
+  --pick-edge: var(--paper-control);
+  --pick-on: var(--ink);
+  --pick-on-text: var(--paper);
   --ui-on-strong: var(--paper); /* words on --ui-strong, and on a filled destructive button */
   --ui-strong-pressed: var(--ink-deep);
   --ui-error: var(--error-on-paper);

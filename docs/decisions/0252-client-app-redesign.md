@@ -97,8 +97,14 @@ Recorded as they are found while building; `docs/client-redesign/REPORT.md` list
   line in the notice's own words. It has no switch to use a free service visit, since the API applies one to the hold
   itself and the review says it is used, and no note box, since a note is kept on a visit, which exists once booked:
   the booked screen's "Add a note" writes it. Change beside the address lets the time held go and opens the address
-  form; a move keeps its visit's address. Once GST applies its split sits under the total, and a first fit's length
-  under its name. A failed payment is said at the review's head, and Pay tries again, as drawn.
-- **Booked** names the technician the API holds rather than "Confirmed the day before". That we tell the client of a
-  change, and remind them the day before, is said only to a client who has agreed to WhatsApp about their visits. A
-  wait that ended without a booking (slow, refunded) has Close at its foot.
+  form; a move shows no address, since it keeps its visit's own. Back and Change are offered only until Checkout has
+  an order for the time held: the API keeps an ordered hold until its grace ends and hands it back for the next time
+  picked, so from then on Pay is the way on. Once GST applies its split sits under the total, and a first fit's length
+  under its name. A failed payment, and Checkout closed unpaid, are said at the review's head, and Pay tries again, as
+  drawn.
+- **Booked** names the technician the API holds rather than "Confirmed the day before", and leaves out "If yours
+  changes, we tell you on WhatsApp": a swap tells the client nothing (the brief's ruling 5; ADR 0115). The reminder the
+  day before is promised only to a client who has switched on WhatsApp about their visits.
+- **The waits**: the design's "Waiting for your bank" is said as "This is taking longer than usual", with what happens
+  next: the app cannot tell a bank's wait from the booking's own. A wait that ended without a booking (that one, or a
+  refund) has Close at its foot.

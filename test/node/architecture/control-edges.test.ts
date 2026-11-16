@@ -27,6 +27,9 @@ const EDGES: Readonly<Record<string, readonly string[]>> = {
   "--ui-line-control": ["--paper", "--white", "--paper-light", "--ink", "--ink-deep", "--ink-night"],
   "--ui-strong": ["--paper", "--white", "--ink", "--ink-deep", "--ink-night"],
   "--ui-error": ["--paper", "--white", "--ink", "--ink-deep", "--ink-night"],
+  // A day or a time to pick, and the one picked, on paper (the client app's look sets its own, on its white).
+  "--pick-edge": ["--paper", "--white", "--paper-light"],
+  "--pick-on": ["--paper", "--white"],
 };
 
 const CONTROL =

@@ -90,8 +90,8 @@ function paymentOf(hold: Hold, moving: MoveTerms | undefined): string {
 
 /**
  * Booked, on the navy: the day, when the technician arrives, who, where and what was paid, the calendars, Done, and a
- * note for the technician. That we tell the client of a change, and remind them the day before, is said only to a
- * client who has switched on WhatsApp about their visits, since nothing is sent to anyone else.
+ * note for the technician. The reminder the day before is promised only to a client who has switched on WhatsApp
+ * about their visits, since it is sent to no one else.
  */
 export function ConfirmedStep(props: {
   hold: Hold;
@@ -118,12 +118,13 @@ export function ConfirmedStep(props: {
         <p className={styles.arrives}>{copy.arrives(arrivalHours(hold))}</p>
         <dl className={styles.facts}>
           <Fact name={copy.technician}>{hold.technician.name}</Fact>
-          {props.address !== null && <Fact name={copy.address}>{props.address.line1}</Fact>}
+          {/* A move keeps its visit's own address, which the profile's may no longer be. */}
+          {props.address !== null && props.moving === undefined && (
+            <Fact name={copy.address}>{props.address.line1}</Fact>
+          )}
           <Fact name={copy.payment}>{paymentOf(hold, props.moving)}</Fact>
         </dl>
-        {reminded && (
-          <p className={styles.told}>{remindsTheDayBefore ? `${copy.assigned} ${copy.tellsYou}` : copy.assigned}</p>
-        )}
+        {remindsTheDayBefore && <p className={styles.told}>{copy.tellsYou}</p>}
         <div className={styles.calendar}>
           <AddToCalendar
             visit={{

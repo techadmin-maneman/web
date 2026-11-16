@@ -173,11 +173,6 @@
     /* A short list's numbers (./NumberedSteps.tsx): muted, unless the app's look marks them. */
     --steps-number: var(--ui-text-muted);
     --steps-number-weight: inherit;
-    /* A day or a time to pick (./DateStrip.tsx, ./TimeChoice.tsx): edged in the paper's control line, the one picked
-       in the ink, unless the app's look sets its own. */
-    --pick-edge: var(--paper-control);
-    --pick-on: var(--ink);
-    --pick-on-text: var(--paper);
     /* A day's figure in a strip of days (./DateStrip.tsx): the title face's 18 px, unless the app's look sets its own. */
     --strip-number-size: var(--fs-18);
     --strip-number-weight: inherit;

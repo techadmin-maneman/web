@@ -68,6 +68,29 @@ test("says so on the review when the payment fails, with the hold counting outsi
   expect(await alert.textContent()).toBe(said);
 });
 
+test("steps back from the review, letting the time go, and holds the next time picked", async ({ page }) => {
+  await toPayment(page);
+  const released = releases(page);
+  const review = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await review.getByRole("button", { name: appCopy.booking.back }).click();
+  await expect(page.getByRole("dialog", { name: appCopy.booking.when.title })).toBeVisible();
+  await expect.poll(() => released.length).toBe(1);
+  await continueToPayment(page);
+  await expect(review.getByText(HELD_FOR)).toBeVisible();
+});
+
+// An ordered hold is kept until its grace ends, and the API hands it back for the next time picked.
+test("offers no way back, nor a change of address, once Checkout has an order for the time", async ({ page }) => {
+  await fakeCheckout(page, "failed");
+  await toPayment(page);
+  const review = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await review.getByRole("checkbox", { name: AGREE_TERMS }).check();
+  await review.getByRole("button", { name: PAY_SERVICE }).click();
+  await expect(review.getByRole("alert").filter({ hasText: appCopy.booking.failed.title })).toBeVisible();
+  await expect(review.getByRole("button", { name: appCopy.booking.back })).toHaveCount(0);
+  await expect(review.getByRole("button", { name: appCopy.booking.pay.changeAddress })).toHaveCount(0);
+});
+
 test("keeps the sheet, and the hold, when Checkout fails the moment it opens", async ({ page }) => {
   await page.route(CHECKOUT, (route) =>
     route.fulfill({

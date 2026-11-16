@@ -48,7 +48,14 @@ const ADDRESS = {
 
 const draw = (
   hold: Hold,
-  over: { busy?: boolean; problem?: string | null; askToRemind?: boolean; failed?: boolean } = {},
+  over: {
+    busy?: boolean;
+    problem?: string | null;
+    askToRemind?: boolean;
+    failed?: boolean;
+    unfinished?: boolean;
+    leavable?: boolean;
+  } = {},
 ) => {
   act(() => {
     root.render(
@@ -56,10 +63,11 @@ const draw = (
         hold,
         address: ADDRESS,
         failed: over.failed ?? false,
+        unfinished: over.unfinished ?? false,
         step: { at: 2, of: 2 },
-        onBack: () => tapped.push("back"),
+        onBack: over.leavable === false ? undefined : () => tapped.push("back"),
         onClose: () => tapped.push("close"),
-        onChangeAddress: () => tapped.push("address"),
+        onChangeAddress: over.leavable === false ? undefined : () => tapped.push("address"),
         busy: over.busy ?? false,
         problem: over.problem ?? null,
         askToRemind: over.askToRemind ?? false,
@@ -197,5 +205,19 @@ describe("the review", () => {
       back?.click();
     });
     expect(tapped).toEqual(["back"]);
+  });
+
+  it("offers no way back, nor a change of address, while the hold may not be left", () => {
+    draw(holdOf(), { leavable: false });
+    expect(page.querySelector(`button[aria-label="${booking.back}"]`)).toBeNull();
+    expect([...page.querySelectorAll("button")].some((button) => button.textContent === copy.changeAddress)).toBe(
+      false,
+    );
+  });
+
+  it("says the time is still held once Checkout is closed unpaid", () => {
+    draw(holdOf(), { unfinished: true });
+    const said = [...page.querySelectorAll('[role="status"]')].map((status) => status.textContent);
+    expect(said).toContain(copy.notCompleted);
   });
 });

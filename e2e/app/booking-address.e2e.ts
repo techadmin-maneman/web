@@ -18,6 +18,7 @@ import {
   PHOTOS,
   scanOf,
   AGREE_TERMS,
+  ADDRESS,
 } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 import { CLIENT_WORDS } from "../../packages/web-kit/client-words.ts";
@@ -96,6 +97,23 @@ test("goes back to the address, saying why, when the API holds no slot for want 
   const where = page.getByRole("dialog", { name: appCopy.profile.where });
   await expect(where.getByRole("alert")).toHaveText(appCopy.booking.address.refused);
   await expect(where.getByRole("button", { name: appCopy.booking.address.save })).toBeVisible();
+});
+
+test("changes the address from the review, letting the time go, then picks a time again", async ({ page }) => {
+  await profileAs(page, {});
+  await toPayment(page);
+  const released = page.waitForRequest(
+    (request) => request.method() === "DELETE" && /\/api\/holds\/[0-9a-f-]{36}$/.test(request.url()),
+  );
+  const review = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await expect(review.getByText(ADDRESS.line1)).toBeVisible();
+  await review.getByRole("button", { name: appCopy.booking.pay.changeAddress }).click();
+  await released;
+  const where = page.getByRole("dialog", { name: appCopy.profile.where });
+  await expect(where.getByLabel(appCopy.profile.form.pincode)).toHaveValue(ADDRESS.pincode);
+  await where.getByLabel(appCopy.profile.form.flat).fill("House 4417");
+  await where.getByRole("button", { name: appCopy.booking.address.save }).click();
+  await expect(page.getByRole("dialog", { name: appCopy.booking.when.title })).toBeVisible();
 });
 
 // An address in a pincode we do not come to was held, paid for and booked.

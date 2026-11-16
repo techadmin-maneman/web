@@ -24,7 +24,7 @@ export function useSheetData(asking: Asking) {
   const { dispatch, movingId, firstDay, offeredDate, offeredWindow, wanted } = asking;
   /** Whether reminders are on: null when the profile could not say, and the sheet asks. */
   const [reminders, setReminders] = useState<boolean | null>(null);
-  // True once the sheet knows it asks for the address before the date, which adds a step to the boards' three.
+  // True once the sheet knows it asks for the address before the day and time, which adds a step to their two.
   const [addressFirst, setAddressFirst] = useState(false);
   // The profile had no address when it was last read, so the address comes before the date.
   const addressMissing = useRef(false);

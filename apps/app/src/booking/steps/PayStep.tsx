@@ -245,8 +245,9 @@ function PriceFacts({ hold, moving }: { hold: Hold; moving: MoveTerms | undefine
 function HeldFacts(props: {
   hold: Hold;
   moving: MoveTerms | undefined;
+  /** Null for a move, which keeps its visit's own address, and where the profile could not be read. */
   address: Address | null;
-  onChangeAddress: () => void;
+  onChangeAddress: (() => void) | undefined;
 }) {
   const { hold } = props;
   const copy = booking.pay;
@@ -264,8 +265,7 @@ function HeldFacts(props: {
       {props.address !== null && (
         <Fact name={copy.address}>
           {props.address.line1}
-          {/* A move keeps its visit's address: only a new booking changes it here. */}
-          {props.moving === undefined && (
+          {props.onChangeAddress !== undefined && (
             <TextButton tone="plain" className={styles.factAction} onClick={props.onChangeAddress}>
               {copy.changeAddress}
             </TextButton>
@@ -313,6 +313,16 @@ function PaymentFailed() {
   );
 }
 
+/** Checkout closed with nothing paid: the time is still held, and Pay opens it again. */
+function NotCompleted() {
+  return (
+    <div className={styles.notice} role="status">
+      <Icon className={styles.noticeIcon} d={CLIENT_ICONS.lock} size="md" />
+      <p>{booking.pay.notCompleted}</p>
+    </div>
+  );
+}
+
 /** Pay, with what went wrong starting it, and a credit's late-cancel note beneath. */
 function PayFooter(props: {
   hold: Hold;
@@ -348,14 +358,17 @@ function PayFooter(props: {
   );
 }
 
-/** The review's way through: back, out, the address changed, the hold priced again, and Pay. */
+/**
+ * The review's way through: back, out, the address changed, the hold priced again, and Pay. Back and Change are left
+ * out while the hold may not be left: Pay starting, or an order on it.
+ */
 interface ReviewActions {
   readonly onPay: () => void;
   /** The hold priced again, once a discount code is applied or removed. */
   readonly onHold: (hold: Hold) => void;
-  readonly onBack: () => void;
+  readonly onBack: (() => void) | undefined;
   readonly onClose: () => void;
-  readonly onChangeAddress: () => void;
+  readonly onChangeAddress: (() => void) | undefined;
 }
 
 /** The review: the held visit, what it costs, what changing it later costs, and Pay. */
@@ -367,6 +380,8 @@ export function PayStep(
     address: Address | null;
     /** The last payment failed: said at the head, and Pay tries again. */
     failed: boolean;
+    /** Checkout was closed with nothing paid. */
+    unfinished: boolean;
     step: StepAt;
     busy: boolean;
     problem: string | null;
@@ -411,11 +426,12 @@ export function PayStep(
     >
       <HoldLine left={left} />
       {props.failed && <PaymentFailed />}
+      {props.unfinished && <NotCompleted />}
       <HeldFacts
         hold={hold}
         moving={inPlace ? moving : undefined}
-        address={props.address}
-        onChangeAddress={props.onChangeAddress}
+        address={moving === undefined ? props.address : null}
+        onChangeAddress={moving === undefined ? props.onChangeAddress : undefined}
       />
       {hold.type === "first_fit" && !inPlace && <p className={styles.line}>{booking.pay.guarantee}</p>}
       {!paysNothing(hold) && (
