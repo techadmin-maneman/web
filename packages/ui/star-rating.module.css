@@ -1,0 +1,51 @@
+/* Five stars (./StarRating.tsx): a 44 px target each, outlined in the muted words' colour, filled in brass up to the
+   rating, the darker brass a mark needs to stand at 3:1 against paper. */
+
+@layer base, ui;
+
+@layer ui {
+  .stars {
+    display: flex;
+    gap: var(--sp-4);
+    margin: 0;
+  }
+
+  .star {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tap);
+    height: var(--tap);
+    color: var(--ui-text-muted);
+  }
+
+  .on {
+    color: var(--brass-text);
+  }
+
+  .on svg {
+    fill: currentColor;
+  }
+
+  /* A star to tap: no frame of its own, the star alone, its ring on focus. */
+  .choose {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  .choose:hover,
+  .choose:focus-visible {
+    color: var(--brass-text);
+  }
+
+  .choose:disabled {
+    cursor: default;
+  }
+
+  .choose:focus-visible {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-offset);
+  }
+}

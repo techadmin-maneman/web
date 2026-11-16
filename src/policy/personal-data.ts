@@ -220,6 +220,11 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut: "Our keys, and which member of staff answered.",
     erasure: { blanks: ["text", "response"], why: "The words go; that a concern was raised and answered stays." },
   },
+  visit_ratings: {
+    leftOut: ["appointment_id", "person_id", "technician_id", "low"],
+    whyLeftOut: "Our keys: the visit and its technician are in the export already; whether it reached Care is ours.",
+    erasure: { why: "The stars stay, for the technician's figure; they hold no words (ADR 0260)." },
+  },
   client_reports: {
     leftOut: ["id", "person_id", "visit_id", "claim_visit_id", "conversation_id"],
     whyLeftOut: "Our keys: the visit, a claimed fit and the Care chat it is about are in the export already.",

@@ -92,6 +92,15 @@ export type TaskFacts =
       readonly flag: string | null;
     }
   | {
+      readonly group: "low_rating";
+      readonly kind: VisitType;
+      /** The client's stars, low under ops' setting when given. */
+      readonly stars: number;
+      readonly technician: string;
+      /** India's day of the visit. */
+      readonly visited_on: Day;
+    }
+  | {
       readonly group: "fit_guarantee_claim";
       /** The report that opened the claim, as MM-ISS-0032. */
       readonly reference: string;

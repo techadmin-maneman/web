@@ -120,6 +120,7 @@ describe("tasks", () => {
       "consumables_short",
       "fit_unsigned",
       "fit_guarantee_claim",
+      "low_rating",
       "at_risk_client",
       "city_matter",
       "kit_request",
@@ -132,6 +133,7 @@ describe("tasks", () => {
       "fit_guarantee_claim",
       "fit_unsigned",
       "kit_request",
+      "low_rating",
       "partial_visit",
       "reschedule_request",
     ]);

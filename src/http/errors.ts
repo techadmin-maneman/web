@@ -157,6 +157,11 @@ export const ERROR_CODES = [
   "sign_off_not_asked",
   "sign_off_closed",
   "sign_off_checks_open",
+  // A client's rating (docs/decisions/0260-ratings.md): the visit has its rating already, is not one done, or is past
+  // the days to rate it.
+  "already_rated",
+  "visit_not_done",
+  "rating_closed",
   // A move to another day the client tried to accept, whose time was taken since or whose visit cannot move now
   // (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
   "move_gone",
@@ -332,6 +337,9 @@ export const ERROR_STATUS = {
   not_disputable: 409,
   dispute_window_closed: 409,
   sign_off_not_asked: 409,
+  already_rated: 409,
+  visit_not_done: 409,
+  rating_closed: 409,
   sign_off_closed: 409,
   sign_off_checks_open: 422,
   move_gone: 409,

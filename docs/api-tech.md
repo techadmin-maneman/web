@@ -6220,7 +6220,7 @@ Every kind of visit's checklist as ops set it, for Guides
 
 ### GET /api/tech/quality
 
-The technician's on-time visits and hairline redo rate over the last 30 days
+The technician's on-time visits and hairline redo rate over the last 30 days, and their rating
 
 **200**: Their counts
 
@@ -6917,6 +6917,9 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "sign_off_not_asked",
             "sign_off_closed",
             "sign_off_checks_open",
+            "already_rated",
+            "visit_not_done",
+            "rating_closed",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -12430,13 +12433,31 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "type": "integer",
       "minimum": 0,
       "description": "Of them, those whose free refit was booked within 30 days."
+    },
+    "rating": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The average of clients' ratings of their visits over rating_days, one to five stars to one place; null with fewer than ratings.shown_from. How many is never given (ADR 0260)."
+    },
+    "rating_days": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The days the rating covers (ratings.average_days)."
     }
   },
   "required": [
     "visits",
     "on_time",
     "fits",
-    "redone"
+    "redone",
+    "rating",
+    "rating_days"
   ],
   "additionalProperties": false
 }

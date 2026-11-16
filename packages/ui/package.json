@@ -71,6 +71,7 @@
     "./Timeline": "./Timeline.tsx",
     "./PhotoPick": "./PhotoPick.tsx",
     "./Missing": "./Missing.tsx",
+    "./StarRating": "./StarRating.tsx",
     "./SelectCard": "./SelectCard.tsx",
     "./SettingRow": "./SettingRow.tsx",
     "./SettingsLayout": "./SettingsLayout.tsx",

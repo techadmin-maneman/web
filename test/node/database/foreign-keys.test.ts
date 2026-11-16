@@ -25,6 +25,8 @@ const HANDLED: Readonly<Record<string, string>> = {
   "kit_requests.technician_id -> technicians": "a technician who asked for kit has work, and the delete asks for none",
   "fit_sign_offs.technician_id -> technicians":
     "a technician who asked for a sign-off has work, and the delete asks for none",
+  "visit_ratings.technician_id -> technicians":
+    "a technician whose visit was rated has work, and the delete asks for none",
   "reschedule_requests.technician_id -> technicians":
     "a technician who asked to move a visit has work, and the delete asks for none",
   // An erasure deletes a client's notes in one statement (src/domain/privacy/erasure-statements.ts).

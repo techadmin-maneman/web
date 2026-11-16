@@ -292,6 +292,12 @@ export const settings = {
         pay_within_days: "Link after a visit open for",
       },
       credit_reminder_days: { first: "First reminder", last: "Last reminder" },
+      ratings: {
+        low_below: "Care call under",
+        average_days: "Technician’s average over",
+        shown_from: "Shown from",
+        rate_within_days: "Rated within",
+      },
       check_in_days: { first: "First follow-up", second: "Second follow-up" },
       stock_watch: {
         expiry_warning_days: "Expiry flagged within",

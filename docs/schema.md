@@ -21,6 +21,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes`, `step_send_backs` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | A technician's position and their SOS | `visit_positions`, `sos_alerts` | A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was | The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since |
 | A fit's sign-off | `fit_sign_offs` | A sign-off asked, flagged or signed since is lost, and a fit closed since reads as closed without one; one declined since is gone from the Tasks board | Nothing to redo for a fit already closed: its job's outcome stands. Ask ops to note on the visit any sign-off since `<T>` the client remembers |
+| A client's rating of a visit | `visit_ratings` | A rating given since is lost: the visit asks for one again, and a low one since is gone from the Tasks board | Nothing to redo: a client who rated since may rate again; ask Care to call any client whose low rating they saw since `<T>` |
 | A technician's asks of ops: kit, and a visit to move | `kit_requests`, `reschedule_requests` | An ask made since is lost, and one ops settled since is open again on the Tasks board | Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost |
 | A client's alerts in their app, and the sessions that take their pushes | `client_app_alerts`, `client_push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a browser that allowed pushes since takes none | Nothing: the messages since stay in WhatsApp, and the app subscribes again when it next opens |
 | A technician's alerts, the kinds they turned off, and the phones that take their pushes | `tech_alerts`, `tech_alert_kinds_off`, `push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a kind turned off since is on, and a phone that allowed pushes since takes none | Nothing: the cron writes the day's alerts again as they fall due, a kind is turned off again in Alerts, and the phone subscribes again when the app next opens |
@@ -213,6 +214,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [visit_outcomes](#visit_outcomes): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 - [visit_pay_rates](#visit_pay_rates): What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).
 - [visit_positions](#visit_positions): Where a technician is on a visit, the latest reading alone, from check-in to the close; deleted then, or by the sweep after 12 hours (ADR 0248).
+- [visit_ratings](#visit_ratings): A client's stars for a visit done, one a visit, kept with its technician for their figure on Me, and whether it was low when given, which opens a Tasks row for Care (ADR 0260).
 - [waitlist_entries](#waitlist_entries): Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).
 - [word_versions](#word_versions): Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).
 - [zoho_access_tokens](#zoho_access_tokens): Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).
@@ -3945,6 +3947,27 @@ Made by `0207_safety.sql`.
 Indexes:
 
 - `visit_positions_received`: on (`received_at`)
+
+## visit_ratings
+
+A client's stars for a visit done, one a visit, kept with its technician for their figure on Me, and whether it was low when given, which opens a Tasks row for Care (ADR 0260).
+
+Made by `0214_visit_ratings.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `appointment_id` | TEXT | no |  | primary key; → `appointments.id` |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` | Whoever did the visit, as it was closed; NULL for one no technician held. |
+| `stars` | INTEGER | no |  |  |  |
+| `low` | INTEGER | no |  |  | Under ops' setting `ratings.low_below` when given: a later change of the setting moves no rating. |
+| `created_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `visit_ratings_by_person`: on (`person_id`)
+- `visit_ratings_by_technician`: on (`technician_id`, `created_at`)
+- `visit_ratings_low`: on (`created_at`), where `low = 1`
 
 ## waitlist_entries
 

@@ -71,3 +71,16 @@ describe("a fit guarantee claim (docs/decisions/0259-the-issue-log.md)", () => {
     expect(subOf(claim(CHAT, null, 0), now)).toBe("MM-ISS-0002 · fitted Sat 18 Sep · no sign-off");
   });
 });
+
+describe("a low rating's task", () => {
+  const low = (technician: string): Task => ({
+    ...task("d4e5f6a7-b8c9-4d0e-8f1a-2b3c4d5e6f70"),
+    facts: { group: "low_rating", kind: "service", stars: 2, technician, visited_on: "2027-09-20" },
+  });
+
+  it("reads the stars, the visit and its day, and whose job it was", () => {
+    const now = new Date("2027-09-22T05:00:00.000Z");
+    expect(subOf(low("Imran Qureshi"), now)).toBe("2 of 5 stars · Service visit Mon 20 Sep · Imran Qureshi");
+    expect(subOf(low(""), now)).toBe("2 of 5 stars · Service visit Mon 20 Sep");
+  });
+});

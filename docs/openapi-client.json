@@ -113,6 +113,9 @@
                   "sign_off_not_asked",
                   "sign_off_closed",
                   "sign_off_checks_open",
+                  "already_rated",
+                  "visit_not_done",
+                  "rating_closed",
                   "move_gone",
                   "ask_the_client",
                   "code_not_applicable",
@@ -3105,6 +3108,21 @@
               }
             ],
             "description": "A first fit done: India's last day the client may ask for a refit or a refund under the fit guarantee, by the days ops set (guarantee_days; ADR 0256). Null for any other visit."
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Rating"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client's stars for this visit (ADR 0260); null until they give them."
+          },
+          "rateable": {
+            "type": "boolean",
+            "description": "Whether the client may rate it now: ended done or partly done, not yet rated, within the days ops set."
           }
         },
         "required": [
@@ -3141,7 +3159,9 @@
           "invoice_held",
           "no_show",
           "paid",
-          "guarantee_until"
+          "guarantee_until",
+          "rating",
+          "rateable"
         ],
         "additionalProperties": false
       },
@@ -3321,6 +3341,31 @@
           "disputable",
           "dispute_closed_at",
           "dispute_until"
+        ],
+        "additionalProperties": false
+      },
+      "Rating": {
+        "type": "object",
+        "properties": {
+          "stars": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the client gave it."
+          },
+          "low": {
+            "type": "boolean",
+            "description": "Under the stars Care call about (ratings.low_below) when given."
+          }
+        },
+        "required": [
+          "stars",
+          "at",
+          "low"
         ],
         "additionalProperties": false
       },
@@ -3638,6 +3683,20 @@
           }
         ],
         "description": "Happy with the fit, every check ticked; or something isn't right, in the client's words."
+      },
+      "RateVisit": {
+        "type": "object",
+        "properties": {
+          "stars": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "stars"
+        ],
+        "additionalProperties": false
       },
       "ClientAlerts": {
         "type": "object",
@@ -9809,6 +9868,200 @@
                               "type": "string",
                               "enum": [
                                 "sign_off_checks_open"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/visits/{id}/rating": {
+      "post": {
+        "summary": "Rate a visit done, once",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The visit's ID."
+            },
+            "required": true,
+            "description": "The visit's ID.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RateVisit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Kept; under four, Care call the client",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rating"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: see error.fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such visit of this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "already_rated: the visit has its rating; visit_not_done: not ended, or nothing was done; rating_closed: past the days ops set to rate it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "already_rated",
+                                "visit_not_done",
+                                "rating_closed"
                               ]
                             }
                           },

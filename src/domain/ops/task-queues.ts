@@ -325,6 +325,21 @@ export const QUEUES: readonly Queue[] = [
    WHERE s.state = 'declined' AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'fit_unsigned' AND c.subject_id = a.id)`,
   },
+  // A visit the client rated low, under ops' setting when rated (docs/decisions/0260-ratings.md): from the rating, until
+  // Care have called the client and closed it with what came of it.
+  {
+    group: "low_rating",
+    sql: `SELECT 'low_rating' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
+         NULL AS detail,
+         json_object('kind', a.type, 'stars', r.stars, 'technician', COALESCE(t.name, ''),
+           'visited_on', date(a.window_start, '+330 minutes')) AS facts,
+         r.created_at AS since, NULL AS due_by, '' AS episode
+    FROM visit_ratings r INDEXED BY visit_ratings_low
+    JOIN appointments a ON a.id = r.appointment_id JOIN people pe ON pe.id = a.person_id
+    LEFT JOIN technicians t ON t.id = r.technician_id
+   WHERE r.low = 1 AND a.deleted_at IS NULL AND pe.erased_at IS NULL
+     AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'low_rating' AND c.subject_id = a.id)`,
+  },
   // A first fit claimed under its guarantee (docs/decisions/0256-fit-guarantee-setting.md): opened by the client's first
   // report on it since Care last closed a claim on the fit, which its deadline runs from; with their latest words, the
   // fit's sign-off, the photographs sent and the chat on the client's number now, where Care read them; until Care

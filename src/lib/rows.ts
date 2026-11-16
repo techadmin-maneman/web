@@ -1890,6 +1890,14 @@ export interface Rows {
     readonly at: string;
     readonly received_at: string;
   };
+  readonly visit_ratings: {
+    readonly appointment_id: string;
+    readonly person_id: string;
+    readonly technician_id: string | null;
+    readonly stars: number;
+    readonly low: number;
+    readonly created_at: string;
+  };
   readonly waitlist_entries: {
     readonly id: string;
     readonly pincode: string;
