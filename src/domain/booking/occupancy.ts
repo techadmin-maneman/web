@@ -81,7 +81,7 @@ const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technician
                                            WHERE r.kind = 'stockroom' AND r.city = t.city AND r.active = 1)))))))
   ORDER BY t.id = ?3 DESC, t.name`;
 
-/** A fit to place: the product a first fit was paid for, which its piece is of; null on a replacement. */
+/** A fit to place: the package booked, which its piece is of; null where none is, the client's own then. */
 export interface Fitting {
   readonly product: string | null;
 }
@@ -89,9 +89,9 @@ export interface Fitting {
 /** A one visit's fit, whose client has no profile yet to match a piece to: any trained fitter takes it. */
 export const ONE_VISIT_FIT: Fitting = { product: null };
 
-/** The fit a visit of `type` is, a first fit's of the tier paid for; null for a visit that fits nothing. */
+/** The fit a visit of `type` is, of the package booked at a first fit or a replacement; null for one that fits nothing. */
 export const fittingOf = (type: VisitType | null, tier: string | null): Fitting | null =>
-  isAFitting(type) ? { product: type === "first_fit" ? tier : null } : null;
+  isAFitting(type) ? { product: tier } : null;
 
 /**
  * Who can take a booking: the active technicians in the visit's city, and for a fit only those trained to fit (ADR

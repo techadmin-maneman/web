@@ -82,6 +82,30 @@ export type TaskFacts =
       /** Each consumable recorded below what was expected; empty where nothing was used. */
       readonly short: { name: string; expected: number; used: number }[];
     }
+  | {
+      readonly group: "fit_unsigned";
+      readonly kind: VisitType;
+      /** Why the client did not sign, as the technician recorded it. */
+      readonly reason: string;
+      readonly technician: string;
+      /** What the client last said wasn't right before then, in their words; null where they never flagged. */
+      readonly flag: string | null;
+    }
+  | {
+      readonly group: "fit_guarantee_claim";
+      /** The report that opened the claim, as MM-ISS-0032. */
+      readonly reference: string;
+      /** India's day the claimed first fit was done. */
+      readonly fitted_on: Day;
+      /** The fit's sign-off, as it stands; null where none was asked. */
+      readonly sign_off: "asked" | "signed" | "flagged" | "declined" | null;
+      /** The client's Care chat, which the claim's photographs are read beside. */
+      readonly conversation_id: string | null;
+      /** How many photographs the claim's reports carry. */
+      readonly photos: number;
+      /** The claim's reports, as MM-ISS-0032, whose photographs its drawer shows. */
+      readonly references: string[];
+    }
   | { readonly group: "at_risk_client"; readonly last_visit_at: Instant; readonly due_on: Day }
   | {
       readonly group: "first_fit_to_book";

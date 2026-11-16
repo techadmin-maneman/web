@@ -12,7 +12,7 @@ import { addDays, indiaDate, indiaHour, indiaInstant, weekdayOf } from "../../li
 import { latestFits } from "../clients/hair-profiles.ts";
 import type { KitCheck } from "../../policy/kit-check.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
-import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
+import { bookedProduct, hairSystemSpecs, matchingCode } from "./hair-systems.ts";
 import { addTheWeek } from "./kit-week.ts";
 import { tierOf } from "../../config/visit-types.ts";
 import { bookedAhead } from "../../config/statuses.ts";
@@ -80,8 +80,7 @@ async function neededTomorrow(
       if (fit.one_visit === "booked") unknown.push(fit);
       continue;
     }
-    const product = fit.type === "first_fit" ? (fit.tier ?? "standard") : profile.product;
-    const code = matchingCode(specs, { ...profile, product });
+    const code = matchingCode(specs, { ...profile, product: bookedProduct(fit, profile.product) });
     if (code !== null) add(fit.technician_id, code, 1);
   }
   const ranges = await oneVisitRanges(

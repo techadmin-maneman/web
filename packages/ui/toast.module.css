@@ -24,4 +24,44 @@
     background: var(--ink);
     pointer-events: auto;
   }
+
+  /* The phone apps' toast: the column's width less 12 px each side, above the page's bars (--toast-lift). */
+  .fullRegion {
+    position: fixed;
+    right: 0;
+    bottom: var(--toast-lift);
+    left: 0;
+    z-index: var(--z-bar);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
+    max-width: var(--column-max);
+    margin: 0 auto;
+    padding: 0 var(--sp-12);
+    pointer-events: none;
+  }
+
+  .full {
+    display: flex;
+    gap: var(--sp-12);
+    align-items: center;
+    margin: 0;
+    padding: var(--sp-12) var(--sp-16);
+    font-size: var(--fs-15);
+    line-height: var(--lh-145);
+    color: var(--white-000);
+    background: var(--ink-900);
+    pointer-events: auto;
+    animation: fade-in var(--duration-toast) var(--ease-house);
+  }
+
+  .full > svg {
+    flex: none;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
 }

@@ -16,7 +16,15 @@ import { enterOnHold } from "../../domain/money/discount-code-holds.ts";
 import { partnerCodeFor } from "../../domain/referrals/channels.ts";
 import { keepShownConsents, recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
 import { acceptTerms } from "../../domain/privacy/terms-acceptances.ts";
-import { bookable, movedService, moveTermsFor, rangeFor, soldAs, startCheckout } from "../../http/client-booking.ts";
+import {
+  bookable,
+  movedService,
+  moveTermsFor,
+  rangeFor,
+  soldAs,
+  startCheckout,
+  stockedRange,
+} from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -232,7 +240,9 @@ export function registerClientBooking(app: App): void {
         : null,
     ]);
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
-    if (service === null || price === null || date < range.opens || date > range.last) {
+    // A replacement opens no sooner than its hair system can be fitted, of the package it is sold as.
+    const open = service === null ? range : await stockedRange(c, personId, { type, tier: service.tier }, range);
+    if (service === null || price === null || date < open.opens || date > open.last) {
       return refuse(c, "not_bookable");
     }
     if (!isFullAddress(address)) return refuse(c, "address_required");

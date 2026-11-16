@@ -21,10 +21,11 @@ type Dispute = "open" | "refunded" | "upheld" | null;
 async function charged(page: Page, dispute: Dispute, closedAt: string | null = null): Promise<string> {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   const path = `/api/visits/${client.firstFit.id}`;
   // Read by the page, whose app.localhost only the browser resolves.
   const visit = await page.evaluate(async (url) => (await fetch(url)).json() as Promise<object>, path);
+  const disputable = dispute === null && closedAt === null;
   const body = {
     ...visit,
     outcome: "no_show",
@@ -33,8 +34,10 @@ async function charged(page: Page, dispute: Dispute, closedAt: string | null = n
       waited_minutes: 16,
       charge: { kept: LOCAL_PRICES.lateFeeFirstFit, credit_spent: false },
       dispute,
-      disputable: dispute === null && closedAt === null,
+      disputable,
       dispute_closed_at: closedAt,
+      // The 30 days to dispute it, from a charge made now, while it may be disputed.
+      dispute_until: disputable ? new Date(Date.now() + 30 * 86_400_000).toISOString() : null,
     },
   };
   assertInContract("client", "GET", path, 200, body);

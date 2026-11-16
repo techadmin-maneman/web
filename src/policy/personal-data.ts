@@ -220,6 +220,26 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut: "Our keys, and which member of staff answered.",
     erasure: { blanks: ["text", "response"], why: "The words go; that a concern was raised and answered stays." },
   },
+  client_reports: {
+    leftOut: ["id", "person_id", "visit_id", "claim_visit_id", "conversation_id"],
+    whyLeftOut: "Our keys: the visit, a claimed fit and the Care chat it is about are in the export already.",
+    erasure: { blanks: ["text"], why: "The words go, and the photographs with them; that a report was made stays." },
+  },
+  client_app_alerts: {
+    leftOut: [
+      "id",
+      "person_id",
+      "kind",
+      "subject_kind",
+      "subject_id",
+      "once_key",
+      "written_at",
+      "pushed_at",
+      "read_at",
+    ],
+    whyLeftOut: "Each mirrors a message or a sign-off the export gives already, and when it was pushed and read.",
+    erasure: { deletes: true, why: "Deleted: the inbox is the client's own, and nothing is kept from it." },
+  },
   client_alerts: {
     leftOut: [
       "id",

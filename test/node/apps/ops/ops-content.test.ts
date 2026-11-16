@@ -11,6 +11,7 @@ import * as ops from "../../../../apps/ops/src/content.ts";
 import { activity } from "../../../../apps/ops/src/content/activity.ts";
 import { areas, BOOKING_URL, deletions, dispatch, grievances } from "../../../../apps/ops/src/content.ts";
 import { DELETION_ALERT_AFTER_MS } from "../../../../src/domain/privacy/deletion.ts";
+import { GRIEVANCE_ANSWERED_WITHIN_DAYS } from "../../../../src/policy/grievances.ts";
 import { renderMessage } from "../../../../src/config/message-templates.ts";
 import { HOSTNAME } from "../../../../src/config/environments.ts";
 import { BOOKING_WINDOWS } from "../../../../src/config/scheduling.ts";
@@ -35,8 +36,11 @@ describe("the ops console’s content", () => {
 // promised the client, so the two have to be the same number
 // (docs/decisions/0049-dpdp.md, docs/open-points.md, item 51).
 describe("what the DPDP queues promise", () => {
-  it("counts a grievance down to the answer time the client’s app names", () => {
-    expect(profile.data.sent).toContain(`within ${String(grievances.queue.answerDays)} days`);
+  it("counts a grievance down to the answer time the client’s app names, as /api/me gives it", () => {
+    expect(grievances.queue.answerDays).toBe(GRIEVANCE_ANSWERED_WITHIN_DAYS);
+    expect(profile.data.sent(GRIEVANCE_ANSWERED_WITHIN_DAYS)).toContain(
+      `within ${String(grievances.queue.answerDays)} days`,
+    );
   });
 
   it("counts a deletion request down to a window the ops alert falls inside", () => {

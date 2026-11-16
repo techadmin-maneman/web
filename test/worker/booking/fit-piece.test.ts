@@ -7,7 +7,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { techniciansFor } from "../../../src/domain/booking/occupancy.ts";
+import { fittingOf, techniciansFor } from "../../../src/domain/booking/occupancy.ts";
 import { tellOfStockGap } from "../../../src/domain/inventory/stock-gap.ts";
 import { NOW, markDatabase } from "../helpers.ts";
 import { IMRAN, SAMEER, working, type Working } from "../job-fixtures.ts";
@@ -68,6 +68,9 @@ describe("a fit's technician", () => {
     // A replacement fits the profile's own product; a first fit paid for another is matched to that, which none holds.
     expect(await offered({ product: null })).toEqual([SAMEER]);
     expect(await offered({ product: "natural" })).toEqual([IMRAN, SAMEER].sort());
+    // A replacement is matched to the package it is booked as, which may differ from the one worn; with none, the worn.
+    expect(await offered(fittingOf("replacement", "natural"))).toEqual([IMRAN, SAMEER].sort());
+    expect(await offered(fittingOf("replacement", null))).toEqual([SAMEER]);
   });
 
   it("is any in the city whose stockroom holds one", async () => {
@@ -147,6 +150,32 @@ describe("a fit booked", () => {
     };
     await tellOfStockGap(env.DB, noProfile, { alertOnce, now: NOW });
     expect(told).toHaveLength(1);
+  });
+
+  it("reads a replacement as the package booked, which the client may change from the one they wear", async () => {
+    await env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('first_fit', 'natural', 'Mane Man Natural', 120, 2, 'test', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await job.opsPost("/api/hair-systems", {
+      product: "natural",
+      base_width_in: 8,
+      base_length_in: 10,
+      colour: "1B",
+      grey_percent: 20,
+      density_percent: 100,
+      unit_cost: 1_400_000,
+    });
+    // The Essential they wear is in the stockroom; the Natural they booked is nowhere.
+    await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: "gurgaon-room", counted: 1 });
+    await tellOfStockGap(
+      env.DB,
+      { ...fit("2026-09-24"), type: "replacement", tier: "natural" },
+      { alertOnce, now: NOW },
+    );
+    expect(told).toEqual([expect.stringContaining("Move or order Mane Man Natural")]);
   });
 
   it("says nothing where a supplier delivers before the visit, or a piece is in the city's stockroom", async () => {

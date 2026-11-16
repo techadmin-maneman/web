@@ -128,6 +128,7 @@ const card = (id: string, date: string) =>
     handoff: null,
     sent_back: [],
     reschedule_asked: null,
+    sign_off: null,
     client_visits: { count: 0, first: null },
   }) as Job;
 

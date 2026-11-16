@@ -311,6 +311,18 @@ export async function deleteExpiredRecords(context: SweepContext): Promise<void>
          )`,
       )
       .bind(sessionsEnded),
+    // A client's session revoked or ended takes no pushes, and lets go of its subscription before it is deleted
+    // (docs/decisions/0255-client-alerts-and-push.md).
+    db
+      .prepare(
+        "DELETE FROM client_push_subscriptions WHERE session_id IN (SELECT id FROM sessions WHERE revoked_at <= ?1)",
+      )
+      .bind(now.toISOString()),
+    db
+      .prepare(
+        "DELETE FROM client_push_subscriptions WHERE session_id IN (SELECT id FROM sessions WHERE expires_at < ?1)",
+      )
+      .bind(now.toISOString()),
     db.prepare("DELETE FROM sessions WHERE expires_at < ?1").bind(sessionsEnded),
     db.prepare("DELETE FROM sessions WHERE revoked_at < ?1").bind(sessionsEnded),
     // A hold nobody is paying for, past its grace, would otherwise stand until someone else held a window.

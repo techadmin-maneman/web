@@ -43,6 +43,10 @@ import { registerTechReschedule } from "./routes/tech/reschedule.ts";
 import { registerTechLeave } from "./routes/tech/leave.ts";
 import { registerTechOptions } from "./routes/tech/options.ts";
 import { registerClientDisputes } from "./routes/client/disputes.ts";
+import { registerClientSignOff } from "./routes/client/sign-offs.ts";
+import { registerClientAppAlerts } from "./routes/client/app-alerts.ts";
+import { registerClientProblemLog } from "./routes/client/problem-log.ts";
+import { registerClientPackages } from "./routes/client/packages.ts";
 import { registerClientProblems } from "./routes/client/problems.ts";
 import { registerClientMoveProposals } from "./routes/client/move-proposals.ts";
 import { registerClientErrors } from "./routes/client-errors.ts";
@@ -70,6 +74,7 @@ import { registerPublishedPrices } from "./routes/public/published-prices.ts";
 import { registerServedCities } from "./routes/public/served-cities.ts";
 import { registerSiteWords } from "./routes/public/site-words.ts";
 import { registerReferralReward } from "./routes/public/referral-reward.ts";
+import { registerFitGuarantee } from "./routes/public/fit-guarantee.ts";
 import { registerTechAuth } from "./routes/tech/auth.ts";
 import { registerTechJobs } from "./routes/tech/jobs.ts";
 import { registerTechPieces } from "./routes/tech/pieces.ts";
@@ -100,6 +105,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerReferralLanding,
     // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).
     registerReferralReward,
+    // How long the fit guarantee runs, for the terms (docs/decisions/0256-fit-guarantee-setting.md).
+    registerFitGuarantee,
     registerTryonUpload,
     registerTryonGenerate,
     registerTryonClaim,
@@ -131,8 +138,16 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientMoveProposals,
     registerClientPhotos,
     registerClientDisputes,
+    // The client signs off a fit (docs/decisions/0254-client-signs-off-the-fit.md).
+    registerClientSignOff,
+    // The client's alerts and pushes (docs/decisions/0255-client-alerts-and-push.md).
+    registerClientAppAlerts,
     registerClientProblems,
+    // The issue log (docs/decisions/0259-the-issue-log.md).
+    registerClientProblemLog,
     registerClientPayments,
+    // The packages a client compares in the app (docs/decisions/0211-packages.md).
+    registerClientPackages,
     registerClientAvailability,
     registerClientBooking,
     registerClientDiscountCodes,

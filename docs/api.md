@@ -2539,6 +2539,18 @@ What a referral earns now, as ops set it. Cacheable for a minute.
 }
 ```
 
+### GET /api/fit-guarantee
+
+How long the fit guarantee runs, as ops set it. Cacheable for a minute.
+
+**200**: The guarantee
+
+```json
+{
+  "$ref": "#/components/schemas/FitGuarantee"
+}
+```
+
 ### POST /api/tryon/upload-url
 
 Record the photo consent and get a link to upload one photo
@@ -4259,6 +4271,7 @@ Razorpay's webhook: payments and refunds
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",
@@ -4331,6 +4344,9 @@ Razorpay's webhook: payments and refunds
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "sign_off_not_asked",
+            "sign_off_closed",
+            "sign_off_checks_open",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -5723,6 +5739,24 @@ Razorpay's webhook: payments and refunds
   ],
   "additionalProperties": false,
   "description": "What each side is given when a friend's first fit is done, as it stands now. A grant is given what is in force when the friend is fitted, and keeps it."
+}
+```
+
+### FitGuarantee
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "days": {
+      "type": "integer",
+      "description": "Days after a first fit in which the client may ask for a refit or a refund."
+    }
+  },
+  "required": [
+    "days"
+  ],
+  "additionalProperties": false
 }
 ```
 

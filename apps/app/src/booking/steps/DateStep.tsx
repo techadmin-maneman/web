@@ -4,7 +4,8 @@ import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
 import { DateStrip, type StripDate } from "@maneman/ui/DateStrip";
 import { weekdayDate } from "@maneman/web-kit/dates";
-import { booking } from "../../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { booking, missing } from "../../content.ts";
 import { dayInsideNotice, isFull, offeredFullLine, type Day } from "../days.ts";
 import styles from "../booking.module.css";
 import { TITLE_ID, DAY_NAMES, stepOf, Heading } from "./shared.tsx";
@@ -104,10 +105,12 @@ export function DateStep(props: {
         size="action"
         className={styles.primary}
         disabled={props.chosen === null}
+        aria-describedby={describedBy("pick-date", props.chosen === null)}
         onClick={props.onNext}
       >
         {copy.continue}
       </Button>
+      <Missing id="pick-date" what={props.chosen === null ? missing.pickDate : null} />
     </>
   );
 }

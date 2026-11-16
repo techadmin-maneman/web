@@ -1,4 +1,12 @@
-import { fullDate, listDate, listMonth, shortDate, yearInIndia } from "../../packages/web-kit/dates.ts";
+import {
+  dayMonth,
+  fullDate,
+  listDate,
+  listMonth,
+  shortDate,
+  weekdayName,
+  yearInIndia,
+} from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
@@ -10,15 +18,20 @@ import { holdOpen } from "./one-tap.ts";
 test("Home shows a fitted client’s next visit, with the technician, and Reschedule", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
-  await expect(page.getByText(shortDate(client.next.date))).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByText(`${weekdayName(client.next.date)} ${dayMonth(client.next.date)}`)).toBeVisible();
   await expect(page.getByText("12–12:30 pm", { exact: true })).toBeVisible();
-  await expect(page.getByText("Imran", { exact: true })).toBeVisible();
+  // The next visit's card names its technician; the last visit, beneath Home's rows, names its own.
+  const next = page.getByRole("region", { name: appCopy.home.next.label });
+  await expect(next.getByText("Imran", { exact: true })).toBeVisible();
   await expect(page.getByText("Service visit · 90 minutes")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
   // Home's one prompt: this client has given no address, which comes before the replacement falling due.
   await expect(page.getByText(appCopy.home.prompt.address)).toBeVisible();
-  await expect(page.getByRole("link", { name: appCopy.home.prompt.addAddress })).toHaveAttribute("href", "/profile");
+  await expect(page.getByRole("link", { name: appCopy.home.prompt.addAddress })).toHaveAttribute(
+    "href",
+    "/profile/address",
+  );
   // Self-serve booking is on locally, so Reschedule opens the move sheet (C7; e2e/app/changes.e2e.ts moves one).
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();
@@ -33,22 +46,24 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   // Self-serve booking is on locally: the footer opens the booking sheet (e2e/app/booking.e2e.ts).
   await expect(page.getByRole("button", { name: appCopy.home.next.book })).toBeVisible();
 
-  // Every visit opens its own page: the one coming, then the three done.
+  // Every visit opens its own page: the one coming, under Upcoming, then the three done, under Past.
   const visits = page.getByRole("main").getByRole("link");
-  await expect(visits).toHaveCount(4);
+  await expect(visits).toHaveCount(1);
   await expect(visits.nth(0)).toContainText("Service visit · 12–12:30 pm · Imran");
+  await page.getByRole("radio", { name: appCopy.visits.past }).click();
+  await expect(visits).toHaveCount(3);
   // Dated as the payments list dates its entries: the year only where it is not this one.
-  await expect(visits.nth(1)).toContainText(
+  await expect(visits.nth(0)).toContainText(
     `${listDate(client.service.date, yearInIndia(Date.now()))}Service visit · Imran`,
   );
-  await expect(visits.nth(2)).toContainText(
+  await expect(visits.nth(1)).toContainText(
     `${listDate(client.firstFit.date, yearInIndia(Date.now()))}First fit · Imran`,
   );
-  await expect(visits.nth(3)).toContainText(
+  await expect(visits.nth(2)).toContainText(
     `${listDate(client.consultation.date, yearInIndia(Date.now()))}Consultation · Imran`,
   );
 
-  await visits.nth(1).click();
+  await visits.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByText("Imran Qureshi")).toBeVisible();
   await expect(page.getByText("85 minutes")).toBeVisible();
@@ -128,11 +143,11 @@ test("an open note sheet keeps its words through a dropped signal, and Back clos
 // A visit that is not this client's, or a payment, says so rather than offering to try again for ever.
 test("a visit or a payment that is not the client’s says it could not be found", async ({ page }) => {
   await logIn(page, fittedClient().mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   const nobody = "00000000-0000-4000-8000-000000000000";
   await page.goto(`/visits/${nobody}`);
   await expect(page.getByRole("alert")).toContainText(appCopy.visits.notFound);
-  await expect(page.getByRole("button", { name: appCopy.problem.tryAgain })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.errors.retry })).toHaveCount(0);
   await page.getByRole("main").getByRole("link", { name: appCopy.visits.detail.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.titles.visits })).toBeVisible();
   await page.goto(`/payments/${nobody}`);
@@ -147,7 +162,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
 }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   // Read by the page, whose app.localhost only the browser resolves.
   const read = (path: string) =>
     page.evaluate(async (url) => (await fetch(url)).json() as Promise<Record<string, unknown>>, path);
@@ -168,7 +183,8 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   const upcoming = (visits.upcoming as object[]).map((visit) => ({ ...visit, stage: "done" }));
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...visits, upcoming } }));
   await page.reload();
-  await expect(page.getByText(appCopy.home.stages.done)).toBeVisible();
+  // Done but not yet closed: the card says so, with nothing left to change.
+  await expect(page.getByText(appCopy.live.done)).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
   await expect(page.getByRole("button", { name: appCopy.home.note })).toHaveCount(0);
   await expect(page.getByText("2 free service visits")).toBeVisible();
@@ -177,7 +193,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   await expect(page.getByText(`Your replacement is due in ${month}.`)).toBeVisible();
   // The API prompts the replacement only once its month may be booked, so the prompt always offers it, beside the
   // app's own page on what a replacement involves.
-  await expect(page.getByRole("link", { name: appCopy.home.prompt.involves })).toHaveAttribute("href", "/replacement");
+  await expect(page.getByRole("link", { name: appCopy.home.prompt.involves })).toHaveAttribute("href", "/hair-system");
   await expect(page.getByRole("button", { name: appCopy.home.prompt.bookReplacement })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
@@ -207,6 +223,7 @@ test("Visits heads the client’s own record with the month their replacement fa
   const client = fittedClient();
   await logIn(page, client.mobile);
   await tab(page, "Visits").click();
+  await page.getByRole("radio", { name: appCopy.visits.past }).click();
 
   const record = page.getByRole("region", { name: appCopy.visits.record.label });
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());

@@ -41,6 +41,10 @@ const visit = (changes: Partial<ClientVisit>): ClientVisit => ({
   requested_code: null,
   pay_at_visit: null,
   proposed_move: null,
+  latest_update: null,
+  step: null,
+  waits_until: null,
+  sign_off: null,
   ...changes,
 });
 

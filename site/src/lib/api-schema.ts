@@ -1789,6 +1789,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fit-guarantee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How long the fit guarantee runs, as ops set it. Cacheable for a minute. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The guarantee */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FitGuarantee"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tryon/upload-url": {
         parameters: {
             query?: never;
@@ -3126,7 +3162,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -3456,6 +3492,10 @@ export interface components {
             friend_visits: number;
             /** @description How many days the credits last from the grant. */
             valid_days: number;
+        };
+        FitGuarantee: {
+            /** @description Days after a first fit in which the client may ask for a refit or a refund. */
+            days: number;
         };
         UploadUrlResponse: {
             /** Format: uuid */

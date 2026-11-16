@@ -7,15 +7,15 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { classes } from "@maneman/ui/classes";
 import { GLYPHS, ICONS } from "@maneman/brand/icons";
-import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState, type RefCallback } from "react";
 import type { LoginChallenge } from "../api.ts";
-import { login } from "../content.ts";
+import { login, missing } from "../content.ts";
 import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import { CodeField } from "@maneman/ui/CodeField";
 import styles from "./login.module.css";
+import { ActionWithMissing } from "../frame/ActionWithMissing.tsx";
 import { MessageUs } from "./MessageUs.tsx";
 import { masked } from "./mobile.ts";
 
@@ -80,7 +80,7 @@ function Another(props: {
   const copy = login.code;
   if (props.closed) {
     return (
-      <TextButton tone="ink" className={styles.link} onClick={props.onFresh} disabled={props.busy}>
+      <TextButton tone="plain" className={styles.link} onClick={props.onFresh} disabled={props.busy}>
         <span>{copy.fresh}</span>
       </TextButton>
     );
@@ -94,7 +94,7 @@ function Another(props: {
     );
   }
   return (
-    <TextButton tone="ink" className={styles.link} onClick={props.onResend} disabled={props.busy}>
+    <TextButton tone="plain" className={styles.link} onClick={props.onResend} disabled={props.busy}>
       <span>{copy.resend}</span>
     </TextButton>
   );
@@ -105,7 +105,7 @@ function Links(props: Props & { offerSms: boolean; closed: boolean; resendIn: nu
   return (
     <div className={styles.links}>
       {props.offerSms && (
-        <TextButton tone="ink" className={styles.link} onClick={props.onSms} disabled={props.busy}>
+        <TextButton tone="plain" className={styles.link} onClick={props.onSms} disabled={props.busy}>
           <span>{login.code.sms}</span>
         </TextButton>
       )}
@@ -116,15 +116,15 @@ function Links(props: Props & { offerSms: boolean; closed: boolean; resendIn: nu
         onFresh={props.onFresh}
         onResend={props.onResend}
       />
-      <TextButton tone="ink" className={styles.link} onClick={props.onHelp}>
+      <TextButton tone="plain" className={styles.link} onClick={props.onHelp}>
         <span>{login.code.noBooking}</span>
       </TextButton>
     </div>
   );
 }
 
-/** A problem with the code, on the ink the screen stands on. */
-const ERROR_LOOK = messageLook({ tone: "error", ground: "ink", className: styles.error });
+/** A problem with the code, on the white the screen stands on. */
+const ERROR_LOOK = messageLook({ tone: "error", className: styles.error });
 
 export function CodeScreen(props: Props) {
   const copy = login.code;
@@ -206,16 +206,16 @@ export function CodeScreen(props: Props) {
           {resendIn === 0 && !closed ? copy.canResend : ""}
         </VisuallyHidden>
         <div className={styles.foot}>
-          <Button
-            variant="light"
-            size="action"
-            className={styles.primary}
-            type="submit"
-            disabled={code.length < ONE_TIME_CODE.digits || props.busy || closed}
+          <ActionWithMissing
+            id="code-digits"
+            missing={!closed && code.length < ONE_TIME_CODE.digits ? missing.codeDigits : null}
+            held={closed}
             busy={props.busy}
+            type="submit"
+            className={styles.primary}
           >
             {copy.submit}
-          </Button>
+          </ActionWithMissing>
         </div>
       </form>
     </main>

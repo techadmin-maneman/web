@@ -456,3 +456,11 @@ function versionOf(row: VersionRow): HairProfileVersion {
           },
   };
 }
+
+/** The statement that reads which of these visits recorded a hair profile, for a batch (src/domain/visits/live-visit.ts). */
+export function profiledVisitsStatement(db: D1Database, appointmentIds: readonly string[]): D1PreparedStatement {
+  const marks = appointmentIds.map((_, at) => `?${String(at + 1)}`).join(", ");
+  return db
+    .prepare(`SELECT DISTINCT appointment_id FROM hair_profiles WHERE appointment_id IN (${marks})`)
+    .bind(...appointmentIds);
+}

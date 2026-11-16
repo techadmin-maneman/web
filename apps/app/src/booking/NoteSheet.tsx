@@ -8,7 +8,8 @@ import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.ts";
-import { booking, note as copy } from "../content.ts";
+import { ActionWithMissing } from "../frame/ActionWithMissing.tsx";
+import { booking, missing, note as copy } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
@@ -81,16 +82,16 @@ export function NoteSheet(props: {
                 {copy.offline}
               </p>
             )}
-            <Button
-              variant="primary"
-              size="action"
-              className={styles.primary}
+            <ActionWithMissing
+              id="note-words"
               type="submit"
-              disabled={busy || offline || text.trim() === ""}
+              className={styles.primary}
               busy={busy}
+              held={offline}
+              missing={text.trim() === "" ? missing.noteWords : null}
             >
               {busy ? copy.saving : copy.save}
-            </Button>
+            </ActionWithMissing>
           </form>
         )}
         {step.kind === "saved" && (

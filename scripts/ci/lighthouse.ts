@@ -64,6 +64,15 @@ const APP_BUDGET: Budget = {
   metrics: { "largest-contentful-paint": 2500, "total-blocking-time": 200 },
 };
 
+/**
+ * The client app's: the apps', its largest paint under 2.75 s (owner, ADR 0252 decision 8), since the redesign's IBM
+ * Plex comes in three weights the sign-in screen draws, about 300 ms on the slowed profile's first visit.
+ */
+const CLIENT_APP_BUDGET: Budget = {
+  scores: APP_BUDGET.scores,
+  metrics: { ...APP_BUDGET.metrics, "largest-contentful-paint": 2750 },
+};
+
 /** Each page audited: its report's name, its address, and its budget. */
 const PAGES: readonly { name: string; url: string; budget: Budget }[] = [
   { name: "home", url: `${SITE}/`, budget: SITE_BUDGET },
@@ -78,7 +87,7 @@ const PAGES: readonly { name: string; url: string; budget: Budget }[] = [
   { name: "privacy", url: `${SITE}/privacy`, budget: SITE_BUDGET },
   // Lighthouse audits no page that answers 404, so the 404's own file, which answers 200.
   { name: "404", url: `${SITE}/404`, budget: NOT_FOUND_BUDGET },
-  { name: "app", url: `${APP}/`, budget: APP_BUDGET },
+  { name: "app", url: `${APP}/`, budget: CLIENT_APP_BUDGET },
   { name: "tech", url: `${TECH}/`, budget: APP_BUDGET },
 ];
 

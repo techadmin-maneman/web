@@ -197,6 +197,15 @@ export const care = {
       consents: "Consents",
     },
   },
+  /** The photographs the client sent with their reports, shown once asked for, as a viewing is logged. */
+  reportPhotos: {
+    show: (count: number) => (count === 1 ? "Show the report photo" : `Show ${String(count)} report photos`),
+    list: "Report photos",
+    /** "MM-ISS-0032 · photo 2" */
+    caption: (reference: string, n: number) => `${reference} · photo ${String(n)}`,
+    alt: (reference: string, n: number) => `Photo ${String(n)} sent with ${reference}`,
+    failed: "Some photos didn’t open. Show them again.",
+  },
   /** A chat from a number we don't know (docs/decisions/0138-strangers-in-the-inbox.md). */
   stranger: {
     title: "A number we don’t know. Link it to a client, or save them as someone new.",
@@ -315,7 +324,8 @@ export const care = {
     text: "Write something first.",
     unavailable: "Replies can’t go from the console yet. Reply on the office WhatsApp.",
     /** WhatsApp lets our own words through only within 24 hours of the client's last message. */
-    window_closed: "It’s been over 24 hours since they last wrote, so WhatsApp won’t take a reply. Call them instead.",
+    window_closed:
+      "They haven’t written on WhatsApp in the last 24 hours, so it won’t take a reply. Call them instead.",
     not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

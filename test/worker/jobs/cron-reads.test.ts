@@ -160,6 +160,17 @@ const HISTORY = [
   `INSERT INTO razorpay_events (event_id, event, received_at) SELECT 'evt-' || i, 'payment.captured', '${AGO}' FROM n`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
+  // An issue each client reported from the app (docs/decisions/0259-the-issue-log.md).
+  `INSERT INTO client_reports (id, number, person_id, category, text, created_at)
+   SELECT 'cr-' || i, i, 'p-' || i, 'other', 'Something is wrong.', '${AGO}' FROM n`,
+  `INSERT INTO client_report_photos (report_id, n, object_key, bytes, created_at)
+   SELECT 'cr-' || i, 1, 'reports/p-' || i || '/cr-' || i || '/1.jpg', 250000, '${AGO}' FROM n`,
+  // Each client's alerts in their app, pushed and read; and a browser of theirs that takes the pushes.
+  `INSERT INTO client_app_alerts (id, person_id, kind, subject_kind, subject_id, once_key, written_at, pushed_at, read_at)
+   SELECT 'cal-' || i, 'p-' || i, 'visit_reminder', 'appointment', 'a-' || i, 'message:history-' || i, '${HOURS_AGO}',
+     '${HOURS_AGO}', '${HOURS_AGO}' FROM n`,
+  `INSERT INTO client_push_subscriptions (session_id, endpoint, subscribed_at)
+   SELECT 's-' || i, 'https://fcm.googleapis.com/fcm/send/client-' || i, '${AGO}' FROM n`,
   `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)
    SELECT 't-history', 'resource-history', 'A Technician', 'AT', 1, '${AGO}' FROM n LIMIT 1`,
   // Their alerts of the inbox's week, pushed and read, as the day ahead's deletion of old alerts leaves them; a phone signed in long ago
@@ -209,6 +220,9 @@ const HISTORY = [
   // Shortfalls ops closed long ago, which the Tasks board's queue must not read again.
   `INSERT INTO consumable_shortfalls (appointment_id, technician_id, reason, short, recorded_at, settled_at)
    SELECT 'a-' || i, 't-history', 'ran_out', '[]', '${AGO}', '${AGO}' FROM n`,
+  // Fits signed off long ago, which the Tasks board's queue of fits closed without one must not read.
+  `INSERT INTO fit_sign_offs (appointment_id, state, checks, asked_at, asks, signed_at, technician_id, updated_at)
+   SELECT 'a-' || i, 'signed', '{}', '${AGO}', 1, '${AGO}', 't-history', '${AGO}' FROM n`,
   `INSERT INTO consumables_used (id, appointment_id, job_event_id, name, quantity, created_at)
    SELECT 'cu-' || i, 'a-' || i, 'je-' || i, 'Bond strip', 2, '${AGO}' FROM n`,
   `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at)
@@ -410,6 +424,7 @@ describe("one cron run", () => {
       .bind(DUE_SOON, DUE_SOON_PLUS_HOUR)
       .run();
     await rowsReadByOneRun(EVENING); // the day's once-only work, and the three reminders written
+    await rowsReadByOneRun(EVENING); // the reminders' alerts in the clients' app pushed
     const before = await rowsReadByOneRun(EVENING);
 
     await history(401, 800);

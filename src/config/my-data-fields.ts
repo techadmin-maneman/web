@@ -4,13 +4,17 @@
  * How a value reads. `time`: an instant, as India's date and clock. `day`: a date. `money`: paise, as rupees.
  * `yesNo`: 1 or 0. `words`: a stored code, as words ("first_fit" reads "First fit"). `purpose`: a consent's purpose.
  * `purposes`: a JSON list of them. `notice`: a notice's version, as the words it showed. `code`: a stored code the
- * readable copy leaves to the name beside it, in the file only.
+ * readable copy leaves to the name beside it, in the file only. `named`: a stored code in the words its own field gives,
+ * where the same code means something else in another part.
  */
-type FieldKind = "text" | "time" | "day" | "money" | "yesNo" | "words" | "purpose" | "purposes" | "notice" | "code";
+type FieldKind =
+  "text" | "time" | "day" | "money" | "yesNo" | "words" | "purpose" | "purposes" | "notice" | "code" | "named";
 
 export interface Field {
   readonly label: string;
   readonly as: FieldKind;
+  /** A `named` field's codes, as words. */
+  readonly names?: Readonly<Record<string, string>>;
 }
 
 export interface Part {
@@ -25,3 +29,4 @@ export const money = (label: string): Field => ({ label, as: "money" });
 export const yesNo = (label: string): Field => ({ label, as: "yesNo" });
 export const words = (label: string): Field => ({ label, as: "words" });
 export const code = (label: string): Field => ({ label, as: "code" });
+export const named = (label: string, names: Readonly<Record<string, string>>): Field => ({ label, as: "named", names });

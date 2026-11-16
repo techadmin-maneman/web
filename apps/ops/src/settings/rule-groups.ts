@@ -13,7 +13,14 @@ interface RuleGroup {
 export const RULE_GROUPS = [
   {
     id: "moves",
-    rules: ["change_notice_hours", "late_change_charge", "no_show_charge", "no_show_waiver", "dispute_window_days"],
+    rules: [
+      "change_notice_hours",
+      "late_change_charge",
+      "no_show_charge",
+      "no_show_waiver",
+      "dispute_window_days",
+      "guarantee_days",
+    ],
   },
   {
     id: "booking",

@@ -655,6 +655,7 @@ export const visit = localised({
     hair_system: "Hair system",
     consumables: "Consumables",
     after_photos: "After photos",
+    sign_off: "Client sign-off",
     outcome: "Outcome",
   },
   /** "Rohit M. · service visit", beneath a step's name. */
@@ -1278,6 +1279,7 @@ export const guides = localised({
     hair_system: "Scan the new piece",
     consumables: "Record what you used",
     after_photos: "Same 5 shots",
+    sign_off: "The client checks the fit and signs",
     outcome: "Result and close",
   },
   /** "Service visit · Service", beneath a task's name. */
@@ -1285,6 +1287,28 @@ export const guides = localised({
   gone: "This task isn’t in the guide any more.",
   /** The way to a kind of visit's guide, from a later job's preview. */
   howDone: "How this visit is done",
+} as const);
+
+/** The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md), its step and the decline's sheet. */
+export const signOff = localised({
+  intro: "The client checks the hairline, the colour and blend, and that it feels secure, then signs in their app.",
+  ask: "Ask for sign-off",
+  askAgain: "Fixed. Ask again",
+  waiting: "Waiting for the client’s sign-off",
+  waitingLine: "They answer in the Mane Man app.",
+  flagged: "The client says something isn’t right",
+  /** "Signed off · 1:42 pm". */
+  signed: "Signed off",
+  /** "Closed without sign-off: Client in a hurry". */
+  declined: (reason: string) => `Closed without sign-off: ${reason}`,
+  declineOpen: "Client declined to sign",
+  unfinished: "Waiting for sign-off",
+  decline: {
+    title: "Client declined to sign",
+    why: "Why didn’t they sign?",
+    record: "Record and go on",
+    close: "Close",
+  },
 } as const);
 
 /** Ask ops to reschedule, from the job (./job/Reschedule.tsx). */

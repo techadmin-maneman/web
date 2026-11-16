@@ -114,10 +114,12 @@ describe("tasks", () => {
   });
 
   // Every other task leaves the board only when its thing is done.
-  it("lets ops close a partial visit's task, a City matter, an at-risk client, consumables short and a technician's asks, and no other", () => {
+  it("lets ops close a partial visit's task, a City matter, an at-risk client, consumables short, a fit closed without sign-off, a fit guarantee claim and a technician's asks, and no other", () => {
     expect(CLOSABLE_TASK_GROUPS).toEqual([
       "partial_visit",
       "consumables_short",
+      "fit_unsigned",
+      "fit_guarantee_claim",
       "at_risk_client",
       "city_matter",
       "kit_request",
@@ -127,6 +129,8 @@ describe("tasks", () => {
       "at_risk_client",
       "city_matter",
       "consumables_short",
+      "fit_guarantee_claim",
+      "fit_unsigned",
       "kit_request",
       "partial_visit",
       "reschedule_request",

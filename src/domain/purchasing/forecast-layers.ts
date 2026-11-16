@@ -10,7 +10,7 @@
 import { latestFits } from "../clients/hair-profiles.ts";
 import { addDays } from "../../lib/india-time.ts";
 import { learnedRate, periodOf, type ForecastAssumptions } from "../../policy/forecast.ts";
-import { hairSystemSpecs, matchingCode } from "../inventory/hair-systems.ts";
+import { bookedProduct, hairSystemSpecs, matchingCode } from "../inventory/hair-systems.ts";
 import { tierOf } from "../../config/visit-types.ts";
 import { bookedAhead } from "../../config/statuses.ts";
 import { visitCity } from "../clients/places.ts";
@@ -87,8 +87,7 @@ export async function bookedLayer(db: D1Database, horizon: Horizon): Promise<Lay
     const profile = profiles.get(fit.person_id);
     const period = periodIn(horizon, dayOf(fit.window_start));
     if (profile === undefined || period === null) continue;
-    const product = fit.type === "first_fit" ? (fit.tier ?? "standard") : profile.product;
-    const code = matchingCode(specs, { ...profile, product });
+    const code = matchingCode(specs, { ...profile, product: bookedProduct(fit, profile.product) });
     if (code !== null) add(layer, keyOf(code, fit.city, period), 1);
   }
   return layer;

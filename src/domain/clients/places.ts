@@ -125,6 +125,8 @@ const RECORD_PLACES = {
   // A City matter's is the city it was sent to.
   city_matter: { table: "city_matters", city: (row) => `${row}.city` },
   remedy: { table: "remedies", city: (row) => clientCity(`${row}.person_id`) },
+  // A report from the app's is its client's (docs/decisions/0259-the-issue-log.md).
+  client_report: { table: "client_reports", city: (row) => clientCity(`${row}.person_id`) },
 } satisfies Record<string, RecordPlace>;
 
 export type PlacedRecord = keyof typeof RECORD_PLACES;

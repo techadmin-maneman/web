@@ -30,8 +30,12 @@ const SPEC = {
   density_percent: 100,
 };
 
-/** A first fit booked for `person` three days on, in Gurgaon with Imran. */
-async function fitBooked(id: string, person: string): Promise<void> {
+/** A fit booked for `person` three days on, in Gurgaon with Imran: a first fit of Essential, unless named. */
+async function fitBooked(
+  id: string,
+  person: string,
+  booked: { readonly type: string; readonly tier: string | null } = { type: "first_fit", tier: "essential" },
+): Promise<void> {
   await env.DB.batch([
     env.DB.prepare(
       "INSERT OR IGNORE INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, 'A client')",
@@ -39,9 +43,9 @@ async function fitBooked(id: string, person: string): Promise<void> {
     env.DB.prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
          service_city, service_pincode, synced_at)
-       VALUES (?1, ?1, ?2, 'first_fit', 'essential', 'scheduled', '2026-09-24T05:30:00.000Z', '2026-09-24T08:00:00.000Z',
+       VALUES (?1, ?1, ?2, ?5, ?6, 'scheduled', '2026-09-24T05:30:00.000Z', '2026-09-24T08:00:00.000Z',
          ?3, 'Gurgaon', '122018', ?4)`,
-    ).bind(id, person, IMRAN, NOW.toISOString()),
+    ).bind(id, person, IMRAN, NOW.toISOString(), booked.type, booked.tier),
   ]);
 }
 
@@ -95,6 +99,42 @@ describe("the weeks ahead", () => {
     await job.opsPost("/api/stock/deliveries", { consumable_code: code, quantity: 2 });
     await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 1, from: "central", to: IMRAN });
     expect((await demand()).at_risk.map((fit) => fit.appointment_id)).toEqual(["fit-2"]);
+  });
+});
+
+describe("a replacement", () => {
+  it("expects the hair system of the package booked, which the client may change, else the one they wear", async () => {
+    await env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('first_fit', 'natural', 'Mane Man Natural', 120, 2, 'test', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const codeOf = async (product: string) =>
+      (
+        await (
+          await job.opsPost("/api/hair-systems", { ...SPEC, product, unit_cost: 1_200_000 })
+        ).json<{ code: string }>()
+      ).code;
+    const essential = await codeOf("essential");
+    const natural = await codeOf("natural");
+    const [switching, keeping] = ["44444444-4444-4444-8444-444444444451", "44444444-4444-4444-8444-444444444452"];
+    await fitBooked("rep-1", switching, { type: "replacement", tier: "natural" });
+    await fitBooked("rep-2", keeping, { type: "replacement", tier: null });
+    for (const person of [switching, keeping]) {
+      await env.DB.prepare(
+        `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+           grey_percent, density_percent)
+         VALUES (?1, ?1, 'ops@localhost', ?2, 'essential', 8, 10, '1B', 20, 100)`,
+      )
+        .bind(person, NOW.toISOString())
+        .run();
+    }
+    // Both wear Essential: one books Natural for its replacement, the other books none and keeps Essential.
+    expect((await demand()).at_risk.map((fit) => [fit.appointment_id, fit.consumable_code])).toEqual([
+      ["rep-1", natural],
+      ["rep-2", essential],
+    ]);
   });
 });
 

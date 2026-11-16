@@ -24,7 +24,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
         <p className={styles.helpBox}>{copy.hint}</p>
         <div className={styles.buttons}>
           <ButtonLink
-            variant="light"
+            variant="primary"
             size="action"
             className={shared.primary}
             href={BOOKING_URL[import.meta.env.MM_ENV]}
@@ -32,7 +32,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
             {copy.book}
           </ButtonLink>
           <ButtonLink
-            variant="outlineOnInk"
+            variant="outline"
             size="action"
             className={shared.secondary}
             href={whatsappChat(whatsapp.number)}

@@ -2,3 +2,4 @@
 
 export type { Conversation } from "./care-api.ts";
 export { CarePersonLine, ClientChat } from "./ClientChat.tsx";
+export { ReportPhotos } from "./ReportPhotos.tsx";

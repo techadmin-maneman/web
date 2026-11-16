@@ -5,7 +5,8 @@ import { type RescheduleAsked, rescheduleAskedOf } from "../dispatch/reschedule-
 import { takesProfile } from "../../policy/hair-profile.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { cardStepsFor, type CardStep, type JobEventKind } from "../../policy/in-job-steps.ts";
+import { cardStepsFor, SIGN_OFF_STEP, type CardStep, type JobEventKind } from "../../policy/in-job-steps.ts";
+import { signOffOf, type SignOff } from "./sign-offs.ts";
 import { noShowWaitEnds, type Waits } from "../../policy/no-show.ts";
 import { unlocked } from "../../policy/job-visibility.ts";
 import type { Decision } from "../../policy/one-visit.ts";
@@ -122,6 +123,8 @@ interface JobDetail extends JobSummary {
   readonly sent_back: SentBack[];
   /** The technician's open ask that ops move the visit; null for none. */
   readonly reschedule_asked: RescheduleAsked | null;
+  /** A fit's sign-off as it stands (docs/decisions/0254-client-signs-off-the-fit.md); null before it is asked. */
+  readonly sign_off: SignOff | null;
 }
 
 /** A one visit's discount code, and who gave it: the client as they booked, ops, or the technician. */
@@ -142,6 +145,16 @@ interface JobPaymentLink {
   readonly paid: boolean;
 }
 
+/** The card's steps, the sign-off only where clients sign off a fit in their app, and that sign-off where it is one. */
+async function stepsOf(
+  db: D1Database,
+  job: { readonly id: string; readonly type: Parameters<typeof cardStepsFor>[0]; readonly oneVisit: boolean },
+  clientSignOff: boolean,
+) {
+  const steps = cardStepsFor(job.type, job.oneVisit).filter((step) => clientSignOff || step !== SIGN_OFF_STEP);
+  return { steps, sign_off: steps.includes(SIGN_OFF_STEP) ? await signOffOf(db, job.id) : null };
+}
+
 /**
  * One job of this technician's, with everything the day-before unlock allows. Each read is a trip to D1 and back, so
  * the reads that need nothing from each other go together: the job and the day's times, then all the job leads to.
@@ -157,6 +170,8 @@ export async function jobDetail(
     arrivalMinutes: number;
     waits: Waits;
     phoneClock: PhoneClock;
+    /** Whether clients sign off a fit in their app; without, the card has no sign-off. */
+    clientSignOff: boolean;
   },
 ): Promise<JobDetail | null> {
   const [row, schedule] = await Promise.all([
@@ -204,9 +219,9 @@ export async function jobDetail(
     client_alerts: [],
     handoff: null,
     client_visits: null,
-    steps: cardStepsFor(type, oneVisit),
     sent_back: sentBack,
     reschedule_asked: await rescheduleAskedOf(db, row.id),
+    ...(await stepsOf(db, { id: row.id, type, oneVisit }, options.clientSignOff)),
   };
   if (unlockedParts === null) return locked;
   return {

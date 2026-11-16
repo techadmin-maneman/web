@@ -3,11 +3,17 @@
 // client's own rows are ever read; a visit or photograph of anyone else is
 // "not found".
 
+import { liveFactsOf, type LiveFacts } from "./live-visit.ts";
+import { photoSets, type PhotoSet } from "./visit-photo-links.ts";
+import { clientsView, signOffOf } from "../field/sign-offs.ts";
+
+export { PHOTO_LINK_MS, photoSets } from "./visit-photo-links.ts";
+import type { Waits } from "../../policy/no-show.ts";
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { FITTED, REFERS } from "../clients/fitted.ts";
 import { openProposalJson, openProposalOf, type ProposedMove } from "./open-proposals.ts";
-import { signToken, type SigningSecret } from "../../lib/signed-token.ts";
+import type { SigningSecret } from "../../lib/signed-token.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import { namesMoreThanItsKind } from "../../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
@@ -20,7 +26,6 @@ import { currentAddress } from "../clients/profile.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { begunPastArrival, landedOutcome, missedDayOver, todayStartsOf, visitBegun } from "./visit-begun.ts";
-import { ANGLES, type Angle, type Phase } from "../field/visit-photos.ts";
 import { MINUTE_MS, minutesBetween } from "../../lib/durations.ts";
 import {
   PAYMENT_HELD,
@@ -36,9 +41,6 @@ import { readOpsInputs } from "../platform/ops-settings.ts";
 
 /** The three windows the client app offers, by the hour a visit starts in India. */
 type VisitWindowLabel = "morning" | "afternoon" | "evening";
-
-/** A photograph's link lasts this long; the app asks again for a fresh one. */
-export const PHOTO_LINK_MS = 15 * MINUTE_MS;
 
 /**
  * Where a visit not yet closed stands for the client: still to come, under
@@ -80,6 +82,12 @@ interface VisitSummary {
   readonly client_note: string | null;
   /** A move to another day ops asked the client to confirm, still open (ADR 0115); null for none. */
   readonly proposed_move: ProposedMove | null;
+  /** The technician's latest word, the step under way and the wait at the door, as the visit happens (ADR 0255). */
+  readonly latest_update: LiveFacts["latest_update"];
+  readonly step: LiveFacts["step"];
+  readonly waits_until: LiveFacts["waits_until"];
+  /** The fit's sign-off: while the visit is under way, and on a visit's own page once it is done (ADR 0254). */
+  readonly sign_off: LiveFacts["sign_off"];
 }
 
 interface AppointmentRow {
@@ -95,6 +103,7 @@ interface AppointmentRow {
   window_end: string;
   service_city: string | null;
   service_pincode: string | null;
+  technician_id: string | null;
   technician_name: string | null;
   technician_initials: string | null;
   prepaid: number;
@@ -118,7 +127,7 @@ const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id
     AND ${statusIn("p.status", PAYMENT_HELD)})
   OR ${creditSpentOn("a.id")})`;
 
-const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.service_city,
+const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
   a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
   t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
   ${visitBegun("a")} AS begun, ${begunPastArrival("a")} AS started, ${landedOutcome("a")} AS landed_outcome, a.client_note,
@@ -141,6 +150,8 @@ interface SummaryContext {
   readonly schedule: SlotSchedule;
   /** The arrival window, in minutes after a visit's start. */
   readonly arrivalMinutes: number;
+  /** How long the technician waits at the door, by type, as ops set it. */
+  readonly waits: Waits;
 }
 
 async function contextOf(db: D1Database, personId: string, now: Date): Promise<SummaryContext> {
@@ -153,7 +164,7 @@ async function contextOf(db: D1Database, personId: string, now: Date): Promise<S
     address !== null
       ? `${address.locality}, ${address.city} ${address.pincode}`
       : [row.service_city, row.service_pincode].filter((part) => part !== null).join(" ");
-  return { place, schedule, arrivalMinutes: inputs.bookingRules.arrival };
+  return { place, schedule, arrivalMinutes: inputs.bookingRules.arrival, waits: inputs.noShowWaitMin };
 }
 
 /**
@@ -181,7 +192,7 @@ async function visitSummaryOf(
   db: D1Database,
   row: AppointmentRow,
   context: SummaryContext,
-  now: Date,
+  { now, live }: { readonly now: Date; readonly live: LiveFacts | undefined },
 ): Promise<VisitSummary> {
   const { date, window } = context.schedule.at(row.window_start);
   return {
@@ -208,7 +219,30 @@ async function visitSummaryOf(
     pay_at_visit: row.due_at_visit,
     client_note: row.client_note,
     proposed_move: openProposalOf(row.proposal, now, context.schedule),
+    latest_update: live?.latest_update ?? null,
+    step: live?.step ?? null,
+    waits_until: live?.waits_until ?? null,
+    sign_off: clientsView(live?.sign_off ?? null),
   };
+}
+
+/** The visits' summaries, each with what is happening on it now. */
+async function summariesOf(
+  db: D1Database,
+  rows: readonly AppointmentRow[],
+  context: SummaryContext,
+  now: Date,
+): Promise<VisitSummary[]> {
+  const rowsLive = rows.map((row) => ({
+    id: row.id,
+    type: row.type,
+    oneVisit: row.one_visit !== null,
+    startsAt: row.window_start,
+    technicianId: row.technician_id,
+    stage: stageOf(row, now),
+  }));
+  const live = await liveFactsOf(db, rowsLive, { waits: context.waits, now });
+  return Promise.all(rows.map((row) => visitSummaryOf(db, row, context, { now, live: live.get(row.id) })));
 }
 
 /**
@@ -228,7 +262,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
       .first<AppointmentRow>(),
     contextOf(db, personId, now),
   ]);
-  return row === null ? null : visitSummaryOf(db, row, context, now);
+  return row === null ? null : ((await summariesOf(db, [row], context, now))[0] ?? null);
 }
 
 /**
@@ -313,24 +347,9 @@ export async function listVisits(
       .all<AppointmentRow>(),
   ]);
   return {
-    upcoming: await Promise.all(upcoming.results.map((row) => visitSummaryOf(db, row, context, now))),
-    past: await Promise.all(past.results.map((row) => visitSummaryOf(db, row, context, now))),
+    upcoming: await summariesOf(db, upcoming.results, context, now),
+    past: await summariesOf(db, past.results, context, now),
   };
-}
-
-interface PhotoLink {
-  readonly angle: Angle;
-  /** A link to the photograph that lasts 15 minutes, for the signed-in client only. */
-  readonly url: string;
-  /** A link to its small copy for the rows, likewise; null for a photograph with none, which the row shows itself. */
-  readonly thumbnail_url: string | null;
-  readonly width: number | null;
-  readonly height: number | null;
-}
-
-interface PhotoSet {
-  readonly before: PhotoLink[];
-  readonly after: PhotoLink[];
 }
 
 interface VisitDetail extends VisitSummary {
@@ -454,10 +473,17 @@ export async function visitDetail({
       }
     >();
   if (row === null) return null;
-  const photos = await photoSets(db, [row.id], signingKey, now);
-  const noShows = await noShowNotes(db, [row.id], now);
+  const [photos, noShows, summaries, signOff] = await Promise.all([
+    photoSets(db, [row.id], signingKey, now),
+    noShowNotes(db, [row.id], now),
+    contextOf(db, personId, now).then((context) => summariesOf(db, [row], context, now)),
+    signOffOf(db, row.id),
+  ]);
+  const summary = summaries[0];
+  if (summary === undefined) return null;
   return {
-    ...(await visitSummaryOf(db, row, await contextOf(db, personId, now), now)),
+    ...summary,
+    sign_off: clientsView(signOff),
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
     what_was_done: await whatWasDone(db, row.id, row.type),
@@ -482,49 +508,4 @@ export async function visitOutcomes(
     .bind(...appointmentIds)
     .all<{ appointment_id: string; outcome: VisitOutcome }>();
   return new Map(results.map((row) => [row.appointment_id, row.outcome]));
-}
-
-interface PhotoRow {
-  id: string;
-  appointment_id: string;
-  phase: Phase;
-  angle: Angle;
-  width: number | null;
-  height: number | null;
-  thumbnail_key: string | null;
-}
-
-/** The photographs of these visits, each angle in the design's order, with fresh links. */
-export async function photoSets(
-  db: D1Database,
-  appointmentIds: readonly string[],
-  signingKey: SigningSecret,
-  now: Date,
-): Promise<Map<string, PhotoSet>> {
-  const sets = new Map<string, PhotoSet>();
-  if (appointmentIds.length === 0) return sets;
-  const placeholders = appointmentIds.map((_, index) => `?${String(index + 1)}`).join(", ");
-  const { results } = await db
-    .prepare(
-      `SELECT p.id, s.appointment_id, s.phase, p.angle, p.width, p.height, p.thumbnail_key
-       FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id WHERE s.appointment_id IN (${placeholders})`,
-    )
-    .bind(...appointmentIds)
-    .all<PhotoRow>();
-  const expiresAt = new Date(now.getTime() + PHOTO_LINK_MS);
-  for (const row of results.sort((a, b) => ANGLES.indexOf(a.angle) - ANGLES.indexOf(b.angle))) {
-    const set = sets.get(row.appointment_id) ?? { before: [], after: [] };
-    set[row.phase].push({
-      angle: row.angle,
-      url: `/api/photos/file/${await signToken(signingKey, "photo", row.id, expiresAt)}`,
-      thumbnail_url:
-        row.thumbnail_key === null
-          ? null
-          : `/api/photos/small/${await signToken(signingKey, "photo_small", row.id, expiresAt)}`,
-      width: row.width,
-      height: row.height,
-    });
-    sets.set(row.appointment_id, set);
-  }
-  return sets;
 }

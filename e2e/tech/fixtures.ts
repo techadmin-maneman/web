@@ -375,6 +375,8 @@ export interface CardOptions {
   readonly alerts?: Card["client_alerts"];
   readonly handoff?: Card["handoff"];
   readonly sentBack?: Card["sent_back"];
+  /** The fit's sign-off as it stands; none asked for where left out. */
+  readonly signOff?: Card["sign_off"];
   readonly paymentLink?: Card["payment_link"];
   readonly rescheduleAsked?: Card["reschedule_asked"];
   /** The client's earlier visits, counted; none unless a test gives them. */
@@ -444,6 +446,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     handoff: options.handoff ?? null,
     sent_back: options.sentBack ?? [],
     reschedule_asked: options.rescheduleAsked ?? null,
+    sign_off: options.signOff ?? null,
     client_visits: options.clientVisits ?? { count: 0, first: null },
   };
 }
@@ -479,6 +482,7 @@ export function lockedCard(date: string): Card {
     handoff: null,
     sent_back: [],
     reschedule_asked: null,
+    sign_off: null,
     client_visits: null,
   };
 }

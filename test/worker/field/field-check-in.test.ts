@@ -3,6 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
+import { clientInboxOf } from "../../../src/domain/clients/app-alerts.ts";
 import { openTechnicianSession } from "../../../src/domain/dispatch/technicians.ts";
 import { NOW, request } from "../helpers.ts";
 import {
@@ -18,6 +19,7 @@ import {
   minutesAfterStart,
   opsPost,
   OTHER_JOB,
+  PERSON,
   post,
   postAt,
   SAMEER,
@@ -337,6 +339,8 @@ describe("a check-in, guarded before it is measured", () => {
     expect(rows).toEqual([{ technician_id: IMRAN, passed: 1, job_event_id: expect.any(String) as string }]);
     expect(await arrivalNotices()).toBe(1);
     expect(messageQueue.sent).toHaveLength(1);
+    // One alert in the client's app, too (docs/decisions/0255-client-alerts-and-push.md).
+    expect((await clientInboxOf(env.DB, PERSON, NOW)).map((alert) => alert.kind)).toEqual(["arrival_notice"]);
     const card = await (await get(`/api/tech/jobs/${TODAY_JOB}`)).json<{ progress: { wait_ends_at: string } }>();
     expect(card.progress.wait_ends_at).toBe(first.wait_ends_at);
   });

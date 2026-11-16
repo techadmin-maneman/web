@@ -16,7 +16,7 @@ const serviceVisits = (count: number): string => (count === 1 ? "1 service visit
  * Refer's promise, from the referrer's side, in the reward's one name: the sides equal or not, 0, or a reward not
  * known, which gives no count.
  */
-function promiseOf(reward: Reward | null): string {
+export function promiseOf(reward: Reward | null): string {
   const fitted = "When a friend you refer is fitted,";
   if (reward === null) return `${fitted} we tell you.`;
   const { referrer_visits: mine, friend_visits: theirs } = reward;
@@ -53,8 +53,15 @@ export function notYetOpenLines(reward: Reward | null, invite: PendingInvite | n
 
 /** Refer: the invite, the card behind it, and who has been fitted. */
 export const refer = {
-  title: "Refer",
+  title: "Rewards",
   promise: promiseOf,
+  /** The card's two figures: the free service visits left, and how many invites have earned. */
+  left: "Free visits left",
+  leftUseBy: (date: string) => `Free visits left · use by ${date}`,
+  earned: "Earned so far",
+  fittedTitle: "Friends fitted",
+  /** "+3 visits". */
+  plusVisits: (visits: number) => (visits === 1 ? "+1 visit" : `+${String(visits)} visits`),
   /** Refer's credit tile, as Home's. */
   credit: freeVisitsTile,
   // The credits of the invite a client came with, while ops review them.

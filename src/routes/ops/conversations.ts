@@ -80,7 +80,14 @@ const ItemSchema = z
   .openapi("ThreadItem");
 
 const ThreadSchema = z
-  .object({ conversation: ConversationSchema, items: z.array(ItemSchema) })
+  .object({
+    conversation: ConversationSchema,
+    items: z.array(ItemSchema),
+    close_reason: z.union([z.enum(CLOSE_REASONS), z.null()]).openapi({
+      description:
+        "The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none.",
+    }),
+  })
   .strict()
   .openapi("ConversationThread");
 
@@ -147,7 +154,7 @@ const replyRoute = opsRoute({
     200: answered,
     404: errorResponse("not_found: no such thread, or its client's record is erased"),
     409: errorResponse(
-      "window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours)",
+      "window_closed: the client has not written on WhatsApp within the time the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count",
     ),
     503: errorResponse("unavailable: the WhatsApp provider sends no free text yet"),
   },

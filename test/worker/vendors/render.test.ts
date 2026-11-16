@@ -140,6 +140,9 @@ describe("render: the happy path", () => {
     )
       .bind(NOW.toISOString())
       .run();
+    // Nothing in the client's app while there is no look to show (docs/decisions/0255-client-alerts-and-push.md).
+    const alerts = () => env.DB.prepare("SELECT kind, subject_id FROM client_app_alerts").all();
+    expect((await alerts()).results).toEqual([]);
 
     await advanceJob({ env: bindings, deps, log, jobId: "gated", options: OPTIONS });
     time.advance(STUB_RENDER_MS);
@@ -148,6 +151,7 @@ describe("render: the happy path", () => {
     const message = await env.DB.prepare("SELECT state, queued_at FROM outbound_messages WHERE id = 'm1'").first();
     expect(message).toEqual({ state: "queued", queued_at: time.now().toISOString() });
     expect(bindings.MESSAGE_QUEUE.sent).toEqual([{ message_id: "m1", request_id: "request" }]);
+    expect((await alerts()).results).toEqual([{ kind: "tryon_result", subject_id: "gated" }]);
   });
 });
 

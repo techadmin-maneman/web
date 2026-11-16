@@ -20,14 +20,20 @@ export const titles = {
   home: "Home",
   visits: "Visits",
   visit: "Visit",
+  issue: "Issue",
+  raise: "Report an issue",
   photos: "Photos",
-  compare: "Compare",
+  rewards: "Rewards",
+  invited: "Who you invited",
+  profile: "Your profile",
   payments: "Payments",
   entry: "Payment",
-  refer: "Refer",
-  fitted: "Who has been fitted",
-  profile: "Your profile",
-  replacement: "Replacement",
+  address: "Address",
+  privacy: "Privacy",
+  account: "Account",
+  alerts: "Notifications",
+  hairSystem: "Your hair system",
+  hairSystems: "The four hair systems",
 } as const;
 
 export const whatsapp = {
@@ -145,7 +151,10 @@ export const messages = {
 export const empty = {
   photos: {
     title: "Photos",
-    lines: ["Your photos begin at your first visit.", "Five angles at every visit, for your record."],
+    lines: [
+      "Your photos start at your first fit",
+      "Your technician takes five angles at every visit, for your record. Only you and your technician see them.",
+    ],
     // A way on while there is nothing to show.
     tryOn: "Try on a look",
   },
@@ -168,6 +177,14 @@ export const empty = {
   },
 } as const;
 
+/** The frame's head and tabs (apps/app/src/frame/Shell.tsx). */
+export const shell = {
+  /** The tab bar, as a screen reader names it. */
+  tabsLabel: "Main",
+  /** The bell, read out with how many alerts are new. */
+  alerts: (unread: number) => (unread > 0 ? `Notifications, ${String(unread)} unread` : "Notifications"),
+} as const;
+
 /** The states screen: loading, offline and error. */
 export const states = {
   loading: "Loading…",
@@ -183,6 +200,27 @@ export const states = {
     retry: "Try again",
     message: "Message us",
   },
+} as const;
+
+/** What a disabled action waits for, one line beneath it (docs/prompts/client-redesign.md, "Copy"). */
+export const missing = {
+  pickDate: "Pick a date first.",
+  pickService: "Choose a service first.",
+  pickTime: "Pick a start time first.",
+  agreeTerms: "Tick the box to agree to the terms first.",
+  disputeWhy: "Say why the charge is wrong first.",
+  noteWords: "Write your note first.",
+  concernWords: "Say what your concern is first.",
+  discountCode: "Type a code first.",
+  codeDigits: "Enter all 6 digits.",
+  signOffChecks: "Tick all three to sign off.",
+  notRightWords: "Say what isn’t right first.",
+  raise: (about: boolean, words: boolean) => {
+    if (!about && !words) return "Choose what it’s about, and say what’s happening.";
+    return about ? "Say what’s happening first." : "Choose what it’s about first.";
+  },
+  updateWords: "Write your update first.",
+  reopenWords: "Say what’s happening now first.",
 } as const;
 
 export const errors = {

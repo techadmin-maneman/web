@@ -40,9 +40,11 @@ describe("something wrong, told from the app", () => {
 
     const sent = await report(cookie, { about: "hair_system", text: "It lifts at the front." });
     expect(sent.status).toBe(201);
-    expect(await sent.json()).toEqual({ state: "sent" });
+    expect(await sent.json()).toEqual({ state: "sent", reference: "MM-ISS-0001" });
     expect((await thread()).results).toEqual([
-      { direction: "in", author: "client", text: "Something's wrong with my hair system:\nIt lifts at the front." },
+      // An older app's "hair system" reads as fit or comfort.
+      // Theirs, written in the app: Care's reply clock counts it, WhatsApp's window does not.
+      { direction: "in", author: "app", text: "MM-ISS-0001 · Fit or comfort:\nIt lifts at the front." },
       {
         direction: "note",
         author: "system",
@@ -68,7 +70,7 @@ describe("something wrong, told from the app", () => {
     });
     expect(sent.status).toBe(201);
     expect((await thread()).results).toMatchObject([
-      { direction: "in", text: "Something's wrong with a visit:\nThe adhesive itched." },
+      { direction: "in", text: "MM-ISS-0001 · A visit or technician:\nThe adhesive itched." },
       {
         direction: "note",
         text: "From the app. About the first fit of Sat 1 Aug with Sana Mirza. No piece on record.",

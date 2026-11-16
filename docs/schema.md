@@ -20,14 +20,16 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Revoked sessions and phones | `sessions`, `technician_devices` | A lost phone, or a session that was ended, works again | Revoking again: a phone in the console, a client's session with `sessions.revoked_at` |
 | Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes`, `step_send_backs` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | A technician's position and their SOS | `visit_positions`, `sos_alerts` | A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was | The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since |
+| A fit's sign-off | `fit_sign_offs` | A sign-off asked, flagged or signed since is lost, and a fit closed since reads as closed without one; one declined since is gone from the Tasks board | Nothing to redo for a fit already closed: its job's outcome stands. Ask ops to note on the visit any sign-off since `<T>` the client remembers |
 | A technician's asks of ops: kit, and a visit to move | `kit_requests`, `reschedule_requests` | An ask made since is lost, and one ops settled since is open again on the Tasks board | Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost |
+| A client's alerts in their app, and the sessions that take their pushes | `client_app_alerts`, `client_push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a browser that allowed pushes since takes none | Nothing: the messages since stay in WhatsApp, and the app subscribes again when it next opens |
 | A technician's alerts, the kinds they turned off, and the phones that take their pushes | `tech_alerts`, `tech_alert_kinds_off`, `push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a kind turned off since is on, and a phone that allowed pushes since takes none | Nothing: the cron writes the day's alerts again as they fall due, a kind is turned off again in Alerts, and the phone subscribes again when the app next opens |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
-| The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
+| The Care inbox | `conversations`, `chat_messages`, `client_reports`, `client_report_photos`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visit_outcomes`, `consumables_used`, `consumable_shortfalls`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
@@ -71,6 +73,10 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [city_prices](#city_prices): A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).
 - [city_settings](#city_settings): A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).
 - [client_alerts](#client_alerts): What every technician reads in red before they start on a client, raised by staff or by a technician at a close; one taken off is marked so, never deleted, until an erasure (ADR 0242).
+- [client_app_alerts](#client_app_alerts): A client's alerts in their app, over the last 30 days: one beside each message written to them but WhatsApp's own, and one each time a technician asks for their sign-off; when each was pushed and read (ADR 0255).
+- [client_push_subscriptions](#client_push_subscriptions): The session that takes a client's pushes, one subscription a session, by the push service's address; a session signed out, revoked or ended takes none (ADR 0255).
+- [client_report_photos](#client_report_photos): Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0259).
+- [client_reports](#client_reports): Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0259).
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 - [consumable_shortfalls](#consumable_shortfalls): A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).
@@ -95,6 +101,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form no longer asks for one (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
+- [fit_sign_offs](#fit_sign_offs): The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app, or declined with the technician's why, which opens a Tasks row (ADR 0254).
 - [forecast_accuracy](#forecast_accuracy): How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).
 - [forecast_lines](#forecast_lines): Each forecast run's expected use of each stock code in each city and period, with what each of its four layers gave (ADR 0179).
 - [forecast_runs](#forecast_runs): Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
@@ -639,6 +646,88 @@ Indexes:
 
 - `client_alerts_by_visit`: unique on (`appointment_id`), where `appointment_id IS NOT NULL`
 - `client_alerts_person`: on (`person_id`, `written_at`)
+
+## client_app_alerts
+
+A client's alerts in their app, over the last 30 days: one beside each message written to them but WhatsApp's own, and one each time a technician asks for their sign-off; when each was pushed and read (ADR 0255).
+
+Made by `0211_client_app_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `kind` | TEXT | no |  |  | The kind of message it stands beside (src/config/message-kinds.ts), or sign_off_asked. |
+| `subject_kind` | TEXT | no |  |  | What it is about, as the message names it: a visit, a payment, a proposed move, a technician's update. |
+| `subject_id` | TEXT | no |  |  |  |
+| `once_key` | TEXT | no |  |  | One alert a message, and one each time a sign-off is asked. |
+| `written_at` | TEXT | no |  |  |  |
+| `pushed_at` | TEXT | yes |  |  | When the push went; NULL while it is to go. |
+| `read_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `client_app_alerts_by_time`: on (`written_at`)
+- `client_app_alerts_inbox`: on (`person_id`, `written_at`)
+- A `UNIQUE` constraint: unique on (`person_id`, `once_key`)
+
+## client_push_subscriptions
+
+The session that takes a client's pushes, one subscription a session, by the push service's address; a session signed out, revoked or ended takes none (ADR 0255).
+
+Made by `0211_client_app_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `session_id` | TEXT | no |  | primary key; → `sessions.id` |  |
+| `endpoint` | TEXT | no |  |  |  |
+| `subscribed_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`endpoint`)
+
+## client_report_photos
+
+Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0259).
+
+Made by `0212_client_reports.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `report_id` | TEXT | no |  | primary key; → `client_reports.id` |  |
+| `n` | INTEGER | no |  | primary key |  |
+| `object_key` | TEXT | no |  |  |  |
+| `bytes` | INTEGER | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+
+## client_reports
+
+Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0259).
+
+Made by `0212_client_reports.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `number` | INTEGER | no |  |  | Shown as MM-ISS-0032: one more than the last report's. |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `category` | TEXT | no |  |  |  |
+| `visit_id` | TEXT | yes |  | → `appointments.id` |  |
+| `claim_visit_id` | TEXT | yes |  | → `appointments.id` | The first fit a report on the fit (guarantee) claims, where it came inside that fit's guarantee (docs/decisions/0256-fit-guarantee-setting.md); NULL for any other report. |
+| `text` | TEXT | yes |  |  | The client's words; NULL once they are erased. |
+| `conversation_id` | TEXT | yes |  | → `conversations.id` |  |
+| `created_at` | TEXT | no |  |  |  |
+| `closed_at` | TEXT | yes |  |  | When Care closed its chat after it, when the client marked it sorted, and when they last reopened it. |
+| `sorted_at` | TEXT | yes |  |  |  |
+| `reopened_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `client_reports_by_conversation`: on (`conversation_id`)
+- `client_reports_by_person`: on (`person_id`, `created_at`)
+- `client_reports_claims`: on (`claim_visit_id`), where `claim_visit_id IS NOT NULL`
+- A `UNIQUE` constraint: unique on (`number`)
 
 ## consents
 
@@ -1214,6 +1303,33 @@ Indexes:
 - `first_fit_requests_unfitted`: on (`person_id`), where `fitted_since = 0`
 
 Triggers: `first_fit_requests_fitted_asked`.
+
+## fit_sign_offs
+
+The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app, or declined with the technician's why, which opens a Tasks row (ADR 0254).
+
+Made by `0210_fit_sign_offs.sql`; changed by `0211_client_app_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `appointment_id` | TEXT | no |  | primary key; → `appointments.id` |  |
+| `state` | TEXT | no |  |  | asked: waiting for the client; signed: they are happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: the technician closed without it, with why. |
+| `checks` | TEXT | yes |  |  | The client's three checks as they last answered them, a JSON object of booleans: hairline, blend, secure. |
+| `flag_text` | TEXT | yes |  |  | What the client last said isn't right, in their words, kept once they sign. |
+| `declined_reason` | TEXT | yes |  |  | Why the technician closed without it. |
+| `asked_at` | TEXT | no |  |  |  |
+| `asks` | INTEGER | no | `1` |  | How many times it has been asked: again after each flag. |
+| `signed_at` | TEXT | yes |  |  |  |
+| `ask_event_id` | TEXT | yes |  |  | The technician's phone's event the latest ask came with, so one sent again is answered as it was. |
+| `guarantee_days` | INTEGER | yes |  |  | The fit guarantee's days in force when it was signed or declined, which a first fit's guarantee runs for, whatever ops set since (docs/decisions/0256-fit-guarantee-setting.md). |
+| `technician_id` | TEXT | yes |  | → `technicians.id` |  |
+| `updated_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `fit_sign_offs_declined`: on (`updated_at`), where `state = 'declined'`
+
+Triggers: `client_app_alerts_sign_off_asked`, `client_app_alerts_sign_off_asked_again`.
 
 ## forecast_accuracy
 
@@ -1813,7 +1929,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -1841,6 +1957,8 @@ Indexes:
 - `outbound_messages_by_state`: on (`state`, `queued_at`)
 - `outbound_messages_by_subject`: on (`subject_id`)
 - `outbound_messages_one_arrival`: unique on (`subject_id`), where `kind = 'arrival_notice'`
+
+Triggers: `client_app_alerts_beside_messages`, `client_app_alerts_beside_messages_ready`.
 
 ## packages
 
@@ -2122,7 +2240,7 @@ Indexes:
 
 Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`, `0156_pieces_replaced.sql`.
+Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`, `0156_pieces_replaced.sql`, `0213_replacement_booked_from_its_month.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |

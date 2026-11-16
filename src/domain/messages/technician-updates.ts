@@ -21,6 +21,9 @@ const STILL_HELPS_MINUTES: Readonly<Record<Preset, number>> = { on_the_way: 30, 
 const tooLate = (preset: Preset, writtenAt: Date, now: Date): boolean =>
   now.getTime() - writtenAt.getTime() > STILL_HELPS_MINUTES[preset] * MINUTE_MS;
 
+/** Whether a word written at `writtenAt` still tells the client something at `now`, in the app as on WhatsApp. */
+export const stillHelps = (preset: Preset, writtenAt: Date, now: Date): boolean => !tooLate(preset, writtenAt, now);
+
 /** A second tap of the same word for the same visit within this long tells the client nothing new. */
 const REPEAT_MINUTES = 10;
 

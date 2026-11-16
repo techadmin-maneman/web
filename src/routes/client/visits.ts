@@ -10,7 +10,9 @@ import { VISIT_OUTCOMES } from "../../domain/visits/visit-status.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientRoute } from "../../http/session-routes.ts";
+import { guaranteeUntil } from "../../policy/fit-guarantee.ts";
 import { HISTORY_FIGURES, NoShowNoteSchema, PhotoSetSchema, VisitSummarySchema } from "../schemas/visits.ts";
 
 const VisitDetailSchema = VisitSummarySchema.extend({
@@ -53,6 +55,11 @@ const VisitDetailSchema = VisitSummarySchema.extend({
       z.null(),
     ])
     .openapi({ description: "What the client paid for the visit; null where nothing was." }),
+  guarantee_until: z.union([z.iso.date(), z.null()]).openapi({
+    description:
+      "A first fit done: India's last day the client may ask for a refit or a refund under the fit guarantee, by the " +
+      "days ops set (guarantee_days; ADR 0256). Null for any other visit.",
+  }),
 }).openapi("VisitDetail");
 
 const ClientHistorySchema = z
@@ -116,14 +123,21 @@ export function registerClientVisits(app: App): void {
 
   app.openapi(visitRoute, async (c) => {
     const session = clientOf(c);
-    const visit = await visitDetail({
-      db: c.env.DB,
-      personId: session.subjectId,
-      visitId: c.req.valid("param").id,
-      signingKey: c.var.config.settings.tryon.linkSigningKey,
-      now: c.var.deps.now(),
-    });
+    const [visit, inputs] = await Promise.all([
+      visitDetail({
+        db: c.env.DB,
+        personId: session.subjectId,
+        visitId: c.req.valid("param").id,
+        signingKey: c.var.config.settings.tryon.linkSigningKey,
+        now: c.var.deps.now(),
+      }),
+      opsInputs(c),
+    ]);
     if (visit === null) return refuse(c, "not_found");
-    return c.json(visit, 200);
+    const fitted = visit.type === "first_fit" && visit.outcome === "done";
+    // The days in force when the fit was signed off or declined: a change ops make since moves no promise made.
+    const days = visit.sign_off?.guarantee_days ?? inputs.guaranteeDays;
+    const guarantee = fitted ? guaranteeUntil(visit.date, days) : null;
+    return c.json({ ...visit, guarantee_until: guarantee }, 200);
   });
 }

@@ -390,6 +390,8 @@ describe("a client's custom orders, on their Home", () => {
         number: order?.number,
         status: "awaiting_payment",
         promised_on: "2026-10-20",
+        // Late, and refundable in full, past the custom-order grace ops set: seven days until they set another.
+        refundable_after: "2026-10-27",
         amount: 4_500_000,
         pay_url: expect.stringMatching(/^https:\/\/rzp\.io\//) as string,
       },

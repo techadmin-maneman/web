@@ -34,6 +34,11 @@ function onTheBoard(task: Task): string {
 
 /** The section and row a task is decided on; null for a group done from its row or on the client's page. */
 export function decidedAt(group: Group, task: Task): string | null {
+  // A claim is closed from its row; its way on is the client's chat, where Care read the photographs sent with it.
+  if (task.facts.group === "fit_guarantee_claim") {
+    const chat = task.facts.conversation_id;
+    return chat === null ? null : rowPath("/messages", "chat", chat);
+  }
   const where = DECIDED_IN[group];
   if (where === undefined) return null;
   if (where.page === "/dispatch") return onTheBoard(task);

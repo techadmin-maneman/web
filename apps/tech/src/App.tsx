@@ -38,6 +38,7 @@ import { CloseOut } from "./steps/CloseOut.tsx";
 import { Consumables } from "./steps/Consumables.tsx";
 import { Outcome } from "./steps/Outcome.tsx";
 import { Piece } from "./steps/Piece.tsx";
+import { SignOff } from "./steps/SignOff.tsx";
 import { Profile } from "./steps/Profile.tsx";
 import { TodayScreen } from "./today/TodayScreen.tsx";
 import { WaitingScreen } from "./waiting/WaitingScreen.tsx";
@@ -94,6 +95,8 @@ function pageFor(route: Route) {
           return <Piece id={route.id} />;
         case "profile":
           return <Profile id={route.id} />;
+        case "sign_off":
+          return <SignOff id={route.id} />;
         case "outcome":
           return <Outcome id={route.id} />;
       }

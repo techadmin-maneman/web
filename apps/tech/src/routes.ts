@@ -82,7 +82,11 @@ export type EventKind =
   | "outcome"
   | "no_show"
   // A word to the client from the card (docs/decisions/0145-technician-presets.md): no step of the job.
-  | "update";
+  | "update"
+  // The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md): asking, and recording that they
+  // declined; the client signs in their own app. Neither is a step the API orders.
+  | "sign_off_request"
+  | "sign_off_declined";
 
 /** The route one of the outbox's events is sent to. Both photograph sets go to the one route. */
 const ROUTE_OF = {
@@ -97,6 +101,8 @@ const ROUTE_OF = {
   outcome: "outcome",
   no_show: "no-show",
   update: "updates",
+  sign_off_request: "sign-off-request",
+  sign_off_declined: "sign-off-declined",
 } as const satisfies Record<EventKind, string>;
 
 type EventRoute<K extends EventKind> = paths[`/api/tech/jobs/{id}/${(typeof ROUTE_OF)[K]}`]["post"];

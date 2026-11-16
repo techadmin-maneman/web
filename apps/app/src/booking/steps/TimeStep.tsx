@@ -4,7 +4,8 @@ import { Button } from "@maneman/ui/Button";
 import { TimeChoice } from "@maneman/ui/TimeChoice";
 import { dayClock, indiaClock, weekdayDate } from "@maneman/web-kit/dates";
 import { lengthWords } from "@maneman/web-kit/visit-length";
-import { BOOKING_WINDOW_ORDER, booking, WINDOW_NAMES } from "../../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { BOOKING_WINDOW_ORDER, booking, missing, WINDOW_NAMES } from "../../content.ts";
 import { timeContinue, type Day } from "../days.ts";
 import styles from "../booking.module.css";
 import { TITLE_ID, stepOf, Heading } from "./shared.tsx";
@@ -70,11 +71,13 @@ export function TimeStep(props: {
         size="action"
         className={styles.primary}
         disabled={props.chosen === null || props.busy}
+        aria-describedby={describedBy("pick-time", props.chosen === null)}
         busy={props.busy}
         onClick={props.onNext}
       >
         {timeContinue(day)}
       </Button>
+      <Missing id="pick-time" what={props.chosen === null ? missing.pickTime : null} />
     </>
   );
 }

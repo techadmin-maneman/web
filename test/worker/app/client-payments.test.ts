@@ -269,6 +269,7 @@ describe("GET /api/payments, what else a visit took", () => {
           dispute: null,
           disputable: false,
           dispute_closed_at: null,
+          dispute_until: null,
         },
       }),
     ]);

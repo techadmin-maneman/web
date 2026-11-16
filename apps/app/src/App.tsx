@@ -12,34 +12,47 @@
 import { Suspense, useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { api, forgetHome, keptHome, onSessionEnded, type Me } from "./api.ts";
 import { titles, update } from "./content.ts";
-import { HomeScreen } from "./home/HomeScreen.tsx";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { titled } from "./lib/arrival.ts";
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { forgetSignedOut, rememberSignedOut, signedOutHere } from "./lib/signed-out.ts";
-import { ReplacementScreen } from "./home/ReplacementScreen.tsx";
-import { TrackerScreen } from "./refer/TrackerScreen.tsx";
-import { EntryScreen } from "./payments/EntryScreen.tsx";
-import { PaymentsScreen } from "./payments/PaymentsScreen.tsx";
-import { PhotosScreen } from "./photos/PhotosScreen.tsx";
-import { VisitScreen } from "./visits/VisitScreen.tsx";
-import { VisitsScreen } from "./visits/VisitsScreen.tsx";
 import { Login } from "./login/Login.tsx";
 import type { LinkedLogin } from "./login/linked-mobile.ts";
-import { go, routeOf, usePath, type Route } from "./route.ts";
+import { go, movedTo, redirect, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext } from "./session.ts";
+import { useKeptPush } from "./alerts/kept-push.ts";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
 import { LoadFailed } from "./frame/LoadFailed.tsx";
 import { Loading } from "@maneman/ui/States";
 import styles from "./app.module.css";
 
-// The pages opened least, and the heaviest, load when first opened; the service worker keeps them, so they open
-// offline too. Every other page comes with Home: split, they would cost more to fetch than they save.
+// Every page the client opens once signed in loads when first opened, so the sign-in screen, the first thing a new
+// phone draws, carries none of them; the service worker keeps them all, so they open offline too.
+const HomeScreen = lazyScreen(() => import("./home/HomeScreen.tsx").then((module) => module.HomeScreen));
+const HairSystemScreen = lazyScreen(() =>
+  import("./home/HairSystemScreen.tsx").then((module) => module.HairSystemScreen),
+);
+const TrackerScreen = lazyScreen(() => import("./refer/TrackerScreen.tsx").then((module) => module.TrackerScreen));
+const EntryScreen = lazyScreen(() => import("./payments/EntryScreen.tsx").then((module) => module.EntryScreen));
+const PaymentsScreen = lazyScreen(() =>
+  import("./payments/PaymentsScreen.tsx").then((module) => module.PaymentsScreen),
+);
+const PhotosScreen = lazyScreen(() => import("./photos/PhotosScreen.tsx").then((module) => module.PhotosScreen));
+const VisitScreen = lazyScreen(() => import("./visits/VisitScreen.tsx").then((module) => module.VisitScreen));
+const VisitsScreen = lazyScreen(() => import("./visits/VisitsScreen.tsx").then((module) => module.VisitsScreen));
 const ReferScreen = lazyScreen(() => import("./refer/ReferScreen.tsx").then((module) => module.ReferScreen));
-const CompareScreen = lazyScreen(() => import("./photos/CompareScreen.tsx").then((module) => module.CompareScreen));
 const ProfileScreen = lazyScreen(() => import("./profile/ProfileScreen.tsx").then((module) => module.ProfileScreen));
+const AddressScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.AddressScreen));
+const PrivacyScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.PrivacyScreen));
+const RaiseScreen = lazyScreen(() => import("./issues/RaiseScreen.tsx").then((module) => module.RaiseScreen));
+const IssueScreen = lazyScreen(() => import("./issues/IssueScreen.tsx").then((module) => module.IssueScreen));
+const AlertsScreen = lazyScreen(() => import("./alerts/AlertsScreen.tsx").then((module) => module.AlertsScreen));
+const HairSystemsScreen = lazyScreen(() =>
+  import("./home/HairSystemsScreen.tsx").then((module) => module.HairSystemsScreen),
+);
+const AccountScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.AccountScreen));
 
 type Session =
   | { readonly kind: "checking" }
@@ -48,30 +61,42 @@ type Session =
   | { readonly kind: "failed"; readonly booked: boolean }
   | { readonly kind: "in"; readonly me: Me; readonly offline: boolean };
 
-function pageFor(route: Route, onChanged: () => void) {
+function pageFor(route: Route) {
   switch (route.page) {
     case "home":
       return <HomeScreen />;
     case "visits":
-      return <VisitsScreen />;
+      return <VisitsScreen {...(route.show === undefined ? {} : { show: route.show })} />;
     case "visit":
       return <VisitScreen id={route.id} />;
     case "photos":
       return <PhotosScreen />;
-    case "compare":
-      return <CompareScreen />;
     case "payments":
       return <PaymentsScreen />;
     case "entry":
       return <EntryScreen id={route.id} />;
-    case "refer":
+    case "rewards":
       return <ReferScreen />;
-    case "fitted":
+    case "invited":
       return <TrackerScreen />;
     case "profile":
-      return <ProfileScreen onChanged={onChanged} />;
-    case "replacement":
-      return <ReplacementScreen />;
+      return <ProfileScreen />;
+    case "hairSystem":
+      return <HairSystemScreen />;
+    case "address":
+      return <AddressScreen />;
+    case "privacy":
+      return <PrivacyScreen />;
+    case "account":
+      return <AccountScreen />;
+    case "issue":
+      return <IssueScreen id={route.id} />;
+    case "raise":
+      return <RaiseScreen />;
+    case "alerts":
+      return <AlertsScreen />;
+    case "hairSystems":
+      return <HairSystemsScreen />;
   }
 }
 
@@ -86,6 +111,18 @@ const pause = (ms: number) =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+
+/** Signed in, a 401 from any call ends the session: the screens go first, then the cached Home. */
+function useSessionEnd(signedIn: boolean, setSession: Dispatch<SetStateAction<Session>>) {
+  useEffect(() => {
+    if (!signedIn) return;
+    return onSessionEnded(() => {
+      setSession({ kind: "out", ended: true });
+      rememberSignedOut();
+      void forgetHome();
+    });
+  }, [signedIn, setSession]);
+}
 
 /** Offline, the session says so; back online, Home is asked for again. */
 function useConnection(setSession: Dispatch<SetStateAction<Session>>, refreshSoon: () => Promise<void>) {
@@ -103,9 +140,22 @@ function useConnection(setSession: Dispatch<SetStateAction<Session>>, refreshSoo
   }, [setSession, refreshSoon]);
 }
 
+/**
+ * The path shown, where a path the app had before, from a message already sent, gives way to the page's new one: drawn
+ * at once, never the old path's page first.
+ */
+function useAppPath(): string {
+  const path = usePath();
+  const moved = movedTo(path);
+  useEffect(() => {
+    if (moved !== null) redirect(moved);
+  }, [moved]);
+  return moved ?? path;
+}
+
 export function App({ linked }: { linked: LinkedLogin }) {
   const [session, setSession] = useState<Session>({ kind: "checking" });
-  const path = usePath();
+  const path = useAppPath();
 
   /**
    * Home fetched again without the blank wait: after the profile changes it, or when the connection is
@@ -148,23 +198,10 @@ export function App({ linked }: { linked: LinkedLogin }) {
     void check();
   }, [check]);
 
-  // Signed in, a 401 from any call ends the session: the screens go first, then the cached Home.
   const signedIn = session.kind === "in";
-  useEffect(() => {
-    if (!signedIn) return;
-    return onSessionEnded(() => {
-      setSession({ kind: "out", ended: true });
-      rememberSignedOut();
-      void forgetHome();
-    });
-  }, [signedIn]);
-
+  useSessionEnd(signedIn, setSession);
   useConnection(setSession, refreshSoon);
-
-  // The page's ground follows the screen: ink for the login, paper for everything the states screen draws and once in.
-  useEffect(() => {
-    document.body.dataset.ground = session.kind === "out" ? "ink" : "paper";
-  }, [session.kind]);
+  useKeptPush(signedIn);
 
   // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind. The
   // login names its own steps.
@@ -201,7 +238,7 @@ export function App({ linked }: { linked: LinkedLogin }) {
           <UpdateReady copy={update} resting={routeOf(path).page === "home"} />
           {/* Keyed by the path, so each page opens at its top with its own data, and one that failed stays behind. */}
           <ErrorBoundary key={path}>
-            <Suspense fallback={<Loading />}>{pageFor(routeOf(path), () => void refresh())}</Suspense>
+            <Suspense fallback={<Loading />}>{pageFor(routeOf(path))}</Suspense>
           </ErrorBoundary>
         </SessionContext>
       );

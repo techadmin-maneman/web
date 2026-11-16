@@ -19,6 +19,8 @@ export const ERROR_CODES = [
   // Try-on (docs/decisions/0014-try-on-api.md).
   "busy",
   "photo_invalid_file",
+  // A report holds its three photographs already (docs/decisions/0259-the-issue-log.md).
+  "photos_full",
   "upload_already_received",
   "upload_missing",
   "session_required",
@@ -150,6 +152,11 @@ export const ERROR_CODES = [
   "already_disputed",
   "not_disputable",
   "dispute_window_closed",
+  // The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md): not asked for yet, signed or
+  // declined already, or signed with a check left open.
+  "sign_off_not_asked",
+  "sign_off_closed",
+  "sign_off_checks_open",
   // A move to another day the client tried to accept, whose time was taken since or whose visit cannot move now
   // (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
   "move_gone",
@@ -252,6 +259,7 @@ export const ERROR_STATUS = {
   internal_error: 500,
   busy: 503,
   photo_invalid_file: 422,
+  photos_full: 409,
   upload_already_received: 409,
   upload_missing: 409,
   session_required: 401,
@@ -323,6 +331,9 @@ export const ERROR_STATUS = {
   already_disputed: 409,
   not_disputable: 409,
   dispute_window_closed: 409,
+  sign_off_not_asked: 409,
+  sign_off_closed: 409,
+  sign_off_checks_open: 422,
   move_gone: 409,
   ask_the_client: 409,
   code_not_applicable: 422,

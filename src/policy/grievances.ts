@@ -8,3 +8,6 @@ export const GRIEVANCES_SHOWN = 5;
 
 /** A concern in the client's own words: room to explain, not a document. */
 export const GRIEVANCE_MAX_CHARS = 2000;
+
+/** The most days a grievance waits for its answer, as the law and the app both say. */
+export const GRIEVANCE_ANSWERED_WITHIN_DAYS = 30;

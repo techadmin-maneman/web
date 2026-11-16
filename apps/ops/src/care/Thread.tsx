@@ -184,7 +184,7 @@ export function Thread({
   const mayAct = useAccess().mayCall("POST /api/conversations/{id}/replies");
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const { items } = changed ?? loaded.value;
+  const { items, close_reason: closeReason } = changed ?? loaded.value;
   const who = whoOf(conversation);
   const applied = (next: ChatThread, words: string) => {
     setChanged(next);
@@ -200,7 +200,7 @@ export function Thread({
           <h3 className={typeLook("title-4", styles.name)}>{who}</h3>
           <StateLine conversation={conversation} />
         </div>
-        {mayAct && <CloseChat conversationId={conversation.id} onThread={applied} />}
+        {mayAct && <CloseChat conversationId={conversation.id} suggested={closeReason} onThread={applied} />}
       </header>
       {items.length === 0 ? <Note>{thread.empty}</Note> : <Items items={items} them={themOf(conversation)} />}
       {said !== null && <Toast>{said}</Toast>}
