@@ -40,8 +40,8 @@ const SIZES = [
 
 /**
  * What spills, or scrolls sideways, on the page and in any sheet open on it. Words spill when they run out of the box
- * they are in, as a name into the next; a count set over an icon's corner on purpose is no spill, being within its
- * own box. A box scrolls sideways when it is a scroller whose bar shows, as the page's main or a sheet's body; a row
+ * they are in, as a name into the next, and a box when it runs past its parent's edge; a count set over an icon's
+ * corner on purpose is no spill, being placed so. A box scrolls sideways when it is a scroller whose bar shows, as the page's main or a sheet's body; a row
  * made to scroll sideways hides its bar, as the photographs' angles and the booking's days. Words kept for a screen
  * reader alone (packages/ui/VisuallyHidden.tsx) are out of sight.
  */
@@ -64,6 +64,17 @@ function spills(page: Page) {
       const out = text.right > edge.right + 1 || text.left < edge.left - 1;
       return out ? [`${box.tagName.toLowerCase()} "${box.textContent.trim().slice(0, 40)}"`] : [];
     });
+    // A box running past its parent's edge, as a row of buttons wider than its card, though each keeps its words. A box
+    // set absolutely, as a count over an icon's corner, is placed so on purpose; the children of a box that clips or
+    // scrolls are its own to hold, measured as it scrolls.
+    const overrun = shown.flatMap((box) => {
+      const parent = box.parentElement;
+      if (parent === null || ["absolute", "fixed"].includes(getComputedStyle(box).position)) return [];
+      if (["hidden", "clip", "auto", "scroll"].includes(getComputedStyle(parent).overflowX)) return [];
+      const [own, edge] = [box.getBoundingClientRect(), parent.getBoundingClientRect()];
+      const out = own.width > 0 && (own.right > edge.right + 1 || own.left < edge.left - 1);
+      return out ? [`${box.tagName.toLowerCase()} "${box.textContent.trim().slice(0, 40)}" past its box`] : [];
+    });
     const scrolling = shown
       .filter((box) => {
         const style = getComputedStyle(box);
@@ -72,7 +83,7 @@ function spills(page: Page) {
       })
       .map((box) => `${box.tagName.toLowerCase()} scrolls sideways`);
     return {
-      spilled: [...spilled, ...scrolling],
+      spilled: [...spilled, ...overrun, ...scrolling],
       sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     };
   });
