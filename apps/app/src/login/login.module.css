@@ -6,7 +6,7 @@
   flex-direction: column;
   /* Clear of an iPhone's home indicator when installed (viewport-fit=cover). */
   padding-bottom: env(safe-area-inset-bottom);
-  background: var(--ink);
+  background: var(--navy-900);
 }
 
 .top {
@@ -17,7 +17,7 @@
 }
 
 .back {
-  color: var(--ink-soft);
+  color: var(--grid-100);
 }
 
 .body {
@@ -40,11 +40,10 @@
 
 .title {
   margin: 0;
-  font-family: var(--font-serif);
   font-size: var(--fs-app-title);
-  font-weight: var(--weight-regular);
   line-height: var(--lh-115);
-  color: var(--paper);
+  color: var(--white-000);
+  font-weight: var(--weight-semibold);
 }
 
 .mark + .title {
@@ -55,12 +54,12 @@
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-16);
   line-height: var(--lh-160);
-  color: var(--ink-soft);
+  color: var(--grid-100);
 }
 
 .number {
   font-variant-numeric: tabular-nums;
-  color: var(--paper);
+  color: var(--white-000);
 }
 
 .form {
@@ -87,7 +86,7 @@
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-16);
   line-height: var(--lh-160);
-  color: var(--ink-soft);
+  color: var(--grid-100);
 }
 
 .error {
@@ -105,11 +104,11 @@
   gap: var(--sp-8);
   margin-top: var(--sp-24);
   font-size: var(--fs-15);
-  color: var(--ink-soft);
+  color: var(--grid-100);
 }
 
 .automatic svg {
-  color: var(--ink-muted);
+  color: var(--mist-300);
 }
 
 .links {
@@ -129,7 +128,7 @@
   margin: 0;
   font-size: var(--fs-14);
   font-variant-numeric: tabular-nums;
-  color: var(--ink-muted);
+  color: var(--mist-300);
 }
 
 .foot {

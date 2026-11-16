@@ -12,5 +12,5 @@
   padding: var(--sp-8);
   font-size: var(--fs-13);
   text-align: center;
-  color: var(--text-muted);
+  color: var(--ink-500);
 }

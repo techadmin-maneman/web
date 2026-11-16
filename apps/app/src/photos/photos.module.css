@@ -41,7 +41,7 @@
   display: block;
   aspect-ratio: 3 / 4;
   overflow: hidden;
-  background: var(--paper-shade);
+  background: var(--grid-100);
 }
 
 div.cell {
@@ -62,5 +62,5 @@ div.cell {
   height: auto;
   max-height: var(--photo-max-h);
   aspect-ratio: 3 / 4;
-  background: var(--paper-shade);
+  background: var(--grid-100);
 }

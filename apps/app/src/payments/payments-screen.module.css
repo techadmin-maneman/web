@@ -12,8 +12,8 @@
   gap: var(--sp-16);
   min-height: var(--tap-row);
   padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
-  color: var(--text);
+  border-bottom: var(--hairline) solid var(--line-200);
+  color: var(--ink-900);
   text-decoration: none;
 }
 .entryText {
@@ -32,7 +32,7 @@
 .meta,
 .status {
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 .meta {
   margin-top: var(--sp-4);
@@ -45,24 +45,24 @@
   text-align: right;
 }
 .amount {
-  font-family: var(--font-serif);
   font-size: var(--fs-22);
   line-height: var(--lh-100);
   font-variant-numeric: lining-nums tabular-nums;
+  font-weight: var(--weight-semibold);
 }
 .refunded {
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 .incl {
   margin-top: var(--sp-4);
   font-size: var(--fs-13);
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--ink-500);
 } /* A payment owed, above the payments made. */
 .owedLabel {
   margin: var(--sp-24) var(--sp-20) 0;
   font-size: var(--fs-15);
-  color: var(--text-muted);
+  color: var(--ink-500);
 } /* The first entry sits against the top of the page, where a ring drawn outside it would be cut. */
 .entry:focus-visible {
   outline-offset: var(--focus-inset);

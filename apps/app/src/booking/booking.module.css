@@ -7,7 +7,7 @@
  */
 
 .dialog {
-  --focus-colour: var(--paper);
+  --focus-colour: var(--white-000);
 }
 
 .sheet p,
@@ -17,7 +17,7 @@
 
 .loading {
   height: var(--skeleton-card);
-  background: var(--paper-shade);
+  background: var(--grid-100);
 }
 
 .heading {
@@ -29,14 +29,13 @@
 
 .title {
   margin: 0;
-  font-family: var(--font-serif);
   font-size: var(--fs-24);
-  font-weight: var(--weight-regular);
+  font-weight: var(--weight-semibold);
 }
 
 .step {
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .held {
@@ -45,7 +44,7 @@
   gap: var(--sp-8);
   font-size: var(--fs-14);
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .legend {
@@ -54,7 +53,7 @@
   gap: var(--sp-8) var(--sp-20);
   margin-top: var(--sp-16);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .legend > span {
@@ -66,13 +65,13 @@
 .swatch {
   width: var(--sp-12);
   height: var(--sp-12);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--line-200);
   background: var(--white);
 }
 
 .swatchFull {
-  border-color: var(--paper-shade);
-  background: var(--paper-shade);
+  border-color: var(--grid-100);
+  background: var(--grid-100);
 }
 
 .swatchLate {
@@ -89,14 +88,14 @@
 .sheet .dayLine {
   margin-bottom: var(--sp-20);
   font-size: var(--fs-16);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 /* The time chosen's promise, clear of the last row of times. */
 .sheet .arrival {
   margin: var(--sp-16) 0 var(--sp-20);
   font-size: var(--fs-16);
-  color: var(--text);
+  color: var(--ink-900);
 }
 
 .windows {
@@ -134,7 +133,7 @@
 
 /* The pay step, and the credit step's first fit. */
 .summary {
-  border-top: var(--hairline) solid var(--text);
+  border-top: var(--hairline) solid var(--ink-900);
 }
 
 .item {
@@ -143,7 +142,7 @@
   justify-content: space-between;
   gap: var(--sp-16);
   padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--line-200);
 }
 
 .itemName {
@@ -153,7 +152,7 @@
 .sheet .itemWhen {
   margin-top: var(--sp-4);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .money {
@@ -161,20 +160,20 @@
 }
 
 .amount {
-  font-family: var(--font-serif);
   font-size: var(--fs-26);
   line-height: var(--lh-100);
   font-variant-numeric: lining-nums tabular-nums;
+  font-weight: var(--weight-semibold);
 }
 
 /* A credit covers it, so the price is struck through. */
 .was {
-  font-family: var(--font-serif);
   font-size: var(--fs-22);
   line-height: var(--lh-100);
   font-variant-numeric: lining-nums tabular-nums;
-  color: var(--text-muted);
+  color: var(--ink-500);
   text-decoration: line-through;
+  font-weight: var(--weight-semibold);
 }
 
 .was + .amount {
@@ -186,35 +185,35 @@
   justify-content: space-between;
   gap: var(--sp-12);
   padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--line-200);
   font-size: var(--fs-15);
 }
 
 .creditLine span:last-child {
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .sheet .incl {
   margin-top: var(--sp-4);
   font-size: var(--fs-13);
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .line {
   padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--line-200);
   font-size: var(--fs-15);
   line-height: var(--lh-160);
 }
 
 .soft {
-  color: var(--text-soft);
+  color: var(--ink-900);
 }
 
 /* A late fee's figure with GST, muted beside the ex-GST one. */
 .inclusive {
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 /* "Remind me on WhatsApp the day before": the whole line is the target. */
@@ -227,7 +226,7 @@
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
   line-height: var(--lh-145);
-  color: var(--text-muted);
+  color: var(--ink-500);
   text-align: center;
 }
 
@@ -235,13 +234,13 @@
 .sheet .why {
   font-size: var(--fs-15);
   line-height: var(--lh-160);
-  color: var(--text-soft);
+  color: var(--ink-900);
 }
 
 .label {
   margin: var(--sp-20) 0 0;
   font-size: var(--fs-15);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 /* The sheets' buttons (packages/ui/Button.tsx), the width of the sheet: the action 56 px, any other 48. */
@@ -276,20 +275,19 @@
 .offlineLine {
   font-size: var(--fs-15);
   line-height: var(--lh-160);
-  color: var(--text-soft);
+  color: var(--ink-900);
 }
 
 .changeTitle {
-  font-family: var(--font-serif);
   font-size: var(--fs-24);
-  font-weight: var(--weight-regular);
   line-height: var(--lh-115);
+  font-weight: var(--weight-semibold);
 }
 
 .sheet .terms {
   margin-top: var(--sp-16);
   padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--line-200);
   font-size: var(--fs-16);
   line-height: var(--lh-160);
   font-variant-numeric: tabular-nums;
@@ -316,7 +314,7 @@
   margin-top: var(--sp-12);
   font-size: var(--fs-14);
   line-height: var(--lh-160);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .sheet .problem {
@@ -329,13 +327,13 @@
 .sheet .caption {
   margin-bottom: var(--sp-16);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .outcome {
-  font-family: var(--font-serif);
   font-size: var(--fs-22);
   line-height: var(--lh-130);
+  font-weight: var(--weight-semibold);
 }
 
 .sheet .outcomeLine {
@@ -343,7 +341,7 @@
   font-size: var(--fs-15);
   line-height: var(--lh-160);
   font-variant-numeric: tabular-nums;
-  color: var(--text-soft);
+  color: var(--ink-900);
 }
 
 .pair {
@@ -363,16 +361,16 @@
 
 .sheet .confirmedTitle {
   margin-top: var(--sp-16);
-  font-family: var(--font-serif);
   font-size: var(--fs-28);
   line-height: var(--lh-115);
+  font-weight: var(--weight-semibold);
 }
 
 .sheet .confirmedLine {
   margin-top: var(--sp-12);
   font-size: var(--fs-16);
   line-height: var(--lh-160);
-  color: var(--ink-soft);
+  color: var(--grid-100);
 }
 
 .sheet .paid {
@@ -382,7 +380,7 @@
   padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-15);
-  color: var(--ink-soft);
+  color: var(--grid-100);
 }
 
 /* A time inside the notice: a change is charged, said in oxblood. */

@@ -8,7 +8,7 @@
 
 .done dt {
   margin-bottom: var(--sp-8);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .done dd {
@@ -41,7 +41,7 @@
 
 .invoiceIcon {
   flex-shrink: 0;
-  color: var(--ink);
+  color: var(--navy-900);
 }
 
 .invoiceLine,
