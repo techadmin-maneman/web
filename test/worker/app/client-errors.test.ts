@@ -83,7 +83,7 @@ describe("POST /api/client-errors", () => {
     const sent = {
       ...CRASH,
       path: "/r/RM4417",
-      message: `Error: props did not parse on ${landing}`,
+      message: `SecurityError: A history state object with URL '${landing}' cannot be created, on ${landing}.`,
       stack: `SyntaxError: Unexpected token\n    at hydrate (${landing}:1:2048)\n    at ${landing}?from=wa:2:10`,
       source: landing,
     };

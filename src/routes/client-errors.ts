@@ -17,10 +17,11 @@ import { visitorOf } from "../http/visitor.ts";
  * An invite's landing, "/r/MM4417": its code is a person's own, so it is taken out of every part of a report that can
  * name the page, the path, the message, the stack and the script, before the report is logged and sent on to Sentry,
  * whichever page or Worker sent it (site/src/lib/invite.ts keeps it out of what the site's own tags are given). In a
- * stack the code is followed by the line and column: "https://maneman.in/r/MM4417:1:2048".
+ * stack the code is followed by the line and column, "https://maneman.in/r/MM4417:1:2048", and in a message by a quote
+ * or a full stop: wherever it ends, it is taken out.
  */
 const INVITE_LANDING = new RegExp(`^/r/${INVITE_CODE}/?$`);
-const INVITE_IN_TEXT = new RegExp(`/r/${INVITE_CODE}(?=[/?#:\\s)]|$)`, "g");
+const INVITE_IN_TEXT = new RegExp(`/r/${INVITE_CODE}(?![A-Za-z0-9])`, "g");
 
 /** Text from a report with any invite's code taken out. */
 const withoutCode = (text: string | undefined): string | undefined => text?.replace(INVITE_IN_TEXT, "/r/");
