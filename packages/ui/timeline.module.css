@@ -1,0 +1,79 @@
+/* A log down the page (./Timeline.tsx): each line indented past its dot, a hairline joining each dot to the next. */
+
+@layer base, ui;
+
+@layer ui {
+  .timeline {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 var(--sp-16) var(--sp-28);
+  }
+
+  /* The dot, ringed in the strong ink. */
+  .item::before {
+    content: "";
+    position: absolute;
+    top: var(--sp-4);
+    left: var(--sp-4);
+    width: var(--sp-12);
+    height: var(--sp-12);
+    border: var(--rule-strong) solid var(--ui-strong);
+    border-radius: 50%;
+    background: var(--ui-ground);
+  }
+
+  /* The thread to the next dot. */
+  .item::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--sp-16) + var(--sp-2));
+    bottom: 0;
+    left: calc(var(--sp-8) + var(--sp-2));
+    width: var(--hairline);
+    background: var(--ui-line);
+  }
+
+  .item:last-child::after {
+    display: none;
+  }
+
+  .ours::before {
+    background: var(--ui-strong);
+  }
+
+  .done::before {
+    border-color: var(--status-done);
+    background: var(--status-done);
+  }
+
+  .waiting::before {
+    border-style: dashed;
+    border-color: var(--ui-accent);
+  }
+
+  .when {
+    color: var(--ui-text-muted);
+    font-size: var(--fs-13);
+  }
+
+  .who {
+    font-size: var(--fs-13);
+    font-weight: var(--weight-semibold);
+  }
+
+  .waiting .who {
+    color: var(--ui-attention);
+  }
+
+  .text {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-15);
+  }
+}

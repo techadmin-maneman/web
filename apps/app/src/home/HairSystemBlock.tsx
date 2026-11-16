@@ -9,17 +9,8 @@ import { dayMonth, fullDate, todayInIndia } from "@maneman/web-kit/dates";
 import type { Me } from "../api.ts";
 import { home } from "../content.ts";
 import { AppLink } from "../frame/Shell.tsx";
+import { monthWorn } from "./month-worn.ts";
 import styles from "./hair-system-block.module.css";
-
-/** The month of its life a hair system is in, from 1, counted from the day it was fitted. */
-export function monthWorn(fittedOn: string, today: string): number {
-  const part = (date: string, from: number, to: number) => Number(date.slice(from, to));
-  const months =
-    (part(today, 0, 4) - part(fittedOn, 0, 4)) * 12 +
-    (part(today, 5, 7) - part(fittedOn, 5, 7)) -
-    (part(today, 8, 10) < part(fittedOn, 8, 10) ? 1 : 0);
-  return Math.max(1, months + 1);
-}
 
 /** Booked, open to book now, or the day it opens on. */
 function lineOf(me: Me, worn: NonNullable<Me["hair_system"]>): string {

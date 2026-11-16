@@ -16,7 +16,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { NumberedSteps } from "@maneman/ui/NumberedSteps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { monthInIndia, shortDate } from "@maneman/web-kit/dates";
+import { hourInIndia, monthInIndia, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me, type OneVisitPrice, type VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -44,9 +44,6 @@ import styles from "./home.module.css";
 
 import { firstNameOf } from "@rules/lib/names.ts";
 
-/** The hour in India, which Home's greeting goes by. */
-const indiaHour = () => new Date(apiNow() + 330 * 60_000).getUTCHours();
-
 /** The card's line above the day: the visit's kind where it is a first fit or a replacement. */
 const labelOf = (visit: VisitSummary): string =>
   visit.type === "first_fit" || visit.type === "replacement" ? home.next.labels[visit.type] : home.next.label;
@@ -61,7 +58,7 @@ export function HomeScreen() {
   return (
     <Shell header={{ kind: "home" }} tab="/" kept>
       <div className={styles.home}>
-        <h1 className={styles.greeting}>{home.greeting(indiaHour(), me.first_name)}</h1>
+        <h1 className={styles.greeting}>{home.greeting(hourInIndia(apiNow()), me.first_name)}</h1>
         {recallFirst !== null && <RemakeCard remake={recallFirst} />}
         {me.missed_visit !== null && <Missed missed={me.missed_visit} />}
         <HomeBody me={me} offline={offline} />

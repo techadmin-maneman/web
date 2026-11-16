@@ -25,7 +25,7 @@ export function IssueState({ state }: { state: Issue["state"] }) {
 }
 
 /** An issue's path: its report's reference, or its ID where it has none. */
-export const issuePath = (issue: Issue): string => `/visits/issues/${issue.reference ?? issue.id}`;
+const issuePath = (issue: Issue): string => `/visits/issues/${issue.reference ?? issue.id}`;
 
 export function IssueList() {
   const [loaded, retry] = useLoad(api.problems);

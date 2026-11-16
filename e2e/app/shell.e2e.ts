@@ -87,7 +87,7 @@ test("says the error when the API cannot be reached, with a way to try again", a
   expect(await axeViolations(page)).toEqual([]);
 
   await page.unroute("**/api/me");
-  await page.getByRole("button", { name: appCopy.problem.tryAgain }).click();
+  await page.getByRole("button", { name: appCopy.states.error.retry }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
 });
 

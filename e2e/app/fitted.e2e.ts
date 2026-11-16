@@ -132,7 +132,7 @@ test("a visit or a payment that is not the client’s says it could not be found
   const nobody = "00000000-0000-4000-8000-000000000000";
   await page.goto(`/visits/${nobody}`);
   await expect(page.getByRole("alert")).toContainText(appCopy.visits.notFound);
-  await expect(page.getByRole("button", { name: appCopy.problem.tryAgain })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.errors.retry })).toHaveCount(0);
   await page.getByRole("main").getByRole("link", { name: appCopy.visits.detail.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.titles.visits })).toBeVisible();
   await page.goto(`/payments/${nobody}`);

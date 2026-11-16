@@ -42,6 +42,8 @@ const ComingScreen = lazyScreen(() => import("./frame/ComingScreen.tsx").then((m
 const ProfileScreen = lazyScreen(() => import("./profile/ProfileScreen.tsx").then((module) => module.ProfileScreen));
 const AddressScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.AddressScreen));
 const PrivacyScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.PrivacyScreen));
+const RaiseScreen = lazyScreen(() => import("./issues/RaiseScreen.tsx").then((module) => module.RaiseScreen));
+const IssueScreen = lazyScreen(() => import("./issues/IssueScreen.tsx").then((module) => module.IssueScreen));
 const AccountScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.AccountScreen));
 
 type Session =
@@ -80,7 +82,9 @@ function pageFor(route: Route) {
     case "account":
       return <AccountScreen />;
     case "issue":
+      return <IssueScreen id={route.id} />;
     case "raise":
+      return <RaiseScreen />;
     case "alerts":
     case "hairSystems":
       return <ComingScreen page={route.page} />;

@@ -27,7 +27,7 @@ type ConsentScreen = NonNullable<Schemas["ConsentSwitch"]["source"]>;
 export type VisitSummary = Schemas["VisitSummary"];
 export type Visits = Schemas["Visits"];
 export type VisitDetail = Schemas["VisitDetail"];
-export type PhotoLink = Schemas["PhotoLink"];
+type PhotoLink = Schemas["PhotoLink"];
 export type PhotoSet = Schemas["PhotoSet"];
 export type PhotoTimeline = Schemas["PhotoTimeline"];
 export type TryOn = Schemas["TryOn"];
@@ -47,7 +47,6 @@ export type Refer = Schemas["Refer"];
 export type BookableType = Me["booking"]["types"][number];
 export type OfferedService = Me["booking"]["services"][number];
 export type Issue = Schemas["Issue"];
-export type IssueEvent = Schemas["IssueEvent"];
 export type ProblemAbout = Schemas["ProblemReport"]["about"];
 export type BookingWindow = Hold["window"];
 

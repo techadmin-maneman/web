@@ -1,0 +1,54 @@
+// The client's issue log (docs/decisions/0259-the-issue-log.md; src/routes/client/problems.ts, problem-log.ts): a
+// fitted client raises an issue about a visit, from the visit's page, by category and in their words; it opens on its
+// own page with its reference, takes an update, and their word that it is sorted; Visits lists it with where it stands.
+
+import { expect, test } from "../support.ts";
+import { axeViolations } from "../a11y.ts";
+import { fittedClient } from "./fitted.ts";
+import { logIn } from "./signed-in.ts";
+import * as appCopy from "../../apps/app/src/content.ts";
+import { fullDate } from "../../packages/web-kit/dates.ts";
+
+const copy = appCopy.issues;
+
+test("raises an issue about a visit, then updates it and says it is sorted, each in its log", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await page.getByRole("navigation", { name: appCopy.shell.tabsLabel }).waitFor();
+  await page.goto(`/visits/${client.firstFit.id}`);
+  await page.getByRole("link", { name: copy.page.reportVisit }).click();
+
+  // The visit it came from is chosen; the category and the words are the client's.
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.titles.raise })).toBeVisible();
+  const send = page.getByRole("button", { name: copy.raise.send });
+  await expect(send).toBeDisabled();
+  await expect(page.getByRole("radio", { name: new RegExp(fullDate(client.firstFit.date)) })).toBeChecked();
+  await page.getByRole("radio", { name: appCopy.ISSUE_CATEGORIES.edges_lifting }).click();
+  await page.getByRole("textbox", { name: copy.raise.what }).fill("The front lifts after the gym.");
+  expect(await axeViolations(page)).toEqual([]);
+  await send.click();
+
+  // Its own page, named by its reference, with the client's words first in its log and Care still to answer.
+  await expect(page).toHaveURL(/\/visits\/issues\/MM-ISS-\d{4}$/);
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.ISSUE_CATEGORIES.edges_lifting })).toBeVisible();
+  await expect(page.getByText("The front lifts after the gym.")).toBeVisible();
+  await expect(page.getByText(copy.page.waiting)).toBeVisible();
+  await expect(page.getByRole("link", { name: copy.page.theVisit })).toHaveAttribute(
+    "href",
+    `/visits/${client.firstFit.id}`,
+  );
+
+  await page.getByRole("textbox", { name: copy.page.update }).fill("It is worse at the left temple now.");
+  await page.getByRole("button", { name: copy.page.send }).click();
+  await expect(page.getByText("It is worse at the left temple now.")).toBeVisible();
+
+  await page.getByRole("button", { name: copy.page.sorted }).click();
+  await expect(page.getByText(copy.page.resolved)).toBeVisible();
+  await expect(page.getByRole("button", { name: copy.page.again })).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+
+  // Visits lists it under Issues, resolved.
+  await page.goto("/visits/issues");
+  const row = page.getByRole("link", { name: new RegExp(appCopy.ISSUE_CATEGORIES.edges_lifting) });
+  await expect(row).toContainText(copy.states.resolved);
+});

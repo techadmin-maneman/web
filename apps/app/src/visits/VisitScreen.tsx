@@ -6,23 +6,24 @@
 // next visit, with Reschedule and Add a note until it begins. A
 // visit that is not the client's says so, rather than offering to try again.
 
-import { DisputeSheet, ProblemLink } from "../booking/index.ts";
+import { DisputeSheet } from "../booking/index.ts";
 import { VisitCard } from "../home/index.ts";
 import { LINKS_FRESH_MS, PhotoRow, type OpenPhoto, PhotoSheet, type Relink, useRelink } from "../photos/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { api, documentUrl, receiptUrl, type VisitDetail } from "../api.ts";
-import { messages, ONE_VISIT, payments, visitLength, visits } from "../content.ts";
+import { issues, messages, ONE_VISIT, payments, visitLength, visits } from "../content.ts";
 import { AddToCalendar } from "./AddToCalendar.tsx";
 import { OpenDocument } from "../payments/index.ts";
-import { Shell } from "../frame/Shell.tsx";
+import { AppLink, Shell } from "../frame/Shell.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
 import { invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
@@ -171,7 +172,12 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
       <Receipt paid={visit.paid} />
       <Invoice visit={visit} />
       {visit.status === "completed" && (
-        <ProblemLink about={{ about: "visit", visitId: visit.id }} className={styles.dispute} />
+        <AppLink
+          className={textLinkLook({ tone: "muted", className: styles.dispute })}
+          to={`/visits/issues/new?visit=${visit.id}`}
+        >
+          {issues.page.reportVisit}
+        </AppLink>
       )}
       {open !== null && (
         <PhotoSheet

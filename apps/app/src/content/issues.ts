@@ -1,7 +1,10 @@
 // The issue log (design/client-redesign, the issue and raise screens; docs/decisions/0259-the-issue-log.md): what a
 // client raised, where it stands, and what has been said about it.
 
-import type { IssueEvent, ProblemAbout } from "../api.ts";
+import type { components } from "../api-schema.ts";
+
+type IssueEvent = components["schemas"]["IssueEvent"];
+type ProblemAbout = components["schemas"]["ProblemReport"]["about"];
 
 /** What a report is about, as the client picks it. */
 export const ISSUE_CATEGORIES: Readonly<Record<Exclude<ProblemAbout, "hair_system">, string>> = {
@@ -32,17 +35,20 @@ export const issues = {
   failed: "We couldn’t load your issues.",
   /** The issue's own page. */
   page: {
-    linkedVisit: (date: string) => `Linked visit: ${date}`,
+    theVisit: "The visit it’s about",
+    /** A visit's page, to raise one about it. */
+    reportVisit: "Report an issue with this visit",
     log: "Log",
     waiting: "Waiting on Mane Man",
     resolved: "Resolved. If it comes back, reopen it and the history stays together.",
     again: "It’s happening again",
     againLabel: "What’s happening now",
     update: "Add an update",
-    updatePlaceholder: "Anything new since you raised this",
     send: "Send update",
     sorted: "It’s sorted",
     reopen: "Reopen it",
+    addPhoto: "Add a photo",
+    photos: (n: number) => (n === 1 ? "1 photo with this report" : `${String(n)} photos with this report`),
     failed: "That didn’t go through. Try again.",
     notFound: "We couldn’t find this issue.",
   },
@@ -75,6 +81,7 @@ export const issues = {
     photos: "Photos",
     photosHint: "Optional, and they help us a lot",
     addPhotos: "Add photos",
+    photoUnread: "That photo couldn’t be read. Try another, or take it again.",
     removePhoto: (n: number) => `Remove photo ${String(n)}`,
     visit: "Linked visit",
     visitHint: "Optional",
@@ -84,5 +91,8 @@ export const issues = {
     failed: "That didn’t send. Try again.",
     limited: "You’ve reported a lot today. Message us on WhatsApp instead.",
     photoFailed: "Your report is in, but a photo didn’t upload. Add it from the issue.",
+    /** "We reply in the app and on WhatsApp within an hour, 9 am–9 pm. …" */
+    note: (within: string, hours: string) =>
+      `We reply in the app and on WhatsApp within ${within}, ${hours}. Everything stays in your issue log.`,
   },
 } as const;

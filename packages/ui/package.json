@@ -68,6 +68,7 @@
     "./SearchInput": "./SearchInput.tsx",
     "./SearchMenu": "./SearchMenu.tsx",
     "./Segmented": "./Segmented.tsx",
+    "./Timeline": "./Timeline.tsx",
     "./SelectCard": "./SelectCard.tsx",
     "./SettingRow": "./SettingRow.tsx",
     "./SettingsLayout": "./SettingsLayout.tsx",

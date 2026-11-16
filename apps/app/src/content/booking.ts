@@ -232,22 +232,6 @@ export const note = {
   whatsapp: "Send it on WhatsApp",
 };
 
-/** Something wrong with the hair system or a visit, told to Care. */
-export const problem = {
-  link: { hair_system: "Something wrong with your hair system?", visit: "Something wrong with this visit?" },
-  title: { hair_system: "What’s wrong with your hair system?", visit: "What went wrong?" },
-  label: "In your words",
-  send: "Send to Care",
-  sending: "Sending…",
-  sent: "Sent. Care will reply on WhatsApp.",
-  addPhotos: "Add photos on WhatsApp",
-  /** What WhatsApp opens with, for the photographs. */
-  photos: "Photos for Care",
-  limited: "You’ve sent several today. Message us on WhatsApp.",
-  failed: "That didn’t go through. Try again.",
-  tryAgain: "Try again",
-};
-
 export const dispute = {
   title: "Dispute this charge",
   label: "Why is the charge wrong?",
