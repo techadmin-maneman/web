@@ -213,7 +213,7 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
   // Where the money goes back to, which the list no longer says.
   await expect(
     page.getByRole("term").filter({ hasText: appCopy.payments.rows.destination }).locator("+ dd"),
-  ).toHaveText("UPI");
+  ).toHaveText(appCopy.payments.refundTo.upi ?? "");
   // Begun eighteen days ago, it is past Razorpay's 5 to 7 working days, and the client is told so.
   await expect(page.getByText(appCopy.payments.lateRefund)).toBeVisible();
   await expect(page.getByRole("link", { name: appCopy.visits.detail.invoice.message })).toHaveAttribute(

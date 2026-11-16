@@ -40,7 +40,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   // Every visit opens its own page: the one coming, under Upcoming, then the three done, under Past.
   const visits = page.getByRole("main").getByRole("link");
   await expect(visits).toHaveCount(1);
-  await expect(visits.nth(0)).toContainText("Service visit");
+  await expect(visits.nth(0)).toContainText(appCopy.VISIT_TYPES.service);
   await expect(visits.nth(0)).toContainText(/day · 12–12:30\spm · Imran/);
   await page.getByRole("radio", { name: appCopy.visits.past }).click();
   await expect(visits).toHaveCount(3);
