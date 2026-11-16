@@ -33,8 +33,7 @@
   gap: var(--sp-8);
 }
 
-.photo,
-.add {
+.photo {
   position: relative;
   width: calc(var(--sp-36) * 2);
   height: calc(var(--sp-36) * 2);
@@ -53,28 +52,6 @@
   top: 0;
   right: 0;
   background: var(--white-000);
-}
-
-.add {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--hairline) dashed var(--stone);
-  color: var(--navy-900);
-  cursor: pointer;
-}
-
-/* The file chooser is unseen; its label is the tile, and takes the focus ring for it. */
-.file {
-  position: absolute;
-  width: var(--hairline);
-  height: var(--hairline);
-  opacity: 0;
-}
-
-.add:has(.file:focus-visible) {
-  outline: var(--focus-width) solid var(--focus-colour);
-  outline-offset: var(--focus-offset);
 }
 
 .visits {

@@ -5,6 +5,7 @@
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { IconButton } from "@maneman/ui/IconButton";
+import { PhotoPick } from "@maneman/ui/PhotoPick";
 import { smallJpeg } from "@maneman/web-kit/small-jpeg";
 import { PROBLEM_PHOTOS_MAX } from "@rules/policy/problems.ts";
 import { useEffect, useState } from "react";
@@ -44,8 +45,8 @@ export function RaisePhotos({
   const copy = issues.raise;
   const shown = useShown(photos);
   const [failed, setFailed] = useState(false);
-  const add = async (files: FileList | null) => {
-    const picked = [...(files ?? [])].slice(0, PROBLEM_PHOTOS_MAX - photos.length);
+  const add = async (files: readonly File[]) => {
+    const picked = files.slice(0, PROBLEM_PHOTOS_MAX - photos.length);
     try {
       onChange([...photos, ...(await Promise.all(picked.map(small)))]);
       setFailed(false);
@@ -75,17 +76,9 @@ export function RaisePhotos({
           </div>
         ))}
         {photos.length < PROBLEM_PHOTOS_MAX && (
-          <label className={styles.add}>
+          <PhotoPick look="tile" label={copy.addPhotos} multiple onPick={(files) => void add(files)}>
             <Icon d={ICONS.plus} size="md" />
-            <input
-              className={styles.file}
-              type="file"
-              accept="image/*"
-              multiple
-              aria-label={copy.addPhotos}
-              onChange={(event) => void add(event.currentTarget.files)}
-            />
-          </label>
+          </PhotoPick>
         )}
       </div>
       {failed && (

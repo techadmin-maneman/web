@@ -69,6 +69,7 @@
     "./SearchMenu": "./SearchMenu.tsx",
     "./Segmented": "./Segmented.tsx",
     "./Timeline": "./Timeline.tsx",
+    "./PhotoPick": "./PhotoPick.tsx",
     "./SelectCard": "./SelectCard.tsx",
     "./SettingRow": "./SettingRow.tsx",
     "./SettingsLayout": "./SettingsLayout.tsx",

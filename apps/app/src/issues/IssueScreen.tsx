@@ -14,7 +14,7 @@ import { issues, profile, titles } from "../content.ts";
 import { PageFailed } from "../frame/PageFailed.tsx";
 import { Shell } from "../frame/Shell.tsx";
 import { useSession } from "../session.ts";
-import { IssueState, issueTitle } from "../visits/IssueList.tsx";
+import { IssueState, issueTitle } from "../visits/index.ts";
 import { IssueActions } from "./IssueActions.tsx";
 import styles from "./issue.module.css";
 

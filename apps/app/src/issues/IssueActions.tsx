@@ -3,6 +3,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
+import { PhotoPick } from "@maneman/ui/PhotoPick";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { WordsField } from "@maneman/ui/WordsField";
 import { PROBLEM_MAX_CHARS, PROBLEM_PHOTOS_MAX } from "@rules/policy/problems.ts";
@@ -23,16 +24,9 @@ function AddPhoto({ reference, onSent, onFailed }: { reference: string; onSent: 
       else onFailed();
     });
   return (
-    <label className={styles.addPhoto} aria-busy={busy}>
+    <PhotoPick look="words" label={issues.page.addPhoto} disabled={busy} onPick={(files) => void send(files[0])}>
       {issues.page.addPhoto}
-      <input
-        className={styles.file}
-        type="file"
-        accept="image/*"
-        disabled={busy}
-        onChange={(event) => void send(event.currentTarget.files?.[0])}
-      />
-    </label>
+    </PhotoPick>
   );
 }
 

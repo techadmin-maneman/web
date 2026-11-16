@@ -56,31 +56,6 @@
   min-width: max-content;
 }
 
-/* Adding a photograph: words that act, over the unseen file chooser, which takes the focus ring for them. */
-.addPhoto {
-  position: relative;
-  align-self: flex-start;
-  min-height: var(--tap);
-  padding: var(--sp-12) 0;
-  color: var(--navy-900);
-  font-size: var(--fs-15);
-  font-weight: var(--weight-medium);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.file {
-  position: absolute;
-  width: var(--hairline);
-  height: var(--hairline);
-  opacity: 0;
-}
-
-.addPhoto:has(.file:focus-visible) {
-  outline: var(--focus-width) solid var(--focus-colour);
-  outline-offset: var(--focus-offset);
-}
-
 .problem {
   margin: 0;
   color: var(--red-700);

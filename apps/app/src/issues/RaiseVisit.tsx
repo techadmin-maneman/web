@@ -2,6 +2,7 @@
 // none. Nothing to choose before a first visit.
 
 import { ChoiceCard } from "@maneman/ui/ChoiceCard";
+import { Fieldset } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate } from "@maneman/web-kit/dates";
 import { api } from "../api.ts";
@@ -18,10 +19,15 @@ export function RaiseVisit({ chosen, onChoose }: { chosen: string | null; onChoo
   const recent = loaded.value.past.filter((visit, index) => index < RECENT || visit.id === chosen);
   if (recent.length === 0) return null;
   return (
-    <fieldset className={styles.visits}>
-      <legend className={styles.title}>
-        {copy.visit} <span className={styles.hint}>{copy.visitHint}</span>
-      </legend>
+    <Fieldset
+      className={styles.visits}
+      legendLook="title"
+      legend={
+        <>
+          {copy.visit} <span className={styles.hint}>{copy.visitHint}</span>
+        </>
+      }
+    >
       {recent.map((visit) => (
         <ChoiceCard
           key={visit.id}
@@ -44,6 +50,6 @@ export function RaiseVisit({ chosen, onChoose }: { chosen: string | null; onChoo
       >
         {copy.noVisit}
       </ChoiceCard>
-    </fieldset>
+    </Fieldset>
   );
 }

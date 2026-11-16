@@ -61,9 +61,13 @@ describe("the production gate on the apps' copy", () => {
       ],
       app: [
         "apps/app/src/content.ts",
+        "apps/app/src/content/alerts.ts",
         "apps/app/src/content/booking.ts",
         "apps/app/src/content/common.ts",
+        "apps/app/src/content/hair-systems.ts",
         "apps/app/src/content/home.ts",
+        "apps/app/src/content/issues.ts",
+        "apps/app/src/content/live.ts",
         "apps/app/src/content/login.ts",
         "apps/app/src/content/payments.ts",
         "apps/app/src/content/photos.ts",
