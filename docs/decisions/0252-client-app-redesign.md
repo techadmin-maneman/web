@@ -108,3 +108,9 @@ Recorded as they are found while building; `docs/client-redesign/REPORT.md` list
 - **The waits**: the design's "Waiting for your bank" is said as "This is taking longer than usual", with what happens
   next: the app cannot tell a bank's wait from the booking's own. A wait that ended without a booking (that one, or a
   refund) has Close at its foot.
+- **The replacement's choice of hair system** marks each by its replacement price against the one worn (Upgrade,
+  Downgrade, Switch at the same price), as the price book has no rank. Its note says "Any … hair system ordered for
+  you goes back to stock, at no cost to you", not "The … we set aside for you costs you nothing": nothing holds a hair
+  system for a client (ADR 0253, decision 5). It says nothing of a hair system made to order: the days open when one
+  can be fitted (decision 6), and a size no stock code matches is ops' on WhatsApp. "Not sure? Ask us" opens WhatsApp,
+  the app's way to ask. Where the packages' figures cannot be read, each choice keeps its name and price.

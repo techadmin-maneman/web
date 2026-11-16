@@ -10,6 +10,8 @@ import { addDays, indiaDate } from "../../src/lib/india-time.ts";
 import { expect, test } from "../support.ts";
 import { noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
+import { nextVisitClients } from "./next-visit.ts";
+import { logIn } from "./signed-in.ts";
 import {
   FREE_UNTIL,
   toPayment,
@@ -227,4 +229,60 @@ test("says a late change keeps the payment, never a late fee, where the booking 
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(FREE_UNTIL)).toBeVisible();
   await expect(pay.getByText(/Moving or cancelling inside/)).toHaveCount(0);
+});
+
+/** A replacement's hair systems, as a client wearing one of two packages is offered them (ADR 0253). */
+const WORN = { code: "standard", name: "Mane Man Standard" };
+const CHEAPER = { tier: "essential", name: "Mane Man Essential", amount: 1_500_000 };
+
+test("offers a replacement's hair systems, the one worn to keep, and asks the days of the one chosen", async ({
+  page,
+}) => {
+  const { replacement } = nextVisitClients();
+  type Me = { hair_system: unknown; booking?: { services: { type: string; tier: string; name: string }[] } };
+  await passedThrough(page, "**/api/me", (me: Me) =>
+    me.booking === undefined
+      ? me
+      : {
+          ...me,
+          hair_system: {
+            package: WORN.code,
+            name: WORN.name,
+            fitted_on: indiaDay(-170),
+            replace_after_months: 6,
+            due_on: indiaDay(10),
+            replacement_opens_on: indiaDay(-5),
+          },
+          booking: {
+            ...me.booking,
+            services: [
+              ...me.booking.services.map((each) => (each.type === "replacement" ? { ...each, name: WORN.name } : each)),
+              {
+                type: "replacement",
+                tier: CHEAPER.tier,
+                name: CHEAPER.name,
+                description: null,
+                minutes: 135,
+                price: { amount_ex_gst: CHEAPER.amount, amount: CHEAPER.amount, gst_percent: 0 },
+              },
+            ],
+          },
+        },
+  );
+  await logIn(page, replacement.mobile);
+  await page.getByRole("button", { name: appCopy.home.prompt.bookNext }).click();
+  const tiers = page.getByRole("dialog", { name: appCopy.booking.tier.head });
+  await expect(tiers.getByRole("radio", { name: new RegExp(`^${WORN.name}`) })).toBeChecked();
+  await expect(tiers.getByText(appCopy.booking.tier.keep, { exact: true })).toBeVisible();
+  await tiers.getByRole("radio", { name: new RegExp(`^${CHEAPER.name}`) }).check();
+  await expect(tiers.getByText(appCopy.booking.tier.downgrade, { exact: true })).toBeVisible();
+  await expect(tiers.getByRole("status")).toContainText(appCopy.booking.tier.oldBack(WORN.name));
+  await scanOf(page);
+
+  const asked = page.waitForRequest((request) => {
+    const url = new URL(request.url());
+    return url.pathname === "/api/availability" && url.searchParams.get("tier") === CHEAPER.tier;
+  });
+  await tiers.getByRole("button", { name: appCopy.booking.tier.next }).click();
+  await asked;
 });

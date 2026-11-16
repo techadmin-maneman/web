@@ -31,6 +31,7 @@ import { ConfirmedStep, ExpiredStep, WaitStep } from "./steps/OutcomeSteps.tsx";
 import { LoadingStep, moveLine, stepOf, TITLE_ID } from "./steps/shared.tsx";
 import { PayStep } from "./steps/PayStep.tsx";
 import { ServiceStep, type Recommended } from "./steps/ServiceStep.tsx";
+import { TierStep } from "./steps/TierStep.tsx";
 import { WhenStep } from "./steps/WhenStep.tsx";
 import styles from "./booking.module.css";
 
@@ -256,6 +257,19 @@ function BeforeTheDays(props: {
     case "broken":
       return <WaitStep title={booking.failedToStart} onClose={props.onClose} />;
     case "service":
+      // A replacement's choice is of its hair system, kept or changed (ADR 0253); any other kind's, of its visit.
+      if (props.services.every((service) => service.type === "replacement")) {
+        return (
+          <TierStep
+            step={{ at: 1, of: stepOf(0, props.before).of }}
+            services={props.services}
+            chosen={props.picked}
+            onChoose={props.onPick}
+            onNext={props.onPicked}
+            onClose={props.onClose}
+          />
+        );
+      }
       return (
         <ServiceStep
           step={{ at: 1, of: stepOf(0, props.before).of }}
