@@ -14,8 +14,17 @@ export const live = {
   atTheGate: (technician: string) => `${technician} is at the gate`,
   atTheDoor: (technician: string) => `${technician} is at your door`,
   arrivingAround: (time: string) => `Arriving around ${time}`,
-  /** The technician's word as they gave it, beneath. */
-  said: "Also sent to you on WhatsApp",
+  /** The technician's word, as their app sent it: "On my way, 20 min". */
+  word: {
+    on_the_way: (minutes: number | null) => (minutes === null ? "On my way" : `On my way, ${String(minutes)} min`),
+    running_late: (minutes: number | null) =>
+      minutes === null ? "Running late" : `Running ${String(minutes)} min late`,
+    at_the_gate: () => "At the gate",
+  },
+  /** While the technician is on the way: a note for them, or a word with us. */
+  messageUs: "Message us",
+  /** The message WhatsApp opens with. */
+  aboutToday: (what: string) => `About my ${what.toLowerCase()} today: `,
   waits: (until: string) => `They wait until ${until}. If nobody answers, the visit is marked missed.`,
   inProgress: "Visit in progress",
   /** "Step 2 of 5: Hair system". */

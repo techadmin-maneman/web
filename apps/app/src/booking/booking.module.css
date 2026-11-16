@@ -399,3 +399,10 @@
   color: var(--ink-500);
   font-size: var(--fs-13);
 }
+
+/* The ways to change a visit, as the design lists them: rows between hairlines. */
+.changeRows {
+  margin-top: var(--sp-8);
+  border-top: var(--hairline) solid var(--line-200);
+  border-bottom: var(--hairline) solid var(--line-200);
+}

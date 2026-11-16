@@ -30,7 +30,7 @@ async function scan(page: Page): Promise<void> {
 async function reschedule(page: Page, mobile: string) {
   await logIn(page, mobile);
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
-  return page.getByRole("dialog", { name: /^Move \w+day’s visit$/ });
+  return page.getByRole("dialog", { name: /^.+ on \w{3} \d{1,2} \w{3}$/ });
 }
 
 /** Through the date and window steps, to the pay step. */
@@ -53,7 +53,7 @@ test("C1: a paid visit is marked Paid, and opens with Reschedule", async ({ page
   await expect(card).toContainText(appCopy.visits.paid);
   await card.click();
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
-  await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: /^.+ on \w{3} \d{1,2} \w{3}$/ })).toBeVisible();
 });
 
 test("C7: a visit more than 24 hours out moves for free, its payment carried over", async ({ page }) => {
@@ -82,7 +82,7 @@ test("C8: cancelling more than 24 hours out, from the visit’s own page, gives 
   await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.visits }).click();
   await page.getByRole("main").getByRole("link").first().click();
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
-  const sheet = page.getByRole("dialog", { name: /^Move \w+day’s visit$/ });
+  const sheet = page.getByRole("dialog", { name: /^.+ on \w{3} \d{1,2} \w{3}$/ });
   await sheet.getByRole("button", { name: appCopy.change.move.cancelInstead }).click();
   const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
   await expect(cancel.getByText(appCopy.change.cancel.refund(PRICE.service, "UPI"))).toBeVisible();

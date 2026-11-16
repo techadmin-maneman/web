@@ -72,5 +72,5 @@ test("a proposed time taken since says so, and leaves the client to pick another
   await expect(page.getByText(appCopy.home.proposal.gone)).toBeVisible();
   await expect(page.getByRole("button", { name: /^Accept / })).toHaveCount(0);
   await page.getByRole("button", { name: appCopy.home.proposal.pick }).click();
-  await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: /^.+ on \w{3} \d{1,2} \w{3}$/ })).toBeVisible();
 });

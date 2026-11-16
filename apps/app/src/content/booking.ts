@@ -264,19 +264,19 @@ export const dispute = {
 export const change = {
   visit: (weekday: string) => `${weekday}’s visit`,
   move: {
-    title: (visit: string) => `Move ${visit}`,
+    /** "Service visit on Thu 19 Nov": what the visit is and its day, over the ways to change it. */
+    title: (what: string, date: string) => `${what} on ${date}`,
     free: (amount: string) => `Free to move. Your ${amount} carries over.`,
     charged: (amount: string) =>
       `This is a late change: your ${amount} isn’t refunded, and the new visit is paid separately.`,
-    pick: "Pick a new date",
+    pick: "Move to another time",
     accept: "Move and accept charge",
-    keep: "Keep it",
     // Nothing paid, and the way to the cancel sheet. A late fee's line is the credit step's (booking.lateFee).
     freeNothingPaid: "Free to move.",
     // What a move in place keeps, on its pay step.
     carriesOver: (amount: string) => `Your ${amount} carries over.`,
     creditCarriesOver: "Your free service visit carries over.",
-    cancelInstead: "Cancel instead",
+    cancelInstead: "Cancel the visit",
     creditCharged:
       "This is a late change: your free service visit isn’t returned, and the new visit is paid separately.",
   },

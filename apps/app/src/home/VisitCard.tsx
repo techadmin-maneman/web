@@ -121,7 +121,7 @@ function NoteOnWhatsApp({ message }: { message: string }) {
  * on WhatsApp. Tapped offline, it opens WhatsApp, which keeps the note until the phone is back online. A sheet
  * already open stays open when the connection drops, with what the client has written.
  */
-function AddNote(props: { what: string; date: string; noting: NotingVisit | null; onNoted?: (note: string) => void }) {
+export function AddNote(props: { what: string; date: string; noting: NotingVisit | null; onNoted?: (note: string) => void }) {
   const { me, offline } = useSession();
   const [open, setOpen] = useState(false);
   const message = messages.note(props.what, props.date);

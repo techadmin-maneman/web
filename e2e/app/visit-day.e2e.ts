@@ -45,6 +45,13 @@ test("puts a technician running late after the arrival window, never at a time a
   await expect(page.getByText(live.runningLate("Imran"))).toBeVisible();
   const around = indiaClock(new Date(Date.parse(said) + 15 * MINUTE_MS).toISOString());
   await expect(page.getByText(live.arrivingAround(around))).toBeVisible();
+  // Their word as their app sent it, and a note or a message still to send.
+  await expect(page.getByText(`Imran, ${indiaClock(said)}: “${live.word.running_late(15)}”`)).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.home.note })).toBeVisible();
+  await expect(page.getByRole("link", { name: live.messageUs })).toHaveAttribute(
+    "href",
+    new RegExp(encodeURIComponent(live.aboutToday(appCopy.VISIT_TYPES.service))),
+  );
 });
 
 test("says a visit is being closed, or was missed, and never that it is done", async ({ page }) => {

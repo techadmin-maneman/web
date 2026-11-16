@@ -4,7 +4,7 @@
 // missed. Home is read again every 30 seconds while it is live, and its title is announced as it changes.
 
 import { CLIENT_ICONS, GLYPHS } from "@maneman/brand/icons";
-import { buttonLook } from "@maneman/ui/Button";
+import { ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { StepProgress, stepStates } from "@maneman/ui/Progress";
 import { apiNow } from "@maneman/web-kit/clock";
 import { indiaClock, shortDate, todayInIndia } from "@maneman/web-kit/dates";
@@ -19,7 +19,18 @@ import { useSession } from "../session.ts";
 import { liveStateOf, MOVING, SETTLED, TRACK_AT, type LiveState } from "./live-state.ts";
 import { ProposedMove } from "./ProposedMove.tsx";
 import { SignOffPanel, signedLine } from "./SignOffPanel.tsx";
-import { Actions, changingOf, Fact, notingOf, OneVisitTerms, Technician, whenText } from "./VisitCard.tsx";
+import {
+  Actions,
+  AddNote,
+  changingOf,
+  Fact,
+  notingOf,
+  OneVisitTerms,
+  Technician,
+  whenText,
+  type NotingVisit,
+} from "./VisitCard.tsx";
+import { whatsappWith } from "../lib/whatsapp.ts";
 import home from "./home.module.css";
 import styles from "./live-card.module.css";
 
@@ -106,6 +117,37 @@ function Track({ at }: { at: number }) {
   );
 }
 
+/** The technician's last word, as their app sent it: who, when, and what. */
+function Word({ visit, technician }: { visit: VisitSummary; technician: string }) {
+  const update = visit.latest_update;
+  if (update === null) return null;
+  return (
+    <p className={styles.word}>
+      <strong>{`${technician}, ${indiaClock(update.at)}: `}</strong>
+      {`“${live.word[update.kind](update.minutes)}”`}
+    </p>
+  );
+}
+
+/** On the way: a note for the technician, or a word with us on WhatsApp. */
+function OnTheWayActions(props: { visit: VisitSummary; noting: NotingVisit; onNoted: (note: string) => void }) {
+  const what = summaryName(props.visit);
+  return (
+    <div className={home.actions}>
+      <AddNote what={what} date={shortDate(props.visit.date)} noting={props.noting} onNoted={props.onNoted} />
+      <ButtonLink
+        variant="outlineOnInk"
+        size="control"
+        className={home.action}
+        href={whatsappWith(live.aboutToday(what))}
+        rel="noopener"
+      >
+        {live.messageUs}
+      </ButtonLink>
+    </div>
+  );
+}
+
 /** Before the technician arrives: what is paid at the visit, a one visit's terms, and the client's note. */
 function Kept({ visit, clientNote }: { visit: VisitSummary; clientNote: string | null }) {
   const oneVisit = oneVisitOf(visit);
@@ -131,7 +173,12 @@ function Body({ visit, state, technician }: { visit: VisitSummary; state: LiveSt
     case "on_the_way":
     case "running_late":
     case "at_the_gate":
-      return <ul className={home.facts}>{visit.place !== "" && <Fact icon={GLYPHS.pin}>{visit.place}</Fact>}</ul>;
+      return (
+        <>
+          <Word visit={visit} technician={technician} />
+          <ul className={home.facts}>{visit.place !== "" && <Fact icon={GLYPHS.pin}>{visit.place}</Fact>}</ul>
+        </>
+      );
     case "arrived":
       return visit.waits_until === null ? null : (
         <p className={styles.line}>{live.waits(indiaClock(visit.waits_until))}</p>
@@ -159,6 +206,8 @@ function Body({ visit, state, technician }: { visit: VisitSummary; state: LiveSt
 
 /** Before the technician comes: what is kept on the visit can still be changed. */
 const BEFORE: ReadonlySet<LiveState> = new Set(["today", "proposal", "on_the_way", "running_late", "at_the_gate"]);
+/** The technician coming: their word, and a note or a message still to send. */
+const ON_THE_WAY: ReadonlySet<LiveState> = new Set(["on_the_way", "running_late", "at_the_gate"]);
 /** Who is coming, while that still helps. */
 const NAMED: ReadonlySet<LiveState> = new Set(["today", "on_the_way", "running_late", "at_the_gate", "arrived"]);
 
@@ -187,6 +236,9 @@ export function LiveCard({ visit, label }: { visit: VisitSummary; label: { reado
       <Body visit={visit} state={state} technician={technician} />
       {BEFORE.has(state) && <Kept visit={visit} clientNote={clientNote} />}
       {NAMED.has(state) && visit.technician !== null && <Technician technician={visit.technician} />}
+      {ON_THE_WAY.has(state) && (
+        <OnTheWayActions visit={visit} noting={{ ...notingOf(visit), note: clientNote }} onNoted={setNoted} />
+      )}
       {(state === "today" || state === "proposal") && (
         <Actions
           what={what}
