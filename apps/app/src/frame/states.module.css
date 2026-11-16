@@ -8,16 +8,15 @@
   gap: var(--sp-16);
   min-height: 100dvh;
   padding: var(--sp-24) var(--sp-20);
-  background: var(--paper);
-  color: var(--text);
+  background: var(--white-000);
+  color: var(--ink-900);
 }
 
 .title {
   margin: 0;
-  font-family: var(--font-serif);
   font-size: var(--fs-24);
-  font-weight: var(--weight-regular);
   line-height: var(--lh-115);
+  font-weight: var(--weight-semibold);
 }
 
 .actions {

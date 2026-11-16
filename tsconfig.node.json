@@ -45,6 +45,7 @@
     "packages/web-kit/sw-update.ts",
     "packages/web-kit/trusted-scripts.ts",
     "packages/web-kit/turnstile.ts",
+    "packages/web-kit/web-push.ts",
     "scripts/dev/seed-local.ts",
     "scripts/fidelity/*.ts",
     "scripts/lib/fidelity.ts",

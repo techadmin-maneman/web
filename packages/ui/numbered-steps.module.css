@@ -19,11 +19,12 @@
     gap: var(--sp-16);
   }
 
+  /* In the app's title font (./base.css), its figures lining: the client's Plex, where the serif's sat old-style. */
   .number {
     flex-shrink: 0;
     width: var(--sp-16);
-    font-family: var(--font-serif);
-    font-variant-numeric: oldstyle-nums;
-    color: var(--text-muted);
+    font-family: var(--title-font);
+    font-variant-numeric: lining-nums tabular-nums;
+    color: var(--ui-text-muted);
   }
 }

@@ -5625,6 +5625,10 @@ export interface components {
             } | null;
             /** @description The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed. */
             payment_owed: components["schemas"]["OwedPayment"] | null;
+            /** @description How many of the inbox's alerts are not read: the bell's. */
+            alerts_unread: number;
+            /** @description How many issues in the client's log are not yet resolved: Visits' count. */
+            issues_open: number;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
             /** @description Home's one prompt, the first that applies, in this order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies. */

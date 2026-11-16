@@ -10,6 +10,7 @@ import {
   listMonth,
   longDate,
   minutesBetween,
+  hourInIndia,
   monthInIndia,
   shortDate,
   shortMonth,
@@ -90,11 +91,13 @@ describe("web-kit dates", () => {
   });
 
   // Half past midnight on New Year's Day in India is still the old year on a phone set to London.
-  it("reads today, this month and this year in India, whatever zone the phone is set to", () => {
+  it("reads today, this month, this year and the hour in India, whatever zone the phone is set to", () => {
     const newYear = Date.parse("2026-12-31T19:00:00Z");
     expect(todayInIndia(newYear)).toBe("2027-01-01");
     expect(monthInIndia(newYear)).toBe("2027-01");
     expect(yearInIndia(newYear)).toBe(2027);
+    expect(hourInIndia(newYear)).toBe(0);
+    expect(hourInIndia(Date.parse("2026-12-31T06:29:00Z"))).toBe(11);
   });
 
   it("counts whole minutes from one instant to another", () => {

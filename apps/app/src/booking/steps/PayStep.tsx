@@ -1,7 +1,6 @@
 // Paying, with what the hold costs, what changing it later costs, and what the booking agrees to.
 
 import { Checkbox } from "@maneman/ui/Field";
-import { Button } from "@maneman/ui/Button";
 import { TextLink } from "@maneman/ui/TextLink";
 import { NoticeLine } from "@maneman/ui/NoticeLine";
 import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
@@ -9,7 +8,8 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold, MoveTerms } from "../../api.ts";
-import { arrivalHours, booking, change, LEGAL_URLS, ONE_VISIT } from "../../content.ts";
+import { ActionWithMissing } from "../../frame/ActionWithMissing.tsx";
+import { arrivalHours, booking, change, LEGAL_URLS, missing, ONE_VISIT } from "../../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../../lib/money.ts";
 import { CodeBox } from "../CodeBox.tsx";
@@ -257,16 +257,16 @@ export function PayStep(props: {
           {props.problem}
         </p>
       )}
-      <Button
-        variant="primary"
-        size="action"
+      <ActionWithMissing
+        id="agree-terms"
         className={styles.primary}
-        disabled={props.busy || codeSending || left === 0 || (asksAgreement && !agreed)}
         busy={props.busy}
+        held={codeSending || left === 0}
+        missing={asksAgreement && !agreed ? missing.agreeTerms : null}
         onClick={props.onPay}
       >
         {payLabel(hold, moving)}
-      </Button>
+      </ActionWithMissing>
       {stake.kind === "credit" && !late && (
         <p className={styles.creditNote}>{copy.credit.note(hold.change_notice_hours)}</p>
       )}

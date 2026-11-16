@@ -25,7 +25,8 @@ PR, and production's move to Razorpay alone is a second (ADR 0257).
    move under the profile, opened from the client's initials at the top right. The bell beside them opens the alerts
    inbox (ADR 0255). Every old path redirects to its new place, so links in messages already sent still open:
    `/payments` → `/profile/payments`, `/payments/:id` → `/profile/payments/:id`, `/refer` → `/rewards`,
-   `/refer/fitted` → `/rewards/invited`, `/replacement` → `/`.
+   `/refer/fitted` → `/rewards/invited`, `/replacement` → `/hair-system` (Your hair system, which says when the
+   replacement opens and books it), `/photos/compare` → `/photos`.
 4. **One component library.** Every new part is in `packages/ui`; the app holds screens. Toasts gain a full-width variant
    with a leading icon (`Toast`, `fullWidth`): ink, white words, 12 px from each side, above the tab bar or the action bar,
    2.6 seconds. A toast is only for what the client just did; news arrives as the banner and an inbox row; errors stay
@@ -36,6 +37,12 @@ PR, and production's move to Razorpay alone is a second (ADR 0257).
 6. **Words stay in the app** (owner, ruling 4): `apps/app/src/content*`, no Words-page keys. A state the prototype does
    not draw keeps its current words, restyled.
 7. **Every current state survives**, including those the prototype does not draw (audit section 9).
+8. **The client app's JavaScript budget is 200 KB**, gzipped, as the technician app's is (ADR 0247), not the brief's
+   150 KB (owner, 16 November 2026). The redesign's screens, the live visit, the sign-off, the alerts and request mode
+   take the first load past 150 KB, and the budget counts every chunk the service worker keeps. The console keeps 150 KB.
+   Its first screen's largest paint on Lighthouse's slowed mobile profile is held under 2.75 s, not 2.5 s (owner, 16
+   November 2026): the design's IBM Plex comes in three weights the sign-in screen draws, about 300 ms on a first visit;
+   the service worker keeps them after it.
 
 ## Departures
 

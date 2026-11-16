@@ -2,10 +2,14 @@
 
 export const visits = {
   title: "Visits",
+  /** The three views, as a screen reader names their choice, and Issues with how many are open. */
+  show: "Show",
   upcoming: "Upcoming",
-  // Done, missed and cancelled visits alike, so a cancelled one still to come does not read as past.
-  past: "History",
+  past: "Past",
+  issues: "Issues",
+  issuesCounted: (open: number) => `Issues · ${String(open)}`,
   none: "Nothing booked yet.",
+  noneYet: "No visits yet. After your consultation, every visit shows here with its photos and invoice.",
   /** Visits: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
   /** A visit paid by UPI at the visit while online payment is off (ADR 0209): "Pay Rs. 2,200 by UPI at the visit". */
@@ -50,6 +54,13 @@ export const visits = {
     paid: "Paid",
     receipt: "Receipt",
     type: "Type",
+    /** A fit the client signed off in their app, and when. */
+    signedOff: "Signed off",
+    signedBy: (when: string) => `By you, ${when}`,
+    /** A first fit's guarantee, and the way to claim it while it runs. */
+    guarantee: "Fit guarantee",
+    guaranteeUntil: (date: string) => `Until ${date}`,
+    notRight: "The fit isn’t right",
     done: "What was done",
     /** The checklist the technician ticked, as one sentence: "Hair system removed, scalp cleaned, cut and styled." */
     doneLine: (items: readonly string[]) =>

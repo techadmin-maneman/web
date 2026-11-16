@@ -5,7 +5,8 @@ import { classes } from "@maneman/ui/classes";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import type { OfferedService } from "../../api.ts";
-import { booking, VISIT_TYPES } from "../../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { booking, missing, VISIT_TYPES } from "../../content.ts";
 import { priceFigures } from "../../lib/money.ts";
 import bookingSheet from "../booking.module.css";
 import styles from "./service-step.module.css";
@@ -88,10 +89,12 @@ export function ServiceStep(props: {
         size="action"
         className={bookingSheet.primary}
         disabled={props.chosen === null}
+        aria-describedby={describedBy("pick-service", props.chosen === null)}
         onClick={props.onNext}
       >
         {copy.continue}
       </Button>
+      <Missing id="pick-service" what={props.chosen === null ? missing.pickService : null} />
     </>
   );
 }

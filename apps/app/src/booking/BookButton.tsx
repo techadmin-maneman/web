@@ -1,6 +1,6 @@
 // "Book your next visit" and its kin: the booking sheet where self-serve
-// booking is on, WhatsApp to ops with a message ready where it is off (ADR
-// 0043), and nothing offline. Once money has moved, Home is fetched again.
+// booking is on; where it is off, Ask for a time, whose pick goes to ops on WhatsApp (ADR
+// 0043; ./RequestSheet.tsx); and nothing offline. Once money has moved, Home is fetched again.
 //
 // It books the kind of visit it is given, the first the client may book if it
 // is given none, and opens the sheet with the day and window the app offers it
@@ -11,17 +11,19 @@
 // way on. A first fit while ops offer no hair system is not bookable at all,
 // and says so in place of the button.
 
-import { TextButton, TextLink } from "@maneman/ui/TextLink";
-import { Button, ButtonLink } from "@maneman/ui/Button";
-import { shortDate } from "@maneman/web-kit/dates";
+import { TextButton } from "@maneman/ui/TextLink";
+import { Button } from "@maneman/ui/Button";
+import { Toast } from "@maneman/ui/Toast";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { BookableType, Me } from "../api.ts";
-import { booking, VISIT_TYPES, WINDOW_NAMES } from "../content.ts";
-import { whatsappWith } from "../lib/whatsapp.ts";
+import { booking, VISIT_TYPES } from "../content.ts";
 import { useSession } from "../session.ts";
 import type { Offered } from "./BookingSheet.tsx";
 import { BookingSheet } from "./lazy-sheet.tsx";
+import { RequestSheet } from "./RequestSheet.tsx";
+import { requestFrom } from "./request-days.ts";
+import { wornOf } from "../lib/counts.ts";
 import type { Recommended } from "./steps/ServiceStep.tsx";
 import { firstNameOf } from "@rules/lib/names.ts";
 
@@ -34,8 +36,9 @@ function recommendationOf(me: Me): Recommended | undefined {
 }
 
 /**
- * A paid visit booked with ops on WhatsApp: the message names the service and the day the app offered, and the main
- * button says it is paid by UPI at the visit.
+ * A visit booked with ops: Ask for a time, from the first day it may be booked, whose pick opens WhatsApp to them with
+ * the service named, and a toast that it is opening. The main button says what the visit costs, paid by UPI at the
+ * visit.
  */
 function WithOps(props: {
   label: string;
@@ -45,34 +48,48 @@ function WithOps(props: {
   services: Me["booking"]["services"];
   tier: string | null | undefined;
   offer: Offered | undefined;
+  from: string | undefined;
   quiet: boolean;
 }) {
-  const { me } = useSession();
-  const window = props.offer?.window ?? null;
+  const [open, setOpen] = useState(false);
+  const [sent, setSent] = useState(0);
   const service = props.services.find((each) => each.tier === props.tier) ?? props.services[0];
   // The service by name where it names more than the kind: a replacement's hair system, not "Replacement" again.
   const named = props.kind === undefined || service?.name !== VISIT_TYPES[props.kind];
-  const href = whatsappWith(
-    booking.asking(props.message, {
-      day: props.offer === undefined ? null : shortDate(props.offer.date),
-      window: window === null ? null : WINDOW_NAMES[window].toLowerCase(),
-      name: me.name,
-      what: named ? (service?.name ?? null) : null,
-    }),
-  );
-  if (props.quiet) {
-    return (
-      <TextLink tone="brass" className={props.className} href={href}>
-        {props.label}
-      </TextLink>
-    );
-  }
+  const onClick = () => {
+    setOpen(true);
+  };
   return (
     <>
-      <ButtonLink variant="primary" size="action" className={props.className} href={href} rel="noopener">
-        {props.label}
-      </ButtonLink>
-      {service !== undefined && <p>{booking.withOps(rupees(service.price.amount))}</p>}
+      {props.quiet ? (
+        <TextButton tone="brass" className={props.className} onClick={onClick}>
+          {props.label}
+        </TextButton>
+      ) : (
+        <Button variant="primary" size="action" className={props.className} onClick={onClick}>
+          {props.label}
+        </Button>
+      )}
+      {!props.quiet && service !== undefined && <p>{booking.withOps(rupees(service.price.amount))}</p>}
+      {open && (
+        <RequestSheet
+          message={props.message}
+          what={named ? (service?.name ?? null) : null}
+          offer={props.offer}
+          from={props.from}
+          onSent={() => {
+            setSent((count) => count + 1);
+          }}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
+      )}
+      {sent > 0 && (
+        <Toast key={sent} fullWidth>
+          {booking.request.opening}
+        </Toast>
+      )}
     </>
   );
 }
@@ -123,7 +140,8 @@ export function BookButton({
   }
   // A kind the client may not book themselves goes to ops on WhatsApp: every paid visit, while online payment is off.
   if (kind === undefined || !me.booking.self_serve_kinds.includes(kind)) {
-    return <WithOps {...{ label, className, message, kind, services, tier, offer, quiet }} />;
+    const first = requestFrom(kind, from, wornOf(me));
+    return <WithOps {...{ label, className, message, kind, services, tier, offer, quiet }} from={first} />;
   }
   const onClick = () => {
     setOpen(true);

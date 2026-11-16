@@ -8039,6 +8039,14 @@ Request body:
       ],
       "description": "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed."
     },
+    "alerts_unread": {
+      "type": "integer",
+      "description": "How many of the inbox's alerts are not read: the bell's."
+    },
+    "issues_open": {
+      "type": "integer",
+      "description": "How many issues in the client's log are not yet resolved: Visits' count."
+    },
     "credits": {
       "anyOf": [
         {
@@ -8464,6 +8472,8 @@ Request body:
     "remake",
     "missed_visit",
     "payment_owed",
+    "alerts_unread",
+    "issues_open",
     "credits",
     "prompt",
     "invoice",

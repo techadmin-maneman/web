@@ -41,7 +41,7 @@ async function home(page: Page): Promise<void> {
 
 test("opens on the mobile number, as the design draws it", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Your mobile number · Mane Man");
+  await expect(page).toHaveTitle("Sign in · Mane Man");
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
   await expect(page.getByRole("textbox", { name: appCopy.login.mobile.label })).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.login.mobile.send })).toBeVisible();
@@ -87,11 +87,11 @@ test("says the error when the API cannot be reached, with a way to try again", a
   expect(await axeViolations(page)).toEqual([]);
 
   await page.unroute("**/api/me");
-  await page.getByRole("button", { name: appCopy.problem.tryAgain }).click();
+  await page.getByRole("button", { name: appCopy.states.error.retry }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
 });
 
-test("shows the loading shape on paper while it asks whether there is a session, not a blank screen", async ({
+test("shows the loading shape on white while it asks whether there is a session, not a blank screen", async ({
   page,
 }) => {
   let answer: () => void = () => undefined;
@@ -104,10 +104,12 @@ test("shows the loading shape on paper while it asks whether there is a session,
   });
   await page.goto("/");
   await expect(page.getByRole("status").filter({ hasText: appCopy.states.loading })).toBeAttached();
-  expect(await page.evaluate(() => document.body.dataset.ground)).toBe("paper");
+  const ground = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(await ground()).toBe("rgb(253, 253, 251)");
   answer();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
-  expect(await page.evaluate(() => document.body.dataset.ground)).toBe("ink");
+  // The sign-in is on white too, as the redesign draws it.
+  expect(await ground()).toBe("rgb(253, 253, 251)");
 });
 
 // Below a laptop the column keeps a large phone's width; a laptop's frame was that strip in an empty field.
@@ -127,7 +129,7 @@ test("keeps a large phone's column short of a laptop, and a laptop's frame beyon
 test("puts the tabs in a rail down the left on a laptop, each named beside its icon", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await home(page);
-  const tabs = page.getByRole("navigation", { name: appCopy.tabsLabel });
+  const tabs = page.getByRole("navigation", { name: appCopy.shell.tabsLabel });
   const rail = await tabs.boundingBox();
   const main = await page.getByRole("main").boundingBox();
   expect(rail?.height ?? 0).toBeGreaterThan(rail?.width ?? 0);
@@ -148,7 +150,7 @@ test("names each page in the browser’s title, and takes focus to its heading",
   await home(page);
   await expect(page).toHaveTitle("Home · Mane Man");
   const tabs = page.getByRole("navigation");
-  for (const tab of ["Visits", "Photos", "Payments", "Refer"]) {
+  for (const tab of ["Visits", "Photos", "Rewards"]) {
     await tabs.getByRole("link", { name: tab }).click();
     await expect(page).toHaveTitle(`${tab} · Mane Man`);
     await expect(page.getByRole("heading", { level: 1 }).first()).toBeFocused();
@@ -166,18 +168,18 @@ test("offers a way on, not a blank page, when a page fails to draw", async ({ pa
   // An answer the page cannot draw.
   outsideContract("GET /api/payments 200");
   await page.route("**/api/payments", (route) => route.fulfill({ json: { entries: null } }));
-  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.payments }).click();
+  await page.goto("/profile/payments");
   await expect(page.getByRole("alert")).toContainText(appCopy.broken.message);
   await expect(page.getByRole("button", { name: appCopy.broken.reload })).toBeVisible();
 });
 
-test("makes each tab a full 64 px target", async ({ page }) => {
+test("makes each tab the design's full 60 px target", async ({ page }) => {
   await home(page);
   const tab = await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.home }).boundingBox();
-  expect(tab?.height).toBeGreaterThanOrEqual(64);
+  expect(tab?.height).toBeGreaterThanOrEqual(60);
 });
 
-test("fills a phone wider than the design, its header’s rule and tab bar to the edges", async ({ page }) => {
+test("fills a phone wider than the design, its header and tab bar white to the edges", async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 932 });
   await home(page);
   expect((await page.locator("#root").boundingBox())?.width).toBe(430);
@@ -192,11 +194,11 @@ test("fills a phone wider than the design, its header’s rule and tab bar to th
   const tabs = await page.getByRole("navigation").boundingBox();
   const ruleY = Math.floor((header?.y ?? 0) + (header?.height ?? 0) - 1);
   const tabsY = Math.floor((tabs?.y ?? 0) + (tabs?.height ?? 0) / 2);
-  // Four pixels in from the screen's edge: the rule's colour, and the tab bar's ground.
-  expect(at(4, ruleY)).toEqual(rgbOf("rgb(206, 198, 180)"));
-  expect(at(info.width - 4, ruleY)).toEqual(rgbOf("rgb(206, 198, 180)"));
-  expect(at(4, tabsY)).toEqual(rgbOf("rgb(244, 241, 233)"));
-  expect(at(info.width - 4, tabsY)).toEqual(rgbOf("rgb(244, 241, 233)"));
+  // Four pixels in from the screen's edge: the head's ground at its foot, which has no rule, and the tab bar's.
+  expect(at(4, ruleY)).toEqual(rgbOf("rgb(253, 253, 251)"));
+  expect(at(info.width - 4, ruleY)).toEqual(rgbOf("rgb(253, 253, 251)"));
+  expect(at(4, tabsY)).toEqual(rgbOf("rgb(253, 253, 251)"));
+  expect(at(info.width - 4, tabsY)).toEqual(rgbOf("rgb(253, 253, 251)"));
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(430);
 });
 
@@ -242,15 +244,11 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
 
   await home(page);
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.privacy }).click();
   const paper = rgbOf(await style(page.locator("body"), "background-color"));
   const off = page.getByRole("switch", { checked: false }).first();
   await expect(off).toBeVisible();
   expect(contrast(rgbOf(await style(off, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
-  const field = page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).locator("..");
-  expect(contrast(rgbOf(await style(field, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
-  expect(contrast(rgbOf(await style(field, "border-top-color")), rgbOf("rgb(255, 255, 255)"))).toBeGreaterThanOrEqual(
-    3,
-  );
 
   // A switch is drawn small, as the design draws it, and answers a tap 44 px tall.
   const box = await off.boundingBox();
@@ -260,11 +258,20 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
     middle,
   );
   expect(hit).toEqual(["switch", "switch"]);
+
+  // A field on the Account page, against the white and against pure white.
+  await page.getByRole("link", { name: appCopy.profile.back }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.account }).click();
+  const field = page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).locator("..");
+  expect(contrast(rgbOf(await style(field, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
+  expect(contrast(rgbOf(await style(field, "border-top-color")), rgbOf("rgb(255, 255, 255)"))).toBeGreaterThanOrEqual(
+    3,
+  );
 });
 
 test("moves nothing under reduced motion, the share sheet included", async ({ page }) => {
   await home(page);
-  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.refer }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.rewards }).click();
   await page.getByRole("button", { name: appCopy.refer.share }).click();
   const sheet = page.getByRole("dialog");
   await expect(sheet).toBeVisible();

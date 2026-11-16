@@ -6,8 +6,10 @@
 //     <ListRow title={task.kind} meta={task.client} end={task.due} endTone="warning" rule="warning" onClick={open} />
 //   </ListRows>
 
+import { ICONS } from "@maneman/brand/icons";
 import type { ReactNode } from "react";
 import { classes } from "./classes.ts";
+import { Icon } from "./Icon.tsx";
 import { Link } from "./router.tsx";
 import type { RuleTone } from "./Table.tsx";
 import styles from "./list-row.module.css";
@@ -49,6 +51,7 @@ export function ListRows({
 
 export function ListRow({
   lead,
+  icon,
   mark,
   title,
   meta,
@@ -56,13 +59,17 @@ export function ListRow({
   endTone = "muted",
   rule,
   to,
+  href,
   onClick,
   label,
   action,
   current = false,
+  chevron = false,
 }: {
   /** Before the words, in a column of its own down the list: a time, or what the row is. */
   readonly lead?: ReactNode;
+  /** An icon before the words, from @maneman/brand/icons: what the row is, as the client app's rows draw it. */
+  readonly icon?: string | undefined;
   /** Before the words at its own size, as a person's initials (./Initials.tsx). */
   readonly mark?: ReactNode;
   readonly title: ReactNode;
@@ -74,6 +81,8 @@ export function ListRow({
   readonly rule?: RuleTone | "done" | undefined;
   /** The page the row opens. */
   readonly to?: string | undefined;
+  /** A page elsewhere the row opens, as WhatsApp, in a new tab. */
+  readonly href?: string | undefined;
   /** What the row opens in place, as a drawer. */
   readonly onClick?: (() => void) | undefined;
   /** Read out in place of its words, where a figure alone would not say what it counts; holds the title. */
@@ -82,22 +91,26 @@ export function ListRow({
   readonly action?: ReactNode;
   /** The row whose thing is open beside the list, as a chat is: raised, ruled in the ink, and said to be current. */
   readonly current?: boolean;
+  /** A chevron at the end, saying the row opens a page of its own. */
+  readonly chevron?: boolean;
 }) {
   const inside = (
     <>
       {lead !== undefined && <span className={styles.lead}>{lead}</span>}
+      {icon !== undefined && <Icon className={styles.icon} d={icon} size="lg" />}
       {mark}
       <span className={styles.words}>
         <span className={styles.title}>{title}</span>
         {meta !== undefined && <span className={styles.meta}>{meta}</span>}
       </span>
       {end !== undefined && <span className={classes(styles.end, END_TONES[endTone])}>{end}</span>}
+      {chevron && <Icon className={styles.chevron} d={ICONS.handleRight} size="sm" />}
     </>
   );
   const row = classes(styles.row, current && styles.current, rule !== undefined && styles[rule]);
   return (
     <li className={action === undefined ? undefined : styles.acting}>
-      <RowBody row={row} to={to} onClick={onClick} label={label} current={current}>
+      <RowBody row={row} to={to} href={href} onClick={onClick} label={label} current={current}>
         {inside}
       </RowBody>
       {action !== undefined && <span className={styles.action}>{action}</span>}
@@ -109,6 +122,7 @@ export function ListRow({
 function RowBody({
   row,
   to,
+  href,
   onClick,
   label,
   current,
@@ -116,6 +130,7 @@ function RowBody({
 }: {
   readonly row: string;
   readonly to: string | undefined;
+  readonly href: string | undefined;
   readonly onClick: (() => void) | undefined;
   readonly label: string | undefined;
   readonly current: boolean;
@@ -127,6 +142,12 @@ function RowBody({
       <Link className={classes(row, styles.opens)} to={to} label={label}>
         {children}
       </Link>
+    );
+  if (href !== undefined)
+    return (
+      <a className={classes(row, styles.opens)} href={href} target="_blank" rel="noopener" aria-label={label}>
+        {children}
+      </a>
     );
   if (onClick !== undefined)
     return (

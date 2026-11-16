@@ -1,0 +1,49 @@
+/* A way to pick photographs (./PhotoPick.tsx): a dashed tile, or words that act, over an unseen file chooser. */
+
+@layer base, ui;
+
+@layer ui {
+  .tile,
+  .words {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--sp-36) * 2);
+    height: calc(var(--sp-36) * 2);
+    border: var(--hairline) dashed var(--ui-line-control);
+    color: var(--ui-strong);
+  }
+
+  .words {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    color: var(--ui-strong);
+    font-weight: var(--weight-medium);
+    text-decoration: underline;
+  }
+
+  .tile[aria-disabled="true"],
+  .words[aria-disabled="true"] {
+    opacity: var(--busy-opacity);
+    cursor: default;
+  }
+
+  .file {
+    position: absolute;
+    width: var(--hairline);
+    height: var(--hairline);
+    opacity: 0;
+  }
+
+  .tile:has(.file:focus-visible),
+  .words:has(.file:focus-visible) {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-offset);
+  }
+}

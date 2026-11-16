@@ -59,7 +59,7 @@ const ME = {
   consulted: null,
   being_booked: null,
   missed_visit: null,
-  payment_owed: null,
+  ...{ payment_owed: null, alerts_unread: 0, issues_open: 0 },
   remake: null,
   credits: null,
   prompt: null,

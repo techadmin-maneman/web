@@ -10,22 +10,22 @@
 }
 
 .bigAmount {
-  font-family: var(--font-serif);
   font-size: var(--fs-40);
   line-height: var(--lh-100);
   font-variant-numeric: lining-nums tabular-nums;
+  font-weight: var(--weight-semibold);
 }
 
 .detail .including {
   margin-top: var(--sp-8);
   font-size: var(--fs-15);
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .facts {
   margin: var(--sp-24) 0 0;
-  border-top: var(--hairline) solid var(--text);
+  border-top: var(--hairline) solid var(--ink-900);
 }
 
 .fact {
@@ -33,7 +33,7 @@
   justify-content: space-between;
   gap: var(--sp-16);
   padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--line-200);
   font-size: var(--fs-16);
 }
 
@@ -42,7 +42,7 @@
 }
 
 .fact dt {
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .fact dd {
@@ -57,7 +57,7 @@
 .label {
   margin: var(--sp-24) 0 0;
   font-size: var(--fs-15);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .documents {
@@ -69,7 +69,7 @@
 
 .documentIcon {
   flex-shrink: 0;
-  color: var(--ink);
+  color: var(--navy-900);
 }
 
 /* The document is not ready, and Notify me. */

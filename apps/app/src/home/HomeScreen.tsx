@@ -11,12 +11,12 @@
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
 import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
-import { BookButton, BookNext, ProblemLink, type ChangingVisit } from "../booking/index.ts";
+import { BookButton, BookNext, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { NumberedSteps } from "@maneman/ui/NumberedSteps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { monthInIndia, shortDate } from "@maneman/web-kit/dates";
+import { hourInIndia, monthInIndia, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { documentUrl, type Me, type OneVisitPrice, type VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -37,10 +37,17 @@ import {
 import { ProposedMove } from "./ProposedMove.tsx";
 import { CustomOrderCard } from "./CustomOrderCard.tsx";
 import { RemakeCard } from "./RemakeCard.tsx";
-import { CreditTile, Missed, PaymentOwed } from "./HomeNotes.tsx";
+import { Missed, PaymentOwed } from "./HomeNotes.tsx";
+import { HairSystemBlock } from "./HairSystemBlock.tsx";
+import { HomeRows } from "./HomeRows.tsx";
+import { isLive, LiveCard } from "./LiveCard.tsx";
 import styles from "./home.module.css";
 
 import { firstNameOf } from "@rules/lib/names.ts";
+
+/** The card's line above the day: the visit's kind where it is a first fit or a replacement. */
+const labelOf = (visit: VisitSummary): string =>
+  visit.type === "first_fit" || visit.type === "replacement" ? home.next.labels[visit.type] : home.next.label;
 
 export function HomeScreen() {
   const { me, offline } = useSession();
@@ -52,15 +59,16 @@ export function HomeScreen() {
   return (
     <Shell header={{ kind: "home" }} tab="/" kept>
       <div className={styles.home}>
+        <h1 className={styles.greeting}>{home.greeting(hourInIndia(apiNow()), me.first_name)}</h1>
         {recallFirst !== null && <RemakeCard remake={recallFirst} />}
         {me.missed_visit !== null && <Missed missed={me.missed_visit} />}
         <HomeBody me={me} offline={offline} />
         {owed !== null && <PaymentOwed owed={owed} />}
-        {me.credits !== null && <CreditTile credits={me.credits} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
         <CustomOrderCard />
         {invoice !== null && <InvoiceLine invoice={invoice} />}
-        {me.state === "fitted" && <ProblemLink about={{ about: "hair_system" }} className={styles.problem} />}
+        {me.state === "fitted" && <HairSystemBlock me={me} />}
+        <HomeRows me={me} />
       </div>
     </Shell>
   );
@@ -68,6 +76,14 @@ export function HomeScreen() {
 
 function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   const visit = me.next_visit;
+  // On its day, or once begun, any visit is the live card: a consultation and a one visit too.
+  if (visit !== null && isLive(visit, todayInIndia(apiNow()))) {
+    return (
+      <section aria-labelledby="next">
+        <LiveCard visit={visit} label={{ id: "next" }} />
+      </section>
+    );
+  }
   if (visit?.type === "consultation") {
     return (
       <Consultation
@@ -86,10 +102,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   if (visit !== null) {
     return (
       <section aria-labelledby="next">
-        <h1 className={capsLook(styles.label)} id="next">
-          {home.next.label}
-        </h1>
-        <VisitCard visit={visit} />
+        <VisitCard visit={visit} label={{ id: "next", text: labelOf(visit) }} />
       </section>
     );
   }
@@ -160,10 +173,10 @@ function Consultation(props: {
   return (
     <>
       <section aria-labelledby="consultation">
-        <h1 className={capsLook(styles.label)} id="consultation">
-          {oneVisit ? copy.labelOneVisit : copy.label}
-        </h1>
         <div className={styles.card}>
+          <h2 className={styles.eyebrow} id="consultation">
+            {oneVisit ? copy.labelOneVisit : copy.label}
+          </h2>
           <p className={styles.date}>{date}</p>
           <p className={styles.window}>{props.when}</p>
           {props.technician !== undefined && props.technician !== null && (
@@ -200,10 +213,7 @@ function OneVisit({ visit }: { visit: NonNullable<Me["next_visit"]> }) {
   return (
     <>
       <section aria-labelledby="next">
-        <h1 className={capsLook(styles.label)} id="next">
-          {home.oneVisit.label}
-        </h1>
-        <VisitCard visit={visit} />
+        <VisitCard visit={visit} label={{ id: "next", text: home.oneVisit.label }} />
       </section>
       {!hasBegun(visit) && <WhatToExpect steps={home.oneVisit.expect} />}
     </>
@@ -229,10 +239,10 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
   const copy = home.beingBooked;
   return (
     <section aria-labelledby="next">
-      <h1 className={capsLook(styles.label)} id="next">
-        {home.next.label}
-      </h1>
       <div className={styles.card}>
+        <h2 className={styles.eyebrow} id="next">
+          {home.next.label}
+        </h2>
         <p className={styles.date}>{shortDate(booking.date)}</p>
         <p className={styles.window}>{windowText(booking.window, booking.hours)}</p>
         <p className={styles.place}>{bookingName(booking)}</p>
@@ -252,7 +262,7 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
       return (
         <div className={styles.prompt}>
           <p className={styles.promptLine}>{home.prompt.address}</p>
-          <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/profile">
+          <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/profile/address">
             <span>{home.prompt.addAddress}</span>
           </AppLink>
         </div>
@@ -347,7 +357,7 @@ function InvoiceLine({ invoice }: { invoice: NonNullable<Me["invoice"]> }) {
 /** "See what that involves": the app's own page on a replacement, in place of a WhatsApp message to us. */
 function Involves() {
   return (
-    <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/replacement">
+    <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/hair-system">
       <span>{home.prompt.involves}</span>
     </AppLink>
   );
@@ -360,9 +370,9 @@ function Involves() {
 function NothingNext({ promptBooks }: { promptBooks: boolean }) {
   return (
     <section className={styles.nothing} aria-labelledby="next">
-      <h1 className={capsLook(styles.label)} id="next">
+      <h2 className={styles.eyebrow} id="next">
         {home.next.label}
-      </h1>
+      </h2>
       <p>{home.next.none}</p>
       {!promptBooks && <BookNext className={styles.book} offerOther={false} />}
     </section>
@@ -385,9 +395,9 @@ function Consulted({
   const product = services.find((service) => service.type === "first_fit" && service.tier === consulted.recommended);
   return (
     <section className={styles.nothing} aria-labelledby="consulted">
-      <h1 className={capsLook(styles.label)} id="consulted">
+      <h2 className={styles.eyebrow} id="consulted">
         {copy.label}
-      </h1>
+      </h2>
       <p className={styles.consultedWhen}>{copy.when(shortDate(consulted.date), technician)}</p>
       {product !== undefined && <p>{copy.recommends(technician, product.name)}</p>}
       <BookNext className={styles.book} offerOther={false} />
@@ -399,7 +409,7 @@ function Consulted({
 function NothingBooked({ me, offline }: { me: Me; offline: boolean }) {
   return (
     <section className={styles.nothing}>
-      <h1 className={styles.nothingTitle}>{home.nothing.title}</h1>
+      <h2 className={styles.nothingTitle}>{home.nothing.title}</h2>
       {me.booking.self_serve_kinds.includes("consultation") || offline ? (
         <BookButton className={styles.book} label={home.nothing.book} message={messages.book} />
       ) : (

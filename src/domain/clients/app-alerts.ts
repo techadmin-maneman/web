@@ -30,6 +30,19 @@ interface AlertRow {
   read_at: string | null;
 }
 
+/** How many of the inbox's alerts the client has not read: the bell's count. */
+export async function unreadClientAlerts(db: D1Database, personId: string, now: Date): Promise<number> {
+  const since = new Date(now.getTime() - CLIENT_INBOX_DAYS * DAY_MS).toISOString();
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) AS unread FROM client_app_alerts
+        WHERE person_id = ?1 AND written_at >= ?2 AND read_at IS NULL`,
+    )
+    .bind(personId, since)
+    .first<{ unread: number }>();
+  return row?.unread ?? 0;
+}
+
 /** The client's alerts of the inbox's days, newest first. */
 export async function clientInboxOf(db: D1Database, personId: string, now: Date): Promise<ClientAlert[]> {
   const since = new Date(now.getTime() - CLIENT_INBOX_DAYS * DAY_MS).toISOString();

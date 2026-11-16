@@ -163,7 +163,7 @@ test("writes the late fee to move a visit as the pay step does, and C7's way to 
   expect(instead?.height).toBeGreaterThanOrEqual(44);
 });
 
-test("draws a change’s outcome in the serif’s one weight, never a made-up bold", async ({ page }) => {
+test("draws a change’s outcome in Plex’s semibold, a weight the app loads, never a made-up bold", async ({ page }) => {
   await page.route(/\/api\/appointments\/[0-9a-f-]{36}\/reschedule$/, (route) =>
     route.fulfill({ status: 500, json: { error: { code: "internal_error", request_id: "e2e" } } }),
   );
@@ -171,5 +171,6 @@ test("draws a change’s outcome in the serif’s one weight, never a made-up bo
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   const outcome = page.getByRole("dialog").getByRole("heading", { name: /^That didn’t go through/ });
   await expect(outcome).toBeVisible();
-  expect(await outcome.evaluate((heading) => getComputedStyle(heading).fontWeight)).toBe("400");
+  expect(await outcome.evaluate((heading) => getComputedStyle(heading).fontWeight)).toBe("600");
+  expect(await outcome.evaluate((heading) => getComputedStyle(heading).fontFamily)).toContain("IBM Plex Sans");
 });

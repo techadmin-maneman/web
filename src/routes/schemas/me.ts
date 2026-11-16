@@ -83,6 +83,14 @@ export const MeSchema = z
         "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the " +
         "link Razorpay texted. Null when nothing is owed.",
     }),
+    alerts_unread: z
+      .number()
+      .int()
+      .openapi({ description: "How many of the inbox's alerts are not read: the bell's." }),
+    issues_open: z
+      .number()
+      .int()
+      .openapi({ description: "How many issues in the client's log are not yet resolved: Visits' count." }),
     credits: z
       .union([CreditsSchema, z.null()])
       .openapi({ description: "The credit tile: balance and earliest expiry; null with none left." }),

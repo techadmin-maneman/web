@@ -7,7 +7,8 @@ import { Button } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.ts";
-import { booking, dispute as copy } from "../content.ts";
+import { ActionWithMissing } from "../frame/ActionWithMissing.tsx";
+import { booking, dispute as copy, missing } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import styles from "./booking.module.css";
 import { WordsField } from "@maneman/ui/WordsField";
@@ -65,16 +66,15 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
               max={DISPUTE_REASON_MAX_CHARS}
               onText={setText}
             />
-            <Button
-              variant="primary"
-              size="action"
-              className={styles.primary}
+            <ActionWithMissing
+              id="dispute-why"
               type="submit"
-              disabled={busy || text.trim() === ""}
+              className={styles.primary}
               busy={busy}
+              missing={text.trim() === "" ? missing.disputeWhy : null}
             >
               {busy ? copy.sending : copy.send}
-            </Button>
+            </ActionWithMissing>
           </form>
         )}
         {(step === "sent" || step === "already" || step === "closed") && (

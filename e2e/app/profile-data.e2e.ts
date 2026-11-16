@@ -3,10 +3,13 @@ import { axeViolations } from "../a11y.ts";
 import { logIn, signIn } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { DELETION_DECIDED_WITHIN_DAYS } from "../../src/policy/account-deletion.ts";
+import { GRIEVANCE_ANSWERED_WITHIN_DAYS } from "../../src/policy/grievances.ts";
+import { INVOICE_KEPT_YEARS } from "../../src/policy/retention.ts";
 
 test("offers support on WhatsApp, with the design’s line", async ({ page }) => {
   await loggedIn(page);
-  await expect(page.getByRole("link", { name: appCopy.profile.support.message })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: appCopy.profileMenu.help })).toHaveAttribute(
     "href",
     "https://wa.me/17116660760",
   );
@@ -14,7 +17,7 @@ test("offers support on WhatsApp, with the design’s line", async ({ page }) =>
 });
 
 test("Your data: a download of everything held, and a concern sent to ops", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "account");
   await expect(page.getByRole("link", { name: appCopy.profile.data.download })).toHaveAttribute(
     "href",
     "/api/me/export.html",
@@ -22,7 +25,7 @@ test("Your data: a download of everything held, and a concern sent to ops", asyn
   await page.getByRole("button", { name: appCopy.profile.data.raise }).click();
   await page.getByRole("textbox", { name: appCopy.profile.data.field }).fill("Please explain who sees my photographs.");
   await page.getByRole("button", { name: appCopy.profile.data.send }).click();
-  await expect(page.getByText(appCopy.profile.data.sent)).toBeVisible();
+  await expect(page.getByText(appCopy.profile.data.sent(GRIEVANCE_ANSWERED_WITHIN_DAYS))).toBeVisible();
   const concerns = page.getByRole("list", { name: appCopy.profile.data.concerns });
   await expect(concerns).toContainText("Please explain who sees my photographs.");
   await expect(concerns).toContainText(appCopy.profile.data.waiting);
@@ -59,6 +62,7 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
     });
   });
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.account }).click();
   const concerns = page.getByRole("list", { name: appCopy.profile.data.concerns });
   await expect(concerns.getByText("Your concern of 2 Oct 2026 · Answered 3 Oct 2026")).toBeVisible();
   await expect(concerns.getByText("Who sees my photographs?")).toBeVisible();
@@ -66,8 +70,10 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
 });
 
 test("asks before requesting deletion, then says it is requested", async ({ page }) => {
-  await loggedIn(page);
-  await expect(page.getByText(appCopy.profile.deletion.body)).toBeVisible();
+  await loggedIn(page, "account");
+  await expect(
+    page.getByText(appCopy.profile.deletion.body({ days: DELETION_DECIDED_WITHIN_DAYS, years: INVOICE_KEPT_YEARS })),
+  ).toBeVisible();
   await page.getByRole("button", { name: appCopy.profile.deletion.request }).click();
   await page.getByRole("button", { name: appCopy.profile.deletion.no }).click();
   await expect(page.getByRole("button", { name: appCopy.profile.deletion.request })).toBeVisible();
@@ -101,6 +107,7 @@ test("says when ops kept the account, and why, and still lets the client ask aga
     });
   });
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.account }).click();
   await expect(page.getByText("On 2 Oct 2026 we didn’t delete your account.")).toBeVisible();
   await expect(page.getByText("Our reason: You still have a consultation booked")).toBeVisible();
   await expect(page.getByText(appCopy.profile.deletion.disagree)).toBeVisible();
@@ -125,6 +132,7 @@ test("lists where the client is signed in, and signs another browser out", async
   await expect(phone.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
 
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.account }).click();
   const card = page.getByRole("region", { name: appCopy.profile.sessions.label });
   await expect(card.getByText(appCopy.profile.sessions.thisDevice)).toBeVisible();
   await card.getByRole("button", { name: "Sign out Safari on iOS" }).click();
@@ -135,17 +143,22 @@ test("lists where the client is signed in, and signs another browser out", async
 });
 
 test("meets WCAG 2.2 AA, with the address form and the card’s lines open", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "address");
   const scan = async () => {
     expect(await axeViolations(page)).toEqual([]);
   };
   await scan();
   await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
-  await page.getByRole("switch", { name: appCopy.profile.purposes.photos_referral_cards }).click();
   await scan();
 
   // Again with the suggestion list open, which is the app's only combobox.
   await page.getByRole("combobox", { name: appCopy.profile.form.building.label }).fill("Sec");
   await expect(page.getByRole("option")).toHaveCount(3);
+  await scan();
+
+  // The privacy page, with the card's lines open.
+  await page.getByRole("link", { name: appCopy.profile.back }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.privacy }).click();
+  await page.getByRole("switch", { name: appCopy.profile.purposes.photos_referral_cards }).click();
   await scan();
 });

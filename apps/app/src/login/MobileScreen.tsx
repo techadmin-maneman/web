@@ -55,17 +55,15 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
           }}
         >
           <Field
-            onInk
             labelHidden
             announce
             label={copy.label}
             error={shown}
-            look={{ error: messageLook({ tone: "error", ground: "ink", className: shared.error }) }}
+            look={{ error: messageLook({ tone: "error", className: shared.error }) }}
           >
             {(control) => (
               <MobileInput
                 {...control}
-                onInk
                 className={shared.field}
                 prefix={copy.prefix}
                 name="mobile"
@@ -79,7 +77,14 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
           {!invalid && error === "rate_limited" && <MessageUs />}
           <div ref={turnstileBox} className={shared.turnstile} />
           <div className={shared.foot}>
-            <Button variant="light" size="action" className={shared.primary} type="submit" disabled={busy} busy={busy}>
+            <Button
+              variant="primary"
+              size="action"
+              className={shared.primary}
+              type="submit"
+              disabled={busy}
+              busy={busy}
+            >
               {copy.send}
             </Button>
             <p className={styles.hint}>{copy.hint}</p>

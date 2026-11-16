@@ -292,6 +292,11 @@ export async function openReportsOf(db: D1Database, personId: string): Promise<I
     .sort((a, b) => number(b) - number(a));
 }
 
+/** How many issues in the client's log are not yet resolved: Visits' count. */
+export async function openIssueCount(db: D1Database, personId: string): Promise<number> {
+  return (await issueLogOf(db, personId)).filter((issue) => issue.state !== "resolved").length;
+}
+
 /** Everything in the client's issue log, newest first. */
 export async function issueLogOf(db: D1Database, personId: string): Promise<Issue[]> {
   const [reports, others] = await Promise.all([reportsOf(db, personId), othersOf(db, personId)]);
