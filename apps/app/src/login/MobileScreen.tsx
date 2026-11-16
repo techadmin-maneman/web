@@ -77,7 +77,14 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
           {!invalid && error === "rate_limited" && <MessageUs />}
           <div ref={turnstileBox} className={shared.turnstile} />
           <div className={shared.foot}>
-            <Button variant="primary" size="action" className={shared.primary} type="submit" disabled={busy} busy={busy}>
+            <Button
+              variant="primary"
+              size="action"
+              className={shared.primary}
+              type="submit"
+              disabled={busy}
+              busy={busy}
+            >
               {copy.send}
             </Button>
             <p className={styles.hint}>{copy.hint}</p>

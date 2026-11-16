@@ -191,7 +191,6 @@ export function App({ linked }: { linked: LinkedLogin }) {
 
   useConnection(setSession, refreshSoon);
 
-
   // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind. The
   // login names its own steps.
   useScreenTitle(signedIn ? titled(titles[routeOf(path).page]) : null);
