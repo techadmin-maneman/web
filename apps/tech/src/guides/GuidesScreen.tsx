@@ -19,7 +19,7 @@ const screensFor = (type: VisitType): Screen[] => screensOf({ type, one_visit: f
 
 export function GuidesScreen() {
   return (
-    <CardFrame title={copy.title} sub={copy.sub} back="/me" foot={null}>
+    <CardFrame title={copy.title} back="/me" foot={null}>
       <ListRows className={styles.rows} label={copy.title}>
         {VISIT_TYPES.map((type) => (
           <ListRow

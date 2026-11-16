@@ -11,7 +11,7 @@ import { fakeTech, type Fake } from "./fake-tech.ts";
 import { atTheDoor, heldOnPhone, keptOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { askToSignOut, openPending } from "./tabs.ts";
-import { stepAction } from "./steps-fixtures.ts";
+import { stepAction, throughTheTasks, shots } from "./steps-fixtures.ts";
 
 /**
  * Opens the day, checks in at the door, then takes the signal away. The app
@@ -61,7 +61,7 @@ async function photograph(page: Page, from = 1): Promise<void> {
   await expect(capture).toBeEnabled();
   for (let angle = from; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
 }
@@ -71,7 +71,7 @@ async function workTheJob(page: Page): Promise<void> {
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await throughTheTasks(page);
   await stepAction(page).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await page.getByRole("button", { name: "One more tape strips" }).click();
@@ -79,7 +79,7 @@ async function workTheJob(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.after })).toBeVisible();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
-  await page.getByRole("button", { name: techCopy.capture.finish, exact: true }).click();
+  await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
   await stepAction(page).click();
 }
 
@@ -137,7 +137,8 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
   // Only the refused angle is asked for: the four that reached us count.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.before })).toBeVisible();
   await expect(page.getByText("The top photo wouldn’t upload. Take it again.")).toBeVisible();
-  await expect(page.getByText("4 of 5")).toBeVisible();
+  // The fifth shot is the refused one, the top.
+  await expect(page.getByText(techCopy.capture.taking(5, techCopy.capture.angles.top), { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.capture.retake })).toBeDisabled();
   fake.refusedPhoto = null;
   await photograph(page, 5);
@@ -201,7 +202,7 @@ test("warns when the phone will not promise to keep the queue, and says how long
 
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
-  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
@@ -228,7 +229,7 @@ test("says nothing about keeping the queue when the phone has promised to", asyn
 
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
-  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
@@ -250,7 +251,7 @@ test("accounts plainly for what has not reached us, and says what changed on a s
 
   // Today says what is waiting, without a number of bytes or a spinner. Every
   // move here is a link inside the app: with no signal there is no navigation.
-  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
@@ -348,7 +349,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   await context.setOffline(true);
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
 
@@ -394,7 +395,7 @@ test("counts a set as sent only as its photographs go up", async ({ page, contex
   await expect(capture).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
   // Every move here is a link inside the app: with no signal there is no navigation. From a step, the way back is the
@@ -427,7 +428,7 @@ test("asks before a sign-out would lose unsent work, sends it first if asked, an
   fake.online = false;
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
-  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();

@@ -6,7 +6,7 @@ import { expect, test } from "../support.ts";
 import { JOB_ID, type Step, type VisitType } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { queuedOnPhone } from "./on-phone.ts";
-import { startedThrough, stepAction, writesTo } from "./steps-fixtures.ts";
+import { startedThrough, stepAction, writesTo, throughTheTasks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 const { visit, steps } = techCopy;
@@ -81,7 +81,7 @@ for (const { name, type, oneVisit, stops } of VISITS) {
       startedThrough(fake, ...sentBefore);
       await page.goto(`/jobs/${JOB_ID}/${step}`);
       // The tasks say "Next task" until the last.
-      if (step === "checklist") await page.getByRole("button", { name: steps.checklist.all }).click();
+      if (step === "checklist") await throughTheTasks(page);
       await expect(stepAction(page)).toHaveText(action);
     }
   });
@@ -91,7 +91,7 @@ test("the action passes over a step already sent", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos", "consumables");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  await page.getByRole("button", { name: steps.checklist.all }).click();
+  await throughTheTasks(page);
   await expect(stepAction(page)).toHaveText(visit.next(visit.screens.after_photos));
 });
 
@@ -101,9 +101,9 @@ test("a one visit closed as done says it sends the link", async ({ page }) => {
   fake.oneVisit = true;
   startedThrough(fake, ...ALL_BEFORE_THE_CLOSE, "profile", "piece");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
-  await page.getByRole("button", { name: steps.outcome.done, exact: true }).click();
+  await page.getByRole("radio", { name: steps.outcome.done, exact: true }).click();
   await expect(stepAction(page)).toHaveText(steps.outcome.sendLinkAndClose);
-  await page.getByRole("button", { name: steps.outcome.partial, exact: true }).click();
+  await page.getByRole("radio", { name: steps.outcome.partial, exact: true }).click();
   await expect(stepAction(page)).toHaveText(visit.close);
 });
 

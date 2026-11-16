@@ -130,6 +130,9 @@
     --row-lead-colour: var(--ui-text-muted);
     --row-lead-wrap: nowrap;
     --row-lead-align: auto;
+    --row-lead-width: calc(var(--sp-64) + var(--sp-16));
+    /* A choice in a ruled list (./choice-list.module.css): a row the tap's height, unless the app's look sets more. */
+    --choice-row-height: var(--tap);
     --row-title-text: var(--fs-14);
     --row-title-weight: var(--weight-medium);
     --row-meta-text: var(--fs-13);

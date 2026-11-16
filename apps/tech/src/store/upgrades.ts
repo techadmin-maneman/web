@@ -353,4 +353,19 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       return { ...record, me: { ...record.me, grade: null, city: null, mobile: null } };
     });
   },
+  // Version 13: a card carries the client's earlier visits counted, and a day's row its drive's km
+  // (docs/decisions/0258-the-technician-design-pass.md). One kept before says neither until it is read again.
+  (_db, upgrade) => {
+    eachAgain(upgrade.objectStore("cards"), (value) => {
+      // What an earlier build wrote, which may lack the field this step adds.
+      const card = value as Partial<Pick<Job, "client_visits">>;
+      return card.client_visits === undefined ? { ...card, client_visits: null } : null;
+    });
+    eachAgain(upgrade.objectStore("days"), (value) => {
+      // What an earlier build wrote, which may lack the field this step adds.
+      const day = value as Omit<KeptDay, "jobs"> & { readonly jobs: readonly Partial<JobSummary>[] };
+      if (day.jobs.every((job) => job.drive_km !== undefined)) return null;
+      return { ...day, jobs: day.jobs.map((job) => ({ ...job, drive_km: job.drive_km ?? null })) };
+    });
+  },
 ];

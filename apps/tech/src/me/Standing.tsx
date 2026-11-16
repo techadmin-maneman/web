@@ -42,7 +42,7 @@ export function Quality() {
   const copy = me.quality;
   return (
     <section className={styles.section} aria-labelledby="me-quality">
-      <SectionHead id="me-quality" title={copy.title} end={copy.days} />
+      <SectionHead id="me-quality" size="list" title={copy.title} end={copy.days} />
       <Waiting loaded={loaded} failed={copy.failed} onRetry={retry} />
       {loaded.state === "loaded" && (
         <dl className={styles.lines}>
@@ -69,7 +69,7 @@ export function Incentives() {
   const total = lines.reduce((sum, line) => sum + (line.amount ?? 0), 0);
   return (
     <section className={styles.section} aria-labelledby="me-incentives">
-      <SectionHead id="me-incentives" title={copy.title(month)} end={copy.upTo(dayMonth(today))} />
+      <SectionHead id="me-incentives" size="list" title={copy.title(month)} end={copy.upTo(dayMonth(today))} />
       <Waiting loaded={loaded} failed={copy.failed} onRetry={retry} />
       {loaded.state === "loaded" && lines.length === 0 && <p className={styles.quiet}>{copy.none}</p>}
       {lines.length > 0 && (

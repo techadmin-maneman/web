@@ -171,7 +171,7 @@ test("opens a job’s card with its address, access notes and the way in (board 
   await page.getByText("Rohit M.").first().click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
-  await expect(page.getByText("9:30–10 am · service")).toBeVisible();
+  await expect(page.getByText("9:30 to 10 am · service")).toBeVisible();
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("Gate code 4417 · visitor bay B")).toBeVisible();
   // A Maps URL now, not `geo:`, which an iPhone ignores (ADR 0054; e2e/tech/job.e2e.ts).
@@ -256,7 +256,9 @@ test("every target on every screen is at least the design’s 48 px, and the pri
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     for (const target of await page.locator("button, a[href], input").all()) {
       if (!(await target.isVisible())) continue;
-      const each = await target.boundingBox();
+      // A radio's tap is its whole labelled row, as the result's rows on the outcome are.
+      const radio = (await target.getAttribute("type")) === "radio";
+      const each = await (radio ? target.locator("xpath=..") : target).boundingBox();
       const name = `${screen}: ${(await target.textContent()) ?? ""}${(await target.getAttribute("aria-label")) ?? ""}`;
       expect(each?.height ?? 0, name).toBeGreaterThanOrEqual(48);
       expect(each?.width ?? 0, name).toBeGreaterThanOrEqual(48);

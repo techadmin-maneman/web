@@ -8,7 +8,7 @@ import { axeViolations } from "../a11y.ts";
 import { LOCAL_LOGIN_CODE } from "../../scripts/lib/local-stack.ts";
 import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { checklistItems, startedThrough, stepAction } from "./steps-fixtures.ts";
+import { startedThrough, stepAction } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 const HINDI = techCopy.languageNames.hi;
@@ -86,10 +86,9 @@ test("Me's Language row switches every screen without a reload, and a visit keep
   await page.goto(`/jobs/${JOB_ID}/checklist`);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
   await marked(page);
-  // One task a screen: the first done, on to the second, done.
-  await checklistItems(page).first().click();
+  // One task a screen: on to the second.
   await stepAction(page).click();
-  await checklistItems(page).first().click();
+  await expect(page.getByText(techCopy.visit.task(2, 3), { exact: true })).toBeVisible();
 
   await goInApp(page, "/me");
   await page.getByRole("button", { name: new RegExp(`^${techCopy.me.language}`) }).click();
@@ -100,10 +99,10 @@ test("Me's Language row switches every screen without a reload, and a visit keep
   await expect(page.getByRole("button", { name: /^भाषा/ })).toContainText(HINDI);
   expect(await axeViolations(page)).toEqual([]);
 
-  // Back to the visit within the app: its step and its ticks as they were, in Hindi, the page never loaded again.
+  // Back to the visit within the app: on the task it was on, in Hindi, the page never loaded again.
   await goInApp(page, `/jobs/${JOB_ID}/checklist`);
   await expect(page.getByRole("heading", { level: 1, name: "सर्विस की चेकलिस्ट" })).toBeVisible();
-  await expect(checklistItems(page).first()).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("काम 2/3", { exact: true })).toBeVisible();
   await expect(page.locator("body")).toHaveAttribute("data-same-load", "yes");
 });
 
@@ -117,7 +116,7 @@ test("the close-out says what was decided in Hindi around ops' own reason, which
   await page.goto(`/jobs/${JOB_ID}/outcome`);
   await page.getByRole("button", { name: /^Mane Man Essential/ }).click();
   await stepAction(page).click();
-  await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+  await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
   await page.getByRole("button", { name: techCopy.steps.outcome.notNow }).click();
   await page.getByRole("button", { name: "Client moved to another city" }).click();
   await stepAction(page).click();
@@ -184,6 +183,8 @@ test("Kit says its names and amounts in Hindi where the catalog holds them, and 
     ],
     returned: [],
     forecast: [{ code: "shampoo", name: "Shampoo sachet", unit: "sachet", need: 6, have: 0 }],
+    visits: 3,
+    pieces: [],
     asked: null,
   };
   await keptHindi(page);
@@ -192,7 +193,9 @@ test("Kit says its names and amounts in Hindi where the catalog holds them, and 
   await expect(page.getByText("सॉल्वेंट", { exact: true })).toBeVisible();
   await expect(page.getByText("टेप स्ट्रिप", { exact: true })).toBeVisible();
   await expect(page.locator("main")).toContainText("TS-1 · 5 स्ट्रिप");
-  await expect(page.locator("main")).toContainText(`${HAIR} · 2 पीस`);
+  // The product and its count on one line, its details beneath, as ops named them.
+  await expect(page.locator("main")).toContainText("Mane Man Essential · 2 पीस");
+  await expect(page.locator("main")).toContainText("8 × 10 in · #1B · 20% grey · 120% density");
   await expect(page.getByRole("rowheader", { name: "शैम्पू पाउच" })).toBeVisible();
   await expect(page.locator("main")).not.toContainText("strips");
 });

@@ -95,7 +95,7 @@ export type DeviceRecord =
       readonly fit: FitForm;
       readonly history: HistoryForm;
     }
-  /** The checklist's ticks as made, so closing the app loses none; gone once sent (../steps/Checklist.tsx). */
+  /** The guided tasks passed, so the app opens on the task it was on; gone once sent (../steps/Checklist.tsx). */
   | { readonly key: "checklist_draft"; readonly job_id: string; readonly done: readonly string[] }
   /** A consultation's pick on Options, by the product's tier, until its close is sent (../steps/Outcome.tsx). */
   | { readonly key: "options_draft"; readonly job_id: string; readonly picked: string | null }

@@ -97,7 +97,7 @@ export function MeScreen() {
       <Quality />
       <Incentives />
 
-      <SectionHead title={copy.account} className={styles.section} />
+      <SectionHead title={copy.account} size="list" className={styles.section} />
       <ListRows className={styles.rows} label={copy.account}>
         <ListRow title={guides.title} meta={guides.kinds} to="/guides" />
         <ListRow title={copy.leave} to="/leave" />
@@ -123,7 +123,7 @@ export function MeScreen() {
         </p>
       )}
 
-      <SectionHead title={copy.contact} className={styles.section} />
+      <SectionHead title={copy.contact} size="list" className={styles.section} />
       <ReachOps className={styles.ops} onPaper />
 
       {leaving === "asking" && (

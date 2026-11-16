@@ -11,10 +11,11 @@ import { CodeField } from "@maneman/ui/CodeField";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { ActionBar } from "@maneman/ui/ActionBar";
 import { Button } from "@maneman/ui/Button";
-import { TextButton } from "@maneman/ui/TextLink";
+import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { Mark } from "@maneman/ui/Mark";
 import { LanguageToggle } from "../lang/index.ts";
 import { fieldDigits, formatMobileField, mobileDigits } from "@maneman/web-kit/mobile";
+import { OPS_NUMBER } from "@maneman/web-kit/whatsapp";
 import { apiNow } from "@maneman/web-kit/clock";
 import { useEffect, useRef, useState, type Ref } from "react";
 import { flushSync } from "react-dom";
@@ -23,7 +24,6 @@ import { session, signIn as copy } from "../content.ts";
 import { installed } from "../lib/installed.ts";
 import type { Out } from "../session.ts";
 import { deviceId, enrolled } from "../store/device.ts";
-import { ReachOps } from "../frame/ReachOps.tsx";
 import styles from "./login.module.css";
 
 /** What the sign-in says before the code is asked for: what ops did, or why an installed app is out. */
@@ -98,13 +98,41 @@ function Again(props: { resendIn: number; busy: boolean; onChangeNumber: () => v
   );
 }
 
-/** For a number we do not know: the way to ops, beneath the field. */
+/** For a number we do not know: the way to ops, one tap in the line beneath the field. */
 function NewNumber() {
   return (
-    <div className={styles.help}>
-      <p className={styles.note}>{copy.notRegistered}</p>
-      <ReachOps className={styles.helpReach} onPaper />
-    </div>
+    <p className={styles.note}>
+      {copy.notRegistered}{" "}
+      <TextLink inline href={`tel:+${OPS_NUMBER}`}>
+        {copy.callOps}
+      </TextLink>
+    </p>
+  );
+}
+
+/** The number's field, until a code is out for it. */
+function NumberField(props: {
+  number: Ref<HTMLInputElement>;
+  mobile: string;
+  onMobile: (typed: string) => void;
+  onLeft: () => void;
+}) {
+  return (
+    <Field label={copy.mobileLabel} look={{ label: styles.label }}>
+      {(control) => (
+        <MobileInput
+          {...control}
+          ref={props.number}
+          prefix={copy.prefix}
+          value={props.mobile}
+          onChange={(event) => {
+            props.onMobile(fieldDigits(event.target.value));
+          }}
+          onBlur={props.onLeft}
+          placeholder={copy.mobilePlaceholder}
+        />
+      )}
+    </Field>
   );
 }
 
@@ -251,26 +279,20 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => Promis
         <p className={styles.sent}>{copy.codeSent(`${copy.prefix} ${formatMobileField(mobile)}`)}</p>
       )}
 
-      <Field label={copy.mobileLabel} look={{ label: styles.label }}>
-        {(control) => (
-          <MobileInput
-            {...control}
-            ref={number}
-            prefix={copy.prefix}
-            value={mobile}
-            onChange={(event) => {
-              setMobile(fieldDigits(event.target.value));
-              setError(null);
-              setLeft(false);
-            }}
-            onBlur={() => {
-              setLeft(true);
-            }}
-            placeholder={copy.mobilePlaceholder}
-            disabled={challenge !== null}
-          />
-        )}
-      </Field>
+      {challenge === null && (
+        <NumberField
+          number={number}
+          mobile={mobile}
+          onMobile={(typed) => {
+            setMobile(typed);
+            setError(null);
+            setLeft(false);
+          }}
+          onLeft={() => {
+            setLeft(true);
+          }}
+        />
+      )}
 
       {challenge !== null && (
         <CodeStep

@@ -44,7 +44,8 @@ export function CardFrame({
   children,
 }: {
   readonly title: string;
-  readonly sub: string;
+  /** The line under the title; none where the title says enough. */
+  readonly sub?: string;
   /** Where the way back goes: Today, unless the screen opened from the job's. */
   readonly back?: string;
   /** The bar's actions, given the helper line's id for each it describes; null for a screen with none. */
@@ -72,7 +73,7 @@ export function CardFrame({
           <h1 className={styles.name} ref={heading} tabIndex={-1}>
             {title}
           </h1>
-          <p className={styles.when}>{sub}</p>
+          {sub !== undefined && <p className={styles.when}>{sub}</p>}
         </div>
         {safety !== undefined && <Safety jobId={safety} className={styles.safety} />}
       </header>

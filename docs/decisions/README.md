@@ -147,6 +147,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0250](0250-guides-and-alerts.md) Guides and alerts
 - [0251](0251-hindi-and-the-sign-in.md) Hindi on every screen, and the sign-in redrawn
 - [0254](0254-client-signs-off-the-fit.md) The client signs off the fit
+- [0258](0258-the-technician-design-pass.md) The technician app's design pass
 
 ### Money and Books
 
@@ -538,11 +539,11 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0242](0242-client-record.md) | A client's record for the technicians: alerts, the handoff note, and their history | 2026-11-11 | accepted |  |
 | [0243](0243-job-and-the-door.md) | The job and the door in the new look | 2026-11-11 | accepted |  |
 | [0244](0244-the-visit-engine.md) | The visit engine, its plan, and the photographs | 2026-11-11 | accepted | [0245](0245-the-steps.md) |
-| [0245](0245-the-steps.md) | The visit's steps in the new look | 2026-11-12 | accepted | [0246](0246-closed-and-sent-back.md) |
+| [0245](0245-the-steps.md) | The visit's steps in the new look | 2026-11-12 | accepted | [0246](0246-closed-and-sent-back.md), [0258](0258-the-technician-design-pass.md) |
 | [0246](0246-closed-and-sent-back.md) | Closed, and a step sent back | 2026-11-11 | accepted |  |
 | [0247](0247-the-steps-left.md) | The steps left from PR 7 | 2026-11-11 | accepted |  |
 | [0248](0248-safety.md) | A technician's safety on a visit | 2026-11-11 | accepted |  |
-| [0249](0249-schedule-kit-and-me.md) | Schedule, Kit and Me | 2026-11-11 | accepted |  |
+| [0249](0249-schedule-kit-and-me.md) | Schedule, Kit and Me | 2026-11-11 | accepted | [0258](0258-the-technician-design-pass.md) |
 | [0250](0250-guides-and-alerts.md) | Guides and alerts | 2026-11-11 | accepted |  |
 | [0251](0251-hindi-and-the-sign-in.md) | Hindi on every screen, and the sign-in redrawn | 2026-11-11 | accepted |  |
 | [0252](0252-client-app-redesign.md) | The client app redrawn: four tabs, the profile, and the client's look | 2026-11-12 | accepted |  |
@@ -552,3 +553,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0256](0256-fit-guarantee-setting.md) | The fit guarantee's days as a setting, and a claim as a Tasks row | 2026-11-12 | accepted |  |
 | [0257](0257-razorpay-only.md) | Razorpay is the only way to pay | 2026-11-12 | accepted |  |
 | [0258](0258-the-issue-log.md) | The issue log | 2026-11-16 | accepted |  |
+| [0258](0258-the-technician-design-pass.md) | The technician app's design pass | 2026-11-12 | accepted |  |

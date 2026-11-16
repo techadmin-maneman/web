@@ -15,14 +15,20 @@ const TABS = [
   { page: "me", to: "/me", icon: GLYPHS.person, name: "me" },
 ] as const satisfies readonly { page: Route["page"]; to: string; icon: string; name: keyof typeof copy }[];
 
-/** The pages a tab opens, under which the bar is drawn; a later job's preview is Schedule's. */
-const TABBED: ReadonlySet<Route["page"]> = new Set([...TABS.map((tab) => tab.page), "preview"]);
+/** The pages under Me's tab beyond Me itself: the guides, read from Me. */
+const UNDER_ME: ReadonlySet<Route["page"]> = new Set(["guides", "guide", "guideTask"]);
+
+/** The pages a tab opens, under which the bar is drawn; a later job's preview is Schedule's, the guides Me's. */
+const TABBED: ReadonlySet<Route["page"]> = new Set([...TABS.map((tab) => tab.page), "preview", ...UNDER_ME]);
 
 /** The tabbed pages already drawn in the new look. */
-const LIGHT: ReadonlySet<Route["page"]> = new Set(["today", "week", "preview", "kit", "me"]);
+const LIGHT: ReadonlySet<Route["page"]> = new Set(["today", "week", "preview", "kit", "me", ...UNDER_ME]);
 
 /** The tab a page is under. */
-const tabOf = (page: Route["page"]): Route["page"] => (page === "preview" ? "week" : page);
+function tabOf(page: Route["page"]): Route["page"] {
+  if (page === "preview") return "week";
+  return UNDER_ME.has(page) ? "me" : page;
+}
 
 export const hasTabs = (page: Route["page"]): boolean => TABBED.has(page);
 

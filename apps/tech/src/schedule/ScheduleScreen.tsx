@@ -7,7 +7,9 @@
 import { DateStrip, type StripDate } from "@maneman/ui/DateStrip";
 import { type DayBlock, DayColumn } from "@maneman/ui/DayColumn";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
-import { TextButton } from "@maneman/ui/TextLink";
+import { Icon } from "@maneman/ui/Icon";
+import { GLYPHS } from "@maneman/brand/icons";
+import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, dayClock, indiaTimeOf, minutesBetween, weekdayName } from "@maneman/web-kit/dates";
 import { useCallback, useId, useRef } from "react";
@@ -24,7 +26,8 @@ import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useRefreshTick } from "../lib/useRefreshTick.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { apiDate, clock, dayMonth, todayInIndia } from "../lib/when.ts";
+import { wayTo } from "../lib/navigate.ts";
+import { apiDate, clock, dayAfter, dayMonth, spanEnds, todayInIndia } from "../lib/when.ts";
 import { redirect } from "../route.ts";
 import { useSession } from "../session.ts";
 import { keptDay } from "../store/jobs.ts";
@@ -93,6 +96,31 @@ function metaOf(job: JobSummary, opens: boolean, closed: boolean, queued: readon
   return opens ? joined(kindName(job), job.sector) : joined(job.sector, jobCopy.minutes(lengthOf(job)));
 }
 
+/** The drive before a job, with the way there in Google Maps where the job's address is on the phone. */
+function DriveLine({ job, words }: { readonly job: JobSummary; readonly words: string }) {
+  const line = (
+    <>
+      <Icon className={styles.driveIcon} d={GLYPHS.navigate} size="sm" />
+      {words}
+    </>
+  );
+  if (job.address === null) return <span className={styles.drive}>{line}</span>;
+  // A new tab, so a technician who has taken the route back still has the app open behind it.
+  return (
+    <TextLink className={styles.drive} href={wayTo(job.address)} newTab>
+      {line}
+    </TextLink>
+  );
+}
+
+/** A day's heading: today's and tomorrow's said as such, "Today, Thu 12 Nov"; any other, "Sat, 14 Nov". */
+function dayTitle(date: string, today: string): string {
+  const weekday = weekdayName(date).slice(0, 3);
+  if (date === today) return copy.today(weekday, dayMonth(date));
+  if (date === dayAfter(today)) return copy.tomorrow(weekday, dayMonth(date));
+  return copy.day(weekday, dayMonth(date));
+}
+
 /** A day's jobs as blocks: one whose card has opened by the client's name, a locked one by the visit, as previews. */
 function blocksOf(day: Day, today: boolean, names: ReadonlyMap<string, string>, queued: readonly Queued[]) {
   return (day.jobs ?? []).flatMap((job): DayBlock[] => {
@@ -114,7 +142,7 @@ function blocksOf(day: Day, today: boolean, names: ReadonlyMap<string, string>, 
       start: start - job.drive_minutes,
       minutes: job.drive_minutes,
       look: "drive",
-      title: copy.drive(job.drive_minutes, clock(job.leave_by)),
+      title: <DriveLine job={job} words={copy.drive(job.drive_minutes, clock(job.leave_by))} />,
     };
     return [drive, visit];
   });
@@ -173,7 +201,7 @@ function DayView(props: {
   return (
     <section className={styles.day} aria-labelledby={`${stripId}-day`}>
       <h2 className={styles.dayTitle} id={`${stripId}-day`}>
-        {copy.day(weekdayName(day.date).slice(0, 3), dayMonth(day.date))}
+        {dayTitle(day.date, today)}
       </h2>
       {jobs === null ? (
         <DayFailed day={day} onRetry={props.onRetry} />
@@ -217,9 +245,7 @@ export function ScheduleScreen({ date }: { readonly date: string | null }) {
             {copy.title}
           </h1>
           {days.length > 0 && (
-            <p className={styles.range}>
-              {copy.range(dayMonth(today), dayMonth(addDays(today, SCHEDULE_DAYS - 1)), jobs)}
-            </p>
+            <p className={styles.range}>{copy.range(...spanEnds(today, addDays(today, SCHEDULE_DAYS - 1)), jobs)}</p>
           )}
         </div>
         <SyncLabel />

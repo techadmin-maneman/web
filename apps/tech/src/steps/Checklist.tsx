@@ -1,6 +1,6 @@
 // The guided tasks (docs/prompts/tech-redesign.md, "Guided tasks"): the visit's checklist, one item a screen, each with
-// the training lead's words for it (../visit/tasks.ts), the client's alerts above, and its Done. The action goes to
-// the next task, and on the last, once every one is done, to the step after.
+// the training lead's words for it (../visit/tasks.ts) and the client's alerts under its name. Next task goes to the
+// next, and the last to the step after, the list sent as done.
 //
 // The items are the API's, per visit type (src/config/job-sheet.ts); the app
 // invents none and sends back the IDs it was given. The title names the visit
@@ -9,9 +9,6 @@
 // one, or the consultation's alone once the client decided against the fit at
 // the piece step before it.
 
-import { sayKnown } from "../lang/index.ts";
-import { Button } from "@maneman/ui/Button";
-import { CheckRow } from "@maneman/ui/CheckRow";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
 import { useEffect, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
@@ -37,10 +34,11 @@ function titleOf(job: Job, declined: boolean): string {
 }
 
 /**
- * The list once the job is in hand: a refused list starts as it was ticked, else as the phone kept it, and one already
- * finished opens on its last task, ready to send.
+ * The tasks once the job is in hand, one a screen, worked through by Next task; the last lands the list with every item
+ * done (docs/decisions/0258-the-technician-design-pass.md). A list sent before and refused opens where it stood, and
+ * one the phone kept opens on the task the technician was on.
  */
-function Ticking({
+function Tasks({
   job,
   declined,
   refused,
@@ -57,32 +55,29 @@ function Ticking({
   onBack: () => void;
 }) {
   const items = declined ? job.checklist_if_declined : job.checklist;
-  const listed = items.map((item) => item.id);
-  const [done, setDone] = useState<readonly string[]>(() =>
-    refused === null && draft !== null
-      ? draft.done.filter((id) => listed.includes(id))
-      : checklistSent(refused, listed),
-  );
-  const all = items.length > 0 && done.length === items.length;
+  const [at, setAt] = useState(() => {
+    const listed = items.map((item) => item.id);
+    const passed =
+      refused === null && draft !== null
+        ? draft.done.filter((id) => listed.includes(id)).length
+        : checklistSent(refused, listed).length;
+    return Math.min(passed, Math.max(0, items.length - 1));
+  });
 
-  // Kept as ticked: a full phone loses the ticks, never the step.
+  // Kept as the tasks passed: a phone closed mid-way opens on the task it was on.
   useEffect(() => {
-    put("device", { key: "checklist_draft", job_id: job.id, done }).catch(() => undefined);
-  }, [job.id, done]);
+    const passed = items.slice(0, at).map((item) => item.id);
+    put("device", { key: "checklist_draft", job_id: job.id, done: passed }).catch(() => undefined);
+  }, [job.id, items, at]);
 
-  const [at, setAt] = useState(() => (all ? items.length - 1 : 0));
   const item = items[Math.min(at, items.length - 1)];
   const last = at >= items.length - 1;
-  const toggle = (id: string) => {
-    setDone((already) => (already.includes(id) ? already.filter((one) => one !== id) : [...already, id]));
-  };
   return (
     <StepFrame
       title={titleOf(job, declined)}
       page={at}
       action={last ? undefined : visit.nextTask}
-      ready={!last || all}
-      unfinished={copy.checklist.unfinished}
+      ready
       notice={refused === null ? null : copy.corrected.other}
       onBack={() => {
         if (at > 0) setAt(at - 1);
@@ -94,48 +89,26 @@ function Ticking({
           return;
         }
         remove("device", "checklist_draft").catch(() => undefined);
-        onFinish({ done: [...done] });
+        onFinish({ done: items.map((each) => each.id) });
       }}
     >
-      <Alerts job={job} />
-      {item !== undefined && (
-        <Task item={item} at={at} total={items.length} done={done.includes(item.id)} onToggle={toggle} />
-      )}
-      {!all && items.length > 1 && (
-        <Button
-          variant="outline"
-          size="control"
-          className={styles.tickAll}
-          onClick={() => {
-            setDone(listed);
-            setAt(items.length - 1);
-          }}
-        >
-          {copy.checklist.all}
-        </Button>
-      )}
+      {item !== undefined && <Task job={job} item={item} at={at} total={items.length} />}
     </StepFrame>
   );
 }
 
-/** The client's alerts, above every task (docs/prompts/tech-redesign.md, "Guided tasks"). */
+/** The client's alerts, in the task under its title, as the design has them. */
 function Alerts({ job }: { job: Job }) {
   if (job.client_alerts.length === 0) return null;
   return (
-    <ProblemCard className={styles.alerts} title={clientRecord.alerts}>
+    <ProblemCard className={styles.alerts} title={clientRecord.alertLabel} runIn>
       {job.client_alerts.map((alert) => alert.body).join(" ")}
     </ProblemCard>
   );
 }
 
-/** One guided task: how far through, its words from the training lead's file, and its Done. */
-function Task(props: {
-  item: { readonly id: string; readonly label: string };
-  at: number;
-  total: number;
-  done: boolean;
-  onToggle: (id: string) => void;
-}) {
+/** One guided task: how far through, its name, the client's alerts, and its words from the training lead's file. */
+function Task(props: { job: Job; item: { readonly id: string; readonly label: string }; at: number; total: number }) {
   const words = taskFor(props.item);
   return (
     <section className={styles.task} aria-labelledby="task-title">
@@ -143,20 +116,8 @@ function Task(props: {
       <h2 className={styles.taskTitle} id="task-title">
         {words.title}
       </h2>
+      <Alerts job={props.job} />
       <TaskGuide words={words} />
-      <ul className={styles.taskDone}>
-        <li>
-          <CheckRow
-            done={props.done}
-            tickWeight="heavy"
-            onToggle={() => {
-              props.onToggle(props.item.id);
-            }}
-          >
-            {sayKnown(props.item.label)}
-          </CheckRow>
-        </li>
-      </ul>
     </section>
   );
 }
@@ -171,7 +132,7 @@ export function Checklist({ id }: { id: string }) {
   }
   const job = loaded.value;
   return (
-    <Ticking
+    <Tasks
       job={job}
       declined={fitsNothingToday(job, queued)}
       refused={refused}

@@ -210,3 +210,28 @@ export function tenthRelease(cards: readonly object[]): Promise<void> {
     };
   });
 }
+
+/** A database as the build before the design pass left it, at version 12, holding these cards and days. */
+export function twelfthRelease(cards: readonly object[], days: readonly object[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE, 12);
+    request.onupgradeneeded = (event) => {
+      const upgrade = request.transaction;
+      if (upgrade === null) return;
+      for (const step of UPGRADES.slice(event.oldVersion, 12)) step(request.result, upgrade);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(["cards", "days"], "readwrite");
+      for (const card of cards) transaction.objectStore("cards").put(card);
+      for (const day of days) transaction.objectStore("days").put(day);
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onabort = () => {
+        reject(new Error("could not seed the twelfth release’s records"));
+      };
+    };
+  });
+}

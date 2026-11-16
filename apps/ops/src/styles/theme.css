@@ -21,6 +21,7 @@
   --ui-line: var(--ink-line);
   --ui-line-control: var(--ink-line-strong);
   --ui-strong: var(--paper);
+  --outline-edge: var(--ui-strong);
   --ui-on-strong: var(--ink);
   --ui-strong-pressed: var(--paper-shade);
   --ui-error: var(--error-on-ink);
@@ -60,6 +61,7 @@
     --ui-line: var(--ink-line);
     --ui-line-control: var(--ink-line-strong);
     --ui-strong: var(--paper);
+    --outline-edge: var(--ui-strong);
     --ui-on-strong: var(--ink);
     --ui-strong-pressed: var(--paper-shade);
     --ui-error: var(--error-on-ink);

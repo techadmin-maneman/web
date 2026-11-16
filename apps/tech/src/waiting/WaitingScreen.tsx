@@ -21,7 +21,8 @@ import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../
 import { jobLabel } from "../lib/kind.ts";
 import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
-import { apiDate, clock } from "../lib/when.ts";
+import { apiDate, clock, stamp } from "../lib/when.ts";
+import { lastSynced } from "../store/last-sync.ts";
 import { go, STEP_PATHS, stepPath, type InJobStep } from "../route.ts";
 import { useSession } from "../session.ts";
 import { account, forget, replay, sendAgain, STUCK, type EventKind, type JobAccount } from "../store/outbox.ts";
@@ -143,6 +144,17 @@ function WaitingJob(props: {
   );
 }
 
+/** Nothing waiting: that everything is uploaded, and when the phone's work last reached us. */
+function AllSent() {
+  const last = lastSynced();
+  return (
+    <>
+      <p className={styles.nothing}>{copy.nothing}</p>
+      {last !== null && <p className={styles.lastSync}>{copy.lastSync(stamp(new Date(last).toISOString()))}</p>}
+    </>
+  );
+}
+
 export function WaitingScreen() {
   const { offline, atRisk } = useSession();
   const waiting = useOutbox();
@@ -181,7 +193,7 @@ export function WaitingScreen() {
       {offline && <NoSignal />}
 
       {jobs.length === 0 ? (
-        <p className={styles.nothing}>{copy.nothing}</p>
+        <AllSent />
       ) : (
         <>
           {atRisk && (
@@ -213,8 +225,6 @@ export function WaitingScreen() {
           </ul>
         </>
       )}
-
-      <p className={styles.never}>{copy.never}</p>
 
       {forgetting !== null && (
         <ConfirmSheet

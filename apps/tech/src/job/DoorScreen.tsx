@@ -98,7 +98,7 @@ function useDoor(job: Job, queued: readonly Queued[]) {
 
 /** What the line under the timer says: when the wait starts, that it waits for signal, or that it is over. */
 function waitLine(job: Job, wait: Wait): string {
-  if (!wait.begun) return copy.door.fromStart(clock(job.starts_at));
+  if (!wait.begun) return copy.door.booked(clock(job.starts_at));
   if (!wait.confirmed) return copy.door.fromTap;
   return wait.over ? copy.door.over : copy.door.booked(clock(job.starts_at));
 }
