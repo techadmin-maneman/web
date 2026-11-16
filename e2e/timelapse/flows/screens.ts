@@ -100,19 +100,17 @@ export async function appBooking(sim: Sim, wave: string, client: Client): Promis
       await expect(page.getByRole("navigation").first()).toBeVisible();
       await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.visits }).click();
       await page.getByRole("button", { name: appCopy.home.next.book }).click();
-      const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
-      await expect(dates.getByText(/^Step 1 of \d$/)).toBeVisible({ timeout: 15_000 });
-      await dates.getByRole("radio").and(page.locator(":enabled")).nth(1).click();
-      await dates.getByRole("button", { name: appCopy.booking.service.continue }).click();
-      const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-      await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
+      const when = page.getByRole("dialog", { name: appCopy.booking.when.title });
+      await expect(when.getByText(/^Step 1 of \d$/)).toBeAttached({ timeout: 15_000 });
+      await when.locator('input[name="booking-date"]:enabled').nth(1).click();
+      await when.locator('input[name="booking-time"]:enabled').first().click();
       const held = page.waitForResponse(
         (answer) => answer.request().method() === "POST" && answer.url().endsWith("/api/holds"),
       );
-      await windows.getByRole("button", { name: /^Continue( to payment)?$/ }).click();
-      check((await held).ok(), "the window was not held");
+      await when.getByRole("button", { name: appCopy.booking.when.continue, exact: true }).click();
+      check((await held).ok(), "the time was not held");
       const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-      await expect(pay.getByText(/^Held for \d+:\d\d$/)).toBeVisible();
+      await expect(pay.getByText(new RegExp(`^${appCopy.booking.pay.holding}\\d+:\\d\\d$`))).toBeVisible();
       await pay.getByRole("checkbox", { name: Object.values(appCopy.booking.pay.agree).join("") }).check();
       const booked = page.waitForResponse(
         (answer) => answer.request().method() === "POST" && answer.url().endsWith("/api/bookings"),
@@ -130,7 +128,7 @@ export async function appBooking(sim: Sim, wave: string, client: Client): Promis
         );
         recordPaid(sim.world, indiaDateOf(sim.clock.now).slice(0, 7), body.checkout.amount);
       }
-      await expect(page.getByText(appCopy.booking.confirmed.label, { exact: true }).first()).toBeVisible({
+      await expect(page.getByText(appCopy.booking.confirmed.label.service, { exact: true }).first()).toBeVisible({
         timeout: 15_000,
       });
     },

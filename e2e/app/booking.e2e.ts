@@ -12,6 +12,7 @@ import { FREE_UNTIL, toPayment, profileAs, type Hold, holdAs, scanOf, AGREE_TERM
 import * as appCopy from "../../apps/app/src/content.ts";
 import { PRICE } from "../prices.ts";
 import { PAY_SERVICE } from "./booking-fixtures.ts";
+import { HELD_FOR } from "./picking.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -43,7 +44,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await profileAs(page, { reminders: true });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-  await expect(pay.getByText(/^Held for \d:\d\d$/)).toBeVisible();
+  await expect(pay.getByText(HELD_FOR)).toBeVisible();
   await expect(pay.getByText(PRICE.service, { exact: true })).toBeVisible();
   // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it.
   await expect(pay.getByText(/GST/)).toHaveCount(0);
@@ -58,10 +59,9 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
 
   await pay.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await pay.getByRole("button", { name: PAY_SERVICE }).click();
-  const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label });
+  const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label.service });
   await expect(confirmed.getByRole("status").getByText(REMINDED)).toBeVisible();
-  await expect(confirmed.getByText(appCopy.booking.confirmed.paid, { exact: true })).toBeVisible();
-  await expect(confirmed.getByText(PRICE.service)).toBeVisible();
+  await expect(confirmed.getByText(appCopy.booking.confirmed.paid(PRICE.service), { exact: true })).toBeVisible();
   await page.getByRole("button", { name: appCopy.booking.confirmed.close }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 });
@@ -72,7 +72,9 @@ test("lets Checkout’s own window through, in front of the sheet", async ({ pag
   await toPayment(page);
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label.service),
+  ).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __checkoutOnTop: boolean | null }).__checkoutOnTop)).toBe(
     true,
   );
@@ -82,16 +84,14 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   const hold = await holdAs(page, { credit: { remaining: 2 } });
   await bookedWithoutPaying(page, hold);
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(appCopy.booking.pay.credit.used)).toBeVisible();
   await pay.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await pay.getByRole("button", { name: appCopy.booking.pay.confirm }).click();
 
   const confirmed = page.getByRole("dialog").getByRole("status");
-  await expect(confirmed.getByText(appCopy.booking.confirmed.label)).toBeVisible();
-  await expect(confirmed.getByText(appCopy.booking.pay.credit.used)).toBeVisible();
-  await expect(confirmed.getByText("2 remaining")).toBeVisible();
-  await expect(confirmed.getByText(appCopy.booking.confirmed.paid, { exact: true })).toHaveCount(0);
+  await expect(confirmed.getByText(appCopy.booking.confirmed.label.service)).toBeVisible();
+  await expect(confirmed.getByText(appCopy.booking.confirmed.credit, { exact: true })).toBeVisible();
   await expect(confirmed.getByText(PRICE.service)).toHaveCount(0);
 });
 
@@ -114,11 +114,11 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
     route.request().method() === "GET" ? route.fulfill({ json: { ...hold(), credit: null } }) : route.fallback(),
   );
   await toPayment(page);
-  const free = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
+  const free = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await free.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await free.getByRole("button", { name: appCopy.booking.pay.confirm }).click();
 
-  // Now there is a price to pay, the step is named for paying it.
+  // Now there is a price to pay, the review asks it.
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(appCopy.booking.creditGone)).toBeVisible();
   await expect(pay.getByText(appCopy.booking.pay.credit.used)).toHaveCount(0);
@@ -191,6 +191,6 @@ test("promises no reminder the client has not agreed to", async ({ page }) => {
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
   const confirmed = page.getByRole("dialog").getByRole("status");
-  await expect(confirmed.getByText(appCopy.booking.confirmed.label)).toBeVisible();
+  await expect(confirmed.getByText(appCopy.booking.confirmed.label.service)).toBeVisible();
   await expect(confirmed.getByText(REMINDED)).toHaveCount(0);
 });

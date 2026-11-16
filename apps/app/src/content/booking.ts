@@ -55,7 +55,7 @@ export const booking = {
    * ADR 0025, item 60), under Profile's heading, "Your address".
    */
   address: {
-    why: "First, your address. Then pick a date.",
+    why: "First, your address. Then pick a time.",
     refused: "Add your address, then pick a time again.",
     save: "Save and continue",
   },
@@ -65,43 +65,65 @@ export const booking = {
     body: "Change your address below, or join the waitlist and we’ll tell you when we arrive.",
     waitlist: "Join the waitlist",
   },
-  date: {
-    title: "Pick a date",
-    available: "Available",
+  /**
+   * The day and the time on it, on one screen (design/client-redesign, "Pick a time"): the earliest open time to take
+   * at a tap, the days in a row that scrolls, each with how many times are left, then the day's times under its
+   * parts.
+   */
+  when: {
+    title: "Pick a time",
+    /** A first fit's and a replacement's, as the design titles them. */
+    titleDate: "Pick a date",
+    titleMove: "Move your visit",
+    /** "Earliest: Tue 18 Nov, 9:30 am" */
+    earliest: (day: string, time: string) => `Earliest: ${day}, ${time}`,
+    tapToChoose: "Tap to choose it",
+    /** Beneath a day's figure: how many of its times are open. */
+    left: (count: number) => `${String(count)} left`,
     full: "Full",
-    // A day with a window already inside the notice is still sold, and marked.
+    /** Beside a part of the day: how many of its times are open. */
+    open: (count: number) => `${String(count)} open`,
+    fullyBooked: "Fully booked",
+    /** Read after a time struck through. */
+    taken: "taken",
+    /** The promise of any time picked, whoever comes. */
+    arrival: (minutes: number) =>
+      `The technician arrives within ${String(minutes)} minutes of the time you pick. We assign the technician.`,
+    /** Above Continue, once a time is picked: "Tue 18 Nov, arrives 9:30–10 am". */
+    summary: (day: string, hours: string) => `${day}, arrives ${hours}`,
+    // A time already inside the notice.
     within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue",
+    // Taken by another booking, or no longer fitting the technician's day once the drives are checked.
+    gone: "That time isn’t free any more. Pick another.",
     // The day offered being full, and the days past the first fortnight.
     offeredFull: (day: string) => `${day} is full. We’ve picked the next open day.`,
     offeredFullPickAnother: (day: string) => `${day} is full. Pick another day.`,
     later: "Later dates",
     laterFailed: "Those dates didn’t load. Try again.",
   },
-  window: {
-    title: "Pick a time",
-    full: "Full",
-    /** Under a part of the day with no time left. */
-    fullyBooked: "Fully booked",
-    /** Read after a time struck through. */
-    taken: "taken",
-    /** "Takes about 90 minutes" */
-    takes: (length: string) => `Takes about ${length}`,
-    /** The promise of the time chosen: "Arrives between 11:30 am and 12 pm". */
-    arrives: (from: string, to: string) => `Arrives between ${from} and ${to}`,
-    // A window already inside the notice.
-    within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
-    continue: "Continue to payment",
-    // A visit that costs nothing has no payment to continue to.
-    continueFree: "Continue",
-    // Taken by another booking, or no longer fitting the technician's day once the drives are checked.
-    gone: "That time isn’t free any more. Pick another.",
-  },
+  /** Each step's way back, at its head. */
+  back: "Back",
   pay: {
-    title: "Pay and confirm",
-    // A visit that costs nothing to book.
-    titleFree: "Confirm",
-    held: (time: string) => `Held for ${time}`,
+    title: "Review",
+    /** Followed by the minutes and seconds left, in bold. */
+    holding: "We’re holding this time for you for ",
+    visit: "Visit",
+    when: "When",
+    technician: "Technician",
+    /** Who comes is never promised (docs/decisions/0111-a-technician-never-takes-two-visits-in-a-row.md). */
+    assigned: "Assigned by us",
+    address: "Address",
+    changeAddress: "Change",
+    total: "Total",
+    /** Once GST applies, the total says it is in it. */
+    totalWithGst: "Total, incl. GST",
+    payment: "Payment",
+    razorpay: "Pay by UPI, card, netbanking or wallet on Razorpay’s secure checkout. Saved methods appear there.",
+    /** What changing the visit later costs, and when it starts to. */
+    changing: "Changing your plans",
+    now: "Now",
+    theVisit: "Visit",
     // The pay step says "Free to move until"; cancelling is free until then too.
     freeUntil: (when: string) => `Free to move or cancel until ${when}.`,
     afterThat: " After that, changes are charged.",
@@ -187,34 +209,60 @@ export const booking = {
   },
   // Said to a screen reader, once, a minute before the hold lapses.
   lastMinute: "One minute left to pay. Then the time is released.",
+  /** On the review, over Pay, which tries again: Checkout offers every way to pay. */
   failed: {
-    label: "Payment failed",
     title: "The payment didn’t go through.",
-    held: (time: string) => `Held for ${time} more.`,
-    retry: "Try again",
+    line: "Nothing was booked. If money left your account, it comes back automatically. Try again, or use another method.",
   },
   expired: {
-    label: "Time’s up",
-    title: "That time has been released.",
-    pickAgain: "Pick again",
+    title: "That time has been released",
+    line: "Nothing was charged.",
+    pickAgain: "Pick another time",
   },
   /** The hair system the consultation recommended, beside its name in the chooser. */
   recommended: (technician: string | null) => (technician === null ? "Recommended" : `Recommended by ${technician}`),
   confirmed: {
-    label: "Confirmed",
+    /** Over the day, on the navy: what was booked. */
+    label: {
+      consultation: "Consultation booked",
+      first_fit: "First fit booked",
+      service: "Visit booked",
+      replacement: "Replacement booked",
+    },
+    moved: "Visit moved",
+    arrives: (hours: string) => `Arrives ${hours}`,
+    technician: "Technician",
+    address: "Address",
+    payment: "Payment",
+    paid: (amount: string) => `${amount} paid`,
+    credit: "Free service visit",
+    carriedOver: "Carried over",
+    free: "Free",
+    /** Said only to a client who has switched on WhatsApp about their visits, since nothing is sent to anyone else. */
+    assigned: "Technicians are assigned by us. If yours changes, we tell you on WhatsApp.",
     /** The reminder is ours, sent automatically, not the technician's. */
-    tellsYou: "We’ll remind you on WhatsApp the day before.",
-    paid: "Paid",
+    tellsYou: "We remind you the day before.",
     note: (name: string) => `Add a note for ${name}`,
     close: "Done",
   },
-  confirming: "Confirming your visit…",
+  /** While Razorpay's word and the booking are awaited: a title, and a line beneath it. */
+  confirming: {
+    paid: "Confirming your payment",
+    free: "Confirming your visit",
+    line: "This takes a few seconds.",
+  },
   // The hold's time ran out on the phone after Razorpay had taken the payment, which keeps it.
   paidIn: PAID_IN,
-  slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
-  /** The same, for a free visit to a client who has not agreed to WhatsApp about visits: nothing will be sent. */
-  slowQuiet: "This is taking longer than usual. Check Home in a minute.",
-  refunded: "We couldn’t book that visit, so we’re refunding your payment in full.",
+  slow: {
+    title: "This is taking longer than usual",
+    line: TOLD_WHEN_BOOKED,
+    /** For a free visit to a client who has not agreed to WhatsApp about visits: nothing will be sent. */
+    quiet: "Check Home in a minute.",
+  },
+  refunded: {
+    title: "We couldn’t book that visit",
+    line: "We’re refunding your payment in full.",
+  },
   failedToStart: "That didn’t go through. Try again.",
   creditGone: "Your free service visit is already used on another booking. This visit is charged at the price below.",
   close: "Close",
@@ -307,7 +355,6 @@ export const change = {
   notChangeable: "This visit can no longer be changed here.",
   message: "Message us",
   failed: "That didn’t go through. Try again.",
-  moved: "Moved",
   moveItem: (what: string) => `${what} · moved`,
   lateFeeItem: (what: string) => `Late fee · ${what.toLowerCase()}`,
   confirmMove: "Confirm move",

@@ -3,11 +3,10 @@
 // once it is within SIZE; a new file starts within SIZE.
 
 export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
-  "apps/app/src/booking/BookingSheet.tsx": { fn: 114 },
+  "apps/app/src/booking/BookingSheet.tsx": { fn: 113 },
   "apps/app/src/booking/ChangeSheet.tsx": { fn: 133 },
   "apps/app/src/booking/DisputeSheet.tsx": { fn: 86 },
   "apps/app/src/booking/NoteSheet.tsx": { fn: 94 },
-  "apps/app/src/booking/steps/PayStep.tsx": { fn: 85 },
   "apps/app/src/login/CodeScreen.tsx": { fn: 85 },
   "apps/app/src/login/Login.tsx": { fn: 113 },
   "apps/app/src/profile/AddressForm.tsx": { fn: 118 },
@@ -30,7 +29,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/tech/src/login/SignIn.tsx": { fn: 121 },
   "apps/tech/src/steps/Piece.tsx": { fn: 92 },
   "apps/tech/src/steps/Profile.tsx": { fn: 85 },
-  "scripts/fidelity/fidelity-app.ts": { lines: 1098, fn: 167 },
+  "scripts/fidelity/fidelity-app.ts": { lines: 1097, fn: 167 },
   "scripts/fidelity/fidelity-tech.ts": { lines: 452, fn: 104 },
   "scripts/lib/wrangler-config-check.ts": { lines: 419 },
   "site/src/islands/invite/Consultation.tsx": { fn: 143 },

@@ -17,7 +17,8 @@ const rows = (recommended?: Recommended) => {
   const page = document.createElement("div");
   page.innerHTML = renderToStaticMarkup(
     createElement(ServiceStep, {
-      before: 0,
+      step: { at: 1, of: 2 },
+      onClose: () => undefined,
       services: SERVICES,
       chosen: null,
       recommended,

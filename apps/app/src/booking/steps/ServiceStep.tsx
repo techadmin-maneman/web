@@ -10,7 +10,7 @@ import { booking, missing, VISIT_TYPES } from "../../content.ts";
 import { priceFigures } from "../../lib/money.ts";
 import bookingSheet from "../booking.module.css";
 import styles from "./service-step.module.css";
-import { Heading } from "./shared.tsx";
+import { Frame, type StepAt } from "./shared.tsx";
 
 /** A first fit's hair system as the consultation recommended it: its tier, and the technician's first name. */
 export interface Recommended {
@@ -22,11 +22,11 @@ export interface Recommended {
  * Every service open to the client, when there is more than one, a kind at a time in the order
  * ops keep them, each with the line ops wrote for it, how long it takes and what it costs from the first day it can
  * be booked. The services are native radio buttons of one name, drawn as the window step's rows: one
- * choice among them all, one tab stop, and the arrow keys move between them. `before`: the steps the sheet will take
- * before the date.
+ * choice among them all, one tab stop, and the arrow keys move between them.
  */
 export function ServiceStep(props: {
-  before: number;
+  step: StepAt;
+  onClose: () => void;
   services: readonly OfferedService[];
   chosen: OfferedService | null;
   /** The hair system the consultation recommended, and who recommended it; marked beside its name. */
@@ -38,8 +38,26 @@ export function ServiceStep(props: {
   const kinds = [...new Set(props.services.map((service) => service.type))];
   const title = kinds.length === 1 && kinds[0] === "first_fit" ? copy.titleFirstFit : copy.title;
   return (
-    <>
-      <Heading title={title} step={booking.step(1, 3 + props.before)} />
+    <Frame
+      title={title}
+      step={props.step}
+      onClose={props.onClose}
+      footer={
+        <>
+          <Button
+            variant="primary"
+            size="action"
+            className={bookingSheet.primary}
+            disabled={props.chosen === null}
+            aria-describedby={describedBy("pick-service", props.chosen === null)}
+            onClick={props.onNext}
+          >
+            {copy.continue}
+          </Button>
+          <Missing id="pick-service" what={props.chosen === null ? missing.pickService : null} />
+        </>
+      }
+    >
       {kinds.map((kind) => (
         <div key={kind} className={bookingSheet.kind}>
           <h3 className={capsLook(bookingSheet.label)} id={`booking-kind-${kind}`}>
@@ -84,17 +102,6 @@ export function ServiceStep(props: {
           </div>
         </div>
       ))}
-      <Button
-        variant="primary"
-        size="action"
-        className={bookingSheet.primary}
-        disabled={props.chosen === null}
-        aria-describedby={describedBy("pick-service", props.chosen === null)}
-        onClick={props.onNext}
-      >
-        {copy.continue}
-      </Button>
-      <Missing id="pick-service" what={props.chosen === null ? missing.pickService : null} />
-    </>
+    </Frame>
   );
 }

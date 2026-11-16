@@ -1,6 +1,7 @@
 // The booking sheet's days (./BookingSheet.tsx): the strip the API answered, the day and start chosen on it, and the
-// later days added on asking (ADR 0086). Opened on a visit the app offers, the first open day on or after the day
-// offered is chosen, and the first open start in the window offered that day.
+// later days added on asking (ADR 0086). The first open day is chosen as the sheet opens, as the design does; opened
+// on a visit the app offers, the first open day on or after the day offered, and the first open start in the window
+// offered that day.
 
 import { useState, type Dispatch } from "react";
 import { api, type Availability, type BookingWindow, type Wanted } from "../api.ts";
@@ -34,7 +35,7 @@ export function useDays(asked: DaysAsked) {
   const showDays = (days: Availability) => {
     setAvailability(days);
     setLaterAsk("idle");
-    const chosen = offeredDate === undefined ? null : firstOpenFrom(days.days, offeredDate);
+    const chosen = firstOpenFrom(days.days, offeredDate ?? "");
     setDate(chosen);
     setChosenStart(
       firstOpenIn(
@@ -91,6 +92,12 @@ export function useDays(asked: DaysAsked) {
     setChosenStart((picked) => stillOpen(day, picked));
   };
 
+  /** The earliest open start, taken at a tap: its day and itself. */
+  const chooseStartOn = (chosen: string, startsAt: string) => {
+    setDate(chosen);
+    setChosenStart(startsAt);
+  };
+
   return {
     availability,
     laterAsk,
@@ -99,6 +106,7 @@ export function useDays(asked: DaysAsked) {
     setChosenStart,
     showDays,
     chooseDate,
+    chooseStartOn,
     showLater,
     askAgainFrom,
   };

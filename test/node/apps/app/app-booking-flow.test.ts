@@ -16,17 +16,15 @@ const ADDRESS = { pincode: "400050" } as Address;
 const after = (...events: BookingEvent[]): Step => events.reduce<Step>(nextStep, { kind: "loading" });
 
 describe("the booking sheet’s way through", () => {
-  it("goes from the days to the window, a hold, Checkout and the visit booked", () => {
+  it("goes from the day and time to a hold, Checkout and the visit booked", () => {
     const steps = [
       { kind: "answered", picking: false, addressMissing: false },
-      { kind: "dayTaken" },
       { kind: "held", hold: HOLD },
       { kind: "paid", hold: HOLD },
       { kind: "booked", hold: PAID },
     ] as const satisfies readonly BookingEvent[];
     expect(steps.map((_, index) => after(...steps.slice(0, index + 1)).kind)).toEqual([
-      "date",
-      "window",
+      "when",
       "pay",
       "confirming",
       "confirmed",
@@ -44,7 +42,7 @@ describe("the booking sheet’s way through", () => {
   });
 
   it("asks for the address when the API refuses a hold for want of one, and says where it does not come", () => {
-    const window = after({ kind: "answered", picking: false, addressMissing: false }, { kind: "dayTaken" });
+    const window = after({ kind: "answered", picking: false, addressMissing: false });
     expect(nextStep(window, { kind: "addressNeeded", refused: true })).toEqual({ kind: "address", refused: true });
     expect(nextStep(window, { kind: "notServed", address: ADDRESS })).toEqual({ kind: "notServed", address: ADDRESS });
     // With no address known, it cannot say where, and says it failed.
@@ -54,7 +52,6 @@ describe("the booking sheet’s way through", () => {
   it("lets a failed payment be tried again, and a lapsed hold be picked again", () => {
     const failed = after(
       { kind: "answered", picking: false, addressMissing: false },
-      { kind: "dayTaken" },
       { kind: "held", hold: HOLD },
       { kind: "payFailed", hold: HOLD },
     );
@@ -77,6 +74,25 @@ describe("the booking sheet’s way through", () => {
     const confirming: Step = { kind: "confirming", hold: HOLD };
     expect(nextStep(confirming, { kind: "refunded" })).toEqual({ kind: "refunded" });
     expect(nextStep(confirming, { kind: "slow", paid: true })).toEqual({ kind: "slow", paid: true });
+  });
+
+  it("steps back from the review to the day and time, and from those to the service", () => {
+    const pay: Step = { kind: "pay", hold: HOLD };
+    expect(nextStep(pay, { kind: "back" })).toEqual({ kind: "when" });
+    expect(nextStep({ kind: "failed", hold: HOLD }, { kind: "back" })).toEqual({ kind: "when" });
+    expect(nextStep({ kind: "when" }, { kind: "back" })).toEqual({ kind: "service" });
+    // A wait for the booking has no way back.
+    const confirming: Step = { kind: "confirming", hold: HOLD };
+    expect(nextStep(confirming, { kind: "back" })).toBe(confirming);
+  });
+
+  it("changes the address from the review, letting the time go", () => {
+    expect(nextStep({ kind: "pay", hold: HOLD }, { kind: "changeAddress" })).toEqual({
+      kind: "address",
+      refused: false,
+      changing: true,
+    });
+    expect(nextStep({ kind: "when" }, { kind: "changeAddress" })).toEqual({ kind: "when" });
   });
 
   it("shows the hold again with its price, as a code or a credit gone changes it", () => {
@@ -111,8 +127,8 @@ describe("an answer that comes too late", () => {
   it("drops a poll’s answer once the sheet is no longer waiting on one", () => {
     const pay: Step = { kind: "pay", hold: HOLD };
     expect(nextStep(pay, { kind: "booked", hold: PAID })).toBe(pay);
-    expect(nextStep({ kind: "date" }, { kind: "answered", picking: false, addressMissing: false })).toEqual({
-      kind: "date",
+    expect(nextStep({ kind: "when" }, { kind: "answered", picking: false, addressMissing: false })).toEqual({
+      kind: "when",
     });
   });
 

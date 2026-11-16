@@ -1,0 +1,21 @@
+/* A ring turning (./Spinner.tsx): the quiet track, its arc in the strong ink. */
+
+@layer base, ui;
+
+@layer ui {
+  .spinner {
+    display: block;
+    width: var(--sp-40);
+    height: var(--sp-40);
+    border: var(--focus-offset-wide) solid var(--ui-tint);
+    border-top-color: var(--ui-strong);
+    border-radius: 50%;
+    animation: turn var(--duration-spin) linear infinite;
+  }
+
+  @keyframes turn {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+}

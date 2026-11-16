@@ -173,6 +173,30 @@
     /* A short list's numbers (./NumberedSteps.tsx): muted, unless the app's look marks them. */
     --steps-number: var(--ui-text-muted);
     --steps-number-weight: inherit;
+    /* A day or a time to pick (./DateStrip.tsx, ./TimeChoice.tsx): edged in the paper's control line, the one picked
+       in the ink, unless the app's look sets its own. */
+    --pick-edge: var(--paper-control);
+    --pick-on: var(--ink);
+    --pick-on-text: var(--paper);
+    /* A day's figure in a strip of days (./DateStrip.tsx): the title face's 18 px, unless the app's look sets its own. */
+    --strip-number-size: var(--fs-18);
+    --strip-number-weight: inherit;
+    /* A day with nothing open: shaded, unless the app's look sets its own. */
+    --strip-off-ground: var(--paper-shade);
+    --strip-off-text: var(--text-muted);
+    /* A day's times (./TimeChoice.tsx): four to a row a row's height, under small-capital names, a taken one shaded,
+       unless the app's look sets its own. */
+    --time-columns: 4;
+    --time-height: var(--tap-row);
+    --time-weight: inherit;
+    --time-name-size: var(--fs-13);
+    --time-name-weight: inherit;
+    --time-name-caps: all-small-caps;
+    --time-name-tracking: var(--tracking-14);
+    --time-name-colour: var(--text-muted);
+    --time-taken-ground: var(--paper-shade);
+    --time-taken-edge: transparent;
+    --time-taken-text: var(--text-muted);
     /* A sheet's panel (./Sheet.tsx): the paper, unless the app's look sets its own. */
     --sheet-ground: var(--paper);
     --sheet-text: var(--text);

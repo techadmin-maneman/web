@@ -1,5 +1,5 @@
-// The booking sheet's pay step (apps/app/src/booking/steps/PayStep.tsx): what it says a visit costs, now and if it is
-// changed later, and when Pay can be tapped.
+// The booking sheet's review (apps/app/src/booking/steps/PayStep.tsx): what it says a visit costs, now and if it is
+// changed later, a payment that failed, the ways back, and when Pay can be tapped.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -16,14 +16,18 @@ let page: HTMLElement;
 let root: Root;
 let paid: number;
 let reminded: boolean[];
+let tapped: string[];
 
 beforeEach(() => {
   Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
+  // The DOM here draws nothing, so there is nothing to scroll; a failed payment's notice asks to be brought into view.
+  Reflect.set(Element.prototype, "scrollIntoView", () => undefined);
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
   paid = 0;
   reminded = [];
+  tapped = [];
 });
 
 afterEach(() => {
@@ -33,11 +37,29 @@ afterEach(() => {
   page.remove();
 });
 
-const draw = (hold: Hold, over: { busy?: boolean; problem?: string | null; askToRemind?: boolean } = {}) => {
+const ADDRESS = {
+  line1: "Flat 4B, Sea Breeze",
+  line2: null,
+  locality: "Bandra West",
+  city: "Mumbai",
+  pincode: "400050",
+  access_notes: null,
+};
+
+const draw = (
+  hold: Hold,
+  over: { busy?: boolean; problem?: string | null; askToRemind?: boolean; failed?: boolean } = {},
+) => {
   act(() => {
     root.render(
       createElement(PayStep, {
         hold,
+        address: ADDRESS,
+        failed: over.failed ?? false,
+        step: { at: 2, of: 2 },
+        onBack: () => tapped.push("back"),
+        onClose: () => tapped.push("close"),
+        onChangeAddress: () => tapped.push("address"),
         busy: over.busy ?? false,
         problem: over.problem ?? null,
         askToRemind: over.askToRemind ?? false,
@@ -70,7 +92,7 @@ const agree = () => {
   });
 };
 
-describe("the pay step", () => {
+describe("the review", () => {
   it("asks a visit's price, and pays at a tap once the terms are agreed to", () => {
     draw(holdOf());
     expect(payButton().textContent).toBe(copy.pay(rupees(200000)));
@@ -143,5 +165,37 @@ describe("the pay step", () => {
     draw(holdOf());
     agree();
     expect(payButton().disabled).toBe(false);
+  });
+
+  it("lists the visit, when, who comes and where, with a way to change the address", () => {
+    draw(holdOf());
+    const facts = [...page.querySelectorAll("dt")].map((term) => term.textContent);
+    expect(facts.slice(0, 4)).toEqual([copy.visit, copy.when, copy.technician, copy.address]);
+    expect(page.textContent).toContain(copy.assigned);
+    expect(page.textContent).toContain(ADDRESS.line1);
+    const change = [...page.querySelectorAll("button")].find((button) => button.textContent === copy.changeAddress);
+    act(() => {
+      change?.click();
+    });
+    expect(tapped).toEqual(["address"]);
+  });
+
+  it("says a payment that failed at its head, Pay trying again", () => {
+    draw(holdOf(), { failed: true });
+    expect(page.querySelector('[role="alert"]')?.textContent).toContain(booking.failed.title);
+    agree();
+    act(() => {
+      payButton().click();
+    });
+    expect(paid).toBe(1);
+  });
+
+  it("steps back to the day and time", () => {
+    draw(holdOf());
+    const back = page.querySelector<HTMLButtonElement>(`button[aria-label="${booking.back}"]`);
+    act(() => {
+      back?.click();
+    });
+    expect(tapped).toEqual(["back"]);
   });
 });

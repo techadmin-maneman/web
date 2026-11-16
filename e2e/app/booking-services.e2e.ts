@@ -113,11 +113,9 @@ async function pickVisit(page: Page, name: RegExp): Promise<void> {
   await visits.getByRole("button", { name: appCopy.booking.service.continue }).click();
 }
 
-/** From the date step, the first free day and a free window, as far as the pay step. */
+/** From the day and time, the first free day, chosen as the step opens, and a free time, as far as the review. */
 async function datesToPayment(page: Page): Promise<void> {
-  const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
-  await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await dates.getByRole("button", { name: appCopy.booking.service.continue }).click();
+  await expect(page.getByRole("dialog", { name: appCopy.booking.when.title })).toBeVisible();
   await continueToPayment(page);
 }
 
@@ -129,7 +127,7 @@ test("offers every service of the kind it books, the one offered chosen, with ho
   await premiumBeside(page, "standard");
   await openSheet(page);
   const visits = page.getByRole("dialog", { name: appCopy.booking.service.title });
-  await expect(visits.getByText("Step 1 of 4")).toBeVisible();
+  await expect(visits.getByText(appCopy.booking.step(1, 3))).toBeAttached();
   const kind = visits.getByRole("radiogroup", { name: appCopy.VISIT_TYPES.service });
   await expect(kind.getByRole("radio")).toHaveCount(2);
   // The service the app offers the next visit as, which the client may keep or change.

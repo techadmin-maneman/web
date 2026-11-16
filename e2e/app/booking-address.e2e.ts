@@ -5,10 +5,10 @@
 // service booked: picked first where its kind offers more than one, the one
 // the app offers chosen (ADR 0085, ADR 0086).
 
-import type { Locator, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
-import { continueToPayment } from "./picking.ts";
+import { continueToPayment, OPEN_TIMES } from "./picking.ts";
 import {
   toPayment,
   toWindows,
@@ -52,7 +52,7 @@ test("asks a client with no address for it first, then books", async ({ page }) 
   });
   await openSheet(page);
   const where = page.getByRole("dialog", { name: appCopy.profile.where });
-  await expect(where.getByText("Step 1 of 4")).toBeVisible();
+  await expect(where.getByText(appCopy.booking.step(1, 3))).toBeAttached();
   await expect(where.getByText(appCopy.booking.address.why)).toBeVisible();
   await scanOf(page);
   await where.getByLabel(appCopy.profile.form.flat).fill("House 4417");
@@ -62,20 +62,24 @@ test("asks a client with no address for it first, then books", async ({ page }) 
   await where.getByLabel(appCopy.profile.form.pincode).fill("122018");
   await where.getByRole("button", { name: appCopy.booking.address.save }).click();
 
-  const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
-  await expect(dates.getByText("Step 2 of 4")).toBeVisible();
-  await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await dates.getByRole("button", { name: appCopy.booking.date.continue }).click();
-  await expect(page.getByRole("dialog", { name: appCopy.booking.window.title }).getByText("Step 3 of 4")).toBeVisible();
+  const when = page.getByRole("dialog", { name: appCopy.booking.when.title });
+  await expect(when.getByText(appCopy.booking.step(2, 3))).toBeAttached();
   await continueToPayment(page);
+  await expect(
+    page.getByRole("dialog", { name: appCopy.booking.pay.title }).getByText(appCopy.booking.step(3, 3)),
+  ).toBeAttached();
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label.service),
+  ).toBeVisible();
 });
 
-test("takes a client who has given their address straight to the date, as board C2 draws it", async ({ page }) => {
+test("takes a client who has given their address straight to the day and time", async ({ page }) => {
   await openSheet(page);
-  await expect(page.getByRole("dialog", { name: appCopy.booking.date.title }).getByText("Step 1 of 3")).toBeVisible();
+  await expect(
+    page.getByRole("dialog", { name: appCopy.booking.when.title }).getByText(appCopy.booking.step(1, 2)),
+  ).toBeAttached();
   await expect(page.getByRole("heading", { name: appCopy.profile.where })).toHaveCount(0);
 });
 
@@ -86,9 +90,9 @@ test("goes back to the address, saying why, when the API holds no slot for want 
       : route.fallback(),
   );
   await toWindows(page);
-  const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await windows.getByRole("button", { name: appCopy.booking.window.continue }).click();
+  const when = page.getByRole("dialog", { name: appCopy.booking.when.title });
+  await when.locator(OPEN_TIMES).first().click();
+  await when.getByRole("button", { name: appCopy.booking.when.continue, exact: true }).click();
   const where = page.getByRole("dialog", { name: appCopy.profile.where });
   await expect(where.getByRole("alert")).toHaveText(appCopy.booking.address.refused);
   await expect(where.getByRole("button", { name: appCopy.booking.address.save })).toBeVisible();
@@ -111,8 +115,8 @@ test("offers no day at an address we do not come to, but the address to change a
   await expect(where.getByRole("link", { name: appCopy.profile.form.waitlist })).toHaveAttribute("href", /\/book$/);
 });
 
-// Every visit is photographed for the client's record, said one tap away beneath Pay; booking agrees to no consent.
-test("puts Pay above what every visit’s photographs are, one tap away, and sends no consent", async ({ page }) => {
+// Every visit is photographed for the client's record, said one tap away on the review; booking agrees to no consent.
+test("says on the review what every visit’s photographs are, one tap away, and sends no consent", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   await profileAs(page, { reminders: true, undecided: PHOTOS });
@@ -120,11 +124,12 @@ test("puts Pay above what every visit’s photographs are, one tap away, and sen
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   const payButton = pay.getByRole("button", { name: PAY_SERVICE });
-  // One line beneath Pay, where a fold once held it, with its link to the photos notice.
+  // One line at the review's foot, where a fold once held it, with its link to the photos notice; Pay always in view.
   const line = pay.getByText(appCopy.profile.visitPhotos);
   await expect(payButton).toBeInViewport();
+  await line.scrollIntoViewIfNeeded();
   await expect(line).toBeInViewport();
-  expect(await bottomOf(payButton)).toBeLessThanOrEqual(await topOf(line));
+  await expect(payButton).toBeInViewport();
   await expect(pay.getByRole("link", { name: CLIENT_WORDS.noticeMore })).toHaveAttribute("href", /\/notices#photos$/);
   // Referral cards are the client's choice when they share an invite, never booking's.
   await expect(pay.getByText("Anyone you send this card to can see your photographs.")).toHaveCount(0);
@@ -133,19 +138,9 @@ test("puts Pay above what every visit’s photographs are, one tap away, and sen
 
   await pay.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await payButton.click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label.service),
+  ).toBeVisible();
   expect(sent).toHaveLength(1);
   expect(sent[0]).not.toHaveProperty("consents");
 });
-
-/** Where an element begins down the page; NaN for one not drawn, which no comparison passes. */
-async function topOf(element: Locator): Promise<number> {
-  const box = await element.boundingBox();
-  return box === null ? Number.NaN : box.y;
-}
-
-/** Where an element ends down the page; NaN for one not drawn. */
-async function bottomOf(element: Locator): Promise<number> {
-  const box = await element.boundingBox();
-  return box === null ? Number.NaN : box.y + box.height;
-}

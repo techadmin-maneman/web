@@ -129,6 +129,28 @@
   --steps-number: var(--navy-900);
   --steps-number-weight: var(--weight-semibold);
 
+  /* Booking's days and times, as the design draws them: the one picked in navy; a day's figure 20/600; three times to
+     a row, 46 px, under names in Plex's semibold with what is open beside them; a taken time on white, struck through.
+     Their edges are a control's stone. */
+  --pick-edge: var(--stone);
+  --pick-on: var(--navy-900);
+  --pick-on-text: var(--white-000);
+  --strip-number-size: var(--fs-20);
+  --strip-number-weight: var(--weight-semibold);
+  --strip-off-ground: var(--grid-100);
+  --strip-off-text: var(--stone);
+  --time-columns: 3;
+  --time-height: calc(var(--sp-48) - var(--sp-2));
+  --time-weight: var(--weight-medium);
+  --time-name-size: var(--fs-14);
+  --time-name-weight: var(--weight-semibold);
+  --time-name-caps: normal;
+  --time-name-tracking: normal;
+  --time-name-colour: var(--ink-900);
+  --time-taken-ground: var(--white-000);
+  --time-taken-edge: var(--grid-100);
+  --time-taken-text: var(--stone);
+
   /* The one circle the client app draws besides its radios and spinners (owner, ruling 10). */
   --compare-knob-radius: 50%;
 }

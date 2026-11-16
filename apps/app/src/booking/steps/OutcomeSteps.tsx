@@ -1,128 +1,149 @@
-// What came of paying, the hold that ran out, the booking confirmed, and a wait.
+// What came of paying, as the design draws it: a wait while it is confirmed, the time released, and the visit booked,
+// on the navy.
 
-import { TextButton } from "@maneman/ui/TextLink";
-import { capsLook } from "@maneman/ui/Caps";
-import { ICONS } from "@maneman/brand/icons";
-import { Button, ButtonLink } from "@maneman/ui/Button";
+import { GLYPHS, ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
+import { Spinner } from "@maneman/ui/Spinner";
+import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { addDays, shortDate, todayInIndia, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { useState } from "react";
-import type { Hold } from "../../api.ts";
-import { arrivalHours, booking, change, messages, VISIT_TYPES } from "../../content.ts";
+import { useState, type ReactNode } from "react";
+import type { Address, Hold, MoveTerms } from "../../api.ts";
+import { arrivalHours, booking, messages, VISIT_TYPES } from "../../content.ts";
 import { AddToCalendar } from "../../visits/index.ts";
 import { whatsappWith } from "../../lib/whatsapp.ts";
 import { NoteSheet } from "../NoteSheet.tsx";
 import bookingSheet from "../booking.module.css";
 import styles from "./outcome-steps.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
-import { TITLE_ID, minutesAndSeconds, useHoldLeft, LastMinute } from "./shared.tsx";
+import { Frame, TITLE_ID } from "./shared.tsx";
 
-/** The outcome step: the payment failed, and the hold's time left. Checkout offers every way to pay again. */
-export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => void }) {
-  const { hold, busy, onRetry } = props;
-  const copy = booking.failed;
-  const left = useHoldLeft(hold);
+/** The hold lapsed before the payment: nothing was charged, and the client picks again. */
+export function ExpiredStep({ onPickAgain, onClose }: { onPickAgain: () => void; onClose: () => void }) {
+  const copy = booking.expired;
   return (
-    // Busy while the payment is being started again, so a screen reader is told the step is working.
-    <div aria-busy={busy}>
-      <p className={capsLook(bookingSheet.caption)}>{copy.label}</p>
-      <div className={styles.failed}>
-        <div role="alert">
-          <h2 className={bookingSheet.outcome} id={TITLE_ID}>
-            {copy.title}
-          </h2>
-        </div>
-        {/* Outside the alert, which a screen reader reads again whenever it changes: here, every second. */}
-        <p className={bookingSheet.outcomeLine}>{copy.held(minutesAndSeconds(left))}</p>
-        <LastMinute left={left} />
+    <Frame
+      onClose={onClose}
+      footer={
+        <Button variant="primary" size="action" className={bookingSheet.primary} onClick={onPickAgain}>
+          {copy.pickAgain}
+        </Button>
+      }
+    >
+      <div className={styles.middle} role="alert">
+        <Icon className={styles.released} d={GLYPHS.clock} size="xl" />
+        <h2 className={styles.title} id={TITLE_ID}>
+          {copy.title}
+        </h2>
+        <p className={styles.line}>{copy.line}</p>
       </div>
-      <Button
-        variant="primary"
-        size="action"
-        className={bookingSheet.primary}
-        disabled={busy}
-        busy={busy}
-        onClick={onRetry}
-      >
-        {copy.retry}
-      </Button>
-    </div>
-  );
-}
-
-/** The outcome step: the hold lapsed before the payment. */
-export function ExpiredStep({ onPickAgain }: { onPickAgain: () => void }) {
-  return (
-    <div role="alert">
-      <p className={capsLook(bookingSheet.caption)}>{booking.expired.label}</p>
-      <h2 className={bookingSheet.outcome} id={TITLE_ID}>
-        {booking.expired.title}
-      </h2>
-      <Button variant="primary" size="action" className={bookingSheet.primary} onClick={onPickAgain}>
-        {booking.expired.pickAgain}
-      </Button>
-    </div>
-  );
-}
-
-/** What booking took, on the confirmation: a visit credit, or the money paid; for a free visit, nothing. */
-function Settled({ hold }: { hold: Hold }) {
-  const copy = booking;
-  if (hold.credit !== null) {
-    return (
-      <p className={bookingSheet.paid}>
-        <span>{copy.pay.credit.used}</span>
-        <span className={styles.paidAmount}>{copy.pay.credit.remaining(hold.credit.remaining)}</span>
-      </p>
-    );
-  }
-  if (hold.price.amount === 0) return null;
-  return (
-    <p className={bookingSheet.paid}>
-      <span>{copy.confirmed.paid}</span>
-      <span className={styles.paidAmount}>{rupees(hold.price.amount)}</span>
-    </p>
+    </Frame>
   );
 }
 
 /**
- * Booked. The reminder the day before is promised only to a client who has switched on
- * WhatsApp about their visits, since it is sent to no one else.
+ * Waiting for Razorpay's word and the booking, turning, with the way out at its head; or what came of it when it was
+ * not a booking, with Close at its foot. Its title and line are said as they change.
  */
-export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boolean; onDone: () => void }) {
-  const { hold, moved, reminded, onDone } = props;
+export function WaitStep(props: { title: string; line?: string; waiting?: boolean; onClose: () => void }) {
+  const { waiting = false } = props;
+  return (
+    <Frame
+      onClose={waiting ? props.onClose : undefined}
+      footer={
+        waiting ? undefined : (
+          <Button variant="outline" size="action" className={bookingSheet.primary} onClick={props.onClose}>
+            {booking.close}
+          </Button>
+        )
+      }
+    >
+      <div className={styles.middle} role="status">
+        {waiting && <Spinner className={styles.spinner} />}
+        <h2 className={styles.title} id={TITLE_ID}>
+          {props.title}
+        </h2>
+        {props.line !== undefined && <p className={styles.line}>{props.line}</p>}
+      </div>
+    </Frame>
+  );
+}
+
+/** A name beside its value on the navy, as the design's booked screen lists them. */
+function Fact({ name, children }: { name: string; children: ReactNode }) {
+  return (
+    <div className={styles.fact}>
+      <dt>{name}</dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
+/** What booking took: a visit credit, the money paid, what a move kept, or, for a free visit, nothing. */
+function paymentOf(hold: Hold, moving: MoveTerms | undefined): string {
+  const copy = booking.confirmed;
+  if (hold.credit !== null) return copy.credit;
+  if (hold.price.amount > 0) return copy.paid(rupees(hold.price.amount));
+  return moving !== undefined && (moving.paid > 0 || moving.credit !== null) ? copy.carriedOver : copy.free;
+}
+
+/**
+ * Booked, on the navy: the day, when the technician arrives, who, where and what was paid, the calendars, Done, and a
+ * note for the technician. That we tell the client of a change, and remind them the day before, is said only to a
+ * client who has switched on WhatsApp about their visits, since nothing is sent to anyone else.
+ */
+export function ConfirmedStep(props: {
+  hold: Hold;
+  moving: MoveTerms | undefined;
+  address: Address | null;
+  reminded: boolean;
+  onDone: () => void;
+}) {
+  const { hold, reminded } = props;
   const copy = booking.confirmed;
   const technician = firstNameOf(hold.technician.name);
-  const when = `${weekdayDate(hold.date)}, ${arrivalHours(hold)}`;
+  const remindsTheDayBefore = reminded && hold.date > addDays(todayInIndia(Date.now()), 1);
   return (
     <div className={styles.confirmed} role="status">
-      <h2 className={capsLook(styles.confirmedLabel)} id={TITLE_ID}>
-        {moved ? change.moved : copy.label}
-      </h2>
-      <Icon className={styles.confirmedTick} d={ICONS.tick} size="xl" />
-      <p className={bookingSheet.confirmedTitle}>{when}</p>
-      {reminded && hold.date > addDays(todayInIndia(Date.now()), 1) && (
-        <p className={bookingSheet.confirmedLine}>{copy.tellsYou}</p>
-      )}
-      <Settled hold={hold} />
-      <div className={styles.confirmedCalendar}>
-        <AddToCalendar
-          visit={{
-            id: hold.visit_id ?? hold.id,
-            starts_at: hold.starts_at,
-            ends_at: hold.ends_at,
-            arrives_by: hold.arrives_by,
-            name: VISIT_TYPES[hold.type],
-            technician,
-          }}
-          onInk
-        />
+      <div className={styles.confirmedBody}>
+        <span className={styles.check}>
+          <Icon d={ICONS.tick} size="lg" />
+        </span>
+        {/* What was booked names the sheet; the day beneath it is drawn the larger, as the design draws it. */}
+        <h2 className={styles.confirmedLabel} id={TITLE_ID}>
+          {props.moving === undefined ? copy.label[hold.type] : copy.moved}
+        </h2>
+        <p className={styles.confirmedDate}>{weekdayDate(hold.date)}</p>
+        <p className={styles.arrives}>{copy.arrives(arrivalHours(hold))}</p>
+        <dl className={styles.facts}>
+          <Fact name={copy.technician}>{hold.technician.name}</Fact>
+          {props.address !== null && <Fact name={copy.address}>{props.address.line1}</Fact>}
+          <Fact name={copy.payment}>{paymentOf(hold, props.moving)}</Fact>
+        </dl>
+        {reminded && (
+          <p className={styles.told}>{remindsTheDayBefore ? `${copy.assigned} ${copy.tellsYou}` : copy.assigned}</p>
+        )}
+        <div className={styles.calendar}>
+          <AddToCalendar
+            visit={{
+              id: hold.visit_id ?? hold.id,
+              starts_at: hold.starts_at,
+              ends_at: hold.ends_at,
+              arrives_by: hold.arrives_by,
+              name: VISIT_TYPES[hold.type],
+              technician,
+            }}
+            onInk
+          />
+        </div>
       </div>
-      <ConfirmedNote hold={hold} technician={technician} />
-      <TextButton tone="ink" className={styles.done} onClick={onDone}>
-        {copy.close}
-      </TextButton>
+      <div className={styles.confirmedFooter}>
+        <Button variant="gold" size="action" className={bookingSheet.primary} onClick={props.onDone}>
+          {copy.close}
+        </Button>
+        <ConfirmedNote hold={hold} technician={technician} />
+      </div>
     </div>
   );
 }
@@ -136,29 +157,22 @@ function ConfirmedNote({ hold, technician }: { hold: Hold; technician: string })
   const message = messages.note(VISIT_TYPES[hold.type], shortDate(hold.date));
   if (hold.visit_id === null) {
     return (
-      <ButtonLink
-        variant="outlineOnInk"
-        size="control"
-        className={styles.note}
-        href={whatsappWith(message)}
-        rel="noopener"
-      >
+      <TextLink tone="ink" className={styles.note} href={whatsappWith(message)}>
         {booking.confirmed.note(technician)}
-      </ButtonLink>
+      </TextLink>
     );
   }
   return (
     <>
-      <Button
-        variant="outlineOnInk"
-        size="control"
+      <TextButton
+        tone="ink"
         className={styles.note}
         onClick={() => {
           setOpen(true);
         }}
       >
         {booking.confirmed.note(technician)}
-      </Button>
+      </TextButton>
       {open && (
         <NoteSheet
           visitId={hold.visit_id}
@@ -171,21 +185,5 @@ function ConfirmedNote({ hold, technician }: { hold: Hold; technician: string })
         />
       )}
     </>
-  );
-}
-
-/** Waiting for Razorpay's confirmation and the booking, or what came of it when it was not a booking. */
-export function WaitStep({ text, onClose }: { text: string; onClose?: () => void }) {
-  return (
-    <div role="status">
-      <h2 className={bookingSheet.outcome} id={TITLE_ID}>
-        {text}
-      </h2>
-      {onClose !== undefined && (
-        <Button variant="outline" size="control" className={bookingSheet.secondary} onClick={onClose}>
-          {booking.close}
-        </Button>
-      )}
-    </div>
   );
 }

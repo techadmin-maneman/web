@@ -30,12 +30,14 @@ export function DateStrip(props: {
   /** The heading the group is named by; without one, a fieldset around the strip names it. */
   readonly labelledBy?: string;
   readonly onChoose: (date: string) => void;
+  /** A row of fixed tiles that scrolls sideways, for more days than a week, as the client app's booking draws. */
+  readonly scrolls?: boolean;
   /** The strip's place on its screen. */
   readonly className?: string | undefined;
 }) {
   return (
     <div
-      className={classes(styles.strip, props.className)}
+      className={classes(styles.strip, props.scrolls === true && styles.scrolls, props.className)}
       role={props.labelledBy === undefined ? undefined : "radiogroup"}
       aria-labelledby={props.labelledBy}
     >

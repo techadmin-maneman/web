@@ -13,7 +13,7 @@ import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { CLIENT_ICONS, ICONS } from "@maneman/brand/icons";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } from "../api.ts";
 import { booking, change, states } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
@@ -21,7 +21,7 @@ import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet } from "./lazy-sheet.tsx";
 import { moveButton } from "./late-change.ts";
-import { LateFee } from "./steps/shared.tsx";
+import { moveLine } from "./steps/shared.tsx";
 import styles from "./booking.module.css";
 
 export interface ChangingVisit {
@@ -46,14 +46,6 @@ type Step =
 
 /** The cancel sheet's "One left": the credits the client still has, in words. */
 const COUNTS = ["One", "Two", "Three", "Four", "Five", "Six"];
-
-/** What moving costs, in the design's words; a late fee in the pay step's own line. */
-function moveLine(terms: MoveTerms): ReactNode {
-  if (terms.cost === "charged" && terms.credit !== null) return change.move.creditCharged;
-  if (terms.cost === "charged") return change.move.charged(rupees(terms.paid));
-  if (terms.cost === "late_fee") return <LateFee fee={terms.price} noticeHours={terms.notice_hours} />;
-  return terms.paid > 0 ? change.move.free(rupees(terms.paid)) : change.move.freeNothingPaid;
-}
 
 /** What confirming a cancellation says: that a credit is lost, that a fee is kept, or only that it cancels. */
 function cancelButton(terms: CancelTerms): string {

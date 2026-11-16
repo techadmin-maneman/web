@@ -89,3 +89,16 @@ Recorded as they are found while building; `docs/client-redesign/REPORT.md` list
   row, Add a note, is the card's own button beside Change. The rows carry no second line: what moving costs is the line
   above them, and what cancelling gives back is the cancel step's, which reads the API's terms before anything is
   cancelled. A consultation's rows read as any visit's.
+- **Booking** is the design's full screen: a head with the way back and out, a step bar, and the step's button in a
+  footer. The day and the time are one step, as drawn. The days come a fortnight at a time, as the API gives them, and
+  "Later dates" beside the month adds the next; the prototype draws every day at once. A day with a time inside the
+  notice is no longer marked on the strip: the time chosen says so above Continue.
+- **The review** keeps the I-agree tick (ruling of 25 October) and the WhatsApp reminder's tick, and the photographs'
+  line in the notice's own words. It has no switch to use a free service visit, since the API applies one to the hold
+  itself and the review says it is used, and no note box, since a note is kept on a visit, which exists once booked:
+  the booked screen's "Add a note" writes it. Change beside the address lets the time held go and opens the address
+  form; a move keeps its visit's address. Once GST applies its split sits under the total, and a first fit's length
+  under its name. A failed payment is said at the review's head, and Pay tries again, as drawn.
+- **Booked** names the technician the API holds rather than "Confirmed the day before". That we tell the client of a
+  change, and remind them the day before, is said only to a client who has agreed to WhatsApp about their visits. A
+  wait that ended without a booking (slow, refunded) has Close at its foot.

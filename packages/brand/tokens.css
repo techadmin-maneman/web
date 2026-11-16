@@ -190,6 +190,8 @@
   --ease-house: cubic-bezier(0.22, 0.61, 0.36, 1);
   /* The client app's toast fades in this quick (docs/prompts/client-redesign.md, "Motion"); not under reduced motion. */
   --duration-toast: 160ms;
+  /* A spinner's one turn, round and round while a payment is confirmed (packages/ui/Spinner.tsx). */
+  --duration-spin: 800ms;
 
   /* ---- Layers: what sits over what, from low to high ---------------------- */
   --press-scale: 0.92; /* a round control pressed: a camera's shutter */
