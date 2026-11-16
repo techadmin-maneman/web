@@ -49,3 +49,6 @@ export const monthsBefore = (now: Date, months: number): string => {
   then.setUTCMonth(then.getUTCMonth() - months);
   return then.toISOString();
 };
+
+/** Payments and invoices, kept eight years as the law asks of them, whatever a deletion request asks. */
+export const INVOICE_KEPT_YEARS = 8;

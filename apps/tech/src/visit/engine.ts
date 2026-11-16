@@ -7,8 +7,9 @@
 import type { Job } from "../api.ts";
 import { visit as copy } from "../content.ts";
 import type { InJobStep } from "../route.ts";
+import { PLANS, planOf, SCREEN_STEPS, type PlanScreen, type VisitPlan } from "@rules/policy/visit-plan.ts";
 
-type ScreenId = "before_photos" | "tasks" | "hair_profile" | "hair_system" | "consumables" | "after_photos" | "outcome";
+type ScreenId = PlanScreen;
 
 export interface Screen {
   readonly id: ScreenId;
@@ -17,31 +18,11 @@ export interface Screen {
   readonly title: string;
 }
 
-/** Which table a job follows: its type, or the consultation and fit in one visit. */
-type Plan = "service" | "replacement" | "first_fit" | "consultation" | "one_visit";
+/** Which table a job follows (src/policy/visit-plan.ts, which the client's live visit reads too). */
+type Plan = VisitPlan;
 
-const PLANS: Record<Plan, readonly ScreenId[]> = {
-  service: ["before_photos", "tasks", "consumables", "after_photos", "outcome"],
-  replacement: ["before_photos", "hair_system", "tasks", "consumables", "after_photos", "outcome"],
-  first_fit: ["before_photos", "hair_profile", "hair_system", "tasks", "consumables", "after_photos", "outcome"],
-  consultation: ["before_photos", "tasks", "hair_profile", "outcome"],
-  one_visit: ["before_photos", "hair_profile", "hair_system", "tasks", "consumables", "after_photos", "outcome"],
-};
-
-const EVENTS: Record<ScreenId, InJobStep> = {
-  before_photos: "before_photos",
-  tasks: "checklist",
-  hair_profile: "profile",
-  hair_system: "piece",
-  consumables: "consumables",
-  after_photos: "after_photos",
-  outcome: "outcome",
-};
-
-function planOf(job: Pick<Job, "type" | "one_visit">): Plan {
-  if (job.one_visit) return "one_visit";
-  return job.type ?? "service";
-}
+/** The API's event each screen feeds: the card's step, which is an event for every screen the engine works. */
+const EVENTS = SCREEN_STEPS as Readonly<Record<ScreenId, InJobStep>>;
 
 /** The guided tasks' title: a service's, a fitting's, or a consultation's look at the scalp and hairline. */
 function tasksTitle(plan: Plan): string {

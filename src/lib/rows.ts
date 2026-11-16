@@ -224,6 +224,43 @@ export interface Rows {
     readonly taken_off_at: string | null;
     readonly taken_off_by: string | null;
   };
+  readonly client_app_alerts: {
+    readonly id: string;
+    readonly person_id: string;
+    readonly kind: string;
+    readonly subject_kind: string;
+    readonly subject_id: string;
+    readonly once_key: string;
+    readonly written_at: string;
+    readonly pushed_at: string | null;
+    readonly read_at: string | null;
+  };
+  readonly client_push_subscriptions: {
+    readonly session_id: string;
+    readonly endpoint: string;
+    readonly subscribed_at: string;
+  };
+  readonly client_report_photos: {
+    readonly report_id: string;
+    readonly n: number;
+    readonly object_key: string;
+    readonly bytes: number;
+    readonly created_at: string;
+  };
+  readonly client_reports: {
+    readonly id: string;
+    readonly number: number;
+    readonly person_id: string;
+    readonly category: string;
+    readonly visit_id: string | null;
+    readonly claim_visit_id: string | null;
+    readonly text: string | null;
+    readonly conversation_id: string | null;
+    readonly created_at: string;
+    readonly closed_at: string | null;
+    readonly sorted_at: string | null;
+    readonly reopened_at: string | null;
+  };
   readonly consents: {
     readonly id: string;
     readonly person_id: string;
@@ -506,6 +543,20 @@ export interface Rows {
     readonly preferred_window: string | null;
     readonly created_at: string;
     readonly fitted_since: number;
+  };
+  readonly fit_sign_offs: {
+    readonly appointment_id: string;
+    readonly state: string;
+    readonly checks: string | null;
+    readonly flag_text: string | null;
+    readonly declined_reason: string | null;
+    readonly asked_at: string;
+    readonly asks: number;
+    readonly signed_at: string | null;
+    readonly ask_event_id: string | null;
+    readonly guarantee_days: number | null;
+    readonly technician_id: string | null;
+    readonly updated_at: string;
   };
   readonly forecast_accuracy: {
     readonly run_id: string;

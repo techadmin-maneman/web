@@ -96,6 +96,7 @@ describe("a client's hair profile", () => {
       "consumables",
       "profile",
       "after_photos",
+      "sign_off",
       "outcome",
     ]);
     expect(cardStepsFor("first_fit", false)).toEqual(cardStepsFor("first_fit", true));

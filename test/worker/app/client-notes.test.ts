@@ -72,6 +72,7 @@ describe("POST /api/appointments/:id/note", () => {
         arrivalMinutes: 30,
         waits: NO_SHOW_WAIT_MIN,
         phoneClock: PHONE_CLOCK,
+        clientSignOff: true,
       });
 
     expect((await card(NOW))?.client).toBeNull();

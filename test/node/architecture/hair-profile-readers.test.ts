@@ -36,7 +36,7 @@ describe("the hair profile's table", () => {
     // recommended alone (recommendedProduct), as do the package a client is on before they book one and a package
     // kept from deletion; and the stock demand, a client's match to stock, a custom order raised to it, the forecast,
     // the evening's kit check, the technician's week ahead on Kit and a first fit's price each client's latest fit spec
-    // (latestFits).
+    // (latestFits); and the client's live visit whether a profile was recorded on it (profiledVisitsStatement).
     const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?(?:[a-z-]+\/)?hair-profiles\.ts"/).sort();
     expect(users).toEqual(
       [
@@ -55,6 +55,7 @@ describe("the hair profile's table", () => {
         "src/domain/inventory/stock-match.ts",
         "src/domain/visits/consultation-recap.ts",
         "src/domain/visits/next-visit.ts",
+        "src/domain/visits/live-visit.ts",
         "src/routes/ops/hair-profile.ts",
         "src/routes/ops/visits.ts",
         "src/routes/tech/jobs.steps.ts",

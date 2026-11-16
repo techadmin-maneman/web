@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import type { Settings } from "../../../src/config/settings.ts";
 import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
-import { JOB, working, type Working } from "../job-fixtures.ts";
+import { clientSignsOff, JOB, working, type Working } from "../job-fixtures.ts";
 
 /** Mane Man Natural, at Rs. 45,000 with no GST, as staging's book has no GST. */
 export const NATURAL = { tier: "natural", name: "Mane Man Natural", amount: 4_500_000 };
@@ -41,6 +41,8 @@ export async function toThePiece(job: Working, piece: object): Promise<Response>
   await job.post(path("checklist"), { done: [] }, "event-checklist-01");
   await job.post(path("consumables"), { items: [], short_reason: "other" }, "event-consumables-01");
   await job.post(path("photos"), { phase: "after" }, "event-afterphotos-01");
+  // A one visit that fits the client closes done once they have signed it off (ADR 0254).
+  await clientSignsOff(JOB);
   return answer;
 }
 

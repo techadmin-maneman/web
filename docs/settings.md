@@ -19,6 +19,7 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `BOOKS_PROVIDER` | `stub` | `zoho` | `none` |
 | `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000000352005` | — |
 | `BOOKS_SAC` | — | — | — |
+| `CLIENT_SIGN_OFF` | `true` | `false` | `false` |
 | `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |
 | `ENVIRONMENT` | `local` | `staging` | `production` |
 | `GEOCODE_PROVIDER` | `stub` | `google` | `google` |
@@ -139,7 +140,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `address_unlock_hour` | Address unlock | hour of the day, in India | `18` |
 | `reminder_hour` | Reminder time | hour of the day, in India | `18` |
 | `phone_clock` | Phone clock limits | minutes | `{"before_start":60,"held_offline":24}` |
-| `task_sla_hours` | Task deadlines | hours | `{"untold_move":4,"move_unanswered":4,"reschedule_request":4,"visit_left_open":24,"unassigned_visit":24,"recall_call":24,"unanswered_chat":24,"city_matter":24,"remedy_approval":24,"leave_request":24,"leave_conflict":48,"address_to_confirm":48,"consultation_request":48,"first_fit_to_book":48,"replacement_order":48,"stock_at_risk":48,"at_risk_client":48,"partial_visit":48,"consumables_short":48,"kit_request":24,"referral_review":48,"no_show_decision":48,"no_show_dispute":48,"number_change":48,"erasure_request":720,"grievance":720,"draft_invoice":48,"payment_owed":48,"upi_due":12,"payment_to_refund":24}` |
+| `task_sla_hours` | Task deadlines | hours | `{"untold_move":4,"move_unanswered":4,"reschedule_request":4,"visit_left_open":24,"unassigned_visit":24,"recall_call":24,"unanswered_chat":24,"city_matter":24,"remedy_approval":24,"leave_request":24,"leave_conflict":48,"address_to_confirm":48,"consultation_request":48,"first_fit_to_book":48,"replacement_order":48,"stock_at_risk":48,"at_risk_client":48,"partial_visit":48,"consumables_short":48,"fit_unsigned":48,"fit_guarantee_claim":48,"kit_request":24,"referral_review":48,"no_show_decision":48,"no_show_dispute":48,"number_change":48,"erasure_request":720,"grievance":720,"draft_invoice":48,"payment_owed":48,"upi_due":12,"payment_to_refund":24}` |
 | `task_lapse_days` | Tasks lapse after | days | `60` |
 | `payment_hold` | Payment hold | minutes | `{"countdown":10,"grace":2}` |
 | `dispute_window_days` | Dispute window | days | `30` |
@@ -157,6 +158,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `payment_links` | Payment links | hours | `{"holds_hours":24,"closes_before_hours":2,"pay_within_days":14}` |
 | `arrival_notice_min` | Arrival message | minutes | `10` |
 | `move_proposal_hours` | Move proposals | hours | `48` |
+| `guarantee_days` | Fit guarantee | days | `14` |
 | `credit_reminder_days` | Free visit reminders | days | `{"first":30,"last":7}` |
 | `check_in_days` | Follow-ups after a fit | days | `{"first":2,"second":21}` |
 | `referral_monthly_cap` | Hold referral rewards above | fits a month | `5` |

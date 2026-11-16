@@ -61,11 +61,26 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since",
   },
   {
+    what: "A fit's sign-off",
+    tables: ["fit_sign_offs"],
+    leftAtT:
+      "A sign-off asked, flagged or signed since is lost, and a fit closed since reads as closed without one; one declined since is gone from the Tasks board",
+    putBackBy:
+      "Nothing to redo for a fit already closed: its job's outcome stands. Ask ops to note on the visit any sign-off since `<T>` the client remembers",
+  },
+  {
     what: "A technician's asks of ops: kit, and a visit to move",
     tables: ["kit_requests", "reschedule_requests"],
     leftAtT: "An ask made since is lost, and one ops settled since is open again on the Tasks board",
     putBackBy:
       "Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost",
+  },
+  {
+    what: "A client's alerts in their app, and the sessions that take their pushes",
+    tables: ["client_app_alerts", "client_push_subscriptions"],
+    leftAtT:
+      "An alert written since is gone from the inbox, and one read since is new again; a browser that allowed pushes since takes none",
+    putBackBy: "Nothing: the messages since stay in WhatsApp, and the app subscribes again when it next opens",
   },
   {
     what: "A technician's alerts, the kinds they turned off, and the phones that take their pushes",
@@ -121,6 +136,8 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     tables: [
       "conversations",
       "chat_messages",
+      "client_reports",
+      "client_report_photos",
       "care_owners",
       "care_weekly_off",
       "care_leave",

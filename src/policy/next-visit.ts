@@ -10,7 +10,7 @@
 // A day is India's calendar day (src/lib/india-time.ts), and a visit's day is the day in India it started on.
 
 import { windowsFor, type BookingWindow } from "../config/scheduling.ts";
-import { addDays } from "../lib/india-time.ts";
+import { addDays, monthOf } from "../lib/india-time.ts";
 
 /** The figures, each in days, in the order Settings · Rules lists them. */
 export const NEXT_VISIT_DAY_KEYS = [
@@ -133,6 +133,21 @@ export const daysPastHorizon = (days: NextVisitDays): NextVisitDayKey[] =>
 
 /** The last day a visit may be booked on in the app: `horizon` days, counted from tomorrow. */
 export const lastBookableDay = (tomorrow: string, days: NextVisitDays): string => addDays(tomorrow, days.horizon - 1);
+
+/** The first day of the month a hair system falls due on `dueOn`: the day its replacement may first be booked on. */
+export const replacementOpensOn = (dueOn: string): string => `${monthOf(dueOn)}-01`;
+
+/**
+ * The first day a replacement may be booked on: the first day of the month the hair system in wear falls due, and
+ * never before tomorrow (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md).
+ * Null while none falls due, or while that day lies past the last day a visit may be booked on. The rule Home's prompt
+ * always kept, now the booking's own.
+ */
+export function replacementOpens(dueOn: string | null, tomorrow: string, days: NextVisitDays): string | null {
+  if (dueOn === null) return null;
+  const opens = offeredDay(replacementOpensOn(dueOn), tomorrow);
+  return opens <= lastBookableDay(tomorrow, days) ? opens : null;
+}
 
 /**
  * The first day of a date strip `stripDays` long: the day asked for, within the days a visit may be booked on

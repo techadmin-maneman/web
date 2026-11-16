@@ -16,6 +16,7 @@ import {
   NOW,
   request,
 } from "../helpers.ts";
+import { FROM_APP } from "../../../src/domain/care/chat-opened.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
 
 const THREAD = "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e";
@@ -105,21 +106,28 @@ describe("a reply", () => {
     expect(row).toEqual({ failure: "HTTP 400 not on WhatsApp" });
   });
 
-  // MSG91 holds a reply in our own words to WhatsApp's window: 24 hours from the client's last message.
+  // MSG91 holds a reply in our own words to WhatsApp's window: 24 hours from the client's last WhatsApp message.
   it("is refused, and neither sent nor kept, once the provider's window from the client's last message has passed", async () => {
     const { messaging, sent } = provider();
     const held = { ...messaging, replyWindowHours: 24 };
-    const wroteAt = (hoursAgo: number) =>
-      env.DB.prepare("UPDATE conversations SET last_inbound_at = ?2 WHERE id = ?1")
-        .bind(THREAD, new Date(NOW.getTime() - hoursAgo * 60 * 60 * 1000).toISOString())
+    const wroteAt = (hoursAgo: number, author = "client") =>
+      env.DB.prepare(
+        `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+         VALUES (?1, ?2, 'in', ?3, 'Hello?', ?4, ?4)`,
+      )
+        .bind(crypto.randomUUID(), THREAD, author, new Date(NOW.getTime() - hoursAgo * 60 * 60 * 1000).toISOString())
         .run();
 
     await wroteAt(25);
+    // Their words from the app since count for Care's reply clock, never for WhatsApp's window.
+    await wroteAt(1, FROM_APP);
     const late = await post(held, `/api/conversations/${THREAD}/replies`, { text: "Sorry for the wait." });
     expect(late.status).toBe(409);
     expect(await late.json()).toMatchObject({ error: { code: "window_closed" } });
     expect(sent).toEqual([]);
-    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM chat_messages").first()).toEqual({ n: 0 });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM chat_messages WHERE direction = 'out'").first()).toEqual({
+      n: 0,
+    });
 
     await wroteAt(23);
     expect((await post(held, `/api/conversations/${THREAD}/replies`, { text: "Sorry for the wait." })).status).toBe(

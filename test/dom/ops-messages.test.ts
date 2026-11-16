@@ -6,7 +6,6 @@
 import { act, createElement, Fragment } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Conversation } from "../../apps/ops/src/care/care-api.ts";
 import {
   CareTeamScreen,
   MessagesScreen,
@@ -21,37 +20,8 @@ import { contractChecked } from "./contract-fetch.ts";
 import { RECORD } from "../../e2e/ops/fixtures/clients.ts";
 import { openDialogsAsJsdomCan } from "./dialogs.ts";
 import { Shell } from "../../apps/ops/src/frame/Shell.tsx";
+import { ARJUN, IMRAN, STRANGER } from "./ops-messages-fixtures.ts";
 
-const ARJUN: Conversation = {
-  id: "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e",
-  person: { id: "11111111-1111-4111-8111-111111111111", name: "Arjun Mehta" },
-  mobile: "+919810000001",
-  state: "open",
-  care_person: "asha@maneman.test",
-  care_name: null,
-  covered_by: null,
-  technician: null,
-  last_message_at: "2026-09-21T05:12:00.000Z",
-  last_line: "Can I move tomorrow’s visit to the evening?",
-  waiting_since: "2026-09-21T05:12:00.000Z",
-  reply_by: "2026-09-21T06:12:00.000Z",
-};
-const STRANGER: Conversation = {
-  ...ARJUN,
-  id: "9d2e0a5c-6f7b-4c8d-0e9f-4a5b6c7d8e9f",
-  person: null,
-  care_person: null,
-  mobile: "+919811112222",
-  last_line: "Do you come to Noida?",
-};
-
-/** One of our technicians, on a number a client of ours has too: the chat is the technician's everywhere it is named. */
-const IMRAN: Conversation = {
-  ...ARJUN,
-  id: "ad3f1b6d-7a8c-4d9e-8f0a-5b6c7d8e9f0a",
-  technician: { id: "88000000-0000-4000-8000-000000000001", name: "Imran Qureshi" },
-  last_line: "Running ten minutes late.",
-};
 const LEAVE = { id: "7b0c8e3a-4d59-4a6b-8c7d-2e3f4a5b6c7d", from: "2026-10-20", to: "2026-10-22" };
 
 const LATE = {
@@ -122,7 +92,9 @@ beforeEach(() => {
           text: "Yes, 6 pm works.",
           delivery: "sent",
         };
-        return Promise.resolve(Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied] }));
+        return Promise.resolve(
+          Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied], close_reason: "billing" }),
+        );
       }
       if (address.pathname === "/api/care-team") {
         return Promise.resolve(
@@ -186,15 +158,17 @@ beforeEach(() => {
       }
       if (address.pathname === `/api/conversations/${IMRAN.id}`) {
         const said = { kind: "in", at: IMRAN.last_message_at, author: "client", text: IMRAN.last_line, delivery: null };
-        return Promise.resolve(Response.json({ conversation: IMRAN, items: [said] }));
+        return Promise.resolve(Response.json({ conversation: IMRAN, items: [said], close_reason: null }));
       }
       if (address.pathname === `/api/conversations/${STRANGER.id}`) {
-        return Promise.resolve(Response.json({ conversation: STRANGER, items: [] }));
+        return Promise.resolve(Response.json({ conversation: STRANGER, items: [], close_reason: null }));
       }
       if (address.pathname === `/api/conversations/${ARJUN.id}`) {
         return Promise.resolve(
           Response.json({
             conversation: ARJUN,
+            // The chat's open report is about a payment (docs/decisions/0259-the-issue-log.md).
+            close_reason: "billing",
             items: [
               {
                 kind: "auto",
@@ -684,7 +658,8 @@ describe("the Messages page", () => {
     await press(copy.compose.send);
     expect(posted).toEqual([{ path: `/api/conversations/${ARJUN.id}/replies`, body: { text: "Yes, 6 pm works." } }]);
     expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.compose.sent);
-    // Close chat, in the chat's head, opens a drawer asking what it was about, with its own Close chat.
+    // Close chat, in the chat's head, opens a drawer asking what it was about, on its open report's, with its own
+    // Close chat.
     await press(copy.compose.closeChat);
     await act(async () => {
       [...document.body.querySelectorAll("dialog button")]
@@ -692,7 +667,7 @@ describe("the Messages page", () => {
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       await answered();
     });
-    expect(posted.at(-1)).toEqual({ path: `/api/conversations/${ARJUN.id}/close`, body: { reason: "other" } });
+    expect(posted.at(-1)).toEqual({ path: `/api/conversations/${ARJUN.id}/close`, body: { reason: "billing" } });
     expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.compose.closed);
   });
 });

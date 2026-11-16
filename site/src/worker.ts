@@ -27,6 +27,7 @@
 // Every answer of mm-api's that cannot be used is one line in the Worker's log, and a failure is remembered for ten
 // seconds, so a down mm-api is not asked again by every view.
 
+import { legalDays } from "./lib/legal-days.ts";
 import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, ReferralReward } from "./lib/api.ts";
 import { partOf } from "./lib/byte-range.ts";
@@ -55,6 +56,9 @@ const CITY_PAGE = /^\/areas\/[a-z0-9-]+$/;
 /** The page besides the landing that says what a referral earns. */
 const REWARD_PAGE = "/book";
 
+/** The terms, which state the fit guarantee in the days ops set (docs/decisions/0256-fit-guarantee-setting.md). */
+const TERMS_PAGE = "/terms";
+
 /** How long an answer of mm-api's is kept: the console's own minute (docs/decisions/0061-ops-editable-inputs.md). */
 const KEPT_MS = 60_000;
 
@@ -62,7 +66,7 @@ const KEPT_MS = 60_000;
 const FAILURE_KEPT_MS = 10_000;
 
 /** What the Worker asks mm-api for, as its log line names it. */
-type Asked = "invite" | "reward" | "cities";
+type Asked = "invite" | "reward" | "cities" | "guarantee";
 
 /** A page's policy with a nonce of this request's own for its scripts; anything but a page is passed on as it is. */
 export function withNonce(answer: Response): Response {
@@ -120,6 +124,26 @@ const askForReward = (env: SiteEnv, origin: string): Promise<ReferralReward | nu
 /** The cities ops serve, or null when mm-api could not say. */
 const askForCities = (env: SiteEnv, origin: string): Promise<ServedCities | null> =>
   fetchJson(env, new Request(`${origin}/api/served-cities`), "cities", isServedCities);
+
+const isFitGuarantee = (body: unknown): body is { readonly days: number } =>
+  typeof body === "object" && body !== null && "days" in body && Number.isInteger(body.days);
+
+/** How long the fit guarantee runs, or null when mm-api could not say. */
+const askForGuarantee = (env: SiteEnv, origin: string): Promise<{ readonly days: number } | null> =>
+  fetchJson(env, new Request(`${origin}/api/fit-guarantee`), "guarantee", isFitGuarantee);
+
+/** The words an element holds, put in place of the ones it was built with. */
+class Filled {
+  readonly words: string;
+
+  constructor(words: string) {
+    this.words = words;
+  }
+
+  element(element: Element): void {
+    element.setInnerContent(this.words);
+  }
+}
 
 type Ask<T> = (env: SiteEnv, origin: string) => Promise<T | null>;
 
@@ -297,12 +321,25 @@ export interface SiteWorkerOptions {
 export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
   const referralReward = cachedFor(KEPT_MS, clock, askForReward);
   const servedCities = cachedFor(KEPT_MS, clock, askForCities);
+  const fitGuarantee = cachedFor(KEPT_MS, clock, askForGuarantee);
 
   return {
     async fetch(request: Request, env: SiteEnv): Promise<Response> {
       const url = new URL(request.url);
       if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
       if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
+      if (url.pathname === TERMS_PAGE && request.method === "GET") {
+        // The terms as built say the days the guarantee began with; while mm-api cannot say, they stand. Either way the
+        // page goes without its validators, so a browser never keeps a figure ops have changed since.
+        const [page, guarantee] = await Promise.all([
+          env.ASSETS.fetch(builtFile(request, `${url.origin}${TERMS_PAGE}`)),
+          fitGuarantee(env, url.origin),
+        ]);
+        if (!page.ok) return withNonce(page);
+        if (guarantee === null) return withNonce(withoutValidators(page));
+        const filled = new HTMLRewriter().on("[data-guarantee-days]", new Filled(legalDays(guarantee.days)));
+        return withNonce(filled.transform(withoutValidators(page)));
+      }
 
       const code = INVITE_PATH.exec(url.pathname)?.[1]?.toUpperCase();
       const cityPage = CITY_PAGE.test(url.pathname);

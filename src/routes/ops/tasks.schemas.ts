@@ -83,6 +83,24 @@ export const TaskFactsSchema = z
         .array(z.object({ name: z.string(), expected: z.number(), used: z.number() }).strict())
         .openapi({ description: "Each consumable recorded below what was expected; empty where nothing was used." }),
     }),
+    facts("fit_unsigned", {
+      kind,
+      reason: z.string().openapi({ description: "Why the client did not sign, as the technician recorded it." }),
+      technician: z.string(),
+      flag: z.string().nullable().openapi({
+        description: "What the client last said wasn't right before then; null where they never flagged.",
+      }),
+    }),
+    facts("fit_guarantee_claim", {
+      reference: z.string().openapi({ description: "The report that opened the claim, as MM-ISS-0032." }),
+      fitted_on: day,
+      sign_off: z.enum(["asked", "signed", "flagged", "declined"]).nullable(),
+      conversation_id: z.string().nullable().openapi({ description: "The Care chat the photographs are read beside." }),
+      photos: z.number().int(),
+      references: z
+        .array(z.string())
+        .openapi({ description: "The claim's reports, as MM-ISS-0032, whose photographs its drawer shows." }),
+    }),
     facts("at_risk_client", { last_visit_at: instant, due_on: day }),
     facts("first_fit_to_book", {
       consulted_at: instant,

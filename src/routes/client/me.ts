@@ -17,9 +17,9 @@
 
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { WINDOW_LABELS, type WindowLabel } from "../../config/booking.ts";
-import { BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
-import { VISIT_TYPES } from "../../config/visit-types.ts";
+import type { WindowLabel } from "../../config/booking.ts";
+import type { BookingWindow } from "../../config/scheduling.ts";
+import type { VisitType } from "../../config/visit-types.ts";
 import { bookableTypes } from "../../domain/booking/availability.ts";
 import { bookingUnderWay, type BookingUnderWay } from "../../domain/booking/holds.ts";
 import {
@@ -35,211 +35,30 @@ import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
 import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/money/one-visit-money.ts";
 import { pendingInviteOf } from "../../domain/referrals/referrals.ts";
-import {
-  canRefer,
-  CLIENT_STATES,
-  clientStateOf,
-  isFitted,
-  missedVisit,
-  nextVisit,
-} from "../../domain/visits/client-visits.ts";
+import { canRefer, clientStateOf, isFitted, missedVisit, nextVisit } from "../../domain/visits/client-visits.ts";
 import { consultationRecap } from "../../domain/visits/consultation-recap.ts";
 import { nextVisitFacts } from "../../domain/visits/next-visit.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
+import { MeSchema } from "../schemas/me.ts";
+import type { OpsInputs } from "../../domain/platform/ops-settings.ts";
+import { INVOICE_KEPT_YEARS } from "../../policy/retention.ts";
+import { DELETION_DECIDED_WITHIN_DAYS } from "../../policy/account-deletion.ts";
+import { GRIEVANCE_ANSWERED_WITHIN_DAYS } from "../../policy/grievances.ts";
 import { clientRoute } from "../../http/session-routes.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
-import { ReferralRewardSchema } from "../public/referral-reward.ts";
-import {
-  BeingBookedSchema,
-  ConsultedSchema,
-  OneVisitPriceSchema,
-  RemakeSchema,
-  VisitSummarySchema,
-} from "../schemas/visits.ts";
-import { BookingOfferSchema, WindowHoursSchema } from "../schemas/booking.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../../domain/booking/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
-import { OwedPaymentSchema } from "./payments.ts";
-import { creditsBody, CreditsSchema } from "./refer.ts";
+import { creditsBody } from "../schemas/credits.ts";
 import { clientPackage } from "../../domain/clients/client-package.ts";
+import { wornHairSystem } from "../../domain/clients/worn-hair-system.ts";
 import { pricedFor } from "../../domain/booking/client-prices.ts";
 import { forPackage } from "../../policy/services.ts";
 import { cityOfPerson } from "../../domain/cities/cities.ts";
 import { selfServeKinds } from "../../policy/self-serve.ts";
-
-const MeSchema = z
-  .object({
-    state: z.enum(CLIENT_STATES),
-    refers: z.boolean().openapi({
-      description: "Whether Refer is open: the client's first consultation, or a fit, has been done (ADR 0218).",
-    }),
-    name: z.string(),
-    first_name: z.string(),
-    initials: z
-      .string()
-      .openapi({ description: "For the profile's button: the first letters of the first and last names." }),
-    consultation: z
-      .object({
-        date: z.iso.date(),
-        window: z.enum(BOOKING_WINDOWS).openapi({ description: "The window the client asked for." }),
-        hours: WindowHoursSchema,
-        window_label: z
-          .enum(WINDOW_LABELS)
-          .nullable()
-          .openapi({
-            description:
-              "Deprecated: read `window`. The window in the first booked page's words; null for the afternoon, " +
-              "which it had no words for.",
-          }),
-        place: z.string().openapi({
-          description: "Where it is: the saved address (locality, city and pincode), else the booking's city.",
-        }),
-        requested: z.boolean().openapi({
-          description:
-            "Asked for with no slot held, as while self-serve booking is off or by the site's first form: ops confirm " +
-            "the time on WhatsApp.",
-        }),
-        one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
-          description:
-            "A consultation and fit in one visit asked for on /book: what it costs once fitted, after the code typed " +
-            "there. Null for a consultation alone.",
-        }),
-      })
-      .strict()
-      .nullable()
-      .openapi({
-        description:
-          "A booking's consultation from the site's form, or its first form's, before any visit of the client's is " +
-          "on record. Null once one is, and once its day has passed.",
-      }),
-    next_visit: z
-      .union([VisitSummarySchema, z.null()])
-      .openapi({ description: "The next visit that has not happened: a consultation for a lead." }),
-    consulted: z.union([ConsultedSchema, z.null()]).openapi({
-      description:
-        "The latest consultation done, while the client is not yet fitted. Null before one, and once fitted.",
-    }),
-    being_booked: z.union([BeingBookedSchema, z.null()]).openapi({
-      description:
-        "The soonest visit paid for, or booked free, that is not booked yet: neither booked nor refunded. It is " +
-        "on its way, and becomes a visit once it is booked (ADR 0068).",
-    }),
-    remake: z.union([RemakeSchema, z.null()]).openapi({
-      description: "Null when none; a partly done visit's while another visit is booked, a recall's never.",
-    }),
-    missed_visit: z
-      .union([z.object({ date: z.iso.date(), technician: z.string().nullable() }).strict(), z.null()])
-      .openapi({
-        description:
-          "A visit nobody was home for, while ops are still to decide it and nothing is booked since; null for none.",
-      }),
-    payment_owed: z.union([OwedPaymentSchema, z.null()]).openapi({
-      description:
-        "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the " +
-        "link Razorpay texted. Null when nothing is owed.",
-    }),
-    credits: z
-      .union([CreditsSchema, z.null()])
-      .openapi({ description: "The credit tile: balance and earliest expiry; null with none left." }),
-    prompt: z
-      .union([
-        z.object({ kind: z.literal("address") }).strict(),
-        z
-          .object({
-            kind: z.literal("next_visit"),
-            type: z.enum(["service", "replacement"]).openapi({
-              description: "The next service, or the replacement where the piece in wear falls due first.",
-            }),
-            tier: z
-              .string()
-              .nullable()
-              .openapi({ description: "The service of its kind it offers, as booking.next's (ADR 0085)." }),
-            due_on: z.iso.date().openapi({
-              description:
-                "India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's " +
-                "the piece's own. Before `date`, it has passed.",
-            }),
-            date: z.iso.date().openapi({
-              description: "India's day it is offered on: the day it falls due, or tomorrow once that has passed.",
-            }),
-            window: z
-              .union([z.enum(BOOKING_WINDOWS), z.null()])
-              .openapi({ description: "The last visit's window, where this kind of visit can start in it." }),
-            replacement_bookable: z.boolean().openapi({
-              description:
-                "A service offered while the piece in wear falls due within how far ahead a visit may be booked, " +
-                "and no replacement is booked: the replacement is offered beside it.",
-            }),
-          })
-          .strict(),
-        z
-          .object({
-            kind: z.literal("replacement_due"),
-            month: z.string().regex(/^\d{4}-\d{2}$/),
-            tier: z
-              .string()
-              .nullable()
-              .openapi({
-                description:
-                  "The replacement service it offers: the client's last one while that is offered, else the first " +
-                  "in the console's order (ADR 0085); null while none is offered.",
-              }),
-          })
-          .strict(),
-        z.null(),
-      ])
-      .openapi({
-        description:
-          "Home's one prompt, the first that applies, in this order: no address given while something " +
-          "is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in " +
-          "wear falls due, never the day, and only once that month may be booked. Null when none applies.",
-      }),
-    invoice: z
-      .union([
-        z
-          .object({
-            visit_id: z.uuid(),
-            date: z.iso.date().openapi({ description: "India's date of the visit." }),
-            type: z.union([z.enum(VISIT_TYPES), z.null()]),
-          })
-          .strict(),
-        z.null(),
-      ])
-      .openapi({
-        description:
-          "An invoice issued in the last fortnight, which ops may lengthen or shorten, ready to open: a line beneath " +
-          "the prompt, or the only one. Null when none is.",
-      }),
-    booking: BookingOfferSchema,
-    referral_reward: ReferralRewardSchema.openapi({
-      description:
-        "What a referral earns now, as ops set it: the Refer tab's promise, for a lead as for a fitted client, and " +
-        "the invite's preview say it (docs/decisions/0107-referral-rewards-in-the-console.md).",
-    }),
-    pending_invite: z
-      .union([
-        z
-          .object({
-            referrer_first_name: z.string().nullable().openapi({
-              description: "Who sent it, exactly where the invite's own page names them; null where it does not.",
-            }),
-          })
-          .strict(),
-        z.null(),
-      ])
-      .openapi({
-        description:
-          "The invite a client not yet fitted came with, while its free service visits (referral_reward's " +
-          "friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it " +
-          "lapsed.",
-      }),
-  })
-  .strict()
-  .openapi("Me");
 
 /** The words the first booked page had for a window. It had none for the afternoon. */
 const FIRST_FORM_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "before noon", evening: "after four" };
@@ -321,6 +140,46 @@ async function homeFactsOf(c: Context<AppEnv>, personId: string, now: Date) {
   return { days, referralReward: inputs.referralReward, next, prompt };
 }
 
+/**
+ * Care's hours and the fit guarantee, as ops set them, and the account's promises, which are the law's, for the app's
+ * words.
+ */
+function promisesOf(inputs: OpsInputs) {
+  const { opens, closes, first_reply } = inputs.careHours;
+  return {
+    care_hours: { opens, closes, first_reply },
+    guarantee_days: inputs.guaranteeDays,
+    answers_within: {
+      grievance_days: GRIEVANCE_ANSWERED_WITHIN_DAYS,
+      deletion_days: DELETION_DECIDED_WITHIN_DAYS,
+      invoices_kept_years: INVOICE_KEPT_YEARS,
+    },
+  };
+}
+
+/** Their package's service visit and replacement, and each first fit priced for the hair system made to them. */
+async function offeredServices(
+  db: D1Database,
+  of: {
+    readonly personId: string;
+    readonly tomorrow: string;
+    readonly sold: { readonly city: string | null; readonly services: Awaited<ReturnType<typeof servicesOnDay>> };
+    readonly types: VisitType[];
+    readonly onPackage: string | null;
+  },
+) {
+  const services = forPackage(offeredAmong(of.sold.services, of.tomorrow, of.types), of.onPackage);
+  const priced = await pricedFor(db, services, { personId: of.personId, on: of.tomorrow, city: of.sold.city });
+  return priced.map((service) => ({
+    type: service.kind,
+    tier: service.tier,
+    name: service.name,
+    description: service.description,
+    minutes: service.minutes,
+    price: service.price,
+  }));
+}
+
 export function registerClientMe(app: App): void {
   app.openapi(meRoute, async (c) => {
     const personId = clientOf(c).subjectId;
@@ -333,7 +192,8 @@ export function registerClientMe(app: App): void {
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
     const missed = missedVisit(db, personId);
     const refers = canRefer(db, personId);
-    const [person, upcoming, underWay, credits, fitted, form, types, sold, home, invite, owed, recap, onPackage] =
+    const inputsRead = opsInputs(c);
+    const [person, upcoming, underWay, credits, fitted, form, types, sold, home, invite, owed, recap, onPackage, worn] =
       await Promise.all([
         liveContact(db, personId),
         nextVisit(db, personId, now),
@@ -341,13 +201,14 @@ export function registerClientMe(app: App): void {
         spendableCredits(db, personId, now),
         isFitted(db, personId),
         formBookingOf(c, personId, today),
-        bookableTypes(db, personId, now),
+        inputsRead.then((inputs) => bookableTypes(db, personId, now, inputs.nextVisitDays)),
         cityOfPerson(db, personId).then(async (city) => ({ city, services: await servicesOnDay(db, tomorrow, city) })),
         homeFactsOf(c, personId, now),
         pendingInviteOf(db, personId, now, nameOnInvite),
         owedPayments(db, personId),
         consultationRecap(db, personId),
         clientPackage(db, personId),
+        wornHairSystem(db, personId),
       ]);
     if (person === null) return refuse(c, "session_required");
 
@@ -356,16 +217,7 @@ export function registerClientMe(app: App): void {
     // A form's consultation counts as booked while it stands, asked for or held.
     const booked = home.next.booked || upcoming !== null || form.proposal !== null;
     const { remake, offer } = whatHomeOffers(booked, home.prompt, home.next.offer);
-    // Their package's service visit and replacement, and each first fit priced for the hair system made to them.
-    const services = forPackage(offeredAmong(sold.services, tomorrow, types), onPackage);
-    const offered = (await pricedFor(db, services, { personId, on: tomorrow, city: sold.city })).map((service) => ({
-      type: service.kind,
-      tier: service.tier,
-      name: service.name,
-      description: service.description,
-      minutes: service.minutes,
-      price: service.price,
-    }));
+    const offered = await offeredServices(db, { personId, tomorrow, sold, types, onPackage });
     const { prompt, invoice } = await homePrompts({
       db,
       personId,
@@ -401,6 +253,8 @@ export function registerClientMe(app: App): void {
           services: offered,
           next: offer,
         },
+        ...promisesOf(await inputsRead),
+        hair_system: worn,
         referral_reward: home.referralReward,
         pending_invite: pendingInvite === null ? null : { referrer_first_name: pendingInvite.referrerFirstName },
       },

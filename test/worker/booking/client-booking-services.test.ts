@@ -7,7 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
-import { IMRAN, SANDEEP, SANA, technician, client, visit } from "./client-booking-fixtures.ts";
+import { IMRAN, SANDEEP, SANA, technician, client, visit, wornPiece } from "./client-booking-fixtures.ts";
 import { aPackage } from "../fixtures/index.ts";
 import { startOffers } from "../../../src/domain/booking/start-offers.ts";
 
@@ -49,6 +49,8 @@ describe("choosing a service", () => {
 
   it("lists on Home the service visit and replacement of the client's package, else the standard ones", async () => {
     const rohit = await client();
+    // Their hair system falls due this month, so its replacement may be booked from tomorrow.
+    await wornPiece(rohit.id, "2026-09-30");
     await aPackage({ code: "premium", name: "Premium", firstFit: 4_000_000, replacement: 3_000_000 });
 
     const me = await (
@@ -70,6 +72,7 @@ describe("choosing a service", () => {
   // recommended; before then it is the standard one.
   it("offers and holds the replacement of the client's package, priced with its service visit", async () => {
     const rohit = await client();
+    await wornPiece(rohit.id, "2026-09-30");
     await env.DB.prepare(
       `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
          grey_percent, density_percent)

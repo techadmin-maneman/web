@@ -109,6 +109,7 @@ export function registerTechJobReads(app: App): void {
         arrivalMinutes: inputs.bookingRules.arrival,
         waits: inputs.noShowWaitMin,
         phoneClock: inputs.phoneClock,
+        clientSignOff: c.var.config.settings.clientSignOff,
       }),
       jobSheet(c.env.DB),
       rulesOfVisit(c.env.DB, jobId),

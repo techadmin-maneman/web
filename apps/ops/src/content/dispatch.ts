@@ -181,6 +181,18 @@ export const dispatch = {
       /** What the technician wrote at the door on a no-show, as they wrote it. */
       doorNote: (note: string) => `“${note}”`,
       doorPhoto: "Door photo in Charges",
+      /** The client's sign-off of the fit (docs/decisions/0254-client-signs-off-the-fit.md), as the story's last line. */
+      signOff: {
+        asked: "Sign-off asked, waiting for the client",
+        /** "Flagged by the client: “The left edge lifts”". */
+        flagged: (text: string) => (text === "" ? "Flagged by the client" : `Flagged by the client: “${text}”`),
+        /** "Signed off by the client, 1:42 pm", each part it has. */
+        signed: (parts: readonly string[]) => ["Signed off by the client", ...parts].join(", "),
+        /** "after flagging “The left edge lifts”", where the client flagged before they signed. */
+        flaggedFirst: (text: string) => `after flagging “${text}”`,
+        /** "Closed without sign-off: “Client in a hurry”". */
+        declined: (reason: string) => `Closed without sign-off: “${reason}”`,
+      },
       /** A landed step ops send back to the technician, with why; their phone opens it again (ADR 0246). */
       sendBack: {
         action: "Send back",

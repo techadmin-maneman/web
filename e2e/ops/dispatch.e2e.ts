@@ -245,6 +245,7 @@ test("tells what happened on a visit in its drawer, step by step, and opens its 
       ],
       sent_back: [],
       may_send_back: [],
+      sign_off: null,
     }),
   });
   await press(page, ROHIT_BLOCK);
@@ -302,6 +303,7 @@ test("sends a landed step back to the technician with what to fix, and says so b
           ? [{ kind: "before_photos", reason: "Front is blurred", sent_at: "2025-09-19T06:00:00.000Z" }]
           : [],
         may_send_back: sentBack ? [] : ["before_photos"],
+        sign_off: null,
       })(route),
     "POST /api/visits/{id}/send-back": async (route) => {
       sentBack = true;

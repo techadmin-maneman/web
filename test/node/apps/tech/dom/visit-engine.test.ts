@@ -4,7 +4,9 @@
 
 import { describe, expect, it } from "vitest";
 import { screensOf } from "../../../../../apps/tech/src/visit/engine.ts";
-import { stepsOf } from "../../../../../apps/tech/src/lib/progress.ts";
+import { done, nextStep, signedOff, stepsOf } from "../../../../../apps/tech/src/lib/progress.ts";
+import { declinedWhy, heldOf, standingOf } from "../../../../../apps/tech/src/steps/sign-off-standing.ts";
+import type { Queued } from "../../../../../apps/tech/src/store/outbox.ts";
 import type { Job } from "../../../../../apps/tech/src/api.ts";
 import { cardStepsFor, stepBefore } from "../../../../../src/policy/in-job-steps.ts";
 import type { VisitType } from "../../../../../src/config/visit-types.ts";
@@ -32,6 +34,7 @@ describe("each visit type's screens", () => {
       "Fitting → checklist",
       "Consumables → consumables",
       "After photos → after_photos",
+      "Client sign-off → sign_off",
       "Outcome → outcome",
     ]);
   });
@@ -44,6 +47,7 @@ describe("each visit type's screens", () => {
       "Fitting → checklist",
       "Consumables → consumables",
       "After photos → after_photos",
+      "Client sign-off → sign_off",
       "Outcome → outcome",
     ]);
   });
@@ -65,6 +69,7 @@ describe("each visit type's screens", () => {
       "Fitting → checklist",
       "Consumables → consumables",
       "After photos → after_photos",
+      "Client sign-off → sign_off",
       "Outcome → outcome",
     ]);
   });
@@ -98,8 +103,8 @@ describe("the steps the phone sends", () => {
     ] as const) {
       const done = new Set<string>(["check_in", "start"]);
       for (const step of stepsOf(jobOf(type, oneVisit))) {
-        // The hair profile is no event the API orders (src/routes/tech/jobs.steps.ts): it needs only the start.
-        if (step !== "profile") {
+        // The hair profile and the sign-off are no events the API orders: each needs only the start.
+        if (step !== "profile" && step !== "sign_off") {
           expect(stepBefore({ kind: step, type, done, body: {}, oneVisit }), `${type}: ${step}`).toBeNull();
         }
         done.add(step);
@@ -110,5 +115,60 @@ describe("the steps the phone sends", () => {
   it("leaves out a screen whose step the card does not carry", () => {
     const job = { ...jobOf("replacement"), steps: jobOf("service").steps } as Job;
     expect(screensOf(job).map((screen) => screen.id)).not.toContain("hair_system");
+  });
+});
+
+describe("a fit's sign-off on the phone", () => {
+  const fit = { ...jobOf("replacement"), id: "job-1", sign_off: null } as unknown as Job;
+  const queued = (kind: string, body: unknown): Queued =>
+    ({ job_id: "job-1", kind, body, state: "waiting" }) as unknown as Queued;
+
+  it("lets the fit close once the card says signed or declined, and not while asked or flagged", () => {
+    expect(signedOff(fit, [])).toBe(false);
+    for (const state of ["signed", "declined"]) {
+      expect(signedOff({ ...fit, sign_off: { state } } as unknown as Job, [])).toBe(true);
+    }
+    for (const state of ["asked", "flagged"]) {
+      expect(signedOff({ ...fit, sign_off: { state } } as unknown as Job, [])).toBe(false);
+    }
+  });
+
+  it("lets it close on a decline the phone holds to send, never on an ask", () => {
+    expect(signedOff(fit, [queued("sign_off_declined", { reason: "No phone" })])).toBe(true);
+    expect(signedOff(fit, [queued("sign_off_request", {})])).toBe(false);
+  });
+
+  it("keeps the technician on the step while the phone holds only the ask, and moves on with a decline", () => {
+    const steps = cardStepsFor("replacement", false);
+    const worked = {
+      ...fit,
+      progress: { steps_done: steps.slice(0, steps.indexOf("sign_off")), checked_in_at: "x", started_at: "x" },
+      sent_back: [],
+    } as unknown as Job;
+    const asked = queued("sign_off_request", {});
+    expect(done(worked, [asked]).has("sign_off")).toBe(false);
+    expect(nextStep(worked, [asked])).toBe("sign_off");
+    const declined = queued("sign_off_declined", { reason: "No phone" });
+    expect(done(worked, [asked, declined]).has("sign_off")).toBe(true);
+    expect(nextStep(worked, [asked, declined])).toBe("outcome");
+  });
+
+  it("reads where it stands from the card, else from the latest write the phone holds", () => {
+    const asked = queued("sign_off_request", {});
+    const declined = queued("sign_off_declined", { reason: "No phone with them" });
+    const card = (signOff: object) => ({ ...fit, sign_off: signOff }) as unknown as Job;
+    expect(standingOf(fit, heldOf(fit, []))).toBe("unasked");
+    expect(standingOf(fit, heldOf(fit, [asked]))).toBe("asked");
+    // A flag on the card, then "Fixed. Ask again" held on the phone: asked.
+    expect(standingOf(card({ state: "flagged" }), heldOf(fit, [asked]))).toBe("asked");
+    expect(standingOf(card({ state: "flagged" }), undefined)).toBe("flagged");
+    // A decline held on the phone, with its why, before the card has heard.
+    expect(standingOf(fit, heldOf(fit, [asked, declined]))).toBe("declined");
+    expect(declinedWhy(fit, heldOf(fit, [asked, declined]))).toBe("No phone with them");
+    // The card's signed or declined is final, whatever the phone still holds.
+    expect(standingOf(card({ state: "signed" }), heldOf(fit, [declined]))).toBe("signed");
+    expect(
+      declinedWhy(card({ state: "declined", declined_reason: "Client in a hurry" }), heldOf(fit, [declined])),
+    ).toBe("Client in a hurry");
   });
 });

@@ -5,6 +5,7 @@ import { ARRIVAL_NOTICE_MIN } from "./check-in.ts";
 import { CREDIT_REMINDER_DAYS, CREDIT_REMINDER_KEYS, creditReminderConflicts } from "./credit-reminders.ts";
 import { CHECK_IN_DAYS, CHECK_IN_KEYS, checkInConflicts } from "./follow-ups.ts";
 import { MOVE_PROPOSAL_HOURS } from "./dispatch.ts";
+import { GUARANTEE_DAYS } from "./fit-guarantee.ts";
 import { REFERRAL_MONTHLY_CAP } from "./fraud-holds.ts";
 import type { OpsSetting } from "./ops-settings.ts";
 import { PAYMENT_LINK_KEYS, PAYMENT_LINKS } from "./pay-by-link.ts";
@@ -47,6 +48,17 @@ export const CLIENT_SETTINGS = [
     max: 168,
     keys: null,
     fallback: MOVE_PROPOSAL_HOURS,
+  },
+  {
+    // docs/decisions/0256-fit-guarantee-setting.md: the terms state the guarantee in these days.
+    name: "guarantee_days",
+    title: "Fit guarantee",
+    note: "Days after a first fit in which a client may ask for a refit or a refund. The terms say the same.",
+    unit: "days",
+    min: 1,
+    max: 90,
+    keys: null,
+    fallback: GUARANTEE_DAYS,
   },
   {
     name: "credit_reminder_days",

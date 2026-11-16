@@ -57,7 +57,7 @@ describe("the technician's card", () => {
       one_visit: true,
       badge: "at_visit",
       // The first fit's, the client's choice first, with their hair profile once the product is fitted (ADR 0106).
-      steps: ["before_photos", "piece", "checklist", "consumables", "profile", "after_photos", "outcome"],
+      steps: ["before_photos", "piece", "checklist", "consumables", "profile", "after_photos", "sign_off", "outcome"],
       products: [
         { tier: "standard", name: "First fit" },
         { tier: "natural", name: "Mane Man Natural" },

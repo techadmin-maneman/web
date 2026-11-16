@@ -37,6 +37,7 @@
                   "internal_error",
                   "busy",
                   "photo_invalid_file",
+                  "photos_full",
                   "upload_already_received",
                   "upload_missing",
                   "session_required",
@@ -109,6 +110,9 @@
                   "already_disputed",
                   "not_disputable",
                   "dispute_window_closed",
+                  "sign_off_not_asked",
+                  "sign_off_closed",
+                  "sign_off_checks_open",
                   "move_gone",
                   "ask_the_client",
                   "code_not_applicable",
@@ -971,6 +975,107 @@
             ],
             "additionalProperties": false
           },
+          "care_hours": {
+            "type": "object",
+            "properties": {
+              "opens": {
+                "type": "integer",
+                "description": "The hour Care open, in India, 0 to 23."
+              },
+              "closes": {
+                "type": "integer",
+                "description": "The hour Care close."
+              },
+              "first_reply": {
+                "type": "integer",
+                "description": "Minutes within which Care first reply in hours."
+              }
+            },
+            "required": [
+              "opens",
+              "closes",
+              "first_reply"
+            ],
+            "additionalProperties": false,
+            "description": "Care's hours and their reply promise, as ops set them (care_hours)."
+          },
+          "guarantee_days": {
+            "type": "integer",
+            "description": "Days after a first fit the client may ask for a refit or a refund (guarantee_days; ADR 0256)."
+          },
+          "answers_within": {
+            "type": "object",
+            "properties": {
+              "grievance_days": {
+                "type": "integer",
+                "description": "Days within which a grievance is answered."
+              },
+              "deletion_days": {
+                "type": "integer",
+                "description": "Days within which a deletion request is acted on."
+              },
+              "invoices_kept_years": {
+                "type": "integer",
+                "description": "Years invoices are kept, as the law asks."
+              }
+            },
+            "required": [
+              "grievance_days",
+              "deletion_days",
+              "invoices_kept_years"
+            ],
+            "additionalProperties": false,
+            "description": "What the account's promises say, each the law's: a grievance answered, a deletion acted on, invoices kept."
+          },
+          "hair_system": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "package": {
+                    "type": "string",
+                    "description": "The package's code, which its services share as their tier."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "The package's name, as clients read it."
+                  },
+                  "fitted_on": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "India's day the hair system worn now was fitted."
+                  },
+                  "replace_after_months": {
+                    "type": "integer",
+                    "description": "How many months its package's are worn."
+                  },
+                  "due_on": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "India's day it falls due."
+                  },
+                  "replacement_opens_on": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "The first day of the month it falls due: the first day its replacement may be booked on (ADR 0253). `booking.types` says whether it may be booked now."
+                  }
+                },
+                "required": [
+                  "package",
+                  "name",
+                  "fitted_on",
+                  "replace_after_months",
+                  "due_on",
+                  "replacement_opens_on"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The hair system the client wears now; null for none on record."
+          },
           "referral_reward": {
             "$ref": "#/components/schemas/ReferralReward"
           },
@@ -1016,6 +1121,10 @@
           "prompt",
           "invoice",
           "booking",
+          "care_hours",
+          "guarantee_days",
+          "answers_within",
+          "hair_system",
           "referral_reward",
           "pending_invite"
         ],
@@ -1241,6 +1350,113 @@
               }
             ],
             "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
+          },
+          "latest_update": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "on_the_way",
+                      "running_late",
+                      "at_the_gate"
+                    ]
+                  },
+                  "minutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "On the way: minutes away; running late: minutes late; null at the gate."
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the technician sent it."
+                  }
+                },
+                "required": [
+                  "kind",
+                  "minutes",
+                  "at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone."
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "description": "The step under way, counting from 1."
+                  },
+                  "of": {
+                    "type": "integer",
+                    "description": "How many steps the client is told of."
+                  },
+                  "name": {
+                    "type": "string",
+                    "enum": [
+                      "before_photos",
+                      "service",
+                      "scalp",
+                      "hair_profile",
+                      "hair_system",
+                      "fitting",
+                      "after_photos",
+                      "sign_off"
+                    ],
+                    "description": "The step, as the app names it."
+                  }
+                },
+                "required": [
+                  "index",
+                  "of",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress."
+          },
+          "waits_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+          },
+          "sign_off": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignOff"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
           }
         },
         "required": [
@@ -1263,7 +1479,11 @@
           "client_note",
           "pay_at_visit",
           "one_visit",
-          "proposed_move"
+          "proposed_move",
+          "latest_update",
+          "step",
+          "waits_until",
+          "sign_off"
         ],
         "additionalProperties": false
       },
@@ -1332,6 +1552,117 @@
           "expires_at"
         ],
         "additionalProperties": false
+      },
+      "SignOff": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "asked",
+              "signed",
+              "flagged",
+              "declined"
+            ],
+            "description": "asked: waiting for the client; signed: happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: closed without it, with why."
+          },
+          "checks": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignOffChecks"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "As the client last answered; null till then."
+          },
+          "flag_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the client last said isn't right, in their words; kept once they sign."
+          },
+          "declined_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the client did not sign."
+          },
+          "asked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "asks": {
+            "type": "integer",
+            "description": "How many times it was asked: again after each flag."
+          },
+          "signed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the client signed in their app."
+          },
+          "guarantee_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then."
+          }
+        },
+        "required": [
+          "state",
+          "checks",
+          "flag_text",
+          "declined_reason",
+          "asked_at",
+          "asks",
+          "signed_at",
+          "guarantee_days"
+        ],
+        "additionalProperties": false
+      },
+      "SignOffChecks": {
+        "type": "object",
+        "properties": {
+          "hairline": {
+            "type": "boolean"
+          },
+          "blend": {
+            "type": "boolean"
+          },
+          "secure": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hairline",
+          "blend",
+          "secure"
+        ],
+        "additionalProperties": false,
+        "description": "The hairline, the colour and blend, and that it is secure and comfortable: each ticked or not."
       },
       "Consulted": {
         "type": "object",
@@ -2526,6 +2857,113 @@
             ],
             "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
           },
+          "latest_update": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "on_the_way",
+                      "running_late",
+                      "at_the_gate"
+                    ]
+                  },
+                  "minutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "On the way: minutes away; running late: minutes late; null at the gate."
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the technician sent it."
+                  }
+                },
+                "required": [
+                  "kind",
+                  "minutes",
+                  "at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone."
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "description": "The step under way, counting from 1."
+                  },
+                  "of": {
+                    "type": "integer",
+                    "description": "How many steps the client is told of."
+                  },
+                  "name": {
+                    "type": "string",
+                    "enum": [
+                      "before_photos",
+                      "service",
+                      "scalp",
+                      "hair_profile",
+                      "hair_system",
+                      "fitting",
+                      "after_photos",
+                      "sign_off"
+                    ],
+                    "description": "The step, as the app names it."
+                  }
+                },
+                "required": [
+                  "index",
+                  "of",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress."
+          },
+          "waits_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+          },
+          "sign_off": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignOff"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
+          },
           "duration_minutes": {
             "anyOf": [
               {
@@ -2645,6 +3083,18 @@
               }
             ],
             "description": "What the client paid for the visit; null where nothing was."
+          },
+          "guarantee_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A first fit done: India's last day the client may ask for a refit or a refund under the fit guarantee, by the days ops set (guarantee_days; ADR 0256). Null for any other visit."
           }
         },
         "required": [
@@ -2668,6 +3118,10 @@
           "pay_at_visit",
           "one_visit",
           "proposed_move",
+          "latest_update",
+          "step",
+          "waits_until",
+          "sign_off",
           "duration_minutes",
           "outcome",
           "what_was_done",
@@ -2676,7 +3130,8 @@
           "invoice_expected",
           "invoice_held",
           "no_show",
-          "paid"
+          "paid",
+          "guarantee_until"
         ],
         "additionalProperties": false
       },
@@ -2834,6 +3289,18 @@
               }
             ],
             "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
+          },
+          "dispute_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last moment the charge may be disputed, by the dispute window ops set, while `disputable`; null otherwise."
           }
         },
         "required": [
@@ -2842,7 +3309,8 @@
           "charge",
           "dispute",
           "disputable",
-          "dispute_closed_at"
+          "dispute_closed_at",
+          "dispute_until"
         ],
         "additionalProperties": false
       },
@@ -3112,6 +3580,223 @@
         ],
         "additionalProperties": false
       },
+      "SignOffAnswer": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "result": {
+                "type": "string",
+                "enum": [
+                  "signed"
+                ]
+              },
+              "checks": {
+                "$ref": "#/components/schemas/SignOffChecks"
+              }
+            },
+            "required": [
+              "result",
+              "checks"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "result": {
+                "type": "string",
+                "enum": [
+                  "flagged"
+                ]
+              },
+              "checks": {
+                "$ref": "#/components/schemas/SignOffChecks"
+              },
+              "flag_text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "result",
+              "checks",
+              "flag_text"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Happy with the fit, every check ticked; or something isn't right, in the client's words."
+      },
+      "ClientAlerts": {
+        "type": "object",
+        "properties": {
+          "alerts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientAlert"
+            },
+            "description": "The last 30 days', newest first."
+          },
+          "push_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The key a browser subscribes to our pushes with; null where pushes are not set up."
+          }
+        },
+        "required": [
+          "alerts",
+          "push_key"
+        ],
+        "additionalProperties": false
+      },
+      "ClientAlert": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tryon_result",
+              "consultation_confirmation",
+              "visit_reminder",
+              "payment_receipt",
+              "nothing_to_pay",
+              "link_paid",
+              "upi_received",
+              "reschedule_confirmation",
+              "cancel_confirmation",
+              "visit_cancelled",
+              "visit_moved",
+              "move_proposed",
+              "arrival_notice",
+              "technician_update",
+              "no_show_decided",
+              "no_show_dispute_ruled",
+              "booking_refunded",
+              "next_service_reminder",
+              "friend_fitted",
+              "friend_credited",
+              "referral_rejected",
+              "credits_expiring",
+              "launch_alert",
+              "deletion_rejected",
+              "concern_received",
+              "concern_answered",
+              "recall_notice",
+              "consultation_follow_up",
+              "fit_aftercare",
+              "first_check_in",
+              "second_check_in",
+              "sign_off_asked"
+            ],
+            "description": "The message it stands beside, by its kind, or sign_off_asked: the technician asks for a sign-off."
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The visit it is about, where it is about one."
+          },
+          "update": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "on_the_way",
+                      "running_late",
+                      "at_the_gate"
+                    ]
+                  },
+                  "minutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "minutes"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A technician's word: on the way, running late or at the gate, with their minutes."
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "read": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "visit_id",
+          "update",
+          "at",
+          "read"
+        ],
+        "additionalProperties": false
+      },
+      "ClientPushSubscribed": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "subscribed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "endpoint",
+          "subscribed_at"
+        ],
+        "additionalProperties": false
+      },
+      "ClientPushSubscription": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "The push service's address for this browser, as it gave it."
+          }
+        },
+        "required": [
+          "endpoint"
+        ],
+        "additionalProperties": false
+      },
       "ProblemReported": {
         "type": "object",
         "properties": {
@@ -3120,10 +3805,15 @@
             "enum": [
               "sent"
             ]
+          },
+          "reference": {
+            "type": "string",
+            "description": "The report's reference, as MM-ISS-0032."
           }
         },
         "required": [
-          "state"
+          "state",
+          "reference"
         ],
         "additionalProperties": false
       },
@@ -3133,9 +3823,18 @@
           "about": {
             "type": "string",
             "enum": [
-              "hair_system",
-              "visit"
-            ]
+              "fit_guarantee",
+              "edges_lifting",
+              "itching",
+              "colour",
+              "shedding",
+              "fit_comfort",
+              "visit",
+              "payment",
+              "other",
+              "hair_system"
+            ],
+            "description": "What it is about: fit_guarantee, edges_lifting, itching, colour, shedding, fit_comfort, visit, payment, other; hair_system, an older app's, reads fit_comfort."
           },
           "visit_id": {
             "anyOf": [
@@ -3160,6 +3859,200 @@
         "required": [
           "about",
           "text"
+        ],
+        "additionalProperties": false
+      },
+      "IssueLog": {
+        "type": "object",
+        "properties": {
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Issue"
+            }
+          }
+        },
+        "required": [
+          "issues"
+        ],
+        "additionalProperties": false
+      },
+      "Issue": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "report",
+              "grievance",
+              "dispute"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A report's, as MM-ISS-0032."
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "fit_guarantee",
+                  "edges_lifting",
+                  "itching",
+                  "colour",
+                  "shedding",
+                  "fit_comfort",
+                  "visit",
+                  "payment",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "resolved"
+            ]
+          },
+          "raised_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photos": {
+            "type": "integer"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueEvent"
+            },
+            "description": "The issue's thread, oldest first."
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "reference",
+          "category",
+          "state",
+          "raised_at",
+          "visit_id",
+          "text",
+          "photos",
+          "events"
+        ],
+        "additionalProperties": false
+      },
+      "IssueEvent": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "you",
+              "care",
+              "city",
+              "visits",
+              "closed",
+              "sorted",
+              "ruled"
+            ],
+            "description": "you: the client's words; care: a reply; city: passed to their city team; visits: free visits given (text: how many); closed: Care closed it; sorted: the client marked it sorted; ruled: the answer to a grievance or a dispute (text: its words, or refunded or upheld)."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first name a reply came from."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "kind",
+          "name",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "IssueWords": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "ReportPhotoAdded": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "n"
         ],
         "additionalProperties": false
       },
@@ -4242,6 +5135,93 @@
         ],
         "additionalProperties": false
       },
+      "ClientPackages": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPackage"
+            }
+          }
+        },
+        "required": [
+          "packages"
+        ],
+        "additionalProperties": false
+      },
+      "ClientPackage": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_fit": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "description": "The hair system made to the client where their profile matches one, else the cheapest, and the service visit."
+              }
+            ]
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its service visit."
+          },
+          "service_every_days": {
+            "type": "integer",
+            "description": "Days from a visit to the service visit after it."
+          },
+          "replacement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its replacement as sold, the service visit with it."
+          },
+          "replace_after_months": {
+            "type": "integer",
+            "description": "Months from a fit to its replacement."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "description",
+          "first_fit",
+          "service",
+          "service_every_days",
+          "replacement",
+          "replace_after_months"
+        ],
+        "additionalProperties": false
+      },
       "Availability": {
         "type": "object",
         "properties": {
@@ -4270,6 +5250,11 @@
           "change_notice_hours": {
             "type": "integer",
             "description": "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it."
+          },
+          "opens": {
+            "type": "string",
+            "format": "date",
+            "description": "The first day this visit may be booked on: a replacement's no sooner than its hair system can be fitted, where none is in stock."
           },
           "last": {
             "type": "string",
@@ -4358,6 +5343,7 @@
           "service",
           "price",
           "change_notice_hours",
+          "opens",
           "last",
           "days"
         ],
@@ -5027,6 +6013,14 @@
                   ],
                   "format": "date"
                 },
+                "refundable_after": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "The last day it is on time: past it, it is late and the client may have their money back in full, by the days ops set (custom_order_grace_days). Null with no promised date."
+                },
                 "amount": {
                   "type": "integer",
                   "description": "What it costs them, in paise."
@@ -5043,6 +6037,7 @@
                 "number",
                 "status",
                 "promised_on",
+                "refundable_after",
                 "amount",
                 "pay_url"
               ],
@@ -8595,9 +9590,446 @@
         }
       }
     },
+    "/api/visits/{id}/sign-off": {
+      "post": {
+        "summary": "Sign off the fit the technician asked about, or say what isn't right",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The visit's ID."
+            },
+            "required": true,
+            "description": "The visit's ID.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignOffAnswer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded; a flag reaches the technician's phone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignOff"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: see error.fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such visit of this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "sign_off_not_asked: the technician has not asked yet; sign_off_closed: signed or declined",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "sign_off_not_asked",
+                                "sign_off_closed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "sign_off_checks_open: a sign-off needs every check ticked; flag what isn't right instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "sign_off_checks_open"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/alerts": {
+      "get": {
+        "summary": "The client's alerts of the last 30 days, newest first",
+        "responses": {
+          "200": {
+            "description": "The inbox",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAlerts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/alerts/read": {
+      "post": {
+        "summary": "Every alert the client has, read: they opened the inbox",
+        "responses": {
+          "204": {
+            "description": "Read"
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/push-subscriptions": {
+      "post": {
+        "summary": "This browser takes the client's pushes, until it is signed out, revoked or ends",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientPushSubscription"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Kept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPushSubscribed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: not a browser's push service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/problems": {
       "post": {
-        "summary": "Tell Care something is wrong with the hair system or a visit",
+        "summary": "Tell Care something is wrong: answered with the report's reference for the issue log",
         "requestBody": {
           "required": true,
           "content": {
@@ -8610,7 +10042,7 @@
         },
         "responses": {
           "201": {
-            "description": "Filed for Care, who answer on WhatsApp",
+            "description": "Filed for Care, who answer in the app and on WhatsApp",
             "content": {
               "application/json": {
                 "schema": {
@@ -8752,6 +10184,820 @@
                               "type": "string",
                               "enum": [
                                 "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "The client's issue log: their reports, grievances and missed-visit disputes, newest first",
+        "responses": {
+          "200": {
+            "description": "The log",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueLog"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/problems/{reference}/updates": {
+      "post": {
+        "summary": "Add the client's words to a report of theirs, which opens it again where it was settled",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The report's reference, as MM-ISS-0032."
+            },
+            "required": true,
+            "description": "The report's reference, as MM-ISS-0032.",
+            "name": "reference",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueWords"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Filed in its Care chat"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no report of this client's by that reference",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 20 a day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/problems/{reference}/reopen": {
+      "post": {
+        "summary": "Reopen a settled report of the client's: it is happening again",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The report's reference, as MM-ISS-0032."
+            },
+            "required": true,
+            "description": "The report's reference, as MM-ISS-0032.",
+            "name": "reference",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueWords"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Reopened, and filed in its Care chat"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no report of this client's by that reference",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 20 a day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/problems/{reference}/photos": {
+      "post": {
+        "summary": "A photograph for a report of the client's: a JPEG of at most 2 MB, up to 3 a report",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The report's reference, as MM-ISS-0032."
+            },
+            "required": true,
+            "description": "The report's reference, as MM-ISS-0032.",
+            "name": "reference",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Kept, and Care told in the chat on the client's number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportPhotoAdded"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no report of this client's by that reference",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "photos_full: the report has its 3 already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "photos_full"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "photo_invalid_file: not a JPEG, or over 2 MB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "photo_invalid_file"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 20 a day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/problems/{reference}/sorted": {
+      "post": {
+        "summary": "The client says a report of theirs is sorted",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The report's reference, as MM-ISS-0032."
+            },
+            "required": true,
+            "description": "The report's reference, as MM-ISS-0032.",
+            "name": "reference",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Marked sorted"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no report of this client's by that reference",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
                               ]
                             }
                           },
@@ -9369,6 +11615,61 @@
                               "enum": [
                                 "unavailable",
                                 "not_ready"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/packages": {
+      "get": {
+        "summary": "The packages on sale from tomorrow, in ops' order, priced for the client in their city",
+        "responses": {
+          "200": {
+            "description": "The packages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPackages"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
                               ]
                             }
                           },

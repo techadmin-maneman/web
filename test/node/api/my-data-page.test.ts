@@ -82,6 +82,35 @@ describe("the readable copy of a client's data", () => {
     expect(page).toContain("Who\n Mane Man Care");
   });
 
+  it("words a fit's sign-off in its own part, each check a yes or no, leaving other parts' codes as they are", () => {
+    const page = read(
+      myDataPage(
+        {
+          ...held,
+          fit_sign_offs: [
+            {
+              visit: "2026-10-02T04:30:00.000Z",
+              state: "signed",
+              hairline: 1,
+              blend: 1,
+              secure: 0,
+              flag_text: "The left edge lifts",
+              signed_at: "2026-10-02T06:00:00.000Z",
+            },
+          ],
+          remedies: [{ visits: 1, reason: "fit_issue", state: "declined", given_at: "2026-10-03T06:00:00.000Z" }],
+        },
+        EXPORTED,
+      ),
+    );
+    expect(page).toContain("Sign-off\n Signed off");
+    expect(page).toContain("The hairline sits where we agreed\n Yes");
+    expect(page).toContain("It feels secure and comfortable\n No");
+    expect(page).toContain("Where it stands\n Declined");
+    expect(page).not.toContain("Not signed");
+    expect(page).not.toContain('{"hairline"');
+  });
+
   it("names a hair system by its name, leaving its code to the file", () => {
     const page = read(myDataPage(held, EXPORTED));
     expect(page).toContain("Hair system\n Mane Man Active");

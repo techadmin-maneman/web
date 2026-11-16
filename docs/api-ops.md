@@ -10228,7 +10228,7 @@ Request body:
 }
 ```
 
-**409**: window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours)
+**409**: window_closed: the client has not written on WhatsApp within the time the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count
 
 ```json
 {
@@ -33286,6 +33286,242 @@ A photograph of stock, never cached
 }
 ```
 
+### GET /api/conversations/{id}/report-photos
+
+The photographs of the reports a client's chat holds, oldest report first
+
+**200**: The photographs
+
+```json
+{
+  "$ref": "#/components/schemas/ReportPhotos"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/conversations/{id}/report-photos/{report_id}/{n}
+
+One photograph of a report the chat holds, never cached, its viewing logged as a client photograph's is
+
+**200**: The image
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such photograph in this chat
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: the view could not be audited, so no photograph is served
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/supplier-scorecard
 
 Each supplier's last year: on time in full, lead time, quality and claims
@@ -34982,6 +35218,7 @@ Request body:
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",
@@ -35054,6 +35291,9 @@ Request body:
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "sign_off_not_asked",
+            "sign_off_closed",
+            "sign_off_checks_open",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -36119,6 +36359,113 @@ Request body:
       ],
       "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
     },
+    "latest_update": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "on_the_way",
+                "running_late",
+                "at_the_gate"
+              ]
+            },
+            "minutes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "On the way: minutes away; running late: minutes late; null at the gate."
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the technician sent it."
+            }
+          },
+          "required": [
+            "kind",
+            "minutes",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone."
+    },
+    "step": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "integer",
+              "description": "The step under way, counting from 1."
+            },
+            "of": {
+              "type": "integer",
+              "description": "How many steps the client is told of."
+            },
+            "name": {
+              "type": "string",
+              "enum": [
+                "before_photos",
+                "service",
+                "scalp",
+                "hair_profile",
+                "hair_system",
+                "fitting",
+                "after_photos",
+                "sign_off"
+              ],
+              "description": "The step, as the app names it."
+            }
+          },
+          "required": [
+            "index",
+            "of",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress."
+    },
+    "waits_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
+    },
     "lost_reason": {
       "anyOf": [
         {
@@ -36286,6 +36633,10 @@ Request body:
     "pay_at_visit",
     "one_visit",
     "proposed_move",
+    "latest_update",
+    "step",
+    "waits_until",
+    "sign_off",
     "lost_reason",
     "going_ahead",
     "outcome",
@@ -36439,6 +36790,127 @@ Request body:
     "expires_at"
   ],
   "additionalProperties": false
+}
+```
+
+### SignOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "asked",
+        "signed",
+        "flagged",
+        "declined"
+      ],
+      "description": "asked: waiting for the client; signed: happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: closed without it, with why."
+    },
+    "checks": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOffChecks"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "As the client last answered; null till then."
+    },
+    "flag_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client last said isn't right, in their words; kept once they sign."
+    },
+    "declined_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Why the client did not sign."
+    },
+    "asked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "asks": {
+      "type": "integer",
+      "description": "How many times it was asked: again after each flag."
+    },
+    "signed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the client signed in their app."
+    },
+    "guarantee_days": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then."
+    }
+  },
+  "required": [
+    "state",
+    "checks",
+    "flag_text",
+    "declined_reason",
+    "asked_at",
+    "asks",
+    "signed_at",
+    "guarantee_days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SignOffChecks
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hairline": {
+      "type": "boolean"
+    },
+    "blend": {
+      "type": "boolean"
+    },
+    "secure": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "hairline",
+    "blend",
+    "secure"
+  ],
+  "additionalProperties": false,
+  "description": "The hairline, the colour and blend, and that it is secure and comfortable: each ticked or not."
 }
 ```
 
@@ -36607,6 +37079,113 @@ Request body:
         }
       ],
       "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
+    },
+    "latest_update": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "on_the_way",
+                "running_late",
+                "at_the_gate"
+              ]
+            },
+            "minutes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "On the way: minutes away; running late: minutes late; null at the gate."
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the technician sent it."
+            }
+          },
+          "required": [
+            "kind",
+            "minutes",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone."
+    },
+    "step": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "integer",
+              "description": "The step under way, counting from 1."
+            },
+            "of": {
+              "type": "integer",
+              "description": "How many steps the client is told of."
+            },
+            "name": {
+              "type": "string",
+              "enum": [
+                "before_photos",
+                "service",
+                "scalp",
+                "hair_profile",
+                "hair_system",
+                "fitting",
+                "after_photos",
+                "sign_off"
+              ],
+              "description": "The step, as the app names it."
+            }
+          },
+          "required": [
+            "index",
+            "of",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress."
+    },
+    "waits_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
     }
   },
   "required": [
@@ -36629,7 +37208,11 @@ Request body:
     "client_note",
     "pay_at_visit",
     "one_visit",
-    "proposed_move"
+    "proposed_move",
+    "latest_update",
+    "step",
+    "waits_until",
+    "sign_off"
   ],
   "additionalProperties": false
 }
@@ -37000,6 +37583,18 @@ Request body:
         }
       ],
       "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
+    },
+    "dispute_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last moment the charge may be disputed, by the dispute window ops set, while `disputable`; null otherwise."
     }
   },
   "required": [
@@ -37008,7 +37603,8 @@ Request body:
     "charge",
     "dispute",
     "disputable",
-    "dispute_closed_at"
+    "dispute_closed_at",
+    "dispute_until"
   ],
   "additionalProperties": false
 }
@@ -38922,6 +39518,7 @@ Request body:
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",
@@ -38994,6 +39591,9 @@ Request body:
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "sign_off_not_asked",
+            "sign_off_closed",
+            "sign_off_checks_open",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -43779,11 +44379,34 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/ThreadItem"
       }
+    },
+    "close_reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "booking",
+            "move_or_cancel",
+            "fit_problem",
+            "aftercare",
+            "billing",
+            "sign_in",
+            "try_on",
+            "data_request",
+            "other"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none."
     }
   },
   "required": [
     "conversation",
-    "items"
+    "items",
+    "close_reason"
   ],
   "additionalProperties": false
 }
@@ -45331,12 +45954,24 @@ Request body:
         ]
       },
       "description": "The landed steps ops may send back now: POST /api/visits/{id}/send-back."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed and when and where, or declined with why. Null before it is asked, and for a visit that takes none."
     }
   },
   "required": [
     "steps",
     "sent_back",
-    "may_send_back"
+    "may_send_back",
+    "sign_off"
   ],
   "additionalProperties": false
 }
@@ -49358,6 +49993,8 @@ Request body:
               "at_risk_client",
               "partial_visit",
               "consumables_short",
+              "fit_unsigned",
+              "fit_guarantee_claim",
               "kit_request",
               "referral_review",
               "no_show_decision",
@@ -50241,6 +50878,107 @@ Request body:
         "reason",
         "technician",
         "short"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "fit_unsigned"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why the client did not sign, as the technician recorded it."
+        },
+        "technician": {
+          "type": "string"
+        },
+        "flag": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "What the client last said wasn't right before then; null where they never flagged."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "reason",
+        "technician",
+        "flag"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "fit_guarantee_claim"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "description": "The report that opened the claim, as MM-ISS-0032."
+        },
+        "fitted_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "sign_off": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "asked",
+            "signed",
+            "flagged",
+            "declined",
+            null
+          ]
+        },
+        "conversation_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The Care chat the photographs are read beside."
+        },
+        "photos": {
+          "type": "integer"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The claim's reports, as MM-ISS-0032, whose photographs its drawer shows."
+        }
+      },
+      "required": [
+        "group",
+        "reference",
+        "fitted_on",
+        "sign_off",
+        "conversation_id",
+        "photos",
+        "references"
       ],
       "additionalProperties": false
     },
@@ -51970,6 +52708,7 @@ Request body:
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
+        "guarantee_days",
         "credit_reminder_days",
         "check_in_days",
         "referral_monthly_cap",
@@ -52167,6 +52906,7 @@ Request body:
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
+        "guarantee_days",
         "credit_reminder_days",
         "check_in_days",
         "referral_monthly_cap",
@@ -57820,6 +58560,57 @@ Request body:
   "required": [
     "photo_id"
   ]
+}
+```
+
+### ReportPhotos
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "photos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ReportPhoto"
+      }
+    }
+  },
+  "required": [
+    "photos"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReportPhoto
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "report_id": {
+      "type": "string"
+    },
+    "reference": {
+      "type": "string",
+      "description": "The report's reference, as MM-ISS-0032."
+    },
+    "n": {
+      "type": "integer"
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "report_id",
+    "reference",
+    "n",
+    "at"
+  ],
+  "additionalProperties": false
 }
 ```
 

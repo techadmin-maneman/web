@@ -23,6 +23,8 @@ const HANDLED: Readonly<Record<string, string>> = {
   // An SOS is kept as a record of the technician's: one who sent any has work, and is never deleted.
   "sos_alerts.technician_id -> technicians": "a technician with an SOS has work, and the delete asks for none",
   "kit_requests.technician_id -> technicians": "a technician who asked for kit has work, and the delete asks for none",
+  "fit_sign_offs.technician_id -> technicians":
+    "a technician who asked for a sign-off has work, and the delete asks for none",
   "reschedule_requests.technician_id -> technicians":
     "a technician who asked to move a visit has work, and the delete asks for none",
   // An erasure deletes a client's notes in one statement (src/domain/privacy/erasure-statements.ts).
@@ -33,6 +35,7 @@ const HANDLED: Readonly<Record<string, string>> = {
   "dispatch_moves.message_id -> outbound_messages": "kept: not deleted while one names it",
   "chat_messages.conversation_id -> conversations": "deleted first, in the same batch",
   "city_matters.conversation_id -> conversations": "kept: not deleted while one names it",
+  "client_reports.conversation_id -> conversations": "kept: not deleted while a report names it",
   // A city renamed (docs/decisions/0198-cities-as-data.md).
   "leads.city -> cities": RENAMED,
   "technicians.city -> cities": RENAMED,
@@ -51,6 +54,8 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/field/technician-pay.ts deletes a grade only while no rate names it",
   "technician_devices.session_id -> sessions":
     "src/scheduled/sweeper.ts clears it in the batch that deletes the session",
+  "client_push_subscriptions.session_id -> sessions":
+    "src/scheduled/sweeper.ts deletes it in the batch that deletes the session, before the session",
   "photos.photo_set_id -> photo_sets": "src/domain/privacy/erasure.ts deletes a set's photographs first",
   "checkins.address_id -> addresses":
     "src/domain/privacy/erasure.ts blanks an address a check-in points at, and keeps it",

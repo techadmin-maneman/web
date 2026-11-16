@@ -2315,7 +2315,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/me/problems": {
+    "/api/visits/{id}/sign-off": {
         parameters: {
             query?: never;
             header?: never;
@@ -2324,7 +2324,360 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Tell Care something is wrong with the hair system or a visit */
+        /** Sign off the fit the technician asked about, or say what isn't right */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SignOffAnswer"];
+                };
+            };
+            responses: {
+                /** @description Recorded; a flag reaches the technician's phone */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SignOff"];
+                    };
+                };
+                /** @description invalid_request: see error.fields */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such visit of this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description sign_off_not_asked: the technician has not asked yet; sign_off_closed: signed or declined */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "sign_off_not_asked" | "sign_off_closed";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description sign_off_checks_open: a sign-off needs every check ticked; flag what isn't right instead */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "sign_off_checks_open";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's alerts of the last 30 days, newest first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The inbox */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientAlerts"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/alerts/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Every alert the client has, read: they opened the inbox */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Read */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/push-subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** This browser takes the client's pushes, until it is signed out, revoked or ends */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ClientPushSubscription"];
+                };
+            };
+            responses: {
+                /** @description Kept */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientPushSubscribed"];
+                    };
+                };
+                /** @description invalid_request: not a browser's push service */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/problems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's issue log: their reports, grievances and missed-visit disputes, newest first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The log */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IssueLog"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Tell Care something is wrong: answered with the report's reference for the issue log */
         post: {
             parameters: {
                 query?: never;
@@ -2338,7 +2691,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Filed for Care, who answer on WhatsApp */
+                /** @description Filed for Care, who answer in the app and on WhatsApp */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -2411,6 +2764,470 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/problems/{reference}/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add the client's words to a report of theirs, which opens it again where it was settled */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The report's reference, as MM-ISS-0032. */
+                    reference: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["IssueWords"];
+                };
+            };
+            responses: {
+                /** @description Filed in its Care chat */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no report of this client's by that reference */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description rate_limited: 20 a day */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/problems/{reference}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen a settled report of the client's: it is happening again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The report's reference, as MM-ISS-0032. */
+                    reference: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["IssueWords"];
+                };
+            };
+            responses: {
+                /** @description Reopened, and filed in its Care chat */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no report of this client's by that reference */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description rate_limited: 20 a day */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/problems/{reference}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A photograph for a report of the client's: a JPEG of at most 2 MB, up to 3 a report */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The report's reference, as MM-ISS-0032. */
+                    reference: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Kept, and Care told in the chat on the client's number */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReportPhotoAdded"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no report of this client's by that reference */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description photos_full: the report has its 3 already */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "photos_full";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description photo_invalid_file: not a JPEG, or over 2 MB */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "photo_invalid_file";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description rate_limited: 20 a day */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/problems/{reference}/sorted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The client says a report of theirs is sorted */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The report's reference, as MM-ISS-0032. */
+                    reference: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Marked sorted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no report of this client's by that reference */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -2782,6 +3599,60 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "unavailable" | "not_ready";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The packages on sale from tomorrow, in ops' order, priced for the client in their city */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The packages */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientPackages"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -4596,7 +5467,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -4830,6 +5701,50 @@ export interface components {
                     window: ("morning" | "afternoon" | "evening") | null;
                 } | null;
             };
+            /** @description Care's hours and their reply promise, as ops set them (care_hours). */
+            care_hours: {
+                /** @description The hour Care open, in India, 0 to 23. */
+                opens: number;
+                /** @description The hour Care close. */
+                closes: number;
+                /** @description Minutes within which Care first reply in hours. */
+                first_reply: number;
+            };
+            /** @description Days after a first fit the client may ask for a refit or a refund (guarantee_days; ADR 0256). */
+            guarantee_days: number;
+            /** @description What the account's promises say, each the law's: a grievance answered, a deletion acted on, invoices kept. */
+            answers_within: {
+                /** @description Days within which a grievance is answered. */
+                grievance_days: number;
+                /** @description Days within which a deletion request is acted on. */
+                deletion_days: number;
+                /** @description Years invoices are kept, as the law asks. */
+                invoices_kept_years: number;
+            };
+            /** @description The hair system the client wears now; null for none on record. */
+            hair_system: {
+                /** @description The package's code, which its services share as their tier. */
+                package: string;
+                /** @description The package's name, as clients read it. */
+                name: string;
+                /**
+                 * Format: date
+                 * @description India's day the hair system worn now was fitted.
+                 */
+                fitted_on: string;
+                /** @description How many months its package's are worn. */
+                replace_after_months: number;
+                /**
+                 * Format: date
+                 * @description India's day it falls due.
+                 */
+                due_on: string;
+                /**
+                 * Format: date
+                 * @description The first day of the month it falls due: the first day its replacement may be booked on (ADR 0253). `booking.types` says whether it may be booked now.
+                 */
+                replacement_opens_on: string;
+            } | null;
             referral_reward: components["schemas"]["ReferralReward"];
             /** @description The invite a client not yet fitted came with, while its free service visits (referral_reward's friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it lapsed. */
             pending_invite: {
@@ -4898,6 +5813,34 @@ export interface components {
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
             proposed_move: components["schemas"]["ProposedMove"] | null;
+            /** @description The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone. */
+            latest_update: {
+                /** @enum {string} */
+                kind: "on_the_way" | "running_late" | "at_the_gate";
+                /** @description On the way: minutes away; running late: minutes late; null at the gate. */
+                minutes: number | null;
+                /**
+                 * Format: date-time
+                 * @description When the technician sent it.
+                 */
+                at: string;
+            } | null;
+            /** @description The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress. */
+            step: {
+                /** @description The step under way, counting from 1. */
+                index: number;
+                /** @description How many steps the client is told of. */
+                of: number;
+                /**
+                 * @description The step, as the app names it.
+                 * @enum {string}
+                 */
+                name: "before_photos" | "service" | "scalp" | "hair_profile" | "hair_system" | "fitting" | "after_photos" | "sign_off";
+            } | null;
+            /** @description Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise. */
+            waits_until: string | null;
+            /** @description A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none. */
+            sign_off: components["schemas"]["SignOff"] | null;
         };
         /** @description Display name and initials only. */
         Technician: {
@@ -4921,6 +5864,33 @@ export interface components {
              * @description The last moment it may be accepted.
              */
             expires_at: string;
+        };
+        SignOff: {
+            /**
+             * @description asked: waiting for the client; signed: happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: closed without it, with why.
+             * @enum {string}
+             */
+            state: "asked" | "signed" | "flagged" | "declined";
+            /** @description As the client last answered; null till then. */
+            checks: components["schemas"]["SignOffChecks"] | null;
+            /** @description What the client last said isn't right, in their words; kept once they sign. */
+            flag_text: string | null;
+            /** @description Why the client did not sign. */
+            declined_reason: string | null;
+            /** Format: date-time */
+            asked_at: string;
+            /** @description How many times it was asked: again after each flag. */
+            asks: number;
+            /** @description When the client signed in their app. */
+            signed_at: string | null;
+            /** @description The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then. */
+            guarantee_days: number | null;
+        };
+        /** @description The hairline, the colour and blend, and that it is secure and comfortable: each ticked or not. */
+        SignOffChecks: {
+            hairline: boolean;
+            blend: boolean;
+            secure: boolean;
         };
         /** @description A consultation done: its day, who came, and the hair system recommended there. */
         Consulted: {
@@ -5225,6 +6195,34 @@ export interface components {
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
             proposed_move: components["schemas"]["ProposedMove"] | null;
+            /** @description The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone. */
+            latest_update: {
+                /** @enum {string} */
+                kind: "on_the_way" | "running_late" | "at_the_gate";
+                /** @description On the way: minutes away; running late: minutes late; null at the gate. */
+                minutes: number | null;
+                /**
+                 * Format: date-time
+                 * @description When the technician sent it.
+                 */
+                at: string;
+            } | null;
+            /** @description The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress. */
+            step: {
+                /** @description The step under way, counting from 1. */
+                index: number;
+                /** @description How many steps the client is told of. */
+                of: number;
+                /**
+                 * @description The step, as the app names it.
+                 * @enum {string}
+                 */
+                name: "before_photos" | "service" | "scalp" | "hair_profile" | "hair_system" | "fitting" | "after_photos" | "sign_off";
+            } | null;
+            /** @description Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise. */
+            waits_until: string | null;
+            /** @description A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none. */
+            sign_off: components["schemas"]["SignOff"] | null;
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
             /** @description Done, partly done, or a no-show: the client was not home. Null until it is closed. */
@@ -5247,6 +6245,8 @@ export interface components {
                 /** @description The payment, for GET /api/payments/{id}/receipt, once Books has recorded it. */
                 receipt: string | null;
             } | null;
+            /** @description A first fit done: India's last day the client may ask for a refit or a refund under the fit guarantee, by the days ops set (guarantee_days; ADR 0256). Null for any other visit. */
+            guarantee_until: string | null;
         };
         /** @description Each angle in the order front, top, left, right, hair; missing angles left out. */
         PhotoSet: {
@@ -5284,6 +6284,8 @@ export interface components {
             disputable: boolean;
             /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
             dispute_closed_at: string | null;
+            /** @description The last moment the charge may be disputed, by the dispute window ops set, while `disputable`; null otherwise. */
+            dispute_until: string | null;
         };
         ProposedMoveAccepted: {
             /** @enum {boolean} */
@@ -5351,13 +6353,63 @@ export interface components {
             /** @description Why the charge is wrong, in the client's words. Ops read it; it reaches no message. */
             reason: string;
         };
+        /** @description Happy with the fit, every check ticked; or something isn't right, in the client's words. */
+        SignOffAnswer: {
+            /** @enum {string} */
+            result: "signed";
+            checks: components["schemas"]["SignOffChecks"];
+        } | {
+            /** @enum {string} */
+            result: "flagged";
+            checks: components["schemas"]["SignOffChecks"];
+            flag_text: string;
+        };
+        ClientAlerts: {
+            /** @description The last 30 days', newest first. */
+            alerts: components["schemas"]["ClientAlert"][];
+            /** @description The key a browser subscribes to our pushes with; null where pushes are not set up. */
+            push_key: string | null;
+        };
+        ClientAlert: {
+            id: string;
+            /**
+             * @description The message it stands beside, by its kind, or sign_off_asked: the technician asks for a sign-off.
+             * @enum {string}
+             */
+            kind: "tryon_result" | "consultation_confirmation" | "visit_reminder" | "payment_receipt" | "nothing_to_pay" | "link_paid" | "upi_received" | "reschedule_confirmation" | "cancel_confirmation" | "visit_cancelled" | "visit_moved" | "move_proposed" | "arrival_notice" | "technician_update" | "no_show_decided" | "no_show_dispute_ruled" | "booking_refunded" | "next_service_reminder" | "friend_fitted" | "friend_credited" | "referral_rejected" | "credits_expiring" | "launch_alert" | "deletion_rejected" | "concern_received" | "concern_answered" | "recall_notice" | "consultation_follow_up" | "fit_aftercare" | "first_check_in" | "second_check_in" | "sign_off_asked";
+            /** @description The visit it is about, where it is about one. */
+            visit_id: string | null;
+            /** @description A technician's word: on the way, running late or at the gate, with their minutes. */
+            update: {
+                /** @enum {string} */
+                kind: "on_the_way" | "running_late" | "at_the_gate";
+                minutes: number | null;
+            } | null;
+            /** Format: date-time */
+            at: string;
+            read: boolean;
+        };
+        ClientPushSubscribed: {
+            endpoint: string;
+            /** Format: date-time */
+            subscribed_at: string;
+        };
+        ClientPushSubscription: {
+            /** @description The push service's address for this browser, as it gave it. */
+            endpoint: string;
+        };
         ProblemReported: {
             /** @enum {string} */
             state: "sent";
+            /** @description The report's reference, as MM-ISS-0032. */
+            reference: string;
         };
         ProblemReport: {
-            /** @enum {string} */
-            about: "hair_system" | "visit";
+            /**
+             * @description What it is about: fit_guarantee, edges_lifting, itching, colour, shedding, fit_comfort, visit, payment, other; hair_system, an older app's, reads fit_comfort.
+             * @enum {string}
+             */
+            about: "fit_guarantee" | "edges_lifting" | "itching" | "colour" | "shedding" | "fit_comfort" | "visit" | "payment" | "other" | "hair_system";
             /**
              * @description The visit it is about, if one.
              * @default null
@@ -5365,6 +6417,44 @@ export interface components {
             visit_id: string | null;
             /** @description What is wrong, in their words. */
             text: string;
+        };
+        IssueLog: {
+            issues: components["schemas"]["Issue"][];
+        };
+        Issue: {
+            /** @enum {string} */
+            kind: "report" | "grievance" | "dispute";
+            id: string;
+            /** @description A report's, as MM-ISS-0032. */
+            reference: string | null;
+            category: ("fit_guarantee" | "edges_lifting" | "itching" | "colour" | "shedding" | "fit_comfort" | "visit" | "payment" | "other") | null;
+            /** @enum {string} */
+            state: "open" | "in_progress" | "resolved";
+            /** Format: date-time */
+            raised_at: string;
+            visit_id: string | null;
+            text: string | null;
+            photos: number;
+            /** @description The issue's thread, oldest first. */
+            events: components["schemas"]["IssueEvent"][];
+        };
+        IssueEvent: {
+            /** Format: date-time */
+            at: string;
+            /**
+             * @description you: the client's words; care: a reply; city: passed to their city team; visits: free visits given (text: how many); closed: Care closed it; sorted: the client marked it sorted; ruled: the answer to a grievance or a dispute (text: its words, or refunded or upheld).
+             * @enum {string}
+             */
+            kind: "you" | "care" | "city" | "visits" | "closed" | "sorted" | "ruled";
+            /** @description The first name a reply came from. */
+            name: string | null;
+            text: string | null;
+        };
+        IssueWords: {
+            text: string;
+        };
+        ReportPhotoAdded: {
+            n: number;
         };
         PaymentEntry: {
             /**
@@ -5657,6 +6747,23 @@ export interface components {
             /** @description normal (5 to 7 working days) or instant. */
             speed: string | null;
         };
+        ClientPackages: {
+            packages: components["schemas"]["ClientPackage"][];
+        };
+        ClientPackage: {
+            code: string;
+            name: string;
+            description: string | null;
+            first_fit: components["schemas"]["Price"] & unknown;
+            /** @description Its service visit. */
+            service: components["schemas"]["Price"] | null;
+            /** @description Days from a visit to the service visit after it. */
+            service_every_days: number;
+            /** @description Its replacement as sold, the service visit with it. */
+            replacement: components["schemas"]["Price"] | null;
+            /** @description Months from a fit to its replacement. */
+            replace_after_months: number;
+        };
         Availability: {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
@@ -5664,6 +6771,11 @@ export interface components {
             price: components["schemas"]["Price"] & unknown;
             /** @description The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it. */
             change_notice_hours: number;
+            /**
+             * Format: date
+             * @description The first day this visit may be booked on: a replacement's no sooner than its hair system can be fitted, where none is in stock.
+             */
+            opens: string;
             /**
              * Format: date
              * @description The last day this visit may be booked on: later days are asked for up to it.
@@ -5888,6 +7000,11 @@ export interface components {
                 status: "awaiting_payment" | "paid" | "ordered" | "arrived";
                 /** Format: date */
                 promised_on: string | null;
+                /**
+                 * Format: date
+                 * @description The last day it is on time: past it, it is late and the client may have their money back in full, by the days ops set (custom_order_grace_days). Null with no promised date.
+                 */
+                refundable_after: string | null;
                 /** @description What it costs them, in paise. */
                 amount: number;
                 /** @description The link to pay by, while it waits for payment. */

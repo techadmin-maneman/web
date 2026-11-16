@@ -229,6 +229,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('ap1', 't1', 28.4, 77.07, 12, '${AT}', '${AT}')`,
   `INSERT INTO sos_alerts (id, technician_id, appointment_id, lat, lng, accuracy_m, position_at, sent_at)
      VALUES ('so1', 't1', 'ap1', 28.4, 77.07, 12, '${AT}', '${AT}')`,
+  `INSERT INTO fit_sign_offs (appointment_id, state, checks, asked_at, asks, signed_at, technician_id, updated_at)
+     VALUES ('ap1', 'signed', '{"hairline":true,"blend":true,"secure":true}', '${AT}', 1, '${AT}', 't1', '${AT}')`,
   `INSERT INTO kit_requests (id, technician_id, items, requested_at)
      VALUES ('kr1', 't1', '[{"code":"strip","quantity":2}]', '${AT}')`,
   `INSERT INTO reschedule_requests (id, appointment_id, technician_id, reason, requested_at)
@@ -238,6 +240,12 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO tech_alert_kinds_off (technician_id, kind, set_at) VALUES ('t1', 'day_ahead', '${AT}')`,
   `INSERT INTO push_subscriptions (device_id, endpoint, subscribed_at)
      VALUES ('d1', 'https://fcm.googleapis.com/fcm/send/phone-1', '${AT}')`,
+  `INSERT INTO client_reports (id, number, person_id, category, text, conversation_id, created_at)
+     VALUES ('cr1', 1, 'p1', 'edges_lifting', 'The front lifts.', 'cv1', '${AT}')`,
+  `INSERT INTO client_report_photos (report_id, n, object_key, bytes, created_at)
+     VALUES ('cr1', 1, 'reports/p1/cr1/1.jpg', 1024, '${AT}')`,
+  `INSERT INTO client_push_subscriptions (session_id, endpoint, subscribed_at)
+     VALUES ('s2', 'https://fcm.googleapis.com/fcm/send/client-1', '${AT}')`,
   `INSERT INTO step_send_backs (id, appointment_id, kind, reason, sent_by, sent_at)
      VALUES ('sb1', 'ap1', 'checklist', 'Tick the scalp check.', 'ops@example.com', '${AT}')`,
   // A setting changed in the console: ops_settings_snapshot follows it.
@@ -357,6 +365,8 @@ export const WRITTEN_SINCE_T: readonly string[] = [
   `UPDATE addresses SET line2 = 'Tower B' WHERE id = 'a1'`,
   `UPDATE outbound_messages SET state = 'sent', sent_at = '${SINCE}' WHERE id = 'm1'`,
   `UPDATE cron_runs SET started_at = '${SINCE}', completed_at = '${SINCE}' WHERE id = 1`,
+  // The sweeper lets a session's pushes go before it deletes the session.
+  `DELETE FROM client_push_subscriptions WHERE session_id = 's2'`,
   `DELETE FROM sessions WHERE id = 's2'`,
   `DELETE FROM counters`,
   `INSERT INTO staff (email, active, added_by, added_at) VALUES ('care@example.com', 1, 'owner@example.com', '${SINCE}')`,

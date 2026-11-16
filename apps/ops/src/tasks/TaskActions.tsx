@@ -26,6 +26,8 @@ type Group = TaskGroup["group"];
 const closableAs = (group: Group): ClosableGroup | null =>
   group === "partial_visit" ||
   group === "consumables_short" ||
+  group === "fit_unsigned" ||
+  group === "fit_guarantee_claim" ||
   group === "at_risk_client" ||
   group === "city_matter" ||
   group === "kit_request" ||
@@ -37,6 +39,8 @@ const closableAs = (group: Group): ClosableGroup | null =>
 const CLOSE_WORDS: Readonly<Record<ClosableGroup, { readonly open: string; readonly label: string }>> = {
   partial_visit: tasks.close,
   consumables_short: tasks.close.consumablesShort,
+  fit_unsigned: tasks.close.fitUnsigned,
+  fit_guarantee_claim: tasks.close.guaranteeClaim,
   at_risk_client: tasks.close.atRisk,
   city_matter: tasks.close.cityMatter,
   kit_request: tasks.close.kitRequest,

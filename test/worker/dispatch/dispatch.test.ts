@@ -166,6 +166,8 @@ describe("a change of technician alone", () => {
     expect(messageQueue.sent).toEqual([]);
     const messages = await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first<{ n: number }>();
     expect(messages?.n).toBe(0);
+    // Nor anything in their app: a technician swap is silent (docs/decisions/0255-client-alerts-and-push.md).
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM client_app_alerts").first("n")).toBe(0);
   });
 });
 

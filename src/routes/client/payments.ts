@@ -7,6 +7,7 @@
 // failed attempt is not a payment and is left out. A payment kept under the
 // 24-hour rule is a charge, and carries its evidence.
 
+import { OwedPaymentSchema } from "../schemas/payments.ts";
 import { documentPdf } from "../../domain/clients/client-documents.ts";
 import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
@@ -123,23 +124,6 @@ const RefundEntrySchema = z
   .openapi("RefundEntry");
 
 export const EntrySchema = z.discriminatedUnion("kind", [PaymentEntrySchema, RefundEntrySchema]);
-
-/** A consultation and fit in one visit the client was fitted at and has not paid for yet. */
-export const OwedPaymentSchema = z
-  .object({
-    visit_id: z.uuid(),
-    date: z.iso.date().openapi({ description: "India's date of the visit." }),
-    amount: z
-      .number()
-      .int()
-      .openapi({ description: "In paise, GST included, after any code: what the link asks for." }),
-    product: z.string().openapi({ description: 'The hair system fitted: "Mane Man Natural hair system".' }),
-    url: z.union([z.string(), z.null()]).openapi({
-      description: "The payment link Razorpay texted the client; null until it has made one.",
-    }),
-  })
-  .strict()
-  .openapi("OwedPayment");
 
 /** What happened to the client's service-visit credits, entry by entry, as the ledger keeps them. */
 const CreditLineSchema = z

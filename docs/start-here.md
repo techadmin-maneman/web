@@ -59,7 +59,7 @@ this map, or when the map names something that no longer exists.
   `visit-begun`, `client-visits`, `client-photo-keys`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
   `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `finish-asks` (how a technician suggests finishing a visit), `open-proposals`, `visit-upkeep` (what a write to a
   visit keeps up beside it),
-  `no-show-notes`, `visit-story` (a visit's steps, for its drawer)
+  `no-show-notes`, `visit-story` (a visit's steps, for its drawer), `live-visit` (the technician's word and step, for the client), `visit-photo-links` (a visit's photographs with their links)
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `follow-ups`, `one-visit`
 - **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`, `ops/visit-lost-reason`, `ops/visit-story`
 - **Screens:** `apps/app/src/visits/`, `apps/ops/src/clients/`
@@ -89,7 +89,7 @@ this map, or when the map names something that no longer exists.
 
 ### The technician's work in the field
 
-- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `client-history` (a client's past visits for the technician), `step-send-backs` (steps ops sent back to the technician), `safety` (where the technician is on a visit, and their SOS), `tech-alerts`, `alert-settings` and `alert-sends` (their alerts: the inbox, the kinds on, and what the cron writes and pushes), `workable-job`, `job-events`, `job-event-bodies`,
+- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `client-history` (a client's past visits for the technician), `step-send-backs` (steps ops sent back to the technician), `sign-offs` (the client's sign-off of a fit), `safety` (where the technician is on a visit, and their SOS), `tech-alerts`, `alert-settings` and `alert-sends` (their alerts: the inbox, the kinds on, and what the cron writes and pushes), `workable-job`, `job-events`, `job-event-bodies`,
   `job-record`, `job-use`, `consumable-shortfalls` (a job short of what its service expects, and why), `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `job-options` (a
   consultation's packages, prices and the client's try-on looks)
 - **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `consumable-shortfall`, `tech-alerts`
@@ -172,7 +172,7 @@ this map, or when the map names something that no longer exists.
 
 ### Clients
 
-- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `client-notes`, `staff-notes` (staff's notes on a client), `client-alerts` (what every technician reads before they start), `handoff-notes` (the note left for the next technician),
+- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `worn-hair-system` (the hair system a client wears, and when its replacement opens), `client-notes`, `staff-notes` (staff's notes on a client), `client-alerts` (what every technician reads before they start), `app-alerts` (the client's own alerts in their app, and the pushes telling it), `handoff-notes` (the note left for the next technician),
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`,
   `pincode-directory` (India Post's pincodes, which ops open a city from), `pincode-launches` (launches scheduled for
   a later day), `launch-runs` (those due, served by the cron on the day), `pincode-reach` (a city's
@@ -246,7 +246,7 @@ this map, or when the map names something that no longer exists.
 
 ### The Care inbox
 
-- **Database work** (`src/domain/care/`): `inbox`, `replies`, `care-people` (each client's named Care person), `chat-tasks` (a chat past its reply-by time, on Tasks), `after-hours` (the answer to a message sent while Care are off), `cover` (the team's days off and who covers them), `city-matters` (what Care send to a client's city), `strangers` (a chat from a number we don't know, linked or saved), `quick-replies` (saved answers), `remedies` (free visits Care give, and their approval), `care-numbers` (whether the same-day promise holds), `app-reports` (something wrong told from the app), `chat-archive` (a client's thread quiet a year, moved to the backups bucket)
+- **Database work** (`src/domain/care/`): `inbox`, `chat-opened` (the chat a client's words open, from WhatsApp or the app), `replies`, `care-people` (each client's named Care person), `chat-tasks` (a chat past its reply-by time, on Tasks), `after-hours` (the answer to a message sent while Care are off), `cover` (the team's days off and who covers them), `city-matters` (what Care send to a client's city), `strangers` (a chat from a number we don't know, linked or saved), `quick-replies` (saved answers), `remedies` (free visits Care give, and their approval), `care-numbers` (whether the same-day promise holds), `app-reports` (something wrong told from the app), `issue-log` (the client's reports with their state and thread), `report-photos` (the photographs sent with them), `chat-archive` (a client's thread quiet a year, moved to the backups bucket)
 - **Routes** (`src/routes/`): `ops/conversations`, `ops/care-people`, `ops/care-rota`, `ops/city-matters`, `ops/strangers`, `ops/quick-replies`, `ops/remedies`, `ops/care-numbers`, `hooks/evolution` (files what clients write), `client/problems`
 - **Screens:** `apps/ops/src/care/` (Messages, the thread, its client panel, City matters, remedies, quick replies, the Care team and its numbers)
 - **Tests:** `test/worker/care/`, `test/dom/ops-messages.test.ts`, `test/dom/ops-care-numbers.test.ts`, `e2e/ops/messages.e2e.ts`

@@ -1,6 +1,10 @@
 ---
-// A sentence of a legal page, each address at maneman.in, email there and phone number it names drawn as a link.
+// A sentence of a legal page, each address at maneman.in, email there and phone number it names drawn as a link. The
+// fit guarantee's days are drawn in a span of their own, which the site's Worker fills with the days ops set
+// (site/src/worker.ts; docs/decisions/0256-fit-guarantee-setting.md).
 import { textLinkLook } from "@maneman/ui/TextLink";
+import { GUARANTEE_DAYS } from "@rules/policy/fit-guarantee.ts";
+import { GUARANTEE_HOLE, legalDays } from "../lib/legal-days.ts";
 import { withLinks } from "../lib/text.ts";
 
 interface Props {
@@ -8,14 +12,20 @@ interface Props {
 }
 
 const { text } = Astro.props;
+const pieces = text.split(GUARANTEE_HOLE);
 ---
 
-{withLinks(text).map((part) =>
-  "href" in part ? (
-    <a class={textLinkLook({ inline: true })} href={part.href}>
-      {part.text}
-    </a>
-  ) : (
-    part.text
-  ),
-)}
+{pieces.map((piece, index) => (
+  <>
+    {index > 0 && <span data-guarantee-days>{legalDays(GUARANTEE_DAYS)}</span>}
+    {withLinks(piece).map((part) =>
+      "href" in part ? (
+        <a class={textLinkLook({ inline: true })} href={part.href}>
+          {part.text}
+        </a>
+      ) : (
+        part.text
+      ),
+    )}
+  </>
+))}

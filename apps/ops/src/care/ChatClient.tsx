@@ -1,7 +1,7 @@
 // Who a chat is with, at the inbox's right (docs/decisions/0140-the-client-panel.md). The chat's head names them, so
 // the column starts at their facts: a client's next and last visit, free service visits, city and Care person, then
-// one stack of what Care do for them, the parts of their page, free service visits and a matter for their city's team.
-// One of our technicians: their city and their page. A number we don't know: made a client here.
+// what Care do for them, then the photographs they sent with their reports. One of our technicians: their city and
+// their page. A number we don't know: made a client here.
 
 import { buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -16,6 +16,7 @@ import { CareMove, careWords, type Named } from "./CarePerson.tsx";
 import { CityMatter } from "./CityMatter.tsx";
 import { ClientLinks, ClientPanel } from "./ClientPanel.tsx";
 import { RemedyForm } from "./Remedies.tsx";
+import { ReportPhotos } from "./ReportPhotos.tsx";
 import { Stranger } from "./Stranger.tsx";
 import care from "./care.module.css";
 import styles from "./thread.module.css";
@@ -60,6 +61,7 @@ function ClientSide({ conversation, mayAct }: { conversation: Conversation; mayA
         {mayAct && <RemedyForm personId={personId} />}
         {mayAct && <CityMatter conversationId={conversation.id} />}
       </div>
+      <ReportPhotos conversationId={conversation.id} />
       <CareMove personId={personId} now={carePerson} onMoved={setCarePerson} />
     </>
   );

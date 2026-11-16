@@ -7,15 +7,20 @@ import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
 import { archivedMessages } from "./chat-archive.ts";
 import { giveCarePerson } from "./care-people.ts";
+import { chatOpened, FROM_APP } from "./chat-opened.ts";
+import { openReportsOf } from "./issue-log.ts";
 import { read, readAll } from "../../lib/read-all.ts";
+import { CLOSE_REASON_OF, type CloseReason } from "./replies.ts";
 
-/** A message a client wrote to our number, as the bridge or MSG91 reports it. */
+/** A message a client wrote to our number, as the bridge or MSG91 reports it, or their words from the app. */
 export interface Inbound {
   readonly mobileE164: string;
   readonly text: string;
   /** WhatsApp's ID for it: a message reported twice is filed once. */
   readonly providerMessageId: string | null;
   readonly at: Date;
+  /** Written in the app, not on WhatsApp: Care's reply clock runs from it, WhatsApp's reply window does not. */
+  readonly fromApp?: true;
 }
 
 /**
@@ -26,30 +31,22 @@ export interface Inbound {
 export async function fileInbound(db: D1Database, inbound: Inbound): Promise<boolean> {
   const at = inbound.at.toISOString();
   const [, message] = await db.batch([
-    db
-      .prepare(
-        `INSERT INTO conversations (id, person_id, mobile_e164, state, opened_at, last_message_at, last_inbound_at,
-           created_at, updated_at)
-         VALUES (?1, (SELECT id FROM people WHERE mobile_e164 = ?2 AND erased_at IS NULL), ?2, 'open', ?3, ?3, ?3, ?3, ?3)
-         ON CONFLICT (mobile_e164) DO UPDATE SET
-           person_id = COALESCE(conversations.person_id, excluded.person_id),
-           state = 'open',
-           opened_at = CASE WHEN conversations.state = 'closed' THEN excluded.opened_at ELSE conversations.opened_at END,
-           closed_at = NULL,
-           closed_by = NULL,
-           last_message_at = MAX(conversations.last_message_at, excluded.last_message_at),
-           last_inbound_at = excluded.last_inbound_at,
-           updated_at = excluded.updated_at`,
-      )
-      .bind(crypto.randomUUID(), inbound.mobileE164, at),
+    chatOpened(db, inbound.mobileE164, at),
     db
       .prepare(
         `INSERT INTO chat_messages (id, conversation_id, direction, author, text, provider_message_id, sent_at,
            created_at)
-         SELECT ?1, id, 'in', 'client', ?3, ?4, ?5, ?5 FROM conversations WHERE mobile_e164 = ?2
+         SELECT ?1, id, 'in', ?6, ?3, ?4, ?5, ?5 FROM conversations WHERE mobile_e164 = ?2
          ON CONFLICT DO NOTHING`,
       )
-      .bind(crypto.randomUUID(), inbound.mobileE164, inbound.text, inbound.providerMessageId, at),
+      .bind(
+        crypto.randomUUID(),
+        inbound.mobileE164,
+        inbound.text,
+        inbound.providerMessageId,
+        at,
+        inbound.fromApp === true ? FROM_APP : "client",
+      ),
   ]);
   const filed = await db
     .prepare("SELECT person_id FROM conversations WHERE mobile_e164 = ?1")
@@ -227,6 +224,11 @@ type ThreadItem =
 export interface Thread {
   readonly conversation: ConversationRow;
   readonly items: ThreadItem[];
+  /**
+   * The reason Care's close opens on: the latest report the issue log of the client on the chat's number reads open, by
+   * its category; null for none.
+   */
+  readonly close_reason: CloseReason | null;
 }
 
 /** How far back a thread reads, so a long-standing client's opens quickly. */
@@ -248,6 +250,7 @@ export async function conversationThread(
          (SELECT n.name FROM care_names n WHERE n.email = o.email) AS care_name, t.id AS technician_id,
          t.name AS technician_name, c.last_message_at, c.archive_key,
          c.last_inbound_at, NULL AS last_line,
+         (SELECT holder.id FROM people holder WHERE holder.mobile_e164 = c.mobile_e164) AS holder_id,
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
             AND m.author <> ?2) AS last_reply_at
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id LEFT JOIN care_owners o ON o.person_id = c.person_id
@@ -255,7 +258,7 @@ export async function conversationThread(
        WHERE c.id = ?1`,
     )
     .bind(id, AUTO_REPLY)
-    .first<ListRow & { archive_key: string | null }>();
+    .first<ListRow & { archive_key: string | null; holder_id: string | null }>();
   if (row === null) return null;
   const { chat, auto } = await readAll(db, {
     chat: read<ThreadItem & { id: string }>(
@@ -290,6 +293,9 @@ export async function conversationThread(
   const items = [...archived, ...said, ...auto]
     .sort((one, other) => one.at.localeCompare(other.at))
     .slice(-THREAD_ITEMS);
-  const { archive_key: _key, ...listed } = row;
-  return { conversation: rowOf({ ...listed, last_line: null }, context), items };
+  const { archive_key: _key, holder_id: holder, ...listed } = row;
+  const [latest] = holder === null ? [] : await openReportsOf(db, holder);
+  const closeReason =
+    latest?.category === undefined || latest.category === null ? null : CLOSE_REASON_OF[latest.category];
+  return { conversation: rowOf({ ...listed, last_line: null }, context), items, close_reason: closeReason };
 }
