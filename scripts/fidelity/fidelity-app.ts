@@ -201,6 +201,7 @@ const VISIT_DETAIL = {
   no_show: null,
   paid: { amount: 220_000, receipt: null },
   guarantee_until: null,
+  rating: null,
 } satisfies Schemas["VisitDetail"];
 
 const timeline = (inks: readonly [string, string, string]) => ({

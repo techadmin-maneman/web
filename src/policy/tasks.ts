@@ -96,6 +96,7 @@ export const TASK_GROUPS = [
   "consumables_short",
   "fit_unsigned",
   "fit_guarantee_claim",
+  "low_rating",
   "kit_request",
   "referral_review",
   "no_show_decision",
@@ -169,6 +170,8 @@ export const TASK_SLA_HOURS: Slas = {
   // A client's claim under the fit guarantee, as the terms promise a refit or a refund: Care call them within the two
   // days (docs/decisions/0256-fit-guarantee-setting.md).
   fit_guarantee_claim: 48,
+  // A visit the client rated under four stars: Care call them within the two days (docs/decisions/0260-ratings.md).
+  low_rating: 48,
   // A kit short of what its week's visits need: in its next transfer, within the day.
   kit_request: 24,
   referral_review: 48,
@@ -197,8 +200,8 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
 
 /**
  * The groups ops close with a reason: a visit left partly done, whose follow-up the client may never want; an at-risk
- * client, a fit closed without the client's sign-off, and a fit guarantee claim, each closed with what came of the
- * call; a City matter, closed with what was done; consumables short of what a job expects, closed once
+ * client, a fit closed without the client's sign-off, a fit guarantee claim and a low rating, each closed with what
+ * came of the call; a City matter, closed with what was done; consumables short of what a job expects, closed once
  * checked against the kit; and a technician's asks, for their kit and to move a visit, closed with what was done. Every
  * other group leaves the board only when its thing is done.
  */
@@ -207,6 +210,7 @@ export const CLOSABLE_TASK_GROUPS = [
   "consumables_short",
   "fit_unsigned",
   "fit_guarantee_claim",
+  "low_rating",
   "at_risk_client",
   "city_matter",
   "kit_request",

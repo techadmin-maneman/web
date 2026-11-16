@@ -61,6 +61,16 @@ export const visits = {
     guarantee: "Fit guarantee",
     guaranteeUntil: (date: string) => `Until ${date}`,
     notRight: "The fit isn’t right",
+    /** The client's stars for a visit done, given once (docs/decisions/0260-ratings.md). */
+    rating: {
+      title: "How was this visit?",
+      label: "Rate this visit",
+      star: (stars: number) => `${String(stars)} of 5`,
+      thanks: "Thanks. We share ratings with the technician.",
+      low: "Thanks. Tell us what went wrong and we’ll follow up.",
+      report: "Report an issue",
+      failed: "That didn’t go through. Try again.",
+    },
     done: "What was done",
     /** The checklist the technician ticked, as one sentence: "Hair system removed, scalp cleaned, cut and styled." */
     doneLine: (items: readonly string[]) =>

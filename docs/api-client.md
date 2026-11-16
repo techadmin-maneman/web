@@ -3151,6 +3151,171 @@ Request body:
 }
 ```
 
+### POST /api/visits/{id}/rating
+
+Rate a visit done, once
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/RateVisit"
+}
+```
+
+**201**: Kept; under four, Care call the client
+
+```json
+{
+  "$ref": "#/components/schemas/Rating"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such visit of this client's
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: already_rated: the visit has its rating; visit_not_done: not closed, or nothing was done
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "already_rated",
+                "visit_not_done"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/me/alerts
 
 The client's alerts of the last 30 days, newest first
@@ -7420,6 +7585,8 @@ Request body:
             "sign_off_not_asked",
             "sign_off_closed",
             "sign_off_checks_open",
+            "already_rated",
+            "visit_not_done",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -10592,6 +10759,17 @@ Request body:
         }
       ],
       "description": "A first fit done: India's last day the client may ask for a refit or a refund under the fit guarantee, by the days ops set (guarantee_days; ADR 0256). Null for any other visit."
+    },
+    "rating": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Rating"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's stars for this visit (ADR 0260); null until they give them."
     }
   },
   "required": [
@@ -10628,7 +10806,8 @@ Request body:
     "invoice_held",
     "no_show",
     "paid",
-    "guarantee_until"
+    "guarantee_until",
+    "rating"
   ],
   "additionalProperties": false
 }
@@ -10823,6 +11002,31 @@ Request body:
     "disputable",
     "dispute_closed_at",
     "dispute_until"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Rating
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "stars": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the client gave it."
+    }
+  },
+  "required": [
+    "stars",
+    "at"
   ],
   "additionalProperties": false
 }
@@ -11180,6 +11384,25 @@ Request body:
     }
   ],
   "description": "Happy with the fit, every check ticked; or something isn't right, in the client's words."
+}
+```
+
+### RateVisit
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "stars": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    }
+  },
+  "required": [
+    "stars"
+  ],
+  "additionalProperties": false
 }
 ```
 

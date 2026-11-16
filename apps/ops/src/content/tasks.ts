@@ -108,6 +108,8 @@ export const tasks = {
     fit_unsigned: "Fit closed without sign-off",
     // A group the board does not draw (docs/decisions/0256-fit-guarantee-setting.md).
     fit_guarantee_claim: "Fit guarantee claim",
+    // A group the board does not draw (docs/decisions/0260-ratings.md).
+    low_rating: "Low rating",
     // A group the board does not draw.
     kit_request: "Kit request",
     referral_review: "Referral review",
@@ -260,6 +262,9 @@ export const tasks = {
     /** "Client in a hurry · Imran", after "Flagged first: “The left edge lifts”" where the client flagged before. */
     fit_unsigned: (reason: string, technician: string, flag: string | null) =>
       [...(flag === null ? [] : [`Flagged first: “${flag}”`]), reason, technician].join(" · "),
+    /** "2 of 5 stars · service visit Mon 14 Sep · Imran". */
+    low_rating: (stars: number, visit: string, technician: string) =>
+      [`${String(stars)} of 5 stars`, visit, technician].filter((part) => part !== "").join(" · "),
     /** "MM-ISS-0032 · fitted Mon 14 Sep · signed off · 2 photos". */
     fit_guarantee_claim: (reference: string, fittedOn: string, signOff: string, photos: number) =>
       [
@@ -374,6 +379,8 @@ export const tasks = {
     fitUnsigned: { open: "Called", label: "What the client said" },
     /** A fit guarantee claim closes with what was done: a refit, or a refund. */
     guaranteeClaim: { open: "Done", label: "What was done" },
+    /** A low rating closes once Care have called, with what the client said. */
+    lowRating: { open: "Called", label: "What the client said" },
     /** A kit request closes once what it asked for is sent, or with why not. */
     kitRequest: { open: "Sent", label: "What was sent" },
     /** A technician's ask to move a visit closes with what was agreed with the client. */

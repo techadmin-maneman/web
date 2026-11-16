@@ -35294,6 +35294,8 @@ Request body:
             "sign_off_not_asked",
             "sign_off_closed",
             "sign_off_checks_open",
+            "already_rated",
+            "visit_not_done",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -39594,6 +39596,8 @@ Request body:
             "sign_off_not_asked",
             "sign_off_closed",
             "sign_off_checks_open",
+            "already_rated",
+            "visit_not_done",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -49995,6 +49999,7 @@ Request body:
               "consumables_short",
               "fit_unsigned",
               "fit_guarantee_claim",
+              "low_rating",
               "kit_request",
               "referral_review",
               "no_show_decision",
@@ -50920,6 +50925,46 @@ Request body:
         "reason",
         "technician",
         "flag"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "low_rating"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "stars": {
+          "type": "integer",
+          "description": "The client's stars, under four."
+        },
+        "technician": {
+          "type": "string"
+        },
+        "visited_on": {
+          "type": "string",
+          "format": "date",
+          "description": "India's day of the visit."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "stars",
+        "technician",
+        "visited_on"
       ],
       "additionalProperties": false
     },

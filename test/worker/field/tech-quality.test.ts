@@ -50,12 +50,12 @@ const refitBooked = (daysAgo: number) =>
 describe("the technician's quality", () => {
   it("counts a visit checked in by its booked start on time", async () => {
     await checkedInAt(ago(60), ago(30));
-    expect(await quality()).toEqual({ visits: 1, on_time: 1, fits: 0, redone: 0 });
+    expect(await quality()).toEqual({ visits: 1, on_time: 1, fits: 0, redone: 0, ratings: 0, rating: null });
   });
 
   it("counts a visit checked in after its booked start late", async () => {
     await checkedInAt(ago(60), ago(90));
-    expect(await quality()).toEqual({ visits: 1, on_time: 0, fits: 0, redone: 0 });
+    expect(await quality()).toEqual({ visits: 1, on_time: 0, fits: 0, redone: 0, ratings: 0, rating: null });
   });
 
   it("counts a first fit left partly done as redone once its free refit is booked within 30 days", async () => {

@@ -1,5 +1,5 @@
-// One visit. Past: its photographs, its sign-off and a first fit's guarantee, technician, duration and type,
-// what was done, and the visit's own tax invoice beneath them (ADR 0056; the
+// One visit. Past: its photographs, its sign-off and a first fit's guarantee, technician, duration and type, what was
+// done, the client's rating of it, and the visit's own tax invoice beneath them (ADR 0056; the
 // board has none). A visit the client was not home for says what ops ruled and
 // what a charge took, and offers the charge's dispute (ADR 0096); a cancelled
 // one says it was cancelled. Not yet closed: its card as Home draws its
@@ -22,6 +22,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, documentUrl, receiptUrl, type VisitDetail } from "../api.ts";
 import { issues, messages, ONE_VISIT, payments, visitLength, visits } from "../content.ts";
 import { AddToCalendar } from "./AddToCalendar.tsx";
+import { RateVisit } from "./RateVisit.tsx";
 import { OpenDocument } from "../payments/index.ts";
 import { AppLink, Shell } from "../frame/Shell.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -217,6 +218,9 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
           </div>
         )}
       </dl>
+      {visit.status === "completed" && (visit.outcome === "done" || visit.outcome === "partial") && (
+        <RateVisit visit={visit} onRefused={onChanged} />
+      )}
       <Receipt paid={visit.paid} />
       <Invoice visit={visit} />
       {visit.status === "completed" && (

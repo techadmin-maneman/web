@@ -200,6 +200,9 @@ export const api = {
   reportProblem: (body: { about: ProblemAbout; visit_id: string | null; text: string }) =>
     client.post("/api/me/problems", { body }),
   /** The client's sign-off of a fit the technician asked them to check: signed, or what isn't right (ADR 0256). */
+  /** The client's stars for a visit done, once (ADR 0260). */
+  rateVisit: (visitId: string, stars: number) =>
+    client.post("/api/visits/{id}/rating", { path: { id: visitId }, body: { stars } }),
   signOff: (visitId: string, answer: Schemas["SignOffAnswer"]) =>
     client.post("/api/visits/{id}/sign-off", { path: { id: visitId }, body: answer }),
   /** The four hair systems on sale from tomorrow, priced for the client's city, to compare. */

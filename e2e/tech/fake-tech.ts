@@ -297,7 +297,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     yesterday: false,
     dayFails: false,
     writes: [],
-    quality: { visits: 18, on_time: 17, fits: 9, redone: 1 },
+    quality: { visits: 18, on_time: 17, fits: 9, redone: 1, ratings: 23, rating: 4.6 },
     inbox: {
       alerts: [],
       settings: { time_to_leave: true, day_ahead: true, job_changes: true, running_over: true },

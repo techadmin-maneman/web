@@ -404,7 +404,8 @@
     "Number not registered?": "नंबर रजिस्टर नहीं है?",
     "Call ops.": "ऑप्स को कॉल करें।",
     "Type it instead": "इसके बजाय टाइप करें",
-    "the rest to come": "बाकी आने वाले हैं"
+    "the rest to come": "बाकी आने वाले हैं",
+    "Client rating, 90 days": "क्लाइंट रेटिंग, 90 दिन"
   },
   "patterns": [
     {
@@ -1030,6 +1031,14 @@
     {
       "match": "^Updated ([^·]+)$",
       "hi": "$1 पर अपडेट"
+    },
+    {
+      "match": "^([\\d.]+) of 5$",
+      "hi": "5 में से $1"
+    },
+    {
+      "match": "^(\\d+) ratings?$",
+      "hi": "$1 रेटिंग"
     }
   ],
   "dateTokens": {

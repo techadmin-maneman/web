@@ -1,5 +1,5 @@
 // Me's two figures sections (docs/prompts/tech-redesign.md, "Me"): the technician's quality over the last 30 days, the
-// hairline redo rate and visits on time (src/routes/tech/quality.ts); and this month's incentives, a line a kind of
+// hairline redo rate and visits on time, and their clients' rating over 90 (src/routes/tech/quality.ts); and this month's incentives, a line a kind of
 // visit, its count and the rate a visit, with the total (src/routes/tech/month.ts). Incentives a visit, not pay. The
 // client rating follows once ratings exist. Each says when it is loading, and when it would not load, with Try again.
 
@@ -53,6 +53,10 @@ export function Quality() {
           <Line
             term={copy.onTime}
             value={loaded.value.visits === 0 ? copy.none : copy.onTimeShare(loaded.value.on_time, loaded.value.visits)}
+          />
+          <Line
+            term={copy.rating}
+            value={loaded.value.rating === null ? copy.none : copy.rated(loaded.value.rating, loaded.value.ratings)}
           />
         </dl>
       )}

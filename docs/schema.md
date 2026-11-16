@@ -213,6 +213,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [visit_outcomes](#visit_outcomes): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 - [visit_pay_rates](#visit_pay_rates): What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).
 - [visit_positions](#visit_positions): Where a technician is on a visit, the latest reading alone, from check-in to the close; deleted then, or by the sweep after 12 hours (ADR 0248).
+- [visit_ratings](#visit_ratings): 
 - [waitlist_entries](#waitlist_entries): Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).
 - [word_versions](#word_versions): Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).
 - [zoho_access_tokens](#zoho_access_tokens): Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).
@@ -3945,6 +3946,26 @@ Made by `0207_safety.sql`.
 Indexes:
 
 - `visit_positions_received`: on (`received_at`)
+
+## visit_ratings
+
+
+
+Made by `0214_visit_ratings.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `appointment_id` | TEXT | no |  | primary key; → `appointments.id` |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` | Whoever did the visit, as it was closed; NULL for one no technician held. |
+| `stars` | INTEGER | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `visit_ratings_by_person`: on (`person_id`)
+- `visit_ratings_by_technician`: on (`technician_id`, `created_at`)
+- `visit_ratings_low`: on (`created_at`), where `stars < 4`
 
 ## waitlist_entries
 

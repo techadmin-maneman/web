@@ -91,6 +91,12 @@ export const TaskFactsSchema = z
         description: "What the client last said wasn't right before then; null where they never flagged.",
       }),
     }),
+    facts("low_rating", {
+      kind,
+      stars: z.number().int().openapi({ description: "The client's stars, under four." }),
+      technician: z.string(),
+      visited_on: z.iso.date().openapi({ description: "India's day of the visit." }),
+    }),
     facts("fit_guarantee_claim", {
       reference: z.string().openapi({ description: "The report that opened the claim, as MM-ISS-0032." }),
       fitted_on: day,

@@ -88,6 +88,9 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   },
   // Anything the client flagged first, why they did not sign, and whose job.
   fit_unsigned: (facts) => copy.fit_unsigned(facts.reason, facts.technician, facts.flag),
+  // The stars, the visit and its day, and whose job.
+  low_rating: (facts) =>
+    copy.low_rating(facts.stars, `${dispatch.typeNames[facts.kind]} ${shortDate(facts.visited_on)}`, facts.technician),
   // The report's reference, when the fit was done, where its sign-off stood, and the photographs sent.
   fit_guarantee_claim: (facts) =>
     copy.fit_guarantee_claim(

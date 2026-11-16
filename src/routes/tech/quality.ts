@@ -1,4 +1,5 @@
-// The technician's own quality over the last 30 days, for Me (src/domain/field/quality.ts). Their own counts alone.
+// The technician's own quality over the last 30 days, and their clients' ratings over the last 90, for Me
+// (src/domain/field/quality.ts). Their own counts alone.
 
 import { z } from "@hono/zod-openapi";
 import { qualityOf } from "../../domain/field/quality.ts";
@@ -19,6 +20,10 @@ const QualitySchema = z
         'First fits done or left partly done in the last 30 days; a no-show or one closed "Can\'t fit today" is none.',
     }),
     redone: count.openapi({ description: "Of them, those whose free refit was booked within 30 days." }),
+    ratings: count.openapi({ description: "Clients' ratings of their visits in the last 90 days (ADR 0260)." }),
+    rating: z.union([z.number(), z.null()]).openapi({
+      description: "Those ratings' average, one to five stars to one place; null with none.",
+    }),
   })
   .strict()
   .openapi("TechnicianQuality");
@@ -26,7 +31,7 @@ const QualitySchema = z
 const qualityRoute = techRoute({
   method: "get",
   path: "/api/tech/quality",
-  summary: "The technician's on-time visits and hairline redo rate over the last 30 days",
+  summary: "The technician's on-time visits and hairline redo rate over the last 30 days, and their rating",
   responses: {
     200: { description: "Their counts", ...json(QualitySchema) },
     401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),

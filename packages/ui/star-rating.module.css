@@ -1,0 +1,49 @@
+/* Five stars (./StarRating.tsx): a 44 px target each, outlined in the muted words' colour, filled in brass up to the
+   rating, the darker brass a mark needs to stand at 3:1 against paper. */
+
+@layer base, ui;
+
+@layer ui {
+  .stars {
+    display: flex;
+    gap: var(--sp-4);
+    margin: 0;
+  }
+
+  .star {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tap);
+    height: var(--tap);
+    color: var(--ui-text-muted);
+  }
+
+  .on {
+    color: var(--brass-text);
+  }
+
+  .on svg {
+    fill: currentColor;
+  }
+
+  .radio {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .radio:disabled {
+    cursor: default;
+  }
+
+  .star:has(.radio:focus-visible) {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-offset);
+  }
+}
