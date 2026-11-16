@@ -39,35 +39,6 @@ export function onPackageBooked(
     .bind(booked.personId, booked.tier, booked.type);
 }
 
-/**
- * A replacement booked as another package than the client's, as ADR 0253 lets them: the hair system ordered for the
- * one they wear goes back to stock for others, and nobody pays for it. Its "Replacement order" task, for each piece
- * they wear, closes with why. Written before the booking moves their package.
- */
-export function returnedToStock(
-  db: D1Database,
-  booked: {
-    readonly id: string;
-    readonly personId: string;
-    readonly type: string;
-    readonly tier: string;
-    readonly at: string;
-  },
-): D1PreparedStatement {
-  return db
-    .prepare(
-      `INSERT INTO task_closures (id, task_group, subject_id, reason, closed_by, closed_at)
-       SELECT ?1 || '-' || p.id, 'replacement_order', p.id,
-              'Returned to stock: the replacement is booked as ' || COALESCE(s.name, ?3), 'system', ?5
-         FROM pieces p JOIN people pe ON pe.id = p.person_id
-         LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = ?3
-        WHERE p.person_id = ?2 AND ?4 = 'replacement' AND p.replaced_at IS NULL AND p.deleted_at IS NULL
-          AND pe.package IS NOT NULL AND pe.package IS NOT ?3
-       ON CONFLICT (task_group, subject_id) DO NOTHING`,
-    )
-    .bind(booked.id, booked.personId, booked.tier, booked.type, booked.at);
-}
-
 /** Puts a client on another package, from the console, with its audit entry. "not_found" for no such client or package. */
 export async function setClientPackage(
   db: D1Database,

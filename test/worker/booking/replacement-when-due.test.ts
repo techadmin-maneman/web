@@ -7,7 +7,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { returnedToStock } from "../../../src/domain/clients/client-package.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, SANA, client, technician, visit, wornPiece } from "./client-booking-fixtures.ts";
 
@@ -94,29 +93,6 @@ describe("a replacement", () => {
     expect(days.days[0]?.date).toBe("2026-10-01");
     expect((await hold(rohit, "2026-09-25")).status).toBe(422);
     expect((await hold(rohit, "2026-10-01")).status).toBe(201);
-  });
-
-  it("closes the order of the hair system worn, back to stock, only when booked as another package", async () => {
-    const rohit = await client();
-    const piece = await wornPiece(rohit.id, "2026-09-28");
-    await env.DB.prepare("UPDATE people SET package = 'essential' WHERE id = ?1").bind(rohit.id).run();
-    const booked = (id: string, tier: string) =>
-      env.DB.batch([
-        returnedToStock(env.DB, { id, personId: rohit.id, type: "replacement", tier, at: NOW.toISOString() }),
-      ]);
-    const closed = async () =>
-      (
-        await env.DB.prepare(
-          "SELECT subject_id, reason FROM task_closures WHERE task_group = 'replacement_order'",
-        ).all()
-      ).results;
-
-    await booked("v-same", "essential");
-    expect(await closed()).toEqual([]);
-    await booked("v-other", "natural");
-    expect(await closed()).toEqual([
-      { subject_id: piece, reason: "Returned to stock: the replacement is booked as natural" },
-    ]);
   });
 
   it("is offered from tomorrow once its month has begun", async () => {

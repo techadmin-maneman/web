@@ -35,9 +35,9 @@ replacement_opens_on}`, from the piece in wear and the package it was fitted und
    for a replacement booked with none. Demand and `stock_at_risk`, the evening's kit check, the forecast, who takes the
    fit and the stock gap told at booking all read it.
 5. **The old package's hair system returns to stock.** Nothing holds a hair system for a client, so one ordered for
-   the package they wear is ordinary stock already. Where the replacement is booked as another package, each piece's
-   `replacement_order` task closes with "Returned to stock: the replacement is booked as …", by the system, in the
-   booking's own batch. Nothing is charged to anyone.
+   the package they wear is ordinary stock already, for any client it fits. Its `replacement_order` task leaves Tasks
+   once the replacement is booked, whichever package, and comes back if that booking is cancelled. Nothing is charged
+   to anyone, and nothing more is written.
 6. **Not in stock in the client's size.** Where no place holds the stock code made to the client as the package asked
    for, the app's days open from today and the quickest supplier's lead time for it (`stockArrivesOn`, through
    `rangeFor`), and a hold before then is refused; `stock_at_risk` tells ops to order it once the replacement is booked.
