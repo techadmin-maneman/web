@@ -1,12 +1,13 @@
 // The packages a client compares in their app (src/routes/client/packages.ts; docs/decisions/0211-packages.md): each
-// sold today, in ops' order, priced from the price book, with how often it is serviced and replaced. NOW is Monday 21
-// September 2026, 12 noon in India. Every name and number here is made up.
+// on sale from tomorrow, in ops' order, priced from the price book in the client's city as a technician's Options price
+// them, with how often it is serviced and replaced. NOW is Monday 21 September 2026, 12 noon in India. Every name and
+// number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { asClient, client, signedIn } from "../clients.ts";
-import { aPackage } from "../fixtures/index.ts";
-import { markDatabase } from "../helpers.ts";
+import { aPackage, anAddress } from "../fixtures/index.ts";
+import { markDatabase, NOW } from "../helpers.ts";
 
 const ROHIT = "p-rohit";
 
@@ -31,28 +32,53 @@ beforeEach(async () => {
 type Offered = { packages: { code: string; [field: string]: unknown }[] };
 
 const offered = async () => (await (await asClient(cookie, "/api/packages")).json<Offered>()).packages;
+const ofCode = async (code: string) => (await offered()).find((each) => each.code === code);
+const rupees = (paise: number) => ({ amount_ex_gst: paise, amount: paise, gst_percent: 0 });
 
 describe("the packages a client compares", () => {
-  it("lists each sold today in ops' order, with its prices and how often it is serviced and replaced", async () => {
+  it("lists each on sale in ops' order, with its prices and how often it is serviced and replaced", async () => {
     const packages = (await offered()).filter((each) => each.code === "essential" || each.code === "natural");
     expect(packages).toEqual([
       expect.objectContaining({
         code: "essential",
         name: "Mane Man Essential",
-        first_fit: { amount_ex_gst: 3000000, amount: 3000000, gst_percent: 0 },
-        replacement: { amount_ex_gst: 1500000, amount: 1500000, gst_percent: 0 },
-        service_visit: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
+        first_fit: rupees(3000000),
+        service: rupees(200000),
+        replacement: rupees(1500000),
         service_every_days: 30,
         replace_after_months: 6,
       }),
       expect.objectContaining({
         code: "natural",
-        first_fit: { amount_ex_gst: 4000000, amount: 4000000, gst_percent: 0 },
-        replacement: { amount_ex_gst: 2500000, amount: 2500000, gst_percent: 0 },
+        first_fit: rupees(4000000),
+        replacement: rupees(2500000),
         service_every_days: 45,
         replace_after_months: 9,
       }),
     ]);
+  });
+
+  it("reads tomorrow's prices, the first day a visit or a price change can be on", async () => {
+    await env.DB.prepare(
+      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+       VALUES ('service', 'essential', 250000, 0, '2026-09-22')`,
+    ).run();
+    expect(await ofCode("essential")).toMatchObject({ service: rupees(250000), first_fit: rupees(3050000) });
+  });
+
+  it("reads the client's city's own price before the book's", async () => {
+    // Their newest address, in Mumbai, which sets its own service visit price.
+    await anAddress(ROHIT, {
+      created_at: new Date(NOW.getTime() + 60_000).toISOString(),
+      city: "Mumbai",
+      locality: "Bandra West",
+      pincode: "400050",
+    });
+    await env.DB.prepare(
+      `INSERT INTO city_prices (item, tier, city, amount_ex_gst, gst_percent, valid_from)
+       VALUES ('service', 'essential', 'Mumbai', 300000, 0, '2026-01-01')`,
+    ).run();
+    expect(await ofCode("essential")).toMatchObject({ service: rupees(300000) });
   });
 
   it("leaves out a package ops have retired", async () => {

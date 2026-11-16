@@ -5159,6 +5159,16 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "first_fit": {
             "allOf": [
               {
@@ -5169,6 +5179,21 @@
               }
             ]
           },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its service visit."
+          },
+          "service_every_days": {
+            "type": "integer",
+            "description": "Days from a visit to the service visit after it."
+          },
           "replacement": {
             "anyOf": [
               {
@@ -5178,21 +5203,7 @@
                 "type": "null"
               }
             ],
-            "description": "The replacement and its service visit."
-          },
-          "service_visit": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Price"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "service_every_days": {
-            "type": "integer",
-            "description": "Days from a visit to the service visit after it."
+            "description": "Its replacement as sold, the service visit with it."
           },
           "replace_after_months": {
             "type": "integer",
@@ -5202,10 +5213,11 @@
         "required": [
           "code",
           "name",
+          "description",
           "first_fit",
-          "replacement",
-          "service_visit",
+          "service",
           "service_every_days",
+          "replacement",
           "replace_after_months"
         ],
         "additionalProperties": false
@@ -11627,7 +11639,7 @@
     },
     "/api/packages": {
       "get": {
-        "summary": "The packages sold today, in ops' order, priced for the client in their city",
+        "summary": "The packages on sale from tomorrow, in ops' order, priced for the client in their city",
         "responses": {
           "200": {
             "description": "The packages",

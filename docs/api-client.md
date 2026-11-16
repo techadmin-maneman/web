@@ -4731,7 +4731,7 @@ A visit's invoice, as a PDF from Books
 
 ### GET /api/packages
 
-The packages sold today, in ops' order, priced for the client in their city
+The packages on sale from tomorrow, in ops' order, priced for the client in their city
 
 **200**: The packages
 
@@ -12791,6 +12791,16 @@ Request body:
     "name": {
       "type": "string"
     },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "first_fit": {
       "allOf": [
         {
@@ -12801,6 +12811,21 @@ Request body:
         }
       ]
     },
+    "service": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Its service visit."
+    },
+    "service_every_days": {
+      "type": "integer",
+      "description": "Days from a visit to the service visit after it."
+    },
     "replacement": {
       "anyOf": [
         {
@@ -12810,21 +12835,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The replacement and its service visit."
-    },
-    "service_visit": {
-      "anyOf": [
-        {
-          "$ref": "#/components/schemas/Price"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "service_every_days": {
-      "type": "integer",
-      "description": "Days from a visit to the service visit after it."
+      "description": "Its replacement as sold, the service visit with it."
     },
     "replace_after_months": {
       "type": "integer",
@@ -12834,10 +12845,11 @@ Request body:
   "required": [
     "code",
     "name",
+    "description",
     "first_fit",
-    "replacement",
-    "service_visit",
+    "service",
     "service_every_days",
+    "replacement",
     "replace_after_months"
   ],
   "additionalProperties": false

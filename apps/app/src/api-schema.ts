@@ -3624,7 +3624,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The packages sold today, in ops' order, priced for the client in their city */
+        /** The packages on sale from tomorrow, in ops' order, priced for the client in their city */
         get: {
             parameters: {
                 query?: never;
@@ -6753,12 +6753,14 @@ export interface components {
         ClientPackage: {
             code: string;
             name: string;
+            description: string | null;
             first_fit: components["schemas"]["Price"] & unknown;
-            /** @description The replacement and its service visit. */
-            replacement: components["schemas"]["Price"] | null;
-            service_visit: components["schemas"]["Price"] | null;
+            /** @description Its service visit. */
+            service: components["schemas"]["Price"] | null;
             /** @description Days from a visit to the service visit after it. */
             service_every_days: number;
+            /** @description Its replacement as sold, the service visit with it. */
+            replacement: components["schemas"]["Price"] | null;
             /** @description Months from a fit to its replacement. */
             replace_after_months: number;
         };
