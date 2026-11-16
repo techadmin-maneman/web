@@ -12434,11 +12434,6 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "minimum": 0,
       "description": "Of them, those whose free refit was booked within 30 days."
     },
-    "ratings": {
-      "type": "integer",
-      "minimum": 0,
-      "description": "Clients' ratings of their visits over the days ops set (ratings.average_days; ADR 0260)."
-    },
     "rating": {
       "anyOf": [
         {
@@ -12448,7 +12443,12 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "null"
         }
       ],
-      "description": "Those ratings' average, one to five stars to one place; null with fewer than ratings.shown_from."
+      "description": "The average of clients' ratings of their visits over rating_days, one to five stars to one place; null with fewer than ratings.shown_from. How many is never given (ADR 0260)."
+    },
+    "rating_days": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The days the rating covers (ratings.average_days)."
     }
   },
   "required": [
@@ -12456,8 +12456,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "on_time",
     "fits",
     "redone",
-    "ratings",
-    "rating"
+    "rating",
+    "rating_days"
   ],
   "additionalProperties": false
 }

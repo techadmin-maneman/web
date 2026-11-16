@@ -17,7 +17,7 @@ test("shows who they are, their quality and this month's incentives on Me", asyn
   await expect(quality.getByRole("definition")).toHaveText([
     me.quality.redone(1, 9),
     me.quality.onTimeShare(17, 18),
-    me.quality.rated(4.6, 23),
+    me.quality.rated(4.6),
   ]);
   const incentives = page.getByRole("region", { name: /^Incentives, / });
   await expect(incentives).toContainText("Rs. 5,400");
@@ -50,7 +50,7 @@ test("says Me's quality didn't load, with the reference, and loads it on Try aga
   await expect(quality.getByRole("definition")).toHaveText([
     techCopy.me.quality.redone(1, 9),
     techCopy.me.quality.onTimeShare(17, 18),
-    techCopy.me.quality.rated(4.6, 23),
+    techCopy.me.quality.rated(4.6),
   ]);
 });
 

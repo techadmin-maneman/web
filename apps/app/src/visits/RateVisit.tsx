@@ -28,8 +28,10 @@ export function RateVisit({ visit, onRefused }: { visit: VisitDetail; onRefused:
       if (answer.ok) {
         setGiven(answer.body);
         setFailed(false);
-      } else if (answer.code === "already_rated" || answer.code === "rating_closed") onRefused();
-      else setFailed(true);
+      } else if (answer.code === "already_rated" || answer.code === "rating_closed") {
+        setFailed(false);
+        onRefused();
+      } else setFailed(true);
     });
   return (
     <section aria-labelledby="rating">

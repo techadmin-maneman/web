@@ -194,7 +194,7 @@ describe("the technician's rating on Me", () => {
     return rohit;
   }
 
-  it("is the average of their ratings over ops' days, to one place, once there are five", async () => {
+  it("is the average of their ratings over ops' days, to one place, once there are five, and not the count", async () => {
     const rohit = await rated([
       [5, "2026-09-20T06:30:00.000Z"],
       [4, "2026-09-01T06:30:00.000Z"],
@@ -206,22 +206,19 @@ describe("the technician's rating on Me", () => {
     ]);
     const sana = await visit(rohit.id, "service", "completed", NOW.toISOString(), SANA);
     await add(sana, rohit.id, 1, NOW.toISOString(), SANA);
-    expect(await qualityOf(env.DB, IMRAN, NOW, RATINGS)).toMatchObject({ ratings: 5, rating: 4.4 });
+    expect(await qualityOf(env.DB, IMRAN, NOW, RATINGS)).toMatchObject({ rating: 4.4, rating_days: 90 });
   });
 
-  it("is none with fewer than ops' fewest, so one client's stars cannot be read off it", async () => {
+  it("is none with fewer than ops' fewest, and never says how many rated them", async () => {
     await rated([
       [5, "2026-09-20T06:30:00.000Z"],
       [2, "2026-09-01T06:30:00.000Z"],
     ]);
-    expect(await qualityOf(env.DB, IMRAN, NOW, RATINGS)).toMatchObject({ ratings: 2, rating: null });
-    expect(await qualityOf(env.DB, IMRAN, NOW, { ...RATINGS, shown_from: 2 })).toMatchObject({
-      ratings: 2,
-      rating: 3.5,
-    });
+    expect(await qualityOf(env.DB, IMRAN, NOW, RATINGS)).toMatchObject({ rating: null });
+    expect(await qualityOf(env.DB, IMRAN, NOW, { ...RATINGS, shown_from: 2 })).toMatchObject({ rating: 3.5 });
   });
 
   it("is none before any client rates them", async () => {
-    expect(await qualityOf(env.DB, IMRAN, NOW, RATINGS)).toMatchObject({ ratings: 0, rating: null });
+    expect(await qualityOf(env.DB, IMRAN, NOW, RATINGS)).toMatchObject({ rating: null });
   });
 });

@@ -6332,10 +6332,10 @@ export interface components {
             fits: number;
             /** @description Of them, those whose free refit was booked within 30 days. */
             redone: number;
-            /** @description Clients' ratings of their visits over the days ops set (ratings.average_days; ADR 0260). */
-            ratings: number;
-            /** @description Those ratings' average, one to five stars to one place; null with fewer than ratings.shown_from. */
+            /** @description The average of clients' ratings of their visits over rating_days, one to five stars to one place; null with fewer than ratings.shown_from. How many is never given (ADR 0260). */
             rating: number | null;
+            /** @description The days the rating covers (ratings.average_days). */
+            rating_days: number;
         };
         TechnicianRescheduleRequest: {
             /**

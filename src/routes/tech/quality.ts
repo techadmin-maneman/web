@@ -21,12 +21,12 @@ const QualitySchema = z
         'First fits done or left partly done in the last 30 days; a no-show or one closed "Can\'t fit today" is none.',
     }),
     redone: count.openapi({ description: "Of them, those whose free refit was booked within 30 days." }),
-    ratings: count.openapi({
-      description: "Clients' ratings of their visits over the days ops set (ratings.average_days; ADR 0260).",
-    }),
     rating: z.union([z.number(), z.null()]).openapi({
-      description: "Those ratings' average, one to five stars to one place; null with fewer than ratings.shown_from.",
+      description:
+        "The average of clients' ratings of their visits over rating_days, one to five stars to one place; null with " +
+        "fewer than ratings.shown_from. How many is never given (ADR 0260).",
     }),
+    rating_days: count.openapi({ description: "The days the rating covers (ratings.average_days)." }),
   })
   .strict()
   .openapi("TechnicianQuality");

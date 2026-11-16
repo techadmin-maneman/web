@@ -2,8 +2,9 @@
 // checked in by the booked start; and the hairline redo rate, their first fits done or left partly done, and of them
 // those whose free refit was booked within 30 days (docs/decisions/0192-free-remakes.md), the partly done visit's Tasks
 // row closed as it was. A no-show is no fit, nor is one closed "Can't fit today", which fitted no hairline; payroll
-// counts that one a consultation too. And the clients' ratings of their visits over the days ops set, averaged once
-// there are enough that one client's stars cannot be read off the figure (docs/decisions/0260-ratings.md).
+// counts that one a consultation too. And the average of the clients' ratings of their visits over the days ops set,
+// once enough have rated them, and never how many did: a count beside it would tell one new rating from the change
+// (docs/decisions/0260-ratings.md).
 
 import { statusIn, VISIT_ENDED } from "../../config/statuses.ts";
 import { DAY_MS } from "../../lib/durations.ts";
@@ -18,9 +19,10 @@ export interface Quality {
   /** First fits done or left partly done, and how many had their free refit booked within 30 days. */
   readonly fits: number;
   readonly redone: number;
-  /** Clients' ratings over the days ops set, and their average to one place; null with fewer than ops' fewest. */
-  readonly ratings: number;
+  /** The average of clients' ratings over the days ops set, to one place; null with fewer than ops' fewest. */
   readonly rating: number | null;
+  /** The days it covers. */
+  readonly rating_days: number;
 }
 
 /** The average of `count` ratings adding up to `stars`, to one place; null with none. */
@@ -72,7 +74,7 @@ export async function qualityOf(db: D1Database, technicianId: string, now: Date,
     on_time: visits?.counted ?? 0,
     fits: fitted?.total ?? 0,
     redone: fitted?.counted ?? 0,
-    ratings: count,
     rating: count < ratings.shown_from ? null : averageOf(given?.counted ?? 0, count),
+    rating_days: ratings.average_days,
   };
 }
