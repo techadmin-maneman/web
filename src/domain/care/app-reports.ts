@@ -139,6 +139,7 @@ export async function reportProblem(db: D1Database, report: ProblemReport): Prom
     text: `${reportReference(number)} · ${CATEGORY_WORDS[report.category]}:\n${report.text}`,
     providerMessageId: null,
     at: report.at,
+    fromApp: true,
   });
   const note = ["From the app.", ...(about === null ? [] : [about]), pieceLine(piece, indiaDate(report.at))].join(" ");
   // A moment after the client's words, so the thread reads it beneath them.
@@ -195,6 +196,7 @@ export async function addToReport(
     text: `${heading}:\n${added.text}`,
     providerMessageId: null,
     at: added.at,
+    fromApp: true,
   });
   await db
     .prepare("UPDATE client_reports SET reopened_at = ?2 WHERE id = ?1")

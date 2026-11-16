@@ -10228,7 +10228,7 @@ Request body:
 }
 ```
 
-**409**: window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours)
+**409**: window_closed: the client last wrote on WhatsApp longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count
 
 ```json
 {
@@ -33373,7 +33373,7 @@ The photographs of the reports a client's chat holds, oldest report first
 
 ### GET /api/conversations/{id}/report-photos/{report_id}/{n}
 
-One photograph of a report the chat holds, never cached
+One photograph of a report the chat holds, never cached, its viewing logged as a client photograph's is
 
 **200**: The image
 
@@ -33468,6 +33468,42 @@ One photograph of a report the chat holds, never cached
               "type": "string",
               "enum": [
                 "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: the view could not be audited, so no photograph is served
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
               ]
             }
           },

@@ -86,6 +86,40 @@
   width: 100%;
 }
 
+/* The photographs the client sent with their reports: the button across the column, then two to a row, each over
+   the report it came with. */
+.reportPhotos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.reportPhotos > button {
+  width: 100%;
+}
+
+.photoList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photoFigure {
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: var(--hairline) solid var(--ui-line);
+}
+
 /* One of Care's own actions in that stack, its button across the column as the links above it are. */
 .action {
   display: flex;

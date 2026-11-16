@@ -1,6 +1,6 @@
 // A task's drawer, opened from its row on Tasks (./TasksScreen.tsx): what it is, whom it is about and whose it is; all
-// else done on it here, the payment link, UPI, the call about a move and leave; and at its foot, taking it, giving it to
-// someone or closing it, beside the step that settles it.
+// else done on it here, the payment link, UPI, the call about a move, leave and a claim's photographs; and at its foot,
+// taking it, giving it to someone or closing it, beside the step that settles it.
 
 import { buttonLook } from "@maneman/ui/Button";
 import { DescriptionList } from "@maneman/ui/DescriptionList";
@@ -17,6 +17,7 @@ import { Left } from "../lib/Left.tsx";
 import { mayFollow } from "../route.ts";
 import { decidedAt, taskClientPath } from "../lib/task-links.ts";
 import { nameParts } from "../lib/who.ts";
+import { ReportPhotos } from "../care/index.ts";
 import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
 import { LeaveDecision } from "./LeaveDecision.tsx";
@@ -142,6 +143,9 @@ export function TaskDrawer({ group, task, subject, now, acting, onDismiss }: Pro
         )}
         <CallAboutMove group={group} task={task} subject={subject} onTold={done} />
         <LeaveDecision group={group} task={task} onDecided={done} />
+        {task.facts.group === "fit_guarantee_claim" && task.facts.conversation_id !== null && (
+          <ReportPhotos conversationId={task.facts.conversation_id} />
+        )}
       </div>
     </Drawer>,
     document.body,

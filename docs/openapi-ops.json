@@ -34749,7 +34749,7 @@
             }
           },
           "409": {
-            "description": "window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours)",
+            "description": "window_closed: the client last wrote on WhatsApp longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count",
             "content": {
               "application/json": {
                 "schema": {
@@ -62213,7 +62213,7 @@
     },
     "/api/conversations/{id}/report-photos/{report_id}/{n}": {
       "get": {
-        "summary": "One photograph of a report the chat holds, never cached",
+        "summary": "One photograph of a report the chat holds, never cached, its viewing logged as a client photograph's is",
         "parameters": [
           {
             "schema": {
@@ -62351,6 +62351,44 @@
                               "type": "string",
                               "enum": [
                                 "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable: the view could not be audited, so no photograph is served",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "unavailable"
                               ]
                             }
                           },

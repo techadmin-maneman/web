@@ -91,19 +91,18 @@ export async function photosOfChat(db: D1Database, conversationId: string): Prom
   }));
 }
 
-/** One photograph of a report of the client the chat is with; null for any other. */
-export async function reportPhotoFile(
+/** Where one photograph of a report of the client the chat is with is kept, and whose it is; null for any other. */
+export async function reportPhotoOf(
   db: D1Database,
-  bucket: R2Bucket,
   asked: { readonly conversationId: string; readonly reportId: string; readonly n: number },
-): Promise<R2ObjectBody | null> {
-  const key = await db
+): Promise<{ readonly key: string; readonly personId: string } | null> {
+  const row = await db
     .prepare(
-      `SELECT p.object_key FROM client_report_photos p JOIN client_reports r ON r.id = p.report_id
+      `SELECT p.object_key, r.person_id FROM client_report_photos p JOIN client_reports r ON r.id = p.report_id
         WHERE p.report_id = ?1 AND p.n = ?2 AND r.person_id IN (SELECT pe.id FROM people pe JOIN conversations c ON c.mobile_e164 = pe.mobile_e164
                                  WHERE c.id = ?3)`,
     )
     .bind(asked.reportId, asked.n, asked.conversationId)
-    .first<string>("object_key");
-  return key === null ? null : bucket.get(key);
+    .first<{ object_key: string; person_id: string }>();
+  return row === null ? null : { key: row.object_key, personId: row.person_id };
 }

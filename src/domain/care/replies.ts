@@ -8,6 +8,7 @@ import type { MessagingProvider, SendResult } from "../../providers/messaging/in
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { hasNumber } from "../../lib/mobile.ts";
 import type { ProblemCategory } from "../../policy/problems.ts";
+import { FROM_APP } from "./chat-opened.ts";
 import { openReportsOf } from "./issue-log.ts";
 
 /** What a chat was about, as Care close it. */
@@ -47,30 +48,33 @@ interface Change {
 interface Recipient {
   readonly to: string;
   readonly testRecord: boolean;
-  /** When the client last wrote; null where they never have. */
-  readonly lastInbound: string | null;
+  /** When the client last wrote on WhatsApp, which its window runs from; null where they never have. */
+  readonly lastOnWhatsApp: string | null;
 }
 
 /** The thread's number, whether its client is a test record and when they last wrote, or why nothing can be sent. */
 async function numberOf(db: D1Database, conversationId: string): Promise<Recipient | "not_found" | "erased"> {
   const row = await db
     .prepare(
-      `SELECT c.mobile_e164, COALESCE(p.test_record, 0) AS test_record, c.last_inbound_at
+      `SELECT c.mobile_e164, COALESCE(p.test_record, 0) AS test_record,
+         -- Their words from the app count for Care's reply clock, never for WhatsApp's window.
+         (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'in'
+            AND m.author <> ?2) AS last_on_whatsapp
        FROM conversations c LEFT JOIN people p ON p.id = c.person_id WHERE c.id = ?1`,
     )
-    .bind(conversationId)
-    .first<{ mobile_e164: string; test_record: number; last_inbound_at: string | null }>();
+    .bind(conversationId, FROM_APP)
+    .first<{ mobile_e164: string; test_record: number; last_on_whatsapp: string | null }>();
   if (row === null) return "not_found";
   if (!hasNumber(row.mobile_e164)) return "erased";
-  return { to: row.mobile_e164, testRecord: row.test_record === 1, lastInbound: row.last_inbound_at };
+  return { to: row.mobile_e164, testRecord: row.test_record === 1, lastOnWhatsApp: row.last_on_whatsapp };
 }
 
 /** Whether a reply may still go: inside the provider's window from the client's last message, where it has one. */
 function insideWindow(messaging: MessagingProvider, number: Recipient, now: Date): boolean {
   const hours = messaging.replyWindowHours;
   if (hours === undefined) return true;
-  if (number.lastInbound === null) return false;
-  return now.getTime() - Date.parse(number.lastInbound) <= hours * 60 * 60 * 1000;
+  if (number.lastOnWhatsApp === null) return false;
+  return now.getTime() - Date.parse(number.lastOnWhatsApp) <= hours * 60 * 60 * 1000;
 }
 
 /** Why a reply is kept unsent: messaging is off, or it is to a test record the allowlist holds back. */

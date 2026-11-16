@@ -154,7 +154,7 @@ const replyRoute = opsRoute({
     200: answered,
     404: errorResponse("not_found: no such thread, or its client's record is erased"),
     409: errorResponse(
-      "window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours)",
+      "window_closed: the client last wrote on WhatsApp longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count",
     ),
     503: errorResponse("unavailable: the WhatsApp provider sends no free text yet"),
   },

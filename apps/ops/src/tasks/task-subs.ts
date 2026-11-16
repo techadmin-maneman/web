@@ -88,8 +88,14 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   },
   // Anything the client flagged first, why they did not sign, and whose job.
   fit_unsigned: (facts) => copy.fit_unsigned(facts.reason, facts.technician, facts.flag),
-  // The report's reference, and when the fit was done.
-  fit_guarantee_claim: (facts) => copy.fit_guarantee_claim(facts.reference, shortDate(facts.fitted_on)),
+  // The report's reference, when the fit was done, where its sign-off stood, and the photographs sent.
+  fit_guarantee_claim: (facts) =>
+    copy.fit_guarantee_claim(
+      facts.reference,
+      shortDate(facts.fitted_on),
+      copy.signOffs[facts.sign_off ?? "none"],
+      facts.photos,
+    ),
   // Why, whose job, and each consumable short of what was expected.
   consumables_short: (facts) =>
     copy.consumables_short(

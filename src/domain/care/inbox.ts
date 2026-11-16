@@ -7,18 +7,20 @@ import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
 import { archivedMessages } from "./chat-archive.ts";
 import { giveCarePerson } from "./care-people.ts";
-import { chatOpened } from "./chat-opened.ts";
+import { chatOpened, FROM_APP } from "./chat-opened.ts";
 import { openReportsOf } from "./issue-log.ts";
 import { read, readAll } from "../../lib/read-all.ts";
 import { CLOSE_REASON_OF, type CloseReason } from "./replies.ts";
 
-/** A message a client wrote to our number, as the bridge or MSG91 reports it. */
+/** A message a client wrote to our number, as the bridge or MSG91 reports it, or their words from the app. */
 export interface Inbound {
   readonly mobileE164: string;
   readonly text: string;
   /** WhatsApp's ID for it: a message reported twice is filed once. */
   readonly providerMessageId: string | null;
   readonly at: Date;
+  /** Written in the app, not on WhatsApp: Care's reply clock runs from it, WhatsApp's reply window does not. */
+  readonly fromApp?: true;
 }
 
 /**
@@ -34,10 +36,17 @@ export async function fileInbound(db: D1Database, inbound: Inbound): Promise<boo
       .prepare(
         `INSERT INTO chat_messages (id, conversation_id, direction, author, text, provider_message_id, sent_at,
            created_at)
-         SELECT ?1, id, 'in', 'client', ?3, ?4, ?5, ?5 FROM conversations WHERE mobile_e164 = ?2
+         SELECT ?1, id, 'in', ?6, ?3, ?4, ?5, ?5 FROM conversations WHERE mobile_e164 = ?2
          ON CONFLICT DO NOTHING`,
       )
-      .bind(crypto.randomUUID(), inbound.mobileE164, inbound.text, inbound.providerMessageId, at),
+      .bind(
+        crypto.randomUUID(),
+        inbound.mobileE164,
+        inbound.text,
+        inbound.providerMessageId,
+        at,
+        inbound.fromApp === true ? FROM_APP : "client",
+      ),
   ]);
   const filed = await db
     .prepare("SELECT person_id FROM conversations WHERE mobile_e164 = ?1")

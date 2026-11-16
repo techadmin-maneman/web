@@ -54,6 +54,10 @@ const IMRAN: Conversation = {
 };
 const LEAVE = { id: "7b0c8e3a-4d59-4a6b-8c7d-2e3f4a5b6c7d", from: "2026-10-20", to: "2026-10-22" };
 
+/** Two photographs Arjun sent with a report (docs/decisions/0258-the-issue-log.md). */
+const REPORT = "c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f";
+const PHOTOS = [1, 2].map((n) => ({ report_id: REPORT, reference: "MM-ISS-0001", n, at: "2026-09-21T05:00:00.000Z" }));
+
 const LATE = {
   id: "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d",
   title: "See you soon",
@@ -185,6 +189,13 @@ beforeEach(() => {
             credits: { visits: 2, earliest_expiry: null },
           }),
         );
+      }
+      if (address.pathname === `/api/conversations/${ARJUN.id}/report-photos`) {
+        return Promise.resolve(Response.json({ photos: PHOTOS }));
+      }
+      if (address.pathname.startsWith(`/api/conversations/${ARJUN.id}/report-photos/`)) {
+        const jpeg = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: "image/jpeg" });
+        return Promise.resolve(new Response(jpeg, { headers: { "Content-Type": "image/jpeg" } }));
       }
       if (address.pathname === `/api/conversations/${IMRAN.id}`) {
         const said = { kind: "in", at: IMRAN.last_message_at, author: "client", text: IMRAN.last_line, delivery: null };
@@ -472,6 +483,38 @@ describe("the Messages page", () => {
     expect(panel?.textContent).toContain(copy.panel.visit("Thu 24 Sep, 12 pm", "Service visit"));
     expect(panel?.textContent).toContain("Gurgaon");
     expect(panel?.querySelector(`a[href$="/payments"]`)?.textContent).toBe(copy.panel.links.payments);
+  });
+
+  it("shows the photographs the client sent with their reports beside the chat, only once asked for", async () => {
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: () => "blob:photo", revokeObjectURL: () => undefined }));
+    await show();
+    await act(async () => {
+      chatButton("Arjun Mehta")?.click();
+      await answered();
+    });
+    const panel = document.body.querySelector(`[aria-label="${copy.panel.title}"]`);
+    // A viewing is logged, so nothing is fetched until Care ask.
+    expect(asked.filter((path) => path.includes("/report-photos/"))).toEqual([]);
+    const button = [...(panel?.querySelectorAll("button") ?? [])].find((each) =>
+      each.textContent.includes(copy.reportPhotos.show(2)),
+    );
+    await act(async () => {
+      button?.click();
+      await answered();
+    });
+    expect([...(panel?.querySelectorAll("img") ?? [])].map((image) => image.getAttribute("alt"))).toEqual([
+      copy.reportPhotos.alt("MM-ISS-0001", 1),
+      copy.reportPhotos.alt("MM-ISS-0001", 2),
+    ]);
+    expect(panel?.textContent).toContain(copy.reportPhotos.caption("MM-ISS-0001", 2));
+    expect(asked).toContain(`/api/conversations/${ARJUN.id}/report-photos/${REPORT}/1`);
+  });
+
+  it("opens the chat a task's link names, whichever view it is in", async () => {
+    window.history.replaceState(null, "", `/messages#chat-${IMRAN.id}`);
+    await show();
+    expect(document.body.querySelector(`[aria-label="${copy.thread.title("Imran Qureshi")}"]`)).not.toBeNull();
+    expect(window.location.hash).toBe("");
   });
 
   it("sends a matter from the chat to the client’s city", async () => {

@@ -1,9 +1,10 @@
 // The client's issue log (docs/decisions/0258-the-issue-log.md): each report with its state and its thread, read from
 // the rows that exist; and their grievances and missed-visit disputes beside them, each with its own state.
 //
-// A report's thread is its own words, then what its Care chat holds from it until the client's next report: Care's
+// A report's thread is its own words, then what the client's Care chats hold from it until their next report: Care's
 // replies, under the first name the client knows them by, the client's own later words, a City matter passed on, free
-// visits given, and Care closing the chat or the client marking it sorted.
+// visits given, and Care closing the chat or the client marking it sorted. A chat is read only while the client held
+// its number, so the thread follows them across a change of number and never shows another's words.
 
 import { reportNumberOf, reportReference, type ProblemCategory } from "../../policy/problems.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
@@ -63,7 +64,6 @@ interface ThreadRow {
 }
 
 interface Passed {
-  conversation_id: string | null;
   raised_at: string;
 }
 
@@ -72,11 +72,9 @@ interface Given {
   given_at: string;
 }
 
-/** The stretch of the chat a report holds: from it until the client's next report in the same chat, by number. */
+/** The stretch of the client's chats a report holds: from it until their next report, by number. */
 function spanOf(report: ReportRow, reports: readonly ReportRow[]): { from: string; to: string | null } {
-  const next = reports
-    .filter((other) => other.conversation_id === report.conversation_id && other.number > report.number)
-    .sort((a, b) => a.number - b.number)[0];
+  const next = reports.filter((other) => other.number > report.number).sort((a, b) => a.number - b.number)[0];
   return { from: report.created_at, to: next?.created_at ?? null };
 }
 
@@ -121,12 +119,11 @@ function reportIssue(
   rows: { thread: readonly ThreadRow[]; passed: readonly Passed[]; given: readonly Given[] },
 ): Issue {
   const span = spanOf(report, reports);
-  const ours = (conversation: string | null) => conversation === report.conversation_id;
   const words: IssueEvent = { at: report.created_at, kind: "you", name: null, text: report.text };
-  // The client's words go to the report they name, wherever they fall; the rest of the chat by its stretch.
+  // The client's words go to the report they name, wherever they fall; the rest of their chats by its stretch.
   const mine = (row: ThreadRow): boolean => {
     const named = row.direction === "in" ? namedIn(row.text) : null;
-    if (named === null) return ours(row.conversation_id) && within(row.sent_at, span);
+    if (named === null) return within(row.sent_at, span);
     return named.number === report.number && row.sent_at > report.created_at;
   };
   const events: IssueEvent[] = [
@@ -137,7 +134,7 @@ function reportIssue(
       return { at: row.sent_at, kind: fromCare ? "care" : "you", name: fromCare ? row.name : null, text };
     }),
     ...rows.passed
-      .filter((row) => ours(row.conversation_id) && within(row.raised_at, span))
+      .filter((row) => within(row.raised_at, span))
       .map((row): IssueEvent => ({ at: row.raised_at, kind: "city", name: null, text: null })),
     ...rows.given
       .filter((row) => within(row.given_at, span))
@@ -173,43 +170,36 @@ async function reportsOf(db: D1Database, personId: string): Promise<Issue[]> {
     .all<ReportRow>();
   const oldest = reports.at(-1)?.created_at;
   if (oldest === undefined) return [];
-  const chats = JSON.stringify([...new Set(reports.flatMap((report) => report.conversation_id ?? []))]);
   const [thread, passed, given] = await db.batch([
     db
       .prepare(
-        `WITH chats AS (
-           -- The chats the reports went into, and the one on the client's number now, where their updates go.
-           SELECT c.id,
-             -- When the client came to the chat: their first report in it, or the change that gave them its number,
-             -- whichever is earlier. Before that, the number was another's.
-             (SELECT MIN(f.created_at) FROM client_reports f WHERE f.conversation_id = c.id AND f.person_id = ?3)
-               AS first_report,
-             (SELECT MAX(n.decided_at) FROM number_change_requests n
-               WHERE n.person_id = ?3 AND n.state = 'confirmed' AND n.new_mobile_e164 = c.mobile_e164) AS came,
-             -- Only while the client held the chat's number: one they changed away from may be someone else's since.
-             (SELECT MIN(n.decided_at) FROM number_change_requests n
-               WHERE n.person_id = ?3 AND n.state = 'confirmed' AND n.replaced_mobile_e164 = c.mobile_e164
-                 AND n.decided_at > ?2) AS left_at
-             FROM conversations c
-            WHERE c.id IN (SELECT value FROM json_each(?1)
-                           UNION SELECT cur.id FROM conversations cur
-                            WHERE cur.mobile_e164 = (SELECT pe.mobile_e164 FROM people pe WHERE pe.id = ?3))
-         )
-         SELECT m.conversation_id, m.direction, m.text, m.sent_at, cn.name
-           FROM chats
-           JOIN chat_messages m ON m.conversation_id = chats.id
+        `SELECT m.conversation_id, m.direction, m.text, m.sent_at, cn.name
+           FROM conversations c
+           JOIN chat_messages m ON m.conversation_id = c.id
            LEFT JOIN care_names cn ON cn.email = m.author
-          WHERE m.direction IN ('in', 'out') AND m.sent_at > ?2
+          -- The chats on every number the client has held: the one they hold now, and each a change took them to or
+          -- from.
+          WHERE c.mobile_e164 IN (SELECT pe.mobile_e164 FROM people pe WHERE pe.id = ?1
+                                  UNION SELECT n.new_mobile_e164 FROM number_change_requests n
+                                         WHERE n.person_id = ?1 AND n.state = 'confirmed'
+                                  UNION SELECT n.replaced_mobile_e164 FROM number_change_requests n
+                                         WHERE n.person_id = ?1 AND n.state = 'confirmed')
+            AND m.direction IN ('in', 'out') AND m.sent_at > ?2
             -- The after-hours answer is no reply from Care (docs/decisions/0133-the-after-hours-reply.md).
-            AND m.author <> ?4
-            AND m.sent_at > COALESCE(MIN(chats.first_report, chats.came), chats.first_report, chats.came)
-            AND m.sent_at < COALESCE(chats.left_at, '9999')
+            AND m.author <> ?3
+            -- Only while the client held the chat's number: the one the last change before the message took them to, or
+            -- before any change, the one they started on. Before and after, the number was or may be another's.
+            AND c.mobile_e164 = COALESCE(
+                  (SELECT n.new_mobile_e164 FROM number_change_requests n
+                    WHERE n.person_id = ?1 AND n.state = 'confirmed' AND n.decided_at <= m.sent_at
+                    ORDER BY n.decided_at DESC LIMIT 1),
+                  (SELECT n.replaced_mobile_e164 FROM number_change_requests n
+                    WHERE n.person_id = ?1 AND n.state = 'confirmed' ORDER BY n.decided_at LIMIT 1),
+                  (SELECT pe.mobile_e164 FROM people pe WHERE pe.id = ?1))
           ORDER BY m.sent_at`,
       )
-      .bind(chats, oldest, personId, AUTO_REPLY),
-    db
-      .prepare("SELECT conversation_id, raised_at FROM city_matters WHERE person_id = ?1 AND raised_at > ?2")
-      .bind(personId, oldest),
+      .bind(personId, oldest, AUTO_REPLY),
+    db.prepare("SELECT raised_at FROM city_matters WHERE person_id = ?1 AND raised_at > ?2").bind(personId, oldest),
     db
       .prepare("SELECT visits, given_at FROM remedies WHERE person_id = ?1 AND state = 'given' AND given_at > ?2")
       .bind(personId, oldest),

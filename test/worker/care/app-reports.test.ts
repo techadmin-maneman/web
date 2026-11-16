@@ -43,7 +43,8 @@ describe("something wrong, told from the app", () => {
     expect(await sent.json()).toEqual({ state: "sent", reference: "MM-ISS-0001" });
     expect((await thread()).results).toEqual([
       // An older app's "hair system" reads as fit or comfort.
-      { direction: "in", author: "client", text: "MM-ISS-0001 · Fit or comfort:\nIt lifts at the front." },
+      // Theirs, written in the app: Care's reply clock counts it, WhatsApp's window does not.
+      { direction: "in", author: "app", text: "MM-ISS-0001 · Fit or comfort:\nIt lifts at the front." },
       {
         direction: "note",
         author: "system",

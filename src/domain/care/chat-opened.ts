@@ -2,8 +2,14 @@
 // report, an update or a photograph from the app.
 
 /**
- * The chat on a number opened by the client's words at `at`, or open again: Care's reply clock runs from them, as the
- * reply window does.
+ * The author of the client's words written in the app, a report, an update or a reopening, beside "client" for their
+ * WhatsApp messages: Care's reply clock counts both, WhatsApp's reply window only the latter.
+ */
+export const FROM_APP = "app";
+
+/**
+ * The chat on a number opened by the client's words at `at`, or open again: Care's reply clock runs from them.
+ * WhatsApp's reply window is read from their WhatsApp messages alone (./replies.ts).
  */
 export const chatOpened = (db: D1Database, mobileE164: string, at: string): D1PreparedStatement =>
   db

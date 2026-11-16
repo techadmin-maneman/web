@@ -54,13 +54,13 @@ const chat = async () =>
   (await env.DB.prepare("SELECT id FROM conversations WHERE person_id = ?1").bind(ROHIT).first<string>("id")) ?? "";
 
 /** Care's reply, `minutes` after NOW. */
-async function careReplies(text: string, minutes: number) {
+async function careReplies(text: string, minutes: number, conversationId?: string) {
   const at = new Date(NOW.getTime() + minutes * 60_000).toISOString();
   await env.DB.prepare(
     `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at, delivery)
      VALUES (?1, ?2, 'out', ?3, ?4, ?5, ?5, 'sent')`,
   )
-    .bind(crypto.randomUUID(), await chat(), NEHA, text, at)
+    .bind(crypto.randomUUID(), conversationId ?? (await chat()), NEHA, text, at)
     .run();
 }
 
@@ -86,16 +86,19 @@ const closeReason = async (conversationId?: string) =>
 
 const NEW_NUMBER = "+919810000099";
 
-/** The client's number changed to NEW_NUMBER, `minutes` after NOW. */
-const changesNumber = (minutes: number) =>
+/** The client's number changed from one to another, `minutes` after NOW. */
+const changeNumber = (id: string, from: string, to: string, minutes: number) =>
   env.DB.batch([
     env.DB.prepare(
       `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state, decided_at, decided_by,
          replaced_mobile_e164)
-       VALUES ('nc-1', ?1, ?2, ?3, 'confirmed', ?4, 'ops@localhost', '+919810000001')`,
-    ).bind(ROHIT, NOW.toISOString(), NEW_NUMBER, after(minutes).toISOString()),
-    env.DB.prepare("UPDATE people SET mobile_e164 = ?2 WHERE id = ?1").bind(ROHIT, NEW_NUMBER),
+       VALUES (?1, ?2, ?3, ?4, 'confirmed', ?5, 'ops@localhost', ?6)`,
+    ).bind(id, ROHIT, after(minutes).toISOString(), to, after(minutes).toISOString(), from),
+    env.DB.prepare("UPDATE people SET mobile_e164 = ?2 WHERE id = ?1").bind(ROHIT, to),
   ]);
+
+/** The client's number changed to NEW_NUMBER, `minutes` after NOW. */
+const changesNumber = (minutes: number) => changeNumber("nc-1", "+919810000001", NEW_NUMBER, minutes);
 
 const chatOn = async (mobile: string) =>
   (await env.DB.prepare("SELECT id FROM conversations WHERE mobile_e164 = ?1").bind(mobile).first<string>("id")) ?? "";
@@ -256,6 +259,58 @@ describe("the issue log", () => {
       "And now at the back.",
     ]);
     expect(itching?.events.map((event) => event.text)).toEqual(["It itches."]);
+  });
+
+  it("files Care's answer in the chat on the new number under the report it follows", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await changesNumber(10);
+    expect((await add("MM-ISS-0001", "updates", 20, "Still lifting at the front.")).status).toBe(204);
+    await careReplies("We will re-bond it on Thursday.", 25, await chatOn(NEW_NUMBER));
+    const [lifting] = await log();
+    expect(lifting).toMatchObject({ state: "in_progress" });
+    expect(lifting?.events.map((event) => event.text)).toEqual([
+      "The front lifts.",
+      "Still lifting at the front.",
+      "We will re-bond it on Thursday.",
+    ]);
+  });
+
+  it("gives free visits to the one report they follow, across a change of number", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await changesNumber(10);
+    await report({ about: "itching", text: "It itches." }, cookie, 30);
+    await env.DB.prepare(
+      `INSERT INTO remedies (id, person_id, visits, reason, note, given_by, given_at, state)
+       VALUES ('rm-1', ?1, 2, 'fit_problem', 'Edge lifting.', ?2, ?3, 'given')`,
+    )
+      .bind(ROHIT, NEHA, after(50).toISOString())
+      .run();
+    const [itching, lifting] = await log();
+    expect(itching?.events.filter((event) => event.kind === "visits")).toHaveLength(1);
+    expect(lifting?.events.filter((event) => event.kind === "visits")).toEqual([]);
+  });
+
+  it("reads the client's words on every number they held, a return to one too, and none of another holder's", async () => {
+    const first = "+919810000001";
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await changeNumber("nc-1", first, NEW_NUMBER, 10);
+    expect((await add("MM-ISS-0001", "updates", 20, "From my second number.")).status).toBe(204);
+    // While the client is away, someone else holds the first number and writes in its chat as if to the report.
+    await fileInbound(env.DB, {
+      mobileE164: first,
+      text: "MM-ISS-0001 · Update:\nNot mine at all.",
+      providerMessageId: null,
+      at: after(25),
+    });
+    await changeNumber("nc-2", NEW_NUMBER, first, 30);
+    expect((await add("MM-ISS-0001", "updates", 40, "Back on my first number.")).status).toBe(204);
+    await changeNumber("nc-3", first, "+919810000077", 50);
+    const [lifting] = await log();
+    expect(lifting?.events.filter((event) => event.kind === "you").map((event) => event.text)).toEqual([
+      "The front lifts.",
+      "From my second number.",
+      "Back on my first number.",
+    ]);
   });
 
   it("counts the after-hours answer as no reply from Care", async () => {
@@ -461,6 +516,23 @@ describe("a report's photographs", () => {
     expect(
       (await opened.json<{ conversation: { state: string; waiting_since: string | null } }>()).conversation,
     ).toMatchObject({ state: "open", waiting_since: after(twoDays).toISOString() });
+  });
+
+  it("logs Care's viewing of the photographs once, as a client photograph's is", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await send(syntheticJpeg(640, 480));
+    const listed = await request(ops(), `/api/conversations/${await chat()}/report-photos`);
+    const [photo] = (await listed.json<{ photos: { report_id: string }[] }>()).photos;
+    const file = `/api/conversations/${await chat()}/report-photos/${photo?.report_id ?? ""}/1`;
+    expect((await request(ops(), file)).status).toBe(200);
+    expect((await request(ops(), file)).status).toBe(200);
+    expect(
+      await env.DB.prepare(
+        "SELECT COUNT(*) AS n FROM audit_log WHERE action = 'photo.view' AND subject_kind = 'person' AND subject_id = ?1",
+      )
+        .bind(ROHIT)
+        .first("n"),
+    ).toBe(1);
   });
 
   it("reopens a closed chat with a photograph's note", async () => {

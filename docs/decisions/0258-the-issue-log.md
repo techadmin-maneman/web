@@ -22,12 +22,12 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
 2. **Categories.** The fit (guarantee), edges lifting, itching or irritation, colour or shine, shedding, fit or comfort,
    a visit or technician, payment or refund, something else. Each maps to one of Care's closure reasons, which the
    console's close opens on.
-3. **A report's thread** is its own words, then what its Care chat holds from it until the client's next report: Care's
-   replies, under the first name the client knows them by, never the after-hours answer; the client's own later words,
-   and every update or reopening sent to it from the app, wherever it falls; a City matter passed on; free visits given;
-   and Care closing the chat. Each chat is read from when the client came to it, their first report in it or the
-   change that gave them its number, and one on a number they have since changed away from only up to the change.
-   An update or reopening sent after a change of number goes to the chat on the new one, and is read there.
+3. **A report's thread** is its own words, then what the client's Care chats hold from it until their next report:
+   Care's replies, under the first name the client knows them by, never the after-hours answer; the client's own later
+   words, and every update or reopening sent to it from the app, wherever it falls; a City matter passed on; free visits
+   given; and Care closing the chat. The chats are those on every number the client has held, each read only while they
+   held it, so the thread follows them across a change of number, back to an earlier one too, and never shows the words
+   of whoever held a number before or after them.
 4. **Its state**, read from those rows: `resolved` once Care closed the chat after it, or the client marked it sorted,
    with nothing from the client since, in the app or the chat; `in_progress` once Care replied, passed it to the city
    or gave visits; `open` until then. Care read a client in the chat on the number they hold now: its close settles
@@ -38,24 +38,23 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
    and opens it again. New reports keep five a day; updates and reopenings have a daily limit of their own.
 6. **Photos.** Up to three a report, sent after it with `POST /api/me/problems/{reference}/photos`, a JPEG of at most
    the size a visit photograph is kept at. A note in the chat on the client's number says each came; it counts as the
-   client writing from the app, as an update does, so it opens the chat (or makes one) and Care's reply clock runs
-   from it. The console's
-   routes list and open them (`GET /api/conversations/{id}/report-photos`), for the chat of whoever made them, on the
-   number they hold now. The console draws them beside the chat with its screens, in this same change.
+   client writing from the app, as an update does, so it opens the chat (or makes one) and Care's reply clock runs from
+   it. The console's routes list and open them (`GET /api/conversations/{id}/report-photos`), for the chat of whoever
+   made them, on the number they hold now, each viewing logged as a client photograph's is. The console shows them
+   beside the chat, and in a claim's drawer, once Care ask for them.
 7. **The same log** lists the client's grievances (answered or not) and missed-visit disputes (open, refunded or upheld),
    each with its own state, beside the reports.
 8. **The fit guarantee claim** (ADR 0256): a report on the fit (guarantee) about a first fit inside its guarantee opens
    the Tasks row "Fit guarantee claim", due by `task_sla_hours` from its first report, its facts carrying the fit's
-   sign-off, how many photographs were sent and the chat on the client's number now, where they are read, which the
-   console's Tasks row draws with its
-   screens, until Care close it with what was done. Reports on the fit meanwhile are the same claim; one after
-   the close opens another.
+   sign-off, how many photographs were sent and the chat on the client's number now, which its row names and links to,
+   until Care close it with what was done. Reports on the fit meanwhile are the same claim; one after the close opens
+   another.
 
 ## Consequences
 
-- The Care chat stays one thread a client. A report's part of it is the stretch up to the next report, so a reply Care
-  meant for an earlier report that comes after a later one reads under the later one.
+- The Care chat stays one thread a client, across their numbers. A report's part of it is the stretch up to the next
+  report, so a reply Care meant for an earlier report that comes after a later one reads under the later one.
 - The log, and so Care's close, read a client's newest fifty reports; an older one is left as it stood.
-- A report, an update or a photograph from the app counts as the client's last words in the chat, as a report from
-  the app did before: Care's reply clock runs from it, and so does the reply window the console reads, though only the
-  client's own WhatsApp message opens WhatsApp's.
+- A report, an update or a photograph from the app counts as the client's words for Care's reply clock, but never for
+  WhatsApp's reply window, which runs from their last WhatsApp message alone: their words from the app are filed under
+  the author "app". Past the window, Care call them, as ADR 0130 has it.

@@ -7540,7 +7540,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours) */
+                /** @description window_closed: the client last wrote on WhatsApp longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -24566,7 +24566,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One photograph of a report the chat holds, never cached */
+        /** One photograph of a report the chat holds, never cached, its viewing logged as a client photograph's is */
         get: {
             parameters: {
                 query?: never;
@@ -24635,6 +24635,24 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description unavailable: the view could not be audited, so no photograph is served */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "unavailable";
                             } & {
                                 [key: string]: unknown;
                             };

@@ -37,6 +37,7 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   number_change: "Decide in Number changes",
   erasure_request: "Decide in Deletion requests",
   grievance: "Answer in Concerns",
+  fit_guarantee_claim: "Open the chat",
 };
 
 /**
@@ -259,8 +260,22 @@ export const tasks = {
     /** "Client in a hurry · Imran", after "Flagged first: “The left edge lifts”" where the client flagged before. */
     fit_unsigned: (reason: string, technician: string, flag: string | null) =>
       [...(flag === null ? [] : [`Flagged first: “${flag}”`]), reason, technician].join(" · "),
-    /** "MM-ISS-0032 · fitted Mon 14 Sep". */
-    fit_guarantee_claim: (reference: string, fittedOn: string) => `${reference} · fitted ${fittedOn}`,
+    /** "MM-ISS-0032 · fitted Mon 14 Sep · signed off · 2 photos". */
+    fit_guarantee_claim: (reference: string, fittedOn: string, signOff: string, photos: number) =>
+      [
+        reference,
+        `fitted ${fittedOn}`,
+        signOff,
+        ...(photos === 0 ? [] : [photos === 1 ? "1 photo" : `${String(photos)} photos`]),
+      ].join(" · "),
+    /** Where the fit's sign-off stood when the claim came. */
+    signOffs: {
+      asked: "sign-off asked",
+      signed: "signed off",
+      flagged: "flagged at sign-off",
+      declined: "sign-off declined",
+      none: "no sign-off",
+    },
     shortLine: (name: string, used: number, expected: number) => `${name} ${String(used)} of ${String(expected)}`,
     nothingUsed: "Nothing used",
     shortReasons: {
