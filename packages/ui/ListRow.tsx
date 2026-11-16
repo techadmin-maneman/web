@@ -65,6 +65,7 @@ export function ListRow({
   action,
   current = false,
   chevron = false,
+  download = false,
 }: {
   /** Before the words, in a column of its own down the list: a time, or what the row is. */
   readonly lead?: ReactNode;
@@ -83,6 +84,8 @@ export function ListRow({
   readonly to?: string | undefined;
   /** A page elsewhere the row opens, as WhatsApp, in a new tab. */
   readonly href?: string | undefined;
+  /** With `href`: a file the row downloads in place, as a data export, rather than a page in a new tab. */
+  readonly download?: boolean;
   /** What the row opens in place, as a drawer. */
   readonly onClick?: (() => void) | undefined;
   /** Read out in place of its words, where a figure alone would not say what it counts; holds the title. */
@@ -110,7 +113,7 @@ export function ListRow({
   const row = classes(styles.row, current && styles.current, rule !== undefined && styles[rule]);
   return (
     <li className={action === undefined ? undefined : styles.acting}>
-      <RowBody row={row} to={to} href={href} onClick={onClick} label={label} current={current}>
+      <RowBody row={row} to={to} href={href} download={download} onClick={onClick} label={label} current={current}>
         {inside}
       </RowBody>
       {action !== undefined && <span className={styles.action}>{action}</span>}
@@ -123,6 +126,7 @@ function RowBody({
   row,
   to,
   href,
+  download,
   onClick,
   label,
   current,
@@ -131,6 +135,7 @@ function RowBody({
   readonly row: string;
   readonly to: string | undefined;
   readonly href: string | undefined;
+  readonly download: boolean;
   readonly onClick: (() => void) | undefined;
   readonly label: string | undefined;
   readonly current: boolean;
@@ -142,6 +147,12 @@ function RowBody({
       <Link className={classes(row, styles.opens)} to={to} label={label}>
         {children}
       </Link>
+    );
+  if (href !== undefined && download)
+    return (
+      <a className={classes(row, styles.opens)} href={href} download aria-label={label}>
+        {children}
+      </a>
     );
   if (href !== undefined)
     return (

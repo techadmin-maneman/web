@@ -18,10 +18,11 @@ test("offers support on WhatsApp, with the design’s line", async ({ page }) =>
 
 test("Your data: a download of everything held, and a concern sent to ops", async ({ page }) => {
   await loggedIn(page, "account");
-  await expect(page.getByRole("link", { name: appCopy.profile.data.download })).toHaveAttribute(
-    "href",
-    "/api/me/export.html",
-  );
+  const download = page.getByRole("link", { name: appCopy.profile.data.download });
+  await expect(download).toHaveAttribute("href", "/api/me/export.html");
+  // Downloaded in place, never a new tab, where the app's session may not reach.
+  await expect(download).toHaveAttribute("download", "");
+  await expect(download).not.toHaveAttribute("target");
   await page.getByRole("button", { name: appCopy.profile.data.raise }).click();
   await page.getByRole("textbox", { name: appCopy.profile.data.field }).fill("Please explain who sees my photographs.");
   await page.getByRole("button", { name: appCopy.profile.data.send }).click();

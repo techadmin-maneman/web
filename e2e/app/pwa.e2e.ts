@@ -121,7 +121,7 @@ test("offline on Visits, which the phone does not keep, says the visits load onc
   await expect(page.getByText(appCopy.errors.load)).toHaveCount(0);
 
   await page.context().setOffline(false);
-  await expect(page.getByText("Consultation · 9 am–12 noon")).toBeVisible();
+  await expect(page.getByText(/day · 9\sam–12\snoon$/)).toBeVisible();
   await expect(waiting).toBeHidden();
   await expect(page.getByText(appCopy.states.offlineOnly)).toBeHidden();
 });
@@ -158,8 +158,8 @@ test("offers a new build’s worker on Home, and loads the page on it at the tap
   await expect(update).toBeVisible({ timeout: 15_000 });
   await update.click();
   await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
-  // The page loaded again under the new build's worker.
+  // The page loaded again under the new build's worker; asked while it reloads, it has no answer yet.
   await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL ?? ""))
+    .poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL ?? "").catch(() => ""))
     .toContain("next-build");
 });

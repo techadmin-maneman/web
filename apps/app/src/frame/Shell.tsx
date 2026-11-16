@@ -143,7 +143,7 @@ export function Shell({ header, tab, footer, kept = false, children }: Props) {
         )}
       </div>
       <main className={classes(styles.page, ARRIVE)}>{children}</main>
-      {footer}
+      {footer !== undefined && <div className={styles.footer}>{footer}</div>}
       {tab !== null && <Tabs tab={tab} />}
     </div>
   );

@@ -82,6 +82,23 @@
   --nav-text-current: var(--navy-900);
   --nav-label: var(--ink-500);
   --tab-mark: var(--navy-900);
+  /* A tab's count boxed in navy, as the bell's is. */
+  --nav-count-ground: var(--navy-900);
+  --nav-count-text: var(--white-000);
+  --nav-count-weight: var(--weight-semibold);
+  /* A choice of views, as Visits' Upcoming, Past and Issues: an edged track as wide as the page, the chosen one filled
+     in navy, a count boxed in brass. */
+  --segmented-display: flex;
+  --segmented-grow: 1 1 0;
+  --segmented-edge: var(--line-200);
+  --segmented-track: var(--white-000);
+  --segmented-weight: var(--weight-medium);
+  --segmented-on: var(--navy-900);
+  --segmented-on-edge: var(--navy-900);
+  --segmented-on-text: var(--white-000);
+  --segmented-count: var(--brass-500);
+  --segmented-count-text: var(--navy-900);
+  --segmented-on-count: var(--gilt);
   --sheet-ground: var(--white-000);
   --sheet-text: var(--ink-900);
   /* Rows run the column's width under hairlines, with no box: a row's title 16/500, its meta 14. */
@@ -95,12 +112,21 @@
   --row-title-weight: var(--weight-medium);
   --row-meta-text: var(--fs-14);
 
+  /* A document, as a receipt, is a row between hairlines, as the design's lists are. */
+  --document-pad: 0;
+  --document-edge: 0;
+  --document-rule: var(--line-200);
+  --document-ground: transparent;
+  --document-hover: var(--wash-100);
+
   /* The before and after slider on white: a white line, and its handle white with navy arrows. */
   --compare-ground: var(--grid-100);
   --compare-line: var(--white-000);
   --compare-knob: var(--white-000);
   --compare-knob-edge: var(--line-200);
   --compare-knob-text: var(--navy-900);
+  /* The one circle the client app draws besides its radios and spinners (owner, ruling 10). */
+  --compare-knob-radius: 50%;
 }
 
 body {

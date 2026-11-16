@@ -46,6 +46,7 @@
     width: var(--compare-handle);
     height: var(--compare-handle);
     border: var(--hairline) solid var(--compare-knob-edge);
+    border-radius: var(--compare-knob-radius);
     background: var(--compare-knob);
     color: var(--compare-knob-text);
     transform: translate(-50%, -50%);

@@ -12,7 +12,6 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/app/src/login/Login.tsx": { fn: 113 },
   "apps/app/src/profile/AddressForm.tsx": { fn: 118 },
   "apps/app/src/profile/ConsentList.tsx": { fn: 99 },
-  "apps/app/src/profile/DataCard.tsx": { fn: 84 },
   "apps/app/src/profile/NumberChangeCard.tsx": { fn: 86 },
   "apps/app/src/refer/share-flow.ts": { fn: 98 },
   "apps/ops/src/areas/AddPincode.tsx": { fn: 92 },

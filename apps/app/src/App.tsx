@@ -25,6 +25,7 @@ import { SessionContext } from "./session.ts";
 import { useKeptPush } from "./alerts/kept-push.ts";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
 import { LoadFailed } from "./frame/LoadFailed.tsx";
+import { PageLoading } from "./frame/PageLoading.tsx";
 import { Loading } from "@maneman/ui/States";
 import styles from "./app.module.css";
 
@@ -238,7 +239,7 @@ export function App({ linked }: { linked: LinkedLogin }) {
           <UpdateReady copy={update} resting={routeOf(path).page === "home"} />
           {/* Keyed by the path, so each page opens at its top with its own data, and one that failed stays behind. */}
           <ErrorBoundary key={path}>
-            <Suspense fallback={<Loading />}>{pageFor(routeOf(path))}</Suspense>
+            <Suspense fallback={<PageLoading route={routeOf(path)} />}>{pageFor(routeOf(path))}</Suspense>
           </ErrorBoundary>
         </SessionContext>
       );

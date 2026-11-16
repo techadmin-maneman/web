@@ -1,26 +1,27 @@
-// Visits (design/client-redesign, Visits): Upcoming, Past and Issues, side by side, each opening its own page. A booking's
-// consultation, not yet a visit, shows as the one upcoming, and a visit being
-// booked shows in its day's place, in Home's words. A visit not yet closed
-// stays under upcoming, saying where it stands, and "Book your next
-// visit" waits while it is. That opens WhatsApp to ops while self-serve
-// booking is off, and waits for the connection offline. "Prepaid" marks a
-// visit paid for ahead, or covered by a credit.
+// Visits (design/client-redesign, Visits): Upcoming, Past and Issues, side by side, each a list of rows opening its own
+// page. An upcoming visit is its date in a navy square, what it is, and its day, time and technician, marked paid or free.
+// A booking's consultation, not yet a visit, shows as the one upcoming, and a visit being booked shows in its day's place,
+// in Home's words. A visit not yet closed stays under upcoming, saying where it stands. With nothing upcoming, the visit
+// the app offers is booked from the foot; that opens WhatsApp to ops while self-serve booking is off, and waits for the
+// connection offline.
 //
 // Beneath them, the client's own record, which the board draws nowhere: how
 // often they have been served, what they have bought, what they have paid, and
 // the month their piece falls due (docs/fidelity-method.md).
 
-import { GLYPHS } from "@maneman/brand/icons";
+import { ICONS } from "@maneman/brand/icons";
 import { buttonLook } from "@maneman/ui/Button";
+import { Badge } from "@maneman/ui/Badge";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Segmented } from "@maneman/ui/Segmented";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { BookNext } from "../booking/index.ts";
-import { hasBegun, stageText } from "../home/index.ts";
+import { stageText } from "../home/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { fullDate, listDate, listMonth, monthInIndia, shortDate, yearInIndia } from "@maneman/web-kit/dates";
+import { dayMonth, fullDate, listMonth, monthInIndia, weekdayName, yearInIndia } from "@maneman/web-kit/dates";
 import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
@@ -37,28 +38,41 @@ import styles from "./visits.module.css";
 
 const copy = visits.record;
 
-/** An upcoming visit's card, as C1 draws it: the date and whether it is paid, then what, when and who. */
-function UpcomingCard({
+/** A visit's date in a navy square: its month over its day. */
+function DateSquare({ date }: { date: string }) {
+  const [day, month] = dayMonth(date).split(" ");
+  return (
+    <span className={styles.square}>
+      <span className={styles.squareMonth}>{month}</span>
+      <span className={styles.squareDay}>{day}</span>
+    </span>
+  );
+}
+
+/** An upcoming row: its date, what it is, then its day, time and who; marked paid, free or asked for. */
+function UpcomingRow({
   date,
+  what,
   parts,
-  prepaid,
-  due = null,
+  tag,
+  to,
 }: {
   date: string;
+  what: string;
   parts: readonly string[];
-  prepaid: boolean;
-  /** What is still to pay by UPI at the visit, in paise. */
-  due?: number | null;
+  tag: ReactNode;
+  to?: string | undefined;
 }) {
   return (
-    <>
-      <span className={styles.cardHead}>
-        <span className={styles.cardDate}>{shortDate(date)}</span>
-        {prepaid && <span className={capsLook(styles.prepaid)}>{visits.prepaid}</span>}
-      </span>
-      <span className={styles.cardWhat}>{parts.join(" · ")}</span>
-      {due !== null && <span className={styles.cardWhat}>{visits.payAtVisit(rupees(due))}</span>}
-    </>
+    <ListRow
+      mark={<DateSquare date={date} />}
+      title={what}
+      meta={[weekdayName(date), ...parts].join(" · ")}
+      end={tag}
+      endTone="plain"
+      to={to}
+      chevron={to !== undefined}
+    />
   );
 }
 
@@ -67,14 +81,12 @@ function Upcoming({ visit }: { visit: VisitSummary }) {
   const when = stageText(visit) ?? arrivalHours(visit);
   // A one visit still to happen goes by that name; any other by its kind, and its service where that says more.
   const what = oneVisitOf(visit) === null ? visitTitle(visit) : ONE_VISIT;
-  const parts = [what, when, ...technicianOf(visit)];
-  return (
-    <li>
-      <AppLink className={styles.card} to={`/visits/${visit.id}`}>
-        <UpcomingCard date={visit.date} parts={parts} prepaid={visit.prepaid} due={visit.pay_at_visit} />
-      </AppLink>
-    </li>
-  );
+  const due = visit.pay_at_visit;
+  let tag: ReactNode;
+  if (visit.prepaid) tag = <Badge tone="done">{visits.paid}</Badge>;
+  else if (visit.type === "consultation") tag = <Badge>{visits.free}</Badge>;
+  const parts = [when, ...technicianOf(visit), ...(due === null ? [] : [visits.payAtVisit(rupees(due))])];
+  return <UpcomingRow date={visit.date} what={what} parts={parts} tag={tag} to={`/visits/${visit.id}`} />;
 }
 
 /**
@@ -83,22 +95,28 @@ function Upcoming({ visit }: { visit: VisitSummary }) {
  */
 function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) {
   const words = home.beingBooked;
+  const note = oneVisitOf(booking) === null ? [booking.paid ? words.paid : words.free] : [];
   return (
-    <li className={styles.card}>
-      <UpcomingCard date={booking.date} parts={[bookingName(booking), windowHours(booking.hours)]} prepaid={false} />
-      {oneVisitOf(booking) === null && (
-        <span className={styles.cardNote}>{booking.paid ? words.paid : words.free}</span>
-      )}
-    </li>
+    <UpcomingRow
+      date={booking.date}
+      what={bookingName(booking)}
+      parts={[windowHours(booking.hours), ...note]}
+      tag={booking.paid ? <Badge tone="done">{visits.paid}</Badge> : undefined}
+    />
   );
 }
 
-/** A consultation from the site: what it is, its window, and whether it is only asked for. */
-function proposedParts(consultation: NonNullable<Me["consultation"]>): string[] {
-  const what = oneVisitOf(consultation) === null ? VISIT_TYPES.consultation : ONE_VISIT;
-  const parts = [what, windowHours(consultation.hours)];
-  if (consultation.requested) parts.push(visits.requested);
-  return parts;
+/**
+ * A consultation from the site: what it is, its window, and whether it is only asked for. A consultation alone is free;
+ * one with the first fit is paid for once fitted, so is not called free.
+ */
+function Consultation({ consultation }: { consultation: NonNullable<Me["consultation"]> }) {
+  const oneVisit = oneVisitOf(consultation) !== null;
+  const what = oneVisit ? ONE_VISIT : VISIT_TYPES.consultation;
+  let tag: ReactNode;
+  if (consultation.requested) tag = <Badge tone="attention">{visits.requested}</Badge>;
+  else if (!oneVisit) tag = <Badge>{visits.free}</Badge>;
+  return <UpcomingRow date={consultation.date} what={what} parts={[windowHours(consultation.hours)]} tag={tag} />;
 }
 
 function UpcomingItem({ entry }: { entry: UpcomingEntry }) {
@@ -107,15 +125,9 @@ function UpcomingItem({ entry }: { entry: UpcomingEntry }) {
       return <Upcoming visit={entry.visit} />;
     case "being_booked":
       return <BeingBooked booking={entry.booking} />;
-    case "consultation": {
+    case "consultation":
       // A consultation from the site has no page of its own to open.
-      const { consultation } = entry;
-      return (
-        <li className={styles.card}>
-          <UpcomingCard date={consultation.date} parts={proposedParts(consultation)} prepaid={false} />
-        </li>
-      );
-    }
+      return <Consultation consultation={entry.consultation} />;
   }
 }
 
@@ -190,13 +202,16 @@ function UpcomingList({ list, me }: { list: Visits; me: Me }) {
   const upcoming = upcomingEntries(list.upcoming, me.consultation, me.being_booked);
   if (upcoming.length === 0) return <p className={styles.none}>{visits.none}</p>;
   return (
-    <ul className={styles.upcoming}>
+    <ListRows className={styles.upcoming}>
       {upcoming.map((entry) => (
         <UpcomingItem key={keyOf(entry)} entry={entry} />
       ))}
-    </ul>
+    </ListRows>
   );
 }
+
+/** A visit the client was not home for, which the history says in red. */
+const missed = (visit: VisitSummary) => visit.status === "terminated" && visit.not_home;
 
 function PastList({ list }: { list: Visits }) {
   return (
@@ -204,20 +219,17 @@ function PastList({ list }: { list: Visits }) {
       {list.past.length === 0 ? (
         <p className={styles.none}>{visits.noneYet}</p>
       ) : (
-        <ul className={styles.past}>
+        <ListRows className={styles.past}>
           {list.past.map((visit) => (
-            <li key={visit.id}>
-              <AppLink className={styles.row} to={`/visits/${visit.id}`}>
-                <span>
-                  {/* As the payments list dates its entries: the year only where it is not this one. */}
-                  <span className={styles.rowDate}>{listDate(visit.date, yearInIndia(apiNow()))}</span>
-                  <span className={styles.rowWhat}>{pastLine(visit)}</span>
-                </span>
-                <Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />
-              </AppLink>
-            </li>
+            <ListRow
+              key={visit.id}
+              title={fullDate(visit.date)}
+              meta={missed(visit) ? <span className={styles.missed}>{visits.notHome}</span> : pastLine(visit)}
+              to={`/visits/${visit.id}`}
+              chevron
+            />
           ))}
-        </ul>
+        </ListRows>
       )}
       <Record history={list.history} />
     </>
@@ -234,14 +246,15 @@ function footerOf(shown: Show, me: Me) {
         className={buttonLook({ variant: "primary", size: "action", className: styles.book })}
         to="/visits/issues/new"
       >
+        <Icon d={ICONS.plus} size="md" />
         {issues.report}
       </AppLink>
     ) : undefined;
   }
   const firstFit = me.booking.types.includes("first_fit");
-  // While a visit is under way or being closed, another is not booked in its place.
-  const begun = me.next_visit !== null && hasBegun(me.next_visit);
-  if ((me.state !== "fitted" && !firstFit) || begun) return undefined;
+  // With a visit booked, under way or being closed, none is offered beside it.
+  const upcoming = me.next_visit !== null || me.consultation !== null || me.being_booked !== null;
+  if ((me.state !== "fitted" && !firstFit) || upcoming) return undefined;
   // The visit the app offers, with its day and window chosen, and the other kind beside it for a fitted client (ADR 0086).
   return <BookNext className={styles.book} otherClassName={styles.other} />;
 }
@@ -260,7 +273,7 @@ export function VisitsScreen({ show = "upcoming" }: { show?: Show }) {
         options={[
           ["upcoming", visits.upcoming],
           ["past", visits.past],
-          ["issues", open > 0 ? visits.issuesCounted(open) : visits.issues],
+          ["issues", visits.issues, open],
         ]}
         value={shown}
         onChange={setShown}

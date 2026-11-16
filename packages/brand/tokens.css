@@ -81,6 +81,8 @@
      3:1 a control's edge needs (WCAG 1.4.11; ADR 0252). */
   --wash-100: #f4f0e8; /* the client's initials, and the one highlighted row or note on a screen */
   --red-700: #a3361f; /* errors, a missed visit, a late change's warning */
+  --red-050: #fbf1ee; /* a missed visit's notice, behind --red-900's words */
+  --red-900: #6b2414;
   --green-700: #2f6b4f; /* paid, signed off, refunded */
 
   /* ---- Colour: the hero's scrims, from --ink-night ----------------------- */

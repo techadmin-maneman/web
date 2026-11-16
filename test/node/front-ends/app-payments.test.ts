@@ -11,11 +11,11 @@ import {
   creditWhat,
   documentsOf,
   entryAmount,
-  entryBeneath,
   entryMeta,
   entryNamed,
   entryStatus,
   entryTitle,
+  entryTone,
   entryWhat,
   paymentsAndCredits,
 } from "../../../apps/app/src/payments/entry.ts";
@@ -31,6 +31,7 @@ const payment = (overrides: Record<string, unknown>) =>
     status: "captured",
     method: "upi",
     reference: null,
+    utr: null,
     visit: { id: "v", date: "2030-09-19", type: "service" },
     booking: null,
     purpose: "visit",
@@ -59,12 +60,14 @@ const refund = (overrides: Record<string, unknown>) =>
 // After a refund the list showed two rows, both "Payment" and both "Refunded Rs. 30,000", which read as a charge
 // made twice.
 describe("a refund in the list", () => {
-  it("is titled a refund, says what it gave back, and shows money coming back and where it goes", () => {
+  it("is titled a refund, says what it gave back, and shows money coming back, done once it lands", () => {
     const entry = refund({});
     expect(entryTitle(entry)).toBe("Refund");
     expect(entryMeta(entry, 2030)).toBe("14 Sep · First fit");
     expect(entryAmount(entry)).toBe("+ Rs. 30,000");
-    expect(entryBeneath(entry)).toBe("back to your UPI");
+    expect(entryTone(entry)).toBe("done");
+    expect(entryTone(refund({ status: "created" }))).toBe("attention");
+    expect(entryTone(refund({ status: "failed" }))).toBe("error");
   });
 
   it("is named in a WhatsApp asking for its voucher by what it gave back", () => {
@@ -73,18 +76,11 @@ describe("a refund in the list", () => {
 });
 
 describe("a payment in the list", () => {
-  it("leads with what was paid and has nothing dangling after it while GST is nothing", () => {
+  it("leads with what was paid, marked paid", () => {
     const entry = payment({});
     expect(entryTitle(entry)).toBe("Service visit");
     expect(entryAmount(entry)).toBe("Rs. 30,000");
-    expect(entryBeneath(entry)).toBeNull();
-  });
-
-  it("gives the GST split beneath once GST applies, and nothing where no rate was recorded", () => {
-    expect(entryBeneath(payment({ amount: 3540000, amount_ex_gst: 3000000, gst_percent: 18 }))).toBe(
-      "Rs. 30,000 + Rs. 5,400 GST",
-    );
-    expect(entryBeneath(payment({ amount_ex_gst: null, gst_percent: null }))).toBeNull();
+    expect(entryTone(entry)).toBe("done");
   });
 
   it("is named from the booking under way while there is no visit yet, and is a payment only when nothing is known", () => {
@@ -123,8 +119,10 @@ describe("a visit’s payment the client was not home for", () => {
 
   // A service visit paid on 7 Jul for 30 Jul read as a visit on 7 Jul.
   it("names the visit's own day beside the day it was paid, when they differ", () => {
-    expect(entryMeta(payment({}), 2030)).toBe("10 Sep · UPI · for 19 Sep");
-    expect(entryMeta(payment({ date: "2030-09-19" }), 2030)).toBe("19 Sep · UPI");
+    expect(entryMeta(payment({}), 2030)).toBe("10 Sep · UPI via Razorpay · for 19 Sep");
+    expect(entryMeta(payment({ date: "2030-09-19" }), 2030)).toBe("19 Sep · UPI via Razorpay");
+    // Paid by UPI at the visit, which ops recorded by its bank reference: never through Razorpay.
+    expect(entryMeta(payment({ date: "2030-09-19", utr: "412345678901" }), 2030)).toBe("19 Sep · UPI");
   });
 
   it("says nobody was home and how long we waited, in place of the method", () => {

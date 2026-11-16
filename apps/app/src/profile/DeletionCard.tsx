@@ -59,8 +59,8 @@ export function DeletionCard({ deletion, rejected, law, onRequested }: DeletionC
       return (
         <Button
           variant="danger"
-          size="control"
-          className={styles.danger}
+          size="action"
+          className={styles.request}
           onClick={() => {
             setConfirming(true);
           }}

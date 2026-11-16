@@ -3,9 +3,9 @@
 
 import { fullDate, indiaClock, indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
+import type { BadgeTone } from "@maneman/ui/Badge";
 import type { CreditLine, Entry, EntryDetail } from "../api.ts";
 import { payments, VISIT_TYPES } from "../content.ts";
-import { priceFigures } from "../lib/money.ts";
 import { visitName } from "../lib/visit.ts";
 
 type PaymentEntry = Extract<Entry, { kind: "payment" }>;
@@ -40,15 +40,22 @@ export function refundDestination(method: string | null): string | null {
   return payments.refundTo[method] ?? methodName(method, "short");
 }
 
+/** A payment's method as the list names it: "UPI via Razorpay"; one paid by UPI at the visit, by its name alone. */
+function methodLine(entry: PaymentEntry): string | null {
+  if (entry.method === null) return null;
+  if (entry.utr !== null) return methodName(entry.method, "short");
+  return payments.viaRazorpay(methodName(entry.method, "long") ?? entry.method);
+}
+
 /**
- * The list's line under the name: "22 Aug · UPI · for 30 Aug"; for a refund what it gave back, "14 Sep · First fit"; and for a
+ * The list's line under the name: "22 Aug · UPI via Razorpay · for 30 Aug", "22 Aug · UPI" for UPI at the visit; for a refund what it gave back, "14 Sep · First fit"; and for a
  * visit the client was not home for, "19 Sep · not home, we waited 16 min".
  */
 export function entryMeta(entry: Entry, thisYear: number): string {
   const date = listDate(entry.date, thisYear);
   if (entry.kind === "refund") return `${date} · ${entryWhat(entry)}`;
   if (entry.no_show !== null) return `${date} · ${payments.noShow.meta(entry.no_show)}`;
-  const method = methodName(entry.method, "short");
+  const method = methodLine(entry);
   // Paid ahead, as every visit is: the visit's own day beside the day it was paid, so neither reads as the other.
   const forVisit =
     entry.visit !== null && entry.visit.date !== entry.date
@@ -60,13 +67,6 @@ export function entryMeta(entry: Entry, thisYear: number): string {
 /** The main figure: what was paid, GST included, or for a refund the money coming back, "+ Rs. 1,000". */
 export const entryAmount = (entry: Entry) =>
   entry.kind === "refund" ? payments.moneyBack(rupees(entry.amount)) : rupees(entry.amount);
-
-/** The list's line beneath the figure: where a refund goes, "back to your UPI", or a payment's GST split. */
-export function entryBeneath(entry: Entry): string | null {
-  if (entry.kind === "payment") return priceFigures(entry).split;
-  const destination = refundDestination(entry.destination);
-  return destination === null ? null : payments.backTo(destination);
-}
 
 /** A charge's evidence: "You cancelled at 9:14 am, for a visit at 10 am", "on 16 Aug at 3:35 pm" on different days. */
 export function chargeEvidence(charge: NonNullable<Extract<Entry, { kind: "payment" }>["charge"]>): string {
@@ -93,6 +93,16 @@ export function entryStatus(entry: Entry, withSpeed = false): string {
       ? payments.speed[entry.speed]
       : undefined;
   return withSpeed && speed !== undefined ? `${status} · ${speed}` : status;
+}
+
+/** A state's tone in the list: paid or refunded is done, a refund on its way is to watch, one delayed went wrong. */
+export function entryTone(entry: Entry): BadgeTone {
+  if (entry.kind === "refund") {
+    if (entry.status === "processed") return "done";
+    return entry.status === "failed" ? "error" : "attention";
+  }
+  if (entry.charge !== null || entry.no_show !== null) return "neutral";
+  return entry.status === "captured" || entry.status === "refunded" ? "done" : "attention";
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -140,7 +150,7 @@ export function documentsOf(entry: PaymentDetail): ("invoice" | "receipt")[] {
 }
 
 /** A payment or refund, or a change to the credits, as one row of the Payments list. */
-type PaymentsRow =
+export type PaymentsRow =
   | { readonly kind: "entry"; readonly date: string; readonly entry: Entry }
   | { readonly kind: "credit"; readonly date: string; readonly line: CreditLine };
 

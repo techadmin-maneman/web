@@ -91,8 +91,8 @@ export function AccountScreen() {
       {(now, refresh) => (
         <>
           <NumberChangeCard change={now.number_change} decided={now.number_change_decided} onChanged={refresh} />
-          <SessionsCard />
           <DataCard grievances={now.grievances} answerDays={law?.grievance_days ?? null} onRaised={refresh} />
+          <SessionsCard />
           <DeletionCard
             deletion={now.deletion}
             rejected={now.deletion_rejected}

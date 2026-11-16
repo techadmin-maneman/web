@@ -26,7 +26,7 @@ export const titles = {
   rewards: "Rewards",
   invited: "Who you invited",
   profile: "Your profile",
-  payments: "Payments",
+  payments: "Payments and invoices",
   entry: "Payment",
   address: "Address",
   privacy: "Privacy",

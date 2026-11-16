@@ -44,13 +44,13 @@ async function pickAnother(page: Page, which: "first" | "last"): Promise<void> {
   await continueToPayment(page);
 }
 
-// Visits' Prepaid, on a visit paid for ahead; and the visit opens its own page, with the same ways to change it
+// Visits' Paid, on a visit paid for ahead; and the visit opens its own page, with the same ways to change it
 // as Home has. Read before the tests below move and cancel it.
-test("C1: a paid visit is marked Prepaid, and opens with Reschedule", async ({ page }) => {
+test("C1: a paid visit is marked Paid, and opens with Reschedule", async ({ page }) => {
   await logIn(page, changingClients().free.mobile);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.visits }).click();
   const card = page.getByRole("main").getByRole("link").first();
-  await expect(card).toContainText(appCopy.visits.prepaid);
+  await expect(card).toContainText(appCopy.visits.paid);
   await card.click();
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
   await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();

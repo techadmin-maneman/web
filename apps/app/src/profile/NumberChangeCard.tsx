@@ -175,7 +175,7 @@ function StartChange({
           />
         )}
       </Field>
-      <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>
+      <Button variant="outline" size="action" className={styles.primary} type="submit" disabled={busy}>
         {copy.start}
       </Button>
     </form>

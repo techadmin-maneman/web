@@ -47,3 +47,19 @@ PR, and production's move to Razorpay alone is a second (ADR 0257).
 ## Departures
 
 Recorded as they are found while building; `docs/client-redesign/REPORT.md` lists them with the screens they touch.
+
+- **A page under a tab has a way back and no tab bar**, as the prototype draws every page that is not a tab's own:
+  Payments and invoices, one visit, and a page whose code is still loading the first time it opens, which draws its own
+  head and, on a tab's page, the tabs. The page's action sits in the gutter under a hairline, as the prototype's footer
+  does, never the screen's full width.
+- **Past visits** have no photo thumbnail and no amount beside them: `GET /api/visits` carries neither. Each row is the
+  visit's full date over what it was and who did it, a missed visit in red.
+- **The tags.** Paid, signed off and refunded are green on their tint, as drawn. The prototype's brass words for In
+  progress and Refund in progress fall under 4.5:1 on their wash, so a state to watch takes the look's navy
+  (`--status-attention`).
+- **A missed visit** has no "What happened" log and no "Book again" beside the dispute: the API keeps no such log for the
+  client, and booking stays where every other visit is booked. The charge and any dispute are rows among the visit's
+  facts, and "Were you home?" gives the last day to dispute.
+- **The account** keeps "Signed in on", the sessions the prototype does not draw (every current state survives),
+  between Your data and Delete account.
+- **Visits' record** ("Your record": first fit, service visits, replacements, total paid) stays beneath Past.

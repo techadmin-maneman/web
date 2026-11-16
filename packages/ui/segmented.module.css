@@ -1,32 +1,57 @@
 /* A view of a few (./Segmented.tsx): the options in one quiet track, the chosen one raised out of it on the panel's
-   white with a hairline round it, its words in the full ink. */
+   white with a hairline round it, its words in the full ink. An app may draw it otherwise in its own look, as the client
+   app does: the track edged and as wide as the page, the chosen option filled in its navy. */
 
 @layer base, ui;
 
 @layer ui {
   .track {
-    display: inline-flex;
+    display: var(--segmented-display);
     flex-wrap: wrap;
     gap: var(--sp-2);
     padding: var(--sp-2);
-    background: var(--ui-tint);
+    border: var(--hairline) solid var(--segmented-edge);
+    background: var(--segmented-track);
   }
 
   .segment {
+    display: inline-flex;
+    flex: var(--segmented-grow);
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-8);
     min-height: calc(var(--control-height) - 2 * var(--sp-2));
     padding: 0 var(--sp-12);
     border: var(--hairline) solid transparent;
     background: none;
     font: inherit;
     font-size: var(--fs-14);
+    font-weight: var(--segmented-weight);
     color: var(--ui-text-muted);
     cursor: pointer;
   }
 
   .segment[aria-checked="true"] {
-    border-color: var(--ui-line);
-    background: var(--ui-raised);
-    color: var(--ui-text);
+    border-color: var(--segmented-on-edge);
+    background: var(--segmented-on);
+    color: var(--segmented-on-text);
+  }
+
+  /* How many an option holds, boxed beside its words. */
+  .count {
+    min-width: var(--sp-20);
+    padding: 0 var(--sp-4);
+    background: var(--segmented-count);
+    color: var(--segmented-count-text);
+    font-size: var(--fs-13);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--lh-145);
+    text-align: center;
+  }
+
+  .segment[aria-checked="true"] .count {
+    background: var(--segmented-on-count);
   }
 
   @media (hover: hover) {

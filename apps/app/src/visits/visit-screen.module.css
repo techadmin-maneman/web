@@ -1,19 +1,60 @@
 /* What ./VisitScreen.tsx alone draws; what it shares is in ./visits.module.css. */
 
-/* The visit's record's last row: what was done, beneath its name rather than beside it. */
-.done {
-  padding: var(--sp-16) 0;
-  font-size: var(--fs-16);
-}
-
-.done dt {
-  margin-bottom: var(--sp-8);
+/* What the visit was, under its date in the head. */
+.kind {
+  margin: calc(var(--sp-16) * -1) 0 0;
   color: var(--ink-500);
+  font-size: var(--fs-14);
 }
 
-.done dd {
+/* Who sees the photos, beneath them. */
+.private {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin: var(--sp-8) 0 0;
+  color: var(--ink-500);
+  font-size: var(--fs-13);
+}
+
+.section {
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+/* What was done: the technician's ticks, each on its line. */
+.doneList {
   margin: 0;
-  line-height: var(--lh-160);
+  padding: 0;
+  list-style: none;
+}
+
+.doneList li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  padding: var(--sp-4) 0;
+  font-size: var(--fs-15);
+}
+
+.doneIcon {
+  flex-shrink: 0;
+  color: var(--green-700);
+}
+
+/* The receipt and the tax invoice, as rows under a hairline. */
+.documents {
+  border-top: var(--hairline) solid var(--line-200);
+}
+
+.documents:empty {
+  display: none;
+}
+
+.report {
+  align-self: flex-start;
+  font-size: var(--fs-14);
 }
 
 /* An upcoming visit's own page: its card, as Home draws the next one, 24 px under the header as C9's page is. */
@@ -51,11 +92,34 @@
   line-height: var(--lh-160);
 }
 
-/* A visit the client was not home for, above what the visit's page says of it (the board draws none). */
+/* A missed visit's dispute, beneath its facts. */
 .noShow {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-8);
+  gap: var(--sp-16);
+}
+
+.missed {
+  display: flex;
+  gap: var(--sp-12);
+  padding: var(--sp-16);
+  background: var(--red-050);
+  color: var(--red-900);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+.missedIcon {
+  flex-shrink: 0;
+  color: var(--red-700);
+}
+
+.missedWords {
+  margin: 0;
+}
+
+.missedWords strong {
+  display: block;
 }
 
 .noShowLine {
@@ -64,10 +128,9 @@
   line-height: var(--lh-160);
 }
 
-/* The way to dispute a no-show's charge, beneath the ruling it disputes; no board draws it (ADR 0096). */
+/* The way to dispute a missed visit's charge, beneath the ruling it disputes (ADR 0096). */
 .dispute {
-  align-self: flex-start;
-  margin-top: var(--sp-8);
+  width: 100%;
 }
 
 /* The way to claim a first fit's guarantee, beneath its date. */

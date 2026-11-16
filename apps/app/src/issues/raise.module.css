@@ -90,7 +90,7 @@
   width: 100%;
 }
 
-/* What Send waits for, beneath it in the footer, in the screen's gutter as the page above is. */
+/* What Send waits for, beneath it in the footer. */
 .footerLine {
-  padding: 0 var(--screen-gutter) var(--sp-8);
+  padding-top: var(--sp-8);
 }
