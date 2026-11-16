@@ -160,6 +160,7 @@ test("a photograph whose link has run out is shown again through a fresh one", a
 test("Payments: one list of payments and refunds, an entry’s documents, and a document not ready", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   await page.goto("/profile/payments");
   const entries = page.getByRole("main").getByRole("link");
   await expect(entries).toHaveCount(3);

@@ -5,6 +5,7 @@ import { CLIENT_ICONS } from "@maneman/brand/icons";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import type { Me } from "../api.ts";
 import { home, promiseOf } from "../content.ts";
+import { rewardOf } from "../refer/index.ts";
 import { expiryLine } from "./HomeNotes.tsx";
 import styles from "./home-rows.module.css";
 
@@ -40,13 +41,7 @@ export function HomeRows({ me }: { me: Me }) {
         />
       )}
       {me.refers && (
-        <ListRow
-          icon={CLIENT_ICONS.gift}
-          title={copy.invite}
-          meta={promiseOf(me.referral_reward)}
-          to="/rewards"
-          chevron
-        />
+        <ListRow icon={CLIENT_ICONS.gift} title={copy.invite} meta={promiseOf(rewardOf(me))} to="/rewards" chevron />
       )}
     </ListRows>
   );

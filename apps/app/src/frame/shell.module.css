@@ -112,6 +112,11 @@
   flex-shrink: 0;
 }
 
+/* Each tab the design's full 60 px target. */
+.tabs a {
+  min-height: calc(var(--sp-28) * 2 + var(--sp-4));
+}
+
 /* Drawn inside, since each sits against the frame's edge, where a ring outside would be cut. */
 .initials:focus-visible,
 .back:focus-visible {
@@ -166,6 +171,7 @@
   .withTabs .tabs a {
     flex-direction: row;
     justify-content: flex-start;
+    min-height: var(--tap);
     gap: var(--sp-12);
     padding: 0 var(--sp-16);
     font-size: var(--fs-15);

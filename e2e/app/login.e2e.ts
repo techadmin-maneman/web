@@ -82,7 +82,7 @@ test("a session that ends mid-use goes back to the login, says why, and returns 
   await page.getByRole("textbox", { name: appCopy.login.mobile.label }).fill(mobile);
   await page.getByRole("button", { name: appCopy.login.mobile.send }).click();
   await enter(page, CODE);
-  await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
+  await expect(page.getByText(appCopy.empty.photos.lines[0])).toBeVisible();
 });
 
 test("logging out takes the API’s word for it: offline it waits, and a refusal keeps the client in", async ({
@@ -91,7 +91,7 @@ test("logging out takes the API’s word for it: offline it waits, and a refusal
   await sendCode(page, bookedNumber());
   await enter(page, CODE);
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
-  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.profileMenu.account })).toBeVisible();
   const logOut = page.getByRole("button", { name: appCopy.profile.logout });
 
   await page.context().setOffline(true);
@@ -104,7 +104,7 @@ test("logging out takes the API’s word for it: offline it waits, and a refusal
   );
   await logOut.click();
   await expect(page.getByRole("alert")).toHaveText(appCopy.profile.logoutFailed);
-  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.profileMenu.account })).toBeVisible();
 });
 
 test("the tabs reach Visits, the empty Photos and Rewards, and Payments sits under the profile", async ({ page }) => {
@@ -319,7 +319,7 @@ test("says the code is read automatically only when it comes by SMS, the one a p
 
 test("names each login screen in the browser’s title, and puts focus where the client carries on", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Your mobile number · Mane Man");
+  await expect(page).toHaveTitle("Sign in · Mane Man");
   await sendCode(page, bookedNumber());
   await expect(page).toHaveTitle("Enter the code · Mane Man");
   const field = page.getByRole("textbox", { name: appCopy.login.code.label });

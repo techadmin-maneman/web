@@ -1,9 +1,9 @@
-// The alerts' words (apps/app/sw/alert-words.ts), held to the API's published contract (docs/openapi-client.json): a
+// The alerts' words (apps/app/src/content/alerts.ts), held to the API's published contract (docs/openapi-client.json): a
 // title, a line and a page for every kind of alert the inbox can hold, so a kind added to the API is worded here too.
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ALERTS, alertWords } from "../../../../apps/app/sw/alert-words.ts";
+import { ALERTS, alertWords } from "../../../../apps/app/src/content/alerts.ts";
 
 const contract = JSON.parse(readFileSync("docs/openapi-client.json", "utf8")) as {
   components: { schemas: { ClientAlert: { properties: { kind: { enum: string[] } } } } };

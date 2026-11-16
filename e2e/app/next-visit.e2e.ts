@@ -171,7 +171,7 @@ test("Home offers the replacement where the piece falls due first, and a page sa
 
   // No WhatsApp: the app's own page.
   const involves = page.getByRole("link", { name: appCopy.home.prompt.involves });
-  await expect(involves).toHaveAttribute("href", "/replacement");
+  await expect(involves).toHaveAttribute("href", "/hair-system");
   await involves.click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.replacement.title })).toBeVisible();
   await expect(page.getByText("Your technician removes your current hair system")).toBeVisible();
@@ -217,7 +217,7 @@ test("Home recaps the consultation, and offers the first fit as the hair system 
   const { firstFit } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, firstFit.mobile);
-  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.consultation.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.consulted.label })).toBeVisible();
   await expect(page.getByText(`${shortDate(firstFit.consulted)} · Imran`)).toBeVisible();
   await expect(page.getByText("Imran recommends Mane Man Essential.")).toBeVisible();
   // The first fit is Home's card, and never a prompt beneath it.

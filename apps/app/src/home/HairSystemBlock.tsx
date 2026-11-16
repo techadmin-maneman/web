@@ -20,8 +20,14 @@ function lineOf(me: Me, worn: NonNullable<Me["hair_system"]>): string {
   return copy.bookFrom(fullDate(worn.fitted_on), dayMonth(worn.replacement_opens_on));
 }
 
+/**
+ * The hair system worn, or null: a Home the phone kept from before the API answered it, or one a rolled-back API sends,
+ * carries none though the document says it is there.
+ */
+const wornOf = (me: Partial<Pick<Me, "hair_system">>): Me["hair_system"] => me.hair_system ?? null;
+
 export function HairSystemBlock({ me }: { me: Me }) {
-  const worn = me.hair_system;
+  const worn = wornOf(me);
   if (worn === null) return null;
   const copy = home.hairSystem;
   const of = worn.replace_after_months;

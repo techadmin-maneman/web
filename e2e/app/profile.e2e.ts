@@ -6,21 +6,23 @@ import * as appCopy from "../../apps/app/src/content.ts";
 
 test("opens from Home’s button, with the client’s name and a way back", async ({ page }) => {
   await loggedIn(page);
-  await expect(page.getByRole("banner")).toContainText("Rohit Malhotra");
+  await expect(page.getByRole("heading", { level: 1, name: "Rohit Malhotra" })).toBeVisible();
   await page.getByRole("link", { name: appCopy.profile.back }).click();
   await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
 });
 
 test("keeps the tabs at the foot of the screen, and scrolls only the page, however long it is", async ({ page }) => {
-  await loggedIn(page);
+  // Home on a short screen, so the page is longer than it: the profile's pages have no tabs.
+  await page.setViewportSize({ width: 390, height: 480 });
+  await signIn(page);
   const tabs = await page.getByRole("navigation").boundingBox();
-  expect((tabs?.y ?? 0) + (tabs?.height ?? 0)).toBe(844);
+  expect((tabs?.y ?? 0) + (tabs?.height ?? 0)).toBe(480);
   const heights = await page.evaluate(() => ({
     document: document.documentElement.scrollHeight,
     page: document.querySelector("main")?.scrollHeight ?? 0,
   }));
-  expect(heights.document).toBe(844);
-  expect(heights.page).toBeGreaterThan(844);
+  expect(heights.document).toBe(480);
+  expect(heights.page).toBeGreaterThan(480);
 });
 
 test("shows the loading shape while the profile comes", async ({ page }) => {
@@ -34,6 +36,7 @@ test("shows the loading shape while the profile comes", async ({ page }) => {
     await route.continue();
   });
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.address }).click();
   await expect(page.getByRole("status").filter({ hasText: appCopy.states.loading })).toBeAttached();
   release();
   await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
@@ -55,7 +58,8 @@ test("takes an address and its access notes, and shows them", async ({ page }) =
   await expect(page.getByText("Gate code 4417 · park in visitor bay B")).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.profile.editAddress })).toBeVisible();
 
-  // Home's consultation card now shows the address.
+  // Home's consultation card now shows the address: back to the profile, then back to Home.
+  await page.getByRole("link", { name: appCopy.profile.back }).click();
   await page.getByRole("link", { name: appCopy.profile.back }).click();
   await expect(page.getByText("Sector 65, Gurgaon 122018")).toBeVisible();
 });
@@ -213,6 +217,7 @@ test("says an address was given to us on the phone, so the client can check it",
     });
   });
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.address }).click();
   await expect(page.getByText("Flat 1203, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("You gave us this address by phone on 21 Sep 2026.")).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.profile.editAddress })).toBeVisible();
@@ -255,6 +260,7 @@ test("asks for the building when the address is not on the map", async ({ page }
     });
   });
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.address }).click();
   await expect(page.getByText(appCopy.profile.unpinned)).toBeVisible();
   await page.getByRole("button", { name: appCopy.profile.findBuilding }).click();
   await expect(page.getByRole("combobox", { name: appCopy.profile.form.building.label })).toBeVisible();

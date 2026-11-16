@@ -6,7 +6,7 @@ import * as appCopy from "../../apps/app/src/content.ts";
 
 test("offers support on WhatsApp, with the design’s line", async ({ page }) => {
   await loggedIn(page);
-  await expect(page.getByRole("link", { name: appCopy.profile.support.message })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: appCopy.profileMenu.help })).toHaveAttribute(
     "href",
     "https://wa.me/17116660760",
   );
@@ -59,6 +59,7 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
     });
   });
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.account }).click();
   const concerns = page.getByRole("list", { name: appCopy.profile.data.concerns });
   await expect(concerns.getByText("Your concern of 2 Oct 2026 · Answered 3 Oct 2026")).toBeVisible();
   await expect(concerns.getByText("Who sees my photographs?")).toBeVisible();
@@ -101,6 +102,7 @@ test("says when ops kept the account, and why, and still lets the client ask aga
     });
   });
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.account }).click();
   await expect(page.getByText("On 2 Oct 2026 we didn’t delete your account.")).toBeVisible();
   await expect(page.getByText("Our reason: You still have a consultation booked")).toBeVisible();
   await expect(page.getByText(appCopy.profile.deletion.disagree)).toBeVisible();
@@ -125,6 +127,7 @@ test("lists where the client is signed in, and signs another browser out", async
   await expect(phone.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
 
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.account }).click();
   const card = page.getByRole("region", { name: appCopy.profile.sessions.label });
   await expect(card.getByText(appCopy.profile.sessions.thisDevice)).toBeVisible();
   await card.getByRole("button", { name: "Sign out Safari on iOS" }).click();
@@ -141,11 +144,16 @@ test("meets WCAG 2.2 AA, with the address form and the card’s lines open", asy
   };
   await scan();
   await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
-  await page.getByRole("switch", { name: appCopy.profile.purposes.photos_referral_cards }).click();
   await scan();
 
   // Again with the suggestion list open, which is the app's only combobox.
   await page.getByRole("combobox", { name: appCopy.profile.form.building.label }).fill("Sec");
   await expect(page.getByRole("option")).toHaveCount(3);
+  await scan();
+
+  // The privacy page, with the card's lines open.
+  await page.getByRole("link", { name: appCopy.profile.back }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.privacy }).click();
+  await page.getByRole("switch", { name: appCopy.profile.purposes.photos_referral_cards }).click();
   await scan();
 });

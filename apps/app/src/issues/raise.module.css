@@ -68,8 +68,8 @@
   display: block;
 }
 
+/* The card's own colour, which a chosen card turns to its light words on navy. */
 .visitWhat {
-  color: var(--ink-500);
   font-size: var(--fs-14);
 }
 

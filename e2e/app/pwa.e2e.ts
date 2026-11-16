@@ -130,7 +130,7 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page }
   await signIn(page);
   await keepHome(page);
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
-  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.profileMenu.account })).toBeVisible();
   expect((await keptPaths(page)).filter((path) => path.startsWith("/api/"))).toEqual(["/api/me"]);
 
   await page.getByRole("button", { name: appCopy.profile.logout }).click();
