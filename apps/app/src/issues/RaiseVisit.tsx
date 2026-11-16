@@ -21,7 +21,7 @@ export function RaiseVisit({ chosen, onChoose }: { chosen: string | null; onChoo
   return (
     <Fieldset
       className={styles.visits}
-      legendLook="title"
+      legendLook="label"
       legend={
         <>
           {copy.visit} <span className={styles.hint}>{copy.visitHint}</span>

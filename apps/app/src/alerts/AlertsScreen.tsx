@@ -49,20 +49,26 @@ function Group({ label, list, today }: { label: string; list: readonly Alert[]; 
 
 function Inbox({ list, pushKey }: { list: readonly Alert[]; pushKey: string | null }) {
   const today = todayInIndia(apiNow());
+  const whatsapp = (
+    <p className={styles.note}>
+      {alerts.whatsapp}{" "}
+      <AppLink className={textLinkLook({ inline: true })} to="/profile/privacy">
+        {alerts.privacy}
+      </AppLink>
+      .
+    </p>
+  );
+  // The empty state pads itself, as on every page; the rows run the column the page pads.
   return (
-    <div className={styles.page}>
-      <PhoneAlerts pushKey={pushKey} />
+    <>
+      <div className={styles.page}>
+        <PhoneAlerts pushKey={pushKey} />
+        <Group label={alerts.today} list={list.filter((alert) => indiaDate(alert.at) === today)} today={today} />
+        <Group label={alerts.earlier} list={list.filter((alert) => indiaDate(alert.at) !== today)} today={today} />
+      </div>
       {list.length === 0 && <EmptyState look="page" lines={alerts.none} icon={GLYPHS.bell} />}
-      <Group label={alerts.today} list={list.filter((alert) => indiaDate(alert.at) === today)} today={today} />
-      <Group label={alerts.earlier} list={list.filter((alert) => indiaDate(alert.at) !== today)} today={today} />
-      <p className={styles.note}>
-        {alerts.whatsapp}{" "}
-        <AppLink className={textLinkLook({ inline: true })} to="/profile/privacy">
-          {alerts.privacy}
-        </AppLink>
-        .
-      </p>
-    </div>
+      <div className={styles.page}>{whatsapp}</div>
+    </>
   );
 }
 

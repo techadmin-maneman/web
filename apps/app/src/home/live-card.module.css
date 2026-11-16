@@ -23,7 +23,12 @@
   }
 }
 
+/* The track on navy, as the design draws it: gold to where the visit is, navy-700 for what is still to come. */
 .track {
+  --ui-strong: var(--gilt);
+  --ui-accent: var(--gilt);
+  --ui-tint: var(--navy-700);
+
   margin: var(--sp-16) 0 0;
 }
 
