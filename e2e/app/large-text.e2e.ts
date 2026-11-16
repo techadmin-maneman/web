@@ -1,6 +1,6 @@
 // Every page of the client app on a phone, at 390 and 360 px, and at 360 with its text at 130%
-// (docs/prompts/client-redesign.md, "Acceptance"): sign-in, each of the app's pages with one visit and one payment
-// open, and the booking sheet's day and time and its review. Nothing spills out of its box, as a name running into the
+// (docs/prompts/client-redesign.md, "Acceptance"): sign-in, each of the app's pages with a visit to come, a past one and
+// a payment open, the change sheet, and the booking sheet's day and time and its review. Nothing spills out of its box, as a name running into the
 // next, and nothing scrolls sideways, the page itself included, but a row made to, which hides its bar: the
 // photographs' angles and the booking's days. Larger text is drawn as the browser's zoom draws it, which grows the
 // page's type and its boxes alike: the stricter of the two ways a phone enlarges text.
@@ -11,7 +11,7 @@ import { openSheet } from "./booking-fixtures.ts";
 import { fittedClient } from "./fitted.ts";
 import { continueToPayment, WHEN_STEP } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
-import { booking, login } from "../../apps/app/src/content.ts";
+import { booking, home, login } from "../../apps/app/src/content.ts";
 
 const PAGES = [
   "/",
@@ -38,20 +38,33 @@ const SIZES = [
   { width: 360, zoom: 1.3 },
 ] as const;
 
-/** What spills out of its own box, or scrolls sideways, on the page and in any sheet open on it. */
+/**
+ * What spills out of its own box, or scrolls sideways, on the page and in any sheet open on it. A box excused is
+ * excused alone, never what it holds: one that clips, as a sheet's panel or the photographs' slider, and a row made to
+ * scroll sideways, which hides its bar, as the photographs' angles and the booking's days.
+ */
 function spills(page: Page) {
   return page.evaluate(() => {
-    /** A box that clips what it holds, or a row made to scroll sideways, which hides its bar. */
-    const holds = (box: Element) => {
+    const excused = (box: Element) => {
       const style = getComputedStyle(box);
       if (style.overflowX === "hidden" || style.overflowX === "clip") return true;
       return (style.overflowX === "auto" || style.overflowX === "scroll") && style.scrollbarWidth === "none";
     };
-    const inside = (box: HTMLElement): boolean =>
-      box.parentElement !== null && (holds(box.parentElement) || inside(box.parentElement));
-    // A page's scroller, as its main, is a box like any other: what it scrolls sideways spills from it.
+    // Words kept for a screen reader alone (packages/ui/VisuallyHidden.tsx) are out of sight, so a box within them, or
+    // holding only them, shows nothing that could spill.
+    const hides = (node: Element) => getComputedStyle(node).clipPath === "inset(50%)";
+    const unseen = (node: Element | null): boolean => node !== null && (hides(node) || unseen(node.parentElement));
+    const shows = (box: HTMLElement) => {
+      if (unseen(box)) return false;
+      const words = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+      for (let word = words.nextNode(); word !== null; word = words.nextNode()) {
+        if ((word.textContent ?? "").trim() !== "" && !unseen(word.parentElement)) return true;
+      }
+      return box.querySelector("img, input, svg, video") !== null;
+    };
+    // A page's scroller, as its main or a sheet's body, is a box like any other: what it scrolls sideways spills.
     const spilled = [...document.querySelectorAll<HTMLElement>("header, header *, main, main *, nav *, dialog *")]
-      .filter((box) => box.closest("svg") === null && !holds(box) && !inside(box))
+      .filter((box) => box.closest("svg") === null && !excused(box) && shows(box))
       .filter((box) => box.clientWidth > 0 && box.scrollWidth > box.clientWidth + 1)
       .map((box) => `${box.tagName.toLowerCase()} "${box.textContent.trim().slice(0, 40)}"`);
     return { spilled, sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth };
@@ -88,7 +101,12 @@ for (const size of SIZES) {
     await logIn(page, fitted.mobile);
     // Signed in before any page is asked for: a page asked for sooner is the sign-in screen, which measures nothing.
     await expect(page.getByRole("navigation").first()).toBeVisible();
-    for (const path of [...PAGES, `/visits/${fitted.next.id}`, `/profile/payments/${fitted.servicePayment}`]) {
+    const opened = [
+      `/visits/${fitted.next.id}`,
+      `/visits/${fitted.service.id}`,
+      `/profile/payments/${fitted.servicePayment}`,
+    ];
+    for (const path of [...PAGES, ...opened]) {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.getByRole("heading", { level: 1, name: login.mobile.title })).toHaveCount(0);
@@ -97,6 +115,14 @@ for (const size of SIZES) {
       await sized(page, size);
       expect(await spills(page), path).toEqual({ spilled: [], sideways: false });
     }
+  });
+
+  test(`changing a visit holds at ${named(size)}`, async ({ page }) => {
+    await logIn(page, fittedClient().mobile);
+    await page.getByRole("button", { name: home.reschedule }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await sized(page, size);
+    expect(await spills(page), "change").toEqual({ spilled: [], sideways: false });
   });
 
   test(`booking's day and time, and its review, hold at ${named(size)}`, async ({ page }) => {
