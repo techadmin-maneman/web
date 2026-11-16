@@ -1,16 +1,57 @@
-/* What ./ReferScreen.tsx alone draws; what it shares is in ./refer.module.css. */
+/* What ./ReferScreen.tsx alone draws (design/client-redesign, Rewards); what it shares is in ./refer.module.css. */
 
-/* Refer's credit tile, ruled above and below. */
-.credit {
-  padding: var(--sp-20) 0;
-  border-top: var(--hairline) solid var(--paper-line);
-  border-bottom: var(--hairline) solid var(--paper-line);
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  padding: var(--sp-8) var(--screen-gutter) var(--sp-28);
+}
+
+/* The promise on navy, over the two figures in gold beneath a rule. */
+.card {
+  padding: var(--sp-20);
+  background: var(--navy-900);
+  color: var(--white-000);
+}
+
+.promise {
+  margin: 0;
+  font-size: var(--fs-24);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: var(--sp-16) 0 0;
+  padding-top: var(--sp-12);
+  border-top: var(--hairline) solid var(--navy-700);
+}
+
+/* The figure above its word, though the word is read first. */
+.figure {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.figure dt {
+  color: var(--mist-300);
+  font-size: var(--fs-13);
+}
+
+.figure dd {
+  margin: 0;
+  color: var(--gilt);
+  font-size: var(--fs-24);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Where the credits of the invite the client came with stand, while they are not in the balance. */
 .inviteCredits {
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
+  margin: 0;
+  font-size: var(--fs-15);
 }
 
 .shareSmall {
@@ -19,14 +60,25 @@
   padding: 0 var(--sp-20);
 }
 
-/* How a referral goes, beneath the promise, ruled from it. */
-.how {
-  padding-top: var(--sp-20);
-  border-top: var(--hairline) solid var(--paper-line);
+.section {
+  margin: var(--sp-12) 0 var(--sp-4);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
 }
 
-.howLabel {
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--text-muted);
+.plus {
+  color: var(--gold-700);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+}
+
+.note {
+  margin: var(--sp-8) 0 0;
+  color: var(--ink-500);
+  font-size: var(--fs-13);
+}
+
+.tracker {
+  align-self: flex-start;
+  font-size: var(--fs-14);
 }

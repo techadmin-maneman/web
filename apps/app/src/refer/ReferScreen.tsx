@@ -1,6 +1,6 @@
-// Refer: what a referral earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md),
-// the client's credit, and the two ways on: sharing an invite (ShareSheet) and seeing who has been
-// fitted (/refer/fitted). The tracker shows completed fits only (docs/decisions/0048-referrals.md). A client who came through an invite whose credits ops are reviewing,
+// Rewards (design/client-redesign, the rewards screen): what a referral earns, as ops set it
+// (docs/decisions/0107-referral-rewards-in-the-console.md), the free service visits left and earned, sharing an invite
+// (ShareSheet), and the friends fitted, with the whole tracker a page of its own (/rewards/invited). The tracker shows completed fits only (docs/decisions/0048-referrals.md). A client who came through an invite whose credits ops are reviewing,
 // or refused, is told so beneath the credit (docs/decisions/0074-hand-offs-and-messages.md; the board draws none).
 //
 // Refer opens at the client's first consultation (ADR 0218): before it a client has nothing to vouch for, and the
@@ -9,12 +9,12 @@
 
 import { APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
-import { capsLook } from "@maneman/ui/Caps";
-import { NumberedSteps } from "@maneman/ui/NumberedSteps";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
-import { fullDate, indiaDate } from "@maneman/web-kit/dates";
+import { apiNow } from "@maneman/web-kit/clock";
+import { dayMonth, indiaDate, listMonth, yearInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { api, type Refer } from "../api.ts";
 import { empty, refer } from "../content.ts";
@@ -28,14 +28,53 @@ import { ShareSheet } from "./ShareSheet.tsx";
 import shared from "./refer.module.css";
 import styles from "./refer-screen.module.css";
 
-function CreditTile({ credits }: { credits: Refer["credits"] }) {
-  if (credits.visits === 0) return null;
-  const expiry = credits.earliest_expiry;
+/** The promise on navy, over the free service visits left and how many invites have earned. */
+function RewardCard({ state }: { state: Refer }) {
+  const { me } = useSession();
+  const expiry = state.credits.earliest_expiry;
+  const earned = state.fitted.reduce((sum, friend) => sum + friend.visits, 0);
   return (
-    <div className={styles.credit}>
-      <p className={shared.creditLabel}>{refer.credit.count(credits.visits)}</p>
-      {expiry !== null && <p className={shared.creditExpiry}>{refer.credit.useBy(fullDate(indiaDate(expiry)))}</p>}
-    </div>
+    <section className={styles.card} aria-labelledby="reward">
+      <h2 className={styles.promise} id="reward">
+        {refer.promise(rewardOf(me))}
+      </h2>
+      <dl className={styles.figures}>
+        <div className={styles.figure}>
+          <dt>
+            {expiry === null || state.credits.visits === 0 ? refer.left : refer.leftUseBy(dayMonth(indiaDate(expiry)))}
+          </dt>
+          <dd>{state.credits.visits}</dd>
+        </div>
+        <div className={styles.figure}>
+          <dt>{refer.earned}</dt>
+          <dd>{earned}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+/** The friends fitted through the client's invites, newest first, each with the visits they earned. */
+function Fitted({ state }: { state: Refer }) {
+  return (
+    <section aria-labelledby="fitted">
+      <h2 className={styles.section} id="fitted">
+        {refer.fittedTitle}
+      </h2>
+      {state.fitted.length > 0 && (
+        <ListRows>
+          {state.fitted.map((friend, index) => (
+            <ListRow
+              key={`${friend.month}-${String(index)}`}
+              title={friend.first_name ?? refer.fitted.unnamed}
+              meta={refer.fitted.when(listMonth(friend.month, yearInIndia(apiNow())))}
+              end={<span className={styles.plus}>{refer.plusVisits(friend.visits)}</span>}
+            />
+          ))}
+        </ListRows>
+      )}
+      <p className={styles.note}>{refer.fitted.only}</p>
+    </section>
   );
 }
 
@@ -77,27 +116,17 @@ export function ShareButton({
 }
 
 function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
-  const { me } = useSession();
   return (
-    <div className={shared.page}>
-      <p className={shared.promise}>{refer.promise(rewardOf(me))}</p>
-      <section className={styles.how} aria-labelledby="refer-how">
-        <h2 className={capsLook(styles.howLabel)} id="refer-how">
-          {refer.how.label}
-        </h2>
-        <NumberedSteps steps={refer.how.steps} />
-      </section>
-      <CreditTile credits={state.credits} />
+    <div className={styles.page}>
+      <RewardCard state={state} />
       {state.invite_credits !== null && (
         <p className={styles.inviteCredits}>{refer.inviteCredits[state.invite_credits]}</p>
       )}
-      {/* The board puts the two ways on at the foot of the screen, above the tabs. */}
-      <div className={shared.actions}>
-        <ShareButton state={state} onChanged={onChanged} />
-        <AppLink className={textLinkLook({ tone: "brass", className: shared.quiet })} to="/refer/fitted">
-          <span>{refer.tracker}</span>
-        </AppLink>
-      </div>
+      <ShareButton state={state} onChanged={onChanged} />
+      <Fitted state={state} />
+      <AppLink className={textLinkLook({ className: styles.tracker })} to="/rewards/invited">
+        {refer.tracker}
+      </AppLink>
     </div>
   );
 }
