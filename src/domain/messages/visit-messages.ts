@@ -111,7 +111,7 @@ export async function arrivalNotice(
   const late = input.now.getTime() - input.arrivedAt.getTime() > input.withinMin * MINUTE_MS;
   const id = crypto.randomUUID();
   const at = input.now.toISOString();
-  // Read by the row it returns, not its changes: D1 counts the client's alert a trigger writes beside it (migration 0211).
+  // Read by the row it returns, not its changes, which D1 counts with any row a trigger writes beside it.
   const written = await db
     .prepare(
       `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at,
