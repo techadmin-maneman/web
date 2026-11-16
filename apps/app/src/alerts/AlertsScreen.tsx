@@ -1,9 +1,11 @@
 // The alerts under the bell (design/client-redesign, the notifications screen; docs/decisions/0255-client-alerts-and-
-// push.md): today's, then the earlier ones, newest first, each opening what it is about. Opening the inbox marks them
+// push.md): today's, then the earlier ones, newest first, each with its icon and opening what it is about, a new one
+// marked beside its title. Opening the inbox marks them
 // read, so the bell clears; the ones that were new stay marked so while the page is open.
 
 import { GLYPHS } from "@maneman/brand/icons";
-import { Badge } from "@maneman/ui/Badge";
+import { Icon } from "@maneman/ui/Icon";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Loading } from "@maneman/ui/States";
@@ -17,6 +19,7 @@ import { alerts, alertWords, profile, titles } from "../content.ts";
 import { PageFailed } from "../frame/PageFailed.tsx";
 import { AppLink, Shell } from "../frame/Shell.tsx";
 import { useSession } from "../session.ts";
+import { alertIcon } from "./alert-icons.ts";
 import { PhoneAlerts } from "./PhoneAlerts.tsx";
 import styles from "./alerts.module.css";
 
@@ -35,9 +38,27 @@ function Group({ label, list, today }: { label: string; list: readonly Alert[]; 
           return (
             <ListRow
               key={alert.id}
-              title={words.title}
-              meta={`${words.line} · ${stamp(alert.at, today)}`}
-              end={alert.read ? undefined : <Badge tone="attention">{alerts.unread}</Badge>}
+              mark={
+                <span className={styles.icon}>
+                  <Icon d={alertIcon(alert.kind)} size="sm" />
+                </span>
+              }
+              title={
+                <>
+                  {words.title}
+                  {!alert.read && (
+                    <span className={styles.unread}>
+                      <VisuallyHidden>{`, ${alerts.unread}`}</VisuallyHidden>
+                    </span>
+                  )}
+                </>
+              }
+              meta={
+                <>
+                  {words.line}
+                  <span className={styles.when}>{stamp(alert.at, today)}</span>
+                </>
+              }
               to={words.to}
             />
           );

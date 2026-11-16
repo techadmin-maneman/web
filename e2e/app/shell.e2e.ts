@@ -45,7 +45,8 @@ test("opens on the mobile number, as the design draws it", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
   await expect(page.getByRole("textbox", { name: appCopy.login.mobile.label })).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.login.mobile.send })).toBeVisible();
-  await expect(page.getByText(appCopy.login.mobile.hint)).toBeVisible();
+  await expect(page.getByText(appCopy.login.mobile.lede)).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.login.mobile.book })).toBeVisible();
 });
 
 test("serves its policy: its own origin only, WebOTP, and noindex", async ({ page }) => {
@@ -299,7 +300,7 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
 test("moves nothing under reduced motion, the share sheet included", async ({ page }) => {
   await home(page);
   await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.rewards }).click();
-  await page.getByRole("button", { name: appCopy.refer.share }).click();
+  await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   const sheet = page.getByRole("dialog");
   await expect(sheet).toBeVisible();
   expect(await style(sheet, "animation-name")).toBe("none");

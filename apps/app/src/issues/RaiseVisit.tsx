@@ -1,8 +1,7 @@
 // The visit an issue is about, if one (./RaiseScreen.tsx): the client's last four, a visit a link named among them, and
 // none. Nothing to choose before a first visit.
 
-import { ChoiceCard } from "@maneman/ui/ChoiceCard";
-import { Fieldset } from "@maneman/ui/Field";
+import { ChoiceGroup, Radio } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate } from "@maneman/web-kit/dates";
 import { api } from "../api.ts";
@@ -19,9 +18,9 @@ export function RaiseVisit({ chosen, onChoose }: { chosen: string | null; onChoo
   const recent = loaded.value.past.filter((visit, index) => index < RECENT || visit.id === chosen);
   if (recent.length === 0) return null;
   return (
-    <Fieldset
+    <ChoiceGroup
       className={styles.visits}
-      legendLook="label"
+      ruled
       legend={
         <>
           {copy.visit} <span className={styles.hint}>{copy.visitHint}</span>
@@ -29,27 +28,25 @@ export function RaiseVisit({ chosen, onChoose }: { chosen: string | null; onChoo
       }
     >
       {recent.map((visit) => (
-        <ChoiceCard
+        <Radio
           key={visit.id}
           name="visit"
           checked={chosen === visit.id}
           onChange={() => {
             onChoose(visit.id);
           }}
-        >
-          <span className={styles.visitDate}>{fullDate(visit.date)}</span>
-          <span className={styles.visitWhat}>{[visitTitle(visit), ...technicianOf(visit)].join(" · ")}</span>
-        </ChoiceCard>
+          label={fullDate(visit.date)}
+          detail={[visitTitle(visit), ...technicianOf(visit)].join(" · ")}
+        />
       ))}
-      <ChoiceCard
+      <Radio
         name="visit"
         checked={chosen === null}
         onChange={() => {
           onChoose(null);
         }}
-      >
-        {copy.noVisit}
-      </ChoiceCard>
-    </Fieldset>
+        label={copy.noVisit}
+      />
+    </ChoiceGroup>
   );
 }

@@ -6,17 +6,18 @@
 // (ADR 0068). A consultation and fit in one visit says what it costs once fitted, and has its own steps to expect;
 // one booked on /book shows as booked before it is a visit, as the site's consultation does.
 //
-// Beneath the card, a one visit's payment while the client owes it, the credit tile while there is a balance, its one prompt, and an invoice just issued as a line
+// Beneath the card, a one visit's payment while the client owes it, the credit tile while there is a balance, its one prompt, and an invoice just issued as a row
 // beneath that (src/domain/clients/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
-import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { BookButton, BookNext, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { NumberedSteps } from "@maneman/ui/NumberedSteps";
 import { ButtonLink } from "@maneman/ui/Button";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { hourInIndia, monthInIndia, shortDate, todayInIndia } from "@maneman/web-kit/dates";
+import { CLIENT_ICONS, GLYPHS } from "@maneman/brand/icons";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
+import { dayMonth, hourInIndia, monthInIndia, shortDate, todayInIndia, weekdayName } from "@maneman/web-kit/dates";
 import { documentUrl, type Me, type OneVisitPrice, type VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -27,6 +28,8 @@ import { nextVisitWords, replacementLine } from "./next-visit-words.ts";
 import {
   Actions,
   changingOf,
+  daysAway,
+  Fact,
   hasBegun,
   notingOf,
   OneVisitTerms,
@@ -177,8 +180,16 @@ function Consultation(props: {
           <h2 className={styles.eyebrow} id="consultation">
             {oneVisit ? copy.labelOneVisit : copy.label}
           </h2>
-          <p className={styles.date}>{date}</p>
-          <p className={styles.window}>{props.when}</p>
+          <p className={styles.date}>{`${weekdayName(props.date)} ${dayMonth(props.date)}`}</p>
+          {!begun && <p className={styles.away}>{home.away(daysAway(props.date))}</p>}
+          <ul className={styles.facts}>
+            <Fact icon={GLYPHS.clock}>
+              {props.when}
+              {props.requested === true && <span className={styles.factNote}>{copy.requested}</span>}
+            </Fact>
+            {props.place !== "" && <Fact icon={GLYPHS.pin}>{props.place}</Fact>}
+            {!oneVisit && <Fact icon={CLIENT_ICONS.receipt}>{copy.free}</Fact>}
+          </ul>
           {props.technician !== undefined && props.technician !== null && (
             <div className={styles.technician}>
               <span className={styles.initials} aria-hidden="true">
@@ -187,9 +198,6 @@ function Consultation(props: {
               <p className={styles.who}>{firstNameOf(props.technician.name)}</p>
             </div>
           )}
-          {props.place !== "" && <p className={styles.place}>{props.place}</p>}
-          {!oneVisit && <p className={styles.free}>{copy.free}</p>}
-          {props.requested === true && <p className={styles.free}>{copy.requested}</p>}
           {price !== null && <OneVisitTerms price={price} />}
           {!begun && proposal !== null && <ProposedMove visitId={proposal.visitId} proposal={proposal.move} />}
           {!begun && (
@@ -203,7 +211,12 @@ function Consultation(props: {
           )}
         </div>
       </section>
-      {!begun && <WhatToExpect steps={oneVisit ? home.oneVisit.expect : home.expect.steps} />}
+      {!begun && (
+        <WhatToExpect
+          label={oneVisit ? home.expect.labelOneVisit : home.expect.label}
+          steps={oneVisit ? home.oneVisit.expect : home.expect.steps}
+        />
+      )}
     </>
   );
 }
@@ -215,16 +228,16 @@ function OneVisit({ visit }: { visit: NonNullable<Me["next_visit"]> }) {
       <section aria-labelledby="next">
         <VisitCard visit={visit} label={{ id: "next", text: home.oneVisit.label }} />
       </section>
-      {!hasBegun(visit) && <WhatToExpect steps={home.oneVisit.expect} />}
+      {!hasBegun(visit) && <WhatToExpect label={home.expect.labelOneVisit} steps={home.oneVisit.expect} />}
     </>
   );
 }
 
-function WhatToExpect({ steps }: { steps: readonly string[] }) {
+function WhatToExpect({ label, steps }: { label: string; steps: readonly string[] }) {
   return (
     <section className={styles.expect} aria-labelledby="expect">
       <h2 className={capsLook(styles.label)} id="expect">
-        {home.expect.label}
+        {label}
       </h2>
       <NumberedSteps steps={steps} />
     </section>
@@ -255,17 +268,20 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
 
 type PromptOf<Kind extends NonNullable<Me["prompt"]>["kind"]> = Extract<NonNullable<Me["prompt"]>, { kind: Kind }>;
 
-/** Home's one prompt: a line, and the way to act on it. */
+/** Home's one prompt: the address to add as a row; the next visit or a replacement as a line and the way to book it. */
 function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
   switch (prompt.kind) {
     case "address":
       return (
-        <div className={styles.prompt}>
-          <p className={styles.promptLine}>{home.prompt.address}</p>
-          <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/profile/address">
-            <span>{home.prompt.addAddress}</span>
-          </AppLink>
-        </div>
+        <ListRows className={styles.promptRows}>
+          <ListRow
+            icon={GLYPHS.pin}
+            title={home.prompt.addAddress}
+            meta={home.prompt.addressMeta}
+            to="/profile/address"
+            chevron
+          />
+        </ListRows>
       );
     case "next_visit":
       return <NextVisitPrompt prompt={prompt} />;
@@ -340,17 +356,21 @@ function ReplacementPrompt({ prompt }: { prompt: PromptOf<"replacement_due"> }) 
   );
 }
 
-/** An invoice just issued: a line beneath the prompt, or the only one. */
+/** An invoice just issued, as a row that opens it: beneath the prompt, or the only one. */
 function InvoiceLine({ invoice }: { invoice: NonNullable<Me["invoice"]> }) {
   const copy = home.prompt;
+  const meta = copy.invoiceFor(visitName(invoice.type), shortDate(invoice.date));
   return (
-    <div className={styles.prompt}>
-      <p className={styles.promptLine}>{copy.invoice(visitName(invoice.type), shortDate(invoice.date))}</p>
-      <TextLink tone="brass" className={styles.promptLink} href={documentUrl(invoice.visit_id)} newTab>
-        <span>{copy.openInvoice}</span>
-        <VisuallyHidden>{visits.detail.invoice.newTab}</VisuallyHidden>
-      </TextLink>
-    </div>
+    <ListRows className={styles.promptRows}>
+      <ListRow
+        icon={CLIENT_ICONS.receipt}
+        title={copy.invoiceReady}
+        meta={meta}
+        href={documentUrl(invoice.visit_id)}
+        label={`${copy.invoiceReady}, ${meta}, ${visits.detail.invoice.newTab}`}
+        chevron
+      />
+    </ListRows>
   );
 }
 

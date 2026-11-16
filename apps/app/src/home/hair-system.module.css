@@ -37,3 +37,14 @@
 .book {
   width: 100%;
 }
+
+/* Each fact's name at the left and its value at the right, as drawn. */
+.facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-16);
+}
+
+.facts dd {
+  text-align: right;
+}

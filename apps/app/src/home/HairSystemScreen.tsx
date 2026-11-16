@@ -12,6 +12,7 @@ import { Timeline, type TimelineItem } from "@maneman/ui/Timeline";
 import { useLoad } from "@maneman/ui/useLoad";
 import { apiNow } from "@maneman/web-kit/clock";
 import { fullDate, todayInIndia } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary } from "../api.ts";
 import { BookButton } from "../booking/index.ts";
 import { hairSystems, messages, profile, replacement, titles } from "../content.ts";
@@ -24,6 +25,9 @@ import styles from "./hair-system.module.css";
 
 function Worn({ worn, open }: { worn: NonNullable<Me["hair_system"]>; open: boolean }) {
   const copy = hairSystems;
+  const { me } = useSession();
+  // Its service visit's price, where the client may book one.
+  const service = me.booking.services.find((each) => each.type === "service" && each.tier === worn.package);
   return (
     <section aria-labelledby="worn">
       <p className={styles.eyebrow}>{copy.wearing}</p>
@@ -32,9 +36,13 @@ function Worn({ worn, open }: { worn: NonNullable<Me["hair_system"]>; open: bool
       </h2>
       <DescriptionList
         layout="list"
+        className={styles.facts}
         items={[
           { term: copy.fitted, details: fullDate(worn.fitted_on) },
           { term: copy.life, details: copy.lifeIs(worn.replace_after_months, fullDate(worn.due_on)) },
+          ...(service === undefined
+            ? []
+            : [{ term: copy.service, details: copy.perVisit(rupees(service.price.amount)) }]),
           { term: copy.replacement, details: open ? copy.openNow : copy.opens(fullDate(worn.replacement_opens_on)) },
         ]}
       />

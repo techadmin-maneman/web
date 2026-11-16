@@ -56,10 +56,24 @@ export const NOTICES_URL: Readonly<Record<EnvironmentName, string>> = {
 };
 
 /** The public site's terms and privacy policy, which a booking agrees to. */
-export const LEGAL_URLS: Readonly<Record<EnvironmentName, { readonly terms: string; readonly privacy: string }>> = {
-  local: { terms: "http://127.0.0.1:4321/terms", privacy: "http://127.0.0.1:4321/privacy" },
-  staging: { terms: "https://staging.maneman.in/terms", privacy: "https://staging.maneman.in/privacy" },
-  production: { terms: "https://maneman.in/terms", privacy: "https://maneman.in/privacy" },
+export const LEGAL_URLS: Readonly<
+  Record<EnvironmentName, { readonly terms: string; readonly privacy: string; readonly offerTerms: string }>
+> = {
+  local: {
+    terms: "http://127.0.0.1:4321/terms",
+    privacy: "http://127.0.0.1:4321/privacy",
+    offerTerms: "http://127.0.0.1:4321/offer-terms",
+  },
+  staging: {
+    terms: "https://staging.maneman.in/terms",
+    privacy: "https://staging.maneman.in/privacy",
+    offerTerms: "https://staging.maneman.in/offer-terms",
+  },
+  production: {
+    terms: "https://maneman.in/terms",
+    privacy: "https://maneman.in/privacy",
+    offerTerms: "https://maneman.in/offer-terms",
+  },
 };
 
 /** The public site's try-on, for a client with no photographs yet: the look it makes comes back to Photos. */

@@ -82,15 +82,26 @@ export const profile = {
     visitBooked: "You have a visit booked in this city. To move to another, message us first.",
     message: "Message us",
   },
-  agreed: "What you have agreed to",
+  /** The page's two groups of switches, as drawn: the photographs, then WhatsApp. */
+  groups: { photos: "Your photos", whatsapp: "WhatsApp" },
   purposes: {
     photos_own_record: "Photographs taken for your visit record",
-    photos_referral_cards: "Photographs on referral cards",
-    photos_marketing: "Photographs in our marketing",
-    whatsapp_visits: "WhatsApp about your visits",
+    photos_referral_cards: "On invite cards I send",
+    photos_marketing: "In Mane Man marketing",
+    whatsapp_visits: "About my visits and issues",
     // The waitlist's launch alert, beside the four consents.
-    whatsapp_launches: "WhatsApp about launches",
+    whatsapp_launches: "About new services and cities",
   },
+  /** Beneath a switch: what it covers, and what being off means for the photographs. */
+  purposeNotes: {
+    whatsapp_visits: "Reminders, confirmations, receipts, replies",
+  } as Readonly<Partial<Record<string, string>>>,
+  purposeOff: {
+    photos_referral_cards: "Off. Friends see the Mane Man example card",
+    photos_marketing: "Off unless you switch it on",
+  } as Readonly<Partial<Record<string, string>>>,
+  /** Beneath the switches. */
+  switchingOff: "Switching off a photo choice stops new uses. Invites already sent stay in those chats.",
   given: (date: string) => `Given ${date}`,
   // What switching off visit messages means, since ops then call instead.
   visitsOff: "No visit updates on WhatsApp. We’ll call you about any change.",

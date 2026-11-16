@@ -27,6 +27,18 @@ export function promiseOf(reward: Reward | null): string {
   return `${fitted} you get ${freeServiceVisits(mine)}, and your friend gets ${String(theirs)}.`;
 }
 
+/** How it works' last step, in the promise's own terms: what each side gets once the friend is fitted. */
+function fittedStepOf(reward: Reward | null): string {
+  const once = "Once they’re fitted,";
+  if (reward === null) return `${once} we tell you.`;
+  const { referrer_visits: mine, friend_visits: theirs } = reward;
+  if (mine === 0 && theirs === 0) return `${once} we tell you.`;
+  if (mine === 0) return `${once} they get ${freeServiceVisits(theirs)}.`;
+  if (theirs === mine) return `${once} you both get ${freeServiceVisits(mine)}.`;
+  if (theirs === 0) return `${once} you get ${freeServiceVisits(mine)}.`;
+  return `${once} you get ${freeServiceVisits(mine)}, and your friend gets ${String(theirs)}.`;
+}
+
 /** The promise as it reads before Refer opens: "Then, when a friend you refer is fitted, …". */
 const afterOpening = (promise: string): string => `Then, ${promise.charAt(0).toLowerCase()}${promise.slice(1)}`;
 
@@ -70,15 +82,26 @@ export const refer = {
     refused: "We couldn’t add your invite’s free service visits. Message us to find out why.",
   },
   share: "Share an invite",
+  /** Rewards' own ways to send it, as drawn: WhatsApp first, the link, any other app. */
+  inviteOnWhatsApp: "Invite on WhatsApp",
+  /** The invite as the friend sees it, beneath the ways to send it. */
+  sees: {
+    title: "What your friend sees",
+    note: "Your name and message travel with the picture, never on it.",
+    change: "Change the picture",
+  },
+  offerTerms: "Offer terms",
   tracker: "See who has been fitted",
   /** Beneath the promise: how one goes, from the invite to the visits. */
   how: {
     label: "How it works",
-    steps: [
-      "Share your invite on WhatsApp.",
-      "Your friend books a free consultation at home.",
-      "Once they’re fitted, you both get the free visits.",
-    ],
+    /** The last step is the reward's own, as ops set it (fittedStepOf). */
+    steps: (reward: Reward | null) =>
+      [
+        "Share your invite on WhatsApp.",
+        "Your friend books a free consultation at home.",
+        fittedStepOf(reward),
+      ] as const,
   },
   card: {
     title: "Which card?",

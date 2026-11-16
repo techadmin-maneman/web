@@ -48,7 +48,12 @@ function Package({ offered, me }: { offered: Offered; me: Me }) {
             : [
                 {
                   term: copy.service,
-                  details: `${rupees(offered.service.amount)} ${copy.every(offered.service_every_days)}`,
+                  details: (
+                    <>
+                      {rupees(offered.service.amount)}
+                      <span className={styles.per}>{copy.every(offered.service_every_days)}</span>
+                    </>
+                  ),
                 },
               ]),
         ]}

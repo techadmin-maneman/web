@@ -92,6 +92,12 @@
   color: var(--mist-300);
 }
 
+/* A line beneath a fact, as a consultation only asked for says it waits on us. */
+.factNote {
+  display: block;
+  color: var(--mist-300);
+}
+
 .card .place {
   margin-top: var(--sp-16);
   color: var(--grid-100);
@@ -243,6 +249,12 @@
 .prompt {
   padding-top: var(--sp-16);
   border-top: var(--hairline) solid var(--line-200);
+}
+
+/* A prompt as a row: the address to add, an invoice to open. */
+.promptRows {
+  border-top: var(--hairline) solid var(--line-200);
+  border-bottom: var(--hairline) solid var(--line-200);
 }
 
 /* Home's one prompt: a line, and a quiet way on. */

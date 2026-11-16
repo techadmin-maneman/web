@@ -17,13 +17,13 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { dayMonth, shortDate, todayInIndia, weekdayName } from "@maneman/web-kit/dates";
 import { useState, type ReactNode } from "react";
 import type { OneVisitPrice, VisitSummary } from "../api.ts";
-import { arrivalHours, home, messages, note, visits } from "../content.ts";
-import { rupees } from "@maneman/web-kit/money";
+import { arrivalHours, home, messages, note } from "../content.ts";
 import { oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { oneVisitLines } from "./one-visit-words.ts";
 import { ProposedMove } from "./ProposedMove.tsx";
+import { paidLine } from "./paid-line.ts";
 import styles from "./home.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
 
@@ -217,7 +217,7 @@ export function OneVisitTerms({ price }: { price: OneVisitPrice }) {
 }
 
 /** Days from today in India to the visit's day: 0 on the day. */
-function daysAway(date: string): number {
+export function daysAway(date: string): number {
   return Math.round((Date.parse(date) - Date.parse(todayInIndia(apiNow()))) / 86_400_000);
 }
 
@@ -276,14 +276,14 @@ export function VisitCard({
       <p className={styles.date}>{`${weekdayName(visit.date)} ${dayMonth(visit.date)}`}</p>
       {!begun && <p className={styles.away}>{home.away(daysAway(visit.date))}</p>}
       <ul className={styles.facts}>
-        <Fact icon={GLYPHS.clock}>{whenText(visit)}</Fact>
-        <Fact icon={CLIENT_ICONS.layers}>
-          {home.next.length(oneVisit === null ? visitTitle(visit) : what, visit.length_minutes)}
+        <Fact icon={GLYPHS.clock}>
+          {begun ? whenText(visit) : home.next.arrives(arrivalHours(visit), visit.length_minutes)}
         </Fact>
-        {visit.place !== "" && <Fact icon={GLYPHS.pin}>{visit.place}</Fact>}
-        {visit.pay_at_visit !== null && (
-          <Fact icon={CLIENT_ICONS.receipt}>{visits.payAtVisit(rupees(visit.pay_at_visit))}</Fact>
+        {(oneVisit !== null || visit.type === "first_fit" || visit.type === "replacement") && (
+          <Fact icon={CLIENT_ICONS.layers}>{oneVisit === null ? visitTitle(visit) : what}</Fact>
         )}
+        {visit.place !== "" && <Fact icon={GLYPHS.pin}>{visit.place}</Fact>}
+        {paidLine(visit) !== null && <Fact icon={CLIENT_ICONS.receipt}>{paidLine(visit)}</Fact>}
       </ul>
       {oneVisit !== null && <OneVisitTerms price={oneVisit} />}
       {clientNote !== null && <p className={styles.place}>{note.shown(clientNote)}</p>}

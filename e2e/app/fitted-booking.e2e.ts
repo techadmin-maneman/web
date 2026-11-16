@@ -1,4 +1,4 @@
-import { shortDate } from "../../packages/web-kit/dates.ts";
+import { dayMonth, shortDate, weekdayName } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
@@ -66,7 +66,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [] } }));
   await page.reload();
   const home = page.getByRole("region", { name: appCopy.home.oneVisit.label });
-  await expect(home).toContainText(shortDate("2027-09-25"));
+  await expect(home).toContainText(`${weekdayName("2027-09-25")} ${dayMonth("2027-09-25")}`);
   await expect(home).toContainText("Rs. 30,000, only if you go ahead");
   await expect(home).not.toContainText(appCopy.home.beingBooked.free);
   // Nothing paid and no consent to visit messages, so no WhatsApp is promised.
@@ -140,11 +140,12 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   await page.reload();
 
   const card = page.getByRole("region", { name: appCopy.home.oneVisit.label });
-  await expect(card).toContainText("Consultation and fit · 3 hours");
+  await expect(card).toContainText(appCopy.ONE_VISIT);
+  await expect(card).toContainText(/about 3 hours/);
   await expect(card).toContainText("Rs. 27,000, only if you go ahead");
   await expect(card).toContainText("Code TENPC applied");
   await expect(card).toContainText(appCopy.home.oneVisit.paidBy);
-  await expect(page.getByRole("region", { name: appCopy.home.expect.label })).toContainText(
+  await expect(page.getByRole("region", { name: appCopy.home.expect.labelOneVisit })).toContainText(
     "Choose your hair system, fitted there and then.",
   );
   expect(await axeViolations(page)).toEqual([]);

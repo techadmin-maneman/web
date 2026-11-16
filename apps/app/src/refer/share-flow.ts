@@ -29,7 +29,7 @@ interface Made {
 export const HOUSE: Shown = { kind: "house" };
 
 /** The card the friend will see: one just made, the client's stored one, or the house example. */
-function sentCard(state: Refer, made: Made | null): Shown {
+export function sentCard(state: Refer, made: Made | null): Shown {
   if (made !== null) return { kind: "made", url: made.url };
   if (state.card.state === "personal") return { kind: "made", url: cardUrl(state.card.version) };
   return HOUSE;
