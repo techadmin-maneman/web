@@ -63,3 +63,21 @@ Recorded as they are found while building; `docs/client-redesign/REPORT.md` list
 - **The account** keeps "Signed in on", the sessions the prototype does not draw (every current state survives),
   between Your data and Delete account.
 - **Visits' record** ("Your record": first fit, service visits, replacements, total paid) stays beneath Past.
+- **Home's card** says when the technician arrives and for how long, where, and what it costs now (paid ahead, free, or
+  what is left to pay at the visit); with nothing paid ahead and nothing to pay, it says nothing of money. The
+  technician is named by first name, as before. Home's prompts (the address to add, an invoice to open) are rows. The
+  open issues are a count, not the issue itself, and the last visit has no thumbnail or photo count: `/api/me` and
+  `/api/visits` carry neither.
+- **The consultation's steps** take the prototype's first two, and a third that is true of a consultation alone: the
+  first fit is booked if the client goes ahead, and nothing is fitted on the day. Fitting on the day is a consultation
+  and fit, booked as such, with its own steps.
+- **Rewards** shows the ways to send the invite, the invite as the friend sees it, the friends fitted and how it works,
+  as drawn. Choosing the card and agreeing to the photographs on it stay in the share sheet those ways open, where the
+  consent is recorded before any card is made; the page's "Change the picture" opens it too.
+- **Privacy and messages** groups the switches as drawn. Its first line keeps the words the booking records as the
+  photographs' consent (`VISIT_PHOTOS`), not the prototype's, so the two never differ.
+- **Address**: with no address yet, the page is the form, as drawn; a saved address shows as written, with Edit, so the
+  client can check what was typed for them.
+- **Notifications** has no "Mark all read": opening the inbox marks them read. A new one is marked by a small brass
+  square, not a dot: corners stay square (ruling 10).
+- **Sign in** keeps no example number as a placeholder.
