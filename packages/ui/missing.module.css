@@ -1,0 +1,11 @@
+/* What a disabled action waits for (./Missing.tsx): one quiet line beneath it. */
+
+@layer base, ui;
+
+@layer ui {
+  .missing {
+    margin: var(--sp-8) 0 0;
+    color: var(--ui-text-muted);
+    font-size: var(--fs-14);
+  }
+}

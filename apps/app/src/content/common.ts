@@ -202,6 +202,27 @@ export const states = {
   },
 } as const;
 
+/** What a disabled action waits for, one line beneath it (docs/prompts/client-redesign.md, "Copy"). */
+export const missing = {
+  pickDate: "Pick a date first.",
+  pickService: "Choose a service first.",
+  pickTime: "Pick a start time first.",
+  agreeTerms: "Tick the box to agree to the terms first.",
+  disputeWhy: "Say why the charge is wrong first.",
+  noteWords: "Write your note first.",
+  concernWords: "Say what your concern is first.",
+  discountCode: "Type a code first.",
+  codeDigits: "Enter all 6 digits.",
+  signOffChecks: "Tick all three to sign off.",
+  notRightWords: "Say what isn’t right first.",
+  raise: (about: boolean, words: boolean) => {
+    if (!about && !words) return "Choose what it’s about, and say what’s happening.";
+    return about ? "Say what’s happening first." : "Choose what it’s about first.";
+  },
+  updateWords: "Write your update first.",
+  reopenWords: "Say what’s happening now first.",
+} as const;
+
 export const errors = {
   load: "This page didn’t load.",
   retry: "Try again",

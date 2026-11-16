@@ -10,7 +10,8 @@ import { WordsField } from "@maneman/ui/WordsField";
 import { PROBLEM_MAX_CHARS } from "@rules/policy/problems.ts";
 import { useState } from "react";
 import { api, type ProblemAbout } from "../api.ts";
-import { ISSUE_CATEGORIES, issues, profile, titles } from "../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { ISSUE_CATEGORIES, issues, missing, profile, titles } from "../content.ts";
 import { Shell } from "../frame/Shell.tsx";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
@@ -59,6 +60,7 @@ export function RaiseScreen() {
       setProblem(await sent({ about, visit, text: text.trim(), photos }));
     });
   const ready = about !== null && text.trim() !== "" && !busy;
+  const waiting = about === null || text.trim() === "" ? missing.raise(about !== null, text.trim() !== "") : null;
   const hours = me.care_hours;
   const support = profile.support;
   return (
@@ -66,9 +68,19 @@ export function RaiseScreen() {
       header={{ kind: "back", title: titles.raise, to: "/visits/issues", label: profile.back }}
       tab={null}
       footer={
-        <Button variant="primary" size="action" className={styles.send} disabled={!ready} onClick={() => void send()}>
-          {busy ? copy.sending : copy.send}
-        </Button>
+        <>
+          <Button
+            variant="primary"
+            size="action"
+            className={styles.send}
+            disabled={!ready}
+            aria-describedby={describedBy("raise-missing", waiting !== null)}
+            onClick={() => void send()}
+          >
+            {busy ? copy.sending : copy.send}
+          </Button>
+          <Missing id="raise-missing" what={waiting} />
+        </>
       }
     >
       <div className={styles.page}>

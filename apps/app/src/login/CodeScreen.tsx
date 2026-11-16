@@ -7,15 +7,15 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { classes } from "@maneman/ui/classes";
 import { GLYPHS, ICONS } from "@maneman/brand/icons";
-import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState, type RefCallback } from "react";
 import type { LoginChallenge } from "../api.ts";
-import { login } from "../content.ts";
+import { login, missing } from "../content.ts";
 import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import { CodeField } from "@maneman/ui/CodeField";
 import styles from "./login.module.css";
+import { ActionWithMissing } from "../frame/ActionWithMissing.tsx";
 import { MessageUs } from "./MessageUs.tsx";
 import { masked } from "./mobile.ts";
 
@@ -206,16 +206,16 @@ export function CodeScreen(props: Props) {
           {resendIn === 0 && !closed ? copy.canResend : ""}
         </VisuallyHidden>
         <div className={styles.foot}>
-          <Button
-            variant="primary"
-            size="action"
-            className={styles.primary}
-            type="submit"
-            disabled={code.length < ONE_TIME_CODE.digits || props.busy || closed}
+          <ActionWithMissing
+            id="code-digits"
+            missing={!closed && code.length < ONE_TIME_CODE.digits ? missing.codeDigits : null}
+            held={closed}
             busy={props.busy}
+            type="submit"
+            className={styles.primary}
           >
             {copy.submit}
-          </Button>
+          </ActionWithMissing>
         </div>
       </form>
     </main>

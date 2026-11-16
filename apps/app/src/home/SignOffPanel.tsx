@@ -11,7 +11,8 @@ import { indiaClock } from "@maneman/web-kit/dates";
 import { FLAG_MAX_CHARS } from "@rules/policy/sign-off.ts";
 import { useState } from "react";
 import { api, type VisitSummary } from "../api.ts";
-import { live } from "../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { live, missing } from "../content.ts";
 import { AppLink } from "../frame/Shell.tsx";
 import { useSession } from "../session.ts";
 import styles from "./live-card.module.css";
@@ -44,12 +45,14 @@ function NotRight(props: { technician: string; busy: boolean; onSend: (words: st
         variant="primary"
         size="action"
         disabled={words.trim() === "" || props.busy}
+        aria-describedby={describedBy("not-right-words", words.trim() === "")}
         onClick={() => {
           props.onSend(words.trim());
         }}
       >
         {copy.send(props.technician)}
       </Button>
+      <Missing id="not-right-words" what={words.trim() === "" ? missing.notRightWords : null} />
       <Button variant="quiet" size="control" onClick={props.onBack}>
         {copy.cancel}
       </Button>
@@ -68,6 +71,7 @@ export function SignOffPanel({ visit, technician }: { visit: VisitSummary; techn
   if (signOff === null) return null;
   if (signOff.state === "flagged") return <Flagged technician={technician} words={signOff.flag_text} />;
   if (signOff.state !== "asked") return null;
+  const allTicked = CHECKS.every((check) => checks[check]);
   const answer = (body: Answer) =>
     once(async () => {
       const answered = await api.signOff(visit.id, body);
@@ -105,11 +109,13 @@ export function SignOffPanel({ visit, technician }: { visit: VisitSummary; techn
           <Button
             variant="primary"
             size="action"
-            disabled={!CHECKS.every((check) => checks[check]) || busy}
+            disabled={!allTicked || busy}
+            aria-describedby={describedBy("sign-off-checks", !allTicked)}
             onClick={() => void answer({ result: "signed", checks })}
           >
             {copy.happy}
           </Button>
+          <Missing id="sign-off-checks" what={allTicked ? null : missing.signOffChecks} />
           <Button
             variant="quiet"
             size="control"

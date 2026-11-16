@@ -70,6 +70,7 @@
     "./Segmented": "./Segmented.tsx",
     "./Timeline": "./Timeline.tsx",
     "./PhotoPick": "./PhotoPick.tsx",
+    "./Missing": "./Missing.tsx",
     "./SelectCard": "./SelectCard.tsx",
     "./SettingRow": "./SettingRow.tsx",
     "./SettingsLayout": "./SettingsLayout.tsx",

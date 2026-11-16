@@ -3,14 +3,15 @@
 // what is left. A code that does not apply is told only that. The box is shut while the sheet is busy paying; once
 // Checkout is closed unpaid, the code may change again, and the next Pay makes a new order for the new price.
 
-import { Field, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput, type FieldControl } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useEffect, useState, type ReactNode } from "react";
 import { api, type Hold } from "../api.ts";
-import { booking } from "../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { booking, missing } from "../content.ts";
 import { amountOff } from "../lib/money.ts";
 import shared from "./booking.module.css";
 import styles from "./code-box.module.css";
@@ -40,6 +41,40 @@ function Applied(props: {
         {props.removing ? copy.removing : copy.remove}
       </TextButton>
       {props.children}
+    </div>
+  );
+}
+
+/** The code as typed, and Apply beside it, waiting for a code. */
+function CodeRow(props: {
+  control: FieldControl;
+  typed: string;
+  label: string;
+  held: boolean;
+  onTyped: (typed: string) => void;
+}) {
+  const empty = props.typed.trim() === "";
+  return (
+    <div className={styles.codeRow}>
+      <TextInput
+        {...props.control}
+        className={styles.codeInput}
+        autoCapitalize="characters"
+        autoComplete="off"
+        value={props.typed}
+        onChange={(event) => {
+          props.onTyped(event.target.value);
+        }}
+      />
+      <Button
+        type="submit"
+        variant="outline"
+        size="control"
+        disabled={props.held || empty}
+        aria-describedby={describedBy("discount-code", empty)}
+      >
+        {props.label}
+      </Button>
     </div>
   );
 }
@@ -131,24 +166,19 @@ export function CodeBox(props: {
         look={{ label: capsLook(shared.label), error: shared.problem }}
       >
         {(control) => (
-          <div className={styles.codeRow}>
-            <TextInput
-              {...control}
-              className={styles.codeInput}
-              autoCapitalize="characters"
-              autoComplete="off"
-              value={typed}
-              onChange={(event) => {
-                setTyped(event.target.value);
-                setProblem(null);
-              }}
-            />
-            <Button type="submit" variant="outline" size="control" disabled={busy || sending || typed.trim() === ""}>
-              {sending ? copy.applying : copy.apply}
-            </Button>
-          </div>
+          <CodeRow
+            control={control}
+            typed={typed}
+            label={sending ? copy.applying : copy.apply}
+            held={busy || sending}
+            onTyped={(value) => {
+              setTyped(value);
+              setProblem(null);
+            }}
+          />
         )}
       </Field>
+      <Missing id="discount-code" what={typed.trim() === "" ? missing.discountCode : null} />
     </form>
   );
 }

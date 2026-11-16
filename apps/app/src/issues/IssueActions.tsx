@@ -9,7 +9,8 @@ import { WordsField } from "@maneman/ui/WordsField";
 import { PROBLEM_MAX_CHARS, PROBLEM_PHOTOS_MAX } from "@rules/policy/problems.ts";
 import { useState } from "react";
 import { api, type Issue } from "../api.ts";
-import { issues } from "../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { issues, missing } from "../content.ts";
 import { small } from "./RaisePhotos.tsx";
 import styles from "./issue.module.css";
 
@@ -39,6 +40,39 @@ function Resolved({ onReopen }: { onReopen: () => void }) {
         {issues.page.again}
       </Button>
     </div>
+  );
+}
+
+/** Send the words, or reopen with them; and, while open, say it is sorted. What is missing beneath. */
+function Buttons(props: {
+  reopening: boolean;
+  busy: boolean;
+  empty: boolean;
+  onSend: () => void;
+  onSorted: () => void;
+}) {
+  const copy = issues.page;
+  const wanted = props.reopening ? missing.reopenWords : missing.updateWords;
+  return (
+    <>
+      <div className={styles.buttons}>
+        <Button
+          variant="primary"
+          size="action"
+          disabled={props.empty || props.busy}
+          aria-describedby={describedBy("issue-words", props.empty)}
+          onClick={props.onSend}
+        >
+          {props.reopening ? copy.reopen : copy.send}
+        </Button>
+        {!props.reopening && (
+          <Button variant="outline" size="action" disabled={props.busy} onClick={props.onSorted}>
+            {copy.sorted}
+          </Button>
+        )}
+      </div>
+      <Missing id="issue-words" what={props.empty ? wanted : null} />
+    </>
   );
 }
 
@@ -91,28 +125,15 @@ export function IssueActions({
         max={PROBLEM_MAX_CHARS}
         onText={setText}
       />
-      <div className={styles.buttons}>
-        <Button
-          variant="primary"
-          size="action"
-          disabled={words === "" || busy}
-          onClick={() =>
-            void act(() => (reopening ? api.reopenProblem(reference, words) : api.updateProblem(reference, words)))
-          }
-        >
-          {reopening ? copy.reopen : copy.send}
-        </Button>
-        {!reopening && (
-          <Button
-            variant="outline"
-            size="action"
-            disabled={busy}
-            onClick={() => void act(() => api.problemSorted(reference))}
-          >
-            {copy.sorted}
-          </Button>
-        )}
-      </div>
+      <Buttons
+        reopening={reopening}
+        busy={busy}
+        empty={words === ""}
+        onSend={() =>
+          void act(() => (reopening ? api.reopenProblem(reference, words) : api.updateProblem(reference, words)))
+        }
+        onSorted={() => void act(() => api.problemSorted(reference))}
+      />
       {problem !== null && (
         <p className={styles.problem} role="alert">
           {problem}

@@ -9,7 +9,8 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState, type ReactNode } from "react";
 import { api, EXPORT_URL, type Profile } from "../api.ts";
-import { profile } from "../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { missing, profile } from "../content.ts";
 import styles from "./profile.module.css";
 import { WordsField } from "@maneman/ui/WordsField";
 
@@ -48,6 +49,30 @@ function GrievanceField({ text, onText }: { text: string; onText: (text: string)
       max={GRIEVANCE_MAX_CHARS}
       onText={onText}
     />
+  );
+}
+
+/** Send the concern, or put it away; what is missing beneath. */
+function ConcernButtons({ busy, empty, onCancel }: { busy: boolean; empty: boolean; onCancel: () => void }) {
+  return (
+    <>
+      <div className={styles.row}>
+        <Button
+          variant="primary"
+          size="control"
+          className={styles.primary}
+          type="submit"
+          disabled={busy || empty}
+          aria-describedby={describedBy("concern-words", empty)}
+        >
+          {profile.data.send}
+        </Button>
+        <Button variant="quiet" size="control" className={styles.secondary} onClick={onCancel}>
+          {profile.data.cancel}
+        </Button>
+      </div>
+      <Missing id="concern-words" what={empty ? missing.concernWords : null} />
+    </>
   );
 }
 
@@ -111,27 +136,13 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
             {state === "limited" ? copy.limited : copy.failed}
           </InlineMessage>
         )}
-        <div className={styles.row}>
-          <Button
-            variant="primary"
-            size="control"
-            className={styles.primary}
-            type="submit"
-            disabled={busy || text.trim() === ""}
-          >
-            {copy.send}
-          </Button>
-          <Button
-            variant="quiet"
-            size="control"
-            className={styles.secondary}
-            onClick={() => {
-              setWriting(false);
-            }}
-          >
-            {copy.cancel}
-          </Button>
-        </div>
+        <ConcernButtons
+          busy={busy}
+          empty={text.trim() === ""}
+          onCancel={() => {
+            setWriting(false);
+          }}
+        />
       </form>
     );
   }
